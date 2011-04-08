@@ -1948,6 +1948,20 @@
         template="../templates/distribution-series-and-milestones.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionDerivativesView"
+        permission="zope.Public"
+        name="+derivatives"
+        facet="overview"
+        template="../templates/distribution-series.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionView"
+        permission="zope.Public"
+        name="+derivatives-slot"
+        facet="overview"
+        template="../templates/distribution-derivatives.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+details"

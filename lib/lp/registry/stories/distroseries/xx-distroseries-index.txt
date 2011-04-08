@@ -47,6 +47,7 @@ on the series' details.
     Release manager: None
     Status: Current Stable Release
     Derives from: Warty (4.10) is not derived from another series.
+    Derived series: Hoary Mock (9.9.9), Breezy Badger Autotest (6.6.6)
     Source packages: 3
     Binary packages: 4
 
@@ -63,6 +64,7 @@ change its text slightly to annouce this:
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
     Derives from: Woody (3.0)
+    Derived series: No derived series.
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 
