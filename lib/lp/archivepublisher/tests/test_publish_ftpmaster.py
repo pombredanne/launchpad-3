@@ -422,13 +422,25 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(dists_root))
         self.assertTrue(file_exists(dists_root + ".new"))
 
-    def test_setUpDirs_does_not_mind_if_directories_already_exist(self):
+    def test_setUpDirs_does_not_mind_if_dist_directories_already_exist(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
+        # Sabotage the directory renaming that setUpDirs does.  We want
+        # the original dists directories, not dists.new.
+        script.renameDistsToNewDists = FakeMethod()
         script.setUpDirs()
         script.setUpDirs()
         self.assertTrue(file_exists(get_archive_root(get_pub_config(distro))))
+
+    def test_setUpDirs_aborts_if_dists_new_already_exists(self):
+        distro = self.makeDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        # This invocation of setUpDirs creates dists.new directories.
+        script.setUpDirs()
+        # ...and so the next invocation refuses to make any changes.
+        self.assertRaises(LaunchpadScriptFailure, script.setUpDirs)
 
     def test_setUpDirs_moves_dists_to_dists_new(self):
         distro = self.makeDistro()

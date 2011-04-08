@@ -184,6 +184,47 @@ class PublishFTPMaster(LaunchpadCronScript):
             failure=LaunchpadScriptFailure(
                 "Failed to rsync dists.new for %s." % archive_purpose.title))
 
+    def updateNewDists(self):
+        """Update the new dists directory based on the current one."""
+        for purpose, archive_config in self.configs.iteritems():
+            self.rsyncNewDists(purpose)
+
+    def checkForSafeRenameToNewDists(self, archive_purpose):
+        """Check that it's safe to rename distscopy dist to dists.new."""
+        archive_config = self.configs[archive_purpose]
+        new_dists = archive_config.distsroot + ".new"
+        if file_exists(new_dists):
+            raise LaunchpadScriptFailure(
+                "Can't rename dists to %s; it already exists." % new_dists)
+
+    def createMissingDirs(self, archive_purpose):
+        """Create archive root and such if they did not yet exist."""
+        archive_config = self.configs[archive_purpose]
+        archiveroot = archive_config.archiveroot
+        if not file_exists(archiveroot):
+            self.logger.debug("Creating archive root %s.", archiveroot)
+            os.makedirs(archiveroot)
+        distsroot = archive_config.distsroot
+        if not file_exists(distsroot):
+            self.logger.debug("Creating dists root %s.", distsroot)
+            os.makedirs(distsroot)
+        distscopy = os.path.join(
+            get_distscopyroot(archive_config), "dists")
+        if not file_exists(distscopy):
+            self.logger.debug(
+                "Creating backup dists directory %s for %s",
+                distscopy, archive_purpose.title)
+            os.makedirs(distscopy)
+
+    def renameDistsToNewDists(self, archive_purpose):
+        """Rename distscopy dists to dists.new."""
+        archive_config = self.configs[archive_purpose]
+        dists = os.path.join(get_distscopyroot(archive_config), "dists")
+        new_dists= archive_config.distsroot + ".new"
+        self.logger.debug(
+            "Moving backup dist for %s into place.", archive_purpose.title)
+        os.rename(dists, new_dists)
+
     def setUpDirs(self):
         """Copy the dists tree ready for publishing into.
 
@@ -195,32 +236,25 @@ class PublishFTPMaster(LaunchpadCronScript):
         dists directory, which we move into place and bring up to
         date with rsync.  Should achieve the same effect as copying, but
         faster.
+
+        The counterpart of this method is `restoreDistsCopy`.  Once both
+        have been called, the dists directories will be in place.  If
+        the script fails before it can get to that point, call
+        `rollBackNewDistsRoot` instead.
         """
-        for archive_config in self.configs.itervalues():
-            archiveroot = archive_config.archiveroot
-            if not file_exists(archiveroot):
-                self.logger.debug("Creating archive root %s.", archiveroot)
-                os.makedirs(archiveroot)
-            distsroot = archive_config.distsroot
-            if not file_exists(distsroot):
-                self.logger.debug("Creating dists root %s.", distsroot)
-                os.makedirs(distsroot)
+        # Before messing with the filesystem, try to establish that we
+        # can get to a consistent new state without glitches.
+        for purpose in self.configs.iterkeys():
+            self.checkForSafeRenameToNewDists(purpose)
 
-        for purpose, archive_config in self.configs.iteritems():
-            dists = os.path.join(get_distscopyroot(archive_config), "dists")
-            if not file_exists(dists):
-                self.logger.debug(
-                    "Creating backup dists directory %s for %s",
-                    dists, purpose.title)
-                os.makedirs(dists)
-            self.logger.debug(
-                "Moving backup dist for %s into place.", purpose.title)
-            os.rename(dists, archive_config.distsroot + ".new")
+        # Set up various directories if they do not yet exist.
+        for purpose in self.configs.iterkeys():
+            self.createMissingDirs(purpose)
 
-    def updateNewDists(self):
-        """Update the new dists directory based on the current one."""
-        for purpose, archive_config in self.configs.iteritems():
-            self.rsyncNewDists(purpose)
+        # At this point very little can go wrong.  Rename the distscopy
+        # for each archive to dists.new.
+        for purpose in self.configs.iterkeys():
+            self.renameDistsToNewDists(purpose)
 
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.
@@ -429,8 +463,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         """See `LaunchpadScript`."""
         self.setUp()
         self.processAccepted()
+        self.setUpDirs()
         try:
-            self.setUpDirs()
             self.updateNewDists()
         except:
             self.rollBackNewDistsRoot()
