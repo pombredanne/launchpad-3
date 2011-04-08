@@ -54,7 +54,6 @@ __all__ = ['Dominator']
 
 from datetime import timedelta
 import functools
-import gc
 import operator
 
 import apt_pkg
@@ -62,7 +61,6 @@ from storm.expr import And, Count, Select
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    clear_current_connection_cache,
     flush_database_updates,
     sqlvalues,
     )
@@ -80,15 +78,6 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 # Days before a package will be removed from disk.
 STAY_OF_EXECUTION = 1
-
-
-def clear_cache():
-    """Flush SQLObject updates and clear the cache."""
-    # Flush them anyway, should basically be a noop thanks to not doing
-    # lazyUpdate.
-    flush_database_updates()
-    clear_current_connection_cache()
-    gc.collect()
 
 
 # Ugly, but works
@@ -282,7 +271,7 @@ class Dominator:
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket, do_clear_cache=True):
+    def judgeAndDominate(self, dr, pocket):
         """Perform the domination and superseding calculations
 
         It only works across the distroseries and pocket specified.
@@ -326,9 +315,6 @@ class Dominator:
                 bpph_location_clauses)
             self.debug("Dominating binaries...")
             self._dominatePublications(self._sortPackages(binaries, False))
-            if do_clear_cache:
-                self.debug("Flushing SQLObject cache.")
-                clear_cache()
 
         self.debug("Performing domination across %s/%s (Source)" %
                    (dr.name, pocket.title))
