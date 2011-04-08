@@ -18,7 +18,18 @@ from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.schema import Int
 
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_read_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+
+from canonical.launchpad import _
 from lp.answers.interfaces.questionenums import QuestionStatus
 
 
@@ -79,11 +90,21 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         """
 
 
+from lp.answers.interfaces.question import IQuestion
 class IQuestionSet(IQuestionCollection):
     """A utility that contain all the questions published in Launchpad."""
 
+    # Hurray circular imports!
+    export_as_webservice_collection(IQuestion)
+
     title = Attribute('Title')
 
+    @operation_parameters(
+        question_id=Int(
+            title=_('The id of the question to get'),
+            required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
     def get(question_id, default=None):
         """Return the question with the given id.
 
@@ -98,6 +119,7 @@ class IQuestionSet(IQuestionCollection):
         comments in the last <days_before_expiration> days.
         """
 
+    @collection_default_content(limit=5)
     def getMostActiveProjects(limit=5):
         """Return the list of projects that asked the most questions in
         the last 60 days.

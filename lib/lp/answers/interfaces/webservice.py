@@ -11,6 +11,8 @@ which tells `lazr.restful` that it should look for webservice exports here.
 
 __all__ = [
     'IQuestion',
+    'IQuestionSet',
     ]
 
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questioncollection import IQuestionSet
