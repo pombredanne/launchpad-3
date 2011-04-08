@@ -8,5 +8,4 @@
 # It's safe to do this since the uncompressed MD5 hashes have already been
 # computed for inclusion in the Release files.
 
-find "$DISTSROOT".new \
-    \( -name Packages -o -name Sources \) -exec rm -f -- "{}" \;
+find $DISTSROOT \( -name Packages -o -name Sources \) -exec rm -f -- "{}" \;

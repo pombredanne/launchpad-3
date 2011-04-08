@@ -15,8 +15,8 @@ Some variables will be set before each script is run:
 ARCHIVEROOT - the archive's root directory
 (e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/ )
 
-DISTSROOT - the archive's dists root directory
-(e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/dists )
+DISTSROOT - a working copy of the archive's dists root directory
+(e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/dists.new )
 
 OVERRIDEROOT - the archive's overrides root directory
 (e.g. /srv/launchpad.net/ubuntu-overrides )

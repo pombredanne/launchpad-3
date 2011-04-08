@@ -179,8 +179,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         """
         archive_config = self.configs[archive_purpose]
         self.executeShell(
-            "rsync -aH --delete '%s/' '%s/dists.new'"
-            % (archive_config.distsroot, archive_config.archiveroot),
+            "rsync -aH --delete '%s/' '%s.new'"
+            % (archive_config.distsroot, archive_config.distsroot),
             failure=LaunchpadScriptFailure(
                 "Failed to rsync dists.new for %s." % archive_purpose.title))
 
@@ -254,7 +254,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         archive_config = self.configs[archive.purpose]
         env = {
             'ARCHIVEROOT': archive_config.archiveroot,
-            'DISTSROOT': archive_config.distsroot,
+            'DISTSROOT': archive_config.distsroot + ".new",
             'OVERRIDEROOT': archive_config.overrideroot,
             }
         self.runParts('publish-distro.d', env)
