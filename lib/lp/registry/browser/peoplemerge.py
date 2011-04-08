@@ -56,7 +56,7 @@ class ValidatingMergeView(LaunchpadFormView):
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
+        target_person = data.get('target_person') or self.user
 
         if dupe_person == target_person and dupe_person is not None:
             self.addError(_("You can't merge ${name} into itself.",
@@ -73,8 +73,13 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
-        # XXX sinzui 2011-04-06: verify
-        # dupe_person.is_merge_pending and target_person.is_merge_pending
+            if dupe_person.is_merge_pending:
+                self.addError(_("${name} is already queued for merging.",
+                      mapping=dict(name=dupe_person.name)))
+        if target_person is not None and target_person.is_merge_pending:
+            self.addError(_("${name} is already queued for merging.",
+                  mapping=dict(name=target_person.name)))
+
 
 class AdminMergeBaseView(ValidatingMergeView):
     """Base view for the pages where admins can merge people/teams."""
