@@ -50,6 +50,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
+    Desc,
     LeftJoin,
     Max,
     Not,
@@ -242,17 +243,17 @@ def get_bug_tags_open_count(context_condition, user):
     """
     open_statuses_condition = BugTask.status.is_in(
         UNRESOLVED_BUGTASK_STATUSES)
-    columns = [
+    columns = (
         BugTag.tag,
         Count(),
-        ]
-    tables = [
+        )
+    tables = (
         BugTag,
         LeftJoin(Bug, Bug.id == BugTag.bugID),
         LeftJoin(
             BugTask,
             And(BugTask.bugID == Bug.id, open_statuses_condition)),
-        ]
+        )
     where_conditions = [
         open_statuses_condition,
         context_condition,
@@ -261,10 +262,9 @@ def get_bug_tags_open_count(context_condition, user):
     if privacy_filter:
         where_conditions.append(SQLRaw(privacy_filter))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    result = store.execute(Select(
-        columns=columns, where=And(*where_conditions), tables=tables,
-        group_by=BugTag.tag, order_by=BugTag.tag))
-    return shortlist([(row[0], row[1]) for row in result.get_all()])
+    return store.using(*tables).find(
+        columns, *where_conditions).group_by(BugTag.tag).order_by(
+            Desc(Count()), BugTag.tag)
 
 
 def snapshot_bug_params(bug_params):
