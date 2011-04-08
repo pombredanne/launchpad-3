@@ -83,11 +83,6 @@ def find_run_parts_dir(distro, parts):
 class PublishFTPMaster(LaunchpadCronScript):
     """Publish a distro (update)."""
 
-    # Has the publication been done?  This indicates that the distsroots
-    # have been replaced with newly generated ones.  It has implications
-    # for cleanup.
-    done_pub = False
-
     def add_my_options(self):
         self.parser.add_option(
             '-d', '--distribution', dest='distribution', default=None,
@@ -136,20 +131,17 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
-    def cleanUp(self):
-        """Post-publishing cleanup."""
+    def rollBackNewDistsRoot(self):
+        """Restore distscopy versions of dists directories."""
         self.logger.debug("Cleaning up.")
         for purpose, archive_config in self.configs.iteritems():
             self.logger.debug(
                 "Moving %s dists backup to safe keeping for next time.",
                 purpose.title)
-            distscopyroot = get_distscopyroot(archive_config)
-            dists = os.path.join(distscopyroot, "dists")
-            if self.done_pub:
-                replacement_dists = archive_config.distsroot + ".old"
-            else:
-                replacement_dists = archive_config.distsroot + ".new"
+            replacement_dists = archive_config.distsroot + ".new"
             if file_exists(replacement_dists):
+                dists = os.path.join(
+                    get_distscopyroot(archive_config), "dists")
                 self.logger.debug(
                     "Renaming %s to %s.", replacement_dists, dists)
                 os.rename(replacement_dists, dists)
@@ -218,7 +210,12 @@ class PublishFTPMaster(LaunchpadCronScript):
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
             dists_new = os.path.join(archive_config.archiveroot, "dists.new")
             if not file_exists(dists):
+                self.logger.debug(
+                    "Creating backup dists directory %s for %s",
+                    dists, purpose.title)
                 os.makedirs(dists)
+            self.logger.debug(
+                "Moving backup dist for %s into place.", purpose.title)
             os.rename(dists, dists_new)
             self.rsyncNewDists(purpose)
 
@@ -281,10 +278,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(distsroot, distsroot + ".old")
             os.rename(distsroot + ".new", distsroot)
 
-        # Yay, we did it!  Mark the fact because it makes a difference
-        # to the cleanup procedure.
-        self.done_pub = True
-
+    def restoreDistsCopy(self):
         for purpose, archive_config in self.configs.iteritems():
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
             self.logger.debug(
@@ -382,29 +376,40 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def publishSecurityUploads(self):
         """Quickly process just the pending security uploads."""
-        self.logger.debug("Expediting security uploads.")
-        security_suites = self.getDirtySecuritySuites()
-        if len(security_suites) == 0:
-            self.logger.debug("Nothing to do for security publisher.")
-            return
-        partner_archive = self.distribution.getArchive("partner")
-        if partner_archive is not None:
-            self.publishDistroArchive(partner_archive)
-        self.publishDistroArchive(
-            self.distribution.main_archive, security_suites=security_suites)
-        self.installDists()
+        try:
+            self.logger.debug("Expediting security uploads.")
+            security_suites = self.getDirtySecuritySuites()
+            if len(security_suites) == 0:
+                self.logger.debug("Nothing to do for security publisher.")
+                return
+            partner_archive = self.distribution.getArchive("partner")
+            if partner_archive is not None:
+                self.publishDistroArchive(partner_archive)
+            self.publishDistroArchive(
+                self.distribution.main_archive,
+                security_suites=security_suites)
+            self.installDists()
+        except:
+            self.rollBackNewDistsRoot()
+            raise
+        self.restoreDistsCopy()
         self.runCommercialCompat()
         self.runFinalizeParts(security_only=True)
 
     def publishAllUploads(self):
         """Publish the distro's complete uploads."""
-        self.logger.debug("Full publication.  This may take some time.")
-        for archive in self.archives:
-            # This, for the main archive, is where the script spends
-            # most of its time.
-            self.publishDistroArchive(archive)
+        try:
+            self.logger.debug("Full publication.  This may take some time.")
+            for archive in self.archives:
+                # This, for the main archive, is where the script spends
+                # most of its time.
+                self.publishDistroArchive(archive)
 
-        self.installDists()
+            self.installDists()
+        except:
+            self.rollBackNewDistsRoot()
+            raise
+        self.restoreDistsCopy()
         self.runCommercialCompat()
         self.generateListings()
         self.clearEmptyDirs()
@@ -422,8 +427,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         try:
             self.processAccepted()
             self.setUpDirs()
-            self.publishSecurityUploads()
-            if not self.options.security_only:
-                self.publishAllUploads()
-        finally:
-            self.cleanUp()
+        except:
+            self.rollBackNewDistsRoot()
+            raise
+
+        self.publishSecurityUploads()
+        if not self.options.security_only:
+            self.publishAllUploads()

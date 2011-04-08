@@ -306,7 +306,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(distro.displayname, main_release["Label"])
         self.assertEqual("source", main_release["Architecture"])
 
-    def test_cleanup_moves_dists_to_new_if_not_published(self):
+    def test_rollBackNewDistsRoot_moves_dists_new_to_distscopyroot(self):
         distro = self.makeDistro()
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
@@ -318,27 +318,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
         script = self.makeScript(distro)
         script.setUp()
-        script.cleanUp()
+        script.rollBackNewDistsRoot()
         self.assertEqual(
             "dists.new",
-            self.readMarkerFile([dists_copy_root, "dists", "marker"]))
-
-    def test_cleanup_moves_dists_to_old_if_published(self):
-        distro = self.makeDistro()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-        old_distsroot = dists_root + ".old"
-        dists_copy_root = get_distscopy_root(pub_config)
-        os.makedirs(old_distsroot)
-        self.writeMarkerFile([old_distsroot, "marker"], "dists.old")
-        os.makedirs(dists_copy_root)
-
-        script = self.makeScript(distro)
-        script.setUp()
-        script.done_pub = True
-        script.cleanUp()
-        self.assertEqual(
-            "dists.old",
             self.readMarkerFile([dists_copy_root, "dists", "marker"]))
 
     def test_getDirtySuites_returns_suite_with_pending_publication(self):
@@ -483,15 +465,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         missing_parameters = set(env.keys()).difference(required_parameters)
         self.assertEqual(set(), missing_parameters)
 
-    def test_installDists_sets_done_pub(self):
-        script = self.makeScript()
-        script.setUp()
-        script.setUpDirs()
-        self.assertFalse(script.done_pub)
-        script.installDists()
-        self.assertTrue(script.done_pub)
-
-    def test_installDists_replaces_distsroot(self):
+    def test_installDists_plus_restoreDistsCopy_replaces_distsroot(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
@@ -503,6 +477,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.writeMarkerFile([dists_root + ".new", "marker"], "new")
 
         script.installDists()
+        script.restoreDistsCopy()
 
         self.assertEqual("new", self.readMarkerFile([dists_root, "marker"]))
         self.assertEqual("old", self.readMarkerFile(
