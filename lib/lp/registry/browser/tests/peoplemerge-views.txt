@@ -74,8 +74,6 @@ them to merge a profile which has no email address.
     ...     person_set, '+requestmerge', form=form)
     >>> len(view.errors)
     2
-
-    # XXX sinzui 2011-04-08: give a real error message.
     >>> print view.getFieldError('dupe_person')
     The duplicate is not a valid person or team.
 
