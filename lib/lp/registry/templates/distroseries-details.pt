@@ -60,6 +60,21 @@
       </dd>
     </dl>
 
+    <dl tal:define="all_child_series context/getDerivedSeries">
+      <dt>Derived series:</dt>
+      <dd>
+        <tal:per_child_series repeat="child_series all_child_series">
+          <a
+            tal:attributes="href child_series/fmt:url"
+            tal:content="child_series/named_version" /><tal:comma
+            condition="not: repeat/child_series/end">,</tal:comma>
+        </tal:per_child_series>
+       <tal:none condition="all_child_series/is_empty">
+          No derived series.
+        </tal:none>
+      </dd>
+    </dl>
+
     <dl tal:define="sourcecount context/sourcecount">
       <dt>Source packages:</dt>
       <dd
