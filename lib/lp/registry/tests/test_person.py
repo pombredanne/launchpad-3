@@ -289,7 +289,7 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.is_merge_pending)
 
-    def test_merge_pending(self):
+    def test_is_merge_pending(self):
         # is_merge_pending returns True when this person is being merged with
         # another person in an active merge job.
         from_person = self.factory.makePerson()
