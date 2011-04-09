@@ -57,13 +57,13 @@ class ValidatingMergeView(LaunchpadFormView):
         """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
         target_person = data.get('target_person') or self.user
-
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge if there is a PPA with published
-        # packages on the duplicate, unless that PPA is removed.
-        if dupe_person is not None:
+        if dupe_person is None:
+            self.setFieldError(
+                'dupe_person', 'The duplicate is not a valid person or team.')
+        else:
+            if dupe_person == target_person:
+                self.addError(_("You can't merge ${name} into itself.",
+                      mapping=dict(name=dupe_person.name)))
             dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
                 dupe_person, statuses=[ArchiveStatus.ACTIVE,
                                        ArchiveStatus.DELETING])

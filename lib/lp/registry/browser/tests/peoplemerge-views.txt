@@ -73,12 +73,11 @@ them to merge a profile which has no email address.
     >>> view = create_initialized_view(
     ...     person_set, '+requestmerge', form=form)
     >>> len(view.errors)
-    1
+    2
 
-    # XXX Salgado, 2009-07-08, bug=396410: There should be a meaningful
-    # error message here instead of this one.
+    # XXX sinzui 2011-04-08: give a real error message.
     >>> print view.getFieldError('dupe_person')
-    Constraint not satisfied
+    The duplicate is not a valid person or team.
 
 Admins, on the other hand, are allowed to merge people without a single email
 address.
