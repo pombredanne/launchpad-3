@@ -605,7 +605,8 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         if emailset.getByPerson(self.dupe):
             self.mergeCompleted = False
             return
-        getUtility(IPersonSet).mergeAsync(self.dupe, requester)
+        getUtility(IPersonSet).mergeAsync(
+            self.dupe, requester, reviewer=requester)
         merge_message = _(
             'A merge is queued and is expected to complete in a few minutes.')
         self.request.response.addInfoNotification(merge_message)
