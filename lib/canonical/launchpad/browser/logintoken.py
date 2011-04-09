@@ -605,10 +605,10 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         if emailset.getByPerson(self.dupe):
             self.mergeCompleted = False
             return
-
-        # Call Stuart's magic function which will reassign all of the dupe
-        # account's stuff to the user account.
-        getUtility(IPersonSet).merge(self.dupe, requester)
+        getUtility(IPersonSet).mergeAsync(self.dupe, requester)
+        merge_message = _(
+            'A merge is queued and is expected to complete in a few minutes.')
+        self.request.response.addInfoNotification(merge_message)
         self.mergeCompleted = True
 
 
