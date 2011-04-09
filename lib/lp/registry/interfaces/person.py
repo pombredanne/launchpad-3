@@ -1428,12 +1428,14 @@ class IPersonViewRestricted(Interface):
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
-    activemembers = Attribute('List of direct members with ADMIN or APPROVED status')
+    activemembers = Attribute(
+        'List of direct members with ADMIN or APPROVED status')
     # For the API we need eager loading
     api_activemembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("List of direct members with ADMIN or APPROVED status"),
+                title=_(
+                    "List of direct members with ADMIN or APPROVED status"),
                 value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
