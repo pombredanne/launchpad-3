@@ -55,6 +55,7 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archiveuploader.dscfile import findFile
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -932,3 +933,23 @@ class TestGarbo(TestCaseWithFactory):
         self.assertFalse(spr.changelog == None)
         self.assertTrue(spr.changelog.restricted)
         self.assertEqual(changelog, spr.changelog.read())
+
+    def test_mirror_bugmessages(self):
+        # Nuke the owner in sampledata.
+        con = DatabaseLayer._db_fixture.superuser_connection()
+        try:
+            cur = con.cursor()
+            cur.execute("ALTER TABLE bugmessage "
+                "DISABLE TRIGGER bugmessage__owner__mirror")
+            cur.execute("UPDATE bugmessage set owner=NULL")
+            cur.execute("ALTER TABLE bugmessage "
+                "ENABLE TRIGGER bugmessage__owner__mirror")
+            con.commit()
+        finally:
+            con.close()
+        store = IMasterStore(BugMessage)
+        unmigrated = store.find(BugMessage, BugMessage.ownerID==None).count
+        self.assertNotEqual(0, unmigrated())
+        self.runHourly()
+        self.assertEqual(0, unmigrated())
+
