@@ -647,7 +647,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
-            text='Change upstream link', visible=False)
+            text='Remove upstream link', visible=False)
         self.assertEqual(
             expected, self.view.remove_packaging_link.escapedtext)
 
@@ -656,7 +656,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # link.
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
-            text='Change upstream link', visible=True)
+            text='Remove upstream link', visible=True)
         with person_logged_in(self.factory.makePerson()):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
@@ -670,7 +670,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
-            text='Change upstream link', visible=False)
+            text='Remove upstream link', visible=False)
         with person_logged_in(self.factory.makePerson()):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
@@ -685,7 +685,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing()
         expected = self._getExpectedPackagingLink(
             id='remove-packaging', url='+remove-packaging', icon='remove',
-            text='Change upstream link', visible=True)
+            text='Remove upstream link', visible=True)
         with person_logged_in(self.sourcepackage.packaging.owner):
             view = SourcePackageTranslationSharingDetailsView(
                 self.sourcepackage, LaunchpadTestRequest())
