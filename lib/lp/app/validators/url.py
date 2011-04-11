@@ -37,7 +37,7 @@ def valid_absolute_url(name):
       >>> valid_absolute_url('whatever://example.com/blah')
       True
 
-    Unicode urls are ascii encoded, and a failure here mans it isn't valid.
+    Unicode urls are ascii encoded, and a failure here means it isn't valid.
 
       >>> valid_absolute_url(u'http://www.example.com/test...')
       True
