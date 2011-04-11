@@ -60,7 +60,8 @@
       </dd>
     </dl>
 
-    <dl tal:define="all_child_series context/getDerivedSeries">
+    <dl tal:condition="request/features/soyuz.derived-series-ui.enabled"
+        tal:define="all_child_series context/getDerivedSeries">
       <dt>Derived series:</dt>
       <dd>
         <tal:per_child_series repeat="child_series all_child_series">
