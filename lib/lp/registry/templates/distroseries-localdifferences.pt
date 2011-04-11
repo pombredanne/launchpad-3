@@ -77,7 +77,7 @@
               </td>
               <td tal:define="parent_source_pck_url difference/@@/parent_source_package_url">
                 <a tal:condition="parent_source_pck_url"
-                    tal:attributes="href difference/@@/parent_source_package_url"
+                    tal:attributes="href parent_source_pck_url"
                     class="parent-version">
                     <tal:replace
                         replace="difference/parent_source_version"/></a>
@@ -88,7 +88,7 @@
               </td>
               <td tal:define="source_pck_url difference/@@/source_package_url">
                 <a tal:condition="source_pck_url"
-                    tal:attributes="href difference/@@/source_package_url"
+                    tal:attributes="href source_pck_url"
                     class="derived-version">
                     <tal:replace
                         replace="difference/source_version"/></a>
