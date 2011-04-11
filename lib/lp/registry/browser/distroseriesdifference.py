@@ -178,6 +178,7 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         request link.
         """
         return (check_permission('launchpad.Edit', self.context) and
+                self.context.base_version and
                 (not self.context.package_diff or
                  not self.context.parent_package_diff))
 
