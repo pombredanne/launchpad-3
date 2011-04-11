@@ -1075,6 +1075,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # Deprecated.  Use IArchive.getPublishedSources instead.
+
         # XXX cprov 2006-02-13 bug 31317:
         # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -1969,25 +1971,35 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, registrant=user)
+                version=version, parent_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not self:
+            if child.parent_series is not None:
                 raise DerivationError(
-                    "DistroSeries %s parent series isn't %s" % (
+                    "DistroSeries %s parent series is %s, "
+                    "but it must not be set" % (
                         child.name, self.name))
-        initialise_series = InitialiseDistroSeries(child)
+        initialise_series = InitialiseDistroSeries(self, child)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, architectures, packagesets, rebuild)
+            self, child, architectures, packagesets, rebuild)
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        return Store.of(self).find(
-            DistroSeries, DistroSeries.parent_series == self)
+        # rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.distributionID' is only
+        # required because the parent_series attribute has been
+        # (mis-)used to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        results = Store.of(self).find(
+            DistroSeries,
+            DistroSeries.parent_series==self.id,
+            DistroSeries.distributionID!=self.distributionID)
+        return results.order_by(Desc(DistroSeries.date_created))
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.

@@ -92,6 +92,9 @@ class BugAttachmentSetNavigation(GetitemNavigation):
     usedfor = IBugAttachmentSet
 
 
+# Despite declaring compliance with ICanonicalUrlData, the LaunchBag
+# dependency means this tends towards the "not canonical at all" end of
+# the canonicalness scale. Beware.
 class BugAttachmentURL:
     """Bug URL creation rules."""
     implements(ICanonicalUrlData)

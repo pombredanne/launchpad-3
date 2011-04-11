@@ -4,12 +4,18 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugSubscriptionFilter']
+__all__ = [
+    'BugSubscriptionFilter',
+    'BugSubscriptionFilterMute',
+    ]
+
+import pytz
 
 from itertools import chain
 
 from storm.locals import (
     Bool,
+    DateTime,
     Int,
     Reference,
     SQL,
@@ -18,13 +24,16 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lazr.restful.error import expose
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsubscriptionfilter import (
+    IBugSubscriptionFilter,
+    IBugSubscriptionFilterMute,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -36,7 +45,12 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.registry.interfaces.person import validate_person
 from lp.services.database.stormbase import StormBase
+
+
+class MuteNotAllowed(Exception):
+    """Raised when someone tries to mute a filter that can't be muted."""
 
 
 class BugSubscriptionFilter(StormBase):
@@ -63,22 +77,7 @@ class BugSubscriptionFilter(StormBase):
 
     other_parameters = Unicode()
 
-    _description = Unicode('description')
-
-    def _get_description(self):
-        return self._description
-
-    def _set_description(self, description):
-        has_html_chars = (
-            '<' in description or '>' in description or
-            '"' in description or '&' in description)
-        if has_html_chars:
-            raise expose(ValueError(
-                'BugSubscriptionFilter description cannot contain '
-                'any of <, >, " or &.'))
-        self._description = description
-
-    description = property(_get_description, _set_description)
+    description = Unicode('description')
 
     def _get_statuses(self):
         """Return a frozenset of statuses to filter on."""
@@ -253,3 +252,70 @@ class BugSubscriptionFilter(StormBase):
             # There are no other filters.  We can delete the parent
             # subscription.
             self.structural_subscription.delete()
+
+    def isMuteAllowed(self, person):
+        """See `IBugSubscriptionFilter`."""
+        return (
+            self.structural_subscription.subscriber.isTeam() and
+            person.inTeam(self.structural_subscription.subscriber))
+
+    def muted(self, person):
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        if not existing_mutes.is_empty():
+            return existing_mutes.one().date_created
+
+    def mute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        if not self.isMuteAllowed(person):
+            raise MuteNotAllowed(
+                "This subscription cannot be muted for %s" % person.name)
+
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        if existing_mutes.is_empty():
+            mute = BugSubscriptionFilterMute()
+            mute.person = person
+            mute.filter = self.id
+            store.add(mute)
+
+    def unmute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        existing_mutes.remove()
+
+
+class BugSubscriptionFilterMute(StormBase):
+    """A filter to specialize a *structural* subscription."""
+
+    implements(IBugSubscriptionFilterMute)
+
+    __storm_table__ = "BugSubscriptionFilterMute"
+
+    def __init__(self, person=None, filter=None):
+        if person is not None:
+            self.person = person
+        if filter is not None:
+            self.filter = filter.id
+
+    person_id = Int("person", allow_none=False, validator=validate_person)
+    person = Reference(person_id, "Person.id")
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "StructuralSubscription.id")
+
+    __storm_primary__ = 'person_id', 'filter_id'
+
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)

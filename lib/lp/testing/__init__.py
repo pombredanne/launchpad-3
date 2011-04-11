@@ -4,6 +4,7 @@
 # pylint: disable-msg=W0401,C0301,F0401
 
 from __future__ import absolute_import
+from lp.testing.windmill.lpuser import LaunchpadUser
 
 __metaclass__ = type
 __all__ = [
@@ -776,19 +777,49 @@ class WindmillTestCase(TestCaseWithFactory):
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=self.layer.appserver_root_url())
 
-    def getClientFor(self, obj, user=None, password='test', view_name=None):
+    def getClientFor(self, obj, user=None, password='test', base_url=None,
+                     view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if user is not None:
-            email = removeSecurityProxy(user).preferredemail.email
+            if isinstance(user, LaunchpadUser):
+                email = user.email
+                password = user.password
+            else:
+                email = removeSecurityProxy(user).preferredemail.email
             client.open(url=lpuser.get_basic_login_url(email, password))
             client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         if isinstance(obj, basestring):
             url = obj
         else:
             url = canonical_url(
+                obj, view_name=view_name, rootsite=self.layer.facet,
+                force_local_path=True)
+        if base_url is None:
+            base_url = self.layer.base_url
+        obj_url = base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
+
+    def getClientForPerson(self, url, person, password='test'):
+        """Create a LaunchpadUser for a person and login to the url."""
+        naked_person = removeSecurityProxy(person)
+        user = LaunchpadUser(
+            person.displayname, naked_person.preferredemail.email, password)
+        return self.getClientFor(url, user=user)
+
+
+    def getClientForAnomymous(self, obj, view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
                 obj, view_name=view_name, force_local_path=True)
         obj_url = self.layer.base_url + url
+        obj_url = obj_url.replace('http://', 'http://foo:foo@')
         client.open(url=obj_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         return client, obj_url
@@ -1061,17 +1092,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line):
+def run_script(cmd_line, env=None):
     """Run the given command line as a subprocess.
 
-    Return a 3-tuple containing stdout, stderr and the process' return code.
-
-    The environment given to the subprocess is the same as the one in the
-    parent process except for the PYTHONPATH, which is removed so that the
-    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
-    up properly.
+    :param cmd_line: A command line suitable for passing to
+        `subprocess.Popen`.
+    :param env: An optional environment dict.  If none is given, the
+        script will get a copy of your present environment.  Either way,
+        PYTHONPATH will be removed from it because it will break the
+        script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
     """
-    env = os.environ.copy()
+    if env is None:
+        env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -1222,7 +1255,7 @@ def temp_dir():
     """Provide a temporary directory as a ContextManager."""
     tempdir = tempfile.mkdtemp()
     yield tempdir
-    shutil.rmtree(tempdir)
+    shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @contextmanager

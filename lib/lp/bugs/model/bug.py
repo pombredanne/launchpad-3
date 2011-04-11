@@ -87,7 +87,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
@@ -703,7 +706,7 @@ BugMessage""" % sqlvalues(self.id))
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
-    @property
+    @cachedproperty
     def initial_message(self):
         """See `IBug`."""
         store = Store.of(self)
@@ -1935,10 +1938,11 @@ BugMessage""" % sqlvalues(self.id))
         # See bug 542274 for more details.
         store = Store.of(self)
         return store.find(
-            (BugAttachment, LibraryFileAlias),
+            (BugAttachment, LibraryFileAlias, LibraryFileContent),
             BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+            BugAttachment.libraryfileID == LibraryFileAlias.id,
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            ).order_by(BugAttachment.id)
 
     @property
     def attachments(self):

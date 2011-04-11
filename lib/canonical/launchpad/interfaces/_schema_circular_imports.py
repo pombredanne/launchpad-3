@@ -30,12 +30,12 @@ from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     patch_reference_property,
     )
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.message import (
     IIndexedMessage,
     IMessage,
     IUserToUserEmail,
     )
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
@@ -81,10 +81,7 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.code.interfaces.branch import (
-    IBranch,
-    IBranchSet,
-    )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -115,7 +112,9 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
-from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+from lp.registry.interfaces.commercialsubscription import (
+    ICommercialSubscription,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -131,12 +130,13 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from lp.registry.interfaces.milestone import IHasMilestones
-from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonPublic,
-    IPersonSet,
     ITeam,
     )
 from lp.registry.interfaces.pillar import (
@@ -148,8 +148,10 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.productrelease import IProductReleaseFile
+from lp.registry.interfaces.productrelease import (
+    IProductRelease,
+    IProductReleaseFile,
+    )
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     ITimelineProductSeries,
@@ -176,8 +178,8 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 from lp.soyuz.interfaces.archivepermission import IArchivePermission
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
@@ -214,6 +216,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
     )
+
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['linked_bugs'].value_type.schema = IBug
@@ -434,6 +437,7 @@ IComment['comment_author'].schema = IPerson
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
+IDistribution['derivatives'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
@@ -462,6 +466,8 @@ patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
+patch_collection_property(
+    IDistroSeries, 'architectures', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
 patch_choice_parameter_type(

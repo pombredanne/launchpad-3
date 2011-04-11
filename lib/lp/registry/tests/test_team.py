@@ -30,6 +30,7 @@ from lp.registry.interfaces.person import (
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
@@ -122,6 +123,71 @@ class TestTeamContactAddress(TestCaseWithFactory):
         self.team.setContactAddress(None)
         self.assertEqual(None, self.team.preferredemail)
         self.assertEqual([], self.getAllEmailAddresses())
+
+
+class TestTeamGetTeamAdminsEmailAddresses(TestCaseWithFactory):
+    """Test the rules of IPerson.getTeamAdminsEmailAddresses()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamGetTeamAdminsEmailAddresses, self).setUp()
+        self.team = self.factory.makeTeam(name='finch')
+        login_celebrity('admin')
+
+    def test_admin_is_user(self):
+        # The team owner is a user and admin who provides the email address.
+        email = self.team.teamowner.preferredemail.email
+        self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
+
+    def test_no_admins(self):
+        # A team without admins has no email addresses.
+        self.team.teamowner.leave(self.team)
+        self.assertEqual([], self.team.getTeamAdminsEmailAddresses())
+
+    def test_admins_are_users_with_preferred_email_addresses(self):
+        # The team's admins are users, and they provide the email addresses.
+        admin = self.factory.makePerson()
+        self.team.addMember(admin, self.team.teamowner)
+        for membership in self.team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, self.team.teamowner)
+        email_1 = self.team.teamowner.preferredemail.email
+        email_2 = admin.preferredemail.email
+        self.assertEqual(
+            [email_1, email_2], self.team.getTeamAdminsEmailAddresses())
+
+    def setUpAdminingTeam(self, team):
+        """Return a new team set as the admin of the provided team."""
+        admin_team = self.factory.makeTeam()
+        admin_member = self.factory.makePerson()
+        admin_team.addMember(admin_member, admin_team.teamowner)
+        team.addMember(
+            admin_team, team.teamowner, force_team_add=True)
+        for membership in team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, admin_team.teamowner)
+        approved_member = self.factory.makePerson()
+        team.addMember(approved_member, team.teamowner)
+        team.teamowner.leave(team)
+        return admin_team
+
+    def test_admins_are_teams_with_preferred_email_addresses(self):
+        # The team's admin is a team with a contact address.
+        admin_team = self.setUpAdminingTeam(self.team)
+        admin_team.setContactAddress(
+            self.factory.makeEmail('team@eg.dom', admin_team))
+        self.assertEqual(
+            ['team@eg.dom'], self.team.getTeamAdminsEmailAddresses())
+
+    def test_admins_are_teams_without_preferred_email_addresses(self):
+        # The team's admin is a team without a contact address.
+        # The admin team members provide the email addresses.
+        admin_team = self.setUpAdminingTeam(self.team)
+        emails = sorted(
+            m.preferredemail.email for m in admin_team.activemembers)
+        self.assertEqual(
+            emails, self.team.getTeamAdminsEmailAddresses())
 
 
 class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):

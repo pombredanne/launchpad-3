@@ -8,14 +8,8 @@ __all__ = [
     'run_publisher',
     ]
 
-import gc
-
 from zope.component import getUtility
 
-from canonical.database.sqlbase import (
-    clear_current_connection_cache,
-    flush_database_updates,
-    )
 from canonical.launchpad.scripts import (
     logger,
     logger_options,
@@ -106,12 +100,7 @@ def run_publisher(options, txn, log=None):
     def try_and_commit(description, func, *args):
         try:
             func(*args)
-            log.debug("Committing.")
-            flush_database_updates()
             txn.commit()
-            log.debug("Flushing caches.")
-            clear_current_connection_cache()
-            gc.collect()
         except:
             log.exception("Unexpected exception while %s" % description)
             txn.abort()
@@ -130,7 +119,7 @@ def run_publisher(options, txn, log=None):
     log.debug("  Distribution: %s" % options.distribution)
     log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
     log.debug("    Domination: %s" % careful_msg(options.careful_domination))
-    if num_exclusive == 0 :
+    if num_exclusive == 0:
         log.debug("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
     else:
         log.debug("      Indexing: %s" % careful_msg(options.careful_apt))
@@ -189,7 +178,7 @@ def run_publisher(options, txn, log=None):
     # Consider only archives that have their "to be published" flag turned on
     # or are pending deletion.
     archives = [
-        archive for archive in archives 
+        archive for archive in archives
         if archive.publish or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
@@ -202,7 +191,7 @@ def run_publisher(options, txn, log=None):
         else:
             log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
-        
+
         # Do we need to delete the archive or publish it?
         if archive.status == ArchiveStatus.DELETING:
             if archive.purpose == ArchivePurpose.PPA:
@@ -213,23 +202,27 @@ def run_publisher(options, txn, log=None):
                     "Deletion of %s skipped: operation not supported on %s"
                     % archive.displayname)
         else:
-            try_and_commit("publishing", publisher.A_publish,
-                           options.careful or options.careful_publishing)
+            try_and_commit(
+                "publishing", publisher.A_publish,
+                options.careful or options.careful_publishing)
             # Flag dirty pockets for any outstanding deletions.
             publisher.A2_markPocketsWithDeletionsDirty()
-            try_and_commit("dominating", publisher.B_dominate,
-                           options.careful or options.careful_domination)
+            try_and_commit(
+                "dominating", publisher.B_dominate,
+                options.careful or options.careful_domination)
 
             # The primary and copy archives use apt-ftparchive to generate the
             # indexes, everything else uses the newer internal LP code.
             if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-                try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                               options.careful or options.careful_apt)
+                try_and_commit(
+                    "doing apt-ftparchive", publisher.C_doFTPArchive,
+                    options.careful or options.careful_apt)
             else:
                 try_and_commit("building indexes", publisher.C_writeIndexes,
                                options.careful or options.careful_apt)
 
-            try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                           options.careful or options.careful_apt)
+            try_and_commit(
+                "doing release files", publisher.D_writeReleaseFiles,
+                options.careful or options.careful_apt)
 
     log.debug("Ciao")

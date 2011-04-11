@@ -636,11 +636,24 @@
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsPublic"/>
       <require
           permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+
+    <!-- BugSubscriptionFilterMute -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute" />
+    </class>
+
 
     <!-- BugSubscriptionInfo -->
 
@@ -665,6 +678,38 @@
               indirect_subscribers
               structural_subscriptions
               " />
+    </class>
+
+    <!-- PersonSubscriptionInfo -->
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptions">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
     </class>
 
     <facet

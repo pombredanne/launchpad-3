@@ -800,17 +800,10 @@
     <securedutility
         class="lp.soyuz.model.packageset.PackagesetSet"
         provides="lp.soyuz.interfaces.packageset.IPackagesetSet">
-        <allow
-            attributes="
-                __getitem__
-                get
-                getByName
-                getByOwner
-                setsIncludingSource"/>
+        <allow interface=".interfaces.packageset.IPackagesetSet" />
         <require
             permission="launchpad.Edit"
-            attributes="
-                new"/>
+            interface=".interfaces.packageset.IPackagesetSetEdit" />
     </securedutility>
 
     <!-- PackagesetGroup -->
