@@ -313,24 +313,33 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
 
         def flush_and_render():
             flush_database_caches()
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                principal=self.simple_user)
             with StormStatementRecorder() as recorder:
-                view()
+                create_initialized_view(
+                    derived_series, '+localpackagediffs',
+                    principal=self.simple_user)()
             return recorder
 
         def statement_differ(rec1, rec2):
+            from textwrap import TextWrapper
+            wrap = TextWrapper(break_long_words=False).wrap
+            def prepare_statements(rec):
+                for statement in rec.statements:
+                    for line in wrap(statement):
+                        yield line
+                    yield ""
             def statement_diff():
-                for line in difflib.ndiff(rec1.statements, rec2.statements):
+                diff = difflib.ndiff(
+                    list(prepare_statements(rec1)),
+                    list(prepare_statements(rec2)))
+                for line in diff:
                     yield "%s\n" % line
             return statement_diff
 
         # Render without differences.
         recorder1 = flush_and_render()
-        self.assertThat(recorder1, HasQueryCount(Equals(5)))
+        self.assertThat(recorder1, HasQueryCount(Equals(20)))
         # Add some differences and render.
-        add_differences(3)
+        add_differences(2)
         recorder2 = flush_and_render()
         # Add more differences and render again.
         add_differences(2)
