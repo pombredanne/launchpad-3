@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
+import difflib
+
 from BeautifulSoup import BeautifulSoup
 from lxml import html
 import soupmatchers
 from storm.zope.interfaces import IResultSet
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
     Equals,
@@ -307,7 +311,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
                     removeSecurityProxy(spr).dscsigningkey = (
                         self.factory.makeGPGKey(owner=spr.creator))
 
-        def render():
+        def flush_and_render():
             flush_database_caches()
             view = create_initialized_view(
                 derived_series, '+localpackagediffs',
@@ -316,16 +320,25 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
                 view()
             return recorder
 
+        def statement_differ(rec1, rec2):
+            def statement_diff():
+                for line in difflib.ndiff(rec1.statements, rec2.statements):
+                    yield "%s\n" % line
+            return statement_diff
+
         # Render without differences.
-        recorder1 = render()
+        recorder1 = flush_and_render()
         self.assertThat(recorder1, HasQueryCount(Equals(5)))
         # Add some differences and render.
         add_differences(3)
-        recorder2 = render()
+        recorder2 = flush_and_render()
         # Add more differences and render again.
         add_differences(2)
-        recorder3 = render()
+        recorder3 = flush_and_render()
         # The last render should not need more queries than the previous.
+        self.addDetail(
+            "statement-diff", Content(
+                UTF8_TEXT, statement_differ(recorder2, recorder3)))
         self.assertThat(recorder3, HasQueryCount(Equals(recorder2.count)))
 
 
