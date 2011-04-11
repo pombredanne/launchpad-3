@@ -318,7 +318,7 @@ def main():
         print "== Most Bloated Indexes =="
         print
         for bloated_index in index_bloat_stats[:options.limit]:
-            print "%60s || %2d%% || %s of %s" % (
+            print "%65s || %2d%% || %s of %s" % (
                 bloated_index.sub_name,
                 bloated_index.end_bloat_percent,
                 bloated_index.bloat_size,
@@ -361,7 +361,7 @@ def main():
                 # Bloat decreases are uninteresting, and would need to be in
                 # a separate table sorted in reverse anyway.
                 if bloated_index.delta_bloat_percent > 0:
-                    print "%60s || +%4.2f%% || +%s" % (
+                    print "%65s || +%4.2f%% || +%s" % (
                         bloated_index.sub_name,
                         bloated_index.delta_bloat_percent,
                         bloated_index.delta_bloat_size)
