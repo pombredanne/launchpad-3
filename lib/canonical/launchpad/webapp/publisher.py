@@ -70,6 +70,7 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
+from lp.services.encoding import is_ascii_only
 
 # HTTP Status code constants - define as appropriate.
 HTTP_MOVED_PERMANENTLY = 301
@@ -657,6 +658,10 @@ class Navigation:
         This needs moving into the publication component, once it has been
         refactored.
         """
+        # Launchpad only produces ascii URLs.  If the name is not ascii, we
+        # can say nothing is found here.
+        if not is_ascii_only(name):
+            raise NotFound(self.context, name)
         nextobj = self._publishTraverse(request, name)
         getUtility(IOpenLaunchBag).add(nextobj)
         return nextobj
@@ -839,7 +844,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name, self.context)
+        raise NotFound(self.context, name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
