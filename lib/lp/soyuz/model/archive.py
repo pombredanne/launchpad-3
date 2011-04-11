@@ -527,7 +527,7 @@ class Archive(SQLBase):
         resultset = store.find(SourcePackagePublishingHistory,
             *storm_clauses).order_by(
             *orderBy)
-        if eager_load is False:
+        if not eager_load:
             return resultset
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
