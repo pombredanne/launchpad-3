@@ -367,6 +367,13 @@ class TestOutputLineHandler(TestCase):
         self.handler("i\n")
         self.assertEqual(["hi"], self._getLines())
 
+    def test_clears_buffer_after_joining_lines(self):
+        self.handler("hi")
+        self.handler("!\n")
+        self.assertEqual(["hi!"], self._getLines())
+        self.handler("!\n")
+        self.assertEqual(["hi!", "!"], self._getLines())
+
     def test_finalize_processes_remaining_partial_line(self):
         self.handler("foo")
         self.handler.finalize()

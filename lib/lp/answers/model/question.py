@@ -646,6 +646,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See BugLinkTargetMixin."""
         return QuestionBug(question=self, bug=bug)
 
+    def setCommentVisibility(self, user, comment_number, visible):
+        """See `IQuestion`."""
+        message = self.messages[comment_number].message
+        message.visible = visible
+
 
 class QuestionSet:
     """The set of questions in the Answer Tracker."""

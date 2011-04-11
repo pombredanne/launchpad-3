@@ -118,7 +118,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codehosting import compose_public_url
+from lp.code.interfaces.codehosting import (
+    BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -997,6 +1000,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
+    def _findStackedBranch(self, stacked_on_location):
+        location = stacked_on_location.strip('/')
+        if location.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            try:
+                branch_id = int(location.split('/', 1)[1])
+            except (ValueError, IndexError):
+                return None
+            return getUtility(IBranchLookup).get(branch_id)
+        else:
+            return getUtility(IBranchLookup).getByUniqueName(location)
+
     def branchChanged(self, stacked_on_location, last_revision_id,
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
@@ -1004,8 +1018,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if stacked_on_location == '' or stacked_on_location is None:
             stacked_on_branch = None
         else:
-            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
-                stacked_on_location.strip('/'))
+            stacked_on_branch = self._findStackedBranch(stacked_on_location)
             if stacked_on_branch is None:
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
