@@ -1373,62 +1373,34 @@ class BugTargetBugTagsView(LaunchpadView):
         # Use path_only here to reduce the size of the rendered page.
         return "+bugs?field.tag=%s" % urllib.quote(tag)
 
-    def getUsedBugTagsWithURLs(self):
-        """Return the bug tags and their search URLs."""
-        bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
-        return [
-            {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
-            for tag, count in bug_tag_counts]
-
     @property
     def official_tags(self):
         """Get the official tags to diplay."""
-        official_tags = set(self.context.official_bug_tags)
-        tags = [tag for tag in self.getUsedBugTagsWithURLs()
-                if tag['tag'] in official_tags]
-        used_tags = set(tag['tag'] for tag in tags)
-        tags.sort(key=itemgetter('count'), reverse=True)
-        for tag in sorted(official_tags - used_tags):
-            tags.append(
-                {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})
-        return tags
+        return dict((tag, 0) for tag in self.context.official_bug_tags) # XXX: 0
 
     @property
     def other_tags(self):
         """Get the unofficial tags to diplay."""
-        official_tags = set(self.context.official_bug_tags)
-        tags = [tag for tag in self.getUsedBugTagsWithURLs()
-                if tag['tag'] not in official_tags]
-        tags.sort(key=itemgetter('count'), reverse=True)
-        return tags[:10]
+        return dict(self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
 
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = list(self.context.official_bug_tags)
-        tags = self.getUsedBugTagsWithURLs()
-        other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
-        popular_tags = [tag['tag'] for tag in sorted(
-            other_tags, key=itemgetter('count'), reverse=True)[:10]]
-        tags = [
-            tag for tag in tags
-            if tag['tag'] in official_tags + popular_tags]
-        all_tag_dicts = [tag['tag'] for tag in tags]
-        for official_tag in official_tags:
-            if official_tag not in all_tag_dicts:
-                tags.append({
-                    'tag': official_tag,
-                    'count': 0,
-                    'url': "+bugs?field.tag=%s" % urllib.quote(official_tag)})
-        max_count = float(max([1] + [tag['count'] for tag in tags]))
-        for tag in tags:
-            if tag['tag'] in official_tags:
-                if tag['count'] == 0:
-                    tag['factor'] = 1.5
-                else:
-                    tag['factor'] = 1.5 + (tag['count'] / max_count)
-            else:
-                tag['factor'] = 1 + (tag['count'] / max_count)
+        official_tags = self.official_tags
+        raw_tags = {}
+        raw_tags.update(official_tags)
+        raw_tags.update(self.other_tags)
+
+        max_count = float(max([1] + raw_tags.values()))
+
+        tags = []
+        for tag, count in raw_tags.iteritems():
+            tag_dict = dict(
+                tag=tag, count=count, url=self._getSearchURL(tag),
+                factor=1 + (count / max_count))
+            if tag in official_tags:
+                tag_dict['factor'] += 0.5
+            tags.append(tag_dict)
         return sorted(tags, key=itemgetter('tag'))
 
     @property
