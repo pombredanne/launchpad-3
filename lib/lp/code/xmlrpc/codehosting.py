@@ -59,6 +59,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     ICodehostingAPI,
@@ -287,7 +288,8 @@ class CodehostingAPI(LaunchpadXMLRPCView):
 
         return run_with_login(login_id, branch_changed)
 
-    def _serializeBranch(self, requester, branch, trailing_path):
+    def _serializeBranch(self, requester, branch, trailing_path,
+                         force_readonly=False):
         if requester == LAUNCHPAD_SERVICES:
             branch = removeSecurityProxy(branch)
         try:
@@ -296,10 +298,13 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             raise faults.PermissionDenied()
         if branch.branch_type == BranchType.REMOTE:
             return None
+        if force_readonly:
+            writable = False
+        else:
+            writable = self._canWriteToBranch(requester, branch)
         return (
             BRANCH_TRANSPORT,
-            {'id': branch_id,
-             'writable': self._canWriteToBranch(requester, branch)},
+            {'id': branch_id, 'writable': writable},
             trailing_path)
 
     def _serializeControlDirectory(self, requester, product_path,
@@ -323,12 +328,34 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             {'default_stack_on': escape('/' + unique_name)},
             trailing_path)
 
+    def _translateBranchIdAlias(self, requester, path):
+        # If the path isn't a branch id alias, nothing more to do.
+        stripped_path = unescape(path.strip('/'))
+        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return None
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            raise faults.PathTranslationError(path)
+        branch = getUtility(IBranchLookup).get(branch_id)
+        if branch is None:
+            raise faults.PathTranslationError(path)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return self._serializeBranch(requester, branch, trailing, True)
+
     def translatePath(self, requester_id, path):
         """See `ICodehostingAPI`."""
         @return_fault
         def translate_path(requester):
             if not path.startswith('/'):
                 return faults.InvalidPath(path)
+            branch = self._translateBranchIdAlias(requester, path)
+            if branch is not None:
+                return branch
             stripped_path = path.strip('/')
             for first, second in iter_split(stripped_path, '/'):
                 first = unescape(first)

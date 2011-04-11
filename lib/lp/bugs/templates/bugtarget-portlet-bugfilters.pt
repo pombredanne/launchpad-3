@@ -14,17 +14,30 @@
       <tal:advanced-structural-subscriptions
          condition="request/features/malone.advanced-structural-subscriptions.enabled">
         <tr class="menu-link-subscribe_to_bug_mail invisible-link"
-            tal:define="subscribe_link menu/subscribe_to_bug_mail|nothing"
-            tal:condition="python: subscribe_link and subscribe_link.enabled">
+            tal:define="link menu/subscribe_to_bug_mail|nothing"
+            tal:condition="python: link and link.enabled">
           <td class="bugs-count" style="padding-top: 3px">
-            <a tal:attributes="href subscribe_link/url">
-              <img tal:attributes="src subscribe_link/icon_url" />
+            <a tal:attributes="href link/url">
+              <img tal:attributes="src link/icon_url" />
             </a>
           </td>
           <td class="bugs-link">
             <a class="js-action"
-               tal:attributes="href subscribe_link/url"
-               tal:content="subscribe_link/escapedtext" />
+               tal:attributes="href link/url"
+               tal:content="link/escapedtext" />
+          </td>
+        </tr>
+        <tr class="menu-link-edit_bug_mail"
+            tal:define="link menu/edit_bug_mail|nothing"
+            tal:condition="python: link and link.enabled">
+          <td class="bugs-count" style="padding-top: 3px">
+            <a tal:attributes="href link/url">
+              <img tal:attributes="src link/icon_url" />
+            </a>
+          </td>
+          <td class="bugs-link">
+            <a tal:attributes="href link/url"
+               tal:content="link/escapedtext" />
           </td>
         </tr>
       </tal:advanced-structural-subscriptions>

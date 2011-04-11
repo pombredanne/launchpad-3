@@ -11,10 +11,10 @@
       <ul class="horizontal">
         <li
           tal:define="link context/menu:overview/addseries"
-          tal:condition="link/enabled">
+          tal:condition="python: link.enabled and view.show_add_series_link">
           <a tal:replace="structure link/fmt:link" />
         </li>
-        <li>
+        <li tal:condition="view/show_milestones_link">
           <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
         </li>
       </ul>
