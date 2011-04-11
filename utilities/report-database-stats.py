@@ -165,8 +165,9 @@ def get_bloat_stats(cur, options, kind):
         # We only collect these statistics daily, so add some fuzz
         # to ensure bloat information ends up on the daily reports;
         # we cannot guarantee the disk utilization statistics occur
-        # exactly 24 hours apart.
-        'where': get_where_clause(options, fuzz='6 hours'),
+        # exactly 24 hours apart. Our most recent snapshot could be 1
+        # day ago, give or take a few hours.
+        'where': get_where_clause(options, fuzz='1 day 6 hours'),
         'bloat': options.bloat,
         'min_bloat': options.min_bloat,
         'kind': kind,
