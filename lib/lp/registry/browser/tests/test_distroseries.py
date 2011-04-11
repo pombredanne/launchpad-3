@@ -280,13 +280,13 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
             parent_series=self.factory.makeDistroSeries())
 
         def add_differences(num):
-            versions = {
-                'base': u'1.0',
-                'derived': u'1.0derived1',
-                'parent': u'1.0-1',
-                }
-
             for index in xrange(num):
+                version = self.factory.getUniqueInteger()
+                versions = {
+                    'base': u'1.%d' % version,
+                    'derived': u'1.%dderived1' % version,
+                    'parent': u'1.%d-1' % version,
+                    }
                 dsd = self.factory.makeDistroSeriesDifference(
                     derived_series=derived_series,
                     versions=versions)
