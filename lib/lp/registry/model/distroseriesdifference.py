@@ -82,7 +82,7 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def most_recent_publications(dsds, in_parent, include_pending, match_version):
+def most_recent_publications(dsds, in_parent):
     """The most recent publications for the given `DistroSeriesDifference`s.
 
     Returns an `IResultSet` that yields two columns: `SourcePackageName.id`
@@ -91,12 +91,6 @@ def most_recent_publications(dsds, in_parent, include_pending, match_version):
     :param dsds: An iterable of `DistroSeriesDifference` instances.
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
-
-    :param include_pending: A boolean indicating if pending publications
-        should be considered. If not only published publications are
-        considered.
-    :param match_version: Whether or not to match the against
-        `DistroSeriesDifference.base_version`.
     """
     distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
@@ -112,6 +106,9 @@ def most_recent_publications(dsds, in_parent, include_pending, match_version):
         SourcePackagePublishingHistory.archiveID == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
+        SourcePackagePublishingHistory.status.is_in(
+            (PackagePublishingStatus.PUBLISHED,
+             PackagePublishingStatus.PENDING)),
         SourcePackageRelease.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
         )
@@ -129,28 +126,6 @@ def most_recent_publications(dsds, in_parent, include_pending, match_version):
             conditions,
             Archive.distributionID == DistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
-            )
-    # Include pending publications, or just published?
-    if include_pending:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.status.is_in(
-                (PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING)),
-            )
-    else:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.status == (
-                PackagePublishingStatus.PUBLISHED),
-            )
-    # Match on base version.
-    if match_version:
-        conditions = And(
-            conditions,
-            DistroSeriesDifference.base_version != None,
-            SourcePackageRelease.version == (
-                DistroSeriesDifference.base_version),
             )
     # The sort order is critical so that the DISTINCT ON clause selects the
     # most recent publication (i.e. the one with the highest id).
@@ -286,15 +261,13 @@ class DistroSeriesDifference(Storm):
 
         def eager_load(dsds):
             source_pubs = dict(
-                most_recent_publications(
-                    dsds, in_parent=False, include_pending=True,
-                    match_version=False))
+                most_recent_publications(dsds, in_parent=False))
             parent_source_pubs = dict(
-                most_recent_publications(
-                    dsds, in_parent=True, include_pending=True,
-                    match_version=False))
+                most_recent_publications(dsds, in_parent=True))
 
-            latest_comment_by_dsd_id = dict(most_recent_comments(dsds))
+            latest_comment_by_dsd_id = dict(
+                (comment.id, comment)
+                for comment in most_recent_comments(dsds))
 
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
