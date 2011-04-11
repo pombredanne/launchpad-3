@@ -59,12 +59,12 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
 from lp.registry.model.gpgkey import GPGKey
-from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.propertycache import (
@@ -313,12 +313,18 @@ class DistroSeriesDifference(Storm):
             sprbs = bulk.load_related(
                 SourcePackageRecipeBuild, sprs,
                 ("source_package_recipe_build_id",))
-            bulk.load_related(Person, sprbs, ("requester_id",))
 
             # SourcePackageRelease.uploader can end up getting the owner of
             # the DSC signing key.
             gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
-            bulk.load_related(Person, gpgkeys, ("ownerID",))
+
+            # Load SourcePackageRecipeBuild requesters and GPGKey owners.
+            uploader_ids = set().union(
+                (sprb.requester_id for sprb in sprbs),
+                (gpgkey.ownerID for gpgkey in gpgkeys))
+            uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                uploader_ids, need_validity=True)
+            list(uploaders)
 
         return DecoratedResultSet(
             differences, pre_iter_hook=eager_load)
