@@ -89,6 +89,10 @@
         class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
+        <!-- changelog needs to be updated when unembargoing -->
+        <require
+            permission="launchpad.Edit"
+            set_attributes="changelog"/>
     </class>
     <facet
         facet="overview">
