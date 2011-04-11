@@ -16,7 +16,11 @@ Registering information
 The distroseries pages presents the 'registering' information besides
 its main 'heading'.
 
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> derivation_enabled = FeatureFixture(
+    ...     {'soyuz.derived-series-ui.enabled': 'on'})
+    >>> with derivation_enabled:
+    ...     anon_browser.open('http://launchpad.dev/ubuntu/warty')
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'registration'))
@@ -54,7 +58,8 @@ on the series' details.
 On series that have no source or binary packages, the portlet will
 change its text slightly to annouce this:
 
-    >>> anon_browser.open('http://launchpad.dev/debian/sarge')
+    >>> with derivation_enabled:
+    ...     anon_browser.open('http://launchpad.dev/debian/sarge')
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Series information'))
     Series information

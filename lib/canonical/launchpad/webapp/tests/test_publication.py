@@ -455,6 +455,16 @@ class TestEncodedReferer(TestCaseWithFactory):
         self.assertEqual('NotFound', self.oopses[0].type)
 
 
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite
+class TestUnicodePath(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_ascii_url(self):
+        # The only oops should be a NotFound.
+        browser = self.getUserBrowser()
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/%ED%B4%B5')
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual('NotFound', self.oopses[0].type)
