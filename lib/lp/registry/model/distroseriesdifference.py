@@ -268,8 +268,9 @@ class DistroSeriesDifference(Storm):
                 most_recent_publications(dsds, in_parent=True))
 
             latest_comment_by_dsd_id = dict(
-                (comment.id, comment)
+                (comment.distro_series_difference_id, comment)
                 for comment in most_recent_comments(dsds))
+            latest_comments = latest_comment_by_dsd_id.values()
 
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
@@ -296,13 +297,16 @@ class DistroSeriesDifference(Storm):
             # Load DistroSeriesDifferenceComment owners,
             # SourcePackageRecipeBuild requesters and GPGKey owners.
             person_ids = set().union(
-                (dsdc.message.ownerID for dsdc in
-                 latest_comment_by_dsd_id.itervalues()),
+                (dsdc.message.ownerID for dsdc in latest_comments),
                 (sprb.requester_id for sprb in sprbs),
                 (gpgkey.ownerID for gpgkey in gpgkeys))
             uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 person_ids, need_validity=True)
             list(uploaders)
+
+            # Load SourcePackageNames.
+            bulk.load_related(
+                SourcePackageName, dsds, ("source_package_name_id",))
 
         return DecoratedResultSet(
             differences, pre_iter_hook=eager_load)
