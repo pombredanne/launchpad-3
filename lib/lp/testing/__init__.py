@@ -13,7 +13,6 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
-    'ConditionalStormStatementRecorder',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -303,9 +302,9 @@ class StormStatementRecorder:
         remove_tracer_type(StormStatementRecorder)
         return False
 
-    def connection_raw_execute(
-        self, connection, raw_cursor, statement, params):
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
+
         raw_params = []
         for param in params:
             if isinstance(param, Variable):
@@ -314,42 +313,6 @@ class StormStatementRecorder:
                 raw_params.append(param)
         raw_params = tuple(raw_params)
         self.statements.append("%r, %r" % (statement, raw_params))
-
-
-class ConditionalStormStatementRecorder(StormStatementRecorder):
-    """A `StormStatementRecorder` that conditionally records queries.
-
-    Neither, either or both of `record` and `pattern` can be specified. If
-    both are given, both must match.
-
-    :param pattern: A compiled or uncompiled regular expression. Will be
-        `match`ed against the statement.
-    :param record: A function that takes a single argument - the statement -
-        and returns a boolean indicating if it should be recorded or not.
-    """
-
-    def __init__(self, pattern=None, record=None):
-        super(ConditionalStormStatementRecorder, self).__init__()
-        if isinstance(pattern, (unicode, str)):
-            pattern = re.compile(pattern)
-        if record is None and pattern is None:
-            self.record = lambda statement: True
-        elif record is not None:
-            self.record = record
-        elif pattern is not None:
-            self.record = lambda statement: (
-                pattern.match(statement) is not None)
-        else:
-            self.record = lambda statement: (
-                pattern.match(statement) is not None and
-                record(statement))
-
-    def connection_raw_execute(
-        self, connection, raw_cursor, statement, params):
-        if self.record(statement):
-            up = super(ConditionalStormStatementRecorder, self)
-            up.connection_raw_execute(
-                connection, raw_cursor, statement, params)
 
 
 def record_statements(function, *args, **kwargs):

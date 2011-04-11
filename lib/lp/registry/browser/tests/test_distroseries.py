@@ -54,7 +54,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.testing import (
-    ConditionalStormStatementRecorder,
     feature_flags,
     login_person,
     person_logged_in,
@@ -266,21 +265,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should not be shown when there are no differences.")
-
-    def test_spph_queries(self):
-        login_person(self.simple_user)
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
-        for ignore in xrange(5):
-            self.factory.makeDistroSeriesDifference(
-                derived_series=derived_series)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=self.simple_user)
-        recorder = ConditionalStormStatementRecorder(
-            pattern='SELECT SourcePackagePublishingHistory[.]')
-        with recorder:
-            view()
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_queries(self):
         # With no DistroSeriesDifferences the query count should be low and
