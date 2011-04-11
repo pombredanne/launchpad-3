@@ -746,8 +746,8 @@ class TestBranchMergeProposals(TestCaseWithFactory):
 
     def test_just_owned_branch_merge_proposals(self):
         # If the collection only includes branches owned by a person, the
-        # getMergeProposals() will only return merge proposals for branches
-        # that are owned by that person.
+        # getMergeProposals() will only return merge proposals for source
+        # branches that are owned by that person.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch1 = self.factory.makeProductBranch(

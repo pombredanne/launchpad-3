@@ -87,7 +87,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
@@ -703,7 +706,7 @@ BugMessage""" % sqlvalues(self.id))
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
-    @property
+    @cachedproperty
     def initial_message(self):
         """See `IBug`."""
         store = Store.of(self)
@@ -1151,14 +1154,8 @@ BugMessage""" % sqlvalues(self.id))
             distribution = target.distribution
             source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            if target.distroseries is not None:
-                distro_series = target.distroseries
-                source_package_name = target.sourcepackagename
-            elif target.distribution is not None:
-                distribution = target.distribution
-                source_package_name = target.sourcepackagename
-            else:
-                source_package_name = target.sourcepackagename
+            distro_series = target.distroseries
+            source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
@@ -1790,7 +1787,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):
@@ -1941,10 +1938,11 @@ BugMessage""" % sqlvalues(self.id))
         # See bug 542274 for more details.
         store = Store.of(self)
         return store.find(
-            (BugAttachment, LibraryFileAlias),
+            (BugAttachment, LibraryFileAlias, LibraryFileContent),
             BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+            BugAttachment.libraryfileID == LibraryFileAlias.id,
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            ).order_by(BugAttachment.id)
 
     @property
     def attachments(self):

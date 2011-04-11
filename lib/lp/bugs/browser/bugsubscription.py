@@ -16,6 +16,7 @@ __all__ = [
 import cgi
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -40,10 +41,11 @@ from lp.app.browser.launchpadform import (
     )
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
-    StructuralSubscriptionJSMixin,
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
@@ -578,18 +580,26 @@ class SubscriptionAttrDecorator:
         return 'subscriber-%s' % self.subscription.person.id
 
 
-class BugSubscriptionListView(StructuralSubscriptionJSMixin, LaunchpadView):
+class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
 
-    @property
-    def subscriptions(self):
-        return get_structural_subscriptions_for_bug(
+    def initialize(self):
+        super(BugSubscriptionListView, self).initialize()
+        subscriptions = get_structural_subscriptions_for_bug(
             self.context.bug, self.user)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, subscriptions)
+        subscriptions_info = PersonSubscriptions(
+                self.user, self.context.bug)
+        subdata, references = subscriptions_info.getDataForClient()
+        cache = IJSONRequestCache(self.request).objects
+        cache.update(references)
+        cache['bug_subscription_info'] = subdata
+        
 
     @property
     def label(self):
-        return "%s's subscriptions to bug %d" % (
-            self.user.displayname, self.context.bug.id)
+        return "Your subscriptions to bug %d" % self.context.bug.id
 
     page_title = label
 

@@ -337,10 +337,11 @@ class ArchivePublisherBase:
         self.removed_by = removed_by
         self.removal_comment = removal_comment
         if ISourcePackagePublishingHistory.providedBy(self):
-            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-            dsd_job_source.createForPackagePublication(
-                self.distroseries,
-                self.sourcepackagerelease.sourcepackagename)
+            if self.archive == self.distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    self.distroseries,
+                    self.sourcepackagerelease.sourcepackagename)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1006,9 +1007,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if bpr.essential:
             essential = 'yes'
 
+        source = None
+        if bpr.version != spr.version:
+            source = '%s (%s)' % (spr.name, spr.version)
+        elif bpr.name != spr.name:
+            source = spr.name
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Source', spr.name)
+        fields.append('Source', source)
         fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
@@ -1431,9 +1438,10 @@ class PublishingSet:
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
-        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        dsd_job_source.createForPackagePublication(
-            distroseries, sourcepackagerelease.sourcepackagename)
+        if archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename)
         return pub
 
     def getBuildsForSourceIds(

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'filter_one_task_per_bug',
     ]
 
 from datetime import datetime
@@ -75,6 +74,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -118,7 +118,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codehosting import compose_public_url
+from lp.code.interfaces.codehosting import (
+    BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -316,7 +319,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
         # Post process to discard irrelevant tasks: we only return one task per
         # bug, and cannot easily express this in sql (yet).
-        return filter_one_task_per_bug(self, tasks)
+        return filter_bugtasks_by_context(self.target.context, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -997,6 +1000,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
+    def _findStackedBranch(self, stacked_on_location):
+        location = stacked_on_location.strip('/')
+        if location.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            try:
+                branch_id = int(location.split('/', 1)[1])
+            except (ValueError, IndexError):
+                return None
+            return getUtility(IBranchLookup).get(branch_id)
+        else:
+            return getUtility(IBranchLookup).getByUniqueName(location)
+
     def branchChanged(self, stacked_on_location, last_revision_id,
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
@@ -1004,8 +1018,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if stacked_on_location == '' or stacked_on_location is None:
             stacked_on_branch = None
         else:
-            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
-                stacked_on_location.strip('/'))
+            stacked_on_branch = self._findStackedBranch(stacked_on_location)
             if stacked_on_branch is None:
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
@@ -1390,27 +1403,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def filter_one_task_per_bug(branch, tasks):
-    """Given bug tasks for a branch, discard irrelevant ones.
-
-    Cannot easily be expressed in SQL yet, so we need this helper method.
-    """
-    order = {}
-    bugtarget = branch.target.context
-    # First pass calculates the order and selects the bugtasks that match
-    # our target.
-    # Second pass selects the earliest bugtask where the bug has no task on
-    # our target.
-    for pos, task in enumerate(tasks):
-        bug = task.bug
-        if bug not in order:
-            order[bug] = [pos, None]
-        if task.target == bugtarget:
-            order[bug][1] = task
-    for task in tasks:
-        index = order[task.bug]
-        if index[1] is None:
-            index[1] = task
-    return [task for pos, task in sorted(order.values())]

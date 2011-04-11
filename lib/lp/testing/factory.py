@@ -36,19 +36,19 @@ from operator import (
     isSequenceType,
     )
 import os
-from pytz import UTC
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
-import transaction
 from types import InstanceType
 import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
+from pytz import UTC
 import simplejson
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -101,6 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
@@ -178,6 +179,9 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
@@ -276,10 +280,8 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.side import (
-    TranslationSide,
-    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -1676,8 +1678,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             prerequisite_target = target.distribution
         if ISourcePackage.providedBy(target):
             # We can't have a series task without a distribution task.
-            prerequisite_target = target.distribution.getSourcePackage(
-                target.sourcepackagename)
+            prerequisite_target = target.distribution_sourcepackage
+            if publish:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=target.distroseries,
+                    sourcepackagename=target.sourcepackagename)
+        if IDistributionSourcePackage.providedBy(target):
             if publish:
                 self.makeSourcePackagePublishingHistory(
                     distroseries=target.distribution.currentseries,
@@ -1685,7 +1691,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if prerequisite_target is not None:
             prerequisite = bug.getBugTask(prerequisite_target)
             if prerequisite is None:
-                self.makeBugTask(bug, prerequisite_target)
+                self.makeBugTask(bug, prerequisite_target, publish=publish)
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
@@ -2216,8 +2222,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None,
-                         bug_supervisor=None):
+                         registrant=None, members=None, title=None,
+                         aliases=None, bug_supervisor=None,
+                         publish_root_dir=None, publish_base_url=None,
+                         publish_copy_base_url=None, no_pubconf=False):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2228,23 +2236,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()
+        if registrant is None:
+            registrant = self.makePerson()
         if owner is None:
             owner = self.makePerson()
         if members is None:
             members = self.makeTeam(owner)
         distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
-            members, owner)
+            members, owner, registrant)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
         if bug_supervisor is not None:
             naked_distro = removeSecurityProxy(distro)
             naked_distro.bug_supervisor = bug_supervisor
+        if not no_pubconf:
+            self.makePublisherConfig(
+                distro, publish_root_dir, publish_base_url,
+                publish_copy_base_url)
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None, displayname=None):
+                          parent_series=None, name=None, displayname=None,
+                          registrant=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
@@ -2254,6 +2269,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
+        if registrant is None:
+            registrant = distribution.owner
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
@@ -2264,8 +2281,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, owner=distribution.owner)
+            parent_series=parent_series, registrant=registrant)
         series.status = status
+
         return ProxyFactory(series)
 
     def makeUbuntuDistroRelease(self, version=None,
@@ -2286,7 +2304,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None):
+        changelogs=None,
+        set_base_version=False):
         """Create a new distro series source package difference."""
         if derived_series is None:
             parent_series = self.makeDistroSeries()
@@ -2339,6 +2358,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             derived_series, source_package_name)
 
         removeSecurityProxy(diff).status = status
+
+        if set_base_version:
+            version = versions.get('base', "%s.0" % self.getUniqueInteger())
+            removeSecurityProxy(diff).base_version = version
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.
@@ -3599,7 +3622,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ISectionSet).ensure(name)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=(), distroseries=None):
+                       packages=(), distroseries=None, related_set=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -3612,7 +3635,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner, distroseries))
+            lambda: ps_set.new(
+                name, description, owner, distroseries, related_set))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 
@@ -3899,6 +3923,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString()
         return getUtility(ICveSet).new(sequence, description, cvestate)
 
+    def makePublisherConfig(self, distribution=None, root_dir=None,
+                            base_url=None, copy_base_url=None):
+        """Create a new `PublisherConfig` record."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if root_dir is None:
+            root_dir = self.getUniqueUnicode()
+        if base_url is None:
+            base_url = self.getUniqueUnicode()
+        if copy_base_url is None:
+            copy_base_url = self.getUniqueUnicode()
+        return getUtility(IPublisherConfigSet).new(
+            distribution, root_dir, base_url, copy_base_url)
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by
@@ -3983,6 +4021,12 @@ class LaunchpadObjectFactory:
             return guarded_method
         else:
             return attr
+
+    def __dir__(self):
+        """Enumerate the attributes and methods of the wrapped object factory.
+
+        This is especially useful for interactive users."""
+        return dir(self._factory)
 
 
 def remove_security_proxy_and_shout_at_engineer(obj):

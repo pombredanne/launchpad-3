@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -33,10 +33,11 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
-from lp.app.browser.launchpadform import (
-    LaunchpadFormView,
+from lp.app.browser.launchpadform import LaunchpadFormView
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
     )
-from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
@@ -66,6 +67,29 @@ class DistroSeriesDifferenceNavigation(Navigation):
         return getUtility(
             IDistroSeriesDifferenceCommentSource).getForDifference(
                 self.context, id)
+
+    @property
+    def parent_packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the parent.
+        """
+        packagesets = self.context.getParentPackageSets()
+        return self._formatPackageSets(packagesets)
+
+    @property
+    def packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the derived series.
+        """
+        packagesets = self.context.getPackageSets()
+        return self._formatPackageSets(packagesets)
+
+    def _formatPackageSets(self, packagesets):
+        """Format a list of packagesets to display in the UI."""
+        if packagesets is not None:
+            return ', '.join([packageset.name for packageset in packagesets])
+        else:
+            return None
 
 
 class IDistroSeriesDifferenceForm(Interface):
@@ -131,6 +155,32 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         """Only show the options if an editor requests via JS."""
         return self.request.is_ajax and check_permission(
             'launchpad.Edit', self.context)
+
+    @property
+    def display_child_diff(self):
+        """Only show the child diff if we need to."""
+        return self.context.source_version != self.context.base_version
+
+    @property
+    def can_have_packages_diffs(self):
+        """Return whether this dsd could have packages diffs."""
+        diff_versions = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        return self.context.difference_type == diff_versions
+
+    @property
+    def show_package_diffs_request_link(self):
+        """Return whether package diffs can be requested.
+
+        At least one of the package diffs for this dsd must be missing
+        and the user must have lp.Edit.
+
+        This method is used in the template to show the package diff
+        request link.
+        """
+        return (check_permission('launchpad.Edit', self.context) and
+                self.context.base_version and
+                (not self.context.package_diff or
+                 not self.context.parent_package_diff))
 
 
 class DistroSeriesDifferenceDisplayComment:

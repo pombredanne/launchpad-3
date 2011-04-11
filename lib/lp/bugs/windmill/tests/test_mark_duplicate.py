@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
@@ -38,13 +36,10 @@ class TestMarkDuplicate(WindmillTestCase):
         link on a bug page uses the formoverlay to update the duplicateof
         field via the api.
         """
-        client = self.client
 
         # Open a bug page and wait for it to finish loading
-        client.open(url=u'%s/bugs/15' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
-
+        client, start_url = self.getClientFor(
+            '/bugs/15', user=lpuser.SAMPLE_PERSON)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
@@ -133,7 +128,7 @@ class TestMarkDuplicate(WindmillTestCase):
             timeout=constants.FOR_ELEMENT)
 
         # When we go back to the page for the duplicate bug...
-        client.open(url=u'%s/bugs/15' % BugsWindmillLayer.base_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
             xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
@@ -153,6 +148,3 @@ class TestMarkDuplicate(WindmillTestCase):
 
         # ...the warning is gone.
         client.asserts.assertNotNode(id='warning-comment-on-duplicate')
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

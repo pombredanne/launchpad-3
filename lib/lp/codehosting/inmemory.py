@@ -37,6 +37,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
@@ -806,21 +807,46 @@ class FakeCodehosting:
             {'default_stack_on': escape('/' + default_branch.unique_name)},
             trailing_path)
 
-    def _serializeBranch(self, requester_id, branch, trailing_path):
+    def _serializeBranch(self, requester_id, branch, trailing_path,
+                         force_readonly=False):
         if not self._canRead(requester_id, branch):
             return faults.PermissionDenied()
         elif branch.branch_type == BranchType.REMOTE:
             return None
+        if force_readonly:
+            writable = False
         else:
-            return (
-                BRANCH_TRANSPORT,
-                {'id': branch.id,
-                 'writable': self._canWrite(requester_id, branch),
-                 }, trailing_path)
+            writable = self._canWrite(requester_id, branch)
+        return (
+            BRANCH_TRANSPORT,
+            {'id': branch.id, 'writable': writable},
+            trailing_path)
+
+    def _translateBranchIdAlias(self, requester, path):
+        # If the path isn't a branch id alias, nothing more to do.
+        stripped_path = unescape(path.strip('/'))
+        if not stripped_path.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            return None
+        try:
+            parts = stripped_path.split('/', 2)
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return faults.PathTranslationError(path)
+        branch = self._branch_set.get(branch_id)
+        if branch is None:
+            return faults.PathTranslationError(path)
+        try:
+            trailing = parts[2]
+        except IndexError:
+            trailing = ''
+        return self._serializeBranch(requester, branch, trailing, True)
 
     def translatePath(self, requester_id, path):
         if not path.startswith('/'):
             return faults.InvalidPath(path)
+        branch = self._translateBranchIdAlias(requester_id, path)
+        if branch is not None:
+            return branch
         stripped_path = path.strip('/')
         for first, second in iter_split(stripped_path, '/'):
             first = unescape(first).encode('utf-8')

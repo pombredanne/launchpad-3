@@ -47,11 +47,12 @@ class BlobTooLarge(Exception):
 class ITemporaryBlobStorage(Interface):
     """A blob which we will store in the database temporarily."""
     export_as_webservice_entry(
-        singular_name='temporary_blob', plural_name='temporary_blobs')
+        singular_name='temporary_blob', plural_name='temporary_blobs',
+        as_of="beta")
 
     uuid = exported(
         Text(title=_('UUID'), required=True, readonly=True),
-        exported_as='token')
+        exported_as='token', as_of="beta")
     blob = Bytes(title=_('BLOB'), required=True, readonly=True)
     date_created = Datetime(title=_('Date created'),
         required=True, readonly=True)

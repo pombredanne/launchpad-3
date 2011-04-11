@@ -20,7 +20,10 @@ from storm.expr import (
     Min,
     SQL,
     )
-from storm.locals import Storm, Int
+from storm.locals import (
+    Int,
+    Storm,
+    )
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -74,13 +77,20 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.scripts.garbo import (
+    AntiqueSessionPruner,
     BulkPruner,
     DailyDatabaseGarbageCollector,
+    DuplicateSessionPruner,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
+    UnusedSessionPruner,
     )
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
+from lp.services.session.model import (
+    SessionData,
+    SessionPkgData,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.testing import (
@@ -195,6 +205,153 @@ class TestBulkPruner(TestCase):
             pruner(chunk_size)
 
 
+class TestSessionPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+
+        # Session database isn't reset between tests. We need to do this
+        # manually.
+        nuke_all_sessions = IMasterStore(SessionData).find(SessionData).remove
+        nuke_all_sessions()
+        self.addCleanup(nuke_all_sessions)
+
+        recent = datetime.now(UTC)
+        yesterday = recent - timedelta(days=1)
+        ancient = recent - timedelta(days=61)
+
+        self.make_session(u'recent_auth', recent, 'auth1')
+        self.make_session(u'recent_unauth', recent, False)
+        self.make_session(u'yesterday_auth', yesterday, 'auth2')
+        self.make_session(u'yesterday_unauth', yesterday, False)
+        self.make_session(u'ancient_auth', ancient, 'auth3')
+        self.make_session(u'ancient_unauth', ancient, False)
+
+    def make_session(self, client_id, accessed, authenticated=None):
+        session_data = SessionData()
+        session_data.client_id = client_id
+        session_data.last_accessed = accessed
+        IMasterStore(SessionData).add(session_data)
+
+        if authenticated:
+            # Add login time information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'logintime'
+            session_pkg_data.pickle = 'value is ignored'
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+            # Add authenticated as information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'accountid'
+            # Normally Account.id, but the session pruning works
+            # at the SQL level and doesn't unpickle anything.
+            session_pkg_data.pickle = authenticated
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+    def sessionExists(self, client_id):
+        store = IMasterStore(SessionData)
+        return not store.find(
+            SessionData, SessionData.client_id == client_id).is_empty()
+
+    def test_antique_session_pruner(self):
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = AntiqueSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            # u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_unused_session_pruner(self):
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = UnusedSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            # u'yesterday_unauth',
+            u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_duplicate_session_pruner(self):
+        # None of the sessions created in setUp() are duplicates, so
+        # they will all survive the pruning.
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            u'ancient_auth',
+            u'ancient_unauth',
+            ])
+
+        now = datetime.now(UTC)
+
+        # Make some duplicate logins from a few days ago.
+        # Only the most recent 6 will be kept. Oldest is 'old dupe 9',
+        # most recent 'old dupe 1'.
+        for count in range(1, 10):
+            self.make_session(
+                u'old dupe %d' % count,
+                now - timedelta(days=2, seconds=count),
+                'old dupe')
+        for count in range(1, 7):
+            expected_sessions.add(u'old dupe %d' % count)
+
+        # Make some other duplicate logins less than an hour old.
+        # All of these will be kept.
+        for count in range(1, 10):
+            self.make_session(u'new dupe %d' % count, now, 'new dupe')
+            expected_sessions.add(u'new dupe %d' % count)
+
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = DuplicateSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+
 class TestGarbo(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
@@ -223,7 +380,7 @@ class TestGarbo(TestCaseWithFactory):
         return collector
 
     def test_OAuthNoncePruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
             now - timedelta(days=1) - timedelta(seconds=60), # Garbage
@@ -301,7 +458,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         results_to_keep_count = (
@@ -358,7 +515,7 @@ class TestGarbo(TestCaseWithFactory):
             >= now - timedelta(days=30))
 
     def test_CodeImportEventPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -662,7 +819,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
-    def test_ObsoleteBugAttachmentDeleter(self):
+    def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')

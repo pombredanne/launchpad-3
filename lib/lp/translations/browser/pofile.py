@@ -59,12 +59,6 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    has_upstream_template,
-    get_ubuntu_sharing_info,
-    get_upstream_sharing_info,
-    )
 
 
 class POFileNavigation(Navigation):
@@ -731,8 +725,8 @@ class POFileUploadView(POFileView):
             'should be imported, it will be reviewed manually by an '
             'administrator in the coming few days.  You can track '
             'your upload\'s status in the '
-            '<a href="%s/+imports">Translation Import Queue</a>' %(
-            canonical_url(self.context.potemplate.translationtarget))))
+            '<a href="%s/+imports">Translation Import Queue</a>',
+            canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileBatchNavigator(BatchNavigator):
@@ -998,28 +992,14 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         return potemplate.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        if self.is_upstream_pofile:
-            return has_ubuntu_template(
-                productseries=self.context.potemplate.productseries,
-                templatename=self.context.potemplate.name)
-        else:
-            return has_upstream_template(
-                sourcepackage=self.context.potemplate.sourcepackage,
-                templatename=self.context.potemplate.name)
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        return potemplate is not None
 
     @property
     def sharing_pofile(self):
-        if self.is_upstream_pofile:
-            infos = get_ubuntu_sharing_info(
-                productseries=self.context.potemplate.productseries,
-                templatename=self.context.potemplate.name)
-        else:
-            infos = get_upstream_sharing_info(
-                sourcepackage=self.context.potemplate.sourcepackage,
-                templatename=self.context.potemplate.name)
-        if len(infos) == 0:
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        if potemplate is None:
             return None
-        obj, potemplate = infos[0]
         pofile = potemplate.getPOFileByLang(self.context.language.code)
         if pofile is None:
             pofile = potemplate.getDummyPOFile(
@@ -1054,6 +1034,11 @@ class POExportView(BaseExportView):
 
     @property
     def has_pochanged_option(self):
+        is_ubuntu = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UBUNTU)
+        if is_ubuntu:
+            return True
         other_side_pofile = self.context.getOtherSidePOFile()
         return other_side_pofile is not None
 

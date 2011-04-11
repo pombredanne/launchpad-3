@@ -21,7 +21,6 @@ from lazr.restful.publisher import (
     WebServiceRequestTraversal,
     )
 from lazr.uri import URI
-import pytz
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer

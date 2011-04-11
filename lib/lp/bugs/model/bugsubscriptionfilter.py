@@ -62,7 +62,7 @@ class BugSubscriptionFilter(StormBase):
 
     other_parameters = Unicode()
 
-    description = Unicode()
+    description = Unicode('description')
 
     def _get_statuses(self):
         """Return a frozenset of statuses to filter on."""

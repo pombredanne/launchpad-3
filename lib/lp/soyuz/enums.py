@@ -523,14 +523,14 @@ class SourcePackageFormat(DBEnumeratedType):
         3.0 (quilt)
 
         Specifies a non-native package, with an orig.tar.* and a debian.tar.*.
-        Supports gzip and bzip2 compression.
+        Supports gzip, bzip2, and xz compression.
         """)
 
     FORMAT_3_0_NATIVE = DBItem(2, """
         3.0 (native)
 
-        Specifies a native package, with a single tar.*. Supports gzip and
-        bzip2 compression.
+        Specifies a native package, with a single tar.*. Supports gzip,
+        bzip2, and xz compression.
         """)
 
 

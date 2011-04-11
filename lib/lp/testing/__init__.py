@@ -4,6 +4,7 @@
 # pylint: disable-msg=W0401,C0301,F0401
 
 from __future__ import absolute_import
+from lp.testing.windmill.lpuser import LaunchpadUser
 
 __metaclass__ = type
 __all__ = [
@@ -12,7 +13,6 @@ __all__ = [
     'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
-    'capture_events',
     'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
@@ -29,7 +29,7 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression'
+    'quote_jquery_expression',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -777,19 +777,49 @@ class WindmillTestCase(TestCaseWithFactory):
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=self.layer.appserver_root_url())
 
-    def getClientFor(self, obj, user=None, password='test', view_name=None):
+    def getClientFor(self, obj, user=None, password='test', base_url=None,
+                     view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if user is not None:
-            email = removeSecurityProxy(user).preferredemail.email
+            if isinstance(user, LaunchpadUser):
+                email = user.email
+                password = user.password
+            else:
+                email = removeSecurityProxy(user).preferredemail.email
             client.open(url=lpuser.get_basic_login_url(email, password))
             client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         if isinstance(obj, basestring):
             url = obj
         else:
             url = canonical_url(
+                obj, view_name=view_name, rootsite=self.layer.facet,
+                force_local_path=True)
+        if base_url is None:
+            base_url = self.layer.base_url
+        obj_url = base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
+
+    def getClientForPerson(self, url, person, password='test'):
+        """Create a LaunchpadUser for a person and login to the url."""
+        naked_person = removeSecurityProxy(person)
+        user = LaunchpadUser(
+            person.displayname, naked_person.preferredemail.email, password)
+        return self.getClientFor(url, user=user)
+
+
+    def getClientForAnomymous(self, obj, view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
                 obj, view_name=view_name, force_local_path=True)
         obj_url = self.layer.base_url + url
+        obj_url = obj_url.replace('http://', 'http://foo:foo@')
         client.open(url=obj_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         return client, obj_url
@@ -1223,7 +1253,7 @@ def temp_dir():
     """Provide a temporary directory as a ContextManager."""
     tempdir = tempfile.mkdtemp()
     yield tempdir
-    shutil.rmtree(tempdir)
+    shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @contextmanager

@@ -32,6 +32,16 @@
       </style>
     </noscript>
 
+    <script type="text/javascript"
+        tal:condition="
+          request/features/malone.advanced-structural-subscriptions.enabled">
+        LPS.use('lp.registry.structural_subscription', function(Y) {
+            var module = Y.lp.registry.structural_subscription;
+            Y.on('domready', function() {
+              module.setup({content_box: "#structural-subscription-content-box"});
+            });
+        });
+    </script>
   </tal:head-epilogue>
 </head>
 
@@ -246,6 +256,10 @@
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
+
       </div>
     </tal:main>
 

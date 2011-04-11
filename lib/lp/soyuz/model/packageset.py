@@ -408,6 +408,13 @@ class PackagesetSet:
         result_set = store.find(Packageset, Packageset.owner == owner)
         return _order_result_set(result_set)
 
+    def getBySeries(self, distroseries):
+        """See `IPackagesetSet`."""
+        store = IStore(Packageset)
+        result_set = store.find(
+            Packageset, Packageset.distroseries == distroseries)
+        return _order_result_set(result_set)
+
     def get(self):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
