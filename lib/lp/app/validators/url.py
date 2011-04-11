@@ -6,6 +6,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.url import urlparse
 from lp.app.validators import LaunchpadValidationError
 
 
@@ -31,11 +32,6 @@ def valid_absolute_url(name):
     >>> #valid_absolute_url('whatever://example.com/blah')
     True
     """
-    # Have to import urlparse locally since imports from helpers.py
-    # causes this module to be imported, and we can't import stuff from
-    # webapp at that point, since webapp imports stuff from helpers.py
-    # as well.
-    from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
     # note that URL checking is also done inside the database, in
     # trusted.sql, the valid_absolute_url function, and that code uses
@@ -57,11 +53,6 @@ def valid_builder_url(url):
     >>> valid_builder_url('ftp://foo.com/')
     False
     """
-    # Have to import urlparse locally since imports from helpers.py
-    # causes this module to be imported, and we can't import stuff from
-    # webapp at that point, since webapp imports stuff from helpers.py
-    # as well.
-    from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(url)
     if scheme != 'http':
         return False
