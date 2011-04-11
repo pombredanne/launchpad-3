@@ -274,53 +274,36 @@
       <tal:locked condition="context/potmsgset/is_translation_credit">
         <td class="icon left right" />
         <td>
-          <tal:form-writeable condition="view/form_is_writeable">
-            <tal:automatic condition="view/translation_credits">
-              <div tal:condition="not: view/user_is_official_translator"
-                   tal:attributes="
-                     id string:${translation_dictionary/html_id_translation}"
-                   tal:content="structure view/translation_credits">
-                translation credits
-              </div>
-              <label tal:condition="view/user_is_official_translator"
-                     tal:attributes="
-                       id string:${translation_dictionary/html_id_translation};
-                       for string:${translation_dictionary/html_id_translation}_radiobutton"
-                     tal:content="structure view/translation_credits">
-                translation credits
-              </label>
-            </tal:automatic>
-            <tal:no-automatic condition="not:view/translation_credits">
-              <div class="no-translation"
-                   tal:condition="not:view/user_is_official_translator"
-                   tal:attributes="
-                     id string:${translation_dictionary/html_id_translation}">
-                (no translation yet)
-              </div>
-              <label class="no-translation"
-                     tal:condition="view/user_is_official_translator"
-                     tal:attributes="
-                       id string:${translation_dictionary/html_id_translation};
-                        for string:${translation_dictionary/html_id_translation}_radiobutton">
-                (no translation yet)
-              </label>
-            </tal:no-automatic>
-          </tal:form-writeable>
-          <tal:form-not-writeable condition="not:view/form_is_writeable">
+          <tal:automatic condition="view/translation_credits">
             <div tal:condition="not: view/user_is_official_translator"
                  tal:attributes="
                    id string:${translation_dictionary/html_id_translation}"
-                 tal:content="structure translation_dictionary/current_translation">
+                 tal:content="structure view/translation_credits">
               translation credits
             </div>
             <label tal:condition="view/user_is_official_translator"
                    tal:attributes="
                      id string:${translation_dictionary/html_id_translation};
                      for string:${translation_dictionary/html_id_translation}_radiobutton"
-                   tal:content="structure translation_dictionary/current_translation">
+                   tal:content="structure view/translation_credits">
               translation credits
             </label>
-          </tal:form-not-writeable>
+          </tal:automatic>
+          <tal:no-automatic condition="not:view/translation_credits">
+            <div class="no-translation"
+                 tal:condition="not:view/user_is_official_translator"
+                 tal:attributes="
+                   id string:${translation_dictionary/html_id_translation}">
+              (no translation yet)
+            </div>
+            <label class="no-translation"
+                   tal:condition="view/user_is_official_translator"
+                   tal:attributes="
+                     id string:${translation_dictionary/html_id_translation};
+                      for string:${translation_dictionary/html_id_translation}_radiobutton">
+              (no translation yet)
+            </label>
+          </tal:no-automatic>
         </td>
       </tal:locked>
     </tr>
