@@ -49,6 +49,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -364,25 +365,34 @@ class StructuralSubscriptionMenuMixin:
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if not enabled or (
-            not sst.userCanAlterBugSubscription(self.user, self.user)):
+        if not sst.userCanAlterBugSubscription(self.user, self.user):
             enabled = False
         return Link('+subscribe', text, icon=icon, enabled=enabled)
 
+    @property
+    def _enabled(self):
+        """Should the link be enabled?
+
+        True if the target uses Launchpad for bugs and the user can alter the
+        bug subscriptions.
+        """
+        sst = self._getSST()
+        target = sst
+        if sst.parent_subscription_target is not None:
+            target = sst.parent_subscription_target
+        return (target.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+                sst.userCanAlterBugSubscription(self.user, self.user))
+
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True, enabled=enabled)
+        return Link('#', text, icon='add', hidden=True, enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Edit bug mail'
         return Link('+subscriptions', text, icon='edit', site='bugs',
-                    enabled=enabled)
+                    enabled=self._enabled)
 
 
 def expose_structural_subscription_data_to_js(context, request,
