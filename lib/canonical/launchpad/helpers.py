@@ -482,26 +482,6 @@ def get_email_template(filename, app=None):
     return open(fullpath).read()
 
 
-def is_ascii_only(string):
-    """Ensure that the string contains only ASCII characters.
-
-        >>> is_ascii_only(u'ascii only')
-        True
-        >>> is_ascii_only('ascii only')
-        True
-        >>> is_ascii_only('\xf4')
-        False
-        >>> is_ascii_only(u'\xf4')
-        False
-    """
-    try:
-        string.encode('ascii')
-    except UnicodeError:
-        return False
-    else:
-        return True
-
-
 def truncate_text(text, max_length):
     """Return a version of string no longer than max_length characters.
 
