@@ -51,6 +51,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    Exists,
     Join,
     LeftJoin,
     Max,
@@ -248,8 +249,7 @@ def get_bug_tags_open_count(context_condition, user):
         )
     tables = (
         BugTag,
-        Join(Bug, Bug.id == BugTag.bugID),
-        Join(BugTask, BugTask.bugID == Bug.id),
+        Join(BugTask, BugTask.bugID == BugTag.bugID),
         )
     where_conditions = [
         BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
@@ -257,7 +257,12 @@ def get_bug_tags_open_count(context_condition, user):
         ]
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        where_conditions.append(SQLRaw(privacy_filter))
+        # The EXISTS sub-select avoids a join again Bug, improving
+        # performance significantly.
+        where_conditions.append(
+            Exists(Select(
+                columns=[True], tables=[Bug],
+                where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     return store.using(*tables).find(
         columns, *where_conditions).group_by(BugTag.tag).order_by(
