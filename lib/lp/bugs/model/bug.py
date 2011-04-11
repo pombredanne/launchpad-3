@@ -51,6 +51,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -241,21 +242,17 @@ def get_bug_tags_open_count(context_condition, user):
 
     :return: A list of tuples, (tag name, open bug count).
     """
-    open_statuses_condition = BugTask.status.is_in(
-        UNRESOLVED_BUGTASK_STATUSES)
     columns = (
         BugTag.tag,
         Count(),
         )
     tables = (
         BugTag,
-        LeftJoin(Bug, Bug.id == BugTag.bugID),
-        LeftJoin(
-            BugTask,
-            And(BugTask.bugID == Bug.id, open_statuses_condition)),
+        Join(Bug, Bug.id == BugTag.bugID),
+        Join(BugTask, BugTask.bugID == Bug.id),
         )
     where_conditions = [
-        open_statuses_condition,
+        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
     privacy_filter = get_bug_privacy_filter(user)
