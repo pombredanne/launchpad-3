@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-import simplejson
 from datetime import datetime
 
 from pytz import UTC
@@ -23,7 +22,6 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtask import (
-    BugContributorView,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
@@ -741,43 +739,3 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
-
-
-class TestBugContributorView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestBugContributorView, self).setUp()
-        login(ADMIN_EMAIL)
-
-    def test_non_contributor(self):
-        bug = self.factory.makeBug()
-        # Create a person who has not contributed
-        person = self.factory.makePerson()
-        request = LaunchpadTestRequest()
-        request.form['person'] = "/api/devel/~%s" % person.name
-        view = BugContributorView(bug.default_bugtask, request)
-        json_result = view()
-        result = simplejson.loads(json_result)
-        self.assertFalse(result['is_contributor'])
-        self.assertEqual(person.displayname, result['person_name'])
-        self.assertEqual(
-            bug.default_bugtask.pillar.displayname, result['pillar_name'])
-
-    def test_contributor(self):
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        bug1 = self.factory.makeBug(product=product)
-        # Create a person who has contributed
-        person = self.factory.makePerson()
-        bug1.default_bugtask.transitionToAssignee(person)
-        request = LaunchpadTestRequest()
-        request.form['person'] = "/api/devel/~%s" % person.name
-        view = BugContributorView(bug.default_bugtask, request)
-        json_result = view()
-        result = simplejson.loads(json_result)
-        self.assertTrue(result['is_contributor'])
-        self.assertEqual(person.displayname, result['person_name'])
-        self.assertEqual(
-            bug.default_bugtask.pillar.displayname, result['pillar_name'])
