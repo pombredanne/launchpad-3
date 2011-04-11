@@ -254,8 +254,10 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         test_publisher.getPubSource()
 
         self.setUpForScriptRun(distro)
+# XXX: Write markers in dists/dists.new
         self.makeScript(distro).main()
         self.makeScript(distro).main()
+# XXX: Markers should be back in place.
 
     def test_publishes_package(self):
         test_publisher = SoyuzTestPublisher()
@@ -308,7 +310,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(distro.displayname, main_release["Label"])
         self.assertEqual("source", main_release["Architecture"])
 
-    def test_rollBackNewDistsRoot_moves_dists_new_to_distscopyroot(self):
+    def test_rollBackNewDists_moves_dists_new_to_distscopy(self):
         distro = self.makeDistro()
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
@@ -320,7 +322,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
         script = self.makeScript(distro)
         script.setUp()
-        script.rollBackNewDistsRoot()
+        script.rollBackNewDists()
         self.assertEqual(
             "dists.new",
             read_marker_file([dists_copy_root, "dists", "marker"]))
@@ -420,41 +422,15 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
         self.assertTrue(file_exists(archive_root))
         self.assertTrue(file_exists(dists_root))
-        self.assertTrue(file_exists(dists_root + ".new"))
+        self.assertTrue(file_exists(get_distscopy_root(pub_config)))
 
     def test_setUpDirs_does_not_mind_if_dist_directories_already_exist(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
-        # Sabotage the directory renaming that setUpDirs does.  We want
-        # the original dists directories, not dists.new.
-        script.renameDistsToNewDists = FakeMethod()
         script.setUpDirs()
         script.setUpDirs()
         self.assertTrue(file_exists(get_archive_root(get_pub_config(distro))))
-
-    def test_setUpDirs_aborts_if_dists_new_already_exists(self):
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        script.setUp()
-        # This invocation of setUpDirs creates dists.new directories.
-        script.setUpDirs()
-        # ...and so the next invocation refuses to make any changes.
-        self.assertRaises(LaunchpadScriptFailure, script.setUpDirs)
-
-    def test_setUpDirs_moves_dists_to_dists_new(self):
-        distro = self.makeDistro()
-        pub_config = get_pub_config(distro)
-        distscopy_root = get_distscopy_root(pub_config)
-        os.makedirs(os.path.join(distscopy_root, "dists"))
-        write_marker_file([distscopy_root, "dists", "marker"], "X")
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        self.assertEqual(
-            "X",
-            read_marker_file(
-                [get_archive_root(pub_config), "dists.new", "marker"]))
 
     def test_publishDistroArchive_runs_parts(self):
         distro = self.makeDistro()
@@ -487,6 +463,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
+        script.updateNewDists()
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
 
@@ -645,20 +622,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.publishSecurityUploads()
         self.assertEqual(0, script.installDists.call_count)
 
-    def test_publishSecurityUploads_runs_finalize_parts(self):
-        distro = self.makeDistro()
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=self.factory.makeDistroSeries(distribution=distro),
-            pocket=PackagePublishingPocket.SECURITY)
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        script.runFinalizeParts = FakeMethod()
-        script.publishSecurityUploads()
-        self.assertEqual(1, script.runFinalizeParts.call_count)
-        args, kwargs = script.runFinalizeParts.calls[0]
-        self.assertTrue(kwargs["security_only"])
-
     def test_publishAllUploads_publishes_all_distro_archives(self):
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
@@ -680,12 +643,3 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             distro.all_distro_archives, published_archives)
         self.assertIn(distro.main_archive, published_archives)
         self.assertIn(partner_archive, published_archives)
-
-    def test_publishAllUploads_runs_finalize_parts(self):
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        script.runFinalizeParts = FakeMethod()
-        script.publishAllUploads()
-        self.assertEqual(1, script.runFinalizeParts.call_count)

@@ -48,9 +48,21 @@ def compose_env_string(env):
     return ' '.join(['='.join(pair) for pair in env.iteritems()])
 
 
-def get_distscopyroot(archive_config):
-    """Return the distscopy root directory for `archive_config`."""
-    return archive_config.archiveroot + "-distscopy"
+def get_backup_dists(archive_config):
+    """Return the path of an archive's backup dists directory."""
+    return os.path.join(archive_config.archiveroot + "-distscopy", "dists")
+
+
+def get_dists(archive_config, suffix=''):
+    """Return the path of an archive's dists directory.
+
+    :param archive_config: Configuration for the archive in question.
+    :param suffix: An optional suffix for the name of the dists
+        directory.  The dists directories are shuffled around between
+        dists, dists.new, and dists.old.  This makes it easier to
+        specify any one of those paths.
+    """
+    return archive_config.distsroot + suffix
 
 
 class StoreArgument:
@@ -90,6 +102,20 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.parser.add_option(
             '-s', '--security-only', dest='security_only',
             action='store_true', default=False, help="Security upload only.")
+
+    def processOptions(self):
+        """Handle command-line options.
+
+        Sets `self.distribution` to the `Distribution` to publish.
+        """
+        if self.options.distribution is None:
+            raise LaunchpadScriptFailure("Specify a distribution.")
+
+        self.distribution = getUtility(IDistributionSet).getByName(
+            self.options.distribution)
+        if self.distribution is None:
+            raise LaunchpadScriptFailure(
+                "Distribution %s not found." % self.options.distribution)
 
     def executeShell(self, command_line, failure=None):
         """Run `command_line` through a shell.
@@ -131,20 +157,23 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
-    def rollBackNewDistsRoot(self):
+    def rollBackArchiveNewDists(self, archive_purpose):
+        """Move dists.new directory back into distscopy."""
+        archive_config = self.configs[archive_purpose]
+        self.logger.debug(
+            "Moving %s dists backup to safe keeping for next time.",
+            archive_purpose.title)
+        dists_new = get_dists(archive_config, ".new")
+        if file_exists(dists_new):
+            dists = get_backup_dists(archive_config)
+            self.logger.debug("Renaming %s to %s.", dists_new, dists)
+            os.rename(dists_new, dists)
+
+    def rollBackNewDists(self):
         """Restore distscopy versions of dists directories."""
         self.logger.debug("Cleaning up.")
-        for purpose, archive_config in self.configs.iteritems():
-            self.logger.debug(
-                "Moving %s dists backup to safe keeping for next time.",
-                purpose.title)
-            replacement_dists = archive_config.distsroot + ".new"
-            if file_exists(replacement_dists):
-                dists = os.path.join(
-                    get_distscopyroot(archive_config), "dists")
-                self.logger.debug(
-                    "Renaming %s to %s.", replacement_dists, dists)
-                os.rename(replacement_dists, dists)
+        for purpose in self.configs.iterkeys():
+            self.rollBackArchiveNewDists(purpose)
 
     def processAccepted(self):
         """Run the process-accepted script."""
@@ -179,23 +208,24 @@ class PublishFTPMaster(LaunchpadCronScript):
         """
         archive_config = self.configs[archive_purpose]
         self.executeShell(
-            "rsync -aH --delete '%s/' '%s.new'"
-            % (archive_config.distsroot, archive_config.distsroot),
+            "rsync -aH --delete '%s/' '%s'"
+            % (get_dists(archive_config), get_dists(archive_config, ".new")),
             failure=LaunchpadScriptFailure(
                 "Failed to rsync dists.new for %s." % archive_purpose.title))
 
     def updateNewDists(self):
-        """Update the new dists directory based on the current one."""
-        for purpose, archive_config in self.configs.iteritems():
-            self.rsyncNewDists(purpose)
+        """Set up the new dists directories based on the current ones.
 
-    def checkForSafeRenameToNewDists(self, archive_purpose):
-        """Check that it's safe to rename distscopy dist to dists.new."""
-        archive_config = self.configs[archive_purpose]
-        new_dists = archive_config.distsroot + ".new"
-        if file_exists(new_dists):
-            raise LaunchpadScriptFailure(
-                "Can't rename dists to %s; it already exists." % new_dists)
+        Renames the backup dists directories to dists.new, then updates
+        them from the current ones using rsync.
+        """
+        # At this point very little can go wrong.  Rename the distscopy
+        # for each archive to dists.new.
+        for purpose in self.configs.iterkeys():
+            self.renameBackupDistsToNewDists(purpose)
+
+        for purpose in self.configs.iterkeys():
+            self.rsyncNewDists(purpose)
 
     def createMissingDirs(self, archive_purpose):
         """Create archive root and such if they did not yet exist."""
@@ -204,29 +234,27 @@ class PublishFTPMaster(LaunchpadCronScript):
         if not file_exists(archiveroot):
             self.logger.debug("Creating archive root %s.", archiveroot)
             os.makedirs(archiveroot)
-        distsroot = archive_config.distsroot
-        if not file_exists(distsroot):
-            self.logger.debug("Creating dists root %s.", distsroot)
-            os.makedirs(distsroot)
-        distscopy = os.path.join(
-            get_distscopyroot(archive_config), "dists")
+        dists = get_dists(archive_config)
+        if not file_exists(dists):
+            self.logger.debug("Creating dists root %s.", dists)
+            os.makedirs(dists)
+        distscopy = get_backup_dists(archive_config)
         if not file_exists(distscopy):
             self.logger.debug(
                 "Creating backup dists directory %s for %s",
                 distscopy, archive_purpose.title)
             os.makedirs(distscopy)
 
-    def renameDistsToNewDists(self, archive_purpose):
+    def renameBackupDistsToNewDists(self, archive_purpose):
         """Rename distscopy dists to dists.new."""
         archive_config = self.configs[archive_purpose]
-        dists = os.path.join(get_distscopyroot(archive_config), "dists")
-        new_dists= archive_config.distsroot + ".new"
+        dists_new = get_dists(archive_config, ".new")
         self.logger.debug(
             "Moving backup dist for %s into place.", archive_purpose.title)
-        os.rename(dists, new_dists)
+        os.rename(get_backup_dists(archive_config), dists_new)
 
     def setUpDirs(self):
-        """Copy the dists tree ready for publishing into.
+        """Move dists directories to dists.new, or create them.
 
         We do this so that we don't get an inconsistent dists tree at
         any point during the publishing cycle (which would cause buildds
@@ -240,21 +268,11 @@ class PublishFTPMaster(LaunchpadCronScript):
         The counterpart of this method is `restoreDistsCopy`.  Once both
         have been called, the dists directories will be in place.  If
         the script fails before it can get to that point, call
-        `rollBackNewDistsRoot` instead.
+        `rollBackNewDists` instead.
         """
-        # Before messing with the filesystem, try to establish that we
-        # can get to a consistent new state without glitches.
-        for purpose in self.configs.iterkeys():
-            self.checkForSafeRenameToNewDists(purpose)
-
         # Set up various directories if they do not yet exist.
         for purpose in self.configs.iterkeys():
             self.createMissingDirs(purpose)
-
-        # At this point very little can go wrong.  Rename the distscopy
-        # for each archive to dists.new.
-        for purpose in self.configs.iterkeys():
-            self.renameDistsToNewDists(purpose)
 
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.
@@ -270,7 +288,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         arguments = [
             '-v', '-v',
             '-d', self.distribution.name,
-            '-R', archive_config.distsroot + '.new',
+            '-R', get_dists(archive_config, '.new'),
             ]
 
         if archive.purpose == ArchivePurpose.PARTNER:
@@ -291,7 +309,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         archive_config = self.configs[archive.purpose]
         env = {
             'ARCHIVEROOT': archive_config.archiveroot,
-            'DISTSROOT': archive_config.distsroot + ".new",
+            'DISTSROOT': get_dists(archive_config, ".new"),
             'OVERRIDEROOT': archive_config.overrideroot,
             }
         self.runParts('publish-distro.d', env)
@@ -302,26 +320,26 @@ class PublishFTPMaster(LaunchpadCronScript):
         # sure as possible that we can do either none or all of them.
         self.logger.debug("Looking for impediments to publication.")
         for purpose, archive_config in self.configs.iteritems():
-            old_distsroot = archive_config.distsroot + '.old'
-            if file_exists(old_distsroot):
+            old_dists = get_dists(archive_config, '.old')
+            if file_exists(old_dists):
                 raise LaunchpadScriptFailure(
                     "Old %s distsroot %s is in the way."
-                    % (purpose.title, old_distsroot))
+                    % (purpose.title, old_dists))
 
         # Move the existing distsroots out of the way, and move the new
         # ones in their place.
         self.logger.debug("Placing the new dists into place...")
         for archive_config in self.configs.itervalues():
-            distsroot = archive_config.distsroot
-            os.rename(distsroot, distsroot + ".old")
-            os.rename(distsroot + ".new", distsroot)
+            dists = get_dists(archive_config)
+            os.rename(dists, get_dists(archive_config, ".old"))
+            os.rename(get_dists(archive_config, ".new"), dists)
 
     def restoreDistsCopy(self):
+        """Move dists.old back to the distscopy backup."""
         for purpose, archive_config in self.configs.iteritems():
-            dists = os.path.join(get_distscopyroot(archive_config), "dists")
-            self.logger.debug(
-                "Renaming old %s distsroot to %s." % (purpose.title, dists))
-            os.rename(archive_config.distsroot + ".old", dists)
+            dists_old = get_dists(archive_config, ".old")
+            dists_backup = get_backup_dists(archive_config)
+            os.rename(dists_old, dists_backup)
 
     def runCommercialCompat(self):
         """Generate the -commercial pocket.
@@ -367,20 +385,6 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "find '%s' -type d -empty | xargs -r rmdir"
                 % archive_config.archiveroot)
 
-    def processOptions(self):
-        """Handle command-line options.
-
-        Sets `self.distribution` to the `Distribution` to publish.
-        """
-        if self.options.distribution is None:
-            raise LaunchpadScriptFailure("Specify a distribution.")
-
-        self.distribution = getUtility(IDistributionSet).getByName(
-            self.options.distribution)
-        if self.distribution is None:
-            raise LaunchpadScriptFailure(
-                "Distribution %s not found." % self.options.distribution)
-
     def runParts(self, parts, env):
         """Execute run-parts.
 
@@ -414,44 +418,26 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def publishSecurityUploads(self):
         """Quickly process just the pending security uploads."""
-        try:
-            self.logger.debug("Expediting security uploads.")
-            security_suites = self.getDirtySecuritySuites()
-            if len(security_suites) == 0:
-                self.logger.debug("Nothing to do for security publisher.")
-                return
-            partner_archive = self.distribution.getArchive("partner")
-            if partner_archive is not None:
-                self.publishDistroArchive(partner_archive)
-            self.publishDistroArchive(
-                self.distribution.main_archive,
-                security_suites=security_suites)
-            self.installDists()
-        except:
-            self.rollBackNewDistsRoot()
-            raise
-        self.restoreDistsCopy()
-        self.runCommercialCompat()
-        self.runFinalizeParts(security_only=True)
+        self.logger.debug("Expediting security uploads.")
+        security_suites = self.getDirtySecuritySuites()
+        if len(security_suites) == 0:
+            self.logger.debug("Nothing to do for security publisher.")
+            return
+
+        for archive in self.archives:
+            if archive != self.distribution.main_archive:
+                self.publishDistroArchive(archive)
+
+        self.publishDistroArchive(
+            self.distribution.main_archive, security_suites=security_suites)
 
     def publishAllUploads(self):
         """Publish the distro's complete uploads."""
-        try:
-            self.logger.debug("Full publication.  This may take some time.")
-            for archive in self.archives:
-                # This, for the main archive, is where the script spends
-                # most of its time.
-                self.publishDistroArchive(archive)
-
-            self.installDists()
-        except:
-            self.rollBackNewDistsRoot()
-            raise
-        self.restoreDistsCopy()
-        self.runCommercialCompat()
-        self.generateListings()
-        self.clearEmptyDirs()
-        self.runFinalizeParts()
+        self.logger.debug("Full publication.  This may take some time.")
+        for archive in self.archives:
+            # This, for the main archive, is where the script spends
+            # most of its time.
+            self.publishDistroArchive(archive)
 
     def setUp(self):
         """Process options, and set up internal state."""
@@ -464,12 +450,36 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.setUp()
         self.processAccepted()
         self.setUpDirs()
+
         try:
             self.updateNewDists()
+            self.publishSecurityUploads()
+            self.installDists()
         except:
-            self.rollBackNewDistsRoot()
+            self.rollBackNewDists()
             raise
 
-        self.publishSecurityUploads()
+        # Bring us back to a state where we have a dists and a dists
+        # copy (but switched around from how they started out).
+        self.restoreDistsCopy()
+
+        self.runCommercialCompat()
+        self.runFinalizeParts(security_only=True)
+
         if not self.options.security_only:
-            self.publishAllUploads()
+            try:
+                self.updateNewDists()
+                self.publishAllUploads()
+                self.installDists()
+            except:
+                self.rollBackNewDists()
+                raise
+
+            # Return the dists and dists copy directories to their
+            # original places.
+            self.restoreDistsCopy()
+
+            self.runCommercialCompat()
+            self.generateListings()
+            self.clearEmptyDirs()
+            self.runFinalizeParts()
