@@ -20,7 +20,7 @@ from lp.app.validators import LaunchpadValidationError
 
 
 def valid_absolute_url(name):
-    """validate an absolute URL.
+    """Validate an absolute URL.
 
     It looks like this function has been deprecated by
     canonical.launchpad.interfaces.validation.
@@ -28,20 +28,27 @@ def valid_absolute_url(name):
     We define this as something that can be parsed into a URL that has both
     a protocol and a network address.
 
-    >>> valid_absolute_url('sftp://chinstrap.ubuntu.com/foo/bar')
-    True
-    >>> valid_absolute_url('http://www.example.com')
-    True
-    >>> valid_absolute_url('whatever:/uxample.com/blah')
-    False
+      >>> valid_absolute_url('sftp://chinstrap.ubuntu.com/foo/bar')
+      True
+      >>> valid_absolute_url('http://www.example.com')
+      True
+      >>> valid_absolute_url('whatever:/uxample.com/blah')
+      False
+      >>> valid_absolute_url('whatever://example.com/blah')
+      True
 
-    # XXX: 2010-04-26, Salgado, bug=570244: This test only works against
-    # python2.6 but we still need to run on python2.5, so we should uncomment
-    # it only when we no longer need to run on 2.5.
-    >>> #valid_absolute_url('whatever://example.com/blah')
-    True
+    Unicode urls are ascii encoded, and a failure here mans it isn't valid.
+
+      >>> valid_absolute_url(u'http://www.example.com/test...')
+      True
+      >>> valid_absolute_url(u'http://www.example.com/test\u2026')
+      False
+
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse(name)
+    try:
+        (scheme, netloc, path, params, query, fragment) = urlparse(name)
+    except UnicodeEncodeError:
+        return False
     # note that URL checking is also done inside the database, in
     # trusted.sql, the valid_absolute_url function, and that code uses
     # stdlib urlparse, not our customized version.
@@ -62,8 +69,12 @@ def valid_builder_url(url):
     False
     >>> valid_builder_url('ftp://foo.com/')
     False
+
     """
-    (scheme, netloc, path, params, query, fragment) = urlparse(url)
+    try:
+        (scheme, netloc, path, params, query, fragment) = urlparse(url)
+    except UnicodeEncodeError:
+        return False
     if scheme != 'http':
         return False
     if params or query or fragment:
@@ -86,30 +97,38 @@ def builder_url_validator(url):
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
 
-       A URL is valid if:
-           - its URL scheme is in the provided 'valid_schemes' list, and
-           - it has a non-empty host name.
+    A URL is valid if:
+      - its URL scheme is in the provided 'valid_schemes' list, and
+      - it has a non-empty host name.
 
-       None and an empty string are not valid URLs::
+    None and an empty string are not valid URLs::
 
-           >>> validate_url(None, [])
-           False
-           >>> validate_url('', [])
-           False
+      >>> validate_url(None, [])
+      False
+      >>> validate_url('', [])
+      False
 
-       The valid_schemes list is checked::
+    The valid_schemes list is checked::
 
-           >>> validate_url('http://example.com', ['http'])
-           True
-           >>> validate_url('http://example.com', ['https', 'ftp'])
-           False
+      >>> validate_url('http://example.com', ['http'])
+      True
+      >>> validate_url('http://example.com', ['https', 'ftp'])
+      False
 
-       A URL without a host name is not valid:
+    A URL without a host name is not valid:
 
-           >>> validate_url('http://', ['http'])
-           False
+      >>> validate_url('http://', ['http'])
+      False
 
-      """
+    Unicode urls are converted to ascii for checking.  Failure to convert
+    results in failure.
+
+      >>> validate_url(u'http://example.com', ['http'])
+      True
+      >>> validate_url(u'http://example.com/test\u2026', ['http'])
+      False
+
+    """
     if not url:
         return False
     scheme, host = urllib.splittype(url)
