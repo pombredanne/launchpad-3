@@ -80,6 +80,9 @@ h1, ul, ol, dl, li, dt, dd {
     margin: 0;
     padding: 0;
     }
+ul ul {
+    margin-left: 2em;
+    }
 .mail li {
     margin-left: 20px;
     padding-left: 0px;
