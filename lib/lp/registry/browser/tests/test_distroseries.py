@@ -290,15 +290,33 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
         login_person(self.simple_user)
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
-        for ignore in xrange(5):
+
+        for index in xrange(5):
             dsd = self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
                 versions=versions)
+
+            # Push a base_version in... not sure how better to do it.
             removeSecurityProxy(dsd).base_version = versions["base"]
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+            # Update the spr, some with recipes, some with signing keys.
+            # SPR.uploader references both, and the uploader is referenced in
+            # the page.
+            spr = dsd.source_pub.sourcepackagerelease
+            if index % 2 == 0:
+                removeSecurityProxy(spr).source_package_recipe_build = (
+                    self.factory.makeSourcePackageRecipeBuild(
+                        sourcename=spr.sourcepackagename.name,
+                        distroseries=derived_series))
+            else:
+                removeSecurityProxy(spr).dscsigningkey = (
+                    self.factory.makeGPGKey(owner=spr.creator))
+
         from canonical.database.sqlbase import flush_database_caches
         flush_database_caches()
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
         with StormStatementRecorder() as recorder:
             view()
             self.assertThat(recorder, HasQueryCount(Equals(1)))

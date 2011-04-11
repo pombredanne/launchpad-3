@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -62,7 +63,10 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
+from lp.registry.model.gpgkey import GPGKey
+from lp.registry.model.person import Person
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -298,6 +302,23 @@ class DistroSeriesDifference(Storm):
                 cache.source_pub = source_pubs[spn_id]
                 cache.parent_source_pub = parent_source_pubs[spn_id]
                 cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
+
+            # SourcePackageReleases of the source pubs are often referred to.
+            sprs = bulk.load_related(
+                SourcePackageRelease, source_pubs.itervalues(),
+                ("sourcepackagereleaseID",))
+
+            # SourcePackageRelease.uploader can end up getting the requester
+            # for a source package recipe build.
+            sprbs = bulk.load_related(
+                SourcePackageRecipeBuild, sprs,
+                ("source_package_recipe_build_id",))
+            bulk.load_related(Person, sprbs, ("requester_id",))
+
+            # SourcePackageRelease.uploader can end up getting the owner of
+            # the DSC signing key.
+            gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
+            bulk.load_related(Person, gpgkeys, ("ownerID",))
 
         return DecoratedResultSet(
             differences, pre_iter_hook=eager_load)
