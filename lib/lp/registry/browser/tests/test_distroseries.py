@@ -17,6 +17,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -282,44 +283,66 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_queries(self):
-        versions = {
-            'base': u'1.0',
-            'derived': u'1.0derived1',
-            'parent': u'1.0-1',
-            }
+        # With no DistroSeriesDifferences the query count should be low and
+        # fairly static. However, with some DistroSeriesDifferences the query
+        # count will be higher, but it should remain the same no matter how
+        # many differences there are.
         login_person(self.simple_user)
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
 
-        for index in xrange(5):
-            dsd = self.factory.makeDistroSeriesDifference(
-                derived_series=derived_series,
-                versions=versions)
+        def add_differences(num):
+            versions = {
+                'base': u'1.0',
+                'derived': u'1.0derived1',
+                'parent': u'1.0-1',
+                }
 
-            # Push a base_version in... not sure how better to do it.
-            removeSecurityProxy(dsd).base_version = versions["base"]
+            for index in xrange(num):
+                dsd = self.factory.makeDistroSeriesDifference(
+                    derived_series=derived_series,
+                    versions=versions)
 
-            # Update the spr, some with recipes, some with signing keys.
-            # SPR.uploader references both, and the uploader is referenced in
-            # the page.
-            spr = dsd.source_pub.sourcepackagerelease
-            if index % 2 == 0:
-                removeSecurityProxy(spr).source_package_recipe_build = (
-                    self.factory.makeSourcePackageRecipeBuild(
-                        sourcename=spr.sourcepackagename.name,
-                        distroseries=derived_series))
-            else:
-                removeSecurityProxy(spr).dscsigningkey = (
-                    self.factory.makeGPGKey(owner=spr.creator))
+                # Push a base_version in... not sure how better to do it.
+                removeSecurityProxy(dsd).base_version = versions["base"]
 
-        from canonical.database.sqlbase import flush_database_caches
-        flush_database_caches()
+                # Add a couple of comments.
+                self.factory.makeDistroSeriesDifferenceComment(dsd)
+                self.factory.makeDistroSeriesDifferenceComment(dsd)
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=self.simple_user)
-        with StormStatementRecorder() as recorder:
-            view()
-            self.assertThat(recorder, HasQueryCount(Equals(1)))
+                # Update the spr, some with recipes, some with signing keys.
+                # SPR.uploader references both, and the uploader is referenced
+                # in the page.
+                spr = dsd.source_pub.sourcepackagerelease
+                if index % 2 == 0:
+                    removeSecurityProxy(spr).source_package_recipe_build = (
+                        self.factory.makeSourcePackageRecipeBuild(
+                            sourcename=spr.sourcepackagename.name,
+                            distroseries=derived_series))
+                else:
+                    removeSecurityProxy(spr).dscsigningkey = (
+                        self.factory.makeGPGKey(owner=spr.creator))
+
+        def render():
+            flush_database_caches()
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs',
+                principal=self.simple_user)
+            with StormStatementRecorder() as recorder:
+                view()
+            return recorder
+
+        # Render without differences.
+        recorder1 = render()
+        self.assertThat(recorder1, HasQueryCount(Equals(5)))
+        # Add some differences and render.
+        add_differences(3)
+        recorder2 = render()
+        # Add more differences and render again.
+        add_differences(2)
+        recorder3 = render()
+        # The last render should not need more queries than the previous.
+        self.assertThat(recorder3, HasQueryCount(Equals(recorder2.count)))
 
 
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
