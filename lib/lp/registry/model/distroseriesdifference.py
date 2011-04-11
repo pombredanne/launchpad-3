@@ -39,6 +39,7 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -154,11 +155,12 @@ def most_recent_comments(dsds):
         # with Storm.
         SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
         DistroSeriesDifferenceComment,
+        Message,
         )
     conditions = And(
         DistroSeriesDifferenceComment
-            .distro_series_difference_id.is_in(
-                dsd.id for dsd in dsds))
+            .distro_series_difference_id.is_in(dsd.id for dsd in dsds),
+        Message.id == DistroSeriesDifferenceComment.message_id)
     order_by = (
         DistroSeriesDifferenceComment.distro_series_difference_id,
         Desc(DistroSeriesDifferenceComment.id),
@@ -291,12 +293,15 @@ class DistroSeriesDifference(Storm):
             # the DSC signing key.
             gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
 
-            # Load SourcePackageRecipeBuild requesters and GPGKey owners.
-            uploader_ids = set().union(
+            # Load DistroSeriesDifferenceComment owners,
+            # SourcePackageRecipeBuild requesters and GPGKey owners.
+            person_ids = set().union(
+                (dsdc.message.ownerID for dsdc in
+                 latest_comment_by_dsd_id.itervalues()),
                 (sprb.requester_id for sprb in sprbs),
                 (gpgkey.ownerID for gpgkey in gpgkeys))
             uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                uploader_ids, need_validity=True)
+                person_ids, need_validity=True)
             list(uploaders)
 
         return DecoratedResultSet(
