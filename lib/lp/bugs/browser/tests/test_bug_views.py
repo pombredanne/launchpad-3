@@ -16,16 +16,12 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
-    celebrity_logged_in,
     BrowserTestCase,
     feature_flags,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import (
-    create_initialized_view,
-    create_view,
-    )
+from lp.testing.views import create_initialized_view
 
 
 class TestPrivateBugLinks(BrowserTestCase):
@@ -49,6 +45,7 @@ class TestPrivateBugLinks(BrowserTestCase):
             'warning-comment-on-duplicate')
         # There is no link in the dupe_warning.
         self.assertTrue('href' not in dupe_warning)
+
 
 class TestBugPortletSubscribers(TestCaseWithFactory):
 
