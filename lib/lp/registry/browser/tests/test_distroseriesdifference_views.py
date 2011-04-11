@@ -9,16 +9,16 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
@@ -42,6 +42,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from zope.security.proxy import removeSecurityProxy
 from lp.testing.views import create_initialized_view
 
 
@@ -208,6 +209,36 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
+    def _makeDistroSeriesDifferenceView(self, difference_type):
+        # Helper method to create a view with the specified
+        # difference_type.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=difference_type)
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra')
+        return view
+
+    def test_packagediffs_display_diff_version(self):
+        # The packages diffs slots are displayed when the diff
+        # is of type DIFFERENT_VERSIONS.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
+        self.assertTrue(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_missing_from_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type MISSING_FROM_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+        self.assertFalse(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_unique_to_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type UNIQUE_TO_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+        self.assertFalse(view.can_have_packages_diffs)
+
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
@@ -234,7 +265,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_both_request_diff_texts_rendered(self):
         # An unlinked description of a potential diff is displayed when
         # no diff is present.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         # Both diffs present simple text repr. of proposed diff.
@@ -243,7 +275,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
         # it is present.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
 
         with person_logged_in(ds_diff.derived_series.owner):
             ds_diff.package_diff = self.factory.makePackageDiff()
@@ -259,7 +292,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_source_diff_rendering_diff_no_link(self):
         # The status of the package is shown if the package diff is in a
         # PENDING or FAILED state.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
 
         statuses_and_classes = [
             (PackageDiffStatus.PENDING, 'PENDING'),
@@ -282,7 +316,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_parent_source_diff_rendering_diff_no_link(self):
         # The status of the package is shown if the parent package diff is
         # in a PENDING or FAILED state.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
 
         statuses_and_classes = [
             (PackageDiffStatus.PENDING, 'PENDING'),
@@ -310,12 +345,13 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 (DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(0, self.number_of_request_diff_texts(view()))
 
     def test_parent_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
         # it is present.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
 
         with person_logged_in(ds_diff.derived_series.owner):
             ds_diff.parent_package_diff = self.factory.makePackageDiff()
@@ -337,7 +373,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 (DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(0, self.number_of_request_diff_texts(view()))
 
     def test_comments_rendered(self):
         # If there are comments on the difference, they are rendered.
@@ -398,7 +434,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_package_diff_request_link(self):
         # The link to compute package diffs is only shown to
         # a user with lp.Edit persmission.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True)
         package_diff_request_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Request link', 'a',
@@ -416,3 +453,75 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
             self.assertThat(view(), package_diff_request_matcher)
             self.assertTrue(view.show_package_diffs_request_link)
+
+    def test_package_diff_label(self):
+        # If base_version is not None the label for the section is
+        # there.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.30-1',
+            'parent': '0.32-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+        package_diff_header_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Package diffs header', 'dt',
+                text=re.compile(
+                    '\s*Differences from last common version:')))
+
+        with celebrity_logged_in('admin'):
+            ds_diff.parent_package_diff = self.factory.makePackageDiff()
+            ds_diff.package_diff = self.factory.makePackageDiff()
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            html = view()
+            self.assertThat(html, package_diff_header_matcher)
+
+    def test_package_diff_no_base_version(self):
+        # If diff's base_version is None packages diffs are not displayed
+        # and neither is the link to compute them.
+        versions={
+            'base': None, # No base version.
+            'derived': '0.1-1derived1',
+            'parent': '0.1-2'}
+        ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        pending_package_diff_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Pending package diff', 'span',
+                attrs={'class': 'PENDING'}))
+
+        package_diff_header_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Package diffs header', 'dt',
+                text=re.compile(
+                    '\s*Differences from last common version:')))
+
+        unknown_base_version = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Unknown base version', 'dd',
+                text=re.compile(
+                    '\s*Unknown')))
+
+        with celebrity_logged_in('admin'):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            html = view()
+            self.assertFalse(view.show_package_diffs_request_link)
+            self.assertThat(html, unknown_base_version)
+            self.assertThat(
+                html,
+                Not(
+                    MatchesAny(
+                        package_diff_request_matcher,
+                        pending_package_diff_matcher,
+                        package_diff_header_matcher)))

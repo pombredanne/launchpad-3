@@ -34,6 +34,7 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -339,6 +340,36 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             self.assertTrue(check_permission('launchpad.Edit', ds_diff))
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
+
+    def _setupPackageSets(self, ds_diff, distroseries, nb_packagesets):
+        # Helper method to create packages sets.
+        packagesets = []
+        with celebrity_logged_in('admin'):
+            for i in range(nb_packagesets):
+                ps = self.factory.makePackageset(
+                    packages=[ds_diff.source_package_name],
+                    distroseries=distroseries)
+                packagesets.append(ps)
+        return packagesets
+
+    def test_getParentPackageSets(self):
+        # All parent's packagesets are returned ordered alphabetically.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        packagesets = self._setupPackageSets(
+            ds_diff, ds_diff.derived_series.parent_series, 5)
+        parent_packagesets = ds_diff.getParentPackageSets()
+        self.assertEquals(
+            sorted([packageset.name for packageset in packagesets]),
+            [packageset.name for packageset in parent_packagesets])
+
+    def test_getPackageSets(self):
+        # All the packagesets are returned ordered alphabetically.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        packagesets = self._setupPackageSets(
+            ds_diff, ds_diff.derived_series, 5)
+        self.assertEquals(
+            sorted([packageset.name for packageset in packagesets]),
+            [packageset.name for packageset in ds_diff.getPackageSets()])
 
     def test_blacklist_not_public(self):
         # Differences cannot be blacklisted without edit access.

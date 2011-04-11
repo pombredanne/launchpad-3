@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-import unittest
+import re
 
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.testing import (
+    celebrity_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -100,7 +101,22 @@ def set_derived_series_ui_feature_flag(test_case):
     test_case.addCleanup(install_feature_controller, None)
 
 
-class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
+class DistroSeriesDifferenceMixin():
+    """A helper class for testing differences pages"""
+
+    def _test_packagesets(self, html, packageset_text,
+                          packageset_class, msg_text):
+        parent_packagesets = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                msg_text, 'td',
+                attrs={'class': packageset_class},
+                text=packageset_text))
+
+        self.assertThat(html, parent_packagesets)
+
+
+class DistroSeriesLocalPackageDiffsPageTestCase(DistroSeriesDifferenceMixin,
+                                                TestCaseWithFactory):
     """Test the distroseries +localpackagediffs page."""
 
     layer = DatabaseFunctionalLayer
@@ -144,6 +160,48 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should not be shown when there are no differences.")
+
+    def test_parent_packagesets_localpackagediffs(self):
+        # +localpackagediffs displays the parent packagesets.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        with celebrity_logged_in('admin'):
+            ps = self.factory.makePackageset(
+                packages=[ds_diff.source_package_name],
+                distroseries=ds_diff.derived_series.parent_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                ds_diff.derived_series,
+                '+localpackagediffs',
+                principal=self.simple_user)
+            html = view()
+
+        packageset_text = re.compile('\s*' + ps.name)
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+
+    def test_parent_packagesets_localpackagediffs_sorts(self):
+        # Multiple packagesets are sorted in a comma separated list.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        unsorted_names = [u"zzz", u"aaa"]
+        with celebrity_logged_in('admin'):
+            for name in unsorted_names:
+                ps = self.factory.makePackageset(
+                    name=name,
+                    packages=[ds_diff.source_package_name],
+                    distroseries=ds_diff.derived_series.parent_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                ds_diff.derived_series,
+                '+localpackagediffs',
+                principal=self.simple_user)
+            html = view()
+
+        packageset_text = re.compile(
+            '\s*' + ', '.join(sorted(unsorted_names)))
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -370,7 +428,6 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
 
     def test_higher_radio_mentions_parent(self):
         set_derived_series_ui_feature_flag(self)
@@ -667,6 +724,173 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             'No differences selected.', view.errors[0])
         self.assertEqual(
             'Invalid value', view.errors[1].error_name)
+
+
+class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +missingpackages view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_missingpackages_differences(self):
+        # The view fetches the differences with type
+        # MISSING_FROM_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+missingpackages')
+
+        self.assertContentEqual(
+            [missing_diff], view.cached_differences.batch)
+
+    def test_missingpackages_differences_empty(self):
+        # The view is empty if there is no differences with type
+        # MISSING_FROM_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=not_missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+missingpackages')
+
+        self.assertContentEqual(
+            [], view.cached_differences.batch)
+
+
+class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
+                                              TestCaseWithFactory):
+    """Test the distroseries +missingpackages page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesMissingPackagesPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def test_parent_packagesets_missingpackages(self):
+        # +missingpackages displays the packagesets in the parent.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        self.ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+
+        with celebrity_logged_in('admin'):
+            ps = self.factory.makePackageset(
+                packages=[self.ds_diff.source_package_name],
+                distroseries=self.ds_diff.derived_series.parent_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                self.ds_diff.derived_series,
+                '+missingpackages',
+                principal=self.simple_user)
+            html = view()
+
+        packageset_text = re.compile('\s*' + ps.name)
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+
+
+class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +uniquepackages view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_uniquepackages_differences(self):
+        # The view fetches the differences with type
+        # UNIQUE_TO_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        self.assertContentEqual(
+            [missing_diff], view.cached_differences.batch)
+
+    def test_uniquepackages_differences_empty(self):
+        # The view is empty if there is no differences with type
+        # UNIQUE_TO_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=not_missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        self.assertContentEqual(
+            [], view.cached_differences.batch)
+
+
+class DistroSeriesUniquePackagesPageTestCase(DistroSeriesDifferenceMixin,
+                                             TestCaseWithFactory):
+    """Test the distroseries +uniquepackages page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesUniquePackagesPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def test_packagesets_uniquepackages(self):
+        # +uniquepackages displays the packagesets in the parent.
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+
+        with celebrity_logged_in('admin'):
+            ps = self.factory.makePackageset(
+                packages=[self.ds_diff.source_package_name],
+                distroseries=self.ds_diff.derived_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                self.ds_diff.derived_series,
+                '+uniquepackages',
+                principal=self.simple_user)
+            html = view()
+
+        packageset_text = re.compile('\s*' + ps.name)
+        self._test_packagesets(
+            html, packageset_text, 'packagesets', 'Packagesets')
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
