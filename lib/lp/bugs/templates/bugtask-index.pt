@@ -299,7 +299,7 @@
       <a
         tal:define="duplicateof context/bug/duplicateof"
         tal:condition="duplicateof/required:launchpad.View"
-        tal:attributes="href conteduplicateof/fmt:url; title
+        tal:attributes="href duplicateof/fmt:url; title
            duplicateof/title; style string:margin-right: 4px;
            id string:duplicate-of;"
         tal:content="string:bug #${duplicateof/id}."

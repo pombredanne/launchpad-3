@@ -7,19 +7,48 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
+    celebrity_logged_in,
+    BrowserTestCase,
     feature_flags,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
+
+class TestPrivateBugLinks(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeDupeOfPrivateBug(self):
+        bug = self.factory.makeBug()
+        dupe = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.setPrivate(private=True, who=bug.owner)
+            dupe.markAsDuplicate(bug)
+        return dupe
+
+    def test_private_bugs_are_not_linked_without_permission(self):
+        bug = self.makeDupeOfPrivateBug()
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        dupe_warning = find_tag_by_id(
+            browser.contents,
+            'warning-comment-on-duplicate')
+        # There is no link in the dupe_warning.
+        self.assertTrue('href' not in dupe_warning)
 
 class TestBugPortletSubscribers(TestCaseWithFactory):
 
