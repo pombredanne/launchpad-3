@@ -254,10 +254,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         test_publisher.getPubSource()
 
         self.setUpForScriptRun(distro)
-# XXX: Write markers in dists/dists.new
         self.makeScript(distro).main()
         self.makeScript(distro).main()
-# XXX: Markers should be back in place.
 
     def test_publishes_package(self):
         test_publisher = SoyuzTestPublisher()
@@ -389,22 +387,25 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         dists_root = get_dists_root(get_pub_config(distro))
+        dists_backup = os.path.join(
+            get_distscopy_root(get_pub_config(distro)), "dists")
+        os.makedirs(dists_backup)
         os.makedirs(dists_root)
-        os.makedirs(dists_root + ".new")
         write_marker_file([dists_root, "new-file"], "New file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertEqual(
-            "New file", read_marker_file([dists_root + ".new", "new-file"]))
+            "New file", read_marker_file([dists_backup, "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
-        dists_root = get_dists_root(get_pub_config(distro))
-        os.makedirs(dists_root)
-        os.makedirs(dists_root + ".new")
-        old_file = [dists_root + ".new", "old-file"]
+        dists_backup = os.path.join(
+            get_distscopy_root(get_pub_config(distro)), "dists")
+        os.makedirs(dists_backup)
+        old_file = [dists_backup, "old-file"]
         write_marker_file(old_file, "old-file")
+        os.makedirs(get_dists_root(get_pub_config(distro)))
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertFalse(path_exists(*old_file))
 

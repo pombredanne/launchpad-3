@@ -209,9 +209,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         archive_config = self.configs[archive_purpose]
         self.executeShell(
             "rsync -aH --delete '%s/' '%s'"
-            % (get_dists(archive_config), get_dists(archive_config, ".new")),
+            % (get_dists(archive_config), get_backup_dists(archive_config)),
             failure=LaunchpadScriptFailure(
-                "Failed to rsync dists.new for %s." % archive_purpose.title))
+                "Failed to rsync new dists for %s." % archive_purpose.title))
 
     def updateNewDists(self):
         """Set up the new dists directories based on the current ones.
@@ -219,13 +219,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         Renames the backup dists directories to dists.new, then updates
         them from the current ones using rsync.
         """
-        # At this point very little can go wrong.  Rename the distscopy
-        # for each archive to dists.new.
-        for purpose in self.configs.iterkeys():
-            self.renameBackupDistsToNewDists(purpose)
-
         for purpose in self.configs.iterkeys():
             self.rsyncNewDists(purpose)
+        for purpose in self.configs.iterkeys():
+            self.renameBackupDistsToNewDists(purpose)
 
     def createMissingDirs(self, archive_purpose):
         """Create archive root and such if they did not yet exist."""
@@ -424,10 +421,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             self.logger.debug("Nothing to do for security publisher.")
             return
 
-        for archive in self.archives:
-            if archive != self.distribution.main_archive:
-                self.publishDistroArchive(archive)
-
         self.publishDistroArchive(
             self.distribution.main_archive, security_suites=security_suites)
 
@@ -438,6 +431,31 @@ class PublishFTPMaster(LaunchpadCronScript):
             # This, for the main archive, is where the script spends
             # most of its time.
             self.publishDistroArchive(archive)
+
+    def publish(self, security_only=False):
+        """Do the main publishing work.
+
+        :param security_only: If True, limit publication to security
+            updates on the main archive.  This is much faster, so it
+            makes sense to do a security-only run before the main
+            event to expedite critical fixes.
+        """
+        try:
+            self.updateNewDists()
+
+            if security_only:
+                self.publishSecurityUploads()
+            else:
+                self.publishAllUploads()
+
+            self.installDists()
+        except:
+            self.rollBackNewDists()
+            raise
+
+        # Bring us back to a state where we have a dists and a dists
+        # copy (but switched around from how they started out).
+        self.restoreDistsCopy()
 
     def setUp(self):
         """Process options, and set up internal state."""
@@ -451,33 +469,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.processAccepted()
         self.setUpDirs()
 
-        try:
-            self.updateNewDists()
-            self.publishSecurityUploads()
-            self.installDists()
-        except:
-            self.rollBackNewDists()
-            raise
-
-        # Bring us back to a state where we have a dists and a dists
-        # copy (but switched around from how they started out).
-        self.restoreDistsCopy()
+        self.publish(security_only=True)
 
         self.runCommercialCompat()
         self.runFinalizeParts(security_only=True)
 
         if not self.options.security_only:
-            try:
-                self.updateNewDists()
-                self.publishAllUploads()
-                self.installDists()
-            except:
-                self.rollBackNewDists()
-                raise
-
-            # Return the dists and dists copy directories to their
-            # original places.
-            self.restoreDistsCopy()
+            self.publish(security_only=False)
 
             self.runCommercialCompat()
             self.generateListings()
