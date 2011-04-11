@@ -14,8 +14,6 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
-    'RECIPE_BETA_FLAG',
-    'RECIPE_ENABLED_FLAG',
     ]
 
 
@@ -66,9 +64,6 @@ from lp.services.fields import (
     )
 from lp.soyuz.interfaces.archive import IArchive
 
-
-RECIPE_ENABLED_FLAG = u'code.recipes_enabled'
-RECIPE_BETA_FLAG = u'code.recipes.beta'
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
     # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
