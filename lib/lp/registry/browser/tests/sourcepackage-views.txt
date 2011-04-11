@@ -353,10 +353,11 @@ to the project series.
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/wonky/+source/stinkypackage
 
+    >>> login_person(package.packaging.owner)
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> view = create_initialized_view(
     ...     package, name='+remove-packaging', form=form,
-    ...     principal=product.owner)
+    ...     principal=package.packaging.owner)
     >>> view.errors
     []
 

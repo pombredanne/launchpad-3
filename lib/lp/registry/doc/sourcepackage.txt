@@ -340,10 +340,12 @@ to a product series, the source package does have a product series.
 Packaging entries can be deleted using PackagingUtil.deletePackaging. That
 also removes the source package product series.
 
-    >>> PackagingUtil().deletePackaging(
-    ...     productseries=a52dec_series,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=hoary)
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(user):
+    ...     PackagingUtil().deletePackaging(
+    ...         productseries=a52dec_series,
+    ...         sourcepackagename=a52dec,
+    ...         distroseries=hoary)
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,

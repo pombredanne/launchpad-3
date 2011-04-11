@@ -13,7 +13,10 @@ from lp.translations.tests.test_translationpackagingjob import (
     make_translation_merge_job,
     )
 from lp.translations.translationmerger import TranslationMerger
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestMergeExistingPackagings(TestCaseWithFactory):
@@ -24,7 +27,8 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
         """Running the script performs a translation merge."""
         # Import here to avoid autodetection by test runner.
         for packaging in set(TranslationMerger.findMergeablePackagings()):
-            packaging.destroySelf()
+            with person_logged_in(packaging.owner):
+                packaging.destroySelf()
         job = make_translation_merge_job(self.factory)
         packaging = self.factory.makePackagingLink(job.productseries,
                 job.sourcepackagename, job.distroseries)

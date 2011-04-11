@@ -146,7 +146,7 @@ class TestBrowserDeletePackaging(TestCaseWithFactory):
     def setUp(self):
         super(TestBrowserDeletePackaging, self).setUp()
         # Only the person which created the packaging, admins
-        # and other people with certain privileges can deete a
+        # and other people with certain privileges can delete a
         # packaging. Since the sample data record we'll use for
         # deletion testing does not have any owner set, we'll
         # log in as an admin.
