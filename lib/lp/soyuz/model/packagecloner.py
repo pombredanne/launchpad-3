@@ -133,7 +133,8 @@ class PackageCloner:
         # as PUBLISHED. It's part of the assumptions made in:
         # https://launchpad.net/soyuz/+spec/build-unpublished-source
         sources_published = archive.getPublishedSources(
-            distroseries=distroseries, status=active_publishing_status)
+            distroseries=distroseries, status=active_publishing_status,
+            eager_load=False)
 
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
