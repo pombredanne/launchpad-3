@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from apt_pkg import TagFile
+import logging
 import os
 from textwrap import dedent
 from zope.component import getUtility
@@ -21,7 +22,10 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
-from lp.services.log.logger import DevNullLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -32,6 +36,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_env_string,
     compose_shell_boolean,
     find_run_parts_dir,
+    get_working_dists,
     PublishFTPMaster,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -202,11 +207,11 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.setUpForScriptRun(ubuntu)
         return ubuntu
 
-    def makeScript(self, distro=None):
+    def makeScript(self, distro=None, extra_args=[]):
         """Produce instance of the `PublishFTPMaster` script."""
         if distro is None:
             distro = self.makeDistro()
-        script = PublishFTPMaster(test_args=["-d", distro.name])
+        script = PublishFTPMaster(test_args=["-d", distro.name] + extra_args)
         script.txn = self.layer.txn
         script.logger = DevNullLogger()
         return script
@@ -308,23 +313,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(distro.displayname, main_release["Label"])
         self.assertEqual("source", main_release["Architecture"])
 
-    def test_rollBackNewDists_moves_dists_new_to_distscopy(self):
-        distro = self.makeDistro()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-        dists_copy_root = get_distscopy_root(pub_config)
-        new_distsroot = dists_root + ".new"
-        os.makedirs(new_distsroot)
-        write_marker_file([new_distsroot, "marker"], "dists.new")
-        os.makedirs(dists_copy_root)
-
-        script = self.makeScript(distro)
-        script.setUp()
-        script.rollBackNewDists()
-        self.assertEqual(
-            "dists.new",
-            read_marker_file([dists_copy_root, "dists", "marker"]))
-
     def test_getDirtySuites_returns_suite_with_pending_publication(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         script = self.makeScript(spph.distroseries.distribution)
@@ -392,7 +380,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.makedirs(dists_backup)
         os.makedirs(dists_root)
         write_marker_file([dists_root, "new-file"], "New file")
-        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        script.rsyncBackupDists()
         self.assertEqual(
             "New file", read_marker_file([dists_backup, "new-file"]))
 
@@ -406,7 +394,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         old_file = [dists_backup, "old-file"]
         write_marker_file(old_file, "old-file")
         os.makedirs(get_dists_root(get_pub_config(distro)))
-        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        script.rsyncBackupDists()
         self.assertFalse(path_exists(*old_file))
 
     def test_setUpDirs_creates_directory_structure(self):
@@ -458,25 +446,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
-
-    def test_installDists_plus_restoreDistsCopy_replaces_distsroot(self):
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        script.updateNewDists()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-
-        write_marker_file([dists_root, "marker"], "old")
-        write_marker_file([dists_root + ".new", "marker"], "new")
-
-        script.installDists()
-        script.restoreDistsCopy()
-
-        self.assertEqual("new", read_marker_file([dists_root, "marker"]))
-        self.assertEqual("old", read_marker_file(
-            [get_distscopy_root(pub_config), "dists", "marker"]))
 
     def test_runCommercialCompat_runs_commercial_compat_script(self):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
@@ -616,7 +585,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(set(), missing_parameters)
 
     def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
-        script = self.makeScript(self.makeDistro())
+        script = self.makeScript()
         script.setUp()
         script.setUpDirs()
         script.installDists = FakeMethod()
@@ -644,3 +613,60 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             distro.all_distro_archives, published_archives)
         self.assertIn(distro.main_archive, published_archives)
         self.assertIn(partner_archive, published_archives)
+
+    def test_recoverWorkingDists_is_quiet_normally(self):
+        script = self.makeScript()
+        script.setUp()
+        script.logger = BufferLogger()
+        script.logger.setLevel(logging.INFO)
+        script.recoverWorkingDists()
+        self.assertEqual('', script.logger.getLogBuffer())
+
+    def test_recoverWorkingDists_recovers_working_directory(self):
+        distro = self.makeDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.logger = BufferLogger()
+        script.logger.setLevel(logging.INFO)
+        script.setUpDirs()
+        archive_config = script.configs[ArchivePurpose.PRIMARY]
+        backup_dists = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists")
+        working_dists = get_working_dists(archive_config)
+        os.rename(backup_dists, working_dists)
+        write_marker_file([working_dists, "marker"], "Recovered")
+        script.recoverWorkingDists()
+        self.assertEqual(
+            "Recovered", read_marker_file([backup_dists, "marker"]))
+        self.assertNotEqual('', script.logger.getLogBuffer())
+
+    def test_publishes_first_security_updates_then_all_updates(self):
+        script = self.makeScript()
+        script.publish = FakeMethod()
+        script.main()
+        self.assertEqual(2, script.publish.call_count)
+        args, kwargs = script.publish.calls[0]
+        self.assertEqual({'security_only': True}, kwargs)
+        args, kwargs = script.publish.calls[1]
+        self.assertEqual(False, kwargs.get('security_only', False))
+
+    def test_security_run_publishes_only_security_updates(self):
+        script = self.makeScript(extra_args=['--security-only'])
+        script.publish = FakeMethod()
+        script.main()
+        self.assertEqual(1, script.publish.call_count)
+        args, kwargs = script.publish.calls[0]
+        self.assertEqual({'security_only': True}, kwargs)
+
+    def test_publishAllUploads_processes_all_archives(self):
+        distro = self.makeDistro()
+        partner_archive = self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        script = self.makeScript(distro)
+        script.publishDistroArchive = FakeMethod()
+        script.setUp()
+        script.publishAllUploads()
+        published_archives = [
+            args[0] for args, kwargs in script.publishDistroArchive.calls]
+        self.assertContentEqual(
+            [distro.main_archive, partner_archive], published_archives)
