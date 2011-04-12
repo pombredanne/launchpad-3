@@ -80,8 +80,23 @@ class InitialiseDistroSeries:
                  "derives from {child.parent_series.distribution.name}/"
                  "{child.parent_series.name}.").format(
                     child=self.distroseries))
+        self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
+
+    def _checkBuilds(self):
+        """Assert there are no pending builds for parent series.
+
+        Only cares about the RELEASE pocket, which is the only one inherited
+        via initialiseFromParent method.
+        """
+        # only the RELEASE pocket is inherited, so we only check
+        # pending build records for it.
+        pending_builds = self.parent.getBuildRecords(
+            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
+
+        if pending_builds.any():
+            raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
         """Assert upload queue is empty on parent series.
@@ -196,10 +211,11 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            proc_families = [
-                das[1].processorfamily
-                for das in distroarchseries_list]
+            proc_families = None
             if self.rebuild:
+                proc_families = [
+                    das[1].processorfamily
+                    for das in distroarchseries_list]
                 distroarchseries_list = ()
             getUtility(IPackageCloner).clonePackages(
                 origin, destination, distroarchseries_list,
@@ -251,7 +267,7 @@ class InitialiseDistroSeries:
                 -- the data set for the series being updated, yet results are
                 -- in fact the data from the original series.
                 JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = ChildSeries.parent_series
+                    ON Packaging.distroseries = %s
             WHERE
                 -- Select only the packaging links that are in the parent
                 -- that are not in the child.
@@ -273,7 +289,7 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % (self.distroseries.id, self.parent.id))
+            """ % (self.parent.id, self.distroseries.id, self.parent.id))
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""

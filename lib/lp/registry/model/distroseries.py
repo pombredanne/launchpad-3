@@ -1947,9 +1947,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if distribution is None:
             distribution = self.distribution
         child = IStore(self).find(
-            DistroSeries,
-            DistroSeries.name == name,
-            DistroSeries.distributionID == distribution.id).one()
+            DistroSeries, name=name, distribution=distribution).one()
         if child is None:
             if not displayname:
                 raise DerivationError(
