@@ -85,6 +85,30 @@ class TestDistroSeriesView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
 
+    def _createDifferenceAndGetView(self, difference_type):
+        # Helper function to create a valid DSD.
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries, difference_type=difference_type)
+        view = create_initialized_view(distroseries, '+index')
+        return view
+
+    def test_num_differences(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences)
+
+    def test_num_differences_in_parent(self):
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_parent)
+
+    def test_num_differences_in_child(self):
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_child)
+
 
 def set_derived_series_ui_feature_flag(test_case):
     # Helper to set the feature flag enabling the derived series ui.
@@ -99,6 +123,52 @@ def set_derived_series_ui_feature_flag(test_case):
         return True
     install_feature_controller(FeatureController(in_scope))
     test_case.addCleanup(install_feature_controller, None)
+
+
+class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
+    """Test the distroseries +index page."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(DistroSeriesIndexFunctionalTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+
+    def test_differences_portlet_all_differences(self):
+        # The difference portlet shows the differences with the parent
+        # series.
+        self.simple_user = self.factory.makePerson()
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries(name="sid"))
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            difference_type=diff_type)
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            difference_type=diff_type)
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            difference_type=diff_type)
+
+        portlet_header = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user,
+                current_request=True)
+            html = view()
+
+        self.assertThat(html, portlet_header)
 
 
 class DistroSeriesDifferenceMixin():

@@ -67,9 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.app.enums import (
-    service_uses_launchpad,
-    )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
@@ -124,6 +122,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.job.model.job import Job
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -786,6 +785,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def fullseriesname(self):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
+
+    @property
+    def is_derived_series(self):
+        """See `IDistroSeries`."""
+        # rvb 2011-04-11 bug=754750: This should be cleaned up once the bug
+        # is fixed.
+        return self.parent_series is not None
+
+    @property
+    def is_initialising(self):
+        """See `IDistroSeries`."""
+        return not getUtility(
+            IInitialiseDistroSeriesJobSource).getJobs(
+                self, statuses=Job.PENDING_STATUSES).is_empty()
 
     @property
     def bugtargetname(self):

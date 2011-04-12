@@ -100,3 +100,13 @@ And we can verify both jobs exist.
     ...     print job.distroseries.name
     child1
     child2
+
+The jobs can also be queried per distribution.
+
+    >>> from lp.services.job.model.job import Job
+    >>> jobs = getUtility(
+    ...    IInitialiseDistroSeriesJobSource).getJobs(
+    ...        child_series, statuses=Job.PENDING_STATUSES)
+    >>> for job in jobs:
+    ...     print job.distroseries.name
+    child1

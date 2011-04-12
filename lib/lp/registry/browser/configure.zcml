@@ -112,7 +112,11 @@
             name="+portlet-package-summary"
             facet="overview"
             template="../templates/distroseries-portlet-packaging.pt"/>
-    </browser:pages>
+        <browser:page
+            name="+portlet-derivation"
+            facet="overview"
+            template="../templates/distroseries-portlet-derivation.pt"/>
+     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesPackagesView"

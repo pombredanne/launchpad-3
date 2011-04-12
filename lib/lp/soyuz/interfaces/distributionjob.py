@@ -92,6 +92,11 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
     def create(distroseries, arches, packagesets, rebuild):
         """Create a new initialisation job for a distroseries."""
 
+    def getJobs(distroseries, statuses):
+        """Retrieve initialisation jobs with specified statuses
+        for a distroseries.
+        """
+
 
 class ISyncPackageJobSource(IJobSource):
     """An interface for acquiring IISyncPackageJobs."""
