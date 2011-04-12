@@ -201,8 +201,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Child diffs link', 'a',
                 text=re.compile('\s*3 packages in Deri.\s*'),
-                attrs={'href': re.compile('.*/\+uniquepackages')}),
-              )
+                attrs={'href': re.compile('.*/\+uniquepackages')}))
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
