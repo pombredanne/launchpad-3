@@ -268,6 +268,11 @@ class IDistributionPublic(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see _schema_circular_imports.py.
             value_type=Reference(schema=Interface))))
+    derivatives = exported(doNotSnapshot(
+        CollectionField(
+            title=_("This Distribution's derivatives"),
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface))))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
     uploaders = Attribute(_(
