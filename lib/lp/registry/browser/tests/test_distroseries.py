@@ -302,7 +302,7 @@ class TestDistroSeriesLocalDifferences(
         unsorted_names = [u"zzz", u"aaa"]
         with celebrity_logged_in('admin'):
             for name in unsorted_names:
-                ps = self.factory.makePackageset(
+                self.factory.makePackageset(
                     name=name,
                     packages=[ds_diff.source_package_name],
                     distroseries=ds_diff.derived_series.parent_series)
@@ -869,7 +869,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
             parent_series=self.factory.makeDistroSeries())
 
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+        # Missing blacklisted diff.
+        self.factory.makeDistroSeriesDifference(
             difference_type=missing_type,
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
@@ -893,7 +894,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
 
         not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
-        missing_diff = self.factory.makeDistroSeriesDifference(
+        # Missing diff.
+        self.factory.makeDistroSeriesDifference(
             difference_type=not_missing_type,
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
@@ -953,7 +955,8 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
                 name='lucid'))
 
         missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
-        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+        # Missing blacklisted diff.
+        self.factory.makeDistroSeriesDifference(
             difference_type=missing_type,
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
@@ -977,7 +980,8 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
 
         not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
-        missing_diff = self.factory.makeDistroSeriesDifference(
+        # Missing diff.
+        self.factory.makeDistroSeriesDifference(
             difference_type=not_missing_type,
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
