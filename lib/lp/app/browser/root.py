@@ -569,6 +569,25 @@ class GoogleBatchNavigator(BatchNavigator):
     singular_heading = 'page'
     plural_heading = 'pages'
 
+    def __init__(self, results, request, start=0, size=20, callback=None,
+                 transient_parameters=None, force_start=False,
+                 range_factory=None):
+        """See `BatchNavigator`.
+
+        :param results: A `PageMatches` object that contains the matching
+            pages to iterate over.
+        :param request: An `IBrowserRequest` that contains the form
+            parameters.
+        :param start: an int that represents the start of the current batch.
+        :param size: The batch size is fixed to 20, The param is not used.
+        :param callback: Not used.
+        """
+        results = WindowedList(results, start, results.total)
+        super(GoogleBatchNavigator, self).__init__(results, request,
+            start=start, size=size, callback=callback,
+            transient_parameters=transient_parameters, force_start=force_start,
+            range_factory=range_factory)
+
     def determineSize(self, size, batch_params_source):
         # Force the default and users requested sizes to 20.
         self.default_size = 20
