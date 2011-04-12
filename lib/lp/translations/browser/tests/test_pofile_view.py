@@ -462,3 +462,16 @@ class TestBrowser(BrowserTestCase):
         browser = self.getViewBrowser(pofile)
         self.assertNotIn('This is a dummy translation', browser.contents)
         self.assertIn('(no translation yet)', browser.contents)
+
+    def test_anonymous_translation_credits(self):
+        """Credits should be hidden for non-logged-in users."""
+        pofile = self.factory.makePOFile()
+        # Restrict translations so that the translator cannot change it.
+        product = pofile.potemplate.productseries.product
+        # Add credits so that they show in the UI
+        credits = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, singular='translator-credits')
+        browser = self.getViewBrowser(pofile, no_login=True)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'To prevent privacy issues, this translation is not available to'
+            ' anonymous users', browser.contents)
