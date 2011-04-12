@@ -1423,8 +1423,8 @@ class Person(
         """See `IPerson`."""
         assert self.is_team
         to_addrs = set()
-        for person in self.getDirectAdministrators():
-            to_addrs.update(get_contact_email_addresses(person))
+        for admin in self.adminmembers:
+            to_addrs.update(get_contact_email_addresses(admin))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
@@ -2076,8 +2076,7 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(
-                from_person=self, to_person=self, any_person=True).is_empty()
+            IPersonMergeJobSource).find(from_person=self).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -3836,10 +3835,10 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person):
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
@@ -4065,16 +4064,20 @@ class PersonSet:
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
-        if not to_person.isTeam():
+        if to_person.isTeam():
+            mail_text = get_email_template(
+                'team-merged.txt', app='registry')
+            subject = 'Launchpad teams merged'
+        else:
             mail_text = get_email_template(
                 'person-merged.txt', app='registry')
-            mail_text = mail_text % {
-                'dupename': from_person.name,
-                'person': to_person.name,
-                }
             subject = 'Launchpad accounts merged'
-            getUtility(IPersonNotificationSet).addNotification(
-                to_person, subject, mail_text)
+        mail_text = mail_text % {
+            'dupename': from_person.name,
+            'person': to_person.name,
+            }
+        getUtility(IPersonNotificationSet).addNotification(
+            to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""

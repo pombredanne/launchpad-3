@@ -824,7 +824,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return self.context.getPublishedSources(
             name=self.specified_name_filter,
             status=self.getSelectedFilterValue('status_filter'),
-            distroseries=self.getSelectedFilterValue('series_filter'))
+            distroseries=self.getSelectedFilterValue('series_filter'),
+            eager_load=True)
 
     @property
     def default_status_filter(self):

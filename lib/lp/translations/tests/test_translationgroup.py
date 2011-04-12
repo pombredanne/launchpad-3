@@ -88,6 +88,13 @@ class TestWebService(WebServiceTestCase):
         e = self.assertRaises(Unauthorized, ws_group.lp_save)
         self.assertIn("'name', 'launchpad.Edit'", str(e))
 
+    def test_list_groups(self):
+        """Listing translation groups works and is accurate."""
+        translation_group_set = getUtility(ITranslationGroupSet)
+        self.assertContentEqual(
+            [group.name for group in translation_group_set],
+            [group.name for group in self.service.translation_groups])
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

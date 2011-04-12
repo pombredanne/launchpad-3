@@ -251,8 +251,14 @@ A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
+    >>> [hoary_package] = [
+    ...     package for series in view.series_batch.batch
+    ...     for package in series.packagings
+    ...     if package.distroseries.name == 'hoary']
+    >>> login_person(hoary_package.sourcepackage.currentrelease.maintainer)
     >>> view = create_initialized_view(
-    ...     product, name='+packages', principal=a_user)
+    ...     product, name='+packages',
+    ...     principal=hoary_package.sourcepackage.currentrelease.maintainer)
     >>> print_packages(view)
     trunk
     hotter
@@ -265,16 +271,12 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> for link in table.findAll('a'):
     ...     if '+remove-packaging' in link['href']:
     ...         print link['href']
-    http://launchpad.dev/ubuntu/grumpy/+source/hot/+remove-packaging
     http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
 
-    >>> [hoary_package] = [
-    ...     package for series in view.series_batch.batch
-    ...     for package in series.packagings
-    ...     if package.distroseries.name == 'hoary']
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> unlink_view = create_initialized_view(
-    ...     hoary_package.sourcepackage, name='+remove-packaging', form=form)
+    ...     hoary_package.sourcepackage, name='+remove-packaging', form=form,
+    ...     principal=hoary_package.sourcepackage.currentrelease.maintainer)
     >>> unlink_view.errors
     []
 
