@@ -345,8 +345,10 @@ bugs each tag has. Only tags having open bugs are returned.
 We can even ask for the counts for a particular set of tags.
 
     >>> list(ubuntu.getUsedBugTagsWithOpenCounts(
-    ...     None, wanted_tags=set(['pebcak', 'svg', 'fake'])))
+    ...     None, wanted_tags=['pebcak', 'svg', 'fake']))
     [(u'pebcak', 1L), (u'svg', 1L)]
+    >>> list(ubuntu.getUsedBugTagsWithOpenCounts(None, wanted_tags=[]))
+    []
 
 Source packages are a bit special, they return all the tags that are
 used in the whole distribution, while the bug count includes only bugs

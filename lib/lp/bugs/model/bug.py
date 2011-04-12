@@ -252,7 +252,7 @@ def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
         BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
-    if wanted_tags:
+    if wanted_tags is not None:
         where_conditions.append(BugTag.tag.is_in(wanted_tags))
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
