@@ -1373,6 +1373,10 @@ class BugTargetBugTagsView(LaunchpadView):
         # Use path_only here to reduce the size of the rendered page.
         return "+bugs?field.tag=%s" % urllib.quote(tag)
 
+    def _calculateFactor(self, tag, count, max_count, official_tags):
+        bonus = 1.5 if tag in official_tags else 1
+        return (count / max_count) + bonus
+
     @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
@@ -1392,14 +1396,14 @@ class BugTargetBugTagsView(LaunchpadView):
 
         max_count = float(max([1] + raw_tags.values()))
 
-        tags = []
-        for tag, count in raw_tags.iteritems():
-            tag_dict = dict(
-                tag=tag, count=count, url=self._getSearchURL(tag),
-                factor=1 + (count / max_count))
-            if tag in official_tags:
-                tag_dict['factor'] += 0.5
-            tags.append(tag_dict)
+        tags = [
+            dict(
+                tag=tag,
+                factor=self._calculateFactor(
+                    tag, count, max_count, official_tags),
+                url=self._getSearchURL(tag),
+                )
+            for (tag, count) in raw_tags.iteritems()]
         return sorted(tags, key=itemgetter('tag'))
 
     @property
