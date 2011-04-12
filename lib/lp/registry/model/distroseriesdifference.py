@@ -27,7 +27,6 @@ from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
-    Storm,
     )
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
@@ -69,6 +68,7 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.services.database.stormbase import StormBase
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -175,7 +175,7 @@ def most_recent_comments(dsds):
     return DecoratedResultSet(comments, itemgetter(1))
 
 
-class DistroSeriesDifference(Storm):
+class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
     classProvides(IDistroSeriesDifferenceSource)
