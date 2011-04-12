@@ -1117,11 +1117,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
-        BugHeatUpdater,
         BugWatchScheduler,
         AntiqueSessionPruner,
         UnusedSessionPruner,
         DuplicateSessionPruner,
+        BugHeatUpdater,
         PopulateSPRChangelogs,
         ]
     experimental_tunable_loops = []
