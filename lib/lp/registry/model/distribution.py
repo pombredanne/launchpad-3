@@ -630,9 +630,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.distribution == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distribution == self, user, wanted_tags=wanted_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""

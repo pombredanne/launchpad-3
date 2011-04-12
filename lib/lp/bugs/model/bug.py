@@ -233,20 +233,17 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_condition, user):
+def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
     """Return all the used bug tags with their open bug count.
 
     :param context_condition: A Storm SQL expression, limiting the
         used tags to a specific context. Only the BugTask table may be
         used to choose the context.
     :param user: The user performing the search.
+    :param wanted_tags: A set of tags within which to restrict the search.
 
     :return: A list of tuples, (tag name, open bug count).
     """
-    columns = (
-        BugTag.tag,
-        Count(),
-        )
     tables = (
         BugTag,
         Join(BugTask, BugTask.bugID == BugTag.bugID),
@@ -255,6 +252,8 @@ def get_bug_tags_open_count(context_condition, user):
         BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
+    if wanted_tags:
+        where_conditions.append(BugTag.tag.is_in(wanted_tags))
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
         # The EXISTS sub-select avoids a join again Bug, improving
@@ -265,7 +264,7 @@ def get_bug_tags_open_count(context_condition, user):
                 where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     return store.using(*tables).find(
-        columns, *where_conditions).group_by(BugTag.tag).order_by(
+        tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
             Desc(Count()), BugTag.tag)
 
 
@@ -285,6 +284,9 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
+
+
+tag_count_columns = (BugTag.tag, Count())
 
 
 class BugBecameQuestionEvent:
