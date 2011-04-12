@@ -256,7 +256,7 @@ def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
         where_conditions.append(BugTag.tag.is_in(wanted_tags))
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        # The EXISTS sub-select avoids a join again Bug, improving
+        # The EXISTS sub-select avoids a join against Bug, improving
         # performance significantly.
         where_conditions.append(
             Exists(Select(

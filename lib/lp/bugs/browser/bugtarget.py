@@ -1374,22 +1374,21 @@ class BugTargetBugTagsView(LaunchpadView):
         return "+bugs?field.tag=%s" % urllib.quote(tag)
 
     @property
-    def official_tags(self):
-        """Get the official tags to diplay."""
-        return dict((tag, 0) for tag in self.context.official_bug_tags) # XXX: 0
-
-    @property
-    def other_tags(self):
-        """Get the unofficial tags to diplay."""
-        return dict(self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
-
-    @property
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
-        official_tags = self.official_tags
-        raw_tags = {}
-        raw_tags.update(official_tags)
-        raw_tags.update(self.other_tags)
+        official_tags = self.context.official_bug_tags
+
+        # Construct a dict of official and top 10 tags.
+        # getUsedBugTagsWithOpenCounts is expensive, so do the union in
+        # SQL. Also preseed with 0 for all the official tags, as gUBTWOC
+        # won't return unused ones.
+        raw_tags = dict((tag, 0) for tag in official_tags)
+        top_ten = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
+        official = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(
+                self.user, official_tags))
+        raw_tags.update(dict(top_ten.union(official)))
 
         max_count = float(max([1] + raw_tags.values()))
 
