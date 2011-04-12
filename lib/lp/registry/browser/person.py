@@ -3391,6 +3391,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        if self.context.is_merge_pending:
+            if self.context.is_team:
+                merge_action = 'merged or deleted'
+            else:
+                merge_action = 'merged'
+            self.request.response.addInfoNotification(
+                "%s is queued to be be %s in a few minutes." % (
+                self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()
 

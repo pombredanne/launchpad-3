@@ -2076,8 +2076,7 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(
-                from_person=self, to_person=self, any_person=True).is_empty()
+            IPersonMergeJobSource).find(from_person=self).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -3836,10 +3835,10 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person):
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
