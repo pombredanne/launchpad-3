@@ -624,6 +624,8 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # Delete the publications.
         difference.source_pub.status = PackagePublishingStatus.DELETED
         difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+        # Flush out the changes and invalidate caches (esp. property caches).
+        flush_database_caches()
 
         set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
