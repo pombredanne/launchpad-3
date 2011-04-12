@@ -52,7 +52,7 @@ class _TestResultsMixin:
             self.contents, 'menu-link-edit_bug_mail')
 
     def assertOldLinkMissing(self):
-        self.assertEqual(None, self.old_link, self.contents)
+        self.assertEqual(None, self.old_link)
 
     def assertOldLinkPresent(self):
         self.assertNotEqual(None, self.old_link)
