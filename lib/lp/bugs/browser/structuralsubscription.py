@@ -440,7 +440,8 @@ def expose_user_administered_teams_to_js(request, user, context,
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
-def expose_user_subscriptions_to_js(user, subscriptions, request, target=None):
+def expose_user_subscriptions_to_js(user, subscriptions, request,
+                                    target=None):
     """Make the user's subscriptions available to JavaScript."""
     info = {}
     api_request = IWebServiceClientRequest(request)

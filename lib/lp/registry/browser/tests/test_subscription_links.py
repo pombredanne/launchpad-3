@@ -638,7 +638,9 @@ class ProjectGroupDoesNotUseLPBugs(ProductDoesNotUseLPBugs):
         self.factory.makeProduct(
             project=self.target, official_malone=False)
 
+
 class ProductSeriesDoesNotUseLPView(ProductDoesNotUseLPView):
+
     def setUp(self):
         super(ProductSeriesDoesNotUseLPView, self).setUp()
         product = self.factory.makeProduct(official_malone=False)
@@ -646,6 +648,7 @@ class ProductSeriesDoesNotUseLPView(ProductDoesNotUseLPView):
 
 
 class ProductSeriesDoesNotUseLPBugs(ProductDoesNotUseLPView):
+
     def setUp(self):
         super(ProductSeriesDoesNotUseLPBugs, self).setUp()
         product = self.factory.makeProduct(official_malone=False)
@@ -678,6 +681,7 @@ class DistributionSourcePackageDoesNotUseLPBugs(ProductDoesNotUseLPBugs):
 
 
 class DistroDoesNotUseLPView(DistroView):
+
     def setUp(self):
         super(DistroDoesNotUseLPView, self).setUp()
         self.target = self.factory.makeDistribution()
@@ -744,6 +748,7 @@ class DistroDoesNotUseLPBugs(DistroDoesNotUseLPView):
 
 
 class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
+
     def setUp(self):
         super(DistroMilestoneDoesNotUseLPView, self).setUp()
         with person_logged_in(self.distro.owner):
@@ -798,6 +803,7 @@ class DistroMilestoneDoesNotUseLPView(DistroMilestoneView):
 
 
 class ProductMilestoneDoesNotUseLPView(ProductMilestoneView):
+
     def setUp(self):
         BrowserTestCase.setUp(self)
         self.product = self.factory.makeProduct()
