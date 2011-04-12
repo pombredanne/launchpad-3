@@ -129,11 +129,11 @@ class InitialiseDistroSeries:
             raise InitialisationError(error)
 
     def initialise(self):
+        self._set_parent()
         self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
-        self._set_parent()
         transaction.commit()
 
     def _set_parent(self):
