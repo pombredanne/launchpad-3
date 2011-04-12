@@ -86,7 +86,7 @@ def get_run_parts_path():
 
 
 def write_marker_file(path, contents):
-    """Write a marker file for checking direction movements.
+    """Write a marker file for checking directory movements.
 
     :param path: A list of path components.
     :param contents: Text to write into the file.

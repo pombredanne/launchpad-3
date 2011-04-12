@@ -137,8 +137,8 @@ class PublishFTPMaster(LaunchpadCronScript):
     """Publish a distro (update).
 
     The publishable files are kept in the filesystem.  Most of the work
-    is done in a working "dists" directory in each archive's dists copy
-    root, which then replaces the current "dists" in the archive root.
+    is done in a working "dists" directory, which then replaces the
+    current "dists" in the archive root.
 
     For performance reasons, the old "dists" is not discarded.  It is
     kept as the dists-copy version for the next run.  Its contents
