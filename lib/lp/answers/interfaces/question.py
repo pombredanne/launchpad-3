@@ -20,6 +20,10 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     exported,
+    export_write_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -473,6 +477,21 @@ class IQuestion(IHasOwner):
 
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
+        """
+
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a question message.
+        
+        This is restricted to Launchpad admins and registry members, and will
+        return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
 
 

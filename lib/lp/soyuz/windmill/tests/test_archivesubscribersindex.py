@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
 from zope.component import getUtility
 
@@ -60,14 +58,9 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
 
     def test_add_subscriber(self):
         """Test adding a private PPA subscriber.."""
-        client = self.client
 
-        self.lpuser.ensure_login(client)
-
-        client.open(url='%s/~joe-bloggs/'
-                        '+archive/myppa/+subscriptions'
-                        % SoyuzWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            '/~joe-bloggs/+archive/myppa/+subscriptions', self.lpuser)
 
         # Click on the JS add access action.
         client.waits.forElement(
@@ -98,6 +91,3 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
                       'to install software from PPA named myppa for Joe '
                       'Bloggs. Members of Launchpad Developers will be '
                       'notified of the access  via email.')
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

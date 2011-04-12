@@ -37,10 +37,12 @@ from bzrlib.transport import (
     unregister_transport,
     )
 from twisted.internet import defer
+from twisted.python.failure import Failure
 
 from lp.services.twistedsupport import (
     extract_result,
     gatherResults,
+    no_traceback_failures,
     )
 
 
@@ -119,7 +121,7 @@ class AsyncVirtualTransport(Transport):
         :param failure: A `twisted.python.failure.Failure`.
         """
         failure.trap(TranslationError)
-        raise NoSuchFile(failure.value.virtual_url_fragment)
+        return Failure(NoSuchFile(failure.value.virtual_url_fragment))
 
     def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
@@ -131,7 +133,14 @@ class AsyncVirtualTransport(Transport):
         """
         def call_method((transport, path)):
             method = getattr(transport, method_name)
-            return method(path, *args, **kwargs)
+            try:
+                return method(path, *args, **kwargs)
+            except BaseException, e:
+                # It's much cheaper to explicitly construct a Failure than to
+                # let Deferred build automatically, because the automatic one
+                # will capture the traceback and perform an expensive
+                # stringification on it.
+                return Failure(e)
 
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
@@ -169,6 +178,7 @@ class AsyncVirtualTransport(Transport):
 
     def iter_files_recursive(self):
         deferred = self._getUnderylingTransportAndPath('.')
+        @no_traceback_failures
         def iter_files((transport, path)):
             return transport.clone(path).iter_files_recursive()
         deferred.addCallback(iter_files)
@@ -176,6 +186,7 @@ class AsyncVirtualTransport(Transport):
 
     def listable(self):
         deferred = self._getUnderylingTransportAndPath('.')
+        @no_traceback_failures
         def listable((transport, path)):
             return transport.listable()
         deferred.addCallback(listable)
@@ -219,11 +230,12 @@ class AsyncVirtualTransport(Transport):
         from_deferred = self._getUnderylingTransportAndPath(rel_from)
         deferred = gatherResults([to_deferred, from_deferred])
 
+        @no_traceback_failures
         def check_transports_and_rename(
             ((to_transport, to_path), (from_transport, from_path))):
             if to_transport.base != from_transport.base:
-                raise TransportNotPossible(
-                    'cannot move between underlying transports')
+                return Failure(TransportNotPossible(
+                    'cannot move between underlying transports'))
             return getattr(from_transport, 'rename')(from_path, to_path)
 
         deferred.addCallback(check_transports_and_rename)

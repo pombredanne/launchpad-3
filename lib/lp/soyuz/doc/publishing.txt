@@ -923,7 +923,6 @@ Generating respective "Packages" stanzas:
 
     >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
     Package: mozilla-firefox
-    Source: mozilla-firefox
     Priority: important
     Section: editors
     Maintainer: Mark Shuttleworth <mark@canonical.com>

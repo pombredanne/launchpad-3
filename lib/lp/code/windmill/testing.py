@@ -17,6 +17,7 @@ class CodeWindmillLayer(BaseWindmillLayer):
 
     @classmethod
     def setUp(cls):
-        cls.base_url = cls.appserver_root_url('code')
+        cls.facet = 'code'
+        cls.base_url = cls.appserver_root_url(cls.facet)
         super(CodeWindmillLayer, cls).setUp()
 

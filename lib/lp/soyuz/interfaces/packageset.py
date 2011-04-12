@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -235,9 +235,10 @@ class IPackagesetViewOnly(IHasOwner):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def relatedSets():
-        """Get all package sets related to this one.
+        """Get all other package sets in this set's `PackagesetGroup`.
 
-        Return all package sets that are related to this one.
+        Returns all package sets that are related to this one, but not
+        this one itself.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
