@@ -24,6 +24,7 @@ __all__ = [
     'DistributionPublisherConfigView',
     'DistributionReassignmentView',
     'DistributionSeriesView',
+    'DistributionDerivativesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
@@ -323,6 +324,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         'reassign',
         'addseries',
         'series',
+        'derivatives',
         'milestones',
         'top_contributors',
         'builds',
@@ -420,6 +422,10 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'All series'
         return Link('+series', text, icon='info')
 
+    def derivatives(self):
+        text = 'All derivatives'
+        return Link('+derivatives', text, icon='info')
+
     def milestones(self):
         text = 'All milestones'
         return Link('+milestones', text, icon='info')
@@ -466,7 +472,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
 
     usedfor = IDerivativeDistribution
 
-    @enabled_with_permission('launchpad.Append')
+    @enabled_with_permission('launchpad.Moderate')
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
@@ -645,6 +651,11 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
                     canonical_url(milestone), milestone.name))
 
         return english_list(linked_milestones)
+
+    @cachedproperty
+    def latest_derivatives(self):
+        """The 5 most recent derivatives."""
+        return self.context.derivatives[:5]
 
 
 class DistributionArchivesView(LaunchpadView):
@@ -853,16 +864,13 @@ class DistributionEditView(RegistryEditFormView):
             data['enable_bug_expiration'] = False
 
 
-class DistributionSeriesView(LaunchpadView):
-    """A view to list the distribution series"""
-
-    label = 'Timeline'
-
+class DistributionSeriesBaseView(LaunchpadView):
+    """A base view to list distroseries."""
     @cachedproperty
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.series:
+        for series in self._displayed_series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),
@@ -878,6 +886,28 @@ class DistributionSeriesView(LaunchpadView):
         else:
             # This is normal presentation.
             return ''
+
+
+class DistributionSeriesView(DistributionSeriesBaseView):
+    """A view to list the distribution series."""
+    label = 'Timeline'
+    show_add_series_link = True
+    show_milestones_link = True
+
+    @property
+    def _displayed_series(self):
+        return self.context.series
+
+
+class DistributionDerivativesView(DistributionSeriesBaseView):
+    """A view to list the distribution derivatives."""
+    label = 'Derivatives'
+    show_add_series_link = False
+    show_milestones_link = False
+
+    @property
+    def _displayed_series(self):
+        return self.context.derivatives
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
