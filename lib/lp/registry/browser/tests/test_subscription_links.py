@@ -52,18 +52,30 @@ class _TestResultsMixin:
             self.contents, 'menu-link-edit_bug_mail')
 
     def assertOldLinkMissing(self):
-        self.assertEqual(None, self.old_link)
+        self.assertEqual(
+            None, self.old_link,
+            "Found unexpected link: %s" % self.old_link)
 
     def assertOldLinkPresent(self):
-        self.assertNotEqual(None, self.old_link)
+        self.assertNotEqual(
+            None, self.old_link,
+            "Expected +subscribe link missing")
 
     def assertNewLinksMissing(self):
-        self.assertEqual(None, self.new_subscribe_link)
-        self.assertEqual(None, self.new_edit_link)
+        self.assertEqual(
+            None, self.new_subscribe_link,
+            "Found unexpected link: %s" % self.new_subscribe_link)
+        self.assertEqual(
+            None, self.new_edit_link,
+            "Found unexpected link: %s" % self.new_edit_link)
 
     def assertNewLinksPresent(self):
-        self.assertNotEqual(None, self.new_subscribe_link)
-        self.assertNotEqual(None, self.new_edit_link)
+        self.assertNotEqual(
+            None, self.new_subscribe_link,
+            "Expected subscribe_to_bug_mail link missing")
+        self.assertNotEqual(
+            None, self.new_edit_link,
+            "Expected edit_bug_mail link missing")
 
 
 class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
@@ -497,7 +509,7 @@ class ProductMilestoneView(DistroView):
     """Test structural subscriptions on the product milestones."""
 
     def setUp(self):
-        BrowserTestCase.setUp(self)
+        super(ProductMilestoneView, self).setUp()
         self.product = self.factory.makeProduct()
         with person_logged_in(self.product.owner):
             self.product.official_malone = True
@@ -855,40 +867,19 @@ class ProductMilestoneDoesNotUseLPView(ProductMilestoneView):
         self.assertNewLinksMissing()
 
 
+class CustomTestLoader(unittest.TestLoader):
+    """A test loader that avoids running tests from a base class."""
+
+    def getTestCaseNames(self, testCaseClass):
+        # If we're asked about which tests to run for _TestStructSubs, reply
+        # with an empty list.
+        if testCaseClass is _TestStructSubs:
+            return []
+        else:
+            return super(CustomTestLoader, self).getTestCaseNames(
+                testCaseClass)
+
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
-
-    # Manually construct the test suite to avoid having tests from the base
-    # class _TestStructSubs run.
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProductView))
-    suite.addTest(unittest.makeSuite(ProductBugs))
-    suite.addTest(unittest.makeSuite(ProductSeriesView))
-    suite.addTest(unittest.makeSuite(ProductSeriesBugs))
-    suite.addTest(unittest.makeSuite(ProjectGroupView))
-    suite.addTest(unittest.makeSuite(ProjectGroupBugs))
-    suite.addTest(unittest.makeSuite(DistributionSourcePackageView))
-    suite.addTest(unittest.makeSuite(DistributionSourcePackageBugs))
-    suite.addTest(unittest.makeSuite(DistroView))
-    suite.addTest(unittest.makeSuite(DistroBugs))
-    suite.addTest(unittest.makeSuite(DistroMilestoneView))
-    suite.addTest(unittest.makeSuite(ProductMilestoneView))
-    suite.addTest(unittest.makeSuite(ProductSeriesMilestoneView))
-
-    suite.addTest(unittest.makeSuite(ProductDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(ProductDoesNotUseLPBugs))
-    suite.addTest(unittest.makeSuite(ProductSeriesDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(ProductSeriesDoesNotUseLPBugs))
-    suite.addTest(unittest.makeSuite(ProjectGroupDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(ProjectGroupDoesNotUseLPBugs))
-    suite.addTest(unittest.makeSuite(
-        DistributionSourcePackageDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(
-        DistributionSourcePackageDoesNotUseLPBugs))
-    suite.addTest(unittest.makeSuite(DistroDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(DistroDoesNotUseLPBugs))
-    suite.addTest(unittest.makeSuite(
-        DistroMilestoneDoesNotUseLPView))
-    suite.addTest(unittest.makeSuite(ProductMilestoneDoesNotUseLPView))
-
-    return suite
+    return CustomTestLoader().loadTestsFromName(__name__)
