@@ -88,7 +88,7 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def most_recent_publications(dsds, in_parent):
+def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     """The most recent publications for the given `DistroSeriesDifference`s.
 
     Returns an `IResultSet` that yields two columns: `SourcePackageName.id`
@@ -112,9 +112,7 @@ def most_recent_publications(dsds, in_parent):
         SourcePackagePublishingHistory.archiveID == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
-        SourcePackagePublishingHistory.status.is_in(
-            (PackagePublishingStatus.PUBLISHED,
-             PackagePublishingStatus.PENDING)),
+        SourcePackagePublishingHistory.status.is_in(statuses),
         SourcePackageRelease.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
         )
@@ -132,6 +130,16 @@ def most_recent_publications(dsds, in_parent):
             conditions,
             Archive.distributionID == DistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
+            )
+    # Do we match on DistroSeriesDifference.(parent_)source_version?
+    if match_version:
+        if in_parent:
+            version_column = DistroSeriesDifference.parent_source_version
+        else:
+            version_column = DistroSeriesDifference.source_version
+        conditions = And(
+            conditions,
+            SourcePackageRelease.version == version_column,
             )
     # The sort order is critical so that the DISTINCT ON clause selects the
     # most recent publication (i.e. the one with the highest id).
@@ -268,9 +276,26 @@ class DistroSeriesDifference(StormBase):
 
         def eager_load(dsds):
             source_pubs = dict(
-                most_recent_publications(dsds, in_parent=False))
+                most_recent_publications(
+                    dsds, in_parent=False, statuses=(
+                        PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING)))
             parent_source_pubs = dict(
-                most_recent_publications(dsds, in_parent=True))
+                most_recent_publications(
+                    dsds, in_parent=True, statuses=(
+                        PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING)))
+
+            source_pubs_for_release = dict(
+                most_recent_publications(
+                    dsds, in_parent=False, statuses=(
+                        PackagePublishingStatus.PUBLISHED,),
+                    match_version=True))
+            parent_source_pubs_for_release = dict(
+                most_recent_publications(
+                    dsds, in_parent=True, statuses=(
+                        PackagePublishingStatus.PUBLISHED,),
+                    match_version=True))
 
             latest_comment_by_dsd_id = dict(
                 (comment.distro_series_difference_id, comment)
@@ -282,6 +307,16 @@ class DistroSeriesDifference(StormBase):
                 cache = get_property_cache(dsd)
                 cache.source_pub = source_pubs.get(spn_id)
                 cache.parent_source_pub = parent_source_pubs.get(spn_id)
+                if dsd.id in source_pubs_for_release:
+                    cache.source_package_release = (
+                        DistroSeriesSourcePackageRelease(
+                            dsd.derived_series,
+                            source_pubs_for_release[dsd.id]))
+                if dsd.id in parent_source_pubs_for_release:
+                    cache.parent_source_package_release = (
+                        DistroSeriesSourcePackageRelease(
+                            dsd.derived_series.parent_series,
+                            parent_source_pubs_for_release[dsd.id]))
                 cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
             # SourcePackageReleases of the source pubs are often referred to.
