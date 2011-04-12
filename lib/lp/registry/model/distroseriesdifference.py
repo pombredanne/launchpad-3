@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from itertools import chain
 from operator import itemgetter
 
 from debian.changelog import (
@@ -319,9 +320,12 @@ class DistroSeriesDifference(StormBase):
                             parent_source_pubs_for_release[dsd.id]))
                 cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
-            # SourcePackageReleases of the source pubs are often referred to.
+            # SourcePackageReleases of the parent and source pubs are often
+            # referred to.
             sprs = bulk.load_related(
-                SourcePackageRelease, source_pubs.itervalues(),
+                SourcePackageRelease, chain(
+                    source_pubs.itervalues(),
+                    parent_source_pubs.itervalues()),
                 ("sourcepackagereleaseID",))
 
             # SourcePackageRelease.uploader can end up getting the requester
