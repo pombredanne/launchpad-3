@@ -6,6 +6,7 @@
 from __future__ import absolute_import
 from lp.testing.windmill.lpuser import LaunchpadUser
 
+
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -828,7 +829,6 @@ class WindmillTestCase(TestCaseWithFactory):
         user = LaunchpadUser(
             person.displayname, naked_person.preferredemail.email, password)
         return self.getClientFor(url, user=user)
-
 
     def getClientForAnomymous(self, obj, view_name=None):
         """Return a new client, and the url that it has loaded."""

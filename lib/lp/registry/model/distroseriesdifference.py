@@ -79,17 +79,13 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
-from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.enums import (
-    PackageDiffStatus,
-    PackagePublishingStatus,
-    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 def most_recent_publications(dsds, in_parent):

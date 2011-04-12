@@ -6,9 +6,8 @@
 __metaclass__ = type
 
 import difflib
-from textwrap import TextWrapper
-
 import re
+from textwrap import TextWrapper
 
 from BeautifulSoup import BeautifulSoup
 from lxml import html
