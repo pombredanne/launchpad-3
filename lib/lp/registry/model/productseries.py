@@ -433,9 +433,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See IBugTarget."""
-        return get_bug_tags_open_count(BugTask.productseries == self, user)
+        return get_bug_tags_open_count(
+            BugTask.productseries == self, user, wanted_tags=wanted_tags)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
