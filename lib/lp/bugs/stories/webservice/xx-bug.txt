@@ -1837,7 +1837,7 @@ The collection of all CVEs is available at the top level.
 
     >>> cves = webservice.get("/bugs/cve").jsonBody()
     >>> pprint_collection(cves)
-    next_collection_link: u'http://.../bugs/cve?ws.start=5&ws.size=5'
+    next_collection_link: u'http://.../bugs/cve?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#cves'
     start: 0
     total_size: 10
@@ -2126,7 +2126,7 @@ Each bug has a collection of activities that have taken place with it.
   >>> activity = webservice.get(
   ...     bug_one['activity_collection_link']).jsonBody()
   >>> pprint_collection(activity)
-  next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
+  next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
   resource_type_link: u'http://.../#bug_activity-page-resource'
   start: 0
   total_size: 25
