@@ -236,11 +236,11 @@ class IDistroSeriesPublic(
             title=_("Status"), required=True,
             vocabulary=SeriesStatus))
     is_derived_series = Bool(
-        title=u'Is this series a derived series', required=True,
-        description=(u"Whether or not this series is a derived series"))
+        title=u'Is this series a derived series?', readonly=True,
+        description=(u"Whether or not this series is a derived series."))
     is_initialising = Bool(
-        title=u'Is this series initialising', required=True,
-        description=(u"Whether or not this series is initialising"))
+        title=u'Is this series initialising?', readonly=True,
+        description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
