@@ -688,6 +688,32 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(None, ds_diff.package_diff_url)
         self.assertEqual(None, ds_diff.parent_package_diff_url)
 
+    def test_source_package_release_pending(self):
+        # source_package_release returns the package release of version
+        # source_version with status PUBLISHED or PENDING.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        versions = {'derived': '1.2'}
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str=source_package_name.name,
+            versions=versions)
+
+        # Create a pending source_package_release.
+        package_release = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=derived_series,
+            version='1.4',
+            sourcepackagename=source_package_name,
+            status=PackagePublishingStatus.PENDING)
+
+        # Manually change the diff's source_version.
+        naked_ds_diff = removeSecurityProxy(ds_diff)
+        naked_ds_diff.source_version = '1.4'
+
+        self.assertEqual(ds_diff.source_package_release.version, '1.4')
+
 
 class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
 
