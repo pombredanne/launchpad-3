@@ -106,9 +106,7 @@ def compose_sql_find_differences(derived_distroseries):
         FROM (%(parent_query)s) AS parent
         FULL OUTER JOIN (%(derived_query)s) AS derived
         ON derived.sourcepackagename = parent.sourcepackagename
-        WHERE
-            derived.sourcepackagerelease IS DISTINCT FROM
-                parent.sourcepackagerelease
+        WHERE (derived.version = parent.version) IS NOT TRUE
         """ % parameters
 
 
