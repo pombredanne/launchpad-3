@@ -214,6 +214,29 @@ _bug_tag_query_template = """
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 
+def snapshot_bug_params(bug_params):
+    """Return a snapshot of a `CreateBugParams` object."""
+    return Snapshot(
+        bug_params, names=[
+            "owner", "title", "comment", "description", "msg",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename", "binarypackagename",
+            "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by"])
+
+
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
+
+
+# We need to always use the same Count instance or the
+# get_bug_tags_open_count is not UNIONable.
+tag_count_columns = (BugTag.tag, Count())
+
+
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
@@ -266,27 +289,6 @@ def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
     return store.using(*tables).find(
         tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
             Desc(Count()), BugTag.tag)
-
-
-def snapshot_bug_params(bug_params):
-    """Return a snapshot of a `CreateBugParams` object."""
-    return Snapshot(
-        bug_params, names=[
-            "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
-            "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
-
-
-class BugTag(SQLBase):
-    """A tag belonging to a bug."""
-
-    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    tag = StringCol(notNull=True)
-
-
-tag_count_columns = (BugTag.tag, Count())
 
 
 class BugBecameQuestionEvent:
