@@ -174,7 +174,7 @@ def get_bloat_stats(cur, options, kind):
         }
     query = dedent("""
         SELECT * FROM (
-            SELECT
+            SELECT DISTINCT
                 namespace,
                 name,
                 sub_namespace,
