@@ -37,7 +37,7 @@
                 id="packaging-incomplete">
                 No upstream project series has been linked.
                 <span id="packaging-incomplete-picker">
-                  <a tal:replace="structure context/menu:overview/set_upstream/fmt:icon" />
+                  <a tal:replace="structure view/set_packaging_link/escapedtext" />
                 </span>
             </li>
             <li tal:attributes="class view/packaging_complete_class"
@@ -49,9 +49,9 @@
                   <a tal:condition="not:context/productseries" href="#"></a>
               </span>.
               <span id="packaging-complete-picker">
-                <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
+                <a tal:replace="structure view/change_packaging_link/escapedtext" />
               </span>
-              <a tal:replace="structure context/menu:overview/remove_packaging/fmt:icon" />
+              <a tal:replace="structure view/remove_packaging_link/escapedtext" />
             </li>
             <li tal:attributes="class view/branch_incomplete_class"
                 id="branch-incomplete">

@@ -922,7 +922,6 @@ class TestSharingPOFileCreation(TestCaseWithFactory):
         ubuntu.translation_focus = distroseries
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
-        sourcepackage.setPackaging(self.foo_devel, self.factory.makePerson())
         sourcepackage.setPackaging(self.foo_stable, self.factory.makePerson())
         package_potemplate = self.factory.makePOTemplate(
             distroseries=distroseries,
