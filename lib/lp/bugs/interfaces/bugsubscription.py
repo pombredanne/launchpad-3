@@ -32,8 +32,10 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import (
+    patch_reference_property,
+    )
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bug import IBug
 from lp.services.fields import PersonChoice
 
 
@@ -48,7 +50,7 @@ class IBugSubscription(Interface):
         readonly=True, description=_("The person's Launchpad ID or "
         "e-mail address.")), as_of="beta")
     bug = exported(Reference(
-        IBug, title=_("Bug"), required=True, readonly=True), as_of="beta")
+        Interface, title=_("Bug"), required=True, readonly=True), as_of="beta")
     # We mark this as doNotSnapshot() because it's a magically-generated
     # Storm attribute and it causes Snapshot to break.
     bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
@@ -83,3 +85,11 @@ class IBugSubscription(Interface):
     @operation_for_version("beta")
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
+
+
+
+# In order to avoid circular dependencies, we only import
+# IBug (which itself imports IBugSubscription) here, and assign it as
+# the value type for the `bug` reference.
+from lp.bugs.interfaces.bug import IBug
+patch_reference_property(IBugSubscription, 'bug', IBug)
