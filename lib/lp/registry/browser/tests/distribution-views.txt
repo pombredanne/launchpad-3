@@ -314,7 +314,7 @@ Distribution +series
 --------------------
 
 The +series view provides a page title and list of dicts that represent
-the series and the CSS class to present them wth.
+the series and the CSS class to present them with.
 
     >>> view = create_view(ubuntu, name='+series')
     >>> print view.label
@@ -326,6 +326,24 @@ the series and the CSS class to present them wth.
     grumpy
     hoary highlight
     warty
+
+
+Distribution +derivatives
+-------------------------
+
+The +derivatives view provides a page title and list of dicts that represent
+the derivatives and the CSS class to present them with.
+
+    >>> view = create_view(ubuntu, name='+derivatives')
+    >>> print view.label
+    Derivatives
+
+    >>> for styled_series in view.styled_series:
+    ...     print styled_series['series'].name, styled_series['css_class']
+    hoary-test
+    krunch
+    breezy-autotest
+    2k5 highlight
 
 
 Distribution +ppas

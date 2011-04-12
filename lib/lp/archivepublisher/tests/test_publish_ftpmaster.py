@@ -17,6 +17,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -38,6 +39,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     find_run_parts_dir,
     get_working_dists,
     PublishFTPMaster,
+    shell_quote,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -126,13 +128,34 @@ class HelpersMixin:
 
 class TestPublishFTPMasterHelpers(TestCase):
 
-    def test_compose_env_string_iterates_env(self):
+    def test_compose_env_string_iterates_env_dict(self):
         env = {
             "A": "1",
             "B": "2",
         }
         env_string = compose_env_string(env)
         self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+
+    def test_compose_env_string_combines_env_dicts(self):
+        env1 = {"A": "1"}
+        env2 = {"B": "2"}
+        env_string = compose_env_string(env1, env2)
+        self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+
+    def test_compose_env_string_overrides_repeated_keys(self):
+        self.assertEqual("A=2", compose_env_string({"A": "1"}, {"A": "2"}))
+
+    def test_shell_quote_quotes_string(self):
+        self.assertEqual('"x"', shell_quote("x"))
+
+    def test_shell_quote_escapes_string(self):
+        self.assertEqual('"\\\\"', shell_quote("\\"))
+
+    def test_shell_quote_does_not_escape_its_own_escapes(self):
+        self.assertEqual('"\\$"', shell_quote("$"))
+
+    def test_shell_quote_escapes_entire_string(self):
+        self.assertEqual('"\\$\\$\\$"', shell_quote("$$$"))
 
     def test_compose_shell_boolean_shows_True_as_yes(self):
         self.assertEqual("yes", compose_shell_boolean(True))
@@ -229,6 +252,26 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             run_commercial_compat: true
             """))
         self.addCleanup(config.pop, "commercial-compat")
+
+    def installRunPartsScript(self, distro, parts_dir, script_code):
+        """Set up a run-parts script, and configure it to run.
+
+        :param distro: The `Distribution` you're testing on.  Must have
+            a temporary directory as its publishing root directory.
+        :param parts_dir: The run-parts subdirectory to execute:
+            publish-distro.d or finalize.d.
+        :param script_code: The code to go into the script.
+        """
+        distro_config = get_pub_config(distro)
+        parts_base = os.path.join(distro_config.root_dir, "distro-parts")
+        self.enableRunParts(parts_base)
+        script_dir = os.path.join(parts_base, distro.name, parts_dir)
+        os.makedirs(script_dir)
+        script_path = os.path.join(script_dir, self.factory.getUniqueString())
+        script_file = file(script_path, "w")
+        script_file.write(script_code)
+        script_file.close()
+        os.chmod(script_path, 0755)
 
     def test_script_runs_successfully(self):
         ubuntu = self.prepareUbuntu()
@@ -670,3 +713,49 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             args[0] for args, kwargs in script.publishDistroArchive.calls]
         self.assertContentEqual(
             [distro.main_archive, partner_archive], published_archives)
+
+    def test_runFinalizeParts_quotes_archiveroots(self):
+        # Passing ARCHIVEROOTS to the finalize.d scripts is a bit
+        # difficult because the variable holds multiple values in a
+        # single, double-quoted string.  Escaping and quoting a sequence
+        # of escaped and quoted items won't work.
+        # This test establishes how a script can sanely deal with the
+        # list.  It'll probably go wrong if the configured archive root
+        # contains spaces and such, but should work with Unix-sensible
+        # paths.
+        distro = self.makeDistro()
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+
+        # Create a run-parts script that creates marker files in each of
+        # the archive roots, and writes an expected string to them.
+        # Doesn't write to a marker file that already exists, because it
+        # might be a sign that the path it received is ridiculously
+        # wrong.  Don't want to go overwriting random files now do we?
+        self.installRunPartsScript(distro, "finalize.d", dedent("""\
+            #!/bin/sh -e
+            MARKER_NAME="marker file"
+            for DIRECTORY in $ARCHIVEROOTS
+            do
+                MARKER="$DIRECTORY/$MARKER_NAME"
+                if [ -e "$MARKER" ]
+                then
+                    echo "Marker file $MARKER already exists." >&2
+                    exit 1
+                fi
+                echo "This is an archive root." >"$MARKER"
+            done
+            """))
+
+        script.runFinalizeParts()
+
+        for archive in [distro.main_archive, distro.getArchive("partner")]:
+            archive_root = getPubConfig(archive).archiveroot
+            self.assertEqual(
+                "This is an archive root.",
+                self.readMarkerFile([archive_root, "marker file"]).rstrip(),
+                "Did not find expected marker for %s."
+                % archive.purpose.title)
