@@ -457,13 +457,13 @@ class DistroSeriesDifference(Storm):
         else:
             return self.parent_package_diff.status
 
-    @property
+    @cachedproperty
     def parent_source_package_release(self):
         return self._package_release(
             self.derived_series.parent_series,
             self.parent_source_version)
 
-    @property
+    @cachedproperty
     def source_package_release(self):
         return self._package_release(
             self.derived_series,
