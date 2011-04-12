@@ -828,6 +828,11 @@ button.overlay-close-button {
     border-width: 0 0 1px 0;
     display: block;
     }
+.extra_form_buttons {
+    text-align: center;
+    height: 3em;
+    white-space: nowrap;
+    }
 .actions * {
     /*
       Action links are those that begin the process of doing something.

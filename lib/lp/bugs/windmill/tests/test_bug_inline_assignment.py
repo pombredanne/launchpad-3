@@ -13,12 +13,12 @@ class TestInlineAssignment(WindmillTestCase):
 
     layer = BugsWindmillLayer
 
-    def test_inline_assignment_non_contributer(self):
+    def test_inline_assignment_non_contributor(self):
         """Test assigning bug to a non contributor displays a confirmation."""
 
         import transaction
         # Create a person who has not contributed
-        fred = self.factory.makePerson(name="fred")
+        self.factory.makePerson(name="fred")
         transaction.commit()
 
         client, start_url = self.getClientFor(

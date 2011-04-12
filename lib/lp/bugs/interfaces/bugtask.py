@@ -658,7 +658,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     @call_with(user=REQUEST_USER)
     @operation_parameters(person=copy_field(assignee))
     @export_read_operation()
-    @operation_for_version("beta")
+    @operation_for_version("devel")
     def getContributorInfo(user, person):
         """Is the person a contributor to bugs in this task's pillar?
 
