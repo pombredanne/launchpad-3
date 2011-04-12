@@ -1386,25 +1386,25 @@ class BugTargetBugTagsView(LaunchpadView):
         # getUsedBugTagsWithOpenCounts is expensive, so do the union in
         # SQL. Also preseed with 0 for all the official tags, as gUBTWOC
         # won't return unused ones.
-        raw_tags = dict((tag, 0) for tag in official_tags)
         top_ten = removeSecurityProxy(
             self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
         official = removeSecurityProxy(
             self.context.getUsedBugTagsWithOpenCounts(
                 self.user, official_tags))
-        raw_tags.update(dict(top_ten.union(official)))
+        tags = dict((tag, 0) for tag in official_tags)
+        tags.update(dict(top_ten.union(official)))
 
-        max_count = float(max([1] + raw_tags.values()))
+        max_count = float(max([1] + tags.values()))
 
-        tags = [
-            dict(
+        return sorted(
+            [dict(
                 tag=tag,
                 factor=self._calculateFactor(
                     tag, count, max_count, official_tags),
                 url=self._getSearchURL(tag),
                 )
-            for (tag, count) in raw_tags.iteritems()]
-        return sorted(tags, key=itemgetter('tag'))
+            for (tag, count) in tags.iteritems()],
+            key=itemgetter('tag'))
 
     @property
     def show_manage_tags_link(self):
