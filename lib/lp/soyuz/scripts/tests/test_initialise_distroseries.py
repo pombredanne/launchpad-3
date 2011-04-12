@@ -52,6 +52,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         transaction.commit()
         self.parent_das.addOrUpdateChroot(lf)
         self.parent_das.supports_virtualized = True
+        self.parent.main_archive.require_virtualized = False
         self.parent.nominatedarchindep = self.parent_das
         getUtility(ISourcePackageFormatSelectionSet).add(
             self.parent, SourcePackageFormat.FORMAT_1_0)
@@ -101,12 +102,17 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         source = self.factory.makeSourcePackagePublishingHistory(
             distroseries=self.parent,
             pocket=PackagePublishingPocket.RELEASE)
-        source.createMissingBuilds()
-        child = self.factory.makeDistroSeries()
-        ids = InitialiseDistroSeries(self.parent, child)
-        self.assertRaisesWithContent(
-            InitialisationError, "Parent series has pending builds.",
-            ids.check)
+        [build] = source.createMissingBuilds()
+        build.status = BuildStatus.BUILDING
+        child = self._full_initialise()
+        self.assertDistroSeriesInitialisedCorrectly(child)
+        child.updatePackageCount()
+        building_builds = child.getBuildRecords(BuildStatus.BUILDING)
+        pending_builds = child.getBuildRecords(BuildStatus.NEEDSBUILD)
+        self.assertEqual(5, child.sourcecount)
+        self.assertEqual(0, building_builds.count())
+        # 1 build is chromium, which FTBFS, and the build created earlier.
+        self.assertEqual(2, pending_builds.count())
 
     def test_failure_with_queue_items(self):
         # If the parent series has items in its queues, such as NEW and
@@ -159,6 +165,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
                          distribution=None):
         child = self.factory.makeDistroSeries(distribution=distribution)
+        child.main_archive.require_virtualized = False
         ids = InitialiseDistroSeries(
             self.parent, child, arches, packagesets, rebuild)
         ids.check()

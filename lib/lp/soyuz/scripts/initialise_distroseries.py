@@ -10,6 +10,7 @@ __all__ = [
     'InitialiseDistroSeries',
     ]
 
+import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
@@ -79,23 +80,8 @@ class InitialiseDistroSeries:
                  "derives from {child.parent_series.distribution.name}/"
                  "{child.parent_series.name}.").format(
                     child=self.distroseries))
-        self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
-
-    def _checkBuilds(self):
-        """Assert there are no pending builds for parent series.
-
-        Only cares about the RELEASE pocket, which is the only one inherited
-        via initialiseFromParent method.
-        """
-        # only the RELEASE pocket is inherited, so we only check
-        # pending build records for it.
-        pending_builds = self.parent.getBuildRecords(
-            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
-
-        if pending_builds.any():
-            raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
         """Assert upload queue is empty on parent series.
@@ -115,28 +101,25 @@ class InitialiseDistroSeries:
                     "Parent series queues are not empty.")
 
     def _checkSeries(self):
-        sources = self.distroseries.getAllPublishedSources()
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if bool(sources):
-            raise InitialisationError(error)
+        sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
-        if bool(binaries):
-            raise InitialisationError(error)
-        if bool(self.distroseries.architectures):
-            raise InitialisationError(error)
-        if bool(self.distroseries.components):
-            raise InitialisationError(error)
-        if bool(self.distroseries.sections):
+        if (
+            bool(sources) or bool(binaries) or
+            bool(self.distroseries.architectures) or
+            bool(self.distroseries.components) or
+            bool(self.distroseries.sections)):
             raise InitialisationError(error)
 
     def initialise(self):
-        self._set_parent()
         self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._set_parent()
+        transaction.commit()
 
     def _set_parent(self):
         self.distroseries.parent_series = self.parent
@@ -157,7 +140,7 @@ class InitialiseDistroSeries:
             AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
-
+        self._store.flush()
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
 
@@ -190,7 +173,7 @@ class InitialiseDistroSeries:
 
         spns = []
         # The overhead from looking up each packageset is mitigated by
-        # this usually running from a job
+        # this usually running from a job.
         if self.packagesets:
             for pkgsetname in self.packagesets:
                 pkgset = getUtility(IPackagesetSet).getByName(
@@ -213,11 +196,10 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            proc_families = None
+            proc_families = [
+                das[1].processorfamily
+                for das in distroarchseries_list]
             if self.rebuild:
-                proc_families = [
-                    das[1].processorfamily
-                    for das in distroarchseries_list]
                 distroarchseries_list = ()
             getUtility(IPackageCloner).clonePackages(
                 origin, destination, distroarchseries_list,
@@ -280,7 +262,7 @@ class InitialiseDistroSeries:
                     WHERE distroseries in (
                         SELECT id
                         FROM Distroseries
-                        WHERE id = ChildSeries.parent_series
+                        WHERE id = %s
                         )
                     EXCEPT
                     SELECT sourcepackagename
@@ -291,7 +273,7 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % self.distroseries.id)
+            """ % (self.distroseries.id, self.parent.id))
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
