@@ -6291,14 +6291,14 @@ ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
 ALTER TABLE packaging DISABLE TRIGGER ALL;
 
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.336247');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL, '2006-10-16 18:31:44.337965');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', 52, '2006-10-16 18:31:44.337965');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL, '2006-10-16 18:31:44.338488');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.338912');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', 12, '2006-10-16 18:31:44.338912');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339361');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339782');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340203');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340624');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.341055');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', 12, '2006-10-16 18:31:44.341055');
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;

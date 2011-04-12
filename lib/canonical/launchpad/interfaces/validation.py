@@ -7,9 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'can_be_nominated_for_series',
-    'validate_url',
-    'valid_webref',
-    'valid_branch_url',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
@@ -24,7 +21,6 @@ __all__ = [
 
 from cgi import escape
 from textwrap import dedent
-import urllib
 
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
@@ -32,9 +28,7 @@ from zope.component import getUtility
 from lazr.restful.error import expose
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import (
-    IEmailAddress,
     IEmailAddressSet,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -44,7 +38,6 @@ from lp.app.errors import NotFoundError
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.cve import valid_cve
 from lp.app.validators.email import valid_email
-from lp.app.validators.url import valid_absolute_url
 
 
 def can_be_nominated_for_series(series):
@@ -62,101 +55,6 @@ def can_be_nominated_for_series(series):
             "series: ${series}", mapping={'series': series_str}))
 
     return True
-
-
-# XXX matsubara 2006-03-15 bug=35077:
-# The validations functions that deals with URLs should be in
-# validators/ and we should have them as separete constraints in trusted.sql.
-def validate_url(url, valid_schemes):
-    """Returns a boolean stating whether 'url' is a valid URL.
-
-       A URL is valid if:
-           - its URL scheme is in the provided 'valid_schemes' list, and
-           - it has a non-empty host name.
-
-       None and an empty string are not valid URLs::
-
-           >>> validate_url(None, [])
-           False
-           >>> validate_url('', [])
-           False
-
-       The valid_schemes list is checked::
-
-           >>> validate_url('http://example.com', ['http'])
-           True
-           >>> validate_url('http://example.com', ['https', 'ftp'])
-           False
-
-       A URL without a host name is not valid:
-
-           >>> validate_url('http://', ['http'])
-           False
-
-      """
-    if not url:
-        return False
-    scheme, host = urllib.splittype(url)
-    if not scheme in valid_schemes:
-        return False
-    if not valid_absolute_url(url):
-        return False
-    return True
-
-
-def valid_webref(web_ref):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_webref('http://example.com')
-    True
-    >>> valid_webref('https://example.com/foo/bar')
-    True
-    >>> valid_webref('ftp://example.com/~ming')
-    True
-    >>> valid_webref('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_webref('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
-        # Allow ftp so valid_webref can be used for download_url, and so
-        # it doesn't lock out weird projects where the site or
-        # screenshots are kept on ftp.
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses either http, https or ftp.""")))
-
-
-def valid_branch_url(branch_url):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_branch_url('http://example.com')
-    True
-    >>> valid_branch_url('https://example.com/foo/bar')
-    True
-    >>> valid_branch_url('ftp://example.com/~ming')
-    True
-    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_branch_url('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 
 def non_duplicate_branch(value):
@@ -224,9 +122,6 @@ def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
     """
-    from canonical.launchpad.webapp.publisher import canonical_url
-    from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-
     _validate_email(email)
     _check_email_availability(email)
     return True

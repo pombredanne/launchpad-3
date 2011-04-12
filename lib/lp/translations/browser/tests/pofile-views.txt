@@ -241,7 +241,7 @@ their POTMsgSets' sequence numbers.
 Also, we get redirected to the next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
-    'http://127.0.0.1?start=10'
+    'http://127.0.0.1?memo=10&start=10'
 
 The messsage's sequence is the position of that message in latest imported
 template. We are going to test now what happens when we submit a potmsgset

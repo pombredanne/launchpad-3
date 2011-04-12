@@ -18,7 +18,6 @@ __all__ = [
     'SourcePackageView',
     ]
 
-from cgi import escape
 import string
 import urllib
 
@@ -236,18 +235,29 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+copyright', 'View copyright', icon='info')
 
     def edit_packaging(self):
-        return Link('+edit-packaging', 'Change upstream link', icon='edit')
+        return Link(
+            '+edit-packaging', 'Change upstream link', icon='edit',
+            enabled=self.userCanDeletePackaging())
 
     def remove_packaging(self):
         return Link(
-            '+remove-packaging', 'Remove upstream link', icon='remove')
+            '+remove-packaging', 'Remove upstream link', icon='remove',
+            enabled=self.userCanDeletePackaging())
 
     def set_upstream(self):
-        return Link("+edit-packaging", "Set upstream link", icon="add")
+        return Link(
+            "+edit-packaging", "Set upstream link", icon="add",
+            enabled=self.userCanDeletePackaging())
 
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
+
+    def userCanDeletePackaging(self):
+        packaging = self.context.direct_packaging
+        if packaging is None:
+            return True
+        return packaging.userCanDelete()
 
 
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):

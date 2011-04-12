@@ -44,8 +44,8 @@ class TestDistributionPage(TestCaseWithFactory):
                     canonical_url(self.distro, view_name='+addseries')},
                 text='Add series'),
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'),
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'),
             )
         self.assertThat(view.render(), series_matches)
 
@@ -63,8 +63,8 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Add series'))
         series_header_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'))
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'))
         self.assertThat(
             view.render(),
             Not(MatchesAny(add_series_match, series_header_match)))
@@ -84,7 +84,7 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Add series'))
         series_header_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'))
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
