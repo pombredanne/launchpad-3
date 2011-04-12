@@ -128,7 +128,7 @@ def set_derived_series_ui_feature_flag(test_case):
 class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
     """Test the distroseries +index page."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(DistroSeriesIndexFunctionalTestCase,
@@ -164,8 +164,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             view = create_initialized_view(
                 derived_series,
                 '+index',
-                principal=self.simple_user,
-                current_request=True)
+                principal=self.simple_user)
             html = view()
 
         self.assertThat(html, portlet_header)
