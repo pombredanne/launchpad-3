@@ -280,8 +280,8 @@ class DistroSeriesDifference(StormBase):
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
                 cache = get_property_cache(dsd)
-                cache.source_pub = source_pubs[spn_id]
-                cache.parent_source_pub = parent_source_pubs[spn_id]
+                cache.source_pub = source_pubs.get(spn_id)
+                cache.parent_source_pub = parent_source_pubs.get(spn_id)
                 cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
             # SourcePackageReleases of the source pubs are often referred to.
