@@ -22,7 +22,8 @@ class TestRecipeSetDaily(WindmillTestCase):
     layer = CodeWindmillLayer
     suite_name = "Recipe daily build flag setting"
 
-    def test_inline_recipe_daily_build(self):
+    # Disabled due to spurious failures (bug #753240).
+    def disabled_test_inline_recipe_daily_build(self):
         eric = self.factory.makePerson(
             name="eric", displayname="Eric the Viking", password="test",
             email="eric@example.com")

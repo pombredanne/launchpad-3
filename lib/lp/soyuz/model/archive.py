@@ -465,7 +465,8 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -526,6 +527,8 @@ class Archive(SQLBase):
         resultset = store.find(SourcePackagePublishingHistory,
             *storm_clauses).order_by(
             *orderBy)
+        if not eager_load:
+            return resultset
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):

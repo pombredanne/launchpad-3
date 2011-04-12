@@ -1253,7 +1253,7 @@ def temp_dir():
     """Provide a temporary directory as a ContextManager."""
     tempdir = tempfile.mkdtemp()
     yield tempdir
-    shutil.rmtree(tempdir)
+    shutil.rmtree(tempdir, ignore_errors=True)
 
 
 @contextmanager
