@@ -19,6 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
@@ -596,6 +597,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries,
             distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @cachedproperty
+    def derivatives(self):
+        """See `IDistribution`."""
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        # rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.id' is only required
+        # because the parent_series attribute has been (mis-)used
+        # to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        ret = Store.of(self).find(
+            DistroSeries,
+            ParentDistroSeries.id==DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID==self.id,
+            DistroSeries.distributionID!=self.id)
+        return ret.config(
+            distinct=True).order_by(Desc(DistroSeries.date_created))
 
     @property
     def architectures(self):

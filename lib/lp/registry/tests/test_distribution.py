@@ -160,6 +160,24 @@ class SeriesTests(TestCaseWithFactory):
         self.assertEquals(series, distro.getSeries("42.6"))
 
 
+class SeriesTests(TestCaseWithFactory):
+    """Test IDistribution.derivatives.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_derivatives(self):
+        distro1 = self.factory.makeDistribution()
+        distro2 = self.factory.makeDistribution()
+        parent_series = self.factory.makeDistroRelease(
+            distribution=distro1)
+        series = self.factory.makeDistroRelease(
+            distribution=distro2,
+            parent_series=parent_series)
+        self.assertContentEqual(
+            [series], distro1.derivatives)
+
+
 class DistroSnapshotTestCase(TestCaseWithFactory):
     """A TestCase for distribution snapshots."""
 
@@ -213,8 +231,8 @@ class TestDistributionPage(TestCaseWithFactory):
                     canonical_url(self.distro, view_name='+addseries')},
                 text='Add series'),
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'),
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'),
             )
         self.assertThat(view.render(), series_matches)
 
@@ -233,8 +251,8 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Add series'))
         series_header_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'))
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'))
         self.assertThat(
             view.render(),
             Not(MatchesAny(add_series_match, series_header_match)))
@@ -256,8 +274,8 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Add series'))
         series_header_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'Series and milestones widget', 'h2',
-                text='Series and milestones'))
+                'Active series and milestones widget', 'h2',
+                text='Active series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
 

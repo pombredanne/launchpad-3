@@ -1,3 +1,9 @@
+launchpad-buildd (78) hardy-cat; urgency=low
+
+  * Correctly update sudoers files when needed.  LP: #742881
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 06 Apr 2011 22:20:17 -0600
+
 launchpad-buildd (77) hardy-cat; urgency=low
 
   * Add back in ultimate-backstop umask() correction.
