@@ -3217,11 +3217,13 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         upstream_tasks = [
             bugtask for bugtask in bugtasks
-            if bugtask.product or bugtask.productseries]
+            if (bugtask.product and bugtask.product.active)
+                or (bugtask.productseries and bugtask.productseries.active)]
 
         distro_tasks = [
             bugtask for bugtask in bugtasks
-            if bugtask.distribution or bugtask.distroseries]
+            if bugtask.distribution
+                or (bugtask.distroseries and bugtask.distroseries.active)]
 
         upstream_tasks.sort(key=_by_targetname)
         distro_tasks.sort(key=_by_targetname)
