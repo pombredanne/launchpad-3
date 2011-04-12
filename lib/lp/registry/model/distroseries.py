@@ -789,8 +789,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def is_derived_series(self):
         """See `IDistroSeries`."""
-        # rvb 2011-04-11 bug=754750: This should be cleaned up once the bug
-        # is fixed.
+        # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
+        # the bug is fixed.
         return self.parent_series is not None
 
     @property
@@ -2002,7 +2002,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        # rvb 2011-04-08 bug=754750: The clause
+        # XXX rvb 2011-04-08 bug=754750: The clause
         # 'DistroSeries.distributionID!=self.distributionID' is only
         # required because the parent_series attribute has been
         # (mis-)used to denote other relations than proper derivation
