@@ -18,4 +18,4 @@ from lp.scripts.garbo import HourlyDatabaseGarbageCollector
 if __name__ == '__main__':
     script = HourlyDatabaseGarbageCollector()
     script.continue_on_failure = True
-    script.run() # No global lock. Garbo tasks use individual locks.
+    script.lock_and_run()
