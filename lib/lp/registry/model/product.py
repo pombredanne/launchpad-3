@@ -800,9 +800,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.product == self, user)
+        return get_bug_tags_open_count(
+            BugTask.product == self, user, wanted_tags=wanted_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
