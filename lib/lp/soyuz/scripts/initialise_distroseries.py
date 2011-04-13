@@ -10,6 +10,7 @@ __all__ = [
     'InitialiseDistroSeries',
     ]
 
+from operator import methodcaller
 import transaction
 from zope.component import getUtility
 
@@ -121,11 +122,12 @@ class InitialiseDistroSeries:
             "already distroarchseries(s) initialised for this series.")
         sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
-        if (
-            bool(sources) or bool(binaries) or
-            bool(self.distroseries.architectures) or
-            bool(self.distroseries.components) or
-            bool(self.distroseries.sections)):
+        if not all(
+            map(methodcaller('is_empty'), (
+                sources, binaries, self.distroseries.architectures,
+                self.distroseries.sections))):
+            raise InitialisationError(error)
+        if self.distroseries.components:
             raise InitialisationError(error)
 
     def initialise(self):
