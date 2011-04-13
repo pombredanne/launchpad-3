@@ -3877,17 +3877,22 @@ class BugActivityItem:
         elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
-            return self._formatted_tags_change.replace('\n', '<br />')
+            return cgi.escape(self._formatted_tags_change).replace(
+                '\n', '<br />')
 
         elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         else:
             # Our default state is to just return oldvalue and newvalue.
