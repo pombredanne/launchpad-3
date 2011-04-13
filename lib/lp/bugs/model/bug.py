@@ -50,6 +50,9 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
+    Desc,
+    Exists,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -211,6 +214,29 @@ _bug_tag_query_template = """
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 
+def snapshot_bug_params(bug_params):
+    """Return a snapshot of a `CreateBugParams` object."""
+    return Snapshot(
+        bug_params, names=[
+            "owner", "title", "comment", "description", "msg",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename", "binarypackagename",
+            "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by"])
+
+
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
+
+
+# We need to always use the same Count instance or the
+# get_bug_tags_open_count is not UNIONable.
+tag_count_columns = (BugTag.tag, Count())
+
+
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
@@ -230,59 +256,39 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_condition, user):
+def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
     """Return all the used bug tags with their open bug count.
 
     :param context_condition: A Storm SQL expression, limiting the
         used tags to a specific context. Only the BugTask table may be
         used to choose the context.
     :param user: The user performing the search.
+    :param wanted_tags: A set of tags within which to restrict the search.
 
     :return: A list of tuples, (tag name, open bug count).
     """
-    open_statuses_condition = BugTask.status.is_in(
-        UNRESOLVED_BUGTASK_STATUSES)
-    columns = [
-        BugTag.tag,
-        Count(),
-        ]
-    tables = [
+    tables = (
         BugTag,
-        LeftJoin(Bug, Bug.id == BugTag.bugID),
-        LeftJoin(
-            BugTask,
-            And(BugTask.bugID == Bug.id, open_statuses_condition)),
-        ]
+        Join(BugTask, BugTask.bugID == BugTag.bugID),
+        )
     where_conditions = [
-        open_statuses_condition,
+        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
+    if wanted_tags is not None:
+        where_conditions.append(BugTag.tag.is_in(wanted_tags))
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        where_conditions.append(SQLRaw(privacy_filter))
+        # The EXISTS sub-select avoids a join against Bug, improving
+        # performance significantly.
+        where_conditions.append(
+            Exists(Select(
+                columns=[True], tables=[Bug],
+                where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    result = store.execute(Select(
-        columns=columns, where=And(*where_conditions), tables=tables,
-        group_by=BugTag.tag, order_by=BugTag.tag))
-    return shortlist([(row[0], row[1]) for row in result.get_all()])
-
-
-def snapshot_bug_params(bug_params):
-    """Return a snapshot of a `CreateBugParams` object."""
-    return Snapshot(
-        bug_params, names=[
-            "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
-            "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
-
-
-class BugTag(SQLBase):
-    """A tag belonging to a bug."""
-
-    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    tag = StringCol(notNull=True)
+    return store.using(*tables).find(
+        tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
+            Desc(Count()), BugTag.tag)
 
 
 class BugBecameQuestionEvent:

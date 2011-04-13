@@ -843,6 +843,14 @@ class IProductSet(Interface):
     all_active = Attribute(
         "All the active products, sorted newest first.")
 
+    def get_all_active(eager_load=True):
+        """Get all active products.
+        
+        :param eager_load: If False do not load related objects such as the
+            owner.
+        :return: An iterable of IProduct.
+        """
+
     def __iter__():
         """Return an iterator over all the active products."""
 
