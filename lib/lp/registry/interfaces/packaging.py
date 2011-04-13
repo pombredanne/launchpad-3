@@ -94,6 +94,10 @@ class IPackaging(IHasOwner):
     sourcepackage = Attribute(_("A source package that is constructed from "
         "the distroseries and sourcepackagename of this packaging record."))
 
+    def userCanDelete():
+        """True, if the current user is allowed to delete this packaging,
+        else False."""
+
 
 class IPackagingUtil(Interface):
     """Utilities to handle Packaging."""

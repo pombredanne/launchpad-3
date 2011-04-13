@@ -56,14 +56,14 @@ class ValidatingMergeView(LaunchpadFormView):
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
-
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge if there is a PPA with published
-        # packages on the duplicate, unless that PPA is removed.
-        if dupe_person is not None:
+        target_person = data.get('target_person') or self.user
+        if dupe_person is None:
+            self.setFieldError(
+                'dupe_person', 'The duplicate is not a valid person or team.')
+        else:
+            if dupe_person == target_person:
+                self.addError(_("You can't merge ${name} into itself.",
+                      mapping=dict(name=dupe_person.name)))
             dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
                 dupe_person, statuses=[ArchiveStatus.ACTIVE,
                                        ArchiveStatus.DELETING])
@@ -73,6 +73,12 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
+            if dupe_person.is_merge_pending:
+                self.addError(_("${name} is already queued for merging.",
+                      mapping=dict(name=dupe_person.name)))
+        if target_person is not None and target_person.is_merge_pending:
+            self.addError(_("${name} is already queued for merging.",
+                  mapping=dict(name=target_person.name)))
 
 
 class AdminMergeBaseView(ValidatingMergeView):
@@ -84,7 +90,8 @@ class AdminMergeBaseView(ValidatingMergeView):
     # subclasses.
     should_confirm_email_reassignment = False
     should_confirm_member_deactivation = False
-    merge_message = _('Merge completed successfully.')
+    merge_message = _(
+        'A merge is queued and is expected to complete in a few minutes.')
 
     dupe_person_emails = ()
     dupe_person = None
@@ -97,25 +104,6 @@ class AdminMergeBaseView(ValidatingMergeView):
     @property
     def success_url(self):
         return canonical_url(self.target_person)
-
-    def validate(self, data):
-        """Check that user is not attempting to merge a person into itself."""
-        dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge the teams if there is a PPA with published
-        # packages on the duplicate person, unless that PPA is removed.
-        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
-            dupe_person, statuses=[ArchiveStatus.ACTIVE,
-                                   ArchiveStatus.DELETING])
-        if dupe_person_ppas is not None:
-            self.addError(_(
-                "${name} has a PPA that must be deleted before it "
-                "can be merged. It may take ten minutes to remove the "
-                "deleted PPA's files.",
-                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
@@ -151,7 +139,7 @@ class AdminMergeBaseView(ValidatingMergeView):
                 naked_email.personID = self.target_person.id
                 naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
-        getUtility(IPersonSet).merge(
+        job = getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
@@ -264,7 +252,7 @@ class DeleteTeamView(AdminTeamMergeView):
 
     page_title = 'Delete'
     field_names = ['dupe_person', 'target_person']
-    merge_message = _('Team deleted.')
+    merge_message = _('The team is queued to be deleted.')
 
     @property
     def label(self):

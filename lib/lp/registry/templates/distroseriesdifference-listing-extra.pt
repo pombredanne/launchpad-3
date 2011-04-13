@@ -39,7 +39,11 @@
       </ul></dd>
     <tal:package-diffs tal:condition="view/can_have_packages_diffs">
     <dt>Last common version:</dt>
-    <dd tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="context/base_version"
+        tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="not: context/base_version">
+      Unknown
+    </dd>
     <dt
       tal:condition="view/show_package_diffs_request_link"
       class="package-diff-placeholder">
@@ -49,10 +53,10 @@
         </span>
     </dt>
     <dt
-      tal:condition="not: view/show_package_diffs_request_link">
+      tal:condition="python: not(view.show_package_diffs_request_link) and context.base_version">
       Differences from last common version:
     </dt>
-    <dd>
+    <dd tal:condition="context/base_version">
       <ul class="package-diff-status">
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">

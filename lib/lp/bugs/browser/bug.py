@@ -199,8 +199,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = [
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
-        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'adddistro', 'subscription', 'addsubscriber', 'editsubscriptions',
+        'addcomment', 'nominate', 'addbranch', 'linktocve', 'unlinkcve',
         'createquestion', 'mute_subscription', 'removequestion',
         'activitylog', 'affectsmetoo']
 
@@ -272,6 +272,13 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def editsubscriptions(self):
+        """Return the 'Edit subscriptions' Link."""
+        text = 'Edit subscriptions'
+        return Link(
+            '+subscriptions', text, icon='edit', summary=(
+                'View and change your subscriptions to this bug'))
 
     def mute_subscription(self):
         """Return the 'Mute subscription' Link."""
