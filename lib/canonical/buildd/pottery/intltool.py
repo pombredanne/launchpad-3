@@ -193,6 +193,12 @@ def chdir(directory):
 def generate_pot(podir, domain):
     """Generate one PO template using intltool.
 
+    Although 'intltool-update -p' can try to find out the translation domain
+    we trust our own code more on this one and simply specify the domain.
+    Also, the man page for 'intltool-update' states that the '-g' option
+    "has an additional effect: the name of current working directory is no
+    more  limited  to 'po' or 'po-*'." We don't want that limit either.
+
     :param podir: The PO directory in which to build template.
     :param domain: The translation domain to use as the name of the template.
       If it is None or empty, 'messages.pot' will be used.
