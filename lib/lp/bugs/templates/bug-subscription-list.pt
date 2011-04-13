@@ -15,11 +15,15 @@
     <script type="text/javascript"
         tal:condition="
           request/features/malone.advanced-structural-subscriptions.enabled">
-      LPS.use('lp.registry.structural_subscription', function(Y) {
-          var module = Y.lp.registry.structural_subscription;
+      LPS.use('lp.registry.structural_subscription', 'lp.bugs.subscription',
+              function(Y) {
+          var ss_module = Y.lp.registry.structural_subscription;
+          var info_module = Y.lp.bugs.subscription;
           Y.on('domready', function() {
-              module.setup_bug_subscriptions(
-                  {content_box: "#structural-subscription-content-box"})
+              ss_module.setup_bug_subscriptions(
+                  {content_box: "#structural-subscription-content-box"});
+              console.log(info_module.get_subscription_reason(
+                  {description_box: "#description"}));
           });
       });
     </script>

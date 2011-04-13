@@ -270,7 +270,8 @@ class IDistroSeriesDifferenceSource(Interface):
         source_package_name_filter=None,
         status=None,
         child_version_higher=False):
-        """Return differences for the derived distro series.
+        """Return differences for the derived distro series sorted by
+        package name.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
