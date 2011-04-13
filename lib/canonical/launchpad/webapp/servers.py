@@ -108,6 +108,7 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
+from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -869,7 +870,9 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_json = False
         # stub out the FeatureController that would normally be provided by
         # the publication mechanism
-        self.features = NullFeatureController()
+        # self.features = NullFeatureController()
+        self.features = (get_relevant_feature_controller() or
+                         NullFeatureController())
 
     @property
     def uuid(self):

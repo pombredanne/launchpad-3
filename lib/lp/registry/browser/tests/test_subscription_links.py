@@ -12,14 +12,10 @@ from BeautifulSoup import BeautifulSoup
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.features import (
-    get_relevant_feature_controller,
-    )
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
@@ -89,13 +85,9 @@ class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
                 self.contents = view.render()
 
     def create_view(self, user):
-        request = LaunchpadTestRequest(
-            PATH_INFO='/', HTTP_COOKIE='', QUERY_STRING='')
-        request.features = get_relevant_feature_controller()
         return create_initialized_view(
             self.target, self.view, principal=user,
-            rootsite=self.rootsite,
-            request=request, current_request=False)
+            rootsite=self.rootsite, current_request=False)
 
     def test_subscribe_link_feature_flag_off_owner(self):
         self._create_scenario(self.target.owner, None)
