@@ -17,6 +17,7 @@ from twisted.internet.defer import (
 
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
+from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
@@ -47,14 +48,14 @@ def add_custom_loglevels():
 
     # Install our customized Logger that provides easy access to our
     # custom loglevels.
-    logging.setLoggerClass(loglevels.LaunchpadLogger)
+    logging.setLoggerClass(LaunchpadLogger)
 
     # Fix the root logger, replacing it with an instance of our
     # customized Logger. The original one is instantiated on import of
     # the logging module, so our override does not take effect without
     # this manual effort.
     old_root = logging.root
-    new_root = loglevels.LaunchpadLogger('root', loglevels.WARNING)
+    new_root = LaunchpadLogger('root', loglevels.WARNING)
 
     # Fix globals.
     logging.root = new_root

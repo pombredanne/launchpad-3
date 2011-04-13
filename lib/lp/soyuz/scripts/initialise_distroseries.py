@@ -10,6 +10,8 @@ __all__ = [
     'InitialiseDistroSeries',
     ]
 
+from operator import methodcaller
+import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
@@ -115,20 +117,17 @@ class InitialiseDistroSeries:
                     "Parent series queues are not empty.")
 
     def _checkSeries(self):
-        sources = self.distroseries.getAllPublishedSources()
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if bool(sources):
-            raise InitialisationError(error)
+        sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
-        if bool(binaries):
+        if not all(
+            map(methodcaller('is_empty'), (
+                sources, binaries, self.distroseries.architectures,
+                self.distroseries.sections))):
             raise InitialisationError(error)
-        if bool(self.distroseries.architectures):
-            raise InitialisationError(error)
-        if bool(self.distroseries.components):
-            raise InitialisationError(error)
-        if bool(self.distroseries.sections):
+        if self.distroseries.components:
             raise InitialisationError(error)
 
     def initialise(self):
@@ -137,6 +136,7 @@ class InitialiseDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        transaction.commit()
 
     def _set_parent(self):
         self.distroseries.parent_series = self.parent
@@ -157,7 +157,7 @@ class InitialiseDistroSeries:
             AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
-
+        self._store.flush()
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
 
@@ -190,7 +190,7 @@ class InitialiseDistroSeries:
 
         spns = []
         # The overhead from looking up each packageset is mitigated by
-        # this usually running from a job
+        # this usually running from a job.
         if self.packagesets:
             for pkgsetname in self.packagesets:
                 pkgset = getUtility(IPackagesetSet).getByName(
