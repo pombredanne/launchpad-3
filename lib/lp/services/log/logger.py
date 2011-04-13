@@ -9,7 +9,7 @@ __all__ = [
     'DevNullLogger',
     'FakeLogger',
     'LaunchpadLogger',
-    'Nullhandler'
+    'NullHandler',
     'PrefixFilter',
     ]
 
