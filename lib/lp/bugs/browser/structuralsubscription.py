@@ -355,18 +355,21 @@ class StructuralSubscriptionMenuMixin:
         """
         sst = self._getSST()
 
-        # ProjectGroup milestones aren't really structural subscription
-        # targets as they're not real milestones, so you can't subscribe to
-        # them.
-        enabled = not IProjectGroupMilestone.providedBy(sst)
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if not sst.userCanAlterBugSubscription(self.user, self.user):
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
+        if (not IProjectGroupMilestone.providedBy(sst) and
+            sst.userCanAlterBugSubscription(self.user, self.user)):
+            enabled = True
+        else:
             enabled = False
+
         return Link('+subscribe', text, icon=icon, enabled=enabled)
 
     @property

@@ -14,7 +14,7 @@
             }
     </style>
     <tal:uses_launchpad_bugtracker
-       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+       condition="context/target/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <script type="text/javascript"
           tal:condition="
             request/features/malone.advanced-structural-subscriptions.enabled">
