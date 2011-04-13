@@ -799,6 +799,22 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         self.assertContentEqual(diffs['normal'] + diffs['ignored'], result)
 
+    def test_getForDistroSeries_sorted_by_package_name(self):
+        # The differences are sorted by package name.
+        derived_series = self.makeDerivedSeries()
+        names = []
+        for i in range(10):
+            diff = self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series)
+            names.append(diff.source_package_name.name)
+
+        results = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(derived_series)
+
+        self.assertContentEqual(
+            sorted(names),
+            [result.source_package_name.name for result in results])
+
     def test_getByDistroSeriesAndName(self):
         # An individual difference is obtained using the name.
         ds_diff = self.factory.makeDistroSeriesDifference(
