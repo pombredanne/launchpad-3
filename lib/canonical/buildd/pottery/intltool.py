@@ -86,8 +86,14 @@ def check_potfiles_in(path):
 
 
 def find_intltool_dirs():
-    """Search the current directory and its subdiretories for intltool
-    structure.
+    """Search for directories with intltool structure.
+
+    The current directory and its subdiretories are searched. An 'intltool
+    structure' is a directory that contains a POFILES.in file and where all
+    files listed in that POTFILES.in do actually exist. The latter
+    condition makes sure that the file is not stale.
+
+    :returns: A list of directory names.
     """
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
