@@ -144,11 +144,12 @@ class IDistroSeriesDifferenceJob(IRunnableJob):
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(distroseries, sourcepackagename):
+    def createForPackagePublication(distroseries, sourcepackagename, pocket):
         """Create jobs as appropriate for a given status publication.
 
         :param distroseries: A `DistroSeries` that is assumed to be
             derived from another one.
         :param sourcepackagename: A `SourcePackageName` that is being
             published in `distroseries`.
+        :param pocket: The `PackagePublishingPocket` for the publication.
         """
