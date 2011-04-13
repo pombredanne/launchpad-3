@@ -13,6 +13,7 @@ __all__ = [
     'SourcePackageFacets',
     'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
     'SourcePackageUpstreamConnectionsView',
     'SourcePackageView',
