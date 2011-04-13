@@ -11,16 +11,22 @@ from datetime import (
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.testing import (
+    BrowserTestCase,
     login,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.translations.browser.pofile import (
     POFileBaseView,
     POFileTranslateView,
     )
+from lp.translations.enums import TranslationPermission
 
 
 class TestPOFileBaseViewFiltering(TestCaseWithFactory):
@@ -435,3 +441,37 @@ class TestPOFileTranslateViewDocumentation(TestCaseWithFactory,
                                            DocumentationScenarioMixin):
     layer = ZopelessDatabaseLayer
     view_class = POFileTranslateView
+
+
+class TestBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unwritable_translation_credits(self):
+        """Text of credits should be sane for non-editors."""
+        # Make the user a translator so they can see translations.
+        self.factory.makeTranslator(person=self.user)
+        pofile = self.factory.makePOFile()
+        # Restrict translations so that the translator cannot change it.
+        product = pofile.potemplate.productseries.product
+        with person_logged_in(product.owner):
+            product.translationpermission = TranslationPermission.CLOSED
+        # Add credits so that they show in the UI
+        credits = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, singular='translator-credits')
+        browser = self.getViewBrowser(pofile)
+        self.assertNotIn('This is a dummy translation', browser.contents)
+        self.assertIn('(no translation yet)', browser.contents)
+
+    def test_anonymous_translation_credits(self):
+        """Credits should be hidden for non-logged-in users."""
+        pofile = self.factory.makePOFile()
+        # Restrict translations so that the translator cannot change it.
+        product = pofile.potemplate.productseries.product
+        # Add credits so that they show in the UI
+        credits = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, singular='translator-credits')
+        browser = self.getViewBrowser(pofile, no_login=True)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'To prevent privacy issues, this translation is not available to'
+            ' anonymous users', browser.contents)
