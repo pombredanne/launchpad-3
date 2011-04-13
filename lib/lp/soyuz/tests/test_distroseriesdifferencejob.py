@@ -20,6 +20,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -179,6 +180,15 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         self.getJobSource().createForPackagePublication(distroseries, package)
+        self.assertContentEqual([], find_waiting_jobs(distroseries, package))
+
+    def test_createForPackagePublication_ignores_backports_and_proposed(self):
+        distroseries = self.makeDerivedDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        self.getJobSource().createForPackagePublication(
+            distroseries, package, PackagePublishingPocket.BACKPORTS)
+        self.getJobSource().createForPackagePublication(
+            distroseries, package, PackagePublishingPocket.PROPOSED)
         self.assertContentEqual([], find_waiting_jobs(distroseries, package))
 
     def test_cronscript(self):
