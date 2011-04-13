@@ -3134,11 +3134,11 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         # Pull all of the related milestones, if any, into the storm cache,
         # since they'll be needed for the vocabulary used in this view.
-        self.milestones = list()
-        if len(self.bugtasks):
+        if self.bugtasks:
             self.milestones = list(
                 bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
-
+        else:
+            self.milestones = []    
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
