@@ -269,7 +269,7 @@ class InitialiseDistroSeries:
                 -- the data set for the series being updated, yet results are
                 -- in fact the data from the original series.
                 JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = %s
+                    ON Packaging.distroseries = ChildSeries.parent_series
             WHERE
                 -- Select only the packaging links that are in the parent
                 -- that are not in the child.
@@ -280,7 +280,7 @@ class InitialiseDistroSeries:
                     WHERE distroseries in (
                         SELECT id
                         FROM Distroseries
-                        WHERE id = %s
+                        WHERE id = ChildSeries.parent_series
                         )
                     EXCEPT
                     SELECT sourcepackagename
@@ -291,7 +291,7 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % (self.parent.id, self.distroseries.id, self.parent.id))
+            """ % self.distroseries.id)
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
