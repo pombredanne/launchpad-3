@@ -11,7 +11,9 @@ from datetime import (
     timedelta,
     )
 from fixtures import TempDir
+import logging
 import os
+from StringIO import StringIO
 import subprocess
 import time
 
@@ -86,8 +88,8 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
+from lp.services.log.logger import NullHandler
 from lp.services.job.model.job import Job
-from lp.services.log.logger import BufferLogger
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
@@ -149,9 +151,10 @@ class TestBulkPruner(TestCase):
         for i in range(10):
             self.store.add(BulkFoo())
 
+        self.log = logging.getLogger('garbo')
+
     def test_bulkpruner(self):
-        log = BufferLogger()
-        pruner = BulkFooPruner(log)
+        pruner = BulkFooPruner(self.log)
 
         # The loop thinks there is stuff to do. Confirm the initial
         # state is sane.
@@ -201,7 +204,7 @@ class TestBulkPruner(TestCase):
         pruner.cleanUp()
 
         # We can run it again - temporary objects cleaned up.
-        pruner = BulkFooPruner(log)
+        pruner = BulkFooPruner(self.log)
         while not pruner.isDone():
             pruner(chunk_size)
 
@@ -228,6 +231,8 @@ class TestSessionPruner(TestCase):
         self.make_session(u'yesterday_unauth', yesterday, False)
         self.make_session(u'ancient_auth', ancient, 'auth3')
         self.make_session(u'ancient_unauth', ancient, False)
+
+        self.log = logging.getLogger('garbo')
 
     def make_session(self, client_id, accessed, authenticated=None):
         session_data = SessionData()
@@ -261,8 +266,7 @@ class TestSessionPruner(TestCase):
 
     def test_antique_session_pruner(self):
         chunk_size = 2
-        log = BufferLogger()
-        pruner = AntiqueSessionPruner(log)
+        pruner = AntiqueSessionPruner(self.log)
         try:
             while not pruner.isDone():
                 pruner(chunk_size)
@@ -285,8 +289,7 @@ class TestSessionPruner(TestCase):
 
     def test_unused_session_pruner(self):
         chunk_size = 2
-        log = BufferLogger()
-        pruner = UnusedSessionPruner(log)
+        pruner = UnusedSessionPruner(self.log)
         try:
             while not pruner.isDone():
                 pruner(chunk_size)
@@ -339,8 +342,7 @@ class TestSessionPruner(TestCase):
             expected_sessions.add(u'new dupe %d' % count)
 
         chunk_size = 2
-        log = BufferLogger()
-        pruner = DuplicateSessionPruner(log)
+        pruner = DuplicateSessionPruner(self.log)
         try:
             while not pruner.isDone():
                 pruner(chunk_size)
@@ -358,17 +360,29 @@ class TestGarbo(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGarbo, self).setUp()
+
+        # Silence the root Logger by instructing the garbo logger to not
+        # propagate messages.
+        self.log = logging.getLogger('garbo')
+        self.log.addHandler(NullHandler())
+        self.log.propagate = 0
+
         # Run the garbage collectors to remove any existing garbage,
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+
+        # Capture garbo log output to tests can examine it.
+        self.log_buffer = StringIO()
+        handler = logging.StreamHandler(self.log_buffer)
+        self.log.addHandler(handler)
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
@@ -376,7 +390,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
@@ -916,7 +930,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         spr, changelog = self.upload_to_debian()
         collector = self.runHourly()
-        log = collector.logger.getLogBuffer()
+        log = self.log_buffer.getvalue()
         self.assertTrue(
             'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
         self.assertFalse(spr.changelog == None)
@@ -927,7 +941,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         spr, changelog = self.upload_to_debian(restricted=True)
         collector = self.runHourly()
-        log = collector.logger.getLogBuffer()
+        log = self.log_buffer.getvalue()
         self.assertTrue(
             'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
         self.assertFalse(spr.changelog == None)
