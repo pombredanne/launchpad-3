@@ -8,16 +8,12 @@ __metaclass__ = type
 from lazr.lifecycle.snapshot import Snapshot
 from zope.interface import providedBy
 
-from canonical.launchpad.webapp.adapter import (
-    get_request_statements,
-    set_request_started,
-    clear_request_started,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.enum import BugNotificationLevel
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 
@@ -125,36 +121,21 @@ class TestBugSnapshotting(TestCaseWithFactory):
         # this has a chance of fighting against future eager loading
         # optimizations that might trigger the problem again.
         with person_logged_in(self.person):
-            # We need to do this to enable SQL logging.
-            set_request_started(enable_timeout=False)
-            try:
+            with StormStatementRecorder() as recorder:
                 snapshot = Snapshot(self.bug, providing=providedBy(self.bug))
-                sql_statements = get_request_statements()
-            finally:
-                clear_request_started()
+            sql_statements = recorder.statements
         # This uses "self" as a marker to show that the attribute does not
         # exist.  We do not use hasattr because it eats exceptions.
-        self.assertTrue(getattr(snapshot, 'messages', self) is self)
-        self.assertTrue(getattr(snapshot, 'attachments', self) is self)
-        for (start, stop, dbname, sql) in sql_statements:
-            # Yes, we are doing dumb parsing of SQL.  Hopefully this is not
-            # too fragile.  See comment at start of test for why we are
-            # doing this bizarre thing.
-            # This gets the string between "SELECT" and "FROM".  It should
-            # handle "WITH" being used.  We use the SELECT phrase rather than
-            # the FROM phrase because the FROM might be a subquery, and this
-            # seemed simpler.
-            sql = sql.lower()
-            select_sql = sql.partition('select ')[2].partition(' from ')[0]
-            # This gets the field names with a simple split.
-            select_fields = select_sql.split(', ')
-            # Now we verify that the Message table is not referenced.
-            # Of course, if the Message table is aliased, it won't catch
-            # it.  This shouldn't be a common problem for the way we
-            # currently generate our SQL, and for the kind of problem we are
-            # trying to prevent (that is, getting 1001 messages for a
-            # bug snapshot).
+        #self.assertTrue(getattr(snapshot, 'messages', self) is self)
+        #self.assertTrue(getattr(snapshot, 'attachments', self) is self)
+        for sql in sql_statements:
+            # We are going to be aggressive about looking for the problem in
+            # the SQL.  We'll split the SQL up by whitespace, and then look
+            # for strings that start with "message".  If that is too
+            # aggressive in the future from some reason, please do adjust the
+            # test appropriately.
+            sql_tokens = sql.lower().split()
             self.assertEqual(
-                [field_name for field_name in select_fields
-                 if field_name.startswith('message.')],
+                [token for token in sql_tokens
+                 if token.startswith('message')],
                 [])
