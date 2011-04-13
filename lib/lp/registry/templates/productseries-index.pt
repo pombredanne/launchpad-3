@@ -14,16 +14,19 @@
     <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
       tal:content="view/register_milestone_script"></script>
-    <script type="text/javascript"
-        tal:condition="
-          request/features/malone.advanced-structural-subscriptions.enabled">
-        LPS.use('lp.registry.structural_subscription', function(Y) {
-            var module = Y.lp.registry.structural_subscription;
-            Y.on('domready', function() {
-              module.setup({content_box: "#structural-subscription-content-box"});
-            });
-        });
-    </script>
+    <tal:uses_launchpad_bugtracker
+       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript"
+          tal:condition="
+            request/features/malone.advanced-structural-subscriptions.enabled">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
   </metal:block>
 
     <tal:heading metal:fill-slot="heading">
