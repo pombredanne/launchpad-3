@@ -290,15 +290,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
     # attachments be attachments_prepopulated, but lazr.resful cannot
     # export over a non-exported attribute in an interface.
     # https://bugs.launchpad.net/lazr.restful/+bug/625102
-    attachments_unpopulated = CollectionField(
-            title=_("List of bug attachments."),
-            value_type=Reference(schema=IBugAttachment),
-            readonly=True)
-    attachments = exported(
-        CollectionField(
+    attachments_unpopulated = doNotSnapshot(CollectionField(
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True))
+    attachments = doNotSnapshot(exported(
+        CollectionField(
+            title=_("List of bug attachments."),
+            value_type=Reference(schema=IBugAttachment),
+            readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = exported(

@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bug import IBug
 from lp.testing import (
     feature_flags,
     person_logged_in,
@@ -74,3 +77,21 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(self.person))
             self.bug.unmute(self.person, self.person)
             self.assertFalse(self.bug.isMuted(self.person))
+
+
+class TestBugSnapshotting(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSnapshotting, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+
+    def test_bug_snapshot_does_not_include_messages(self):
+        # A snapshot of a bug does not include its messages.  If it does,
+        # the webservice can become unusable if changes are made to bugs with
+        # many comments, such as bug 1.  See, for instance, bug 744888.
+        snapshot = Snapshot(self.bug, providing=IBug)
+        # This uses "self" as a marker to show that the attribute does not
+        # exist.  We do not use hasattr because it eats exceptions.
+        self.assertTrue(getattr(snapshot, 'messages', self) is self)
