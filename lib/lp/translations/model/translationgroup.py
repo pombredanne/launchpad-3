@@ -36,6 +36,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
     ISlaveStore,
     )
 from lp.app.errors import NotFoundError
@@ -293,7 +294,7 @@ class TranslationGroupSet:
             raise NotFoundError(name)
 
     def _get(self):
-        return self
+        return IStore(TranslationGroup).find(TranslationGroup)
 
     def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""
