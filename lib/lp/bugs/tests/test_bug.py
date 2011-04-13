@@ -136,8 +136,8 @@ class TestBugSnapshotting(TestCaseWithFactory):
                 clear_request_started()
         # This uses "self" as a marker to show that the attribute does not
         # exist.  We do not use hasattr because it eats exceptions.
-        #self.assertTrue(getattr(snapshot, 'messages', self) is self)
-        #self.assertTrue(getattr(snapshot, 'attachments', self) is self)
+        self.assertTrue(getattr(snapshot, 'messages', self) is self)
+        self.assertTrue(getattr(snapshot, 'attachments', self) is self)
         for (start, stop, dbname, sql) in sql_statements:
             # Yes, we are doing dumb parsing of SQL.  Hopefully this is not
             # too fragile.  See comment at start of test for why we are
