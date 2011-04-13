@@ -20,20 +20,28 @@
           var ss_module = Y.lp.registry.structural_subscription;
           var info_module = Y.lp.bugs.subscription;
           Y.on('domready', function() {
-              ss_module.setup_bug_subscriptions(
-                  {content_box: "#structural-subscription-content-box"});
               info_module.show_subscription_description(
                   {description_box: "#subscription-description-box"});
           });
+          Y.on('contentready', function() {
+              ss_module.setup_bug_subscriptions(
+                  {content_box: "#other-subscriptions"});
+          }, '#other-subscriptions');
       });
     </script>
     <style>
+
+      div#other-subscriptions-header {
+        margin-top: 1em;
+      }
+
       div.subscription-description {
+        margin: 0px;
         margin-top: 2em;
         padding: 1em;
         border: 1px solid #ddd;
       }
-      </style>
+    </style>
   </tal:head-epilogue>
 </head>
 <body>
