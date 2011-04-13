@@ -33,17 +33,35 @@ def find_potfiles_in():
 
 
 def check_potfiles_in(path):
-    """Check if the files listed in the POTFILES.in file exist."""
+    """Check if the files listed in the POTFILES.in file exist.
+
+    Running 'intltool-update -m' will perform this check and also take a
+    possible POTFILES.skip into account. It stores details about 'missing'
+    (files that should be in POTFILES.in) and 'notexist'ing files (files
+    that are listed in POTFILES.in but don't exist) in files which are
+    named accordingly. These files are removed before the run.
+
+    We don't care about files missing from POTFILES.in but want to know if
+    all listed files exist. The presence of the 'notexist' file tells us
+    that.
+
+    :param path: The directory where POTFILES.in resides.
+    :returns: False if the directory does not exist, if an error occurred
+        when executing intltool-update or if files are missing from
+        POTFILES.in. True if all went fine and all files in POTFILES.in
+        actually exist.  
+    """
     current_path = os.getcwd()
 
     try:
         os.chdir(path)
     except OSError, e:
-        # Abort nicely if directory does not exist.
+        # Abort nicely if the directory does not exist.
         if e.errno == errno.ENOENT:
             return False
         raise
     try:
+        # Remove stale files from a previous run of intltool-update -m.
         for unlink_name in ['missing', 'notexist']:
             try:
                 os.unlink(unlink_name)
@@ -60,6 +78,7 @@ def check_potfiles_in(path):
         os.chdir(current_path)
 
     if returncode != 0:
+        # An error occurred when executing intltool-update.
         return False
 
     notexist = os.path.join(path, "notexist")
