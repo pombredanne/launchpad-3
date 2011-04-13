@@ -3,17 +3,13 @@
 
 __metaclass__ = type
 
-import os
-import subprocess
-import sys
-
 from storm.exceptions import IntegrityError
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -177,10 +173,5 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(builds.count(), 1)
 
     def test_cronscript(self):
-        script = os.path.join(
-            config.root, 'cronscripts', 'initialise_distro_series.py')
-        args = [sys.executable, script, '-v']
-        process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.assertEqual(process.returncode, 0)
+        run_script(
+            'cronscripts/run_jobs.py', ['-v', 'initialisedistroseries'])

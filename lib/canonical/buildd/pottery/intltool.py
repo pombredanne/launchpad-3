@@ -33,17 +33,35 @@ def find_potfiles_in():
 
 
 def check_potfiles_in(path):
-    """Check if the files listed in the POTFILES.in file exist."""
+    """Check if the files listed in the POTFILES.in file exist.
+
+    Running 'intltool-update -m' will perform this check and also take a
+    possible POTFILES.skip into account. It stores details about 'missing'
+    (files that should be in POTFILES.in) and 'notexist'ing files (files
+    that are listed in POTFILES.in but don't exist) in files which are
+    named accordingly. These files are removed before the run.
+
+    We don't care about files missing from POTFILES.in but want to know if
+    all listed files exist. The presence of the 'notexist' file tells us
+    that.
+
+    :param path: The directory where POTFILES.in resides.
+    :returns: False if the directory does not exist, if an error occurred
+        when executing intltool-update or if files are missing from
+        POTFILES.in. True if all went fine and all files in POTFILES.in
+        actually exist.  
+    """
     current_path = os.getcwd()
 
     try:
         os.chdir(path)
     except OSError, e:
-        # Abort nicely if directory does not exist.
+        # Abort nicely if the directory does not exist.
         if e.errno == errno.ENOENT:
             return False
         raise
     try:
+        # Remove stale files from a previous run of intltool-update -m.
         for unlink_name in ['missing', 'notexist']:
             try:
                 os.unlink(unlink_name)
@@ -60,6 +78,7 @@ def check_potfiles_in(path):
         os.chdir(current_path)
 
     if returncode != 0:
+        # An error occurred when executing intltool-update.
         return False
 
     notexist = os.path.join(path, "notexist")
@@ -67,8 +86,14 @@ def check_potfiles_in(path):
 
 
 def find_intltool_dirs():
-    """Search the current directory and its subdiretories for intltool
-    structure.
+    """Search for directories with intltool structure.
+
+    The current directory and its subdiretories are searched. An 'intltool
+    structure' is a directory that contains a POFILES.in file and where all
+    files listed in that POTFILES.in do actually exist. The latter
+    condition makes sure that the file is not stale.
+
+    :returns: A list of directory names.
     """
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
@@ -173,6 +198,12 @@ def chdir(directory):
 
 def generate_pot(podir, domain):
     """Generate one PO template using intltool.
+
+    Although 'intltool-update -p' can try to find out the translation domain
+    we trust our own code more on this one and simply specify the domain.
+    Also, the man page for 'intltool-update' states that the '-g' option
+    "has an additional effect: the name of current working directory is no
+    more  limited  to 'po' or 'po-*'." We don't want that limit either.
 
     :param podir: The PO directory in which to build template.
     :param domain: The translation domain to use as the name of the template.

@@ -1355,8 +1355,32 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+class TestBugTaskContributor(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_contributor(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        # Create a person who has not contributed
+        person = self.factory.makePerson()
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertFalse(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+    def test_contributor(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=owner)
+        bug1 = self.factory.makeBug(product=product, owner=owner)
+        # Create a person who has contributed
+        person = self.factory.makePerson()
+        login('foo.bar@canonical.com')
+        bug1.default_bugtask.transitionToAssignee(person)
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertTrue(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
