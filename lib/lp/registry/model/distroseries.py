@@ -122,7 +122,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.job.model.job import Job
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -797,8 +796,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def is_initialising(self):
         """See `IDistroSeries`."""
         return not getUtility(
-            IInitialiseDistroSeriesJobSource).getJobs(
-                self, statuses=Job.PENDING_STATUSES).is_empty()
+            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
+                self).is_empty()
 
     @property
     def bugtargetname(self):

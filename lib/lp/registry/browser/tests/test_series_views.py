@@ -98,8 +98,7 @@ class TestDistroSeriesView(TestCaseWithFactory):
             parent_series=self.factory.makeDistroSeries())
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=distroseries, difference_type=difference_type)
-        view = create_initialized_view(distroseries, '+index')
-        return view
+        return create_initialized_view(distroseries, '+index')
 
     def test_num_differences(self):
         diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS

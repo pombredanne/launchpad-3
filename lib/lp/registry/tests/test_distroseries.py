@@ -228,8 +228,8 @@ class TestDistroSeries(TestCaseWithFactory):
         derived_distroseries = self.factory.makeDistroRelease(
             parent_series=self.factory.makeDistroRelease())
         distroseries = self.factory.makeDistroRelease()
-        self.assertEquals(False, distroseries.is_derived_series)
-        self.assertEquals(True, derived_distroseries.is_derived_series)
+        self.assertFalse(distroseries.is_derived_series)
+        self.assertTrue(derived_distroseries.is_derived_series)
 
     def test_is_initialising(self):
         # The series is_initialising only if there is an initialisation
