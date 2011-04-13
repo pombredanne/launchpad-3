@@ -89,12 +89,10 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         """
 
 
-# Hurray circular imports!
-from lp.answers.interfaces.question import IQuestion
 class IQuestionSet(IQuestionCollection):
     """A utility that contain all the questions published in Launchpad."""
 
-    export_as_webservice_collection(IQuestion)
+    export_as_webservice_collection(Interface)
 
     title = Attribute('Title')
 
