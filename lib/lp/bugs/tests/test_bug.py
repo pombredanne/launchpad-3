@@ -16,13 +16,11 @@ from canonical.launchpad.webapp.adapter import (
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bug import IBug
 from lp.testing import (
-    feature_flags,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
+
 
 class TestBugSubscriptionMethods(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
@@ -150,7 +148,7 @@ class TestBugSnapshotting(TestCaseWithFactory):
             select_sql = sql.partition('select ')[2].partition(' from ')[0]
             # This gets the field names with a simple split.
             select_fields = select_sql.split(', ')
-            # Now we verify that the Message table is not referenced. 
+            # Now we verify that the Message table is not referenced.
             # Of course, if the Message table is aliased, it won't catch
             # it.  This shouldn't be a common problem for the way we
             # currently generate our SQL, and for the kind of problem we are
