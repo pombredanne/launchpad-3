@@ -756,6 +756,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             archive_root = getPubConfig(archive).archiveroot
             self.assertEqual(
                 "This is an archive root.",
-                self.readMarkerFile([archive_root, "marker file"]).rstrip(),
+                read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)

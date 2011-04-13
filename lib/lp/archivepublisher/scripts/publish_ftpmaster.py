@@ -342,7 +342,6 @@ class PublishFTPMaster(LaunchpadCronScript):
         env = {
             'ARCHIVEROOT': shell_quote(archive_config.archiveroot),
             'DISTSROOT': shell_quote(get_backup_dists(archive_config)),
-            'OVERRIDEROOT': shell_quote(archive_config.overrideroot),
             }
         if archive_config.overrideroot is not None:
             env["OVERRIDEROOT"] = shell_quote(archive_config.overrideroot)
