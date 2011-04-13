@@ -425,13 +425,17 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
     @action('Unlink')
     def unlink(self, action, data):
         old_series = self.context.productseries
-        getUtility(IPackagingUtil).deletePackaging(
-            self.context.productseries,
-            self.context.sourcepackagename,
-            self.context.distroseries)
-        self.request.response.addInfoNotification(
-            'Removed upstream association between %s and %s.' % (
-            old_series.title, self.context.distroseries.displayname))
+        if self.context.direct_packaging is not None:
+            getUtility(IPackagingUtil).deletePackaging(
+                self.context.productseries,
+                self.context.sourcepackagename,
+                self.context.distroseries)
+            self.request.response.addInfoNotification(
+                'Removed upstream association between %s and %s.' % (
+                old_series.title, self.context.distroseries.displayname))
+        else:
+            self.request.response.addInfoNotification(
+                'The packaging link has already been deleted.')
 
 
 class SourcePackageView:
