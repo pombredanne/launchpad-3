@@ -13,7 +13,10 @@ from BeautifulSoup import BeautifulSoup
 from lxml import html
 import soupmatchers
 from storm.zope.interfaces import IResultSet
-from testtools.content import Content
+from testtools.content import (
+    Content,
+    text_content,
+    )
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
@@ -404,12 +407,21 @@ class TestDistroSeriesLocalDifferences(
         # Render without differences and check the query count isn't silly.
         recorder1 = flush_and_render()
         self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.addDetail(
+            "statement-count-0-differences",
+            text_content(unicode(recorder1.count)))
         # Add some differences and render.
         add_differences(2)
         recorder2 = flush_and_render()
+        self.addDetail(
+            "statement-count-2-differences",
+            text_content(unicode(recorder2.count)))
         # Add more differences and render again.
         add_differences(2)
         recorder3 = flush_and_render()
+        self.addDetail(
+            "statement-count-4-differences",
+            text_content(unicode(recorder3.count)))
         # The last render should not need more queries than the previous.
         self.addDetail(
             "statement-diff", Content(
