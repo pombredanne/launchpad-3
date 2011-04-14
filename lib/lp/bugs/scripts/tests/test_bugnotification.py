@@ -8,9 +8,10 @@ from datetime import datetime, timedelta
 import unittest
 
 import pytz
+from storm.store import Store
 from testtools.matchers import Not
 from transaction import commit
-from zope.component import getUtility
+from zope.component import getUtility, getSiteManager
 from zope.interface import implements
 
 from canonical.config import config
@@ -43,8 +44,14 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.bugs.model.bugnotification import (
+    BugNotification,
+    BugNotificationFilter,
+#    BugNotificationRecipient,
+    )
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
+    construct_email_notifications,
     get_email_notifications,
     get_activity_key,
     notification_batches,
@@ -136,9 +143,6 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
         self.activity = None
 
-    def getFiltersByRecipient(self, recipient):
-        return []
-
 
 class FakeNotification:
     """An even simpler fake notification.
@@ -155,6 +159,17 @@ class FakeNotification:
         self.message = self.Message()
         self.message.owner = owner
         self.activity = None
+
+
+class FakeBugNotificationSetUtility:
+    """A notification utility used for testing."""
+
+    implements(IBugNotificationSet)
+
+    def getRecipientFilterData(self, recipient_to_sources, notifications):
+        return dict(
+            (recipient, {'sources': sources, 'filter descriptions': []})
+            for recipient, sources in recipient_to_sources.items())
 
 
 class MockBugActivity:
@@ -243,6 +258,17 @@ class TestGetEmailNotifications(unittest.TestCase):
         # We need to commit the transaction, since the error handling
         # will abort the current transaction.
         commit()
+
+        sm = getSiteManager()
+        self._original_utility = sm.getUtility(IBugNotificationSet)
+        sm.unregisterUtility(self._original_utility)
+        self._fake_utility = FakeBugNotificationSetUtility()
+        sm.registerUtility(self._fake_utility)
+
+    def tearDown(self):
+        sm = getSiteManager()
+        sm.unregisterUtility(self._fake_utility)
+        sm.registerUtility(self._original_utility)
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.
@@ -875,14 +901,6 @@ class TestEmailNotificationsAttachments(
                 BugAttachmentChange(
                     self.ten_minutes_ago, self.person, 'attachment',
                     item, None))
-
-from lp.bugs.model.bugnotification import (
-    BugNotification,
-    BugNotificationFilter,
-#    BugNotificationRecipient,
-    )
-from lp.bugs.scripts.bugnotification import construct_email_notifications
-from storm.store import Store
 
 
 class TestEmailNotificationsWithFilters(TestCaseWithFactory):

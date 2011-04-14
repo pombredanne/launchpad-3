@@ -10,10 +10,42 @@ from lxml import html
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     feature_flags,
+    person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
+
+
+class TestDistroSeriesAddView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_submit(self):
+        # When creating a new DistroSeries via DistroSeriesAddView, the title
+        # is set to the same as the displayname (title is, in any case,
+        # deprecated), the description is left empty, and parent_series is
+        # None (DistroSeriesInitializeView takes care of setting that).
+        user = self.factory.makePerson()
+        distribution = self.factory.makeDistribution(owner=user)
+        form = {
+            "field.name": u"polished",
+            "field.version": u"12.04",
+            "field.displayname": u"Polished Polecat",
+            "field.summary": u"Even The Register likes it.",
+            "field.actions.create": u"Add Series",
+            }
+        with person_logged_in(user):
+            create_initialized_view(distribution, "+addseries", form=form)
+        distroseries = distribution.getSeries(u"polished")
+        self.assertEqual(u"polished", distroseries.name)
+        self.assertEqual(u"12.04", distroseries.version)
+        self.assertEqual(u"Polished Polecat", distroseries.displayname)
+        self.assertEqual(u"Polished Polecat", distroseries.title)
+        self.assertEqual(u"Even The Register likes it.", distroseries.summary)
+        self.assertEqual(u"", distroseries.description)
+        self.assertIs(None, distroseries.parent_series)
+        self.assertEqual(user, distroseries.owner)
 
 
 class TestDistroSeriesInitializeView(TestCaseWithFactory):

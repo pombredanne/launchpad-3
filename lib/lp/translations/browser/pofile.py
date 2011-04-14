@@ -725,8 +725,8 @@ class POFileUploadView(POFileView):
             'should be imported, it will be reviewed manually by an '
             'administrator in the coming few days.  You can track '
             'your upload\'s status in the '
-            '<a href="%s/+imports">Translation Import Queue</a>' %(
-            canonical_url(self.context.potemplate.translationtarget))))
+            '<a href="%s/+imports">Translation Import Queue</a>',
+            canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileBatchNavigator(BatchNavigator):
@@ -1034,6 +1034,11 @@ class POExportView(BaseExportView):
 
     @property
     def has_pochanged_option(self):
+        is_ubuntu = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UBUNTU)
+        if is_ubuntu:
+            return True
         other_side_pofile = self.context.getOtherSidePOFile()
         return other_side_pofile is not None
 

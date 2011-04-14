@@ -2425,6 +2425,11 @@ class CopyPackageTestCase(TestCaseWithFactory):
         for build in ppa_source.getBuilds():
             build.log = fake_buildlog
 
+        # Add a restricted changelog file.
+        fake_changelog = test_publisher.addMockFile(
+            'changelog', restricted=True)
+        ppa_source.sourcepackagerelease.changelog = fake_changelog
+
         # Create ancestry environment in the primary archive, so we can
         # test unembargoed overrides.
         ancestry_source = test_publisher.getPubSource(
@@ -2477,6 +2482,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             if ISourcePackagePublishingHistory.providedBy(published):
                 source = published.sourcepackagerelease
                 self.assertFalse(source.upload_changesfile.restricted)
+                self.assertFalse(source.changelog.restricted)
                 # Check the source's package diff.
                 [diff] = source.package_diffs
                 self.assertFalse(diff.diff_content.restricted)

@@ -123,7 +123,7 @@ class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
-                  version, parent_series, owner):
+                  version, parent_series, registrant):
         """Creates a new distroseries."""
 
 
@@ -209,6 +209,11 @@ class IDistributionPublic(
         PublicPersonChoice(
             title=_("Owner"), vocabulary='ValidOwner',
             description=_("The distro's owner."), required=True))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam',
+            description=_("The distro's registrant."), required=True,
+            readonly=True))
     date_created = exported(
         Datetime(title=_('Date created'),
                  description=_("The date this distribution was registered.")))
@@ -261,6 +266,11 @@ class IDistributionPublic(
     series = exported(doNotSnapshot(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface))))
+    derivatives = exported(doNotSnapshot(
+        CollectionField(
+            title=_("This Distribution's derivatives"),
             # Really IDistroSeries, see _schema_circular_imports.py.
             value_type=Reference(schema=Interface))))
     architectures = List(
@@ -689,7 +699,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
 
     def getCurrentSourceReleases(distro_to_source_packagenames):

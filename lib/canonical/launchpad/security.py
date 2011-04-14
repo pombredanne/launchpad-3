@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IAuthorization,
@@ -45,6 +46,7 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
@@ -985,9 +987,10 @@ class AdminDistroSeries(AdminByAdminsTeam):
     usedfor = IDistroSeries
 
 
-class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    """The owner of the distro series should be able to modify some of the
-    fields on the IDistroSeries
+class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
+    AuthorizationBase):
+    """The owner of the distro series (i.e. the owner of the distribution)
+    should be able to modify some of the fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
     please consult with Kiko and MDZ on the mailing list before modifying
@@ -1002,8 +1005,7 @@ class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
             # The series driver (release manager) may edit a series if the
             # distribution is an `IDerivativeDistribution`
             return True
-        return (user.inTeam(self.obj.owner) or
-                user.inTeam(self.obj.distribution.owner) or
+        return (user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
 
@@ -1654,6 +1656,15 @@ class ViewBuildFarmJobOld(AuthorizationBase):
     checkUnauthenticated = _checkAccess
 
 
+class SetQuestionCommentVisibility(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IQuestion
+
+    def checkAuthenticated(self, user):
+        """Admins and registry admins can set bug comment visibility."""
+        return (user.in_admin or user.in_registry_experts)
+
+
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
@@ -2052,7 +2063,7 @@ class ViewEntitlement(AuthorizationBase):
 
 class AdminDistroSeriesLanguagePacks(
     OnlyRosettaExpertsAndAdmins,
-    EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
+    EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins):
     permission = 'launchpad.LanguagePacksAdmin'
     usedfor = IDistroSeries
 
@@ -2063,10 +2074,10 @@ class AdminDistroSeriesLanguagePacks(
         edit distroseries or members of IDistribution.language_pack_admin team
         are able to change the language packs available.
         """
+        EditDS = EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins
         return (
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
-                self, user) or
+            EditDS.checkAuthenticated(self, user) or
             user.inTeam(self.obj.distribution.language_pack_admin))
 
 
@@ -2588,3 +2599,16 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class SetMessageVisibility(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMessage
+
+    def checkAuthenticated(self, user):
+        """Admins and registry admins can set bug comment visibility."""
+        return (user.in_admin or user.in_registry_experts)
+
+
+class ViewPublisherConfig(AdminByAdminsTeam):
+    usedfor = IPublisherConfig

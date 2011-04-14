@@ -227,8 +227,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -252,6 +252,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -394,6 +395,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
+
+    @property
+    def owner(self):
+        """See `IDistroSeries`."""
+        return self.distribution.owner
 
     @property
     def sortkey(self):
@@ -827,9 +833,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IHasBugs`."""
-        return get_bug_tags_open_count(BugTask.distroseries == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
 
     @property
     def has_any_specifications(self):
@@ -1069,6 +1076,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # Deprecated.  Use IArchive.getPublishedSources instead.
+
         # XXX cprov 2006-02-13 bug 31317:
         # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -1963,7 +1972,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=None, owner=user)
+                version=version, parent_series=None, registrant=user)
             IStore(self).add(child)
         else:
             if child.parent_series is not None:
@@ -1981,8 +1990,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        return Store.of(self).find(
-            DistroSeries, DistroSeries.parent_series == self)
+        # rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.distributionID' is only
+        # required because the parent_series attribute has been
+        # (mis-)used to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        results = Store.of(self).find(
+            DistroSeries,
+            DistroSeries.parent_series==self.id,
+            DistroSeries.distributionID!=self.distributionID)
+        return results.order_by(Desc(DistroSeries.date_created))
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.

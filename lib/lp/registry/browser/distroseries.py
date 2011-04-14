@@ -19,13 +19,13 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
-    Bool,
     Choice,
     List,
     TextLine,
@@ -40,7 +40,6 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -55,6 +54,7 @@ from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
+    structured,
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
@@ -70,6 +70,7 @@ from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -84,7 +85,10 @@ from lp.registry.browser import (
     add_subscribe_link,
     MilestoneOverlayMixin,
     )
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -195,7 +199,6 @@ class DistroSeriesOverviewMenu(
     @property
     def links(self):
         links = ['edit',
-                 'reassign',
                  'driver',
                  'answers',
                  'packaging',
@@ -219,11 +222,6 @@ class DistroSeriesOverviewMenu(
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for this series'
         return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def reassign(self):
-        text = 'Change registrant'
-        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -510,31 +508,53 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
+class IDistroSeriesAddForm(Interface):
+
+    name = copy_field(
+        IDistroSeries["name"], description=_(
+            "The name of this series as used for URLs."))
+
+    version = copy_field(
+        IDistroSeries["version"], description=_(
+            "The version of the new series."))
+
+    displayname = copy_field(
+        IDistroSeries["displayname"], description=_(
+            "The name of the new series as it would "
+            "appear in a paragraph."))
+
+    summary = copy_field(IDistroSeries["summary"])
+
+
 class DistroSeriesAddView(LaunchpadFormView):
     """A view to create an `IDistroSeries`."""
-    schema = IDistroSeries
+    schema = IDistroSeriesAddForm
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description', 'version',
-        'parent_series']
+        'name',
+        'version',
+        'displayname',
+        'summary',
+        ]
 
-    label = 'Register a series'
+    help_links = {
+        "name": u"/+help/distribution-add-series.html#codename",
+        }
+
+    label = 'Add a series'
     page_title = label
 
-    @action(_('Create Series'), name='create')
+    @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        owner = getUtility(ILaunchBag).user
-
-        assert owner is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
-            description=data['description'],
+            description=u"",
             version=data['version'],
-            parent_series=data['parent_series'],
-            owner=owner)
+            parent_series=None,
+            registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -599,6 +619,31 @@ class DistroSeriesPackagesView(LaunchpadView):
         return navigator
 
 
+# A helper to create package filtering radio button vocabulary.
+NON_BLACKLISTED = 'non-blacklisted'
+BLACKLISTED = 'blacklisted'
+HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
+RESOLVED = 'resolved'
+
+DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
+
+
+def make_package_type_vocabulary(parent_name, higher_version_option=False):
+    voc = [
+        SimpleTerm(
+            NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
+        SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved packages")]
+    if higher_version_option:
+        higher_term = SimpleTerm(
+            HIGHER_VERSION_THAN_PARENT,
+            HIGHER_VERSION_THAN_PARENT,
+            "Blacklisted packages with a higher version than in '%s'"
+                % parent_name)
+        voc.insert(2, higher_term)
+    return SimpleVocabulary(tuple(voc))
+
+
 class DistroSeriesNeedsPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
@@ -618,10 +663,6 @@ class IDifferencesFormSchema(Interface):
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
 
-    include_blacklisted_filter = Bool(
-        title=_("include blacklisted packages"),
-        required=False, default=False)
-
     selected_differences = List(
         title=_('Selected differences'),
         value_type=Choice(vocabulary=SimpleVocabulary([])),
@@ -629,13 +670,25 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
-    """Present differences between a derived series and its parent."""
+class DistroSeriesDifferenceBaseView(LaunchpadFormView,
+                                     PackageCopyingMixin):
+    """Base class for all pages presenting differences between
+    a derived series and its parent."""
     schema = IDifferencesFormSchema
     field_names = ['selected_differences']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
+    custom_widget('package_type', LaunchpadRadioWidget)
 
-    page_title = 'Local package differences'
+    # Differences type to display. Can be overrided by sublasses.
+    differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent_version = True
+    show_derived_version = True
+    show_package_diffs = True
+    # Packagesets display.
+    show_parent_packagesets = False
+    show_packagesets = False
+    # Search vocabulary.
+    search_higher_parent_option = False
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
@@ -643,22 +696,23 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
             self.request.response.redirect(canonical_url(self.context))
             return
 
-        # Update the label for sync action.
-        self.__class__.actions.byname['actions.sync'].label = (
-            "Sync Selected %s Versions into %s" % (
-                self.context.parent_series.displayname,
-                self.context.displayname,
-                ))
-        super(DistroSeriesLocalDifferences, self).initialize()
+        super(DistroSeriesDifferenceBaseView, self).initialize()
+
+    def initialize_sync_label(self, label):
+        self.__class__.actions.byname['actions.sync'].label = label
 
     @property
     def label(self):
-        return (
-            "Source package differences between '%s' and "
-            "parent series '%s'" % (
-                self.context.displayname,
+        return NotImplementedError()
+
+    def setupPackageFilterRadio(self):
+        return form.Fields(Choice(
+            __name__='package_type',
+            vocabulary=make_package_type_vocabulary(
                 self.context.parent_series.displayname,
-                ))
+                self.search_higher_parent_option),
+            default=DEFAULT_PACKAGE_TYPE,
+            required=True))
 
     def setUpFields(self):
         """Add the selected differences field.
@@ -666,7 +720,10 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         As this field depends on other search/filtering field values
         for its own vocabulary, we set it up after all the others.
         """
-        super(DistroSeriesLocalDifferences, self).setUpFields()
+        super(DistroSeriesDifferenceBaseView, self).setUpFields()
+        self.form_fields = (
+            self.setupPackageFilterRadio() +
+            self.form_fields)
         check_permission('launchpad.Edit', self.context)
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
@@ -676,14 +733,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
-
-    @action(_("Sync Sources"), name="sync", validator='validate_sync',
-            condition='canPerformSync')
-    def sync_sources(self, action, data):
+    def _sync_sources(self, action, data):
         """Synchronise packages from the parent series to this one."""
         # We're doing a direct copy sync here as an interim measure
         # until we work out if it's fast enough to work reliably.  If it
@@ -722,7 +772,8 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return check_permission('launchpad.Edit', self.context)
+        return (check_permission('launchpad.Edit', self.context) and
+                self.cached_differences.batch.total() > 0)
 
     @property
     def specified_name_filter(self):
@@ -736,33 +787,45 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
             return None
 
     @property
-    def specified_include_blacklisted_filter(self):
-        """If specified, return the 'blacklisted' filter from the GET form
+    def specified_package_type(self):
+        """If specified, return the package type filter from the GET form
         data.
         """
-        include_blacklisted_filter = self.request.query_string_params.get(
-            'field.include_blacklisted_filter')
-
-        if include_blacklisted_filter and include_blacklisted_filter[0]:
-            return include_blacklisted_filter[0]
+        package_type = self.request.query_string_params.get(
+            'field.package_type')
+        if package_type and package_type[0]:
+            return package_type[0]
         else:
-            return None
+            return DEFAULT_PACKAGE_TYPE
 
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_include_blacklisted_filter:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        else:
+        if self.specified_package_type == NON_BLACKLISTED:
             status=(
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+            child_version_higher = False
+        elif self.specified_package_type == BLACKLISTED:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = False
+        elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = True
+        elif self.specified_package_type == RESOLVED:
+            status=DistroSeriesDifferenceStatus.RESOLVED
+            child_version_higher = False
+        else:
+            raise AssertionError('specified_package_type unknown')
+
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context,
+                difference_type = self.differences_type,
                 source_package_name_filter=self.specified_name_filter,
-                status=status)
+                status=status,
+                child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -780,7 +843,148 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
             differences = getUtility(
                 IDistroSeriesDifferenceSource).getForDistroSeries(
                     self.context,
+                    difference_type = self.differences_type,
                     status=(
                         DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
             return not differences.is_empty()
+
+
+class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
+                                       LaunchpadFormView):
+    """Present differences of type DIFFERENT_VERSIONS between
+    a derived series and its parent.
+    """
+    page_title = 'Local package differences'
+    differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent_packagesets = True
+    search_higher_parent_option = True
+
+    def initialize(self):
+        # Update the label for sync action.
+        self.initialize_sync_label(
+            "Sync Selected %s Versions into %s" % (
+                self.context.parent_series.displayname,
+                self.context.displayname,
+                ))
+        super(DistroSeriesLocalDifferencesView, self).initialize()
+
+    @property
+    def explanation(self):
+        return structured(
+            "Source packages shown here are present in both %s "
+            "and the parent series, %s, but are different somehow. "
+            "Changes could be in either or both series so check the "
+            "versions (and the diff if necessary) before syncing the %s "
+            'version (<a href="/+help/soyuz/derived-series-syncing.html" '
+            'target="help">Read more about syncing from the parent series'
+            '</a>).',
+            self.context.displayname,
+            self.context.parent_series.fullseriesname,
+            self.context.parent_series.displayname)
+
+    @property
+    def label(self):
+        return (
+            "Source package differences between '%s' and "
+            "parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
+
+    @action(_("Sync Sources"), name="sync", validator='validate_sync',
+            condition='canPerformSync')
+    def sync_sources(self, action, data):
+        self._sync_sources(action, data)
+
+
+class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
+                                      LaunchpadFormView):
+    """Present differences of type MISSING_FROM_DERIVED_SERIES between
+    a derived series and its parent.
+    """
+    page_title = 'Missing packages'
+    differences_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+    show_derived_version = False
+    show_package_diffs = False
+    show_parent_packagesets = True
+
+    def initialize(self):
+        # Update the label for sync action.
+        self.initialize_sync_label(
+            "Include Selected packages into into %s" % (
+                self.context.displayname,
+                ))
+        super(DistroSeriesMissingPackagesView, self).initialize()
+
+    @property
+    def explanation(self):
+        return structured(
+            "Packages that are listed here are those that have been added to "
+            "the specific packages %s that were used to create %s. They are "
+            "listed here so you can consider including them in %s.",
+            self.context.parent_series.displayname,
+            self.context.displayname,
+            self.context.displayname)
+
+    @property
+    def label(self):
+        return (
+            "Packages in parent series '%s' but not in '%s'" % (
+                self.context.parent_series.displayname,
+                self.context.displayname,
+                ))
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
+
+    @action(_("Sync Sources"), name="sync", validator='validate_sync',
+            condition='canPerformSync')
+    def sync_sources(self, action, data):
+        self._sync_sources(action, data)
+
+
+class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
+                                     LaunchpadFormView):
+    """Present differences of type UNIQUE_TO_DERIVED_SERIES between
+    a derived series and its parent.
+    """
+    page_title = 'Unique packages'
+    differences_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+    show_parent_version = False
+    show_package_diffs = False
+    show_packagesets = True
+
+    def initialize(self):
+        super(DistroSeriesUniquePackagesView, self).initialize()
+
+    @property
+    def explanation(self):
+        return structured(
+            "Packages that are listed here are those that have been added to "
+            "%s but are not yet part of the parent series %s.",
+            self.context.displayname,
+            self.context.parent_series.displayname)
+
+    @property
+    def label(self):
+        return (
+            "Packages in '%s' but not in parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
+
+    def canPerformSync(self, *args):
+        return False

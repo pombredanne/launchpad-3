@@ -129,13 +129,6 @@
         template="../templates/distroseries-needs-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        permission="launchpad.Admin"
-        facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView"
-        name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Edit"
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
@@ -161,9 +154,21 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+uniquepackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesUniquePackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+     <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferencesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:url
@@ -1943,6 +1948,20 @@
         template="../templates/distribution-series-and-milestones.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionDerivativesView"
+        permission="zope.Public"
+        name="+derivatives"
+        facet="overview"
+        template="../templates/distribution-series.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionView"
+        permission="zope.Public"
+        name="+derivatives-slot"
+        facet="overview"
+        template="../templates/distribution-derivatives.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+details"
@@ -1951,7 +1970,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
@@ -1964,15 +1983,15 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
-        permission="launchpad.Append"
-        template="../../app/templates/generic-edit.pt">
+        permission="launchpad.Moderate"
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+initseries"
@@ -2004,6 +2023,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+pubconf"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionPublisherConfigView"
+        template="../../app/templates/generic-edit.pt"
+        facet="overview"
+        permission="launchpad.Admin"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
         name="+index"/>

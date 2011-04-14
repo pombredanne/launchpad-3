@@ -19,6 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
@@ -240,6 +241,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     domainname = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
@@ -594,6 +598,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
+    @cachedproperty
+    def derivatives(self):
+        """See `IDistribution`."""
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        # rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.id' is only required
+        # because the parent_series attribute has been (mis-)used
+        # to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        ret = Store.of(self).find(
+            DistroSeries,
+            ParentDistroSeries.id==DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID==self.id,
+            DistroSeries.distributionID!=self.id)
+        return ret.config(
+            distinct=True).order_by(Desc(DistroSeries.date_created))
+
     @property
     def architectures(self):
         """See `IDistribution`."""
@@ -627,9 +649,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.distribution == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distribution == self, user, wanted_tags=wanted_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1775,7 +1798,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return user.inTeam(self.owner) or user.inTeam(admins)
 
     def newSeries(self, name, displayname, title, summary,
-                  description, version, parent_series, owner):
+                  description, version, parent_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
@@ -1787,10 +1810,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             version=version,
             status=SeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
-            owner=owner)
-        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            registrant=registrant)
+        if (registrant.inTeam(self.driver)
+            and not registrant.inTeam(self.owner)):
             # This driver is a release manager.
-            series.driver = owner
+            series.driver = registrant
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
@@ -1897,7 +1921,7 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1909,6 +1933,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            registrant=registrant,
             mugshot=mugshot,
             logo=logo,
             icon=icon)

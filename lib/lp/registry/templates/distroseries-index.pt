@@ -13,16 +13,19 @@
       <script id="milestone-script" type="text/javascript"
         tal:condition="context/menu:overview/create_milestone/enabled"
         tal:content="view/register_milestone_script"></script>
-      <script type="text/javascript"
-        tal:condition="
-          request/features/malone.advanced-structural-subscriptions.enabled">
-          LPS.use('lp.registry.structural_subscription', function(Y) {
-              var module = Y.lp.registry.structural_subscription;
-              Y.on('domready', function() {
-                module.setup({content_box: "#structural-subscription-content-box"});
-              });
-          });
-      </script>
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript"
+          tal:condition="
+            request/features/malone.advanced-structural-subscriptions.enabled">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
     </metal:block>
 
     <tal:heading metal:fill-slot="heading">
@@ -30,8 +33,8 @@
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-        registered by
-        <a tal:replace="structure context/owner/fmt:link" />
+        Registered by
+        <a tal:replace="structure context/registrant/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
@@ -135,9 +138,6 @@
           </li>
           <li tal:condition="overview_menu/admin/enabled">
             <a tal:replace="structure overview_menu/admin/fmt:link" />
-          </li>
-          <li tal:condition="overview_menu/reassign/enabled">
-            <a tal:replace="structure overview_menu/reassign/fmt:link" />
           </li>
           <li tal:condition="overview_menu/subscribe/enabled|nothing">
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />
