@@ -318,7 +318,9 @@ class IDistributionPublic(
 
     all_distro_archives = exported(doNotSnapshot(
         CollectionField(
-            title=_("A sequence of the distribution's non-PPA Archives."),
+            title=_(
+                "A sequence of the distribution's primary, "
+                "partner and debug archives."),
             readonly=True, required=False,
             value_type=Reference(schema=Interface))),
                 # Really IArchive, see _schema_circular_imports.py.
