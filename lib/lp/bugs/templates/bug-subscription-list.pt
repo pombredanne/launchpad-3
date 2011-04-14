@@ -24,6 +24,9 @@
                   {description_box: "#subscription-description-box"});
           });
           Y.on('contentready', function() {
+              // This happens only after show_subscription_description()
+              // is called in 'domready' handler, because that's what
+              // inserts '#other-subscriptions-list' into DOM.
               ss_module.setup_bug_subscriptions(
                   {content_box: "#other-subscriptions-list"});
           }, '#other-subscriptions-list');
