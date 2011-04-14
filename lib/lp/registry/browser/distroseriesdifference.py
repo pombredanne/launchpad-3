@@ -162,6 +162,11 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         return self.context.source_version != self.context.base_version
 
     @property
+    def display_parent_diff(self):
+        """Only show the parent diff if we need to."""
+        return self.context.parent_source_version != self.context.base_version
+
+    @property
     def can_have_packages_diffs(self):
         """Return whether this dsd could have packages diffs."""
         diff_versions = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
