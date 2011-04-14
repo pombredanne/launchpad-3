@@ -19,5 +19,7 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
 
-IQuestionSet.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IQuestion
-IQuestionSet['get'].queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)['return_type'] = IQuestion
+IQuestionSet.queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IQuestion
+IQuestionSet['get'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'] = IQuestion

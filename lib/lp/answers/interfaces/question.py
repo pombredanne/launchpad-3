@@ -67,7 +67,7 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    export_as_webservice_entry(as_of="devel")
+    export_as_webservice_entry(as_of='beta')
 
     id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,

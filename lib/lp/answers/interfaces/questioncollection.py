@@ -115,7 +115,13 @@ class IQuestionSet(IQuestionCollection):
         without an assignee or bug links, that did not receive any new
         comments in the last <days_before_expiration> days.
         """
-
+    
+    @operation_parameters(
+        limit=Int(
+            title=_('The limit of projects to get.'),
+            required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
     @collection_default_content(limit=5)
     def getMostActiveProjects(limit=5):
         """Return the list of projects that asked the most questions in
