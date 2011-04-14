@@ -6,10 +6,14 @@
 __metaclass__ = type
 __all__ = [
     'SoyuzWindmillLayer',
+    'SoyuzYUILayer',
     ]
 
 
-from canonical.testing.layers import BaseWindmillLayer
+from canonical.testing.layers import (
+    BaseWindmillLayer,
+    BaseYUITestLayer,
+    )
 
 
 class SoyuzWindmillLayer(BaseWindmillLayer):
@@ -21,4 +25,10 @@ class SoyuzWindmillLayer(BaseWindmillLayer):
         super(SoyuzWindmillLayer, cls).setUp()
 
 
+class SoyuzYUILayer(BaseYUITestLayer):
+    """Layer for Code YUI tests."""
 
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url()
+        super(SoyuzYUILayer, cls).setUp()

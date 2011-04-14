@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-from lp.soyuz.windmill.testing import SoyuzWindmillLayer
+from lp.soyuz.windmill.testing import SoyuzYUILayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
@@ -15,7 +15,7 @@ from lp.testing import (
 
 class SoyuzYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = SoyuzWindmillLayer
+    layer = SoyuzYUILayer
     suite_name = 'SoyuzYUIUnitTests'
 
 
