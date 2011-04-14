@@ -24,6 +24,19 @@ from lp.testing import (
     )
 
 
+class TestQuestionSetExport(TestCaseWithFactory):
+
+    def test_top_level_question_get(self):
+        with celebrity_logged_in('admin'):
+            question = self.factory.makeQuestion(
+                title="This is a question.")
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        webservice.default_api_version = 'devel'
+        ws_question = webservice.get('/questions/%s' % question.id)
+
+
+
 class TestQuestionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Question webservice representations."""
 
@@ -46,7 +59,19 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
 
+    def test_top_level_question_get(self):
+        # The top level question set can be used via the api to get
+        # a question by id without hacking the question's full canonical_url.
+        response = self.webservice.get(
+            '/questions/%s' % self.question.id, 'application/xhtml+xml')
+        self.assertEqual(response.status, 200)
+        self.assertEqual(
+            self.findQuestionTitle(response),
+            "<p>This is a question</p>") 
+
+
     def test_GET_xhtml_representation(self):
+        # A question's xhtml representation is available on the api.
         response = self.webservice.get(
             '/%s/+question/%d' % (self.question.target.name,
                 self.question.id),
@@ -58,6 +83,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
             "<p>This is a question</p>")
 
     def test_PATCH_xhtml_representation(self):
+        # You can update the question through the api with PATCH.
         new_title = "No, this is a question"
 
         question_json = self.webservice.get(
