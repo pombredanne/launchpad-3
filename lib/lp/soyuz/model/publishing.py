@@ -341,7 +341,7 @@ class ArchivePublisherBase:
                 dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
                 dsd_job_source.createForPackagePublication(
                     self.distroseries,
-                    self.sourcepackagerelease.sourcepackagename)
+                    self.sourcepackagerelease.sourcepackagename, self.pocket)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1441,7 +1441,7 @@ class PublishingSet:
         if archive == distroseries.main_archive:
             dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
             dsd_job_source.createForPackagePublication(
-                distroseries, sourcepackagerelease.sourcepackagename)
+                distroseries, sourcepackagerelease.sourcepackagename, pocket)
         return pub
 
     def getBuildsForSourceIds(

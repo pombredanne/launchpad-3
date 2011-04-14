@@ -258,13 +258,13 @@ class DistroSeriesDifference(StormBase):
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status),
-        ]
+            DistroSeriesDifference.source_package_name ==
+                SourcePackageName.id,
+         ]
 
         if source_package_name_filter:
             conditions.extend([
-                DistroSeriesDifference.source_package_name ==
-                    SourcePackageName.id,
-                SourcePackageName.name == source_package_name_filter])
+               SourcePackageName.name == source_package_name_filter])
 
         if child_version_higher:
             conditions.extend([
@@ -273,7 +273,7 @@ class DistroSeriesDifference(StormBase):
 
         differences = IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
-            And(*conditions))
+            And(*conditions)).order_by(SourcePackageName.name)
 
         def eager_load(dsds):
             source_pubs = dict(
@@ -509,10 +509,13 @@ class DistroSeriesDifference(StormBase):
             self.source_version)
 
     def _package_release(self, distro_series, version):
+        statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.PENDING)
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name,
             version=version,
-            status=PackagePublishingStatus.PUBLISHED,
+            status=statuses,
             distroseries=distro_series,
             exact_match=True)
 
