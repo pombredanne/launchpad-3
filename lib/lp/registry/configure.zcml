@@ -180,10 +180,10 @@
 
     <!-- DistroSeriesParent -->
     <securedutility
-        component="lp.registry.model.distroseriesparent.DistroSeriesParent"
-        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent">
+        class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
         <allow
-            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
     </securedutility>
     <class
         class="lp.registry.model.distroseriesparent.DistroSeriesParent">

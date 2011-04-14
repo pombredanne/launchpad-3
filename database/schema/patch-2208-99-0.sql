@@ -13,7 +13,7 @@ CREATE TABLE DistroSeriesParent (
 );
 
 CREATE INDEX distroseriesparent__derivedseries__idx
-    ON DistroSeriesParent (derivedseries);
+    ON DistroSeriesParent (derived_series);
 CREATE INDEX distroseriesparent__parentseries__idx
     ON DistroSeriesParent (parent_series);
 

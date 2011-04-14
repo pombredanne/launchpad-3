@@ -20,7 +20,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.distribution import IDistroseries
+from lp.registry.interfaces.distroseries import IDistroSeries
 
 
 class IDistroSeriesParent(Interface):
@@ -29,11 +29,11 @@ class IDistroSeriesParent(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     derived_series = Reference(
-        IDistroseries, title=_("Derived Series"), required=True,
+        IDistroSeries, title=_("Derived Series"), required=True,
         description=_("The derived distribution series."))
 
     parent_series = Reference(
-        IDistroseries, title=_("Parent Series"), required=True,
+        IDistroSeries, title=_("Parent Series"), required=True,
         description=_("The parent distribution series."))
 
     initialized = Bool(
@@ -43,7 +43,7 @@ class IDistroSeriesParent(Interface):
             "packages from its parent_series."))
 
 
-class IPublisherConfigSet(Interface):
+class IDistroSeriesParentSet(Interface):
     """`DistroSeriesParentSet` interface."""
 
     def new(derived_series, parent_series, initialized):

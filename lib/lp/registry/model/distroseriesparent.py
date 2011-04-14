@@ -36,10 +36,10 @@ class DistroSeriesParent(Storm):
     id = Int(primary=True)
 
     parent_series_id = Int(name='parent_series', allow_none=False)
-    parent_series = Reference(parent_series_id, 'Distroseries.id')
+    parent_series = Reference(parent_series_id, 'DistroSeries.id')
 
     derived_series_id = Int(name='derived_series', allow_none=False)
-    derived_series = Reference(derived_series_id, 'Distroseries.id')
+    derived_series = Reference(derived_series_id, 'DistroSeries.id')
 
     initialized = Bool(allow_none=False)
 
