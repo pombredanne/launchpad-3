@@ -229,6 +229,50 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
+    def _assertNoRequestLink(self, ds_diff):
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra')
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        self.assertFalse(view.show_package_diffs_request_link)
+        self.assertThat(view(), Not(package_diff_request_matcher))
+
+    def test_no_package_diff_parent_same_version(self):
+        # If the derived package diff is computed and parent_version is
+        # the same as the base version, we don't display the link to
+        # request package diffs.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True,
+            versions={
+                'derived': '0.32-1',
+                'parent': '0.30-1',
+                'base': '0.30-1'})
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.package_diff = self.factory.makePackageDiff(
+                status=PackageDiffStatus.COMPLETED)
+            self._assertNoRequestLink(ds_diff)
+
+    def test_no_package_diff_derived_same_version(self):
+        # If the parent package diff is computed and source_version is
+        # the same as the base version, we don't display the link to
+        # request package diffs.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True,
+            versions={
+                'derived': '0.30-1',
+                'parent': '0.32-1',
+                'base': '0.30-1'})
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.parent_package_diff = self.factory.makePackageDiff(
+                status=PackageDiffStatus.COMPLETED)
+            self._assertNoRequestLink(ds_diff)
+
     def _makeDistroSeriesDifferenceView(self, difference_type):
         # Helper method to create a view with the specified
         # difference_type.
