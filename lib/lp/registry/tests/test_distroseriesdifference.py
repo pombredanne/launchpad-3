@@ -30,7 +30,10 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.model.distroseriesdifference import most_recent_comments
+from lp.registry.model.distroseriesdifference import (
+    most_recent_comments,
+    most_recent_publications,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -894,3 +897,53 @@ class TestMostRecentComments(TestCaseWithFactory):
                 self.factory.makeDistroSeriesDifferenceComment(dsd))
         self.assertContentEqual(
             expected_comments, most_recent_comments(dsds))
+
+
+class TestMostRecentPublications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def create_difference(self, derived_series):
+        # Create a new DistroSeriesDifference
+        version = self.factory.getUniqueInteger()
+        versions = {
+            'base': u'1.%d' % version,
+            'derived': u'1.%dderived1' % version,
+            'parent': u'1.%d-1' % version,
+            }
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            versions=versions)
+        # Push a base_version in... not sure how better to do it.
+        removeSecurityProxy(dsd).base_version = versions["base"]
+        return dsd
+
+    def test_most_recent_publications(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsds = [
+            self.create_difference(derived_series),
+            self.create_difference(derived_series),
+            ]
+        # Derived publication.
+        source_pubs_by_spn_id_expected = set(
+            (dsd.source_package_name.id, dsd.source_pub)
+            for dsd in dsds)
+        source_pubs_by_spn_id_found = most_recent_publications(
+            dsds, in_parent=False, statuses=(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
+        self.assertContentEqual(
+            source_pubs_by_spn_id_expected,
+            source_pubs_by_spn_id_found)
+        # Parent publication
+        parent_source_pubs_by_spn_id_expected = set(
+            (dsd.source_package_name.id, dsd.parent_source_pub)
+            for dsd in dsds)
+        parent_source_pubs_by_spn_id_found = most_recent_publications(
+            dsds, in_parent=True, statuses=(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
+        self.assertContentEqual(
+            parent_source_pubs_by_spn_id_expected,
+            parent_source_pubs_by_spn_id_found)
