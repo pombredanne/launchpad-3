@@ -209,6 +209,26 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
+    def test_do_not_display_parent_diff(self):
+        # If the parent's latest published version is the same as the base
+        # version, we don't display the link to the diff.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.32-1',
+            'parent': '0.30-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.30-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(1, len(tags))
+
     def _makeDistroSeriesDifferenceView(self, difference_type):
         # Helper method to create a view with the specified
         # difference_type.
