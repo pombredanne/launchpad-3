@@ -918,7 +918,7 @@ class TestMostRecentPublications(TestCaseWithFactory):
         removeSecurityProxy(dsd).base_version = versions["base"]
         return dsd
 
-    def test_most_recent_publications(self):
+    def test_simple(self):
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
         dsds = [
@@ -947,3 +947,22 @@ class TestMostRecentPublications(TestCaseWithFactory):
         self.assertContentEqual(
             parent_source_pubs_by_spn_id_expected,
             parent_source_pubs_by_spn_id_found)
+
+    def test_statuses(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsd = self.create_difference(derived_series)
+        # Change the derived source publication to DELETED.
+        removeSecurityProxy(dsd.source_pub).status = (
+            PackagePublishingStatus.DELETED)
+        # Searching for DELETED will find the source publication.
+        self.assertContentEqual(
+            [(dsd.source_package_name.id, dsd.source_pub)],
+            most_recent_publications(
+                [dsd], in_parent=False, statuses=(
+                    PackagePublishingStatus.DELETED,)))
+        # Searched for DELETED will *not* find the parent publication.
+        self.assertContentEqual(
+            [], most_recent_publications(
+                [dsd], in_parent=True, statuses=(
+                    PackagePublishingStatus.DELETED,)))
