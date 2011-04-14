@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.features import getFeatureFlag
@@ -115,9 +116,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
 
     @classmethod
-    def createForPackagePublication(cls, distroseries, sourcepackagename):
+    def createForPackagePublication(cls, distroseries, sourcepackagename,
+                                    pocket):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
+            return
+        # -backports and -proposed are not really part of a standard
+        # distribution's packages so we're ignoring them here.  They can
+        # always be manually synced by the users if necessary, in the
+        # rare occasions that they require them.
+        if pocket in (
+            PackagePublishingPocket.BACKPORTS,
+            PackagePublishingPocket.PROPOSED):
             return
         jobs = []
         children = list(distroseries.getDerivedSeries())
