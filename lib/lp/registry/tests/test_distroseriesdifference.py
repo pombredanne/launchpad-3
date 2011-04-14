@@ -30,6 +30,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.model.distroseriesdifference import most_recent_comments
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -873,3 +874,23 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             ds_diff.derived_series, 'fooname')
 
         self.assertEqual(ds_diff, result)
+
+
+class TestMostRecentComments(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_most_recent_comments(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsds = set(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series) for index in xrange(5))
+        expected_comments = set()
+        for dsd in dsds:
+            # Add a couple of comments.
+            self.factory.makeDistroSeriesDifferenceComment(dsd)
+            expected_comments.add(
+                self.factory.makeDistroSeriesDifferenceComment(dsd))
+        self.assertContentEqual(
+            expected_comments, most_recent_comments(dsds))
