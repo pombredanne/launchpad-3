@@ -25,10 +25,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     REQUEST_USER,
     )
-from lazr.restful.fields import (
-    CollectionField,
-    Reference,
-    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -489,7 +485,7 @@ class IQuestion(IHasOwner):
     @operation_for_version('devel')
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a question message.
-        
+
         This is restricted to Launchpad admins and registry members, and will
         return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
