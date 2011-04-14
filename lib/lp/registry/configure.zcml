@@ -178,6 +178,22 @@
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
+    <!-- DistroSeriesParent -->
+    <securedutility
+        component="lp.registry.model.distroseriesparent.DistroSeriesParent"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesparent.DistroSeriesParent">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
