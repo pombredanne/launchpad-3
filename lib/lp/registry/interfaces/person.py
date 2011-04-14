@@ -1570,6 +1570,20 @@ class IPersonViewRestricted(Interface):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    @operation_parameters(
+        obj=Reference(schema=Interface),
+        attributes=List(value_type=Text()))
+    @export_read_operation()
+    @operation_for_version("beta")
+    def canAccess(obj, attributes):
+        """True if this person can access all attributes of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: a sequence of attribute names to check.
+        :return: True if the person can access all given attributes
+            of the given object, else False.
+        """
+
 
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""

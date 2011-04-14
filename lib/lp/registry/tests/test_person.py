@@ -12,6 +12,7 @@ from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -311,6 +312,43 @@ class TestPerson(TestCaseWithFactory):
         # self-generated bug notifications by default.
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
+
+    def test_canAccess__anonymous(self):
+        # Anonymous users cannot call Person.canAccess()
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            Unauthorized, person.canAccess, product, ['licenses'])
+
+    def test_canAccess__checking_own_permissions(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, ['licenses']))
+            self.assertFalse(person.canAccess(product, ['newSeries']))
+
+    def test_canAccess__checking_permissions_of_others(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertRaises(
+                Unauthorized, other.canAccess, product, ['licenses'])
+
+    def test_canAccess__check_two_attributes_both_allowed(self):
+        # If access to more than one attribute is checked,
+        # Person.canAccess() returns True if and only if
+        # the user has access to all attributes.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, ['name']))
+            self.assertTrue(person.canAccess(product, ['name', 'licenses']))
+            self.assertFalse(person.canAccess(product, ['name', 'newSeries']))
 
 
 class TestPersonStates(TestCaseWithFactory):
