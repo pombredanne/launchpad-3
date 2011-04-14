@@ -10,7 +10,10 @@ from bzrlib import urlutils
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.webapp.adapter import set_request_started, clear_request_started
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.vfs import branch_id_to_path
