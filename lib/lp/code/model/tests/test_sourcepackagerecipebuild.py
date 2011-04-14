@@ -287,6 +287,68 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual([], daily_builds)
 
+    def test_makeDailyBuilds_skips_builds_already_queued(self):
+        # If the recipe already has an identical build pending,
+        # makeDailyBuilds() won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        series = list(recipe.distroseries)[0]
+        existing_build = recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, series,
+            PackagePublishingPocket.RELEASE)
+        removeSecurityProxy(existing_build).date_created = (
+            datetime.now(utc) - timedelta(hours=24, seconds=1))
+        removeSecurityProxy(recipe).is_stale = True
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - build already pending for Warty (4.10)\n',
+            logger.getLogBuffer())
+
+    def test_makeDailyBuilds_skips_disabled_archive(self):
+        # If the recipe's daily build archive is disabled, makeDailyBuilds()
+        # won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        archive = self.factory.makeArchive(owner=recipe.owner, name="ppa")
+        removeSecurityProxy(recipe).daily_build_archive = archive
+        removeSecurityProxy(archive).disable()
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - daily build failed for Warty (4.10): ' +
+            'PPA for Eric is disabled.\n',
+            logger.getLogBuffer())
+
+    def test_makeDailyBuilds_skips_archive_with_no_permission(self):
+        # If the recipe's daily build archive cannot be uploaded to due to
+        # insufficient permissions, makeDailyBuilds() won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        archive = self.factory.makeArchive(name="ppa")
+        removeSecurityProxy(recipe).daily_build_archive = archive
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - daily build failed for Warty (4.10): ' +
+            'Signer has no upload rights to this PPA.\n',
+            logger.getLogBuffer())
+
     def test_makeDailyBuilds_with_an_older_build(self):
         # If a previous build is more than 24 hours old, and the recipe is
         # stale, we'll fire another off.
