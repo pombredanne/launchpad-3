@@ -93,6 +93,8 @@ class BranchRewriter:
         # Codebrowse generates references to its images and stylesheets
         # starting with "/static", so pass them on unthinkingly.
         T = time.time()
+        # Tell the webapp adapter that we are in a request, so that DB
+        # statement timeouts will be applied.
         set_request_started()
         try:
             cached = None
