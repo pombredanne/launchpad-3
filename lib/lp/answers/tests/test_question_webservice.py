@@ -24,19 +24,6 @@ from lp.testing import (
     )
 
 
-class TestQuestionSetExport(TestCaseWithFactory):
-
-    def test_top_level_question_get(self):
-        with celebrity_logged_in('admin'):
-            question = self.factory.makeQuestion(
-                title="This is a question.")
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-        webservice.default_api_version = 'devel'
-        ws_question = webservice.get('/questions/%s' % question.id)
-
-
-
 class TestQuestionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Question webservice representations."""
 
