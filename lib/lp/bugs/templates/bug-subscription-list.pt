@@ -22,8 +22,8 @@
           Y.on('domready', function() {
               ss_module.setup_bug_subscriptions(
                   {content_box: "#structural-subscription-content-box"});
-              console.log(info_module.get_subscription_reason(
-                  {description_box: "#description"}));
+              info_module.show_subscription_description(
+                  {description_box: "#subscription-description-box"});
           });
       });
     </script>
@@ -35,6 +35,7 @@
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
+        <div id="subscription-description-box"></div>
         <div id="subscription-listing"></div>
 
             <div id="structural-subscription-content-box"></div>

@@ -804,7 +804,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if person is None:
             person = self.makePerson()
         tx_person = ITranslationsPerson(person)
-        tx_person.translations_relicensing_agreement = license
+        insecure_tx_person = removeSecurityProxy(tx_person)
+        insecure_tx_person.translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(self, product=None, distribution=None,
