@@ -966,3 +966,25 @@ class TestMostRecentPublications(TestCaseWithFactory):
             [], most_recent_publications(
                 [dsd], in_parent=True, statuses=(
                     PackagePublishingStatus.DELETED,)))
+
+    def test_match_version(self):
+        # When match_version is True, the version of the publications (well,
+        # the release) must exactly match those recorded on the
+        # DistroSeriesDifference.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsd = self.create_difference(derived_series)
+        # Modify the release version.
+        removeSecurityProxy(
+            dsd.source_package_release.sourcepackagerelease).version += u"2"
+        # Searching with match_version=False finds the publication.
+        self.assertContentEqual(
+            [(dsd.source_package_name.id, dsd.source_pub)],
+            most_recent_publications(
+                [dsd], in_parent=False, match_version=False,
+                statuses=(PackagePublishingStatus.PUBLISHED,)))
+        # Searching with match_version=True does not find the publication.
+        self.assertContentEqual(
+            [], most_recent_publications(
+                [dsd], in_parent=False, match_version=True,
+                statuses=(PackagePublishingStatus.PUBLISHED,)))
