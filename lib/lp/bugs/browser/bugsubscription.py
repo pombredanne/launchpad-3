@@ -166,13 +166,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.
     _bug_notification_level_descriptions = {
-        BugNotificationLevel.LIFECYCLE: (
-            "The bug is fixed or re-opened."),
-        BugNotificationLevel.METADATA: (
-            "Any change is made to this bug, other than a new comment "
-            "being added."),
         BugNotificationLevel.COMMENTS: (
-            "A change is made to this bug or a new comment is added."),
+            "a change is made to this bug or a new comment is added, "),
+        BugNotificationLevel.METADATA: (
+            "any change is made to this bug, other than a new comment "
+            "being added, or"),
+        BugNotificationLevel.LIFECYCLE: (
+            "the bug is fixed or re-opened."),
         }
 
     @property
@@ -595,7 +595,6 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
-        
 
     @property
     def label(self):
