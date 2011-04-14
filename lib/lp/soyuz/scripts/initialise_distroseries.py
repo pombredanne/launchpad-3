@@ -81,7 +81,7 @@ class InitialiseDistroSeries:
                  "derives from {child.parent_series.distribution.name}/"
                  "{child.parent_series.name}.").format(
                     child=self.distroseries))
-        if self.distroseries.parent.id == self.parent.parent.id:
+        if self.distroseries.distribution.id == self.parent.distribution.id:
             self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
