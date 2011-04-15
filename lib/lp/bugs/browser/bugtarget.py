@@ -308,9 +308,9 @@ class FileBugViewBase(LaunchpadFormView):
             raise AssertionError('Unknown context: %r' % context)
 
         if IHasBugSupervisor.providedBy(context):
-            if self.user.inTeam(context.bug_supervisor):
-                field_names.extend(
-                    ['assignee', 'importance', 'milestone', 'status'])
+#            if self.user.inTeam(context.bug_supervisor):
+            field_names.extend(
+                ['assignee', 'importance', 'milestone', 'status'])
 
         return field_names
 
