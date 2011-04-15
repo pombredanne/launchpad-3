@@ -6,10 +6,14 @@
 __metaclass__ = type
 __all__ = [
     'RegistryWindmillLayer',
+    'RegistryYUITestLayer',
     ]
 
 
-from canonical.testing.layers import BaseWindmillLayer
+from canonical.testing.layers import (
+    BaseWindmillLayer,
+    BaseYUITestLayer,
+    )
 
 
 class RegistryWindmillLayer(BaseWindmillLayer):
@@ -20,3 +24,11 @@ class RegistryWindmillLayer(BaseWindmillLayer):
         cls.base_url = cls.appserver_root_url()
         super(RegistryWindmillLayer, cls).setUp()
 
+
+class RegistryYUITestLayer(BaseYUITestLayer):
+    """Layer for Code YUI tests."""
+
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url()
+        super(RegistryYUITestLayer, cls).setUp()
