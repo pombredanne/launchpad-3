@@ -850,6 +850,9 @@ BugMessage""" % sqlvalues(self.id))
 
     def mute(self, person, muted_by):
         """See `IBug`."""
+        if person is None:
+            # This may be a webservice request.
+            person = muted_by
         # If there's an existing subscription, update it.
         store = Store.of(self)
         subscriptions = store.find(
