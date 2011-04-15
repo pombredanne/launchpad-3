@@ -428,10 +428,10 @@ class TestDistroSeriesLocalDifferences(
                 UTF8_TEXT, statement_differ(recorder2, recorder3)))
         # XXX: GavinPanella 2011-04-12 bug=760733: Reducing the query count
         # further needs work. Ideally this test would be along the lines of
-        # recorder3.count == recorder2.count. 8 queries above the recorder2
-        # count is 4 queries per difference which is not acceptable, but is
+        # recorder3.count == recorder2.count. 4 queries above the recorder2
+        # count is 2 queries per difference which is not acceptable, but is
         # *far* better than without the changes introduced by landing this.
-        compromise_statement_count = recorder2.count + 8
+        compromise_statement_count = recorder2.count + 4
         self.assertThat(
             recorder3, HasQueryCount(
                 LessThan(compromise_statement_count + 1)))
