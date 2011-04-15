@@ -322,8 +322,9 @@ class DistroSeriesDifference(Storm):
             distroseries=distro_series,
             exact_match=True)
 
-        # There is only one or zero published package.
-        pub = IResultSet(pubs).one()
+        # Get the most recent publication (pubs are ordered by
+        # order is (name, id)).
+        pub = IResultSet(pubs).first()
         if pub is None:
             return None
         else:

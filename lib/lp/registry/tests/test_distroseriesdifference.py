@@ -725,7 +725,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        self.assertEqual(pub.id, ds_diff.source_package_release.id)
+        self.assertEqual(
+            pub,
+            ds_diff.source_package_release.publishings[0])
 
     def test_multiple_pending_publications_parent(self):
         # If multiple (PENDING) publications are present in the parent
@@ -745,7 +747,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        self.assertEqual(pub.id, ds_diff.parent_source_package_release.id)
+        self.assertEqual(
+            pub,
+            ds_diff.parent_source_package_release.publishings[0])
 
 
 class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
