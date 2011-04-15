@@ -605,6 +605,5 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         with anonymous_logged_in():
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
-            import pdb; pdb.set_trace()
             html = view()
             self.assertThat(html, Not(self.package_diff_header_matcher))
