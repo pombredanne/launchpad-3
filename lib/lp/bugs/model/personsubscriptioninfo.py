@@ -180,8 +180,6 @@ class PersonSubscriptions(object):
         # membership) in a single query.
         store = Store.of(person)
         bug_id_options = [Bug.id == bug.id, Bug.duplicateofID == bug.id]
-        if bug.duplicateof is not None:
-            bug_id_options.append(Bug.id == bug.duplicateof.id)
         info = store.find(
             (BugSubscription, Bug, Person),
             BugSubscription.bug == Bug.id,
