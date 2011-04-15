@@ -53,7 +53,7 @@
         </span>
     </dt>
     <dt
-      tal:condition="python: not(view.show_package_diffs_request_link) and context.base_version">
+      tal:condition="view/display_diffs">
       Differences from last common version:
     </dt>
     <dd tal:condition="context/base_version">
