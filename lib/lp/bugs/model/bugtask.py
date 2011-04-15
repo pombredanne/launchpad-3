@@ -658,6 +658,15 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
                     bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
+    def getContributorInfo(self, user, person):
+        """See `IBugTask`."""
+        result = {}
+        result['is_contributor'] = person.isBugContributorInTarget(
+            user, self.pillar)
+        result['person_name'] = person.displayname
+        result['pillar_name'] = self.pillar.displayname
+        return result
+
     def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None

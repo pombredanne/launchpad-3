@@ -3119,19 +3119,26 @@ class BugTasksAndNominationsView(LaunchpadView):
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
-        # for each bug task. This query is redundant:
-        # the publisher also queries all the bugtasks.
-        self.bugtasks = list(self.context.bugtasks)
+        # for each bug task.
+        # Note: even though the publisher queries all the bugtasks and we in
+        # theory could just reuse that already loaded list here, it's better
+        # to do another query to only load the bug tasks for active projects
+        # so we don't incur the cost of setting up data structures for tasks
+        # we will not be showing in the listing.
+        bugtask_set = getUtility(IBugTaskSet)
+        search_params = BugTaskSearchParams(user=self.user, bug=self.context)
+        self.bugtasks = list(bugtask_set.search(search_params))
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
-        # Pull all of the related milestones into the storm cache, since
-        # they'll be needed for the vocabulary used in this view.
-        bugtask_set = getUtility(IBugTaskSet)
-        self.milestones = list(
-            bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
-
+        # Pull all of the related milestones, if any, into the storm cache,
+        # since they'll be needed for the vocabulary used in this view.
+        if self.bugtasks:
+            self.milestones = list(
+                bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
+        else:
+            self.milestones = []    
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
