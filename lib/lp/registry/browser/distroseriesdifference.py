@@ -182,10 +182,14 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         This method is used in the template to show the package diff
         request link.
         """
+        derived_diff_computable = (
+            not self.context.package_diff and self.display_child_diff)
+        parent_diff_computable = (
+            not self.context.parent_package_diff and self.display_parent_diff)
         return (check_permission('launchpad.Edit', self.context) and
                 self.context.base_version and
-                (not self.context.package_diff or
-                 not self.context.parent_package_diff))
+                (derived_diff_computable or
+                 parent_diff_computable))
 
 
 class DistroSeriesDifferenceDisplayComment:
