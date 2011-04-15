@@ -118,19 +118,30 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
                 self.dsp_set.new, self.derived_series, self.derived_series,
                 False)
 
-    def test_distro_drivers_edit(self):
+    def assertCanEdit(self):
+        dsp = self.dsp_set.new(
+            self.derived_series, self.parent_series, False)
+        self.assertThat(
+            dsp,
+            MatchesStructure(
+                derived_series=Equals(self.derived_series),
+                parent_series=Equals(self.parent_series),
+                initialized=Equals(False)
+                ))
+
+    def test_distro_drivers_can_edit(self):
         # Test that distro drivers can edit the data.
         login(LAUNCHPAD_ADMIN)
         self.derived_series.distribution.driver = self.person
         with person_logged_in(self.person):
-            dsp = self.dsp_set.new(
-                self.derived_series, self.parent_series, False)
-            self.assertThat(
-                dsp,
-                MatchesStructure(
-                    derived_series=Equals(self.derived_series),
-                    parent_series=Equals(self.parent_series),
-                    initialized=Equals(False)
-                    ))
+            self.assertCanEdit()
 
-    #def test_    
+    def test_admins_can_edit(self):
+        login(LAUNCHPAD_ADMIN)
+        self.assertCanEdit()
+
+    def test_distro_owners_can_edit(self):
+        login(LAUNCHPAD_ADMIN)
+        self.derived_series.distribution.owner = self.person
+        with person_logged_in(self.person):
+            self.assertCanEdit()
