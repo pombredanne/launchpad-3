@@ -312,10 +312,13 @@ class DistroSeriesDifference(Storm):
             self.source_version)
 
     def _package_release(self, distro_series, version):
+        statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.PENDING)
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name,
             version=version,
-            status=PackagePublishingStatus.PUBLISHED,
+            status=statuses,
             distroseries=distro_series,
             exact_match=True)
 

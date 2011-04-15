@@ -297,7 +297,8 @@ class PersonSubscriptions(object):
             'as_owner': as_owner,
             'as_assignee': as_assignee,
             'count': self.count,
-            'muted': self.muted
+            'muted': self.muted,
+            'bug_id': self.bug.id,
             }
         for category, collection in ((as_owner, self.as_owner),
                                  (as_assignee, self.as_assignee)):

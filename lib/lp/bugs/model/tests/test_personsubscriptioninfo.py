@@ -110,6 +110,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(subscriptions['from_duplicate']['count'], 0)
         self.assertEqual(subscriptions['as_owner']['count'], 0)
         self.assertEqual(subscriptions['as_assignee']['count'], 0)
+        self.assertEqual(subscriptions['bug_id'], self.bug.id)
 
     def test_assignee(self):
         with person_logged_in(self.subscriber):
