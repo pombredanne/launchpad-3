@@ -584,10 +584,10 @@ COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The
 COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
 
 -- DistroSeriesParent
-COMMENT ON TABLE DistroSeriesParent IS 'A list of all the derived distroseries for a parent series.'
-COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries'
-COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries'
-COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.'
+COMMENT ON TABLE DistroSeriesParent IS 'A list of all the derived distroseries for a parent series.';
+COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries';
+COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries';
+COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.';
 
 -- DistroSeriesPackageCache
 
