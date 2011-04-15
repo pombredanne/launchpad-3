@@ -114,6 +114,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
@@ -1012,6 +1013,13 @@ class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
     usedfor = IDistroSeries
+
+
+class EditDistroSeriesParent(
+    EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins):
+    """DistroSeriesParent can be edited by the same propoe who can edit
+    DistroSeries."""
+    usedfor = IDistroSeriesParent
 
 
 class ViewCountry(AnonymousAuthorization):
