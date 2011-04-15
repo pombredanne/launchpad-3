@@ -82,8 +82,7 @@
               <tal:comment replace="nothing">
                 XXX: GavinPanella 2011-04-14 bug=760733: In
                 TestDistroSeriesLocalDifferences.test_queries, this
-                cell needs 1 QUERY per row:
-                SourcePackagePublishingHistory
+                cell needs 0 QUERIES per row.
               </tal:comment>
               <td tal:condition="view/show_parent_version">
                 <a tal:condition="difference/parent_source_package_release"
@@ -100,7 +99,7 @@
               <tal:comment replace="nothing">
                 XXX: GavinPanella 2011-04-14 bug=760733: In
                 TestDistroSeriesLocalDifferences.test_queries, this
-                cell needs 1 QUERY per row: SourcePackagePublishingHistory
+                cell needs 0 QUERIES per row.
               </tal:comment>
               <td tal:condition="view/show_derived_version">
                 <a tal:condition="difference/source_package_release"
@@ -137,7 +136,7 @@
               <tal:comment replace="nothing">
                 XXX: GavinPanella 2011-04-14 bug=760733: In
                 TestDistroSeriesLocalDifferences.test_queries, this
-                cell needs 1 QUERY per row.
+                cell needs 0 QUERIES per row.
               </tal:comment>
               <td>
                 <tal:parent condition="not: view/show_derived_version">

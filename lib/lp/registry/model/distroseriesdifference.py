@@ -313,11 +313,15 @@ class DistroSeriesDifference(StormBase):
                         DistroSeriesSourcePackageRelease(
                             dsd.derived_series,
                             source_pubs_for_release[dsd.id]))
+                else:
+                    cache.source_package_release = None
                 if dsd.id in parent_source_pubs_for_release:
                     cache.parent_source_package_release = (
                         DistroSeriesSourcePackageRelease(
                             dsd.derived_series.parent_series,
                             parent_source_pubs_for_release[dsd.id]))
+                else:
+                    cache.parent_source_package_release = None
                 cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
             # SourcePackageReleases of the parent and source pubs are often
