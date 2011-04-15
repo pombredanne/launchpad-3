@@ -296,7 +296,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 # The Unmute option is actually treated the same way as
                 # the unsubscribe option.
                 self.assertEqual(
-                    "Unmute bug mail from this bug",
+                    "unmute bug mail from this bug, or",
                     subscription_widget.vocabulary.getTerm(self.person).title)
 
     def test_muted_subs_have_unmute_and_update_option(self):
@@ -316,7 +316,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 update_term = subscription_widget.vocabulary.getTermByToken(
                     'update-subscription')
                 self.assertEqual(
-                    "Unmute bug mail from this bug and subscribe me to it",
+                    "unmute bug mail from this bug and subscribe me to it.",
                     update_term.title)
 
     def test_unmute_unmutes(self):
