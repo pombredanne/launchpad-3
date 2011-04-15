@@ -1015,11 +1015,14 @@ class ViewDistroSeries(AnonymousAuthorization):
     usedfor = IDistroSeries
 
 
-class EditDistroSeriesParent(
-    EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins):
-    """DistroSeriesParent can be edited by the same propoe who can edit
-    DistroSeries."""
+class EditDistroSeriesParent(AuthorizationBase):
+    """DistroSeriesParent can be edited by the same people who can edit
+    the derived_distroseries."""
+    permission = "launchpad.Edit"
     usedfor = IDistroSeriesParent
+
+    def checkAuthenticated(self, user):
+        return check_permission(self.permission, self.obj.derived_series)
 
 
 class ViewCountry(AnonymousAuthorization):

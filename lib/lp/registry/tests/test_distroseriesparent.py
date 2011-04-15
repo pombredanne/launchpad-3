@@ -106,20 +106,21 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesParentSecurity, self).setUp()
-        self.dsp_set = getUtility(IDistroSeriesParentSet)
         self.parent_series = self.factory.makeDistroSeries()
         self.derived_series = self.factory.makeDistroSeries()
         self.person = self.factory.makePerson()
 
     def test_random_person_is_unauthorized(self):
+        dsp_set = getUtility(IDistroSeriesParentSet)
         with person_logged_in(self.person):
             self.assertRaises(
                 Unauthorized,
-                self.dsp_set.new, self.derived_series, self.derived_series,
+                dsp_set.new, self.derived_series, self.derived_series,
                 False)
 
     def assertCanEdit(self):
-        dsp = self.dsp_set.new(
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        dsp = dsp_set.new(
             self.derived_series, self.parent_series, False)
         self.assertThat(
             dsp,
