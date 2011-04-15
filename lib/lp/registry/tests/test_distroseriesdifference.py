@@ -707,6 +707,46 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(ds_diff.source_package_release.version, '1.4')
         self.assertEqual(ds_diff.parent_source_package_release.version, '1.5')
 
+    def test_multiple_pending_publications_derived(self):
+        # If multiple (PENDING) publications are present in the derived
+        # series, the most recent is returned.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'derived': '1.0',
+                })
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+
+        self.assertEqual(pub.id, ds_diff.source_package_release.id)
+
+    def test_multiple_pending_publications_parent(self):
+        # If multiple (PENDING) publications are present in the parent
+        # series, the most recent is returned.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'parent': '1.0',
+                })
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.0')
+
+        self.assertEqual(pub.id, ds_diff.parent_source_package_release.id)
+
 
 class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
 
