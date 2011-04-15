@@ -48,7 +48,7 @@ function doUpdate(transaction_id, response, args) {
  * Dispatch a XHR for updating the given container.
  */
 function startUpdate(container) {
-    in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
+    var in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
         'Fetching package details ...')
 
     container.set('innerHTML', '');

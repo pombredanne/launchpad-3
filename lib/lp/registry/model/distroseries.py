@@ -845,9 +845,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IHasBugs`."""
-        return get_bug_tags_open_count(BugTask.distroseries == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
 
     @property
     def has_any_specifications(self):
