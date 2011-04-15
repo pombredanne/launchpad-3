@@ -381,10 +381,11 @@ class TestDistroSeriesLocalDifferences(
             # readily apparent reason.
             self.simple_user.location
             with StormStatementRecorder() as recorder:
-                create_initialized_view(
+                view = create_initialized_view(
                     derived_series, '+localpackagediffs',
-                    principal=self.simple_user)()
-            return recorder
+                    principal=self.simple_user)
+                view()
+            return recorder, view.cached_differences.batch.trueSize
 
         def statement_differ(rec1, rec2):
             wrapper = TextWrapper(break_long_words=False)
@@ -405,27 +406,33 @@ class TestDistroSeriesLocalDifferences(
             return statement_diff
 
         # Render without differences and check the query count isn't silly.
-        recorder1 = flush_and_render()
+        recorder1, batch_size = flush_and_render()
         self.assertThat(recorder1, HasQueryCount(LessThan(30)))
         self.addDetail(
             "statement-count-0-differences",
-            text_content(unicode(recorder1.count)))
+            text_content(u"%d" % recorder1.count))
         # Add some differences and render.
         add_differences(2)
-        recorder2 = flush_and_render()
+        recorder2, batch_size = flush_and_render()
         self.addDetail(
             "statement-count-2-differences",
-            text_content(unicode(recorder2.count)))
+            text_content(u"%d" % recorder2.count))
         # Add more differences and render again.
         add_differences(2)
-        recorder3 = flush_and_render()
+        recorder3, batch_size = flush_and_render()
         self.addDetail(
             "statement-count-4-differences",
-            text_content(unicode(recorder3.count)))
+            text_content(u"%d" % recorder3.count))
         # The last render should not need more queries than the previous.
         self.addDetail(
             "statement-diff", Content(
                 UTF8_TEXT, statement_differ(recorder2, recorder3)))
+        # Details about the number of statements per row.
+        statement_count_per_row = (
+            (recorder3.count - recorder1.count) / float(batch_size))
+        self.addDetail(
+            "statement-count-per-row-average",
+            text_content(u"%.2f" % statement_count_per_row))
         # XXX: GavinPanella 2011-04-12 bug=760733: Reducing the query count
         # further needs work. Ideally this test would be along the lines of
         # recorder3.count == recorder2.count. 4 queries above the recorder2
