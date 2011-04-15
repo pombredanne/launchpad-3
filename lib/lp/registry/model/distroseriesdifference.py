@@ -323,7 +323,7 @@ class DistroSeriesDifference(Storm):
             exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
-        # order is (name, id)).
+        # (name, id)).
         pub = IResultSet(pubs).first()
         if pub is None:
             return None
