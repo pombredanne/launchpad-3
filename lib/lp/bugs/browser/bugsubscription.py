@@ -595,7 +595,6 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
-        
 
     @property
     def label(self):
