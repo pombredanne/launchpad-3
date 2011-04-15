@@ -5,6 +5,11 @@
 
 __metaclass__ = type
 
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
+
 
 from storm.store import Store
 from storm.exceptions import IntegrityError
@@ -22,8 +27,10 @@ from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParentSet,
     )
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
 
 class TestDistroSeriesParent(TestCaseWithFactory):
@@ -50,9 +57,13 @@ class TestDistroSeriesParent(TestCaseWithFactory):
             initialized=True
             )
 
-        self.assertEqual(parent_series, dsp.parent_series)
-        self.assertEqual(derived_series, dsp.derived_series)
-        self.assertEqual(True, dsp.initialized)
+        self.assertThat(
+            dsp,
+            MatchesStructure(
+                derived_series=Equals(derived_series),
+                parent_series=Equals(parent_series),
+                initialized=Equals(True)
+                ))
 
     def test_getByDerivedSeries(self):
         parent_series = self.factory.makeDistroSeries()
@@ -93,6 +104,33 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_only_admin(self):
-        # Only XXX can see and change the data.
-        pass
+    def setUp(self):
+        super(TestDistroSeriesParentSecurity, self).setUp()
+        self.dsp_set = getUtility(IDistroSeriesParentSet)
+        self.parent_series = self.factory.makeDistroSeries()
+        self.derived_series = self.factory.makeDistroSeries()
+        self.person = self.factory.makePerson()
+
+    def test_random_person_is_unauthorized(self):
+        with person_logged_in(self.person):
+            self.assertRaises(
+                Unauthorized,
+                self.dsp_set.new, self.derived_series, self.derived_series,
+                False)
+
+    def test_distro_drivers_edit(self):
+        # Test that distro drivers can edit the data.
+        login(LAUNCHPAD_ADMIN)
+        self.derived_series.distribution.driver = self.person
+        with person_logged_in(self.person):
+            dsp = self.dsp_set.new(
+                self.derived_series, self.parent_series, False)
+            self.assertThat(
+                dsp,
+                MatchesStructure(
+                    derived_series=Equals(self.derived_series),
+                    parent_series=Equals(self.parent_series),
+                    initialized=Equals(False)
+                    ))
+
+    #def test_    
