@@ -5,34 +5,24 @@
 
 __metaclass__ = type
 
-from storm.store import Store
-from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import searchbuilder
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
-    BugTaskStatus,
-    )
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
     IRealSubscriptionInfoCollection,
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
-    anonymous_logged_in,
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
+
 
 class TestPersonSubscriptionInfo(TestCaseWithFactory):
 

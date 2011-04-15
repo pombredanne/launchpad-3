@@ -116,7 +116,8 @@ class RealSubscriptionInfoCollection(
             person, administrated_teams)
         self._principal_bug_to_infos = {}
 
-    def _add_item_to_collection(self, collection, principal, bug, subscription):
+    def _add_item_to_collection(self, collection, principal,
+                                bug, subscription):
         info = RealSubscriptionInfo(principal, bug, subscription)
         key = (principal, bug)
         infos = self._principal_bug_to_infos.get(key)
@@ -254,6 +255,7 @@ class PersonSubscriptions(object):
     def getDataForClient(self):
         reference_map = {}
         dest = {}
+
         def get_id(obj):
             "Get an id for the object so it can be shared."
             # We could leverage .id for most objects, but not pillars.
@@ -264,6 +266,7 @@ class PersonSubscriptions(object):
                 reference_map[obj] = identifier
                 dest[identifier] = obj
             return identifier
+
         def virtual_sub_data(info):
             return {
                 'principal': get_id(info.principal),
@@ -271,6 +274,7 @@ class PersonSubscriptions(object):
                 'pillar': get_id(info.pillar),
                 # We won't add bugtasks yet unless we need them.
                 }
+
         def real_sub_data(info):
             return {
                 'principal': get_id(info.principal),
@@ -300,18 +304,18 @@ class PersonSubscriptions(object):
             }
         for category, collection in ((as_owner, self.as_owner),
                                  (as_assignee, self.as_assignee)):
-            for name, inner in (('personal', collection.personal),
-                                ('as_team_admin', collection.as_team_admin),
-                                ('as_team_member', collection.as_team_member)
-                                ):
+            for name, inner in (
+                ('personal', collection.personal),
+                ('as_team_admin', collection.as_team_admin),
+                ('as_team_member', collection.as_team_member)):
                 category[name] = [virtual_sub_data(info) for info in inner]
             category['count'] = collection.count
         for category, collection in ((direct, self.direct),
                                      (from_duplicate, self.from_duplicate)):
-            for name, inner in (('personal', collection.personal),
-                                ('as_team_admin', collection.as_team_admin),
-                                ('as_team_member', collection.as_team_member)
-                                ):
+            for name, inner in (
+                ('personal', collection.personal),
+                ('as_team_admin', collection.as_team_admin),
+                ('as_team_member', collection.as_team_member)):
                 category[name] = [real_sub_data(info) for info in inner]
             category['count'] = collection.count
         return subscription_data, dest
