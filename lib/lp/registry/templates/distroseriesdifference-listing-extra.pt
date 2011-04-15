@@ -86,7 +86,7 @@
           </li>
         </tal:source-diff-option>
 
-        <tal:parent-diff-option condition="context/parent_source_pub">
+        <tal:parent-diff-option condition="view/display_parent_diff">
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
               class="sprite PENDING parent">
