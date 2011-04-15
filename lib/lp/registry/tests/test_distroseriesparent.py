@@ -10,9 +10,6 @@ from testtools.matchers import (
     MatchesStructure,
     )
 
-
-from storm.store import Store
-from storm.exceptions import IntegrityError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
@@ -112,11 +109,11 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
 
     def test_random_person_is_unauthorized(self):
         dsp_set = getUtility(IDistroSeriesParentSet)
+        dsp = dsp_set.new(self.derived_series, self.parent_series, False)
         with person_logged_in(self.person):
             self.assertRaises(
                 Unauthorized,
-                dsp_set.new, self.derived_series, self.derived_series,
-                False)
+                setattr, dsp, "derived_series", self.parent_series)
 
     def assertCanEdit(self):
         dsp_set = getUtility(IDistroSeriesParentSet)

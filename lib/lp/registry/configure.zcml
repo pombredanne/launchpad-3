@@ -182,6 +182,9 @@
     <securedutility
         class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
         provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
+        <require
+            permission="launchpad.Edit"
+            set_attributes="new"/>
         <allow
             interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
     </securedutility>
