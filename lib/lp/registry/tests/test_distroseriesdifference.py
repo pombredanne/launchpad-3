@@ -9,7 +9,6 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -305,9 +304,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             dsd_comment = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
 
         self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
 
@@ -316,11 +316,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # most recent comment first.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             dsd_comment = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
             dsd_comment_2 = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
 
         self.assertEqual(
             [dsd_comment_2, dsd_comment], list(ds_diff.getComments()))
@@ -339,22 +340,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual(comments[-1], ds_diff.latest_comment)
 
-    def test_addComment_not_public(self):
-        # Comments cannot be added with launchpad.View.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-        person = self.factory.makePerson()
-
-        with person_logged_in(person):
-            self.assertTrue(check_permission('launchpad.View', ds_diff))
-            self.assertFalse(check_permission('launchpad.Edit', ds_diff))
-            self.assertRaises(Unauthorized, getattr, ds_diff, 'addComment')
-
     def test_addComment_for_owners(self):
         # Comments can be added by any of the owners of the derived
         # series.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             self.assertTrue(check_permission('launchpad.Edit', ds_diff))
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
@@ -389,21 +381,11 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.getPackageSets()])
 
-    def test_blacklist_not_public(self):
-        # Differences cannot be blacklisted without edit access.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-        person = self.factory.makePerson()
-
-        with person_logged_in(person):
-            self.assertTrue(check_permission('launchpad.View', ds_diff))
-            self.assertFalse(check_permission('launchpad.Edit', ds_diff))
-            self.assertRaises(Unauthorized, getattr, ds_diff, 'blacklist')
-
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.blacklist()
 
         self.assertEqual(
@@ -414,7 +396,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # All versions are blacklisted with the all=True param.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.blacklist(all=True)
 
         self.assertEqual(
@@ -426,7 +408,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -447,7 +429,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -642,8 +624,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': parent_changelog,
             })
 
-        with person_logged_in(ds_diff.owner):
-            ds_diff.requestPackageDiffs(ds_diff.owner)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
 
         self.assertEqual(
             '1.2', ds_diff.package_diff.to_source.version)
@@ -672,8 +655,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': parent_changelog,
             })
 
-        with person_logged_in(ds_diff.owner):
-            ds_diff.requestPackageDiffs(ds_diff.owner)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
         self.assertIs(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 
@@ -692,11 +676,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'derived': changelog_lfa,
                 'parent': changelog_lfa,
             })
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             self.assertRaisesWithContent(
                 DistroSeriesDifferenceError,
                 "Can not generate package diffs for a resolved difference.",
-                ds_diff.requestPackageDiffs, ds_diff.owner)
+                ds_diff.requestPackageDiffs, person)
 
     def test_package_diff_urls_none(self):
         # URLs to the package diffs are only present when the diffs
