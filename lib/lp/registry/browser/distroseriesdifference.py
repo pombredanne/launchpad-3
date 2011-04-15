@@ -151,16 +151,34 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
                 comment in comments]
 
     @property
+    def can_request_diffs(self):
+        """Does the user have permission to request diff calculation?"""
+        return check_permission('launchpad.Edit', self.context)
+
+    @property
     def show_edit_options(self):
         """Only show the options if an editor requests via JS."""
-        return self.request.is_ajax and check_permission(
-            'launchpad.Edit', self.context)
+        return self.request.is_ajax and self.can_request_diffs
+
+    @property
+    def display_diffs_header(self):
+        """Should the diff header line be displayed?"""
+        # Never show the header when the request link is showing.
+        if self.show_package_diffs_request_link:
+            return False
+        # Never show the header when the diff block is not displayed.
+        if not self.display_diffs:
+            return False
+        # Show the header if there are diffs ready to display, or if the user
+        # has permission to request them.
+        return self.can_request_diffs or (
+            self.context.package_diff is not None or
+            self.context.parent_package_diff is not None)
 
     @property
     def display_diffs(self):
-        return (
-            (self.context.base_version is not None) and
-            (not self.show_package_diffs_request_link))
+        """Only show diffs if there's a base version."""
+        return self.context.base_version is not None
 
     @property
     def display_child_diff(self):
@@ -192,7 +210,7 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             not self.context.package_diff and self.display_child_diff)
         parent_diff_computable = (
             not self.context.parent_package_diff and self.display_parent_diff)
-        return (check_permission('launchpad.Edit', self.context) and
+        return (self.can_request_diffs and
                 self.context.base_version and
                 (derived_diff_computable or
                  parent_diff_computable))

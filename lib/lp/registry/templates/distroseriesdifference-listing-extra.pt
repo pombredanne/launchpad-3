@@ -53,11 +53,12 @@
         </span>
     </dt>
     <dt
-      tal:condition="view/display_diffs">
+      tal:condition="view/display_diffs_header">
       Differences from last common version:
     </dt>
-    <dd tal:condition="context/base_version">
+    <dd tal:condition="view/display_diffs">
       <ul class="package-diff-status">
+
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
             <span tal:condition="context/package_diff/status/enumvalue:PENDING"
