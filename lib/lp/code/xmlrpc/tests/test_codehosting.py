@@ -1067,7 +1067,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
@@ -1093,7 +1093,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
@@ -1105,7 +1105,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_package_no_focus(self):
@@ -1131,7 +1131,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on=branch.unique_name,
+            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
             trailing_path='.bzr')
 
 

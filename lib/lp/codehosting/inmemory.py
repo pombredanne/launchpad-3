@@ -802,9 +802,10 @@ class FakeCodehosting:
             return
         if not self._canRead(requester, default_branch):
             return
+        path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, default_branch.id)
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
     def _serializeBranch(self, requester_id, branch, trailing_path,
