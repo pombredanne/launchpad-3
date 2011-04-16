@@ -707,6 +707,46 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(ds_diff.source_package_release.version, '1.4')
         self.assertEqual(ds_diff.parent_source_package_release.version, '1.5')
 
+    def _initDiffWithMultiplePendingPublications(self, versions, parent):
+        ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)
+        if parent:
+            series = ds_diff.derived_series.parent_series
+            version = versions.get('parent')
+        else:
+            series = ds_diff.derived_series
+            version = versions.get('derived')
+        pub1 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=series,
+            status=PackagePublishingStatus.PENDING,
+            version=version)
+        pub2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=series,
+            status=PackagePublishingStatus.PENDING,
+            version=version)
+        return ds_diff, pub1, pub2
+
+    def test_multiple_pending_publications_derived(self):
+        # If multiple (PENDING) publications are present in the derived
+        # series, the most recent is returned.
+        ds_diff, _, pub = self._initDiffWithMultiplePendingPublications(
+            versions={'derived': '1.0'},
+            parent=False)
+        self.assertEqual(
+            pub,
+            ds_diff.source_package_release.publishings[0])
+
+    def test_multiple_pending_publications_parent(self):
+        # If multiple (PENDING) publications are present in the parent
+        # series, the most recent is returned.
+        ds_diff, _, pub = self._initDiffWithMultiplePendingPublications(
+            versions={'parent': '1.0'},
+            parent=True)
+        self.assertEqual(
+            pub,
+            ds_diff.parent_source_package_release.publishings[0])
+
 
 class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
 
