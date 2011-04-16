@@ -6,7 +6,7 @@
   <metal:form-picker define-macro="form-picker">
     <tal:input replace="structure view/inputField" />
 
-    <tal:search_results tal:condition="not: view/hasValidInput">
+    <tal:search_results condition="not: view/hasValidInput">
       <select tal:condition="view/matches">
         <option
             tal:repeat="match view/matches"
@@ -26,7 +26,6 @@
         }
 
         // The vocabulary picker, created when used for the first time.
-        var picker = null;
         function make_picker() {
             var config = {
                 header: ${view/header_text},
@@ -50,7 +49,7 @@
                         {input_element: '[id=\x22${view/input_id}\x22]'});
             return picker;
         }
-
+        var picker = null;
         Y.on('domready', function(e) {
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');

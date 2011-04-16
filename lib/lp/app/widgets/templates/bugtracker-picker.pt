@@ -22,7 +22,7 @@ LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
                 bugtracker_text_box.set(
                     'value', bug_tracker.get('name'));
                 // It doesn't appear possible to use onChange
-                // event, so the onKeyPress event is explicitely
+                // event, so the onKeyPress event is explicitly
                 // fired here.
                 if (bugtracker_text_box.get('onkeypress')) {
                     bugtracker_text_box.get('onkeypress')();
