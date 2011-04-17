@@ -106,7 +106,7 @@ class DistroSeriesDifference(Storm):
     @staticmethod
     def new(derived_series, source_package_name):
         """See `IDistroSeriesDifferenceSource`."""
-        if derived_series.parent_series is None:
+        if not derived_series.is_derived_series:
             raise NotADerivedSeriesError()
 
         store = IMasterStore(DistroSeriesDifference)
