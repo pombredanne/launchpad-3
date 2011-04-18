@@ -34,10 +34,6 @@ class TestDistroSeriesParent(TestCaseWithFactory):
     """Test the `DistroSeriesParent` model."""
     layer = ZopelessDatabaseLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        #self.distribution = self.factory.makeDistribution(name='conftest')
-
     def test_verify_interface(self):
         # Test the interface for the model.
         dsp = self.factory.makeDistroSeriesParent()
@@ -101,45 +97,36 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistroSeriesParentSecurity, self).setUp()
-        self.parent_series = self.factory.makeDistroSeries()
-        self.derived_series = self.factory.makeDistroSeries()
-        self.person = self.factory.makePerson()
-
     def test_random_person_is_unauthorized(self):
-        dsp_set = getUtility(IDistroSeriesParentSet)
-        dsp = dsp_set.new(self.derived_series, self.parent_series, False)
-        with person_logged_in(self.person):
+        dsp = self.factory.makeDistroSeriesParent()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             self.assertRaises(
                 Unauthorized,
-                setattr, dsp, "derived_series", self.parent_series)
+                setattr, dsp, "derived_series", dsp.parent_series)
 
-    def assertCanEdit(self):
-        dsp_set = getUtility(IDistroSeriesParentSet)
-        dsp = dsp_set.new(
-            self.derived_series, self.parent_series, False)
-        self.assertThat(
-            dsp,
-            MatchesStructure(
-                derived_series=Equals(self.derived_series),
-                parent_series=Equals(self.parent_series),
-                initialized=Equals(False)
-                ))
+    def assertCanEdit(self, dsp):
+        dsp.initialized = False
+        self.assertEquals(False, dsp.initialized)
 
-    def test_distro_drivers_can_edit(self):
-        # Test that distro drivers can edit the data.
+    def test_distroseries_drivers_can_edit(self):
+        # Test that distroseries drivers can edit the data.
+        dsp = self.factory.makeDistroSeriesParent()
+        person = self.factory.makePerson()
         login(LAUNCHPAD_ADMIN)
-        self.derived_series.distribution.driver = self.person
-        with person_logged_in(self.person):
-            self.assertCanEdit()
+        dsp.derived_series.driver = person
+        with person_logged_in(person):
+            self.assertCanEdit(dsp)
 
     def test_admins_can_edit(self):
+        dsp = self.factory.makeDistroSeriesParent()
         login(LAUNCHPAD_ADMIN)
-        self.assertCanEdit()
+        self.assertCanEdit(dsp)
 
     def test_distro_owners_can_edit(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        person = self.factory.makePerson()
         login(LAUNCHPAD_ADMIN)
-        self.derived_series.distribution.owner = self.person
-        with person_logged_in(self.person):
-            self.assertCanEdit()
+        dsp.derived_series.distribution.owner = person
+        with person_logged_in(person):
+            self.assertCanEdit(dsp)

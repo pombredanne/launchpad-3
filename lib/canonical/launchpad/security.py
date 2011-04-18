@@ -1022,7 +1022,9 @@ class EditDistroSeriesParent(AuthorizationBase):
     usedfor = IDistroSeriesParent
 
     def checkAuthenticated(self, user):
-        return check_permission(self.permission, self.obj.derived_series)
+        auth = EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
+            self.obj.derived_series)
+        return auth.checkAuthenticated(user)
 
 
 class ViewCountry(AnonymousAuthorization):
