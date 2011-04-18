@@ -184,6 +184,14 @@ class GenerateContentsFiles(LaunchpadScript):
                         self.logger.debug("Creating %s.", path)
                         os.makedirs(path)
 
+    def copyOverrides(self):
+        """Copy overrides into the content archive."""
+        execute(self.logger, "cp", [
+            "-a",
+            self.config.overrideroot,
+            "%s/" % self.content_archive,
+            ])
+
     def writeContentsTop(self):
         """Write Contents.top file."""
         output_filename = os.path.join(
@@ -197,20 +205,20 @@ class GenerateContentsFiles(LaunchpadScript):
         output_file.write(text)
         output_file.close()
 
-    def generateContentsFiles(self):
-        """Generate Contents files."""
-        self.logger.debug(
-            "Running apt in private tree to generate new contents.")
-        execute(self.logger, "cp", [
-            "-a",
-            self.config.overrideroot,
-            "%s/" % self.content_archive,
-            ])
-        self.writeContentsTop()
+    def runAptFTPArchive(self):
+        """Run apt-ftparchive to produce the Contents files."""
         execute(self.logger, "apt-ftparchive", [
             "generate", "%s/%s-misc/apt-contents.conf" % (
                 self.content_archive, self.distribution.name),
             ])
+
+    def generateContentsFiles(self):
+        """Generate Contents files."""
+        self.logger.debug(
+            "Running apt in private tree to generate new contents.")
+        self.copyOverrides()
+        self.writeContentsTop()
+        self.runAptFTPArchive()
 
     def updateContentsFile(self, suite, arch):
         """Update Contents file, if it has changed."""
