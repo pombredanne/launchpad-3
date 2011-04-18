@@ -1,3 +1,5 @@
+BEGIN;
+
 -- Copyright 2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
@@ -15,7 +17,7 @@ WHERE
     pg_class.oid = pg_index.indexrelid
     AND relname='revision__revision__branch__key';
 
--- Update the primary key constraint to point to the new index.
+-- The primary key constraint is on different columns now.
 UPDATE pg_constraint SET
     conname='revision__revision__branch__key',
     conkey='{4,3}'
@@ -27,32 +29,59 @@ WHERE pg_class.oid = pg_constraint.conrelid
 -- The primary key constraint now depends on the new index
 UPDATE pg_depend
     SET objid=(
-            SELECT indexrelid FROM pg_index, pg_class
-            WHERE
-                pg_index.indexrelid = pg_class.oid
-                AND relname='revision__revision__branch__key')
+        SELECT oid FROM pg_class
+        WHERE relname='revision__revision__branch__key')
 WHERE refobjid = (
     SELECT pg_constraint.oid FROM pg_constraint, pg_class
     WHERE 
         pg_class.oid = pg_constraint.conrelid
         AND contype='p'
-        AND relname='branchrevision');
+        AND relname='branchrevision')
+    AND objid = (SELECT oid FROM pg_class WHERE relname='revisionnumber_pkey');
 
+-- Delete old dependency between the constraint and the table columns.
+DELETE FROM pg_depend
+WHERE
+    classid = (SELECT oid FROM pg_class WHERE relname='pg_constraint')
+    AND objid = (
+        SELECT pg_constraint.oid FROM pg_constraint, pg_class
+        WHERE
+            pg_class.oid = pg_constraint.conrelid
+            AND contype='p'
+            AND relname='branchrevision')
+    AND refclassid = (SELECT oid FROM pg_class WHERE relname='pg_class')
+    AND refobjid = (SELECT oid FROM pg_class WHERE relname='branchrevision')
+    AND deptype = 'a';
+
+-- Transfer dependencies of the new key's index on its table
+-- columns to the constraint. It depends on the columns now.
+UPDATE pg_depend
+SET
+    classid = (SELECT oid FROM pg_class WHERE relname='pg_constraint'),
+    objid = (
+        SELECT pg_constraint.oid FROM pg_constraint, pg_class
+        WHERE
+            pg_class.oid = pg_constraint.conrelid
+            AND contype='p'
+            AND relname='branchrevision')
+WHERE
+    classid = (SELECT oid FROM pg_class WHERE relname='pg_class')
+    AND objid = (
+        SELECT oid FROM pg_class
+        WHERE relname='revision__revision__branch__key')
+    AND refclassid = (SELECT oid FROM pg_class WHERE relname='pg_class')
+    AND refobjid = (select oid FROM pg_class WHERE relname='branchrevision')
+    AND deptype = 'a';
 
 -- Strip the unnecessary crud.
 DROP VIEW RevisionNumber;
-
--- Need to drop explicitly. Why?
-DROP INDEX revisionnumber_pkey;
 
 ALTER TABLE BranchRevision
     DROP COLUMN id,
     DROP CONSTRAINT revision__branch__revision__key;
 
 
-And fail...
-
-ALTER TABLE BranchRevision DROP CONSTRAINT revision__revision__branch__key
-does not work.
+At this point, there are two entries in pg_constraint for the revision__revision__branch__key index - one unique and one primary.
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+
