@@ -11,14 +11,25 @@ __all__ = [
     'IQuestionCollection',
     'IQuestionSet',
     'ISearchableByQuestionOwner',
-    'QUESTION_STATUS_DEFAULT_SEARCH'
+    'QUESTION_STATUS_DEFAULT_SEARCH',
     ]
 
 from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.schema import Int
 
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_operation_as,
+    export_read_operation,
+    operation_for_version,
+    operation_parameters,
+    )
+
+from canonical.launchpad import _
 from lp.answers.interfaces.questionenums import QuestionStatus
 
 
@@ -47,7 +58,7 @@ class IQuestionCollection(Interface):
         against the question's language. If None or an empty sequence,
         the language is not included as a filter criteria.
 
-        :sort:  An attribute of QuestionSort. If None, a default value is used.
+        :sort: An attribute of QuestionSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by
         RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
@@ -82,8 +93,17 @@ class ISearchableByQuestionOwner(IQuestionCollection):
 class IQuestionSet(IQuestionCollection):
     """A utility that contain all the questions published in Launchpad."""
 
+    export_as_webservice_collection(Interface)
+
     title = Attribute('Title')
 
+    @operation_parameters(
+        question_id=Int(
+            title=_('The id of the question to get'),
+            required=True))
+    @export_read_operation()
+    @export_operation_as("getByID")
+    @operation_for_version('devel')
     def get(question_id, default=None):
         """Return the question with the given id.
 
@@ -98,6 +118,7 @@ class IQuestionSet(IQuestionCollection):
         comments in the last <days_before_expiration> days.
         """
 
+    @collection_default_content(limit=5)
     def getMostActiveProjects(limit=5):
         """Return the list of projects that asked the most questions in
         the last 60 days.
