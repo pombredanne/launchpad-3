@@ -11,7 +11,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -27,6 +26,7 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.services.job.model.job import Job
 
 
 class InitialiseDistroSeriesJob(DistributionJobDerived):
@@ -50,6 +50,17 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
             metadata)
         IMasterStore(DistributionJob).add(job)
         return cls(job)
+
+    @classmethod
+    def getPendingJobsForDistroseries(cls, distroseries):
+        """See `IInitialiseDistroSeriesJob`."""
+        return IStore(DistributionJob).find(
+            DistributionJob,
+            DistributionJob.job_id == Job.id,
+            DistributionJob.job_type ==
+                DistributionJobType.INITIALISE_SERIES,
+            DistributionJob.distroseries_id == distroseries.id,
+            Job._status.is_in(Job.PENDING_STATUSES))
 
     @property
     def parent(self):
