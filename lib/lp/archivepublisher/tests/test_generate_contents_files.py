@@ -36,6 +36,11 @@ def write_file(filename, content):
 class TestHelpers(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
+    def test_differ_in_content_returns_true_if_one_file_does_not_exist(self):
+        self.useTempDir()
+        write_file('one', self.factory.getUniqueString())
+        self.assertTrue(differ_in_content('one', 'other'))
+
     def test_differ_in_content_returns_false_for_identical_files(self):
         self.useTempDir()
         text = self.factory.getUniqueString()

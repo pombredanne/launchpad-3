@@ -34,7 +34,9 @@ COMPONENTS = [
 
 def differ_in_content(one_file, other_file):
     """Do the two named files have different contents?"""
-    return file(one_file).read() != file(other_file).read()
+    return (
+        file_exists(one_file) != file_exists(other_file) or
+        file(one_file).read() != file(other_file).read())
 
 
 class StoreArgument:
@@ -208,8 +210,10 @@ class GenerateContentsFiles(LaunchpadScript):
     def runAptFTPArchive(self):
         """Run apt-ftparchive to produce the Contents files."""
         execute(self.logger, "apt-ftparchive", [
-            "generate", "%s/%s-misc/apt-contents.conf" % (
-                self.content_archive, self.distribution.name),
+            "generate",
+            os.path.join(
+                self.content_archive, "%s-misc" % self.distribution.name,
+                "apt-contents.conf"),
             ])
 
     def generateContentsFiles(self):
