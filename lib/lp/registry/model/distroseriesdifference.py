@@ -61,11 +61,11 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
-from lp.soyuz.model.packagediff import PackageDiff
 
 
 class DistroSeriesDifference(Storm):
@@ -438,21 +438,20 @@ class DistroSeriesDifference(Storm):
             self.package_diff = None
             self.parent_package_diff = None
             return
-        store = IStore(PackageDiff)
-        diffs = store.find(PackageDiff,
-            from_source=self.base_source_pub.sourcepackagerelease.id,
-            to_source=self.source_pub.sourcepackagerelease.id)
-        if diffs.is_empty():
-            self.package_diff = None
+        if self.source_pub is None:
+            diff = None
         else:
-            self.package_diff = diffs[0]
-        parent_diffs = store.find(PackageDiff,
-            from_source=self.base_source_pub.sourcepackagerelease.id,
-            to_source=self.parent_source_pub.sourcepackagerelease.id)
-        if parent_diffs.is_empty():
-            self.parent_package_diff = None
+            diff = getUtility(IPackageDiffSet).getDiffsToReleases((
+                self.base_source_pub.sourcepackagerelease,
+                self.source_pub.sourcepackagerelease)).first()
+        self.package_diff = diff
+        if self.parent_source_pub is None:
+            parent_diff = None
         else:
-            self.parent_package_diff = parent_diffs[0]
+            parent_diff = getUtility(IPackageDiffSet).getDiffsToReleases((
+                self.base_source_pub.sourcepackagerelease,
+                self.parent_source_pub.sourcepackagerelease)).first()
+        self.parent_package_diff = parent_diff
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
