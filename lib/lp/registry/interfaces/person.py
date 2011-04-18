@@ -1570,11 +1570,6 @@ class IPersonViewRestricted(Interface):
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    @operation_parameters(
-        obj=Reference(schema=Interface),
-        attributes=List(value_type=Text()))
-    @export_read_operation()
-    @operation_for_version("beta")
     def canAccess(obj, attributes):
         """True if this person can access all attributes of the object.
 
