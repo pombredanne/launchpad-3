@@ -10,6 +10,24 @@ but modules specific to other OSs have been taken out. It may need to be
 updated from time to time.
 """
 
+
+# Run this to generate a new module list.
+if __name__ == '__main__':
+    from lxml import html
+    from sys import version_info, stdout
+    modindex_url = (
+        "http://docs.python.org/release/"
+        "{0}.{1}.{2}/modindex.html").format(*version_info)
+    root = html.parse(modindex_url).getroot()
+    modules = set(
+        node.text.split(".", 1)[0] # the "base" module name.
+        for node in root.cssselect("table tt"))
+    stdout.write("python_standard_libs = [\n")
+    for module in sorted(modules, key=str.lower):
+        stdout.write("    %r,\n" % module)
+    stdout.write("    ]")
+
+
 python_standard_libs = [
     'aifc',
     'anydbm',
