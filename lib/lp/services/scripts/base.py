@@ -6,9 +6,11 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'disable_oops_handler',
     'SilentLaunchpadScriptFailure',
     ]
 
+from contextlib import contextmanager
 from ConfigParser import SafeConfigParser
 from cProfile import Profile
 import datetime
@@ -227,7 +229,7 @@ class LaunchpadScript:
     # Convenience or death
     #
     @log_unhandled_exception_and_exit
-    def login(self, user):
+    def login(self, user=ANONYMOUS):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
 
@@ -400,6 +402,17 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+@contextmanager
+def disable_oops_handler(logger):
+    oops_handlers = []
+    for handler in logger.handlers:
+        if isinstance(handler, OopsHandler):
+            oops_handlers.append(handler)
+            logger.removeHandler(handler)
+    yield
+    for handler in oops_handlers:
+        logger.addHandler(handler)
 
 
 def cronscript_enabled(control_url, name, log):

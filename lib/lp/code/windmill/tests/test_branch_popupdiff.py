@@ -18,9 +18,6 @@ from lp.testing import (
     WindmillTestCase,
     )
 from lp.testing.windmill.constants import PAGE_LOAD
-from lp.testing.windmill.lpuser import (
-    login_person as windmill_login_person,
-    )
 
 
 POPUP_DIFF = (
@@ -123,14 +120,8 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        # The `objs` used here hides the email, but that is no longer
-        # accessible.  We have to pass it in by hand.
-        windmill_login_person(
-            objs['eric'], "eric@example.com", "test", client)
-
-        start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(
+            '/bugs/%d' % bug.id, objs['eric'])
         # Sleep for a bit to make sure that the JS onload has had time to
         # execute.
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)

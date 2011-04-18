@@ -31,11 +31,11 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IAuthorization,
@@ -58,8 +58,7 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription)
+from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -114,6 +113,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceEdit,
+    )
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
@@ -192,9 +194,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadQueue,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.translations.interfaces.customlanguagecode import (
-    ICustomLanguageCode,
-    )
+from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.languagepack import ILanguagePack
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -1019,6 +1019,16 @@ class ViewCountry(AnonymousAuthorization):
     usedfor = ICountry
 
 
+class EditDistroSeriesDifference(AuthorizationBase):
+    """Anyone with lp.View on the distribution can edit a DSD."""
+    permission = 'launchpad.Edit'
+    usedfor = IDistroSeriesDifferenceEdit
+
+    def checkAuthenticated(self, user):
+        return check_permission(
+            'launchpad.View', self.obj.derived_series.distribution)
+
+
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
@@ -1654,6 +1664,15 @@ class ViewBuildFarmJobOld(AuthorizationBase):
 
     checkAuthenticated = _checkAccess
     checkUnauthenticated = _checkAccess
+
+
+class SetQuestionCommentVisibility(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IQuestion
+
+    def checkAuthenticated(self, user):
+        """Admins and registry admins can set bug comment visibility."""
+        return (user.in_admin or user.in_registry_experts)
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -2299,10 +2318,11 @@ class ViewArchiveSubscriber(AuthorizationBase):
     usedfor = IArchiveSubscriber
 
     def checkAuthenticated(self, user):
-        if user.inTeam(self.obj.subscriber):
-            return True
         auth_edit = EditArchiveSubscriber(self.obj)
-        return auth_edit.checkAuthenticated(user)
+        result = auth_edit.checkAuthenticated(user)
+        if not result:
+            result = user.inTeam(self.obj.subscriber)
+        return result
 
 
 class EditArchiveSubscriber(AuthorizationBase):

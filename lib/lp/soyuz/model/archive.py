@@ -7,7 +7,10 @@
 
 __metaclass__ = type
 
-__all__ = ['Archive', 'ArchiveSet']
+__all__ = [
+    'Archive',
+    'ArchiveSet',
+    ]
 
 from operator import attrgetter
 import re
@@ -108,6 +111,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
+    archive_suffixes,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -408,12 +412,6 @@ class Archive(SQLBase):
     @property
     def archive_url(self):
         """See `IArchive`."""
-        archive_postfixes = {
-            ArchivePurpose.PRIMARY: '',
-            ArchivePurpose.PARTNER: '-partner',
-            ArchivePurpose.DEBUG: '-debug',
-        }
-
         if self.is_ppa:
             if self.private:
                 url = config.personalpackagearchive.private_base_url
@@ -432,7 +430,7 @@ class Archive(SQLBase):
             return urlappend(url, self.distribution.name)
 
         try:
-            postfix = archive_postfixes[self.purpose]
+            postfix = archive_suffixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
@@ -465,21 +463,24 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
         # callers are problematic. (Migrate them and test to see).
         clauses = []
         storm_clauses = [
-            SourcePackagePublishingHistory.archiveID==self.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID==
+            SourcePackagePublishingHistory.archiveID == self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID==
-                SourcePackageName.id
+            SourcePackageRelease.sourcepackagenameID ==
+                SourcePackageName.id,
             ]
-        orderBy = [SourcePackageName.name,
-                   Desc(SourcePackagePublishingHistory.id)]
+        orderBy = [
+            SourcePackageName.name,
+            Desc(SourcePackagePublishingHistory.id),
+            ]
 
         if name is not None:
             if exact_match:
@@ -509,7 +510,8 @@ class Archive(SQLBase):
 
         if distroseries is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.distroseriesID==distroseries.id)
+                SourcePackagePublishingHistory.distroseriesID ==
+                    distroseries.id)
 
         if pocket is not None:
             storm_clauses.append(
@@ -526,6 +528,8 @@ class Archive(SQLBase):
         resultset = store.find(SourcePackagePublishingHistory,
             *storm_clauses).order_by(
             *orderBy)
+        if not eager_load:
+            return resultset
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):

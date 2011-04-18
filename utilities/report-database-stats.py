@@ -165,15 +165,16 @@ def get_bloat_stats(cur, options, kind):
         # We only collect these statistics daily, so add some fuzz
         # to ensure bloat information ends up on the daily reports;
         # we cannot guarantee the disk utilization statistics occur
-        # exactly 24 hours apart.
-        'where': get_where_clause(options, fuzz='6 hours'),
+        # exactly 24 hours apart. Our most recent snapshot could be 1
+        # day ago, give or take a few hours.
+        'where': get_where_clause(options, fuzz='1 day 6 hours'),
         'bloat': options.bloat,
         'min_bloat': options.min_bloat,
         'kind': kind,
         }
     query = dedent("""
         SELECT * FROM (
-            SELECT
+            SELECT DISTINCT
                 namespace,
                 name,
                 sub_namespace,
@@ -181,6 +182,7 @@ def get_bloat_stats(cur, options, kind):
                 count(*) OVER t AS num_samples,
                 last_value(table_len) OVER t AS table_len,
                 pg_size_pretty(last_value(table_len) OVER t) AS table_size,
+                last_value(dead_tuple_len + free_space) OVER t AS bloat_len,
                 pg_size_pretty(last_value(dead_tuple_len + free_space) OVER t)
                     AS bloat_size,
                 first_value(dead_tuple_percent + free_percent) OVER t
@@ -206,7 +208,7 @@ def get_bloat_stats(cur, options, kind):
         WHERE
             table_len >= %(min_bloat)s
             AND end_bloat_percent >= %(bloat)s
-        ORDER BY bloat_size DESC
+        ORDER BY bloat_len DESC
         """ % params)
     cur.execute(query, params)
     bloat_stats = named_fetchall(cur)
@@ -316,7 +318,7 @@ def main():
         print "== Most Bloated Indexes =="
         print
         for bloated_index in index_bloat_stats[:options.limit]:
-            print "%40s || %2d%% || %s of %s" % (
+            print "%65s || %2d%% || %s of %s" % (
                 bloated_index.sub_name,
                 bloated_index.end_bloat_percent,
                 bloated_index.bloat_size,
@@ -359,7 +361,7 @@ def main():
                 # Bloat decreases are uninteresting, and would need to be in
                 # a separate table sorted in reverse anyway.
                 if bloated_index.delta_bloat_percent > 0:
-                    print "%40s || +%4.2f%% || +%s" % (
+                    print "%65s || +%4.2f%% || +%s" % (
                         bloated_index.sub_name,
                         bloated_index.delta_bloat_percent,
                         bloated_index.delta_bloat_size)

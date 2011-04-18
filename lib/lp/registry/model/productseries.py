@@ -433,9 +433,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See IBugTarget."""
-        return get_bug_tags_open_count(BugTask.productseries == self, user)
+        return get_bug_tags_open_count(
+            BugTask.productseries == self, user, wanted_tags=wanted_tags)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
@@ -496,16 +497,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     "The source package is not published in %s." %
                     distroseries.displayname)
         for pkg in self.packagings:
-            if pkg.distroseries == distroseries:
+            if (pkg.distroseries == distroseries and
+                pkg.sourcepackagename == sourcepackagename):
                 # we have found a matching Packaging record
-                if pkg.sourcepackagename == sourcepackagename:
-                    # and it has the same source package name
-                    return pkg
-                # ok, we need to update this pkging record
-                pkg.sourcepackagename = sourcepackagename
-                pkg.owner = owner
-                pkg.datecreated = UTC_NOW
-                pkg.sync()  # convert UTC_NOW to actual datetime
+                # and it has the same source package name
                 return pkg
 
         # ok, we didn't find a packaging record that matches, let's go ahead
@@ -671,6 +666,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """
         seriesID = self.id
         productID = self.productID
+
         def weight_function(bugtask):
             if bugtask.productseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)

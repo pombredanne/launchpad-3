@@ -2514,6 +2514,14 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
    #11
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 1, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (43, 1, '2.0.7-1ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'evolution (2.0.7-1ubuntu1) deriwarty; urgency=low
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -3395,42 +3403,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (1, 2, 1, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (2, 1, 3, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (3, 1, 4, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (4, 2, 5, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (5, 2, 6, NULL, NULL, 2);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (6, 4, 7, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (7, 5, 8, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (8, 6, 9, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (9, 3, 10, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (10, 7, 11, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (11, 8, 14, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (12, 9, 15, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (13, 10, 17, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (14, 10, 16, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (15, 11, 24, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (16, 11, 25, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (17, 11, 26, NULL, NULL, 2);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (18, 11, 27, NULL, NULL, 3);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (19, 11, 28, NULL, NULL, 4);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (20, 11, 29, NULL, NULL, 5);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (21, 11, 30, NULL, NULL, 6);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (22, 12, 31, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (23, 12, 33, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (24, 12, 34, NULL, NULL, 2);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (25, 12, 35, NULL, NULL, 3);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (26, 12, 36, NULL, NULL, 4);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (27, 13, 37, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (28, 13, 38, NULL, NULL, 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (29, 14, 39, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (30, 15, 40, NULL, NULL, 0);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', 1);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', 2);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', 3);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', 4);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', 5);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', 6);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (1, 2, 1, NULL, NULL, 0, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (2, 1, 3, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (3, 1, 4, NULL, NULL, 1, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (4, 2, 5, NULL, NULL, 1, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (5, 2, 6, NULL, NULL, 2, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (6, 4, 7, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (7, 5, 8, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (8, 6, 9, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (9, 3, 10, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (10, 7, 11, NULL, NULL, 0, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (11, 8, 14, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (12, 9, 15, NULL, NULL, 0, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (13, 10, 17, NULL, NULL, 0, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (14, 10, 16, NULL, NULL, 1, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (15, 11, 24, NULL, NULL, 0, 26);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (16, 11, 25, NULL, NULL, 1, 50);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (17, 11, 26, NULL, NULL, 2, 66);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (18, 11, 27, NULL, NULL, 3, 63);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (19, 11, 28, NULL, NULL, 4, 27);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (20, 11, 29, NULL, NULL, 5, 33);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (21, 11, 30, NULL, NULL, 6, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (22, 12, 31, NULL, NULL, 0, 8);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (23, 12, 33, NULL, NULL, 1, 45);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (24, 12, 34, NULL, NULL, 2, 13);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (25, 12, 35, NULL, NULL, 3, 9);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (26, 12, 36, NULL, NULL, 4, 6);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (27, 13, 37, NULL, NULL, 0, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (28, 13, 38, NULL, NULL, 1, 12);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (29, 14, 39, NULL, NULL, 0, 63);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (30, 15, 40, NULL, NULL, 0, 16);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', 1, 243614);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', 2, 243615);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', 3, 243614);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', 4, 243615);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', 5, 243616);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, owner) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', 6, 243614);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -4156,6 +4164,8 @@ ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 ALTER TABLE packagediff DISABLE TRIGGER ALL;
 
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (1, '2011-03-22 13:27:38.178011', 16, 43, 40, NULL, NULL, 0);
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (2, '2011-03-22 13:27:38.178011', 16, 43, 39, NULL, NULL, 2);
 
 
 ALTER TABLE packagediff ENABLE TRIGGER ALL;
@@ -4164,7 +4174,7 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
 INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, NULL, 1, 3, NULL, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
 INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
 
 
@@ -6339,14 +6349,14 @@ ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
 ALTER TABLE packaging DISABLE TRIGGER ALL;
 
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.336247');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL, '2006-10-16 18:31:44.337965');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', 52, '2006-10-16 18:31:44.337965');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL, '2006-10-16 18:31:44.338488');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.338912');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', 12, '2006-10-16 18:31:44.338912');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339361');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.339782');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340203');
 INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.340624');
-INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', NULL, '2006-10-16 18:31:44.341055');
+INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productseries, datecreated, owner, date_created) VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', 12, '2006-10-16 18:31:44.341055');
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
@@ -10410,6 +10420,7 @@ INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseri
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (34, 40, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (35, 41, 1, 1, 1, 3, '2006-08-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (36, 41, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (37, 43, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagepublishinghistory ENABLE TRIGGER ALL;

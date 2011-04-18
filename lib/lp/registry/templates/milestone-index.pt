@@ -6,14 +6,27 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
-  <tal:css metal:fill-slot="head_epilogue"
+  <tal:head-epilogue metal:fill-slot="head_epilogue"
     condition="view/is_project_milestone">
     <style id="hide-side-portlets" type="text/css">
         .side {
             background: #fff;
             }
     </style>
-  </tal:css>
+    <tal:uses_launchpad_bugtracker
+       condition="context/target/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript"
+          tal:condition="
+            request/features/malone.advanced-structural-subscriptions.enabled">
+          LPS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
+  </tal:head-epilogue>
 
   <body>
     <tal:heading metal:fill-slot="heading">
@@ -307,6 +320,9 @@
               series</a>
           </li>
         </ul>
+      </div>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
     </div>
 

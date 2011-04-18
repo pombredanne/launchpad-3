@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
@@ -61,7 +62,10 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
-from lp.registry.model.person import Person
+from lp.registry.model.person import (
+    get_recipients,
+    Person,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -285,14 +289,14 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.is_merge_pending)
 
-    def test_merge_pending(self):
+    def test_is_merge_pending(self):
         # is_merge_pending returns True when this person is being merged with
         # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertTrue(from_person.is_merge_pending)
-        self.assertTrue(to_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
 
     def test_mergeAsync_success(self):
         # mergeAsync returns a job with the from and to persons.
@@ -1289,7 +1293,71 @@ class TestAPIPartipication(TestCaseWithFactory):
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
-        # XXX: This number should really be 10, but see
+        # XXX: This number should really be 12, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(14)))
+        self.assertThat(collector, HasQueryCount(LessThan(16)))
+
+
+class TestGetRecipients(TestCaseWithFactory):
+    """Tests for get_recipients"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestGetRecipients, self).setUp()
+        login('foo.bar@canonical.com')
+
+    def test_get_recipients_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([owner]), set(recipients))
+
+    def test_get_recipients_team(self):
+        """Ensure get_recipients uses teams with preferredemail."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([team]), set(recipients))
+
+    def makePersonWithNoPreferredEmail(self, **kwargs):
+        kwargs['email_address_status'] = EmailAddressStatus.NEW
+        return self.factory.makePerson(**kwargs)
+
+    def get_test_recipients_person(self):
+        person = self.factory.makePerson()
+        recipients = get_recipients(person)
+        self.assertEqual(set([person]), set(recipients))
+
+    def test_get_recipients_empty(self):
+        """get_recipients returns empty set for person with no preferredemail.
+        """
+        recipients = get_recipients(self.makePersonWithNoPreferredEmail())
+        self.assertEqual(set(), set(recipients))
+
+    def test_get_recipients_complex_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team_member_person = self.factory.makePerson(
+            displayname='Bing Bar', email='bing@bar.com')
+        super_team_member_team = self.factory.makeTeam(
+            email='baz@bar.com')
+        super_team = self.factory.makeTeam(
+            team, members=[super_team_member_person,
+                           super_team_member_team,
+                           self.makePersonWithNoPreferredEmail()])
+        super_team_member_team.acceptInvitationToBeMemberOf(
+            super_team, u'Go Team!')
+        recipients = list(get_recipients(super_team))
+        self.assertEqual(set([owner,
+                              super_team_member_person,
+                              super_team_member_team]),
+                         set(recipients))

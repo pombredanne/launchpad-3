@@ -243,6 +243,24 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         query = compose_sql_find_differences(distroseries)
         self.assertContentEqual([], Store.of(distroseries).execute(query))
 
+    def test_ignores_releases_for_same_version(self):
+        derived_series = self.makeDerivedDistroSeries()
+        version_string = self.factory.getUniqueString()
+        parent_series = derived_series.parent_series
+        package = self.factory.makeSourcePackageName()
+        self.makeSPPH(
+            distroseries=derived_series,
+            sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, distroseries=derived_series,
+                version=version_string))
+        self.makeSPPH(
+            distroseries=parent_series,
+            sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, distroseries=parent_series,
+                version=version_string))
+        query = compose_sql_find_differences(derived_series)
+        self.assertContentEqual([], Store.of(derived_series).execute(query))
+
     def test_finds_release_missing_in_derived_series(self):
         distroseries = self.makeDerivedDistroSeries()
         spph = self.makeSPPH(distroseries=distroseries.parent_series)

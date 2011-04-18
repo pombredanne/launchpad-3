@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_recipients',
     'generate_nick',
     'IrcID',
     'IrcIDSet',
@@ -57,6 +58,7 @@ from storm.expr import (
     And,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Min,
@@ -1421,8 +1423,8 @@ class Person(
         """See `IPerson`."""
         assert self.is_team
         to_addrs = set()
-        for person in self.getDirectAdministrators():
-            to_addrs.update(get_contact_email_addresses(person))
+        for admin in self.adminmembers:
+            to_addrs.update(get_contact_email_addresses(admin))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
@@ -2074,8 +2076,7 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(
-                from_person=self, to_person=self, any_person=True).is_empty()
+            IPersonMergeJobSource).find(from_person=self).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -3072,28 +3073,27 @@ class PersonSet:
             account = IMasterStore(Account).get(
                 Account, email_address.accountID)
             account_person = self.getByAccount(account)
-            # There is a `Person` linked to the `Account`, link the
+            if account_person is None:
+                # There is no associated `Person` to the email `Account`.
+                # This is probably because the account was created externally
+                # to Launchpad. Create just the `Person`, associate it with
+                # the `EmailAddress` and return it.
+                name = generate_nick(email)
+                account_person = self._newPerson(
+                    name, displayname, hide_email_addresses=True,
+                    rationale=rationale, comment=comment,
+                    registrant=registrant, account=email_address.account)
+            # There is (now) a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
-            if account_person is not None:
-                master_email = IMasterStore(EmailAddress).get(
-                    EmailAddress, email_address.id)
-                master_email.personID = account_person.id
-                # Populate the previously empty 'preferredemail' cached
-                # property, so the Person record is up-to-date.
-                if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = get_property_cache(account_person)
-                    cache.preferredemail = master_email
-                return account_person
-            # There is no associated `Person` to the email `Account`.
-            # This is probably because the account was created externally
-            # to Launchpad. Create just the `Person`, associate it with
-            # the `EmailAddress` and return it.
-            name = generate_nick(email)
-            person = self._newPerson(
-                name, displayname, hide_email_addresses=True,
-                rationale=rationale, comment=comment, registrant=registrant,
-                account=email_address.account)
-            return person
+            master_email = IMasterStore(EmailAddress).get(
+                EmailAddress, email_address.id)
+            master_email.personID = account_person.id
+            # Populate the previously empty 'preferredemail' cached
+            # property, so the Person record is up-to-date.
+            if master_email.status == EmailAddressStatus.PREFERRED:
+                cache = get_property_cache(account_person)
+                cache.preferredemail = master_email
+            return account_person
 
         # Easy, return the `Person` associated with the existing
         # `EmailAddress`.
@@ -3835,10 +3835,10 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person):
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
@@ -3964,6 +3964,9 @@ class PersonSet:
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
 
+        # We ignore BugSubscriptionFilterMutes.
+        skip.append(('bugsubscriptionfiltermute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
@@ -4064,16 +4067,20 @@ class PersonSet:
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
-        if not to_person.isTeam():
+        if to_person.isTeam():
+            mail_text = get_email_template(
+                'team-merged.txt', app='registry')
+            subject = 'Launchpad teams merged'
+        else:
             mail_text = get_email_template(
                 'person-merged.txt', app='registry')
-            mail_text = mail_text % {
-                'dupename': from_person.name,
-                'person': to_person.name,
-                }
             subject = 'Launchpad accounts merged'
-            getUtility(IPersonNotificationSet).addNotification(
-                to_person, subject, mail_text)
+        mail_text = mail_text % {
+            'dupename': from_person.name,
+            'person': to_person.name,
+            }
+        getUtility(IPersonNotificationSet).addNotification(
+            to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
@@ -4562,3 +4569,65 @@ def person_from_account(account):
     if person is None:
         raise ComponentLookupError()
     return person
+
+
+@ProxyFactory
+def get_recipients(person):
+    """Return a set of people who receive email for this Person (person/team).
+
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
+
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
+    """
+    if person.preferredemail:
+        return [person]
+    elif person.is_team:
+        # Get transitive members of team with a preferred email.
+        return _get_recipients_for_team(person)
+    else:
+        return []
+
+
+def _get_recipients_for_team(team):
+    """Given a team without a preferred email, return recipients.
+
+    Helper for get_recipients, divided out simply to make get_recipients
+    easier to understand in broad brush."""
+    store = IStore(Person)
+    source = store.using(TeamMembership,
+                         Join(Person,
+                              TeamMembership.personID==Person.id),
+                         LeftJoin(EmailAddress,
+                                  EmailAddress.person == Person.id))
+    pending_team_ids = [team.id]
+    recipient_ids = set()
+    seen = set()
+    while pending_team_ids:
+        intermediate_transitive_results = source.find(
+            (TeamMembership.personID, EmailAddress.personID),
+            In(TeamMembership.status,
+               [TeamMembershipStatus.ADMIN.value,
+                TeamMembershipStatus.APPROVED.value]),
+            In(TeamMembership.teamID, pending_team_ids),
+            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
+               And(Not(Person.teamownerID == None),
+                   EmailAddress.status == None))).config(distinct=True)
+        next_ids = []
+        for (person_id,
+             preferred_email_marker) in intermediate_transitive_results:
+            if preferred_email_marker is None:
+                # This is a team without a preferred email address.
+                if person_id not in seen:
+                    next_ids.append(person_id)
+                    seen.add(person_id)
+            else:
+                recipient_ids.add(person_id)
+        pending_team_ids = next_ids
+    return getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        recipient_ids,
+        need_validity=True,
+        need_preferred_email=True)

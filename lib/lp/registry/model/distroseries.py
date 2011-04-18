@@ -67,9 +67,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     SLAVE_FLAVOR,
     )
-from lp.app.enums import (
-    service_uses_launchpad,
-    )
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
@@ -252,6 +250,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -787,6 +786,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
+    def is_derived_series(self):
+        """See `IDistroSeries`."""
+        # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
+        # the bug is fixed.
+        return self.parent_series is not None
+
+    @property
+    def is_initialising(self):
+        """See `IDistroSeries`."""
+        return not getUtility(
+            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
+                self).is_empty()
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -832,9 +845,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IHasBugs`."""
-        return get_bug_tags_open_count(BugTask.distroseries == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
 
     @property
     def has_any_specifications(self):
@@ -1074,6 +1088,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # Deprecated.  Use IArchive.getPublishedSources instead.
+
         # XXX cprov 2006-02-13 bug 31317:
         # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -1968,25 +1984,35 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, registrant=user)
+                version=version, parent_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not self:
+            if child.parent_series is not None:
                 raise DerivationError(
-                    "DistroSeries %s parent series isn't %s" % (
+                    "DistroSeries %s parent series is %s, "
+                    "but it must not be set" % (
                         child.name, self.name))
-        initialise_series = InitialiseDistroSeries(child)
+        initialise_series = InitialiseDistroSeries(self, child)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, architectures, packagesets, rebuild)
+            self, child, architectures, packagesets, rebuild)
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        return Store.of(self).find(
-            DistroSeries, DistroSeries.parent_series == self)
+        # XXX rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.distributionID' is only
+        # required because the parent_series attribute has been
+        # (mis-)used to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        results = Store.of(self).find(
+            DistroSeries,
+            DistroSeries.parent_series==self.id,
+            DistroSeries.distributionID!=self.distributionID)
+        return results.order_by(Desc(DistroSeries.date_created))
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.

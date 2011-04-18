@@ -306,11 +306,4 @@ class TestOopsMiddleware(TestCase):
 
 
 def test_suite():
-    from bzrlib import tests as bzrlib_tests
-    from loggerhead import tests as loggerhead_tests
-
-    loader = bzrlib_tests.TestLoader()
-    suite = loader.suiteClass()
-    suite = loggerhead_tests.load_tests(suite, loggerhead_tests, loader)
-    suite.addTests(loader.loadTestsFromName(__name__))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

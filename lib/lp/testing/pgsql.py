@@ -220,9 +220,14 @@ rw_main_slave:  dbname=%s
             connection_parameters.append('port=%s' % self.host)
         return ' '.join(connection_parameters)
 
+    def superuser_connection(self, dbname=None):
+        if dbname is None:
+            dbname = self.dbname
+        return psycopg2.connect(self._connectionString(dbname))
+
     def generateResetSequencesSQL(self):
         """Return a SQL statement that resets all sequences."""
-        con = psycopg2.connect(self._connectionString(self.dbname))
+        con = self.superuser_connection()
         cur = con.cursor()
         try:
             return generateResetSequencesSQL(cur)
@@ -243,7 +248,7 @@ rw_main_slave:  dbname=%s
             # anyway (because they might have been incremented even if
             # nothing was committed), making sure not to disturb the
             # 'committed' flag, and we're done.
-            con = psycopg2.connect(self._connectionString(self.dbname))
+            con = self.superuser_connection()
             cur = con.cursor()
             if self.reset_sequences_sql is None:
                 resetSequences(cur)
@@ -261,7 +266,7 @@ rw_main_slave:  dbname=%s
         # template database that are slow in dropping off.
         attempts = 60
         for counter in range(0, attempts):
-            con = psycopg2.connect(self._connectionString(self.template))
+            con = self.superuser_connection(self.template)
             try:
                 con.set_isolation_level(0)
                 cur = con.cursor()
@@ -321,7 +326,7 @@ rw_main_slave:  dbname=%s
         attempts = 100
         for i in range(0, attempts):
             try:
-                con = psycopg2.connect(self._connectionString(self.template))
+                con = self.superuser_connection(self.template)
             except psycopg2.OperationalError, x:
                 if 'does not exist' in x:
                     return

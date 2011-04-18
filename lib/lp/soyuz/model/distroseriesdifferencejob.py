@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.features import getFeatureFlag
@@ -27,6 +28,7 @@ from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJob,
     IDistroSeriesDifferenceJobSource,
     )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
@@ -99,6 +101,12 @@ def may_require_job(distroseries, sourcepackagename):
     return find_waiting_jobs(distroseries, sourcepackagename).is_empty()
 
 
+def has_package(distroseries, sourcepackagename):
+    """Does `distroseries` have the given source package?"""
+    return not distroseries.getPublishedSources(
+        sourcepackagename, include_pending=True).is_empty()
+
+
 class DistroSeriesDifferenceJob(DistributionJobDerived):
     """A `Job` type for creating/updating `DistroSeriesDifference`s."""
 
@@ -108,9 +116,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
 
     @classmethod
-    def createForPackagePublication(cls, distroseries, sourcepackagename):
+    def createForPackagePublication(cls, distroseries, sourcepackagename,
+                                    pocket):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
+            return
+        # -backports and -proposed are not really part of a standard
+        # distribution's packages so we're ignoring them here.  They can
+        # always be manually synced by the users if necessary, in the
+        # rare occasions that they require them.
+        if pocket in (
+            PackagePublishingPocket.BACKPORTS,
+            PackagePublishingPocket.PROPOSED):
             return
         jobs = []
         children = list(distroseries.getDerivedSeries())
@@ -123,13 +140,42 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     def sourcepackagename(self):
         return SourcePackageName.get(self.metadata['sourcepackagename'])
 
+    def passesPackagesetFilter(self):
+        """Is this package of interest as far as packagesets are concerned?
+
+        If the parent series has packagesets, then packages that are
+        missing in the derived series are only of interest if they are
+        in a packageset that the derived series also has.
+        """
+        derived_series = self.distroseries
+        parent_series = derived_series.parent_series
+        if has_package(derived_series, self.sourcepackagename):
+            return True
+        if not has_package(parent_series, self.sourcepackagename):
+            return True
+        packagesetset = getUtility(IPackagesetSet)
+        if packagesetset.getBySeries(parent_series).is_empty():
+            # Parent series does not have packagesets, as would be the
+            # case for e.g. Debian.  In that case, don't filter.
+            return True
+        parent_sets = packagesetset.setsIncludingSource(
+            self.sourcepackagename, distroseries=parent_series)
+        for parent_set in parent_sets:
+            for related_set in parent_set.relatedSets():
+                if related_set.distroseries == derived_series:
+                    return True
+        return False
+
     def run(self):
         """See `IRunnableJob`."""
+        if not self.passesPackagesetFilter():
+            return
+
         store = IMasterStore(DistroSeriesDifference)
         ds_diff = store.find(
-            DistroSeriesDifference, 
+            DistroSeriesDifference,
             DistroSeriesDifference.derived_series == self.distroseries,
-            DistroSeriesDifference.source_package_name == 
+            DistroSeriesDifference.source_package_name ==
             self.sourcepackagename).one()
         if ds_diff is None:
             ds_diff = getUtility(IDistroSeriesDifferenceSource).new(

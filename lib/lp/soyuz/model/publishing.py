@@ -341,7 +341,7 @@ class ArchivePublisherBase:
                 dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
                 dsd_job_source.createForPackagePublication(
                     self.distroseries,
-                    self.sourcepackagerelease.sourcepackagename)
+                    self.sourcepackagerelease.sourcepackagename, self.pocket)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1007,9 +1007,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if bpr.essential:
             essential = 'yes'
 
+        source = None
+        if bpr.version != spr.version:
+            source = '%s (%s)' % (spr.name, spr.version)
+        elif bpr.name != spr.name:
+            source = spr.name
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Source', spr.name)
+        fields.append('Source', source)
         fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
@@ -1435,7 +1441,7 @@ class PublishingSet:
         if archive == distroseries.main_archive:
             dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
             dsd_job_source.createForPackagePublication(
-                distroseries, sourcepackagerelease.sourcepackagename)
+                distroseries, sourcepackagerelease.sourcepackagename, pocket)
         return pub
 
     def getBuildsForSourceIds(

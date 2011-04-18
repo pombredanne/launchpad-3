@@ -65,7 +65,7 @@ of the branch
     lp://dev/firefox - Sample Person
     Change branch
 
-    >>> print sample_browser.getLink('View the branch content').url
+    >>> print sample_browser.getLink('Browse the code').url
     http://bazaar.launchpad.dev/~name12/firefox/main/files
 
 The total and recent revision counts for the branch are displayed to

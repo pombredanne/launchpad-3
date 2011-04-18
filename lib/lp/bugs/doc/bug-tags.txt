@@ -332,27 +332,35 @@ are shown, no matter if they are used in open bugs or closed ones.
 We can also get all the used tags, together with the number of open
 bugs each tag has. Only tags having open bugs are returned.
 
-    >>> firefox.getUsedBugTagsWithOpenCounts(None)
+    >>> list(firefox.getUsedBugTagsWithOpenCounts(None))
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> mozilla.getUsedBugTagsWithOpenCounts(None)
+    >>> list(mozilla.getUsedBugTagsWithOpenCounts(None))
     [(u'doc', 1L), (u'sco', 1L), (u'svg', 1L)]
 
-    >>> ubuntu.getUsedBugTagsWithOpenCounts(None)
+    >>> list(ubuntu.getUsedBugTagsWithOpenCounts(None))
     [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
      (u'sco', 1L), (u'svg', 1L)]
+
+We can even ask for the counts for a particular set of tags.
+
+    >>> list(ubuntu.getUsedBugTagsWithOpenCounts(
+    ...     None, wanted_tags=['pebcak', 'svg', 'fake']))
+    [(u'pebcak', 1L), (u'svg', 1L)]
+    >>> list(ubuntu.getUsedBugTagsWithOpenCounts(None, wanted_tags=[]))
+    []
 
 Source packages are a bit special, they return all the tags that are
 used in the whole distribution, while the bug count includes only bugs
 in the specific package.
 
-    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
+    >>> list(ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None))
     [(u'crash', 1L)]
 
-    >>> debian_woody.getUsedBugTagsWithOpenCounts(None)
+    >>> list(debian_woody.getUsedBugTagsWithOpenCounts(None))
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
-    >>> debian_woody_firefox.getUsedBugTagsWithOpenCounts(None)
+    >>> list(debian_woody_firefox.getUsedBugTagsWithOpenCounts(None))
     [(u'dataloss', 1L), (u'layout-test', 1L), (u'pebcak', 1L)]
 
 Only bugs that the supplied user has access to will be counted:
@@ -362,13 +370,13 @@ Only bugs that the supplied user has access to will be counted:
     True
     >>> flush_database_updates()
 
-    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)
+    >>> list(ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None))
     []
 
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_nine.isSubscribed(sample_person)
     True
-    >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person)
+    >>> list(ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(sample_person))
     [(u'crash', 1L)]
 
 When context doesn't have any tags getUsedBugTags() returns a empty list.

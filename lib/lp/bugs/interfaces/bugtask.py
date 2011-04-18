@@ -62,6 +62,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     rename_parameters_as,
@@ -654,6 +655,28 @@ class IBugTask(IHasDateCreated, IHasBug):
     def findSimilarBugs(user, limit=10):
         """Return the list of possible duplicates for this BugTask."""
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(person=copy_field(assignee))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getContributorInfo(user, person):
+        """Is the person a contributor to bugs in this task's pillar?
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the search.
+        :param person: The person to check to see if they are a contributor.
+
+        Return a dict with the following values:
+        is_contributor: True if the user has any bugs assigned to him in the
+        context of this bug task's pillar, either directly or by team
+        participation.
+        person_name: the displayname of the person
+        pillar_name: the displayname of the bug task's pillar
+
+        This API call is provided for use by the client Javascript where the
+        calling context does not have access to the person or pillar names.
+        """
+
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
 
@@ -1159,7 +1182,7 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1207,6 +1230,7 @@ class BugTaskSearchParams:
         self.modified_since = modified_since
         self.created_since = created_since
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
+        self.cve = cve
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""

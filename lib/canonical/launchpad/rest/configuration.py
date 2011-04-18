@@ -60,6 +60,10 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
+        # The request is going to try to decode the 'PATH_INFO' using utf-8,
+        # so if it is currently unicode, encode it.
+        if isinstance(environ.get('PATH_INFO'), unicode):
+            environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
         request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request

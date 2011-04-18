@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     webservice_error,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -234,6 +235,12 @@ class IDistroSeriesPublic(
         Choice(
             title=_("Status"), required=True,
             vocabulary=SeriesStatus))
+    is_derived_series = Bool(
+        title=u'Is this series a derived series?', readonly=True,
+        description=(u"Whether or not this series is a derived series."))
+    is_initialising = Bool(
+        title=u'Is this series initialising?', readonly=True,
+        description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
@@ -241,7 +248,8 @@ class IDistroSeriesPublic(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
-            vocabulary='DistroSeries'))
+            vocabulary='DistroSeries'),
+        readonly=True)
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
@@ -344,6 +352,14 @@ class IDistroSeriesPublic(
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
 
+    backports_not_automatic = Bool(
+        title=_("Don't upgrade to backports automatically"), required=True,
+        description=_("""
+            Set NotAutomatic: yes and ButAutomaticUpgrades: yes in Release
+            files generated for the backports pocket. This tells apt to
+            automatically upgrade within backports, but not into it.
+            """))
+
     # other properties
     previous_series = Attribute("Previous series from the same "
         "distribution.")
@@ -395,7 +411,11 @@ class IDistroSeriesPublic(
         """
 
     # DistroArchSeries lookup properties/methods.
-    architectures = Attribute("All architectures in this series.")
+    architectures = exported(
+        CollectionField(
+            title=_("All architectures in this series."),
+            value_type=Reference(schema=Interface), # IDistroArchSeries.
+            readonly=True))
 
     enabled_architectures = Attribute(
         "All architectures in this series with the 'enabled' flag set.")
@@ -557,6 +577,8 @@ class IDistroSeriesPublic(
                             include_pending=False, exclude_pocket=None,
                             archive=None):
         """Return the SourcePackagePublishingHistory(s)
+
+        Deprecated.  Use IArchive.getPublishedSources instead.
 
         Given a ISourcePackageName or name.
 

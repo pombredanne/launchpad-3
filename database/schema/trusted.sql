@@ -1954,6 +1954,64 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
     return int(total_heat)
 $$;
 
+CREATE OR REPLACE FUNCTION bugmessage_copy_owner_from_message()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.owner is NULL THEN
+            UPDATE BugMessage
+            SET owner = Message.owner FROM
+            Message WHERE
+            Message.id = NEW.message AND
+            BugMessage.id = NEW.id;
+        END IF;
+    ELSIF NEW.message != OLD.message THEN
+        UPDATE BugMessage
+        SET owner = Message.owner FROM
+        Message WHERE
+        Message.id = NEW.message AND
+        BugMessage.id = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bugmessage_copy_owner_from_message() IS
+'Copies the message owner into bugmessage when bugmessage changes.';
+
+CREATE OR REPLACE FUNCTION message_copy_owner_to_bugmessage()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.owner != OLD.owner THEN
+        UPDATE BugMessage
+        SET owner = NEW.owner
+        WHERE
+        BugMessage.message = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION message_copy_owner_to_bugmessage() IS
+'Copies the message owner into bugmessage whenmessage changes.';
+
+
+CREATE OR REPLACE FUNCTION bug_update_heat_copy_to_bugtask()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.heat != OLD.heat THEN
+        UPDATE bugtask SET heat=NEW.heat WHERE bugtask.bug=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bug_update_heat_copy_to_bugtask() IS
+'Copies bug heat to bugtasks when the bug is changed. Runs on UPDATE only because INSERTs do not have bugtasks at the point of insertion.';
+
 -- This function is not STRICT, since it needs to handle
 -- dateexpected when it is NULL.
 CREATE OR REPLACE FUNCTION milestone_sort_key(
