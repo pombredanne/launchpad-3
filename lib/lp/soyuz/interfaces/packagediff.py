@@ -106,3 +106,11 @@ class IPackageDiffSet(Interface):
         then diff request date in descending order.  If sprs is empty,
         EmptyResultSet is returned.
         """
+
+    def getDiffBetweenReleases(self, sprs):
+        """Return the diff that is targetted to the two SPRs.
+
+        :param sprs: a two-uple of `SourcePackageRelease` objects.
+
+        :return a `ResultSet` or None.
+        """

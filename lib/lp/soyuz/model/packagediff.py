@@ -308,3 +308,10 @@ class PackageDiffSet:
             return DecoratedResultSet(result, pre_iter_hook=preload_hook)
         else:
             return result
+
+    def getDiffBetweenReleases(self, sprs):
+        """See `IPackageDiffSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            PackageDiff,
+            from_sourceID=sprs[0].id, to_sourceID=sprs[1].id).first()
