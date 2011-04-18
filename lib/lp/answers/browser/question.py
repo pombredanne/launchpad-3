@@ -73,6 +73,7 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
+    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -236,7 +237,7 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return question
+        return redirection(canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
