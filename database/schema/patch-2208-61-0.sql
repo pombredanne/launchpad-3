@@ -17,4 +17,4 @@ CREATE INDEX distroseriesparent__derivedseries__idx
 CREATE INDEX distroseriesparent__parentseries__idx
     ON DistroSeriesParent (parent_series);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 61, 0);
