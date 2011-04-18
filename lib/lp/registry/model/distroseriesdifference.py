@@ -290,12 +290,14 @@ class DistroSeriesDifference(StormBase):
             source_pubs_for_release = dict(
                 most_recent_publications(
                     dsds, in_parent=False, statuses=(
-                        PackagePublishingStatus.PUBLISHED,),
+                        PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING),
                     match_version=True))
             parent_source_pubs_for_release = dict(
                 most_recent_publications(
                     dsds, in_parent=True, statuses=(
-                        PackagePublishingStatus.PUBLISHED,),
+                        PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING),
                     match_version=True))
 
             latest_comment_by_dsd_id = dict(
@@ -303,34 +305,38 @@ class DistroSeriesDifference(StormBase):
                 for comment in most_recent_comments(dsds))
             latest_comments = latest_comment_by_dsd_id.values()
 
-            for dsd in dsds:
-                spn_id = dsd.source_package_name_id
-                cache = get_property_cache(dsd)
-                cache.source_pub = source_pubs.get(spn_id)
-                cache.parent_source_pub = parent_source_pubs.get(spn_id)
-                if dsd.id in source_pubs_for_release:
-                    cache.source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.derived_series,
-                            source_pubs_for_release[dsd.id]))
-                else:
-                    cache.source_package_release = None
-                if dsd.id in parent_source_pubs_for_release:
-                    cache.parent_source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.derived_series.parent_series,
-                            parent_source_pubs_for_release[dsd.id]))
-                else:
-                    cache.parent_source_package_release = None
-                cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
-
             # SourcePackageReleases of the parent and source pubs are often
             # referred to.
             sprs = bulk.load_related(
                 SourcePackageRelease, chain(
                     source_pubs.itervalues(),
-                    parent_source_pubs.itervalues()),
+                    parent_source_pubs.itervalues(),
+                    source_pubs_for_release.itervalues(),
+                    parent_source_pubs_for_release.itervalues()),
                 ("sourcepackagereleaseID",))
+
+            for dsd in dsds:
+                spn_id = dsd.source_package_name_id
+                cache = get_property_cache(dsd)
+                cache.source_pub = source_pubs.get(spn_id)
+                cache.parent_source_pub = parent_source_pubs.get(spn_id)
+                if spn_id in source_pubs_for_release:
+                    spph = source_pubs_for_release[spn_id]
+                    cache.source_package_release = (
+                        DistroSeriesSourcePackageRelease(
+                            dsd.derived_series,
+                            spph.sourcepackagerelease))
+                else:
+                    cache.source_package_release = None
+                if spn_id in parent_source_pubs_for_release:
+                    spph = parent_source_pubs_for_release[spn_id]
+                    cache.parent_source_package_release = (
+                        DistroSeriesSourcePackageRelease(
+                            dsd.derived_series.parent_series,
+                            spph.sourcepackagerelease))
+                else:
+                    cache.parent_source_package_release = None
+                cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
             # SourcePackageRelease.uploader can end up getting the requester
             # for a source package recipe build.
