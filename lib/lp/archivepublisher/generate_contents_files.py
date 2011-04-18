@@ -85,9 +85,13 @@ class GenerateContentsFiles(LaunchpadScript):
         if self.distribution is None:
             return self._name
         else:
+            # Include distribution name.  Clearer to admins, but also
+            # puts runs for different distributions under separate
+            # locks so that they can run simultaneously.
             return "%s-%s" % (self._name, self.distribution.name)
 
     def processOptions(self):
+        """Handle command-line options."""
         if self.options.distribution is None:
             raise OptionValueError("Specify a distribution.")
 
@@ -98,6 +102,7 @@ class GenerateContentsFiles(LaunchpadScript):
                 "Distribution '%s' not found." % self.options.distribution)
 
     def setUpPrivateTree(self):
+        """Make sure the `content_archive` directories exist."""
         self.logger.debug("Ensuring that we have a private tree in place.")
         for suffix in ['cache', 'misc']:
             dirname = '%s-%s' % (self.distribution.name, suffix)
@@ -115,20 +120,25 @@ class GenerateContentsFiles(LaunchpadScript):
         return receiver.argument
 
     def getPocketSuffixes(self):
+        """Query the distribution's pocket suffixes."""
         return self.queryDistro("pocket_suffixes").split()
 
     def getSuites(self):
+        """Query the distribution's suites."""
         return self.queryDistro("supported").split()
 
     def getArchs(self):
+        """Query architectures supported by the distribution."""
         devel = self.queryDistro("development")
         return self.queryDistro("archs", options=["-s", devel])
 
     def getDirs(self, archs):
+        """Subdirectories needed for each component."""
         return ['source', 'debian-installer'] + [
             'binary-%s' % arch.name for arch in archs]
 
-    def writeAptConf(self, suites, archs):
+    def writeAptContentsConf(self, suites, archs):
+        """Write apt-contents.conf file."""
         output_dirname = '%s-misc' % self.distribution.name
         output_file = file(os.path.join(
             self.content_archive, output_dirname, "apt-contents.conf"))
@@ -152,6 +162,7 @@ class GenerateContentsFiles(LaunchpadScript):
         output_file.close()
 
     def createComponentDirs(self, suites, archs):
+        """Create the content archive's tree for all of its components."""
         for suite in suites:
             for component in COMPONENTS:
                 for directory in self.getDirs(archs):
@@ -163,6 +174,7 @@ class GenerateContentsFiles(LaunchpadScript):
                         os.makedirs(path)
 
     def writeContentsTop(self):
+        """Write Contents.top file."""
         output_filename = os.path.join(
             self.content_archive, '%s-misc' % self.distribution.name,
             "Contents.top")
@@ -175,6 +187,7 @@ class GenerateContentsFiles(LaunchpadScript):
         output_file.close()
 
     def generateContentsFiles(self):
+        """Generate Contents files."""
         self.logger.debug(
             "Running apt in private tree to generate new contents.")
         execute(self.logger, [
@@ -192,6 +205,7 @@ class GenerateContentsFiles(LaunchpadScript):
             ])
 
     def updateContentsFile(self, suite, arch):
+        """Update Contents file, if it has changed."""
         contents_dir = os.path.join(
             self.content_archive, self.distribution.name, 'dists', suite)
         contents_filename = "Contents-%s" % arch
@@ -220,12 +234,14 @@ class GenerateContentsFiles(LaunchpadScript):
                 "Skipping unmodified Contents file for %s/%s.", suite, arch)
 
     def updateContentsFiles(self, suites, archs):
+        """Update all Contents files that have changed."""
         self.logger.debug("Comparing contents files with public tree.")
         for suite in suites:
             for arch in archs:
                 self.updateContentsFile(suite, arch)
 
     def main(self):
+        """See `LaunchpadScript`."""
         self.processOptions()
 
         self.config = getPubConfig(self.distribution.main_archive)
@@ -236,7 +252,7 @@ class GenerateContentsFiles(LaunchpadScript):
         self.setUpPrivateTree()
         suites = self.getSuites()
         archs = self.getArchs()
-        self.writeAptConf(suites, archs)
+        self.writeAptContentsConf(suites, archs)
         self.createComponentDirs(suites, archs)
         self.generateContentsFiles()
         self.updateContentsFiles(suites, archs)
