@@ -53,6 +53,12 @@ def get_template(template_name):
 
 
 def execute(logger, command_line):
+    """Execute a shell command.
+
+    :param logger: Output from the command will be logged here.
+    :param command_line: Command to execute, as a list of tokens.
+    :raises LaunchpadScriptFailure: If the command returns failure.
+    """
     description = ' '.join(command_line)
     logger.debug("Execute: %s", description)
     retval, stdout, stderr = run_command(command_line)
@@ -153,7 +159,7 @@ class GenerateContentsFiles(LaunchpadScript):
                         self.content_archive, self.distribution.name, 'dists',
                         suite, component, directory)
                     if not file_exists(path):
-                        self.logger.debug("Creating %s", path)
+                        self.logger.debug("Creating %s.", path)
                         os.makedirs(path)
 
     def writeContentsTop(self):
@@ -185,7 +191,7 @@ class GenerateContentsFiles(LaunchpadScript):
                 self.content_archive, self.distribution.name),
             ])
 
-    def installContentsFile(self, suite, arch):
+    def updateContentsFile(self, suite, arch):
         contents_dir = os.path.join(
             self.content_archive, self.distribution.name, 'dists', suite)
         contents_filename = "Contents-%s" % arch
@@ -196,7 +202,7 @@ class GenerateContentsFiles(LaunchpadScript):
         # re-fetch them unnecessarily.
         if differ_in_content(current_contents, last_contents):
             self.logger.debug(
-                "Installing new Contents file for %s/%s", suite, arch)
+                "Installing new Contents file for %s/%s.", suite, arch)
             if file_exists(last_contents):
                 os.remove(last_contents)
             os.rename(current_contents, last_contents)
@@ -211,13 +217,13 @@ class GenerateContentsFiles(LaunchpadScript):
             os.chmod(contents_dest, 0664)
         else:
             self.logger.debug(
-                "Skipping unmodified Contents file for %s/%s", suite, arch)
+                "Skipping unmodified Contents file for %s/%s.", suite, arch)
 
-    def compareAndUpdate(self, suites, archs):
+    def updateContentsFiles(self, suites, archs):
         self.logger.debug("Comparing contents files with public tree.")
         for suite in suites:
             for arch in archs:
-                self.installContentsFile(suite, arch)
+                self.updateContentsFile(suite, arch)
 
     def main(self):
         self.processOptions()
@@ -233,4 +239,4 @@ class GenerateContentsFiles(LaunchpadScript):
         self.writeAptConf(suites, archs)
         self.createComponentDirs(suites, archs)
         self.generateContentsFiles()
-        self.compareAndUpdate(suites, archs)
+        self.updateContentsFiles(suites, archs)
