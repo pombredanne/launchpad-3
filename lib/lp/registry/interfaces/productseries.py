@@ -309,6 +309,11 @@ class IProductSeriesPublic(
     is_development_focus = Attribute(
         _("Is this series the development focus for the product?"))
 
+    user_can_set_branch = exported(
+        Bool(
+            title=u'Can the current user set the branch of the series?',
+            readonly=True, required=False))
+
     @operation_parameters(
         include_inactive=Bool(title=_("Include inactive"),
                               required=False, default=False))
