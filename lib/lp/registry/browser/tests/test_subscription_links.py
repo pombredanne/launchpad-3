@@ -81,6 +81,7 @@ class _TestResultsMixin:
                  """"#structural-subscription-content-box"});""")
         self.assertTrue(setup in self.contents)
 
+
 class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
     """Test structural subscriptions base class.
 
