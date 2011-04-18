@@ -19,6 +19,9 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.security.permission import (
+    checkPermission as check_permission_is_registered,
+    )
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
@@ -237,6 +240,30 @@ class AuthorizationBase:
         :return: True or False.
         """
         return False
+
+    def forwardCheckAuthenticated(self, user,
+                                  obj=None, permission=None):
+        """Forward request to another security adapter.
+
+        Find a matching adapter and call checkAuthenticated on it. Intended
+        to be used in checkAuthenticated.
+
+        :param user: The IRolesPerson object that was passed in.
+        :param obj: The the object to check permissionsn for. If None, use
+            the same object as this adapter.
+        :param permission: The permission to check. If None, use the same
+            permission as this adapter.
+        :return: True or False.
+        """
+        if obj is None:
+            obj = self.obj
+        if permission is None:
+            permission = self.permission
+        else:
+            # This will raise ValueError if the permission doesn't exist.
+            check_permission_is_registered(permission, obj)
+        next_adapter = getAdapter(obj, IAuthorization, permission)
+        return next_adapter.checkAuthenticated(user)
 
     def checkAccountAuthenticated(self, account):
         """See `IAuthorization.checkAccountAuthenticated`.
