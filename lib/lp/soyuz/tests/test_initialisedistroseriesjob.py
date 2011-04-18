@@ -105,6 +105,18 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual(parent, naked_job.parent)
 
+    def test_getPendingJobsForDistroseries(self):
+        # Pending initialisation jobs can be retrieved per distroseries.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        another_distroseries = self.factory.makeDistroSeries()
+        self.job_source.create(parent, distroseries)
+        self.job_source.create(parent, another_distroseries)
+        initialise_utility = getUtility(IInitialiseDistroSeriesJobSource)
+        [job] = list(initialise_utility.getPendingJobsForDistroseries(
+            distroseries))
+        self.assertEqual(job.distroseries, distroseries)
+
 
 class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     """Test case for InitialiseDistroSeriesJob."""

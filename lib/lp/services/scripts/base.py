@@ -3,10 +3,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'disable_oops_handler',
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
-    'disable_oops_handler',
+    'LOCK_PATH',
     'SilentLaunchpadScriptFailure',
     ]
 
