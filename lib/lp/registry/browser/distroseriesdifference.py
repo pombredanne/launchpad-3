@@ -161,21 +161,6 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         return self.request.is_ajax and self.can_request_diffs
 
     @property
-    def display_diffs_header(self):
-        """Should the diff header line be displayed?"""
-        # Never show the header when the request link is showing.
-        if self.show_package_diffs_request_link:
-            return False
-        # Never show the header when the diff block is not displayed.
-        if not self.display_diffs:
-            return False
-        # Show the header if there are diffs ready to display, or if the user
-        # has permission to request them.
-        return self.can_request_diffs or (
-            self.context.package_diff is not None or
-            self.context.parent_package_diff is not None)
-
-    @property
     def display_diffs(self):
         """Only show diffs if there's a base version."""
         return self.context.base_version is not None
@@ -210,10 +195,30 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             not self.context.package_diff and self.display_child_diff)
         parent_diff_computable = (
             not self.context.parent_package_diff and self.display_parent_diff)
-        return (self.can_request_diffs and
-                self.context.base_version and
+        return (self.display_diffs and
+                self.can_request_diffs and
                 (derived_diff_computable or
                  parent_diff_computable))
+
+    @property
+    def display_package_diffs_info(self):
+        """Whether or not to show package differences info.
+
+        Show if:
+
+          There are no diffs yet available AND the base version is set AND
+          either the parent or the derived version differs from the base
+          version AND the user can request diff calculation,
+
+        Or:
+
+          There are diffs.
+
+        """
+        return (
+            self.context.package_diff is not None or
+            self.context.parent_package_diff is not None or
+            self.show_package_diffs_request_link)
 
 
 class DistroSeriesDifferenceDisplayComment:
