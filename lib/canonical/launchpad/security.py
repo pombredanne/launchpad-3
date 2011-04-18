@@ -39,7 +39,6 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IAuthorization,
     ILaunchpadRoot,
@@ -249,7 +248,7 @@ class AuthorizationBase:
         to be used in checkAuthenticated.
 
         :param user: The IRolesPerson object that was passed in.
-        :param obj: The the object to check permissionsn for. If None, use
+        :param obj: The object to check the permission for. If None, use
             the same object as this adapter.
         :param permission: The permission to check. If None, use the same
             permission as this adapter.
@@ -587,7 +586,7 @@ class DriverSpecification(AuthorizationBase):
         # extremely difficult to do :-)
         return (
             self.obj.goal and
-            check_permission("launchpad.Driver", self.obj.goal))
+            self.forwardCheckAuthenticated(user, self.obj.goal))
 
 
 class EditSprintSpecification(AuthorizationBase):
@@ -1052,8 +1051,8 @@ class EditDistroSeriesDifference(AuthorizationBase):
     usedfor = IDistroSeriesDifferenceEdit
 
     def checkAuthenticated(self, user):
-        return check_permission(
-            'launchpad.View', self.obj.derived_series.distribution)
+        return self.forwardCheckAuthenticated(
+            user, self.obj.derived_series.distribution, 'launchpad.View')
 
 
 class SeriesDrivers(AuthorizationBase):
@@ -1143,7 +1142,8 @@ class EditStructuralSubscription(AuthorizationBase):
 
         # Removal of a target cascades removals to StructuralSubscriptions,
         # so we need to allow editing to those who can edit the target itself.
-        can_edit_target = check_permission('launchpad.Edit', self.obj.target)
+        can_edit_target = self.forwardCheckAuthenticated(
+            user, self.obj.target)
 
         # Who is actually allowed to edit a subscription is determined by
         # a helper method on the model.
@@ -2074,7 +2074,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                check_permission('launchpad.Edit', self.obj.target_branch) or
+                self.forwardCheckAuthenticated(
+                    user, self.obj.target_branch) or
                 user.inTeam(self.obj.target_branch.reviewer))
 
 
@@ -2615,7 +2616,7 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
             return False
-        return check_permission(self.permission, parent)
+        return self.forwardCheckAuthenticated(user, parent)
 
 
 class ViewLibraryFileAliasWithParent(AuthorizationBase):
@@ -2635,7 +2636,7 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
             return False
-        return check_permission(self.permission, parent)
+        return forwardCheckAuthenticated(user, parent)
 
 
 class SetMessageVisibility(AuthorizationBase):
