@@ -65,6 +65,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
+from lp.soyuz.model.packagediff import PackageDiff
 
 
 class DistroSeriesDifference(Storm):
@@ -341,11 +342,9 @@ class DistroSeriesDifference(Storm):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
-        # If the DSD has changed, we want to invalidate the diffs. The GC
-        # process for the Librarian will clean up after us.
+        # If the DSD has been updated, fiddle with package diffs.
         if updated is True:
-            self.package_diff = None
-            self.parent_package_diff = None
+            self._setPackageDiffs()
         return updated
 
     def _updateType(self):
@@ -432,6 +431,28 @@ class DistroSeriesDifference(Storm):
                 self.base_version = unicode(max(intersection))
                 return True
         return False
+
+    def _setPackageDiffs(self):
+        """Set package diffs if they exist."""
+        if self.base_version is None or self.base_source_pub is None:
+            self.package_diff = None
+            self.parent_package_diff = None
+            return
+        store = IStore(PackageDiff)
+        diffs = store.find(PackageDiff,
+            from_source=self.base_source_pub.sourcepackagerelease.id,
+            to_source=self.source_pub.sourcepackagerelease.id)
+        if diffs.is_empty():
+            self.package_diff = None
+        else:
+            self.package_diff = diffs[0]
+        parent_diffs = store.find(PackageDiff,
+            from_source=self.base_source_pub.sourcepackagerelease.id,
+            to_source=self.parent_source_pub.sourcepackagerelease.id)
+        if parent_diffs.is_empty():
+            self.parent_package_diff = None
+        else:
+            self.parent_package_diff = parent_diffs[0]
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
