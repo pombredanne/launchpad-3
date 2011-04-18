@@ -72,7 +72,14 @@ class _TestResultsMixin:
         self.assertNotEqual(
             None, self.new_edit_link,
             "Expected edit_bug_mail link missing")
-
+        # Ensure the LP.cache has been populated.
+        self.assertTrue("LP.cache['administratedTeams']" in self.contents)
+        # And that the call to setup the subscription is in the HTML.  A
+        # windmill test is required to ensure that the call actually
+        # succeeded, by checking the link class for 'js-action'.
+        setup = ("""module.setup({content_box: """
+                 """"#structural-subscription-content-box"});""")
+        self.assertTrue(setup in self.contents)
 
 class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
     """Test structural subscriptions base class.
