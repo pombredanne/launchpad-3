@@ -21,6 +21,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
     LessThan,
+    Not,
     )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -47,6 +48,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.services.features import (
+    get_relevant_feature_controller,
     getFeatureFlag,
     install_feature_controller,
     )
@@ -58,6 +60,9 @@ from lp.services.features.model import (
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     SourcePackageFormat,
+    )
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -100,6 +105,168 @@ class TestDistroSeriesView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
+
+    def _createDifferenceAndGetView(self, difference_type):
+        # Helper function to create a valid DSD.
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries, difference_type=difference_type)
+        return create_initialized_view(distroseries, '+index')
+
+    def test_num_differences(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences)
+
+    def test_num_differences_in_parent(self):
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_parent)
+
+    def test_num_differences_in_child(self):
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_child)
+
+
+class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
+    """Test the distroseries +index page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _setupDifferences(self, name, parent_name, nb_diff_versions,
+                          nb_diff_child, nb_diff_parent):
+        # Helper to create DSD of the different types.
+        derived_series = self.factory.makeDistroSeries(
+            name=name,
+            parent_series=self.factory.makeDistroSeries(name=parent_name))
+        self.simple_user = self.factory.makePerson()
+        for i in range(nb_diff_versions):
+            diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        for i in range(nb_diff_child):
+            diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        for i in range(nb_diff_parent):
+            diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        return derived_series
+
+    def test_differences_no_flag_no_portlet(self):
+        # The portlet is not displayed if the feature flag is not enabled.
+        derived_series = self._setupDifferences('deri', 'sid', 1, 2, 2)
+        portlet_header = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            html = view()
+
+        self.assertEqual(
+            None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+        self.assertThat(html, Not(portlet_header))
+
+    def test_differences_portlet_all_differences(self):
+        # The difference portlet shows the differences with the parent
+        # series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 1, 2, 3)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            soupmatchers.Tag(
+                'Differences link', 'a',
+                text=re.compile('\s*1 package with differences.\s*'),
+                attrs={'href': re.compile('.*/\+localpackagediffs')}),
+            soupmatchers.Tag(
+                'Parent diffs link', 'a',
+                text=re.compile('\s*2 packages in Sid.\s*'),
+                attrs={'href': re.compile('.*/\+missingpackages')}),
+            soupmatchers.Tag(
+                'Child diffs link', 'a',
+                text=re.compile('\s*3 packages in Deri.\s*'),
+                attrs={'href': re.compile('.*/\+uniquepackages')}))
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertThat(html, portlet_display)
+
+    def test_differences_portlet_no_differences(self):
+        # The difference portlet displays 'No differences' if there is no
+        # differences with the parent.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            soupmatchers.Tag(
+                'Child diffs link', True,
+                text=re.compile('\s*No differences\s*')),
+              )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertThat(html, portlet_display)
+
+    def test_differences_portlet_initialising(self):
+        # The difference portlet displays 'The series is initialising.' if
+        # there is an initialising job for the series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job = job_source.create(derived_series.parent, derived_series)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derived series', 'h2',
+                text='Derived series'),
+            soupmatchers.Tag(
+                'Init message', True,
+                text=re.compile('\s*This series is initialising.\s*')),
+              )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertTrue(derived_series.is_initialising)
+        self.assertThat(html, portlet_display)
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
