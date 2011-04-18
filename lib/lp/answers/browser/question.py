@@ -237,7 +237,7 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return redirection(canonical_url(question), status=301)
+        return redirection(canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
