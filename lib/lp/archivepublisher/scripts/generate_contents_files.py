@@ -95,13 +95,10 @@ class GenerateContentsFiles(LaunchpadScript):
     @property
     def name(self):
         """See `LaunchpadScript`."""
-        if self.distribution is None:
-            return self._name
-        else:
-            # Include distribution name.  Clearer to admins, but also
-            # puts runs for different distributions under separate
-            # locks so that they can run simultaneously.
-            return "%s-%s" % (self._name, self.distribution.name)
+        # Include distribution name.  Clearer to admins, but also
+        # puts runs for different distributions under separate
+        # locks so that they can run simultaneously.
+        return "%s-%s" % (self._name, self.options.distribution)
 
     def processOptions(self):
         """Handle command-line options."""

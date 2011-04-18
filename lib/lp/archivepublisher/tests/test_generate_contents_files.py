@@ -72,3 +72,16 @@ class TestHelpers(TestCaseWithFactory):
 class TestGenerateContentsFiles(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def makeScript(self, distribution=None):
+        if distribution is None:
+            distribution = self.factory.makeDistribution()
+        return GenerateContentsFiles(test_args=['-d', distribution.name])
+
+    def test_name_is_consistent(self):
+        distro = self.factory.makeDistribution()
+        self.assertEqual(
+            self.makeScript(distro).name, self.makeScript(distro).name)
+
+    def test_name_is_unique_for_each_distro(self):
+        self.assertNotEqual(self.makeScript().name, self.makeScript().name)
