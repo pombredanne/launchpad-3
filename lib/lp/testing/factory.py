@@ -190,6 +190,9 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.distroseriesparent import (
+    IDistroSeriesParentSet,
+    )
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -2385,6 +2388,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             distro_series_difference, owner, comment)
+
+    def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
+                               initialized=False):
+        if parent_series is None:
+            parent_series = self.makeDistroSeries()
+        if derived_series is None:
+            derived_series = self.makeDistroSeries()
+        return getUtility(IDistroSeriesParentSet).new(
+            derived_series, parent_series, initialized)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
