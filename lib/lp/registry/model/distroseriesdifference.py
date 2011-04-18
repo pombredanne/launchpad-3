@@ -439,20 +439,19 @@ class DistroSeriesDifference(Storm):
             self.parent_package_diff = None
             return
         if self.source_pub is None:
-            diff = None
+            self.package_diff = None
         else:
-            diff = getUtility(IPackageDiffSet).getDiffBetweenReleases((
-                self.base_source_pub.sourcepackagerelease,
-                self.source_pub.sourcepackagerelease))
-        self.package_diff = diff
-        if self.parent_source_pub is None:
-            parent_diff = None
-        else:
-            parent_diff = getUtility(
-                IPackageDiffSet).getDiffBetweenReleases((
+            self.package_diff = getUtility(
+                IPackageDiffSet).getDiffBetweenReleases(
                     self.base_source_pub.sourcepackagerelease,
-                    self.parent_source_pub.sourcepackagerelease))
-        self.parent_package_diff = parent_diff
+                    self.source_pub.sourcepackagerelease)
+        if self.parent_source_pub is None:
+            self.parent_package_diff = None
+        else:
+            self.parent_package_diff = getUtility(
+                IPackageDiffSet).getDiffBetweenReleases(
+                    self.base_source_pub.sourcepackagerelease,
+                    self.parent_source_pub.sourcepackagerelease)
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""

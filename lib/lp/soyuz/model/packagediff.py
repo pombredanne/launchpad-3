@@ -309,9 +309,9 @@ class PackageDiffSet:
         else:
             return result
 
-    def getDiffBetweenReleases(self, sprs):
+    def getDiffBetweenReleases(self, from_spr, to_spr):
         """See `IPackageDiffSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             PackageDiff,
-            from_sourceID=sprs[0].id, to_sourceID=sprs[1].id).first()
+            from_sourceID=from_spr.id, to_sourceID=to_spr.id).first()
