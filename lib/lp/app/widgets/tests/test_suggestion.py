@@ -132,8 +132,12 @@ class TestSuggestionWidget(TestCaseWithFactory):
              <input type="text" value="" ...
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
+        
+        # XXX wallyworld 2011-04-18 bug=764170: We cannot pass an unencoded
+        # unicode string to the DocTestMatcher
+        markup = markups[1].encode('utf-8')
         self.assertThat(
-            markups[1], DocTestMatches(expected_item_1, self.doctest_opts))
+            markup, DocTestMatches(expected_item_1, self.doctest_opts))
 
 
 def make_target_branch_widget(branch):

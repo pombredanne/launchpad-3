@@ -294,11 +294,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True)
-    attachments = exported(
+    attachments = doNotSnapshot(exported(
         CollectionField(
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
-            readonly=True))
+            readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = exported(
@@ -394,13 +394,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True,
             value_type=Reference(schema=IMessage)))
 
-    indexed_messages = exported(
+    indexed_messages = doNotSnapshot(exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
             value_type=Reference(schema=IMessage)),
-        exported_as='messages')
+        exported_as='messages'))
 
     def _indexed_messages(include_content=False, include_parents=False):
         """Low level query for getting bug messages.

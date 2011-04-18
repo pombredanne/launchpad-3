@@ -1,15 +1,19 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Simple loggers."""
+"""Loggers."""
 
 __metaclass__ = type
 __all__ = [
     'BufferLogger',
     'DevNullLogger',
     'FakeLogger',
+    'LaunchpadLogger',
+    'NullHandler',
+    'PrefixFilter',
     ]
 
+import logging
 from StringIO import StringIO
 import sys
 import traceback
@@ -28,6 +32,69 @@ LEVEL_PREFIXES.update({
     loglevels.ERROR: 'ERROR',
     loglevels.CRITICAL: 'CRITICAL',
 })
+
+
+class LaunchpadLogger(logging.Logger):
+    """Logger that support our custom levels."""
+
+    def debug1(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG1):
+            self._log(loglevels.DEBUG1, msg, args, **kwargs)
+
+    def debug2(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG2):
+            self._log(loglevels.DEBUG2, msg, args, **kwargs)
+
+    def debug3(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG3):
+            self._log(loglevels.DEBUG3, msg, args, **kwargs)
+
+    def debug4(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG4):
+            self._log(loglevels.DEBUG4, msg, args, **kwargs)
+
+    def debug5(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG5):
+            self._log(loglevels.DEBUG5, msg, args, **kwargs)
+
+    def debug6(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG6):
+            self._log(loglevels.DEBUG6, msg, args, **kwargs)
+
+    def debug7(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG7):
+            self._log(loglevels.DEBUG7, msg, args, **kwargs)
+
+    def debug8(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG8):
+            self._log(loglevels.DEBUG8, msg, args, **kwargs)
+
+    def debug9(self, msg, *args, **kwargs):
+        if self.isEnabledFor(loglevels.DEBUG9):
+            self._log(loglevels.DEBUG9, msg, args, **kwargs)
+
+
+class PrefixFilter:
+    """A logging Filter that inserts a prefix into messages.
+
+    If no static prefix is provided, the Logger's name is used.
+    """
+
+    def __init__(self, prefix=None):
+        self.prefix = prefix
+
+    def filter(self, record):
+        prefix = self.prefix or record.name
+        record.msg = '[%s] %s' % (prefix, record.msg)
+        return True
+
+
+class NullHandler(logging.Handler):
+    """A do-nothing Handler used to silence 'No handlers for logger' warnings.
+    """
+
+    def emit(self, record):
+        pass
 
 
 class FakeLogger:

@@ -14,6 +14,7 @@ from datetime import (
     timedelta,
     )
 from fixtures import TempDir
+import logging
 import multiprocessing
 import os
 import signal
@@ -80,6 +81,7 @@ from lp.code.model.revision import (
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
+from lp.services.log.logger import PrefixFilter
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -1028,7 +1030,16 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     break
                 tunable_loop_class = tunable_loops.pop(0)
 
-                self.logger.info("Running %s", tunable_loop_class.__name__)
+                loop_name = tunable_loop_class.__name__
+
+                # Configure logging for this loop to use a prefix. Log
+                # output from multiple threads will be interleaved, and
+                # this lets us tell log output from different tasks
+                # apart.
+                loop_logger = logging.getLogger('garbo.' + loop_name)
+                loop_logger.addFilter(PrefixFilter(loop_name))
+
+                loop_logger.info("Running %s", loop_name)
 
                 # How long until the script should abort.
                 remaining_script_time = (
@@ -1057,18 +1068,16 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     "Task will be terminated in %0.3f seconds", abort_time)
 
                 tunable_loop = tunable_loop_class(
-                    abort_time=abort_time, log=self.logger)
+                    abort_time=abort_time, log=loop_logger)
 
                 if self._maximum_chunk_size is not None:
                     tunable_loop.maximum_chunk_size = self._maximum_chunk_size
 
                 try:
                     tunable_loop.run()
-                    self.logger.debug(
-                        "%s completed sucessfully.",
-                        tunable_loop_class.__name__)
+                    loop_logger.debug("%s completed sucessfully.", loop_name)
                 except Exception:
-                    self.logger.exception("Unhandled exception")
+                    loop_logger.exception("Unhandled exception")
                     self.failure_count += 1
                 finally:
                     transaction.abort()
