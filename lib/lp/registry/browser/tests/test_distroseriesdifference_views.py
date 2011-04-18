@@ -534,6 +534,13 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             text=re.compile(
                 '\s*Differences from last common version:')))
 
+    package_diff_info_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Within(
+            soupmatchers.Tag('Package diff container', 'dd'),
+            soupmatchers.Tag(
+                'Package diffs info', 'ul',
+                attrs={'class': 'package-diff-status'})))
+
     def test_package_diff_label(self):
         # If base_version is not None the label for the section is
         # there.
@@ -607,3 +614,4 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
             html = view()
             self.assertThat(html, Not(self.package_diff_header_matcher))
+            self.assertThat(html, Not(self.package_diff_info_matcher))
