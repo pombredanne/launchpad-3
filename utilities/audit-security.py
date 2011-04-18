@@ -9,7 +9,79 @@ Usage hint:
 
 % utilities/audit-security.py
 """
+__metatype__ = type
 
+import _pythonpath
+import copy
 import os
+import re
+import sys
 
+from collections import defaultdict
 
+BRANCH_ROOT = os.path.split(
+    os.path.dirname(os.path.abspath(__file__)))[0]
+SECURITY_PATH = os.path.join(
+    BRANCH_ROOT, 'database', 'schema', 'security.cfg')
+
+def strip(data):
+    data = [d for d in data if not d.startswith('#')]
+    return [d for d in data if d.strip() != '']
+
+class SettingsAuditor(object):
+
+    section_regex = re.compile(r'\[.*\]')
+    
+    def __init__(self):
+        self.errors = {}
+        self.current_section = ''
+        self.observed_settings = defaultdict(lambda: 0)
+
+    def _get_section_name(self, line):
+        if line.strip().startswith('['):
+            return self.section_regex.match(line).group()
+        else:
+            return None
+
+    def _get_setting(self, line):
+        return line.split()[0]
+
+    def start_new_section(self, new_section):
+        observed_settings = copy.deepcopy(self.observed_settings)
+        for k in observed_settings.keys():
+            if observed_settings[k] == 1:
+                observed_settings.pop(k)
+        duplicated_settings = observed_settings.keys()
+        if len(duplicated_settings) > 0:
+            self.errors[self.current_section] = observed_settings.keys()
+        self.observed_settings = defaultdict(lambda: 0)
+        self.current_section = new_section
+
+    def readline(self, line):
+        new_section = self._get_section_name(line)
+        if new_section is not None:
+            self.start_new_section(new_section)
+        else:
+            setting = self._get_setting(line)
+            self.observed_settings[setting] += 1
+
+    def print_error_data(self):
+        print "The following errors were found in security.cfg"
+        print "-----------------------------------------------"
+        for section in self.errors.keys():
+            print "In section: %s" % section
+            for setting in self.errors[section]:
+                print '\tDuplicate setting found: %s' % setting
+                
+
+def main():
+    data = file(SECURITY_PATH).readlines()
+    data = strip(data)    
+    auditor = SettingsAuditor()
+    for line in data:
+        auditor.readline(line)
+    auditor.print_error_data()
+
+if __name__ == '__main__':
+    sys.exit(main())
+    
