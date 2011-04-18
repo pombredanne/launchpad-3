@@ -21,6 +21,7 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
+from collections import namedtuple
 import sys
 
 from bzrlib.bzrdir import BzrDir
@@ -29,8 +30,11 @@ from bzrlib import errors
 
 from lp.codehosting.vfs import get_rw_server, get_ro_server
 from lp.codehosting.bzrutils import get_branch_stacked_on_url
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.services.scripts.base import LaunchpadScript
+
+
+FakeBranch = namedtuple('FakeBranch', 'id')
 
 
 def set_branch_stacked_on_url(bzrdir, stacked_on_url):
@@ -138,8 +142,8 @@ class UpdateStackedBranches(LaunchpadScript):
             (branch_id, branch_type, unique_name,
              stacked_on_id, stacked_on_name) = branch_info
             if self.options.stack_on_id:
-                stacked_on_location = '/%s/%s' % (
-                    BRANCH_ID_ALIAS_PREFIX, stacked_on_id)
+                branch = FakeBranch(stacked_on_id)
+                stacked_on_location = branch_id_alias(branch)
             else:
                 stacked_on_location = '/' + stacked_on_name
             self.updateStackedOn(
