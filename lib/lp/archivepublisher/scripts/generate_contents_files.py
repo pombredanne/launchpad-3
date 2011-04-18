@@ -52,16 +52,19 @@ def get_template(template_name):
         template_name)
 
 
-def execute(logger, command_line):
+def execute(logger, command, args=None):
     """Execute a shell command.
 
     :param logger: Output from the command will be logged here.
     :param command_line: Command to execute, as a list of tokens.
     :raises LaunchpadScriptFailure: If the command returns failure.
     """
-    description = ' '.join(command_line)
+    if args is None:
+        description = command
+    else:
+        description = command + ' '.join(args)
     logger.debug("Execute: %s", description)
-    retval, stdout, stderr = run_command(command_line)
+    retval, stdout, stderr = run_command(command, args)
     logger.debug(stdout)
     logger.warn(stderr)
     if retval != 0:
@@ -200,17 +203,14 @@ class GenerateContentsFiles(LaunchpadScript):
         """Generate Contents files."""
         self.logger.debug(
             "Running apt in private tree to generate new contents.")
-        execute(self.logger, [
-            "cp",
+        execute(self.logger, "cp", [
             "-a",
             self.config.overrideroot,
             "%s/" % self.content_archive,
             ])
         self.writeContentsTop()
-        execute(self.logger, [
-            "apt-ftparchive",
-            "generate",
-            "%s/%s-misc/apt-contents.conf" % (
+        execute(self.logger, "apt-ftparchive", [
+            "generate", "%s/%s-misc/apt-contents.conf" % (
                 self.content_archive, self.distribution.name),
             ])
 
