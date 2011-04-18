@@ -495,12 +495,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distroseries == self.distroseries,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     @property
     def max_bug_heat(self):

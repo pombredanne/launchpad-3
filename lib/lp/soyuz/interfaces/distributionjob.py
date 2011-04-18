@@ -92,6 +92,10 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
     def create(distroseries, arches, packagesets, rebuild):
         """Create a new initialisation job for a distroseries."""
 
+    def getPendingJobsForDistroseries(distroseries):
+        """Retrieve pending initialisation jobs for a distroseries.
+        """
+
 
 class ISyncPackageJobSource(IJobSource):
     """An interface for acquiring IISyncPackageJobs."""
@@ -144,11 +148,12 @@ class IDistroSeriesDifferenceJob(IRunnableJob):
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(distroseries, sourcepackagename):
+    def createForPackagePublication(distroseries, sourcepackagename, pocket):
         """Create jobs as appropriate for a given status publication.
 
         :param distroseries: A `DistroSeries` that is assumed to be
             derived from another one.
         :param sourcepackagename: A `SourcePackageName` that is being
             published in `distroseries`.
+        :param pocket: The `PackagePublishingPocket` for the publication.
         """

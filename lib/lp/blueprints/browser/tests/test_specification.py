@@ -14,6 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -119,6 +120,24 @@ class TestBranchTraversal(TestCaseWithFactory):
             branch.name]
         self.assertEqual(
             self.specification.getBranchLink(branch), self.traverse(segments))
+
+
+class TestSpecificationView(TestCaseWithFactory):
+    """Test the SpecificationView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_offsite_url(self):
+        """The specification URL is rendered when present."""
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        spec.specurl = 'http://eg.dom/parrot'
+        view = create_initialized_view(
+            spec, name='+index', principal=spec.owner,
+            rootsite='blueprints')
+        li = find_tag_by_id(view.render(), 'spec-url')
+        self.assertEqual('nofollow', li.a['rel'])
+        self.assertEqual(spec.specurl, li.a['href'])
 
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
