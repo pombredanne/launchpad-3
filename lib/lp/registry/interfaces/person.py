@@ -1571,11 +1571,20 @@ class IPersonViewRestricted(Interface):
         """
 
     def canAccess(obj, attributes):
-        """True if this person can access all attributes of the object.
+        """True if this person can access all given attributes of the object.
 
         :param obj: The object to be checked.
         :param attributes: a sequence of attribute names to check.
         :return: True if the person can access all given attributes
+            of the given object, else False.
+        """
+
+    def canWrite(obj, attributes):
+        """True if this person can write all given attributes of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: a sequence of attribute names to check.
+        :return: True if the person can write all given attributes
             of the given object, else False.
         """
 

@@ -92,7 +92,10 @@ from zope.interface import (
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.publisher.interfaces import Unauthorized
-from zope.security.checker import canAccess
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.management import getInteraction
 from zope.security.proxy import (
     ProxyFactory,
@@ -2808,12 +2811,13 @@ class Person(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
 
-    def canAccess(self, obj, attributes):
-        """See `IPerson.`"""
+    def checkPermissionOnObject(self, obj, attributes, check_operation):
+        """Run check_operation on the given obj for the given attributes."""
         interaction = getInteraction()
         if len(interaction.participations) != 1:
             raise NotImplemented(
-                'canAccess() requires at present exactly one participation')
+                'checkPermissionOnObject() requires at present exactly '
+                'one participation.' % check_operation.__name__)
         principal = interaction.participations[0].principal
         # For security reasons, and because zope.security.checker.canAccess()
         # can only permissions for the current user, any user can
@@ -2824,7 +2828,16 @@ class Person(
         if principal.person != self:
             raise Unauthorized('Users can query only their own permissions')
 
-        return all([canAccess(obj, attribute) for attribute in attributes])
+        return all(
+            [check_operation(obj, attribute) for attribute in attributes])
+
+    def canAccess(self, obj, attributes):
+        """See `IPerson.`"""
+        return self.checkPermissionOnObject(obj, attributes, canAccess)
+
+    def canWrite(self, obj, attributes):
+        """See `IPerson.`"""
+        return self.checkPermissionOnObject(obj, attributes, canWrite)
 
 
 class PersonSet:
