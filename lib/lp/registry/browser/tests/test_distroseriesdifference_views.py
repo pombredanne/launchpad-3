@@ -186,8 +186,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.1-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(2, len(tags))
 
@@ -206,8 +207,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.30-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
@@ -226,8 +228,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.30-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
@@ -334,9 +337,12 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             set_base_version=True)
 
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')#, principal=user)
+            soup = BeautifulSoup(view())
         # Both diffs present simple text repr. of proposed diff.
-        self.assertEqual(2, self.number_of_request_diff_texts(view()))
+        self.assertEqual(2, self.number_of_request_diff_texts(soup))
 
     def test_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
