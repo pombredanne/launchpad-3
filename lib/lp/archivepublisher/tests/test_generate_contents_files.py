@@ -78,7 +78,9 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def makeScript(self, distribution=None):
         if distribution is None:
             distribution = self.factory.makeDistribution()
-        return GenerateContentsFiles(test_args=['-d', distribution.name])
+        script = GenerateContentsFiles(test_args=['-d', distribution.name])
+        script.logger = DevNullLogger()
+        return script
 
     def test_name_is_consistent(self):
         distro = self.factory.makeDistribution()
@@ -102,3 +104,15 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distro, script.distribution)
+
+    def test_queryDistro(self):
+        distroseries = self.factory.makeDistroSeries()
+        script = self.makeScript(distroseries.distribution)
+        script.processOptions()
+        self.assertEqual(distroseries.name, script.queryDistro('supported'))
+
+    def test_getArchs(self):
+        das = self.factory.makeDistroArchSeries()
+        script = self.makeScript(das.distroseries.distribution)
+        script.processOptions()
+        self.assertEqual(das.architecturetag, script.getArchs())

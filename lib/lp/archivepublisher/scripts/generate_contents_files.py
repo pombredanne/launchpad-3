@@ -123,8 +123,10 @@ class GenerateContentsFiles(LaunchpadScript):
         args = ['-d', self.distribution.name]
         if options is not None:
             args += options
-        args += request
+        args.append(request)
         query_distro = LpQueryDistro(test_args=args)
+        query_distro.logger = self.logger
+        query_distro.txn = self.txn
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument
