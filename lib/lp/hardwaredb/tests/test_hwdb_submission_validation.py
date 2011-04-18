@@ -11,10 +11,11 @@ from unittest import (
     TestCase,
     TestLoader,
     )
-
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
 
@@ -56,13 +57,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                                                                submission_id)
         return result, submission_id
 
-    def insertSampledata(self, data, insert_text, where):
+    def insertSampledata(self, data, insert_text, where, after=False):
         """Insert text into the sample data `data`.
 
         Insert the text `insert_text` before the first occurrence of
         `where` in `data`.
         """
         insert_position = data.find(where)
+        if after:
+            insert_position += len(where)
         return data[:insert_position] + insert_text + data[insert_position:]
 
     def replaceSampledata(self, data, replace_text, from_text, to_text):
@@ -98,6 +101,36 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             logging.ERROR)
         self.assertEqual(result, None,
                          'Invalid root node not detected')
+
+    def _getLastOopsTime(self):
+        try:
+            last_oops_time = globalErrorUtility.getLastOopsReport().time
+        except AttributeError:
+            # There haven't been any oopses in this test run
+            last_oops_time = None
+        return last_oops_time
+
+    def test_bad_data_does_not_oops(self):
+        # If the processing cronscript gets bad data, it should log it, but
+        # it should not create an Oops.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=('<dmi>'
+                '/sys/class/dmi/id/bios_vendor:Dell Inc.'
+                '/sys/class/dmi/id/bios_version:A12'
+                '</dmi>'),
+            where = '<hardware>',
+            after=True)
+        # Add the OopsHandler to the log, because we want to make sure this
+        # doesn't create an Oops report.
+        logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
+        result, submission_id = self.runValidator(sample_data)
+        last_oops_time = self._getLastOopsTime()
+        # We use the class method here, because it's been overrided for the
+        # other tests in this test case.
+        TestCase.assertEqual(self,
+            self._getLastOopsTime(),
+            last_oops_time)
 
     def testInvalidFormatVersion(self):
         """The attribute `format` of the root node must be `1.0`."""
