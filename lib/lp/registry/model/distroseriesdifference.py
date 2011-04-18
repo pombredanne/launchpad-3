@@ -106,7 +106,7 @@ class DistroSeriesDifference(Storm):
     @staticmethod
     def new(derived_series, source_package_name):
         """See `IDistroSeriesDifferenceSource`."""
-        if derived_series.parent_series is None:
+        if not derived_series.is_derived_series:
             raise NotADerivedSeriesError()
 
         store = IMasterStore(DistroSeriesDifference)
@@ -322,8 +322,9 @@ class DistroSeriesDifference(Storm):
             distroseries=distro_series,
             exact_match=True)
 
-        # There is only one or zero published package.
-        pub = IResultSet(pubs).one()
+        # Get the most recent publication (pubs are ordered by
+        # (name, id)).
+        pub = IResultSet(pubs).first()
         if pub is None:
             return None
         else:
