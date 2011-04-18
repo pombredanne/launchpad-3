@@ -48,13 +48,10 @@ class TestQuestionRepresentation(TestCaseWithFactory):
 
     def test_top_level_question_get(self):
         # The top level question set can be used via the api to get
-        # a question by id without hacking the question's full canonical_url.
+        # a question by id via redirect without url hacking.
         response = self.webservice.get(
             '/questions/%s' % self.question.id, 'application/xhtml+xml')
-        self.assertEqual(response.status, 200)
-        self.assertEqual(
-            self.findQuestionTitle(response),
-            "<p>This is a question</p>") 
+        self.assertEqual(response.status, 301)
 
 
     def test_GET_xhtml_representation(self):
