@@ -41,6 +41,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
@@ -993,8 +994,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ALIAS_PREFIX)
 
     def test_translatePath_branch_id_alias_bzrdir_content(self):
-        # translatePath('/+branch-id/.bzr/.*') *must* return not found, otherwise
-        # bzr will look for it and we don't have a global bzr dir.
+        # translatePath('/+branch-id/.bzr/.*') *must* return not found,
+        # otherwise bzr will look for it and we don't have a global bzr dir.
         requester = self.factory.makePerson()
         self.assertNotFound(
             requester, '/%s/.bzr/branch-format' % BRANCH_ID_ALIAS_PREFIX)
@@ -1009,7 +1010,7 @@ class CodehostingTest(TestCaseWithFactory):
         # Make sure the trailing path is returned.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(self.factory.makeAnyBranch())
-        path = escape(u'/%s/%s/foo/bar' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        path = escape(u'%s/foo/bar' % branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'foo/bar'),
@@ -1021,7 +1022,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
                 branch_type=BranchType.HOSTED, owner=requester))
-        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        path = escape(branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -1034,7 +1035,7 @@ class CodehostingTest(TestCaseWithFactory):
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
                 branch_type=BranchType.HOSTED, private=True, owner=requester))
-        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        path = escape(branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
             (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
@@ -1046,17 +1047,16 @@ class CodehostingTest(TestCaseWithFactory):
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
                 branch_type=BranchType.HOSTED, private=True))
-        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        path = escape(branch_id_alias(branch))
         self.assertPermissionDenied(requester, path)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
                                             trailing_path):
         """Assert that 'translation' points to the right control transport."""
-        unique_name = escape(u'/' + default_stacked_on)
         expected_translation = (
             CONTROL_TRANSPORT,
-            {'default_stack_on': unique_name}, trailing_path)
+            {'default_stack_on': escape(default_stacked_on)}, trailing_path)
         self.assertEqual(expected_translation, translation)
 
     def test_translatePath_control_directory(self):
@@ -1067,7 +1067,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_no_stacked_set(self):
@@ -1093,7 +1093,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_other_owner(self):
@@ -1105,7 +1105,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
     def test_translatePath_control_directory_package_no_focus(self):
@@ -1131,7 +1131,7 @@ class CodehostingTest(TestCaseWithFactory):
         login(ANONYMOUS)
         self.assertTranslationIsControlDirectory(
             translation,
-            default_stacked_on="%s/%s" % (BRANCH_ID_ALIAS_PREFIX, branch.id),
+            default_stacked_on=branch_id_alias(branch),
             trailing_path='.bzr')
 
 

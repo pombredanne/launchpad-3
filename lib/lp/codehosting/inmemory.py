@@ -37,6 +37,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
@@ -802,7 +803,7 @@ class FakeCodehosting:
             return
         if not self._canRead(requester, default_branch):
             return
-        path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, default_branch.id)
+        path = branch_id_alias(default_branch)
         return (
             CONTROL_TRANSPORT,
             {'default_stack_on': escape(path)},
