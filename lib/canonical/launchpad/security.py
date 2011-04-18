@@ -2636,7 +2636,7 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
             return False
-        return forwardCheckAuthenticated(user, parent)
+        return self.forwardCheckAuthenticated(user, parent)
 
 
 class SetMessageVisibility(AuthorizationBase):
