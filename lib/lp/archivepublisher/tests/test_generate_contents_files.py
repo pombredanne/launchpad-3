@@ -172,3 +172,15 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             distro.name + "-overrides")
         self.assertIn('FileList "%s' % overrides_path, apt_contents_conf)
         self.assertIn('Architectures "%s source";' % arch, apt_contents_conf)
+
+    def test_writeContentsTop(self):
+        content_archive = self.makeContentArchive()
+        distro = self.makeDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.writeContentsTop()
+        contents_top = file(
+            "%s/%s-contents/%s-misc/Contents.top"
+            % (content_archive, distro.name, distro.name)).read()
+        self.assertIn("This file maps", contents_top)
+        self.assertIn(distro.title, contents_top)

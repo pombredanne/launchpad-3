@@ -193,8 +193,8 @@ class GenerateContentsFiles(LaunchpadScript):
             'distrotitle': self.distribution.title,
         }
         output_file = file(output_filename, 'w')
-        output_file.write(
-            file(get_template('Contents.top')).read() % parameters)
+        text = file(get_template("Contents.top")).read() % parameters
+        output_file.write(text)
         output_file.close()
 
     def generateContentsFiles(self):

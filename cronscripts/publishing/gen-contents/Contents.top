@@ -1,4 +1,4 @@
-This file maps each file available in the %(distrotitle)
+This file maps each file available in the %(distrotitle)s
 system to the package from which it originates.  It includes packages
 from the DIST distribution for the ARCH architecture.
 
