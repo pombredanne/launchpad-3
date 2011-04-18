@@ -1601,29 +1601,45 @@ class BugTaskSet:
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
         elif zope_isinstance(status, BaseItem):
+            incomplete_response = (
+                status == BugTaskStatus.INCOMPLETE)
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+            # TODO: bug 759467 tracks the migration of INCOMPLETE in the db to
+            # INCOMPLETE_WITH_RESPONSE and INCOMPLETE_WITHOUT_RESPONSE. When
+            # the migration is complete, we can convert status lookups to a
+            # simple IN clause.
             if with_response or without_response:
-                status_clause = (
-                    '(BugTask.status = %s) ' %
-                    sqlvalues(BugTaskStatus.INCOMPLETE))
                 if with_response:
-                    status_clause += ("""
+                    return """(
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NOT NULL
                              AND BugTask.date_incomplete <=
-                                 Bug.date_last_message)
-                        """)
+                                 Bug.date_last_message)))
+                        """ % sqlvalues(
+                            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                            BugTaskStatus.INCOMPLETE)
                 elif without_response:
-                    status_clause += ("""
+                    return """(
+                        BugTask.status = %s OR
+                        (BugTask.status = %s
                         AND (Bug.date_last_message IS NULL
                              OR BugTask.date_incomplete >
-                                Bug.date_last_message)
-                        """)
-                else:
-                    assert with_response != without_response
-                return status_clause
+                                Bug.date_last_message)))
+                        """ % sqlvalues(
+                            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+                            BugTaskStatus.INCOMPLETE)
+                assert with_response != without_response
+            elif incomplete_response:
+                # search for any of INCOMPLETE (being migrated from),
+                # INCOMPLETE_WITH_RESPONSE or INCOMPLETE_WITHOUT_RESPONSE
+                return 'BugTask.status %s' % search_value_to_where_condition(
+                    any(BugTaskStatus.INCOMPLETE,
+                        BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                        BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE))
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)
         else:
@@ -2736,14 +2752,15 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
-                    AND BugTask.status = %s
+                    AND (BugTask.status = %s OR BugTask.status = %s)
                     AND BugTask.assignee IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old)
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE,
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, min_days_old)
         expirable_bugtasks = BugTask.select(
             query + unconfirmed_bug_condition,
             clauseTables=['Bug'],
@@ -2761,6 +2778,7 @@ class BugTaskSet:
         """
         statuses_not_preventing_expiration = [
             BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
+            BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
             BugTaskStatus.WONTFIX]
 
         unexpirable_status_list = [

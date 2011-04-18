@@ -201,6 +201,11 @@ class BugTaskStatus(DBEnumeratedType):
         this product or source package.
         """)
 
+    # INCOMPLETE is never actually stored now: INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE are mapped to INCOMPLETE on read, and on
+    # write INCOMPLETE is mapped to INCOMPLETE_WITHOUT_RESPONSE. This permits
+    # An index on the INCOMPLETE_WITH*_RESPONSE queries that the webapp
+    # generates.
     INCOMPLETE = DBItem(15, """
         Incomplete
 
@@ -274,10 +279,6 @@ class BugTaskStatus(DBEnumeratedType):
         affected software.
         """)
 
-    # DBItem values 35 and 40 are used by
-    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
-    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-
     UNKNOWN = DBItem(999, """
         Unknown
 
@@ -292,24 +293,20 @@ class BugTaskStatusSearch(DBEnumeratedType):
     """
     use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
-    sort_order = (
-        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
-        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
-
-    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
+    INCOMPLETE_WITH_RESPONSE = DBItem(13, """
         Incomplete (with response)
 
         This bug has new information since it was last marked
         as requiring a response.
         """)
 
-    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(14, """
         Incomplete (without response)
 
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
 
 
 class BugTagsSearchCombinator(EnumeratedType):
