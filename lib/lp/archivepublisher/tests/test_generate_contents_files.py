@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from optparse import OptionValueError
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.archivepublisher.scripts.generate_contents_files import (
     differ_in_content,
@@ -85,3 +87,18 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     def test_name_is_unique_for_each_distro(self):
         self.assertNotEqual(self.makeScript().name, self.makeScript().name)
+
+    def test_requires_distro(self):
+        script = GenerateContentsFiles(test_args=[])
+        self.assertRaises(OptionValueError, script.processOptions)
+
+    def test_requires_real_distro(self):
+        script = GenerateContentsFiles(
+            test_args=['-d', self.factory.getUniqueString()])
+        self.assertRaises(OptionValueError, script.processOptions)
+
+    def test_looks_up_distro(self):
+        distro = self.factory.makeDistribution()
+        script = self.makeScript(distro)
+        script.processOptions()
+        self.assertEqual(distro, script.distribution)
