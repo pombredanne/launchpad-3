@@ -14,11 +14,15 @@ from datetime import (
     timedelta,
     )
 import logging
-import multiprocessing
 import os
 import threading
 import time
 
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
+import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
 from storm.locals import (
@@ -30,10 +34,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from contrib.glock import (
-    GlobalLock,
-    LockAlreadyAcquired,
-    )
 from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.sqlbase import (
@@ -42,10 +42,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus

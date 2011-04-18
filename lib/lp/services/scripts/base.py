@@ -11,8 +11,8 @@ __all__ = [
     'SilentLaunchpadScriptFailure',
     ]
 
-from contextlib import contextmanager
 from ConfigParser import SafeConfigParser
+from contextlib import contextmanager
 from cProfile import Profile
 import datetime
 import logging
@@ -403,6 +403,7 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
 
 @contextmanager
 def disable_oops_handler(logger):
