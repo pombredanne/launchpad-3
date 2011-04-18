@@ -10,10 +10,12 @@ __all__ = [
 
 from optparse import OptionValueError
 import os
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests.script import run_command
 from lp.archivepublisher.config import getPubConfig
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -63,10 +65,31 @@ def execute(logger, command_line):
 
 class GenerateContentsFiles(LaunchpadScript):
 
+    distribution = None
+
     def add_my_options(self):
+        """See `LaunchpadScript`."""
         self.parser.add_option(
             "-d", "--distribution", dest="distribution", default=None,
             help="Distribution to generate Contents files for.")
+
+    @property
+    def name(self):
+        """See `LaunchpadScript`."""
+        if self.distribution is None:
+            return self._name
+        else:
+            return "%s-%s" % (self._name, self.distribution.name)
+
+    def processOptions(self):
+        if self.options.distribution is None:
+            raise OptionValueError("Specify a distribution.")
+
+        self.distribution = getUtility(IDistributionSet).getByName(
+            self.options.distribution)
+        if self.distribution is None:
+            raise OptionValueError(
+                "Distribution '%s' not found." % self.options.distribution)
 
     def setUpPrivateTree(self):
         self.logger.debug("Ensuring that we have a private tree in place.")
@@ -197,8 +220,7 @@ class GenerateContentsFiles(LaunchpadScript):
                 self.installContentsFile(suite, arch)
 
     def main(self):
-        if self.distribution is None:
-            raise OptionValueError("Specify a distribution using -d.")
+        self.processOptions()
 
         self.config = getPubConfig(self.distribution.main_archive)
         self.content_archive = os.path.join(
