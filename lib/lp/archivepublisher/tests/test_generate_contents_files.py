@@ -6,8 +6,14 @@
 __metaclass__ = type
 
 from optparse import OptionValueError
+import os.path
+from textwrap import dedent
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.config import config
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.scripts.generate_contents_files import (
     differ_in_content,
     execute,
@@ -28,7 +34,7 @@ def write_file(filename, content):
 
 
 class TestHelpers(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def test_differ_in_content_returns_false_for_identical_files(self):
         self.useTempDir()
@@ -73,11 +79,31 @@ class TestHelpers(TestCaseWithFactory):
 
 class TestGenerateContentsFiles(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
+
+    def makeContentArchive(self):
+        """Prepare a "content archive" directory for script tests."""
+        content_archive = self.makeTemporaryDirectory()
+        config.push("content-archive", dedent("""\
+            [archivepublisher]
+            content_archive_root: %s
+            """ % content_archive))
+        self.addCleanup(config.pop, "content-archive")
+        return content_archive
+
+    def makeDistro(self):
+        """Create a distribution for testing.
+
+        The distribution will have a root directory set up, which will
+        be cleaned up after the test.
+        """
+        return self.factory.makeDistribution(
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
 
     def makeScript(self, distribution=None):
+        """Create a script for testing."""
         if distribution is None:
-            distribution = self.factory.makeDistribution()
+            distribution = self.makeDistro()
         script = GenerateContentsFiles(test_args=['-d', distribution.name])
         script.logger = DevNullLogger()
         return script
@@ -116,3 +142,33 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script = self.makeScript(das.distroseries.distribution)
         script.processOptions()
         self.assertEqual(das.architecturetag, script.getArchs())
+
+    def test_writeAptContentsConf_writes_header(self):
+        self.makeContentArchive()
+        distro = self.makeDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.writeAptContentsConf([], [])
+        apt_contents_conf = file(
+            "%s/%s-misc/apt-contents.conf"
+            % (script.content_archive, distro.name)).read()
+        self.assertIn('\nDefault\n{', apt_contents_conf)
+        self.assertIn(distro.name, apt_contents_conf)
+
+    def test_writeAptContentsConf_writes_suite_sections(self):
+        content_archive = self.makeContentArchive()
+        distro = self.makeDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        suite = self.factory.getUniqueString('suite')
+        arch = self.factory.getUniqueString('arch')
+        script.writeAptContentsConf([suite], [arch])
+        apt_contents_conf = file(
+            "%s/%s-misc/apt-contents.conf"
+            % (script.content_archive, distro.name)).read()
+        self.assertIn('tree "dists/%s"\n' % suite, apt_contents_conf)
+        overrides_path = os.path.join(
+            content_archive, distro.name + "-contents",
+            distro.name + "-overrides")
+        self.assertIn('FileList "%s' % overrides_path, apt_contents_conf)
+        self.assertIn('Architectures "%s source";' % arch, apt_contents_conf)

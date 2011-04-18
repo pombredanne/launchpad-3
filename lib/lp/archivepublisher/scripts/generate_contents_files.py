@@ -111,7 +111,7 @@ class GenerateContentsFiles(LaunchpadScript):
             raise OptionValueError(
                 "Distribution '%s' not found." % self.options.distribution)
 
-    def setUpPrivateTree(self):
+    def setUpContentArchive(self):
         """Make sure the `content_archive` directories exist."""
         self.logger.debug("Ensuring that we have a private tree in place.")
         for suffix in ['cache', 'misc']:
@@ -152,11 +152,12 @@ class GenerateContentsFiles(LaunchpadScript):
     def writeAptContentsConf(self, suites, archs):
         """Write apt-contents.conf file."""
         output_dirname = '%s-misc' % self.distribution.name
-        output_file = file(os.path.join(
-            self.content_archive, output_dirname, "apt-contents.conf"))
+        output_path = os.path.join(
+            self.content_archive, output_dirname, "apt-contents.conf")
+        output_file = file(output_path, 'w')
 
         parameters = {
-            'architectures': archs,
+            'architectures': ' '.join(archs),
             'content_archive': self.content_archive,
             'distribution': self.distribution.name,
         }
@@ -164,9 +165,7 @@ class GenerateContentsFiles(LaunchpadScript):
         header = get_template('apt_conf_header.template')
         output_file.write(file(header).read() % parameters)
 
-        dist = get_template('apt_conf_dist.template')
-        dist_template = dist.read()
-
+        dist_template = file(get_template('apt_conf_dist.template')).read()
         for suite in suites:
             parameters['suite'] = suite
             output_file.write(dist_template % parameters)
@@ -246,16 +245,17 @@ class GenerateContentsFiles(LaunchpadScript):
             for arch in archs:
                 self.updateContentsFile(suite, arch)
 
-    def main(self):
-        """See `LaunchpadScript`."""
+    def setUp(self):
         self.processOptions()
-
         self.config = getPubConfig(self.distribution.main_archive)
         self.content_archive = os.path.join(
             config.archivepublisher.content_archive_root,
             self.distribution.name + "-contents")
+        self.setUpContentArchive()
 
-        self.setUpPrivateTree()
+    def main(self):
+        """See `LaunchpadScript`."""
+        self.setUp()
         suites = self.getSuites()
         archs = self.getArchs()
         self.writeAptContentsConf(suites, archs)
