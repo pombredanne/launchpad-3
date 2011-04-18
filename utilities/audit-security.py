@@ -11,7 +11,6 @@ Usage hint:
 """
 __metatype__ = type
 
-import _pythonpath
 import copy
 import os
 import re
@@ -24,14 +23,16 @@ BRANCH_ROOT = os.path.split(
 SECURITY_PATH = os.path.join(
     BRANCH_ROOT, 'database', 'schema', 'security.cfg')
 
+
 def strip(data):
     data = [d for d in data if not d.startswith('#')]
     return [d for d in data if d.strip() != '']
 
+
 class SettingsAuditor(object):
 
     section_regex = re.compile(r'\[.*\]')
-    
+
     def __init__(self):
         self.errors = {}
         self.current_section = ''
@@ -72,11 +73,11 @@ class SettingsAuditor(object):
             print "In section: %s" % section
             for setting in self.errors[section]:
                 print '\tDuplicate setting found: %s' % setting
-                
+
 
 def main():
     data = file(SECURITY_PATH).readlines()
-    data = strip(data)    
+    data = strip(data)
     auditor = SettingsAuditor()
     for line in data:
         auditor.readline(line)
@@ -84,4 +85,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-    
