@@ -517,14 +517,6 @@ class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
         self.form_fields += formlib.form.Fields(subscribe_field)
 
-#        security_related_field = Bool(
-#            __name__='security_related',
-#            title=_("This bug is a security vulnerability"),
-#            required=False, default=False)
-#
-#        self.form_fields = self.form_fields.omit('security_related')
-#        self.form_fields += formlib.form.Fields(security_related_field)
-
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
         if IProjectGroup.providedBy(self.context):
@@ -561,8 +553,6 @@ class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
-        elif IProjectGroup.providedBy(context):
-            context = data['product']
         elif IMaloneApplication.providedBy(context):
             context = data['bugtarget']
 
