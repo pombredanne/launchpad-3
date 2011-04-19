@@ -9,7 +9,6 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -31,6 +30,10 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseriesdifference import (
+    most_recent_comments,
+    most_recent_publications,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -302,9 +305,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew")
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             dsd_comment = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
 
         self.assertEqual(ds_diff, dsd_comment.distro_series_difference)
 
@@ -313,31 +317,37 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # most recent comment first.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             dsd_comment = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
             dsd_comment_2 = ds_diff.addComment(
-                ds_diff.owner, "Wait until version 2.1")
+                person, "Wait until version 2.1")
 
         self.assertEqual(
             [dsd_comment_2, dsd_comment], list(ds_diff.getComments()))
 
-    def test_addComment_not_public(self):
-        # Comments cannot be added with launchpad.View.
+    def test_latest_comment(self):
+        # latest_comment is a property containing the most recent comment.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        person = self.factory.makePerson()
 
-        with person_logged_in(person):
-            self.assertTrue(check_permission('launchpad.View', ds_diff))
-            self.assertFalse(check_permission('launchpad.Edit', ds_diff))
-            self.assertRaises(Unauthorized, getattr, ds_diff, 'addComment')
+        with person_logged_in(ds_diff.owner):
+            comments = [
+                ds_diff.addComment(
+                    ds_diff.owner, "Wait until version 2.1"),
+                ds_diff.addComment(
+                    ds_diff.owner, "Wait until version 2.1"),
+                ]
+
+        self.assertEqual(comments[-1], ds_diff.latest_comment)
 
     def test_addComment_for_owners(self):
         # Comments can be added by any of the owners of the derived
         # series.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             self.assertTrue(check_permission('launchpad.Edit', ds_diff))
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
@@ -372,21 +382,11 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.getPackageSets()])
 
-    def test_blacklist_not_public(self):
-        # Differences cannot be blacklisted without edit access.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-        person = self.factory.makePerson()
-
-        with person_logged_in(person):
-            self.assertTrue(check_permission('launchpad.View', ds_diff))
-            self.assertFalse(check_permission('launchpad.Edit', ds_diff))
-            self.assertRaises(Unauthorized, getattr, ds_diff, 'blacklist')
-
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.blacklist()
 
         self.assertEqual(
@@ -397,7 +397,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # All versions are blacklisted with the all=True param.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.blacklist(all=True)
 
         self.assertEqual(
@@ -409,7 +409,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -430,7 +430,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -625,8 +625,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': parent_changelog,
             })
 
-        with person_logged_in(ds_diff.owner):
-            ds_diff.requestPackageDiffs(ds_diff.owner)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
 
         self.assertEqual(
             '1.2', ds_diff.package_diff.to_source.version)
@@ -655,8 +656,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': parent_changelog,
             })
 
-        with person_logged_in(ds_diff.owner):
-            ds_diff.requestPackageDiffs(ds_diff.owner)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
         self.assertIs(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 
@@ -675,11 +677,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'derived': changelog_lfa,
                 'parent': changelog_lfa,
             })
-        with person_logged_in(ds_diff.owner):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
             self.assertRaisesWithContent(
                 DistroSeriesDifferenceError,
                 "Can not generate package diffs for a resolved difference.",
-                ds_diff.requestPackageDiffs, ds_diff.owner)
+                ds_diff.requestPackageDiffs, person)
 
     def test_package_diff_urls_none(self):
         # URLs to the package diffs are only present when the diffs
@@ -757,6 +760,46 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         dsd = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, spn)
         self.assertEqual(pd, dsd.package_diff)
+
+    def _initDiffWithMultiplePendingPublications(self, versions, parent):
+        ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)
+        if parent:
+            series = ds_diff.derived_series.parent_series
+            version = versions.get('parent')
+        else:
+            series = ds_diff.derived_series
+            version = versions.get('derived')
+        pub1 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=series,
+            status=PackagePublishingStatus.PENDING,
+            version=version)
+        pub2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=series,
+            status=PackagePublishingStatus.PENDING,
+            version=version)
+        return ds_diff, pub1, pub2
+
+    def test_multiple_pending_publications_derived(self):
+        # If multiple (PENDING) publications are present in the derived
+        # series, the most recent is returned.
+        ds_diff, _, pub = self._initDiffWithMultiplePendingPublications(
+            versions={'derived': '1.0'},
+            parent=False)
+        self.assertEqual(
+            pub,
+            ds_diff.source_package_release.publishings[0])
+
+    def test_multiple_pending_publications_parent(self):
+        # If multiple (PENDING) publications are present in the parent
+        # series, the most recent is returned.
+        ds_diff, _, pub = self._initDiffWithMultiplePendingPublications(
+            versions={'parent': '1.0'},
+            parent=True)
+        self.assertEqual(
+            pub,
+            ds_diff.parent_source_package_release.publishings[0])
 
 
 class DistroSeriesDifferenceLibrarianTestCase(TestCaseWithFactory):
@@ -895,3 +938,114 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             ds_diff.derived_series, 'fooname')
 
         self.assertEqual(ds_diff, result)
+
+
+class TestMostRecentComments(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_most_recent_comments(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsds = set(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series) for index in xrange(5))
+        expected_comments = set()
+        for dsd in dsds:
+            # Add a couple of comments.
+            self.factory.makeDistroSeriesDifferenceComment(dsd)
+            expected_comments.add(
+                self.factory.makeDistroSeriesDifferenceComment(dsd))
+        self.assertContentEqual(
+            expected_comments, most_recent_comments(dsds))
+
+
+class TestMostRecentPublications(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def create_difference(self, derived_series):
+        # Create a new DistroSeriesDifference
+        version = self.factory.getUniqueInteger()
+        versions = {
+            'base': u'1.%d' % version,
+            'derived': u'1.%dderived1' % version,
+            'parent': u'1.%d-1' % version,
+            }
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            versions=versions)
+        # Push a base_version in... not sure how better to do it.
+        removeSecurityProxy(dsd).base_version = versions["base"]
+        return dsd
+
+    def test_simple(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsds = [
+            self.create_difference(derived_series),
+            self.create_difference(derived_series),
+            ]
+        # Derived publication.
+        source_pubs_by_spn_id_expected = set(
+            (dsd.source_package_name.id, dsd.source_pub)
+            for dsd in dsds)
+        source_pubs_by_spn_id_found = most_recent_publications(
+            dsds, in_parent=False, statuses=(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
+        self.assertContentEqual(
+            source_pubs_by_spn_id_expected,
+            source_pubs_by_spn_id_found)
+        # Parent publication
+        parent_source_pubs_by_spn_id_expected = set(
+            (dsd.source_package_name.id, dsd.parent_source_pub)
+            for dsd in dsds)
+        parent_source_pubs_by_spn_id_found = most_recent_publications(
+            dsds, in_parent=True, statuses=(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
+        self.assertContentEqual(
+            parent_source_pubs_by_spn_id_expected,
+            parent_source_pubs_by_spn_id_found)
+
+    def test_statuses(self):
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsd = self.create_difference(derived_series)
+        # Change the derived source publication to DELETED.
+        removeSecurityProxy(dsd.source_pub).status = (
+            PackagePublishingStatus.DELETED)
+        # Searching for DELETED will find the source publication.
+        self.assertContentEqual(
+            [(dsd.source_package_name.id, dsd.source_pub)],
+            most_recent_publications(
+                [dsd], in_parent=False, statuses=(
+                    PackagePublishingStatus.DELETED,)))
+        # Searched for DELETED will *not* find the parent publication.
+        self.assertContentEqual(
+            [], most_recent_publications(
+                [dsd], in_parent=True, statuses=(
+                    PackagePublishingStatus.DELETED,)))
+
+    def test_match_version(self):
+        # When match_version is True, the version of the publications (well,
+        # the release) must exactly match those recorded on the
+        # DistroSeriesDifference.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        dsd = self.create_difference(derived_series)
+        # Modify the release version.
+        removeSecurityProxy(
+            dsd.source_package_release.sourcepackagerelease).version += u"2"
+        # Searching with match_version=False finds the publication.
+        self.assertContentEqual(
+            [(dsd.source_package_name.id, dsd.source_pub)],
+            most_recent_publications(
+                [dsd], in_parent=False, match_version=False,
+                statuses=(PackagePublishingStatus.PUBLISHED,)))
+        # Searching with match_version=True does not find the publication.
+        self.assertContentEqual(
+            [], most_recent_publications(
+                [dsd], in_parent=False, match_version=True,
+                statuses=(PackagePublishingStatus.PUBLISHED,)))

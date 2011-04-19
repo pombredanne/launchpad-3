@@ -50,7 +50,7 @@ class TestInlineAssignment(WindmillTestCase):
         client.waits.forElement(xpath=PICKER_RESULT, timeout=FOR_ELEMENT)
         client.click(xpath=PICKER_RESULT)
 
-        CONFIRMATION = ("//div[@class='important-notice-balloon']")
+        CONFIRMATION = ("//div[contains(@class, 'important-notice-popup')]")
         client.waits.forElement(xpath=CONFIRMATION, timeout=FOR_ELEMENT)
         self.client.asserts.assertTextIn(
             xpath=CONFIRMATION,

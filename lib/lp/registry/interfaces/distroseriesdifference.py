@@ -38,7 +38,6 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
@@ -48,7 +47,7 @@ from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+class IDistroSeriesDifferencePublic(Interface):
     """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -188,6 +187,11 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
         :return: True if the record was updated, False otherwise.
         """
+
+    latest_comment = Reference(
+        Interface, # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
 
     def getComments():
         """Return a result set of the comments for this difference."""

@@ -409,6 +409,29 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
     def milestone_batch_navigator(self):
         return BatchNavigator(self.context.all_milestones, self.request)
 
+    def _num_differences(self, difference_type):
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                difference_type=difference_type,
+                status=(DistroSeriesDifferenceStatus.NEEDS_ATTENTION,))
+        return differences.count()
+
+    @cachedproperty
+    def num_differences(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
+
+    @cachedproperty
+    def num_differences_in_parent(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+
+    @cachedproperty
+    def num_differences_in_child(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
