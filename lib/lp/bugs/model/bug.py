@@ -272,7 +272,7 @@ def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
         Join(BugTask, BugTask.bugID == BugTag.bugID),
         )
     where_conditions = [
-        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        BugTask._status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
     if wanted_tags is not None:

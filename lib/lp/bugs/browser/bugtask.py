@@ -1812,7 +1812,7 @@ class BugsStatsMixin(BugsInfoMixin):
             bug_task_set.buildUpstreamClause(upstream_open_bugs))
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(self.context)
-        groups = (BugTask.status, BugTask.importance,
+        groups = (BugTask._status, BugTask.importance,
             Bug.latest_patch_uploaded != None, fixed_upstream_clause)
         counts = bug_task_set.countBugs(open_bugs, groups)
         # Sum the split out aggregates.

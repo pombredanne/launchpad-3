@@ -507,7 +507,7 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
-    status = EnumCol(
+    _status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
         default=BugTaskStatus.NEW,
@@ -559,6 +559,12 @@ class BugTask(SQLBase, BugTaskMixin):
     # stores the bugtargetdisplayname.
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
+
+    @property
+    def status(self):
+        if (self._status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE or
+            self._status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
+            return BugTaskStatus.INCOMPLETE
 
     @property
     def title(self):
@@ -848,7 +854,7 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         old_status = self.status
-        self.status = new_status
+        self._status = new_status
 
         if new_status == BugTaskStatus.UNKNOWN:
             # Ensure that all status-related dates are cleared,
@@ -2924,7 +2930,7 @@ class BugTaskSet:
             ]
 
         product_ids = [product.id for product in products]
-        conditions = And(BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        conditions = And(BugTask._status.is_in(UNRESOLVED_BUGTASK_STATUSES),
                          Bug.duplicateof == None,
                          BugTask.productID.is_in(product_ids))
 
@@ -2952,7 +2958,7 @@ class BugTaskSet:
                 # TODO: sort by their name?
                 "assignee": BugTask.assigneeID,
                 "targetname": BugTask.targetnamecache,
-                "status": BugTask.status,
+                "status": BugTask._status,
                 "title": Bug.title,
                 "milestone": BugTask.milestoneID,
                 "dateassigned": BugTask.date_assigned,

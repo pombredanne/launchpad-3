@@ -489,9 +489,13 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
+    # Note that status is a property because the model only exposes INCOMPLETE
+    # but the DB stores INCOMPLETE_WITH_RESPONSE and
+    # INCOMPLETE_WITHOUT_RESPONSE for query efficiency.
     status = exported(
         Choice(title=_('Status'), vocabulary=BugTaskStatus,
                default=BugTaskStatus.NEW, readonly=True))
+    _status = Attribute('The actual status DB column used in queries.')
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED, readonly=True))

@@ -221,6 +221,7 @@
                     distribution
                     distroseries
                     milestone
+                    _status
                     status
                     statusexplanation
                     importance
