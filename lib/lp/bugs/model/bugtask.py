@@ -509,7 +509,7 @@ class BugTask(SQLBase, BugTaskMixin):
         storm_validator=validate_conjoined_attribute)
     _status = EnumCol(
         dbName='status', notNull=True,
-        schema=BugTaskStatusSearch,
+        schema=(BugTaskStatus, BugTaskStatusSearch),
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
@@ -565,6 +565,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if (self._status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE or
             self._status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
             return BugTaskStatus.INCOMPLETE
+        return self._status
 
     @property
     def title(self):

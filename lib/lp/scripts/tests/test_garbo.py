@@ -799,16 +799,18 @@ class TestGarbo(TestCaseWithFactory):
         with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
         self.factory.makeBugComment(bug=bug)
         without_response = self.factory.makeBugTask(bug=bug)
-        with_response._status = BugTaskStatus.INCOMPLETE
-        without_response._status = BugTaskStatus.INCOMPLETE
-        self.runDaily()
+        removeSecurityProxy(with_response)._status = BugTaskStatus.INCOMPLETE
+        removeSecurityProxy(without_response
+            )._status = BugTaskStatus.INCOMPLETE
+        self.runHourly()
+        store = IMasterStore(BugTask)
         self.assertEqual(1,
-            store.find(True,
+            store.find(BugTask.id,
                 BugTask.id==with_response.id,
                 BugTask._status==BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
                 ).count())
         self.assertEqual(1,
-            store.find(True,
+            store.find(BugTask.id,
                 BugTask.id==without_response.id,
                 BugTask._status==
                 BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
