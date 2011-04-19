@@ -15,6 +15,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.testing import (
     TestCaseWithFactory,
     ws_object,
@@ -123,6 +124,26 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             BadRequest, ws_diff.requestPackageDiffs)
+
+    def test_requestPackageDiffs_exception_already_requested(self):
+        # when the package diffs have already been requested, a call to
+        # request them again triggers a PackageDiffAlreadyRequested
+        # exception is raised.  If called through the api, a BadRequest
+        # exception is raised.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.2'},
+            set_base_version=True)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+        ws_diff.requestPackageDiffs()
+        transaction.commit()
+
+        self.assertRaises(
+            PackageDiffAlreadyRequested,
+            ds_diff.requestPackageDiffs, self.factory.makePerson())
+        self.assertRaises(BadRequest, ws_diff.requestPackageDiffs)
 
     def test_package_diffs(self):
         # The package diff urls exposed.
