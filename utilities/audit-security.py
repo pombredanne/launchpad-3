@@ -11,10 +11,8 @@ Usage hint:
 """
 __metatype__ = type
 
-import copy
 import os
 import re
-import sys
 
 from collections import defaultdict
 
@@ -25,11 +23,15 @@ SECURITY_PATH = os.path.join(
 
 
 def strip(data):
-    data = [d for d in data if not d.startswith('#')]
-    return [d for d in data if d.strip() != '']
+    data = [d.strip() for d in data]
+    return [d for d in data if not (d.startswith('#') or d == '')]
 
 
-class SettingsAuditor(object):
+class SettingsAuditor:
+    """Reads the security.cfg file and collects errors.
+
+    We can't just use ConfigParser for this case, as we're doing our own
+    specialized parsing--not interpreting the settings, but verifying."""
 
     section_regex = re.compile(r'\[.*\]')
 
@@ -48,13 +50,12 @@ class SettingsAuditor(object):
         return line.split()[0]
 
     def start_new_section(self, new_section):
-        observed_settings = copy.deepcopy(self.observed_settings)
-        for k in observed_settings.keys():
-            if observed_settings[k] == 1:
-                observed_settings.pop(k)
-        duplicated_settings = observed_settings.keys()
+        for k in self.observed_settings.keys():
+            if self.observed_settings[k] == 1:
+                self.observed_settings.pop(k)
+        duplicated_settings = self.observed_settings.keys()
         if len(duplicated_settings) > 0:
-            self.errors[self.current_section] = observed_settings.keys()
+            self.errors[self.current_section] = self.observed_settings.keys()
         self.observed_settings = defaultdict(lambda: 0)
         self.current_section = new_section
 
@@ -84,4 +85,4 @@ def main():
     auditor.print_error_data()
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
