@@ -67,6 +67,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -213,6 +214,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     logger.debug(
                         ' - build already pending for %s', series_name)
                     continue
+                except CannotUploadToArchive, e:
+                    # This will catch all PPA related issues -
+                    # disabled, security, wrong pocket etc
+                    logger.debug(
+                        ' - daily build failed for %s: %s',
+                        series_name, str(e))
                 except ProgrammingError:
                     raise
                 except:

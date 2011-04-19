@@ -770,11 +770,11 @@ Entering an invalid project also displays an error message:
 
 If the browser supports javascript, there is a 'Choose' link available
 to help the user find an existing project. Since the test browser does
-not support javascript, it is turned into a "Find" link to the /people.
+not support javascript, it is turned into a "Find" link to the /questions.
 
     >>> find_link = anon_browser.getLink('Find')
     >>> print find_link.url
-    http://answers.launchpad.dev/people/
+    http://answers.launchpad.dev/questions...
 
 
 The form field can be filled manually without using the ajax widget.

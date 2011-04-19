@@ -110,6 +110,7 @@ def update_files_privacy(pub_record):
         # Re-upload the source upload changesfile if necessary.
         package_upload = sourcepackagerelease.package_upload
         package_files.append((package_upload, 'changesfile'))
+        package_files.append((sourcepackagerelease, 'changelog'))
     elif IBinaryPackagePublishingHistory.providedBy(pub_record):
         archive = pub_record.archive
         # Re-upload the binary files if necessary.

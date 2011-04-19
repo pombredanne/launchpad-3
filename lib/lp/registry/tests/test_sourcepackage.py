@@ -9,6 +9,10 @@ import unittest
 
 from storm.locals import Store
 import transaction
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -32,6 +36,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -263,9 +268,55 @@ class TestSourcePackage(TestCaseWithFactory):
         packaging = self.factory.makePackagingLink()
         packaging_id = packaging.id
         store = Store.of(packaging)
-        packaging.sourcepackage.deletePackaging()
+        with person_logged_in(packaging.owner):
+            packaging.sourcepackage.deletePackaging()
         result = store.find(Packaging, Packaging.id==packaging_id)
         self.assertIs(None, result.one())
+
+    def test_setPackaging__new(self):
+        """setPackaging() creates a Packaging link."""
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        sourcepackage.setPackaging(
+            productseries, owner=self.factory.makePerson())
+        packaging = sourcepackage.direct_packaging
+        self.assertEqual(packaging.productseries, productseries)
+
+    def test_setPackaging__change_existing_entry(self):
+        """setPackaging() changes existing Packaging links."""
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        other_series = self.factory.makeProductSeries()
+        owner = self.factory.makePerson()
+        with EventRecorder() as recorder:
+            with person_logged_in(owner):
+                sourcepackage.setPackaging(productseries, owner=owner)
+                sourcepackage.setPackaging(other_series, owner=owner)
+                packaging = sourcepackage.direct_packaging
+                self.assertEqual(packaging.productseries, other_series)
+        # The first call of setPackaging() created an ObjectCreatedEvent;
+        # the second call created an ObjectDeletedEvent for the deletion
+        # of the old packaging link, and another ObjectCreatedEvent
+        # for the new Packaging.
+        event1, event2, event3 = recorder.events
+        self.assertIsInstance(event1, ObjectCreatedEvent)
+        self.assertIsInstance(event2, ObjectDeletedEvent)
+        self.assertIsInstance(event3, ObjectCreatedEvent)
+
+    def test_setPackaging__change_existing_entry_different_users(self):
+        """An oridnary user cannot change a Packaging defined by
+        somebody else.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        other_series = self.factory.makeProductSeries()
+        owner = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        sourcepackage.setPackaging(productseries, owner=owner)
+        with person_logged_in(other_user):
+            self.assertRaises(
+                Unauthorized, sourcepackage.setPackaging,
+                other_series, owner=other_user)
 
 
 class TestSourcePackageWebService(WebServiceTestCase):
@@ -288,7 +339,7 @@ class TestSourcePackageWebService(WebServiceTestCase):
         packaging = self.factory.makePackagingLink()
         sourcepackage = packaging.sourcepackage
         transaction.commit()
-        self.wsObject(sourcepackage).deletePackaging()
+        self.wsObject(sourcepackage, user=packaging.owner).deletePackaging()
         transaction.commit()
         self.assertIs(None, sourcepackage.direct_packaging)
 
