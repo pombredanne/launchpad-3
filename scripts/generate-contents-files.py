@@ -9,11 +9,11 @@ import _pythonpath
 
 from canonical.config import config
 from lp.archivepublisher.scripts.generate_contents_files import (
-    GenerateContents,
+    GenerateContentsFiles,
     )
 
 
 if __name__ == '__main__':
-    script = GenerateContents(
+    script = GenerateContentsFiles(
         "generate-contents", dbuser=config.archivepublisher.dbuser)
     script.lock_and_run()
