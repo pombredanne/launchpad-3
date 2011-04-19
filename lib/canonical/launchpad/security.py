@@ -260,7 +260,7 @@ class AuthorizationBase:
             permission = self.permission
         else:
             # This will raise ValueError if the permission doesn't exist.
-            check_permission_is_registered(permission, obj)
+            check_permission_is_registered(obj, permission)
         next_adapter = getAdapter(obj, IAuthorization, permission)
         return next_adapter.checkAuthenticated(user)
 
