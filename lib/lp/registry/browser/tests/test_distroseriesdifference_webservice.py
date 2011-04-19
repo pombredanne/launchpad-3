@@ -3,17 +3,13 @@
 
 __metaclass__ = type
 
+from lazr.restfulclient.errors import BadRequest
 import transaction
-
-from lazr.restfulclient.errors import (
-    BadRequest,
-    Unauthorized,
-    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import AppServerLayer
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.testing import AppServerLayer
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -40,18 +36,11 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         self.assertTrue(
             ws_diff.self_link.endswith(ds_diff_path))
 
-    def test_blacklist_not_public(self):
-        # The blacklist method is not publically available.
-        ds_diff = self.factory.makeDistroSeriesDifference()
-        ws_diff = ws_object(self.factory.makeLaunchpadService(), ds_diff)
-
-        self.assertRaises(Unauthorized, ws_diff.blacklist)
-
     def test_blacklist(self):
         # The blacklist method can be called by people with edit access.
         ds_diff = self.factory.makeDistroSeriesDifference()
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.derived_series.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         result = ws_diff.blacklist()
         transaction.commit()
@@ -63,20 +52,12 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
 
-    def test_unblacklist_not_public(self):
-        # The unblacklist method is not publically available.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        ws_diff = ws_object(self.factory.makeLaunchpadService(), ds_diff)
-
-        self.assertRaises(Unauthorized, ws_diff.unblacklist)
-
     def test_unblacklist(self):
         # The unblacklist method can be called by people with edit access.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         result = ws_diff.unblacklist()
         transaction.commit()
@@ -92,7 +73,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         # Comments can be added via the API
         ds_diff = self.factory.makeDistroSeriesDifference()
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         result = ws_diff.addComment(comment='Hey there')
 
@@ -118,7 +99,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
                 'parent': parent_changelog,
                 })
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         result = ws_diff.requestPackageDiffs()
         transaction.commit()
@@ -138,7 +119,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             })
 
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         self.assertRaises(
             BadRequest, ws_diff.requestPackageDiffs)
@@ -152,7 +133,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         naked_dsdiff.parent_package_diff = self.factory.makePackageDiff()
 
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            ds_diff.owner), ds_diff)
+            self.factory.makePerson()), ds_diff)
 
         self.assertIs(None, ws_diff.package_diff_url)
         self.assertIsNot(None, ws_diff.parent_package_diff_url)

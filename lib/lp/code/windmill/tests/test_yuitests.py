@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-from lp.code.windmill.testing import CodeWindmillLayer
+from lp.code.windmill.testing import CodeYUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
@@ -15,7 +15,7 @@ from lp.testing import (
 
 class CodeYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = CodeWindmillLayer
+    layer = CodeYUITestLayer
     suite_name = 'CodeYUIUnitTests'
 
 

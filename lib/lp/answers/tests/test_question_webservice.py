@@ -46,7 +46,16 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
 
+    def test_top_level_question_get(self):
+        # The top level question set can be used via the api to get
+        # a question by id via redirect without url hacking.
+        response = self.webservice.get(
+            '/questions/%s' % self.question.id, 'application/xhtml+xml')
+        self.assertEqual(response.status, 301)
+
+
     def test_GET_xhtml_representation(self):
+        # A question's xhtml representation is available on the api.
         response = self.webservice.get(
             '/%s/+question/%d' % (self.question.target.name,
                 self.question.id),
@@ -58,6 +67,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
             "<p>This is a question</p>")
 
     def test_PATCH_xhtml_representation(self):
+        # You can update the question through the api with PATCH.
         new_title = "No, this is a question"
 
         question_json = self.webservice.get(
