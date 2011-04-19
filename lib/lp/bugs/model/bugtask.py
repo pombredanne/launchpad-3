@@ -849,7 +849,12 @@ class BugTask(SQLBase, BugTaskMixin):
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
-        if self.status == new_status:
+        if new_status == BugTaskStatus.INCOMPLETE:
+            # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it can
+            # be queried on efficiently.
+            new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+
+        if self._status == new_status:
             # No change in the status, so nothing to do.
             return
 
@@ -2212,6 +2217,8 @@ class BugTaskSet:
             statuses_for_open_tasks = [
                 BugTaskStatus.NEW,
                 BugTaskStatus.INCOMPLETE,
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
                 BugTaskStatus.CONFIRMED,
                 BugTaskStatus.INPROGRESS,
                 BugTaskStatus.UNKNOWN]
