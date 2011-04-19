@@ -29,6 +29,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import (
     most_recent_comments,
     most_recent_publications,
@@ -161,6 +162,52 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
+
+    def test_update_nulls_diffs_for_resolved(self):
+        # Resolved differences should null out the package_diff and
+        # parent_package_diff fields so the libraryfilealias gets
+        # considered for GC later.
+        derived_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            },
+            changelogs={
+                'derived': derived_changelog,
+                'parent': parent_changelog,
+            })
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
+        # The pre-test state is that there are diffs present:
+        self.assertIsNot(None, ds_diff.package_diff)
+        self.assertIsNot(None, ds_diff.parent_package_diff)
+
+        # Resolve the DSD by making the same package version published
+        # in parent and derived.
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.4')
+        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.4')
+
+        # Packagediffs should be gone now.
+        was_updated = ds_diff.update()
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            ds_diff.status, DistroSeriesDifferenceStatus.RESOLVED)
+        self.assertIs(None, ds_diff.package_diff)
+        self.assertIs(None, ds_diff.parent_package_diff)
 
     def test_update_re_opens_difference(self):
         # The status of a resolved difference will updated with new
@@ -722,8 +769,43 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         naked_ds_diff.source_version = '1.4'
         naked_ds_diff.parent_source_version = '1.5'
 
-        self.assertEqual(ds_diff.source_package_release.version, '1.4')
-        self.assertEqual(ds_diff.parent_source_package_release.version, '1.5')
+        self.assertEqual('1.4', ds_diff.source_package_release.version)
+        self.assertEqual(
+            '1.5', ds_diff.parent_source_package_release.version)
+
+    def createPublication(self, spn, versions, distroseries,
+                          status=PackagePublishingStatus.PUBLISHED):
+        changelog_lfa = self.factory.makeChangelog(spn.name, versions)
+        transaction.commit() # Yay, librarian.
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn, version=versions[0],
+            changelog=changelog_lfa)
+        return self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, distroseries=distroseries,
+            status=status, pocket=PackagePublishingPocket.RELEASE)
+
+    def test_existing_packagediff_is_linked_when_dsd_created(self):
+        # When a relevant packagediff already exists, it is linked to the
+        # DSD when it is created.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        spn = self.factory.getOrMakeSourcePackageName(
+            name=self.factory.getUniqueString())
+        parent_spph = self.createPublication(
+            spn, ['1.2-1', '1.0-1'], derived_series.parent_series)
+        spph = self.createPublication(
+            spn, ['1.1-1', '1.0-1'], derived_series)
+        base_spph = self.createPublication(
+            spn, ['1.0-1'], derived_series,
+            status=PackagePublishingStatus.SUPERSEDED)
+        pd = self.factory.makePackageDiff(
+            from_source=base_spph.sourcepackagerelease,
+            to_source=spph.sourcepackagerelease)
+        # factory.makeDistroSeriesDifference() will always create
+        # publications to be helpful. We don't need the help in this case.
+        dsd = getUtility(IDistroSeriesDifferenceSource).new(
+            derived_series, spn)
+        self.assertEqual(pd, dsd.package_diff)
 
     def _initDiffWithMultiplePendingPublications(self, versions, parent):
         ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)
