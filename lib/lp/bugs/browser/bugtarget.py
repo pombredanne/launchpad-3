@@ -12,6 +12,7 @@ __all__ = [
     "BugTargetBugTagsView",
     "BugTargetBugsView",
     "FileBugAdvancedView",
+    "FileBugDetailsView",
     "FileBugGuidedView",
     "FileBugViewBase",
     "IProductBugConfiguration",
@@ -109,6 +110,7 @@ from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
+    IBug,
     IBugAddForm,
     IBugSet,
     IProjectGroupBugAddForm,
@@ -234,7 +236,84 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         self.updateContextFromData(data)
 
 
-class FileBugViewBase(LaunchpadFormView):
+class FileBugExtraInformation(LaunchpadFormView):
+    """Provides access to common bug reporting attributes.
+
+    Attributes provided are: security_related and bug_reporting_guidelines.
+
+    This view is a superclass of `FileBugViewBase` so that non-ajax browsers
+    can load the file bug form, and it is also invoked directly via an XHR
+    request to provide an HTML snippet for Javascript enabled browsers.
+    """
+
+    schema = IBug
+    
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        return ['security_related']
+
+    def setUpFields(self):
+        """Set up the form fields. See `LaunchpadFormView`."""
+        super(FileBugExtraInformation, self).setUpFields()
+
+        security_related_field = Bool(
+            __name__='security_related',
+            title=_("This bug is a security vulnerability"),
+            required=False, default=False)
+
+        self.form_fields = self.form_fields.omit('security_related')
+        self.form_fields += formlib.form.Fields(security_related_field)
+
+    @property
+    def bug_reporting_guidelines(self):
+        """Guidelines for filing bugs in the current context.
+
+        Returns a list of dicts, with each dict containing values for
+        "preamble" and "content".
+        """
+
+        def target_name(target):
+            # IProjectGroup can be considered the target of a bug during
+            # the bug filing process, but does not extend IBugTarget
+            # and ultimately cannot actually be the target of a
+            # bug. Hence this function to determine a suitable
+            # name/title to display. Hurrumph.
+            if IBugTarget.providedBy(target):
+                return target.bugtargetdisplayname
+            else:
+                return target.title
+
+        guidelines = []
+        bugtarget = self.context
+        if bugtarget is not None:
+            content = bugtarget.bug_reporting_guidelines
+            if content is not None and len(content) > 0:
+                guidelines.append({
+                        "source": target_name(bugtarget),
+                        "content": content,
+                        })
+            # Distribution source packages are shown with both their
+            # own reporting guidelines and those of their
+            # distribution.
+            if IDistributionSourcePackage.providedBy(bugtarget):
+                distribution = bugtarget.distribution
+                content = distribution.bug_reporting_guidelines
+                if content is not None and len(content) > 0:
+                    guidelines.append({
+                            "source": target_name(distribution),
+                            "content": content,
+                            })
+        return guidelines
+
+    def getMainContext(self):
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
+
+
+class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
     implements(IBrowserPublisher)
@@ -438,13 +517,13 @@ class FileBugViewBase(LaunchpadFormView):
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
         self.form_fields += formlib.form.Fields(subscribe_field)
 
-        security_related_field = Bool(
-            __name__='security_related',
-            title=_("This bug is a security vulnerability"),
-            required=False, default=False)
-
-        self.form_fields = self.form_fields.omit('security_related')
-        self.form_fields += formlib.form.Fields(security_related_field)
+#        security_related_field = Bool(
+#            __name__='security_related',
+#            title=_("This bug is a security vulnerability"),
+#            required=False, default=False)
+#
+#        self.form_fields = self.form_fields.omit('security_related')
+#        self.form_fields += formlib.form.Fields(security_related_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -456,21 +535,6 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             bug_tracking_usage = self.getMainContext().bug_tracking_usage
             return bug_tracking_usage == ServiceUsage.LAUNCHPAD
-
-    def getMainContext(self):
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context.distribution
-        else:
-            return self.context
-
-    def getSecurityContext(self):
-        """Return the context used for security bugs."""
-        return self.getMainContext()
-
-    @property
-    def can_decide_security_contact(self):
-        """Will we be able to discern a security contact for this?"""
-        return (self.getSecurityContext() is not None)
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -809,47 +873,6 @@ class FileBugViewBase(LaunchpadFormView):
         """
         return self.context
 
-    @property
-    def bug_reporting_guidelines(self):
-        """Guidelines for filing bugs in the current context.
-
-        Returns a list of dicts, with each dict containing values for
-        "preamble" and "content".
-        """
-
-        def target_name(target):
-            # IProjectGroup can be considered the target of a bug during
-            # the bug filing process, but does not extend IBugTarget
-            # and ultimately cannot actually be the target of a
-            # bug. Hence this function to determine a suitable
-            # name/title to display. Hurrumph.
-            if IBugTarget.providedBy(target):
-                return target.bugtargetdisplayname
-            else:
-                return target.title
-
-        guidelines = []
-        context = self.bugtarget
-        if context is not None:
-            content = context.bug_reporting_guidelines
-            if content is not None and len(content) > 0:
-                guidelines.append({
-                        "source": target_name(context),
-                        "content": content,
-                        })
-            # Distribution source packages are shown with both their
-            # own reporting guidelines and those of their
-            # distribution.
-            if IDistributionSourcePackage.providedBy(context):
-                distribution = context.distribution
-                content = distribution.bug_reporting_guidelines
-                if content is not None and len(content) > 0:
-                    guidelines.append({
-                            "source": target_name(distribution),
-                            "content": content,
-                            })
-        return guidelines
-
     default_bug_reported_acknowledgement = "Thank you for your bug report."
 
     def getAcknowledgementMessage(self, context):
@@ -1153,17 +1176,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         if self.extra_data_token is not None:
             url = urlappend(url, self.extra_data_token)
         return url
-
-    def _getSelectedProduct(self):
-        """Return the product that's selected."""
-        assert self.widgets['product'].hasValidInput(), (
-            "This method should be called only when we know which"
-            " product the user selected.")
-        return self.widgets['product'].getInputValue()
-
-    def getSecurityContext(self):
-        """See FileBugViewBase."""
-        return self._getSelectedProduct()
 
 
 class BugTargetBugListingView:

@@ -108,6 +108,12 @@
             facet="bugs"
             permission="launchpad.AnyPerson"/>
         <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.FileBugExtraInformation"
+            template="../templates/bugtarget-filebug-guidelines.pt"
+            permission="launchpad.AnyPerson"
+            name="+filebug-reporting-details"/>
+        <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
             class="lp.bugs.browser.bugtarget.OfficialBugTagsManageView"

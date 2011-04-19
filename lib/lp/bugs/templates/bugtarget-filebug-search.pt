@@ -125,7 +125,11 @@
 
         <div id="possible-duplicates" style="text-align: left;">
         </div>
-        <div id="filebug-form-container" style="display: none;">
+        <div id="filebug-form-container" class="transparent" style="opacity: 0; display: none">
+          <tal:filebug-form define="launchpad_form_id string:filebug-form">
+            <metal:display-similar-bugs
+                use-macro="context/@@+filebug-macros/inline-filebug-form" />
+          </tal:filebug-form>
         </div>
 
         <p style="display: none">

@@ -44,10 +44,10 @@
     </td>
   </tr>
 
-  <tal:product tal:define="widget nocall:view/widgets/product|nothing"
-               tal:condition="widget">
-    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
-  </tal:product>
+  <!--<tal:product tal:define="widget nocall:view/widgets/product|nothing"-->
+               <!--tal:condition="widget">-->
+    <!--<metal:widget use-macro="context/@@launchpad_form/widget_row" />-->
+  <!--</tal:product>-->
 
   <metal:summary tal:define="widget nocall:view/widgets/title">
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
@@ -57,46 +57,8 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
-  <metal:bug_reporting_guidelines
-      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
-  <tr tal:define="security_context view/getSecurityContext">
-    <td colspan="2" width="100%"
-        tal:define="widget nocall: view/widgets/security_related">
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <input type="checkbox" tal:replace="structure widget" />
-            </td>
-            <td>
-              <label tal:attributes="for widget/name">
-                This bug is a security vulnerability
-              </label>
-              <div tal:condition="view/can_decide_security_contact"
-                   tal:define="security_contact security_context/security_contact|nothing">
-                <tal:security-contact tal:condition="security_contact">
-                  The security contact for
-                  <tal:security-context content="security_context/displayname" />,
-                  <a tal:replace="structure security_contact/fmt:link" />,
-                  will be notified.
-                </tal:security-contact>
-                <tal:maintainer condition="not:security_contact"
-                   define="maintainer security_context/owner">
-                  The maintainer of
-                  <tal:security-context content="security_context/displayname">
-                    Mozilla Firefox</tal:security-context>,
-                  <a tal:replace="structure maintainer/fmt:link">
-                    Sample Person</a>,
-                  will be notified.
-                </tal:maintainer>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </td>
-  </tr>
+  <tr id="extra-filebug-details"
+    tal:replace="structure context/@@+filebug-reporting-details" />
 
   <tr>
     <td colspan="2">
