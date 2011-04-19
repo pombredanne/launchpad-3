@@ -12,9 +12,23 @@ Usage hint:
 __metatype__ = type
 
 import os
+import sys
 import re
 
 from collections import defaultdict
+
+TEST_DATA = """
+[good]
+public.foo = SELECT
+public.bar = SELECT, INSERT
+public.baz = SELECT
+
+[bad]
+public.foo = SELECT
+public.bar = SELECT, INSERT
+public.bar = SELECT
+public.baz = SELECT
+"""
 
 BRANCH_ROOT = os.path.split(
     os.path.dirname(os.path.abspath(__file__)))[0]
@@ -76,13 +90,23 @@ class SettingsAuditor:
                 print '\tDuplicate setting found: %s' % setting
 
 
-def main():
-    data = file(SECURITY_PATH).readlines()
+def main(test=False):
+    # This is a cheap hack to allow testing in the testrunner.
+    if test:
+        data = TEST_DATA.split('\n')
+    else:
+        data = file(SECURITY_PATH).readlines()
     data = strip(data)
     auditor = SettingsAuditor()
     for line in data:
         auditor.readline(line)
+    auditor.start_new_section('')
     auditor.print_error_data()
 
 if __name__ == '__main__':
-    main()
+    # smoketest check is a cheap hack to test the utility in the testrunner.
+    try:
+        test = sys.argv[1] == 'smoketest'
+    except IndexError:
+        test = False
+    main(test=test)
