@@ -235,7 +235,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertIn(distro.title, contents_top)
 
     def test_main(self):
-        content_archive = self.makeContentArchive()
+        self.makeContentArchive()
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
