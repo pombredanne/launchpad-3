@@ -853,7 +853,11 @@ class BugTask(SQLBase, BugTaskMixin):
         if new_status == BugTaskStatus.INCOMPLETE:
             # We store INCOMPLETE as INCOMPLETE_WITHOUT_RESPONSE so that it can
             # be queried on efficiently.
-            new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+            if (when is None or self.bug.date_last_message is None or
+                when > self.bug.date_last_message):
+                new_status = BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+            else:
+                new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
         if self._status == new_status:
             # No change in the status, so nothing to do.
@@ -934,7 +938,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
-        if new_status == BugTaskStatus.INCOMPLETE:
+        if new_status in (BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE):
             self.date_incomplete = when
         else:
             self.date_incomplete = None

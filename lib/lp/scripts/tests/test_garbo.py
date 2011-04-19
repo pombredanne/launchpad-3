@@ -779,16 +779,21 @@ class TestGarbo(TestCaseWithFactory):
         # Create a bug with two tasks set to INCOMPLETE and a comment between
         # them.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(BugTask)
         bug = self.factory.makeBug()
         with_response = bug.bugtasks[0]
         with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
-        self.factory.makeBugComment(bug=bug)
-        without_response = self.factory.makeBugTask(bug=bug)
         removeSecurityProxy(with_response)._status = BugTaskStatus.INCOMPLETE
+        store.flush()
+        transaction.commit()
+        self.factory.makeBugComment(bug=bug)
+        transaction.commit()
+        without_response = self.factory.makeBugTask(bug=bug)
+        without_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
         removeSecurityProxy(without_response
             )._status = BugTaskStatus.INCOMPLETE
+        transaction.commit()
         self.runHourly()
-        store = IMasterStore(BugTask)
         self.assertEqual(1,
             store.find(BugTask.id,
                 BugTask.id==with_response.id,
