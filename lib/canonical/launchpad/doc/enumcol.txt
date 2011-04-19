@@ -25,7 +25,7 @@ DBEnumeratedType, with items that are instances of DBItem.
 Attempting to use a normal enumerated type for an enumcol will
 result in an error.
 
-    >>> from lazr.enum import EnumeratedType, Item
+    >>> from lazr.enum import EnumeratedType, Item, use_template
     >>> class PlainFooType(EnumeratedType):
     ...     """Enumerated type for the foo column."""
     ...     ONE = Item("One")
@@ -100,7 +100,7 @@ But not items from another schema.
     >>> t.foo = AnotherType.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from wrong type, 'FooType' != 'AnotherType'
+    TypeError: DBItem from unknown enum, 'AnotherType' not in (<DBEnumeratedType 'FooType'>,)
 
 The type assigned in must be the exact type, not a derived types.
 
@@ -111,9 +111,41 @@ The type assigned in must be the exact type, not a derived types.
     >>> t.foo = item
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from wrong type, 'FooType' != 'DerivedType'
+    TypeError: DBItem from unknown enum, 'DerivedType' not in (<DBEnumeratedType 'FooType'>,)
 
 A simple way to assign in the correct item is to use the name of the derived
 item to access the correct item from the base type.
 
     >>> t.foo = FooType.items[item.name]
+
+Sometimes its useful to serialise things from two different (but related)
+schemas into one table. This works if you tell the column about both enums:
+
+    >>> class BarType(DBEnumeratedType):
+    ...     use_template(FooType, exclude=('TWO'))
+    ...     THREE = DBItem(3, "Three")
+    
+Redefine the table with awareness of BarType:
+
+    >>> class FooTest(SQLBase):
+    ...     foo = EnumCol(schema=[FooType, BarType], default=DEFAULT)
+
+We can assign items from either schema to the table;
+
+    >>> t = FooTest()
+    >>> t.foo = FooType.ONE
+    >>> t_id = t.id
+    >>> b = FooTest()
+    >>> b.foo = BarType.THREE
+    >>> b_id = b.id
+
+And reading back from the database correctly finds things from the schemas in
+the order given.
+
+    >>> from storm.store import AutoReload
+    >>> b.foo = AutoReload
+    >>> t.foo = AutoReload
+    >>> b.foo == BarType.THREE
+    True
+    >>> t.foo == FooType.ONE
+    True
