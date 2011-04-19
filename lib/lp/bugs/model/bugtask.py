@@ -1682,7 +1682,7 @@ class BugTaskSet:
                 And(ConjoinedMaster.bugID == BugTask.bugID,
                     BugTask.distributionID == milestone.distribution.id,
                     ConjoinedMaster.distroseriesID == current_series.id,
-                    Not(ConjoinedMaster.status.is_in(
+                    Not(ConjoinedMaster._status.is_in(
                             BugTask._NON_CONJOINED_STATUSES))))
             join_tables = [(ConjoinedMaster, join)]
         else:
@@ -1702,7 +1702,7 @@ class BugTaskSet:
                         And(ConjoinedMaster.bugID == BugTask.bugID,
                             ConjoinedMaster.productseriesID
                                 == Product.development_focusID,
-                            Not(ConjoinedMaster.status.is_in(
+                            Not(ConjoinedMaster._status.is_in(
                                     BugTask._NON_CONJOINED_STATUSES)))),
                     ]
                 # join.right is the table name.
@@ -1715,7 +1715,7 @@ class BugTaskSet:
                     And(ConjoinedMaster.bugID == BugTask.bugID,
                         BugTask.productID == milestone.product.id,
                         ConjoinedMaster.productseriesID == dev_focus_id,
-                        Not(ConjoinedMaster.status.is_in(
+                        Not(ConjoinedMaster._status.is_in(
                                 BugTask._NON_CONJOINED_STATUSES))))
                 join_tables = [(ConjoinedMaster, join)]
             else:
