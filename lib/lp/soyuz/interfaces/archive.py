@@ -987,11 +987,13 @@ class IArchiveView(IHasBuildRecords):
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
+    @call_with(eager_load=True)
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled

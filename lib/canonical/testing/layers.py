@@ -2103,3 +2103,7 @@ class BaseWindmillLayer(AppServerLayer):
         # Flush the file so that windmill can read it.
         cls.config_file.flush()
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+
+
+class BaseYUITestLayer(BaseWindmillLayer):
+    """The base class for all YUITests cases."""

@@ -11,6 +11,8 @@ __all__ = [
     'SourcePackageTranslationSharingStatus',
     ]
 
+
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -24,6 +26,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.productseries import ProductSeriesOverviewMenu
+from lp.registry.browser.sourcepackage import SourcePackageOverviewMenu
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
 from lp.translations.browser.poexportrequest import BaseExportView
@@ -136,13 +139,19 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
                 'Translations are currently being linked by a background '
                 'job. When that job has finished, translations will be '
                 'shared with the upstream project.')
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'productseries': self.context.productseries,
+            'upstream_branch': self.upstream_branch,
+            'product': self.product,
+        })
 
     @property
     def branch_link(self):
         if self.has_upstream_branch:
             # Normally should use BranchFormatterAPI(branch).link(None), but
             # on this page, that information is redundant.
-            title = self.upstream_branch.unique_name
+            title = 'lp:' + self.upstream_branch.unique_name
             url = canonical_url(self.upstream_branch)
         else:
             title = ''
@@ -239,6 +248,12 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         return self.context.direct_packaging.productseries.branch
 
     @property
+    def product(self):
+        if self.context.productseries is None:
+            return None
+        return self.context.productseries.product
+
+    @property
     def has_upstream_branch(self):
         """Does the upstream series have a source code branch?"""
         return self.upstream_branch is not None
@@ -331,6 +346,33 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
             '<a id="%s" class="%s" href="%s">'
             '<span class="invisible-link">%s</span></a>',
             id, css_class, url, text)
+
+    @property
+    def set_packaging_link(self):
+        """The HTML link to define a new packaging link."""
+        # We can't use the SourcePackageOverviewMenu.set_upstream
+        # ink itself because it is not rendered when the current
+        # user cannot change an existing packaging.
+        link = SourcePackageOverviewMenu(self.context).set_upstream()
+        url = '%s/%s' % (canonical_url(self.context), link.target)
+        return self.icon_link(
+            'set-packaging', link.icon, url, link.text, not link.enabled)
+
+    @property
+    def change_packaging_link(self):
+        """The HTML link to change an existing packaging link."""
+        link = SourcePackageOverviewMenu(self.context).edit_packaging()
+        url = '%s/%s' % (canonical_url(self.context), link.target)
+        return self.icon_link(
+            'change-packaging', link.icon, url, link.text, not link.enabled)
+
+    @property
+    def remove_packaging_link(self):
+        """The HTML link to delete an existing packaging link"""
+        link = SourcePackageOverviewMenu(self.context).remove_packaging()
+        url = '%s/%s' % (canonical_url(self.context), link.target)
+        return self.icon_link(
+            'remove-packaging', link.icon, url, link.text, not link.enabled)
 
     def edit_branch_link(self, id, icon, text):
         """The HTML link to define or edit a product series branch.

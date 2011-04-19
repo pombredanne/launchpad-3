@@ -16,6 +16,7 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
@@ -42,7 +43,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from zope.security.proxy import removeSecurityProxy
 from lp.testing.views import create_initialized_view
 
 
@@ -60,9 +60,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_comment_for_display_provides_icomment(self):
         # The DSDDisplayComment browser object provides IComment.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        owner = ds_diff.derived_series.owner
-        with person_logged_in(owner):
-            comment = ds_diff.addComment(owner, "I'm working on this.")
+
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            comment = ds_diff.addComment(person, "I'm working on this.")
         comment_for_display = DistroSeriesDifferenceDisplayComment(comment)
 
         self.assertTrue(verifyObject(IComment, comment_for_display))
@@ -143,7 +144,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         # Without JS, even editors don't see blacklist options.
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
         self.assertFalse(view.show_edit_options)
@@ -154,7 +155,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
             self.assertTrue(view.show_edit_options)
@@ -208,6 +209,70 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
+
+    def test_do_not_display_parent_diff(self):
+        # If the parent's latest published version is the same as the base
+        # version, we don't display the link to the diff.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.32-1',
+            'parent': '0.30-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.30-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(1, len(tags))
+
+    def _assertNoRequestLink(self, ds_diff):
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra')
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        self.assertFalse(view.show_package_diffs_request_link)
+        self.assertThat(view(), Not(package_diff_request_matcher))
+
+    def test_no_package_diff_parent_same_version(self):
+        # If the derived package diff is computed and parent_version is
+        # the same as the base version, we don't display the link to
+        # request package diffs.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True,
+            versions={
+                'derived': '0.32-1',
+                'parent': '0.30-1',
+                'base': '0.30-1'})
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.package_diff = self.factory.makePackageDiff(
+                status=PackageDiffStatus.COMPLETED)
+            self._assertNoRequestLink(ds_diff)
+
+    def test_no_package_diff_derived_same_version(self):
+        # If the parent package diff is computed and source_version is
+        # the same as the base version, we don't display the link to
+        # request package diffs.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            set_base_version=True,
+            versions={
+                'derived': '0.30-1',
+                'parent': '0.32-1',
+                'base': '0.30-1'})
+
+        with person_logged_in(ds_diff.derived_series.owner):
+            ds_diff.parent_package_diff = self.factory.makePackageDiff(
+                status=PackageDiffStatus.COMPLETED)
+            self._assertNoRequestLink(ds_diff)
 
     def _makeDistroSeriesDifferenceView(self, difference_type):
         # Helper method to create a view with the specified
@@ -278,7 +343,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             set_base_version=True)
 
-        with person_logged_in(ds_diff.derived_series.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.package_diff = self.factory.makePackageDiff()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
@@ -299,7 +364,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             (PackageDiffStatus.PENDING, 'PENDING'),
             (PackageDiffStatus.FAILED, 'FAILED')]
         for status, css_class in statuses_and_classes:
-            with person_logged_in(ds_diff.derived_series.owner):
+            with person_logged_in(self.factory.makePerson()):
                 ds_diff.package_diff = self.factory.makePackageDiff(
                      status=status)
 
@@ -323,7 +388,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             (PackageDiffStatus.PENDING, 'PENDING'),
             (PackageDiffStatus.FAILED, 'FAILED')]
         for status, css_class in statuses_and_classes:
-            with person_logged_in(ds_diff.derived_series.owner):
+            with person_logged_in(self.factory.makePerson()):
                 ds_diff.parent_package_diff = self.factory.makePackageDiff(
                      status=status)
 
@@ -353,7 +418,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             set_base_version=True)
 
-        with person_logged_in(ds_diff.derived_series.owner):
+        with person_logged_in(self.factory.makePerson()):
             ds_diff.parent_package_diff = self.factory.makePackageDiff()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
@@ -378,10 +443,10 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_comments_rendered(self):
         # If there are comments on the difference, they are rendered.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        owner = ds_diff.derived_series.owner
-        with person_logged_in(owner):
-            ds_diff.addComment(owner, "I'm working on this.")
-            ds_diff.addComment(owner, "Here's another comment.")
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.addComment(person, "I'm working on this.")
+            ds_diff.addComment(person, "Here's another comment.")
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         soup = BeautifulSoup(view())
@@ -392,10 +457,17 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             1, len(soup.findAll('pre', text="Here's another comment.")))
 
     def test_blacklist_options(self):
-        # blacklist options are presented to editors.
+        # blacklist options are presented to the users with
+        # lp.View on the distroseries.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
-        with person_logged_in(ds_diff.owner):
+        with person_logged_in(self.factory.makePerson()):
+            self.assertTrue(
+                check_permission('launchpad.Edit', ds_diff))
+            self.assertTrue(
+                check_permission(
+                    'launchpad.View',
+                    ds_diff.derived_series.parent))
             request = LaunchpadTestRequest(
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             view = create_initialized_view(
@@ -433,7 +505,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
     def test_package_diff_request_link(self):
         # The link to compute package diffs is only shown to
-        # a user with lp.Edit persmission.
+        # a user with lp.Edit permission (i.e. lp.View on the
+        # distribution).
         ds_diff = self.factory.makeDistroSeriesDifference(
             set_base_version=True)
         package_diff_request_matcher = soupmatchers.HTMLContains(
@@ -443,12 +516,12 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                     '\s*Compute differences from last common version\s*')))
 
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra')
-            self.assertFalse(view.show_package_diffs_request_link)
-            self.assertThat(view(), Not(package_diff_request_matcher))
-
-        with celebrity_logged_in('admin'):
+            self.assertTrue(
+                check_permission('launchpad.Edit', ds_diff))
+            self.assertTrue(
+                check_permission(
+                    'launchpad.View',
+                    ds_diff.derived_series.parent))
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
             self.assertThat(view(), package_diff_request_matcher)

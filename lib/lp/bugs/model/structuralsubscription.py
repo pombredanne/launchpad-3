@@ -355,6 +355,7 @@ class StructuralSubscriptionTargetMixin:
 
         # Nobody else can, unless the context is a IDistributionSourcePackage,
         # in which case the drivers or owner can.
+
         if IDistributionSourcePackage.providedBy(self):
             for driver in self.distribution.drivers:
                 if subscribed_by.inTeam(driver):
