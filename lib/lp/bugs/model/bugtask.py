@@ -509,7 +509,7 @@ class BugTask(SQLBase, BugTaskMixin):
         storm_validator=validate_conjoined_attribute)
     _status = EnumCol(
         dbName='status', notNull=True,
-        schema=BugTaskStatus,
+        schema=BugTaskStatusSearch,
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
@@ -2630,7 +2630,7 @@ class BugTaskSet:
 
         non_target_create_params = dict(
             bug=bug,
-            status=status,
+            _status=status,
             importance=importance,
             assignee=assignee,
             owner=owner,

@@ -154,6 +154,7 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    BugTaskStatusSearch,
     IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,

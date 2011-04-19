@@ -57,10 +57,15 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archiveuploader.dscfile import findFile
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    BugTaskStatusSearch,
+    )
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.bugs.model.bugtask import BugTask
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -782,6 +787,31 @@ class TestGarbo(TestCaseWithFactory):
                 BugNotification,
                 BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
             0)
+
+    def test_BugTaskIncompleteMigrator(self):
+        # BugTasks with status INCOMPLETE should be either
+        # INCOMPLETE_WITHOUT_RESPONSE or INCOMPLETE_WITH_RESPONSE.
+        # Create a bug with two tasks set to INCOMPLETE and a comment between
+        # them.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bug = self.factory.makeBug()
+        with_response = bug.bugtasks[0]
+        with_response.transitionToStatus(BugTaskStatus.INCOMPLETE, bug.owner)
+        self.factory.makeBugComment(bug=bug)
+        without_response = self.factory.makeBugTask(bug=bug)
+        with_response._status = BugTaskStatus.INCOMPLETE
+        without_response._status = BugTaskStatus.INCOMPLETE
+        self.runDaily()
+        self.assertEqual(1,
+            store.find(True,
+                BugTask.id==with_response.id,
+                BugTask._status==BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
+                ).count())
+        self.assertEqual(1,
+            store.find(True,
+                BugTask.id==without_response.id,
+                BugTask._status==
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE).count())
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
