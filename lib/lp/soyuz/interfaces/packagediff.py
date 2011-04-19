@@ -113,5 +113,5 @@ class IPackageDiffSet(Interface):
         :param from_spr: a `SourcePackageRelease` object.
         :param to_spr:  a `SourcePackageRelease` object.
 
-        :return a `ResultSet` or None.
+        :return a `PackageDiff` or None.
         """

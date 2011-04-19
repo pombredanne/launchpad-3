@@ -35,6 +35,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -311,7 +312,6 @@ class PackageDiffSet:
 
     def getDiffBetweenReleases(self, from_spr, to_spr):
         """See `IPackageDiffSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(PackageDiff).find(
             PackageDiff,
             from_sourceID=from_spr.id, to_sourceID=to_spr.id).first()

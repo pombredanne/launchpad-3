@@ -342,7 +342,6 @@ class DistroSeriesDifference(Storm):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
-        # If the DSD has been updated, fiddle with package diffs.
         if updated is True:
             self._setPackageDiffs()
         return updated
@@ -438,20 +437,19 @@ class DistroSeriesDifference(Storm):
             self.package_diff = None
             self.parent_package_diff = None
             return
+        pds = getUtility(IPackageDiffSet)
         if self.source_pub is None:
             self.package_diff = None
         else:
-            self.package_diff = getUtility(
-                IPackageDiffSet).getDiffBetweenReleases(
-                    self.base_source_pub.sourcepackagerelease,
-                    self.source_pub.sourcepackagerelease)
+            self.package_diff = pds.getDiffBetweenReleases(
+                self.base_source_pub.sourcepackagerelease,
+                self.source_pub.sourcepackagerelease)
         if self.parent_source_pub is None:
             self.parent_package_diff = None
         else:
-            self.parent_package_diff = getUtility(
-                IPackageDiffSet).getDiffBetweenReleases(
-                    self.base_source_pub.sourcepackagerelease,
-                    self.parent_source_pub.sourcepackagerelease)
+            self.parent_package_diff = pds.getDiffBetweenReleases(
+                self.base_source_pub.sourcepackagerelease,
+                self.parent_source_pub.sourcepackagerelease)
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
