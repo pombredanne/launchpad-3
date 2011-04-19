@@ -34,9 +34,14 @@ COMPONENTS = [
 
 def differ_in_content(one_file, other_file):
     """Do the two named files have different contents?"""
-    return (
-        file_exists(one_file) != file_exists(other_file) or
-        file(one_file).read() != file(other_file).read())
+    one_exists = file_exists(one_file)
+    other_exists = file_exists(other_file)
+    if any([one_exists, other_exists]):
+        return (
+            one_exists != other_exists or
+            file(one_file).read() != file(other_file).read())
+    else:
+        return False
 
 
 class StoreArgument:
@@ -64,7 +69,7 @@ def execute(logger, command, args=None):
     if args is None:
         description = command
     else:
-        description = command + ' '.join(args)
+        description = command + ' ' + ' '.join(args)
     logger.debug("Execute: %s", description)
     retval, stdout, stderr = run_command(command, args)
     logger.debug(stdout)
@@ -117,8 +122,10 @@ class GenerateContentsFiles(LaunchpadScript):
         """Make sure the `content_archive` directories exist."""
         self.logger.debug("Ensuring that we have a private tree in place.")
         for suffix in ['cache', 'misc']:
-            dirname = '%s-%s' % (self.distribution.name, suffix)
-            os.makedirs(os.path.join(self.content_archive, dirname))
+            dirname = '-'.join([self.distribution.name, suffix])
+            path = os.path.join(self.content_archive, dirname)
+            if not file_exists(path):
+                os.makedirs(path)
 
     def queryDistro(self, request, options=None):
         """Call the query-distro script about `self.distribution`."""
@@ -141,15 +148,26 @@ class GenerateContentsFiles(LaunchpadScript):
         """Query the distribution's suites."""
         return self.queryDistro("supported").split()
 
+    def getPockets(self):
+        """Return suites that are actually supported in this distribution."""
+        pockets = []
+        pocket_suffixes = self.getPocketSuffixes()
+        for suite in self.getSuites():
+            for pocket_suffix in pocket_suffixes:
+                pocket = suite + pocket_suffix
+                if file_exists(os.path.join(self.config.distsroot, pocket)):
+                    pockets.append(pocket)
+        return pockets
+
     def getArchs(self):
         """Query architectures supported by the distribution."""
         devel = self.queryDistro("development")
-        return self.queryDistro("archs", options=["-s", devel])
+        return self.queryDistro("archs", options=["-s", devel]).split()
 
     def getDirs(self, archs):
         """Subdirectories needed for each component."""
         return ['source', 'debian-installer'] + [
-            'binary-%s' % arch.name for arch in archs]
+            'binary-%s' % arch for arch in archs]
 
     def writeAptContentsConf(self, suites, archs):
         """Write apt-contents.conf file."""
@@ -188,11 +206,14 @@ class GenerateContentsFiles(LaunchpadScript):
 
     def copyOverrides(self):
         """Copy overrides into the content archive."""
-        execute(self.logger, "cp", [
-            "-a",
-            self.config.overrideroot,
-            "%s/" % self.content_archive,
-            ])
+        if file_exists(self.config.overrideroot):
+            execute(self.logger, "cp", [
+                "-a",
+                self.config.overrideroot,
+                "%s/" % self.content_archive,
+                ])
+        else:
+            self.logger.debug("Did not find overrides; not copying.")
 
     def writeContentsTop(self):
         """Write Contents.top file."""
@@ -258,6 +279,12 @@ class GenerateContentsFiles(LaunchpadScript):
                 self.updateContentsFile(suite, arch)
 
     def setUp(self):
+        """Prepare configuration and filesystem state for the script's work.
+
+        This is idempotent: run it as often as you like.  (For example,
+        a test may call `setUp` prior to calling `main` which again
+        invokes `setUp`).
+        """
         self.processOptions()
         self.config = getPubConfig(self.distribution.main_archive)
         self.content_archive = os.path.join(
@@ -268,7 +295,7 @@ class GenerateContentsFiles(LaunchpadScript):
     def main(self):
         """See `LaunchpadScript`."""
         self.setUp()
-        suites = self.getSuites()
+        suites = self.getPockets()
         archs = self.getArchs()
         self.writeAptContentsConf(suites, archs)
         self.createComponentDirs(suites, archs)
