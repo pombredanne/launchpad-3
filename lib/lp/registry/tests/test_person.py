@@ -67,6 +67,7 @@ from lp.registry.model.person import (
     Person,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -1302,7 +1303,7 @@ class TestAPIPartipication(TestCaseWithFactory):
 class TestGetRecipients(TestCaseWithFactory):
     """Tests for get_recipients"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestGetRecipients, self).setUp()
@@ -1325,6 +1326,19 @@ class TestGetRecipients(TestCaseWithFactory):
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
         self.assertEqual(set([team]), set(recipients))
+
+    def test_get_recipients_team_with_unvalidated_address(self):
+        """Ensure get_recipients handles teams with non-preferred addresses.
+
+        If there is no preferred address but one or more non-preferred ones,
+        email should still be sent to the members.
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        self.assertContentEqual([team], get_recipients(team))
+        team.preferredemail.status = EmailAddressStatus.NEW
+        clear_property_cache(team)
+        self.assertContentEqual([owner], get_recipients(team))
 
     def makePersonWithNoPreferredEmail(self, **kwargs):
         kwargs['email_address_status'] = EmailAddressStatus.NEW
