@@ -89,9 +89,8 @@ class PackageCopyJob(DistributionJobDerived):
     # TODO Add target_distroseries property which just returns
     # self.distroseries.
 
-    # XXX Rename to target_pocket.
     @property
-    def pocket(self):
+    def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
 
     @property
@@ -103,6 +102,6 @@ class PackageCopyJob(DistributionJobDerived):
         [(source_package_name, source_package_version)] = self.source_packages
         self.target_archive.syncSource(
             source_package_name, source_package_version,
-            self.source_archive, to_pocket=str(self.pocket),
+            self.source_archive, to_pocket=str(self.target_pocket),
             to_series=self.distroseries.name,
             include_binaries=self.include_binaries)

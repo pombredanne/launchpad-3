@@ -146,7 +146,7 @@ class IPackageCopyJob(IRunnableJob):
         title=_('Target Archive ID'), required=True, readonly=True,
         )
 
-    pocket = Int(
+    target_pocket = Int(
         title=_('Target package publishing pocket'), required=True,
         readonly=True,
         )

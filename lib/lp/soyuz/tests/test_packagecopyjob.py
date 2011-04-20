@@ -45,7 +45,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         self.assertEquals(distroseries, job.distroseries)
         self.assertEquals(archive1, job.source_archive)
         self.assertEquals(archive2, job.target_archive)
-        self.assertEquals(PackagePublishingPocket.RELEASE, job.pocket)
+        self.assertEquals(PackagePublishingPocket.RELEASE, job.target_pocket)
         self.assertContentEqual(
             job.source_packages, [("foo", "1.0-1"), ("bar", "2.4")])
         self.assertEquals(False, job.include_binaries)
