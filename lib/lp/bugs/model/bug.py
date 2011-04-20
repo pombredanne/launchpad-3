@@ -761,13 +761,18 @@ BugMessage""" % sqlvalues(self.id))
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if level is None:
-            level = BugNotificationLevel.COMMENTS
 
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if level is not None:
+                    sub.bug_notification_level = level
+                    # Should subscribed_by be changed in this case?  Until
+                    # proven otherwise, we will answer with "no."
                 return sub
+
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by,
