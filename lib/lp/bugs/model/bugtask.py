@@ -475,7 +475,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
-        "status", "importance", "assigneeID", "milestoneID",
+        "_status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete", "date_left_new",
         "date_triaged", "date_fix_committed", "date_fix_released",
