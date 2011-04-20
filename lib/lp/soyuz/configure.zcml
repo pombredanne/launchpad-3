@@ -910,11 +910,11 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
-      component="lp.soyuz.model.syncpackagejob.PackageCopyJob"
+      component="lp.soyuz.model.packagecopyjob.PackageCopyJob"
       provides="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource">
         <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.syncpackagejob.PackageCopyJob">
+    <class class="lp.soyuz.model.packagecopyjob.PackageCopyJob">
         <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>

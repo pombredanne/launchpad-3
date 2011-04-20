@@ -61,7 +61,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
     def test_cronscript(self):
         # The cron script runs without problems.
         script = os.path.join(
-            config.root, 'cronscripts', 'sync-packages.py')
+            config.root, 'cronscripts', 'copy-packages.py')
         args = [sys.executable, script, '-v']
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -101,6 +101,8 @@ class PackageCopyJobTests(TestCaseWithFactory):
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
+        # XXX: GavinPanella 2011-04-20 bug=??????: The sync_packages database
+        # user should be renamed to copy_packages.
         self.layer.switchDbUser('sync_packages')
         job.run()
 

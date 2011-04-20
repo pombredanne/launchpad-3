@@ -16,7 +16,7 @@ from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 class RunPackageCopyJob(JobCronScript):
     """Run PackageCopyJob jobs."""
 
-    config_name = 'sync_packages'
+    config_name = 'copy_packages'
     source_interface = IPackageCopyJobSource
 
 
