@@ -163,6 +163,52 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
 
+    def test_update_nulls_diffs_for_resolved(self):
+        # Resolved differences should null out the package_diff and
+        # parent_package_diff fields so the libraryfilealias gets
+        # considered for GC later.
+        derived_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            'base': '1.0',
+            },
+            changelogs={
+                'derived': derived_changelog,
+                'parent': parent_changelog,
+            })
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
+        # The pre-test state is that there are diffs present:
+        self.assertIsNot(None, ds_diff.package_diff)
+        self.assertIsNot(None, ds_diff.parent_package_diff)
+
+        # Resolve the DSD by making the same package version published
+        # in parent and derived.
+        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.4')
+        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.derived_series.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.4')
+
+        # Packagediffs should be gone now.
+        was_updated = ds_diff.update()
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            ds_diff.status, DistroSeriesDifferenceStatus.RESOLVED)
+        self.assertIs(None, ds_diff.package_diff)
+        self.assertIs(None, ds_diff.parent_package_diff)
+
     def test_update_re_opens_difference(self):
         # The status of a resolved difference will updated with new
         # uploads.
