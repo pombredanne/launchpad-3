@@ -212,7 +212,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     @export_write_operation()
     @operation_for_version('devel')
     def setPackagingReturnSharingDetailPermissions(productseries, owner):
-        """Like setPackaging(), but return a dictionary which tells
+        """Like setPackaging(), but returns a dictionary which says
         if the current user can change the series' target branch,
         if he can change the translation usage settings of the
         product and if he can change the translation synchronisation
