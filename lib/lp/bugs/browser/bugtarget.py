@@ -553,6 +553,8 @@ class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
             # We're being called from the generic bug filing form, so
             # manually set the chosen distribution as the context.
             context = distribution
+        elif IProjectGroup.providedBy(context):
+            context = data['product']
         elif IMaloneApplication.providedBy(context):
             context = data['bugtarget']
 
