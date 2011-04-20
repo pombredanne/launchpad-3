@@ -74,6 +74,9 @@ WHERE
     AND deptype = 'a';
 
 -- Delete the old UNIQUE constraint.
+-- XXX: This fails! If we dump the database after applying this patch,
+-- the dump attempts to create both a primary key and a unique constraint
+-- with the same name on the same columns.
 DELETE FROM pg_constraint
 WHERE conname='revision__revision__branch__key' AND contype='u';
 
