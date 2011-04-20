@@ -66,7 +66,7 @@ class TestSharingDetails(WindmillTestCase):
         client.click(xpath='//*[@id="translation-incomplete-picker"]/a')
         client.click(id='field.translations_usage.1')
         client.click(
-            xpath=overlay.visible_xpath + '//input[@value="Submit"]')
+            xpath=overlay.visible_xpath + '//button[@type="submit"]')
         client.waits.forElementProperty(
             id='translation-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
@@ -74,7 +74,7 @@ class TestSharingDetails(WindmillTestCase):
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a')
         client.click(id='field.translations_autoimport_mode.2')
         client.click(
-            xpath=overlay.visible_xpath + '//input[@value="Submit"]')
+            xpath=overlay.visible_xpath + '//button[@type="submit"]')
         client.waits.forElementProperty(
             id='upstream-sync-incomplete',
             option='className|sprite no unseen', timeout=FOR_ELEMENT)
