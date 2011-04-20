@@ -35,25 +35,24 @@ class PackageCopyJob(DistributionJobDerived):
 
     implements(IPackageCopyJob)
 
-    class_job_type = DistributionJobType.SYNC_PACKAGE
+    class_job_type = DistributionJobType.COPY_PACKAGE
     classProvides(IPackageCopyJobSource)
 
     @classmethod
-    def create(cls, source_archive, target_archive, distroseries,
-        pocket, source_package_name, source_package_version,
-        include_binaries):
+    def create(cls, source_packages, source_archive,
+               target_archive, target_distroseries, target_pocket,
+               include_binaries=False):
         """See `IPackageCopyJobSource`."""
         metadata = {
+            'source_packages': source_packages,
             'source_archive_id': source_archive.id,
             'target_archive_id': target_archive.id,
-            'pocket': pocket.value,
-            'source_package_name': source_package_name,
-            'source_package_version': source_package_version,
+            'target_pocket': target_pocket.value,
             'include_binaries': include_binaries,
             }
         job = DistributionJob(
-            distroseries.distribution, distroseries, cls.class_job_type,
-            metadata)
+            target_distroseries.distribution, target_distroseries,
+            cls.class_job_type, metadata)
         IMasterStore(DistributionJob).add(job)
         return cls(job)
 
@@ -71,6 +70,8 @@ class PackageCopyJob(DistributionJobDerived):
         jobs = [cls(job) for job in jobs]
         return (job for job in jobs if job.target_archive == archive)
 
+    # TODO Add source_archive_id and target_archive_id properties.
+
     @property
     def source_archive(self):
         return getUtility(IArchiveSet).get(self.metadata['source_archive_id'])
@@ -79,9 +80,13 @@ class PackageCopyJob(DistributionJobDerived):
     def target_archive(self):
         return getUtility(IArchiveSet).get(self.metadata['target_archive_id'])
 
+    # TODO Add target_distroseries property which just returns
+    # self.distroseries.
+
+    # XXX Rename to target_pocket.
     @property
     def pocket(self):
-        return PackagePublishingPocket.items[self.metadata['pocket']]
+        return PackagePublishingPocket.items[self.metadata['target_pocket']]
 
     @property
     def include_binaries(self):
@@ -89,11 +94,13 @@ class PackageCopyJob(DistributionJobDerived):
 
     @property
     def source_package_name(self):
-        return self.metadata['source_package_name']
+        [(source_package_name, version)] = self.metadata['source_packages']
+        return source_package_name
 
     @property
     def source_package_version(self):
-        return self.metadata['source_package_version']
+        [(source_package_name, version)] = self.metadata['source_packages']
+        return version
 
     def run(self):
         """See `IRunnableJob`."""

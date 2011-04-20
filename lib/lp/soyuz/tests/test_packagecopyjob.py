@@ -35,9 +35,11 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPackageCopyJobSource)
-        job = source.create(archive1, archive2, distroseries,
-                PackagePublishingPocket.RELEASE,
-                "foo", "1.0-1", include_binaries=False)
+        job = source.create(
+            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(distroseries, job.distroseries)
         self.assertEquals(archive1, job.source_archive)
@@ -53,9 +55,11 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPackageCopyJobSource)
-        job = source.create(archive1, archive2, distroseries,
-                PackagePublishingPocket.RELEASE,
-                "foo", "1.0-1", include_binaries=False)
+        job = source.create(
+            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
     def test_cronscript(self):
@@ -74,9 +78,11 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPackageCopyJobSource)
-        job = source.create(archive1, archive2, distroseries,
-                PackagePublishingPocket.RELEASE,
-                "foo", "1.0-1", include_binaries=False)
+        job = source.create(
+            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
         self.assertRaises(NoSuchSourcePackageName, job.run)
 
     def test_run(self):
@@ -95,9 +101,11 @@ class PackageCopyJobTests(TestCaseWithFactory):
             archive=archive1)
 
         source = getUtility(IPackageCopyJobSource)
-        job = source.create(archive1, archive2, distroseries,
-                PackagePublishingPocket.RELEASE,
-                "libc", "2.8-1", include_binaries=False)
+        job = source.create(
+            source_packages=[("libc", "2.8-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
@@ -116,9 +124,11 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPackageCopyJobSource)
-        job = source.create(archive1, archive2, distroseries,
-                PackagePublishingPocket.RELEASE,
-                "foo", "1.0-1", include_binaries=False)
+        job = source.create(
+            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
         oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
