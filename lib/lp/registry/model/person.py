@@ -4602,20 +4602,25 @@ def _get_recipients_for_team(team):
                          Join(Person,
                               TeamMembership.personID==Person.id),
                          LeftJoin(EmailAddress,
-                                  EmailAddress.person == Person.id))
+                                  And(
+                                      EmailAddress.person == Person.id,
+                                      EmailAddress.status ==
+                                        EmailAddressStatus.PREFERRED)))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
+        # Find Persons that have a preferred email address, or are a
+        # team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
                [TeamMembershipStatus.ADMIN.value,
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
-            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
-               And(Not(Person.teamownerID == None),
-                   EmailAddress.status == None))).config(distinct=True)
+            Or(
+                EmailAddress.personID != None,
+                Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,
              preferred_email_marker) in intermediate_transitive_results:
