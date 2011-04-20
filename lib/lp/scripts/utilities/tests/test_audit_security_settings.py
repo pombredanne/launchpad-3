@@ -7,7 +7,6 @@
 __metaclass__ = type
 
 import os
-import sys
 
 from canonical.config import config
 from canonical.testing.layers import BaseLayer
@@ -19,8 +18,9 @@ class TestAuditSecuitySettings(TestCase):
     layer = BaseLayer
 
     def test_duplicate_parsing(self):
-        utility = os.path.join(config.root, 'utilities', 'audit-security-settings.py')
-        cmd = '%s smoketest' % utility 
+        utility = os.path.join(
+            config.root, 'utilities', 'audit-security-settings.py')
+        cmd = '%s smoketest' % utility
         error_msg = os.popen(cmd).read()
         expected = '[bad]\n\tDuplicate setting found: public.bar\n'
         self.assertTrue(expected in error_msg)
