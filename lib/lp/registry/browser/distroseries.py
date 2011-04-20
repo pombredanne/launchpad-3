@@ -609,10 +609,10 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     custom_widget('derived_from_series', LaunchpadDropdownWidget)
 
-    label = 'Initialize series'
+    label = 'Initialise series'
     page_title = label
 
-    @action(u"Initialize Series", name='initialize')
+    @action(u"Commence initialisation", name='initialize')
     def submit(self, action, data):
         """Stub for the Javascript in the page to use."""
 
