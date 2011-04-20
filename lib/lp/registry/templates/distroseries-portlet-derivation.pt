@@ -23,7 +23,7 @@
             <a tal:attributes="href string:${context/fmt:url}/+missingpackages">
               <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
                 content="string:s"
-                condition="python:nb_diffs_in_parent!=1"/> in <tal:replace
+                condition="python:nb_diffs_in_parent!=1"/> only in <tal:replace
                   replace="context/parent_series/displayname">Sid</tal:replace>.
             </a>
           </li>
@@ -31,7 +31,7 @@
             <a tal:attributes="href string:${context/fmt:url}/+uniquepackages">
               <tal:nb_diffs replace="nb_diffs_in_child"/> package<tal:plural
                 content="string:s"
-                condition="python:nb_diffs_in_child!=1"/> in <tal:replace
+                condition="python:nb_diffs_in_child!=1"/> only in <tal:replace
                   replace="context/displayname">Natty</tal:replace>.
             </a>
           </li>
