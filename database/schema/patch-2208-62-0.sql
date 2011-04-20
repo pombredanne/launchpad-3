@@ -73,15 +73,20 @@ WHERE
     AND refobjid = (select oid FROM pg_class WHERE relname='branchrevision')
     AND deptype = 'a';
 
--- Strip the unnecessary crud.
+-- Delete the old UNIQUE constraint.
+DELETE FROM pg_constraint
+WHERE conname='revision__revision__branch__key' AND contype='u';
+
+-- This view is no longer used - no need to recreate it.
 DROP VIEW RevisionNumber;
+
+-- Need to drop this manually as we have repurposed the pg_dependency
+-- between the id column and this index.
+DROP INDEX revisionnumber_pkey;
 
 ALTER TABLE BranchRevision
     DROP COLUMN id,
     DROP CONSTRAINT revision__branch__revision__key;
-
-
-At this point, there are two entries in pg_constraint for the revision__revision__branch__key index - one unique and one primary.
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
 
