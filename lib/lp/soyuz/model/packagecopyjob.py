@@ -7,6 +7,8 @@ __all__ = [
     "PackageCopyJob",
 ]
 
+from functools import partial
+
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -18,6 +20,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -28,6 +31,7 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class PackageCopyJob(DistributionJobDerived):
@@ -99,9 +103,23 @@ class PackageCopyJob(DistributionJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-        [(source_package_name, source_package_version)] = self.source_packages
-        self.target_archive.syncSource(
-            source_package_name, source_package_version,
-            self.source_archive, to_pocket=str(self.target_pocket),
-            to_series=self.distroseries.name,
+        get_published_sources = partial(
+            self.source_archive.getPublishedSources, exact_match=True)
+        copy = partial(
+            do_copy, archive=self.target_archive,
+            series=self.distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries)
+
+        for source_name, source_version in self.source_packages:
+            # if target_archive.is_ppa:
+            #     if self.target_pocket != PackagePublishingPocket.RELEASE:
+            #         raise CannotCopy(
+            #             "Destination pocket must be 'release' for a PPA.")
+
+            # Check to see if the source package exists, and raise a useful
+            # error if it doesn't.
+            getUtility(ISourcePackageNameSet)[source_name]
+
+            source_package = get_published_sources(
+                name=source_name, version=source_version).first()
+            copy([source_package])
