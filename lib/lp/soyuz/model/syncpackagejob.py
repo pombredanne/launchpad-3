@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
-    "SyncPackageJob",
+    "PackageCopyJob",
 ]
 
 from zope.component import getUtility
@@ -21,8 +21,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
-    ISyncPackageJob,
-    ISyncPackageJobSource,
+    IPackageCopyJob,
+    IPackageCopyJobSource,
     )
 from lp.soyuz.model.distributionjob import (
     DistributionJob,
@@ -30,19 +30,19 @@ from lp.soyuz.model.distributionjob import (
     )
 
 
-class SyncPackageJob(DistributionJobDerived):
+class PackageCopyJob(DistributionJobDerived):
     """Job that copies a package between archives."""
 
-    implements(ISyncPackageJob)
+    implements(IPackageCopyJob)
 
     class_job_type = DistributionJobType.SYNC_PACKAGE
-    classProvides(ISyncPackageJobSource)
+    classProvides(IPackageCopyJobSource)
 
     @classmethod
     def create(cls, source_archive, target_archive, distroseries,
         pocket, source_package_name, source_package_version,
         include_binaries):
-        """See `ISyncPackageJobSource`."""
+        """See `IPackageCopyJobSource`."""
         metadata = {
             'source_archive_id': source_archive.id,
             'target_archive_id': target_archive.id,
@@ -59,9 +59,9 @@ class SyncPackageJob(DistributionJobDerived):
 
     @classmethod
     def getActiveJobs(cls, archive):
-        """See `ISyncPackageJobSource`."""
+        """See `IPackageCopyJobSource`."""
         # TODO: JRV 20101104. This iterates manually over all active
-        # SyncPackageJobs. This should usually be a short enough list,
+        # PackageCopyJobs. This should usually be a short enough list,
         # but if it really becomes an issue target_archive should
         # be moved into a separate database field.
         jobs = IStore(DistributionJob).find(

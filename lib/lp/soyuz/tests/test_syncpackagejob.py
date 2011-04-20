@@ -16,29 +16,29 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
-    ISyncPackageJob,
-    ISyncPackageJobSource,
+    IPackageCopyJob,
+    IPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class SyncPackageJobTests(TestCaseWithFactory):
-    """Test case for SyncPackageJob."""
+class PackageCopyJobTests(TestCaseWithFactory):
+    """Test case for PackageCopyJob."""
 
     layer = LaunchpadZopelessLayer
 
     def test_create(self):
-        # A SyncPackageJob can be created and stores its arguments.
+        # A PackageCopyJob can be created and stores its arguments.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(ISyncPackageJobSource)
+        source = getUtility(IPackageCopyJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
-        self.assertProvides(job, ISyncPackageJob)
+        self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(distroseries, job.distroseries)
         self.assertEquals(archive1, job.source_archive)
         self.assertEquals(archive2, job.target_archive)
@@ -52,7 +52,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(ISyncPackageJobSource)
+        source = getUtility(IPackageCopyJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
@@ -73,7 +73,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(ISyncPackageJobSource)
+        source = getUtility(IPackageCopyJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)
@@ -94,7 +94,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
 
-        source = getUtility(ISyncPackageJobSource)
+        source = getUtility(IPackageCopyJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "libc", "2.8-1", include_binaries=False)
@@ -113,7 +113,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(ISyncPackageJobSource)
+        source = getUtility(IPackageCopyJobSource)
         job = source.create(archive1, archive2, distroseries,
                 PackagePublishingPocket.RELEASE,
                 "foo", "1.0-1", include_binaries=False)

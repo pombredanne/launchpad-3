@@ -10,8 +10,8 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
-    "ISyncPackageJob",
-    "ISyncPackageJobSource",
+    "IPackageCopyJob",
+    "IPackageCopyJobSource",
 ]
 
 from lazr.enum import (
@@ -97,8 +97,8 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
         """
 
 
-class ISyncPackageJobSource(IJobSource):
-    """An interface for acquiring IISyncPackageJobs."""
+class IPackageCopyJobSource(IJobSource):
+    """An interface for acquiring IIPackageCopyJobs."""
 
     def create(source_archive, target_archive, distroseries, pocket,
         source_package_name, version, include_binaries):
@@ -112,7 +112,7 @@ class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
 
 
-class ISyncPackageJob(IRunnableJob):
+class IPackageCopyJob(IRunnableJob):
     """A Job that synchronizes packages."""
 
     pocket = Int(

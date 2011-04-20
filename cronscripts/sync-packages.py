@@ -10,16 +10,16 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.services.job.runner import JobCronScript
-from lp.soyuz.interfaces.distributionjob import ISyncPackageJobSource
+from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 
 
-class RunSyncPackageJob(JobCronScript):
-    """Run SyncPackageJob jobs."""
+class RunPackageCopyJob(JobCronScript):
+    """Run PackageCopyJob jobs."""
 
     config_name = 'sync_packages'
-    source_interface = ISyncPackageJobSource
+    source_interface = IPackageCopyJobSource
 
 
 if __name__ == '__main__':
-    script = RunSyncPackageJob()
+    script = RunPackageCopyJob()
     script.lock_and_run()
