@@ -50,17 +50,13 @@ class ExpireBugTasks(LaunchpadCronScript):
         try:
             janitor = BugJanitor(
                 log=self.logger, target=target, limit=self.options.limit)
-        except Exception as error:
-            # We use a catchall here (and in the next block) because we don't
-            # know (and don't care) about the particular error--we'll just
-            # log it to as an Oops.
-            self.logger.error(
-                'An error occured getting the janitor: %s' % error)
-        try:
             janitor.expireBugTasks(self.txn)
-        except Exception as error:
+        except Exception:
+            # We use a catchall here because we don't know (and don't care)
+            # about the particular error--we'll just log it to as an Oops.
             self.logger.error(
-                'An error occured trying to expire bugtasks: %s' % error)
+                'An error occured trying to expire bugtasks.', exc_info=1)
+            raise
 
 
 if __name__ == '__main__':
