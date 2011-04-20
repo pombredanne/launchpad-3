@@ -335,17 +335,6 @@ class TestPerson(TestCaseWithFactory):
         with person_logged_in(person):
             self.assertRaises(Unauthorized, getattr, other, 'canAccess')
 
-    def test_canAccess__check_two_attributes(self):
-        # If access to more than one attribute is checked,
-        # Person.canAccess() returns True if and only if
-        # the user has access to all given attributes.
-        person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        with person_logged_in(person):
-            self.assertTrue(person.canAccess(product, 'name'))
-            self.assertTrue(person.canAccess(product, 'name', 'licenses'))
-            self.assertFalse(person.canAccess(product, 'name', 'newSeries'))
-
     def test_canWrite__anonymous(self):
         # Anonymous users cannot call Person.canWrite()
         person = self.factory.makePerson()
@@ -368,24 +357,6 @@ class TestPerson(TestCaseWithFactory):
         other = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(Unauthorized, getattr, other, 'canWrite')
-
-    def test_canWrite__check_two_attributes(self):
-        # If access to more than one attribute is checked,
-        # Person.canWrite() returns True if and only if
-        # the user has access to all given attributes.
-        bug_supervisor = self.factory.makePerson()
-        product = self.factory.makeProduct(bug_supervisor=bug_supervisor)
-        with person_logged_in(bug_supervisor):
-            allowed_1 = 'enable_bugfiling_duplicate_search'
-            allowed_2 = 'bug_reported_acknowledgement'
-            forbidden = 'description'
-            self.assertTrue(bug_supervisor.canWrite(product, allowed_1))
-            self.assertTrue(bug_supervisor.canWrite(product, allowed_2))
-            self.assertFalse(bug_supervisor.canWrite(product, forbidden))
-            self.assertTrue(
-                bug_supervisor.canWrite(product, allowed_1, allowed_2))
-            self.assertFalse(
-                bug_supervisor.canWrite(product, allowed_1, forbidden))
 
 
 class TestPersonStates(TestCaseWithFactory):

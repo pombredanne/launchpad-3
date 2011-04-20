@@ -2809,15 +2809,13 @@ class Person(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
 
-    def canAccess(self, obj, *attributes):
+    def canAccess(self, obj, attribute):
         """See `IPerson.`"""
-        return all(
-            [canAccess(obj, attribute) for attribute in attributes])
+        return canAccess(obj, attribute)
 
-    def canWrite(self, obj, *attributes):
+    def canWrite(self, obj, attribute):
         """See `IPerson.`"""
-        return all(
-            [canWrite(obj, attribute) for attribute in attributes])
+        return canWrite(obj, attribute)
 
 
 class PersonSet:

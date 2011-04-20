@@ -1790,22 +1790,22 @@ class IPersonSpecialRestricted(Interface):
     #    allows users only access to theirs own object.
     # 2. Allowing users access to check permissions for other persons
     #    than themselves might leak information.
-    def canAccess(obj, *attributes):
+    def canAccess(obj, attribute):
         """True if this person can access all given attributes of the object.
 
         :param obj: The object to be checked.
-        :param attributes: The names of one or more attributes to check.
-        :return: True if the person can access all given attributes
-            of the given object, else False.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
         """
 
-    def canWrite(obj, attributes):
+    def canWrite(obj, attribute):
         """True if this person can write all given attributes of the object.
 
         :param obj: The object to be checked.
-        :param attributes: The names of one or more attributes to check.
-        :return: True if the person can write all given attributes
-            of the given object, else False.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
         """
 
 
