@@ -36,8 +36,9 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPackageCopyJobSource)
         job = source.create(
-            source_packages=[("foo", "1.0-1")], source_archive=archive1,
-            target_archive=archive2, target_distroseries=distroseries,
+            source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
+            source_archive=archive1, target_archive=archive2,
+            target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertProvides(job, IPackageCopyJob)
@@ -45,8 +46,8 @@ class PackageCopyJobTests(TestCaseWithFactory):
         self.assertEquals(archive1, job.source_archive)
         self.assertEquals(archive2, job.target_archive)
         self.assertEquals(PackagePublishingPocket.RELEASE, job.pocket)
-        self.assertEquals("foo", job.source_package_name)
-        self.assertEquals("1.0-1", job.source_package_version)
+        self.assertContentEqual(
+            job.source_packages, [("foo", "1.0-1"), ("bar", "2.4")])
         self.assertEquals(False, job.include_binaries)
 
     def test_getActiveJobs(self):

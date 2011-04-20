@@ -25,8 +25,10 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Int,
+    List,
     Object,
     TextLine,
+    Tuple,
     )
 
 from canonical.launchpad import _
@@ -129,30 +131,30 @@ class IInitialiseDistroSeriesJob(IRunnableJob):
 class IPackageCopyJob(IRunnableJob):
     """A Job that synchronizes packages."""
 
-    pocket = Int(
-            title=_('Target package publishing pocket'), required=True,
-            readonly=True,
-            )
+    source_packages = List(
+        title=_("Source Package Names and Versions"),
+        value_type=Tuple(
+            value_type=TextLine(), min_length=2, max_length=2),
+        required=True, readonly=True,
+        )
 
     source_archive = Int(
-            title=_('Source Archive ID'), required=True, readonly=True,
-            )
+        title=_('Source Archive ID'), required=True, readonly=True,
+        )
 
     target_archive = Int(
-            title=_('Target Archive ID'), required=True, readonly=True,
-            )
+        title=_('Target Archive ID'), required=True, readonly=True,
+        )
 
-    source_package_name = TextLine(
-            title=_("Source Package Name"),
-            required=True, readonly=True)
-
-    source_package_version = TextLine(
-            title=_("Source Package Version"),
-            required=True, readonly=True)
+    pocket = Int(
+        title=_('Target package publishing pocket'), required=True,
+        readonly=True,
+        )
 
     include_binaries = Bool(
-            title=_("Copy binaries"),
-            required=False, readonly=True)
+        title=_("Copy binaries"),
+        required=False, readonly=True,
+        )
 
 
 class IDistroSeriesDifferenceJob(IRunnableJob):

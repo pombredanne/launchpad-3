@@ -70,6 +70,12 @@ class PackageCopyJob(DistributionJobDerived):
         jobs = [cls(job) for job in jobs]
         return (job for job in jobs if job.target_archive == archive)
 
+    @property
+    def source_packages(self):
+        return [
+            (name, version) for (name, version) in
+            self.metadata['source_packages']]
+
     # TODO Add source_archive_id and target_archive_id properties.
 
     @property
@@ -92,20 +98,11 @@ class PackageCopyJob(DistributionJobDerived):
     def include_binaries(self):
         return self.metadata['include_binaries']
 
-    @property
-    def source_package_name(self):
-        [(source_package_name, version)] = self.metadata['source_packages']
-        return source_package_name
-
-    @property
-    def source_package_version(self):
-        [(source_package_name, version)] = self.metadata['source_packages']
-        return version
-
     def run(self):
         """See `IRunnableJob`."""
+        [(source_package_name, source_package_version)] = self.source_packages
         self.target_archive.syncSource(
-            self.source_package_name, self.source_package_version,
+            source_package_name, source_package_version,
             self.source_archive, to_pocket=str(self.pocket),
             to_series=self.distroseries.name,
             include_binaries=self.include_binaries)
