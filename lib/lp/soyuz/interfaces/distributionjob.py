@@ -72,8 +72,8 @@ class DistributionJobType(DBEnumeratedType):
         populating the archive from the parent distroseries.
         """)
 
-    SYNC_PACKAGE = DBItem(2, """
-        Synchronize a single package from another distribution.
+    COPY_PACKAGE = DBItem(2, """
+        Copy a single package from another distribution.
 
         This job copies a single package, optionally including binaries.
         """)
@@ -100,9 +100,23 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
 class IPackageCopyJobSource(IJobSource):
     """An interface for acquiring IIPackageCopyJobs."""
 
-    def create(source_archive, target_archive, distroseries, pocket,
-        source_package_name, version, include_binaries):
-        """Create a new sync package job."""
+    def create(cls, source_archive, source_packages,
+               target_archive, target_distroseries, target_pocket,
+               include_binaries=False):
+        """Create a new sync package job.
+
+        :param source_archive: The `IArchive` in which `source_packages` are
+            found.
+        :param source_packages: This is an iterable of `(source_package_name,
+            version)` tuples, where both `source_package_name` and `version`
+            are strings.
+        :param target_archive: The `IArchive` to which to copy the packages.
+        :param target_distroseries: The `IDistroSeries` to which to copy the
+            packages.
+        :param target_pocket: The pocket into which to copy the packages. Must
+            be a member of `PackagePublishingPocket`.
+        :param include_binaries: See `do_copy`.
+        """
 
     def getActiveJobs(archive):
         """Retrieve all active sync jobs for an archive."""
