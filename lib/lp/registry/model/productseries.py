@@ -41,7 +41,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
@@ -294,14 +293,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def is_development_focus(self):
         """See `IProductSeries`."""
         return self == self.product.development_focus
-
-    @property
-    def user_can_set_branch(self):
-        """See `IProductSeries`."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        return user.canWrite(self, ('branch', ))
 
     def specifications(self, sort=None, quantity=None, filter=None,
                        prejoin_people=True):

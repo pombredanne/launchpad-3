@@ -23,7 +23,6 @@ from lp.registry.interfaces.productseries import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
-    person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -401,27 +400,3 @@ class TestWebService(WebServiceTestCase):
         mode = TranslationsBranchImportMode.IMPORT_TRANSLATIONS
         ws_series.translations_autoimport_mode = mode.title
         ws_series.lp_save()
-
-
-class TestProductSeriesPermissionProperties(TestCaseWithFactory):
-    """Test for permission related properties of ProductSeries."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_user_can_set_branch__anonymous(self):
-        # user_can_set_branch is False for anonymous users.
-        productseries = self.factory.makeProductSeries()
-        self.assertFalse(productseries.user_can_set_branch)
-
-    def test_user_can_set_branch__unprivileged_user(self):
-        # user_can_set_branch is False for unprivileged users.
-        productseries = self.factory.makeProductSeries()
-        with person_logged_in(self.factory.makePerson()):
-            self.assertFalse(productseries.user_can_set_branch)
-
-    def test_user_can_set_branch__privileged_user(self):
-        # user_can_set_branch is True for privileged users, like the
-        # series owner.
-        productseries = self.factory.makeProductSeries()
-        with person_logged_in(productseries.owner):
-            self.assertTrue(productseries.user_can_set_branch)

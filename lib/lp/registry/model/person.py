@@ -90,13 +90,11 @@ from zope.interface import (
     implements,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.publisher.interfaces import Unauthorized
 from zope.security.checker import (
     canAccess,
     canWrite,
     )
-from zope.security.management import getInteraction
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -2811,33 +2809,15 @@ class Person(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
 
-    def checkPermissionOnObject(self, obj, attributes, check_operation):
-        """Run check_operation on the given obj for the given attributes."""
-        interaction = getInteraction()
-        if len(interaction.participations) != 1:
-            raise NotImplemented(
-                'checkPermissionOnObject() requires at present exactly '
-                'one participation.' % check_operation.__name__)
-        principal = interaction.participations[0].principal
-        # For security reasons, and because zope.security.checker.canAccess()
-        # can only permissions for the current user, any user can
-        # only check permissions of him/herself.
-        # See also bug xxxxxxxxx
-        if isinstance(principal, UnauthenticatedPrincipal):
-            raise Unauthorized('Only logged in users may call canAccess()')
-        if principal.person != self:
-            raise Unauthorized('Users can query only their own permissions')
-
+    def canAccess(self, obj, *attributes):
+        """See `IPerson.`"""
         return all(
-            [check_operation(obj, attribute) for attribute in attributes])
+            [canAccess(obj, attribute) for attribute in attributes])
 
-    def canAccess(self, obj, attributes):
+    def canWrite(self, obj, *attributes):
         """See `IPerson.`"""
-        return self.checkPermissionOnObject(obj, attributes, canAccess)
-
-    def canWrite(self, obj, attributes):
-        """See `IPerson.`"""
-        return self.checkPermissionOnObject(obj, attributes, canWrite)
+        return all(
+            [canWrite(obj, attribute) for attribute in attributes])
 
 
 class PersonSet:

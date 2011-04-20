@@ -316,9 +316,7 @@ class TestPerson(TestCaseWithFactory):
     def test_canAccess__anonymous(self):
         # Anonymous users cannot call Person.canAccess()
         person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            Unauthorized, person.canAccess, product, ['licenses'])
+        self.assertRaises(Unauthorized, getattr, person, 'canAccess')
 
     def test_canAccess__checking_own_permissions(self):
         # Logged in users can call Person.canAccess() on their own
@@ -326,18 +324,16 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertTrue(person.canAccess(product, ['licenses']))
-            self.assertFalse(person.canAccess(product, ['newSeries']))
+            self.assertTrue(person.canAccess(product, 'licenses'))
+            self.assertFalse(person.canAccess(product, 'newSeries'))
 
     def test_canAccess__checking_permissions_of_others(self):
         # Logged in users cannot call Person.canAccess() on Person
         # object for other people.
         person = self.factory.makePerson()
         other = self.factory.makePerson()
-        product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertRaises(
-                Unauthorized, other.canAccess, product, ['licenses'])
+            self.assertRaises(Unauthorized, getattr, other, 'canAccess')
 
     def test_canAccess__check_two_attributes(self):
         # If access to more than one attribute is checked,
@@ -346,16 +342,14 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertTrue(person.canAccess(product, ['name']))
-            self.assertTrue(person.canAccess(product, ['name', 'licenses']))
-            self.assertFalse(person.canAccess(product, ['name', 'newSeries']))
+            self.assertTrue(person.canAccess(product, 'name'))
+            self.assertTrue(person.canAccess(product, 'name', 'licenses'))
+            self.assertFalse(person.canAccess(product, 'name', 'newSeries'))
 
     def test_canWrite__anonymous(self):
         # Anonymous users cannot call Person.canWrite()
         person = self.factory.makePerson()
-        product = self.factory.makeProduct()
-        self.assertRaises(
-            Unauthorized, person.canWrite, product, ['displayname'])
+        self.assertRaises(Unauthorized, getattr, person, 'canWrite')
 
     def test_canWrite__checking_own_permissions(self):
         # Logged in users can call Person.canWrite() on their own
@@ -363,19 +357,17 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertFalse(person.canWrite(product, ['displayname']))
+            self.assertFalse(person.canWrite(product, 'displayname'))
         with person_logged_in(product.owner):
-            self.assertTrue(product.owner.canWrite(product, ['displayname']))
+            self.assertTrue(product.owner.canWrite(product, 'displayname'))
 
     def test_canWrite__checking_permissions_of_others(self):
         # Logged in users cannot call Person.canWrite() on Person
         # object for other people.
         person = self.factory.makePerson()
         other = self.factory.makePerson()
-        product = self.factory.makeProduct()
         with person_logged_in(person):
-            self.assertRaises(
-                Unauthorized, other.canWrite, product, ['displayname'])
+            self.assertRaises(Unauthorized, getattr, other, 'canWrite')
 
     def test_canWrite__check_two_attributes(self):
         # If access to more than one attribute is checked,
@@ -387,13 +379,13 @@ class TestPerson(TestCaseWithFactory):
             allowed_1 = 'enable_bugfiling_duplicate_search'
             allowed_2 = 'bug_reported_acknowledgement'
             forbidden = 'description'
-            self.assertTrue(bug_supervisor.canWrite(product, [allowed_1]))
-            self.assertTrue(bug_supervisor.canWrite(product, [allowed_2]))
-            self.assertFalse(bug_supervisor.canWrite(product, [forbidden]))
+            self.assertTrue(bug_supervisor.canWrite(product, allowed_1))
+            self.assertTrue(bug_supervisor.canWrite(product, allowed_2))
+            self.assertFalse(bug_supervisor.canWrite(product, forbidden))
             self.assertTrue(
-                bug_supervisor.canWrite(product, [allowed_1, allowed_2]))
+                bug_supervisor.canWrite(product, allowed_1, allowed_2))
             self.assertFalse(
-                bug_supervisor.canWrite(product, [allowed_1, forbidden]))
+                bug_supervisor.canWrite(product, allowed_1, forbidden))
 
 
 class TestPersonStates(TestCaseWithFactory):
