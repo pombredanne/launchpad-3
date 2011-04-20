@@ -126,7 +126,7 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
     def _createWSForDSDWithRequestedPackageDiff(self, versions):
         # Helper to create and return a webservice for a
-        # DistroSeriesDifference with requested package(s) diff(s).
+        # DistroSeriesDifference with requested package diff(s).
         ds_diff = self.factory.makeDistroSeriesDifference(versions=versions,
             set_base_version=True)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
