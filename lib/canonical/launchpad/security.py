@@ -260,7 +260,7 @@ class AuthorizationBase:
             permission = self.permission
         else:
             # This will raise ValueError if the permission doesn't exist.
-            check_permission_is_registered(permission, obj)
+            check_permission_is_registered(obj, permission)
         next_adapter = getAdapter(obj, IAuthorization, permission)
         return next_adapter.checkAuthenticated(user)
 
@@ -950,7 +950,7 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+class BugSuperviseDistributionSourcePackage(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
     permission = 'launchpad.BugSupervisor'
@@ -960,6 +960,15 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
         return (user.inTeam(self.obj.distribution.bug_supervisor) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
+
+class EditDistributionSourcePackage(AuthorizationBase):
+    """DistributionSourcePackage is not editable.
+
+    But EditStructuralSubscription needs launchpad.Edit defined on all
+    targets.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
 
 
 class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
