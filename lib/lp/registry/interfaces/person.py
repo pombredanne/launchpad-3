@@ -1791,7 +1791,7 @@ class IPersonSpecialRestricted(Interface):
     # 2. Allowing users access to check permissions for other persons
     #    than themselves might leak information.
     def canAccess(obj, attribute):
-        """True if this person can access all given attributes of the object.
+        """True if this person can access the given attribute of the object.
 
         :param obj: The object to be checked.
         :param attributes: The name of an attribute to check.
@@ -1800,7 +1800,7 @@ class IPersonSpecialRestricted(Interface):
         """
 
     def canWrite(obj, attribute):
-        """True if this person can write all given attributes of the object.
+        """True if this person can write the given attribute of the object.
 
         :param obj: The object to be checked.
         :param attribute: The name an attribute to check.
