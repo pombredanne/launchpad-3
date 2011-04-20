@@ -241,10 +241,6 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
-        # Reset the timeout timer, so that we can issue db queries when
-        # rendering the page.
-        clear_request_started()
-        set_request_started()
 
 
 class InvalidBatchSizeView(SystemErrorView):

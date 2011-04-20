@@ -59,6 +59,7 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
@@ -320,12 +321,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         if default_branch is None:
             return
         try:
-            unique_name = default_branch.unique_name
+            path = branch_id_alias(default_branch)
         except Unauthorized:
             return
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
     def _translateBranchIdAlias(self, requester, path):
