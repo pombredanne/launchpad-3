@@ -151,7 +151,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
         if self.has_upstream_branch:
             # Normally should use BranchFormatterAPI(branch).link(None), but
             # on this page, that information is redundant.
-            title = self.upstream_branch.unique_name
+            title = 'lp:' + self.upstream_branch.unique_name
             url = canonical_url(self.upstream_branch)
         else:
             title = ''

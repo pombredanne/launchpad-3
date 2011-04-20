@@ -44,6 +44,7 @@
     <dd tal:condition="not: context/base_version">
       Unknown
     </dd>
+    <tal:package-diffs-info condition="view/display_package_diffs_info">
     <dt
       tal:condition="view/show_package_diffs_request_link"
       class="package-diff-placeholder">
@@ -53,10 +54,10 @@
         </span>
     </dt>
     <dt
-      tal:condition="python: not(view.show_package_diffs_request_link) and context.base_version">
+      tal:condition="not:view/show_package_diffs_request_link">
       Differences from last common version:
     </dt>
-    <dd tal:condition="context/base_version">
+    <dd tal:condition="view/display_diffs">
       <ul class="package-diff-status">
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
@@ -85,7 +86,6 @@
             </span>
           </li>
         </tal:source-diff-option>
-
         <tal:parent-diff-option condition="view/display_parent_diff">
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
@@ -113,9 +113,10 @@
             </span>
           </li>
         </tal:parent-diff-option>
-
       </ul>
     </dd>
+    </tal:package-diffs-info>
+
     </tal:package-diffs>
   </dl>
 

@@ -42,9 +42,15 @@ class TimedAction:
         self.category = category
         self.detail = detail
         self.timeline = timeline
+        self._init()
+
+    def _init(self):
+        # hook for child classes.
+        pass
 
     def __repr__(self):
-        return "<TimedAction %s[%s]>" % (self.category, self.detail[:20])
+        return "<%s %s[%s]>" % (self.__class__, self.category,
+            self.detail[:20])
 
     def logTuple(self):
         """Return a 4-tuple suitable for errorlog's use."""

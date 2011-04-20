@@ -2305,8 +2305,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None,
-        set_base_version=False):
+        changelogs=None, set_base_version=False):
         """Create a new distro series source package difference."""
         if derived_series is None:
             parent_series = self.makeDistroSeries()
