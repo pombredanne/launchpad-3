@@ -114,9 +114,6 @@ You can use the following authorization lines:
     >>> browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
-  for Marilize Coetzee (shipit admin)
-    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
-
   for David Allouche (member of vcs-imports)
     >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
 

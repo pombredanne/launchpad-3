@@ -26,19 +26,19 @@ page.
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
-Marilize is not an administrator on any projects.  When she accesses
+no-priv is not an administrator on any projects.  When she accesses
 the page she is not given the option to redeem a voucher.
 
-    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~marilize/+vouchers')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~no-priv/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions...
-    Marilize Coetzee does not own any commercial projects. Only project
+    No Privileges Person does not own any commercial projects. Only project
     owners can redeem vouchers for a project.
 
 A user can access her voucher page but not someone else's.  Here
-Marilize tries to access '+vouchers' on another user and is not
+no-priv tries to access '+vouchers' on another user and is not
 allowed.
 
     >>> browser.open('http://launchpad.dev/~mark/+vouchers')

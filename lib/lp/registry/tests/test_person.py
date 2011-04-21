@@ -12,6 +12,7 @@ from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -312,6 +313,51 @@ class TestPerson(TestCaseWithFactory):
         # self-generated bug notifications by default.
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
+
+    def test_canAccess__anonymous(self):
+        # Anonymous users cannot call Person.canAccess()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canAccess')
+
+    def test_canAccess__checking_own_permissions(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, 'licenses'))
+            self.assertFalse(person.canAccess(product, 'newSeries'))
+
+    def test_canAccess__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canAccess() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canAccess')
+
+    def test_canWrite__anonymous(self):
+        # Anonymous users cannot call Person.canWrite()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canWrite')
+
+    def test_canWrite__checking_own_permissions(self):
+        # Logged in users can call Person.canWrite() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertFalse(person.canWrite(product, 'displayname'))
+        with person_logged_in(product.owner):
+            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+
+    def test_canWrite__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canWrite() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canWrite')
 
 
 class TestPersonStates(TestCaseWithFactory):

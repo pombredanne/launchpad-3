@@ -37,9 +37,6 @@ from zope.schema import (
 from zope.traversing.interfaces import IContainmentRoot
 
 from canonical.launchpad import _
-# Import only added to allow change to land.  Needs to be removed when shipit
-# is updated.
-from lp.app.errors import UnexpectedFormData
 
 
 class IAPIDocRoot(IContainmentRoot):

@@ -126,7 +126,6 @@ class ILaunchpadCelebrities(Interface):
     registry_experts = Attribute("The Registry Administrators team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
-    shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu = Attribute("The Ubuntu Distribution.")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
@@ -199,9 +198,6 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
-        required=True, readonly=True)
-    in_shipit_admin = Bool(
-        title=_("True if this person is a ShipIt admin."),
         required=True, readonly=True)
     in_ubuntu_branches = Bool(
         title=_("True if this person is on the Ubuntu branches team."),
