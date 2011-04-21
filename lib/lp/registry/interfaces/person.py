@@ -1781,6 +1781,33 @@ class IPersonSpecialRestricted(Interface):
             preferred email address. It cannot be None.
         """
 
+    # XXX 2011-04-20, Abel Deuring, Bug=767293: The methods canAccess()
+    # and canWrite() are defined in this interface for two reasons:
+    # 1. The functions zope.security.checker.canWrite() and
+    #    zope.security.checker.canAccess() can at present check only
+    #    permissions for the current user, and this interface is
+    #    protected by the permission launchpad.Special, which
+    #    allows users only access to theirs own object.
+    # 2. Allowing users access to check permissions for other persons
+    #    than themselves might leak information.
+    def canAccess(obj, attribute):
+        """True if this person can access the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
+        """
+
+    def canWrite(obj, attribute):
+        """True if this person can write the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
+        """
+
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,

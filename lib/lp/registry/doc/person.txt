@@ -184,23 +184,23 @@ account_status must always be set to NOACCOUNT. (Notice how we use
 setContactAddress() rather than setPreferredEmail() here, since the
 latter can be used only for people and the former only for teams)
 
-    >>> shipit_admins = personset.getByName('shipit-admins')
-    >>> shipit_admins.account_status
+    >>> team = factory.makeTeam(name='foo', displayname='foobaz')
+    >>> team.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> email = emailset.new('foo@baz.com', shipit_admins)
-    >>> shipit_admins.setContactAddress(email)
+    >>> email = emailset.new('foo@baz.com', team)
+    >>> team.setContactAddress(email)
     >>> email.status
     <DBItem EmailAddressStatus.PREFERRED...
 
-    >>> shipit_admins.account_status
+    >>> team.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
 Unlike people, teams don't need a contact address, so we can pass None
 to setContactAddress() to leave a team without a contact address.
 
-    >>> shipit_admins.setContactAddress(None)
-    >>> print shipit_admins.preferredemail
+    >>> team.setContactAddress(None)
+    >>> print team.preferredemail
     None
 
 When a new sourcepackage is imported and a Person entry has to be

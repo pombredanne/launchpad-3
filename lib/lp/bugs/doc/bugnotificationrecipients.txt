@@ -196,8 +196,8 @@ Here's an example of this situation:
     >>> vcs_imports = personset.getByName("vcs-imports")
     >>> recipients.addRegistrant(vcs_imports, gnomebaker)
 
-    >>> shipit_admins = personset.getByName("shipit-admins")
-    >>> recipients.addDirectSubscriber(shipit_admins)
+    >>> commercial_admins = personset.getByName("commercial-admins")
+    >>> recipients.addDirectSubscriber(commercial_admins)
 
 You'll notice that the rationales this time state clearly which team
 membership is causing us to send mail.
@@ -208,6 +208,10 @@ membership is causing us to send mail.
           You received this bug notification because you are a member
           of testing Spanish team, which is a subscriber of a
           duplicate bug.
+      commercial-member@canonical.com
+          Subscriber @commercial-admins
+          You received this bug notification because you are a member
+          of Commercial Subscription Admins, which is a direct subscriber.
       david.allouche@canonical.com
           Registrant (gnomebaker) @vcs-imports
           You received this bug notification because you are a member
@@ -222,10 +226,6 @@ membership is causing us to send mail.
           You received this bug notification because you are a member
           of testing Spanish team, which is a subscriber of a
           duplicate bug.
-      marilize@hbd.com
-          Subscriber @shipit-admins
-          You received this bug notification because you are a member
-          of ShipIt Administrators, which is a direct subscriber.
       mark@example.com
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
