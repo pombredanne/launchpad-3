@@ -21,9 +21,17 @@ get this picked up by the process email cronscript, you need to copy it to the
 directory above the working tree and call it +testing-mailbox.zcml (actually
 you could call it anything that matches +*.zcml loaded from script.zcml).
 
-There is a helper function create_mail_for_directoryMailBox that has been
-added to the globs in `make harness`, and can be found in the file
-lib/canonical/launchpad/testing/mail.py.
+There is a helper function create_mail_for_directoryMailBox that can be
+run with something like this::
+ 
+    make harness
+    from lp.testing import mail
+    mail.create_mail_for_directoryMailBox(
+	'me@example.com',
+	'new@bugs.launchpad.net',
+	'help',
+	'message body',
+	)
 
 Let's look at the one we use in tests:
 
