@@ -654,23 +654,36 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             ds_diff.derived_series, ds_diff.base_source_pub.distroseries)
 
-    def test_requestPackageDiffs(self):
-        # IPackageDiffs are created for the corresponding versions.
+    def _setupDSDsWithChangelog(self, derived_versions,
+                                        parent_versions,
+                                        status=None):
+        # Helper to create DSD with changelogs.
+        # {derived,parent}_changelog must be ordered (e.g. ['1.1',
+        # '1.2', '1.3']).
+        if status is None:
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         derived_changelog = self.factory.makeChangelog(
-            versions=['1.0', '1.2'])
+            versions=derived_versions)
         parent_changelog = self.factory.makeChangelog(
-            versions=['1.0', '1.3'])
+            versions=parent_versions)
         transaction.commit() # Yay, librarian.
-        ds_diff = self.factory.makeDistroSeriesDifference(versions={
-            'derived': '1.2',
-            'parent': '1.3',
-            'base': '1.0',
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=status,
+            versions={
+                'derived': derived_versions[-1],
+                'parent': parent_versions[-1],
+                'base': derived_versions[0],
             },
             changelogs={
                 'derived': derived_changelog,
                 'parent': parent_changelog,
             })
+        return ds_diff
 
+    def test_requestPackageDiffs(self):
+        # IPackageDiffs are created for the corresponding versions.
+        ds_diff = self._setupDSDsWithChangelog(
+            ['1.0', '1.2'], ['1.0', '1.3'])
         person = self.factory.makePerson()
         with person_logged_in(person):
             ds_diff.requestPackageDiffs(person)
@@ -687,42 +700,32 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_requestPackageDiffs_child_is_base(self):
         # When the child has the same version as the base version, when
         # diffs are requested, child diffs aren't.
-        derived_changelog = self.factory.makeChangelog(versions=['0.1-1'])
-        parent_changelog = self.factory.makeChangelog(
-            versions=['0.1-2', '0.1-1'])
-        transaction.commit() # Yay, librarian.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            versions={
-                'derived': '0.1-1',
-                'parent': '0.1-2',
-                'base': '0.1-1',
-            },
-            changelogs={
-                'derived': derived_changelog,
-                'parent': parent_changelog,
-            })
-
+        ds_diff = self._setupDSDsWithChangelog(
+            ['0.1-1'], ['0.1-1', '0.1-2'])
         person = self.factory.makePerson()
         with person_logged_in(person):
             ds_diff.requestPackageDiffs(person)
+
+        self.assertIs(None, ds_diff.package_diff)
+        self.assertIsNot(None, ds_diff.parent_package_diff)
+
+    def test_requestPackageDiffs_parent_is_base(self):
+        # When the parent has the same version as the base version, when
+        # diffs are requested, parent diffs aren't.
+        ds_diff = self._setupDSDsWithChangelog(
+            ['0.1-1', '0.1-2'], ['0.1-1'])
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            ds_diff.requestPackageDiffs(person)
+
         self.assertIs(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 
     def test_requestPackageDiffs_with_resolved_DSD(self):
         # Diffs can't be requested for DSDs that are RESOLVED.
-        changelog_lfa = self.factory.makeChangelog(versions=['0.1-1'])
-        transaction.commit() # Yay, librarian.
-        ds_diff = self.factory.makeDistroSeriesDifference(
-            status=DistroSeriesDifferenceStatus.RESOLVED,
-            versions={
-                'derived': '0.1-1',
-                'parent': '0.1-1',
-                'base': '0.1-1',
-            },
-            changelogs={
-                'derived': changelog_lfa,
-                'parent': changelog_lfa,
-            })
+        ds_diff = self._setupDSDsWithChangelog(
+            ['0.1-1'], ['0.1-1'],
+            status=DistroSeriesDifferenceStatus.RESOLVED)
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaisesWithContent(
