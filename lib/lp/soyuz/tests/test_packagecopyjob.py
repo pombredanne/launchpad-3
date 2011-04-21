@@ -3,15 +3,11 @@
 
 """Tests for sync package jobs."""
 
-import os
-import subprocess
-import sys
-
+from testtools.content import text_content
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -21,7 +17,10 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    run_script,
+    TestCaseWithFactory,
+    )
 
 
 class PackageCopyJobTests(TestCaseWithFactory):
@@ -66,16 +65,6 @@ class PackageCopyJobTests(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
-
-    def test_cronscript(self):
-        # The cron script runs without problems.
-        script = os.path.join(
-            config.root, 'cronscripts', 'copy-packages.py')
-        args = [sys.executable, script, '-v']
-        process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.assertEqual(process.returncode, 0)
 
     def test_run_unknown_package(self):
         # A job properly records failure.
@@ -156,3 +145,32 @@ class PackageCopyJobTests(TestCaseWithFactory):
         self.assertIn(('distroseries_id', distroseries.id), oops_vars)
         self.assertIn(
             ('distribution_job_id', naked_job.context.id), oops_vars)
+
+    def test_smoke(self):
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=archive1)
+        getUtility(IPackageCopyJobSource).create(
+            source_packages=[("libc", "2.8-1")], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IPackageCopyJobSource.getName()))
+
+        self.addDetail("stdout", text_content(out))
+        self.addDetail("stderr", text_content(err))
+
+        self.assertEqual(0, exit_code)
+        copied_source_package = archive2.getPublishedSources(
+            name="libc", version="2.8-1", exact_match=True).first()
+        self.assertIsNot(copied_source_package, None)
