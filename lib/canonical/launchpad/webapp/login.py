@@ -62,6 +62,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class UnauthorizedView(SystemErrorView):
@@ -195,8 +196,14 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         openid_vhost = config.launchpad.openid_provider_vhost
+
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-begin",
+            allvhosts.configs[openid_vhost].rooturl,
+            allow_nested=True)
         self.openid_request = consumer.begin(
             allvhosts.configs[openid_vhost].rooturl)
+        timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(optional=['email', 'fullname']))
 
