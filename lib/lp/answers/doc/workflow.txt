@@ -423,7 +423,7 @@ As a Launchpad administrator, so can Stub.
 
     >>> login(marilize.preferredemail.email)
     >>> spam_question.reject(
-    ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
+    ...     marilize, "We don't send free CDs any more.")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -432,7 +432,7 @@ When rejecting a question, a comment explaining the reason is given.
 
     >>> login('test@canonical.com')
     >>> reject_message = spam_question.reject(
-    ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
+    ...     sample_person, "We don't send free CDs any more.",
     ...     datecreated=now_plus_one_hour)
     >>> print reject_message.action.name
     REJECT
