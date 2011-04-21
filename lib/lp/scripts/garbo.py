@@ -13,21 +13,19 @@ from datetime import (
     datetime,
     timedelta,
     )
-from fixtures import TempDir
 import logging
-import multiprocessing
 import os
-import signal
-import subprocess
 import threading
 import time
 
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
+import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import LeftJoin
 from storm.locals import (
-    And,
-    Count,
     Max,
     Min,
     SQL,
@@ -44,14 +42,10 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
@@ -59,9 +53,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.librarian.utils import copy_and_close
-from lp.archiveuploader.dscfile import findFile
-from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -82,23 +73,17 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.log.logger import PrefixFilter
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.scripts.base import (
     LaunchpadCronScript,
+    LOCK_PATH,
     SilentLaunchpadScriptFailure,
     )
 from lp.services.session.model import SessionData
-from lp.soyuz.model.files import SourcePackageReleaseFile
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-def subprocess_setup():
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
 class BulkPruner(TunableLoop):
@@ -839,124 +824,6 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
-class PopulateSPRChangelogs(TunableLoop):
-    maximum_chunk_size = 1
-
-    def __init__(self, log, abort_time=None):
-        super(PopulateSPRChangelogs, self).__init__(log, abort_time)
-        value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
-        if not value:
-            self.start_at = 0
-        else:
-            self.start_at = value
-        self.finish_at = self.getCandidateSPRs(0).last()
-
-    def getCandidateSPRs(self, start_at):
-        return IMasterStore(SourcePackageRelease).using(
-            SourcePackageRelease,
-            # Find any SPRFs that have expired (LFA.content IS NULL).
-            LeftJoin(
-                SourcePackageReleaseFile,
-                SourcePackageReleaseFile.sourcepackagereleaseID ==
-                    SourcePackageRelease.id),
-            LeftJoin(
-                LibraryFileAlias,
-                And(LibraryFileAlias.id ==
-                    SourcePackageReleaseFile.libraryfileID,
-                    LibraryFileAlias.content == None)),
-            # And exclude any SPRs that have any expired SPRFs.
-            ).find(
-                SourcePackageRelease.id,
-                SourcePackageRelease.id >= start_at,
-                SourcePackageRelease.changelog == None,
-            ).group_by(SourcePackageRelease.id).having(
-                Count(LibraryFileAlias) == 0
-            ).order_by(SourcePackageRelease.id)
-
-    def isDone(self):
-        return self.start_at > self.finish_at
-
-    def __call__(self, chunk_size):
-        for sprid in self.getCandidateSPRs(self.start_at)[:chunk_size]:
-            spr = SourcePackageRelease.get(sprid)
-            with TempDir() as tmp_dir:
-                dsc_file = None
-
-                # Grab the files from the librarian into a temporary
-                # directory.
-                try:
-                    for sprf in spr.files:
-                        dest = os.path.join(
-                            tmp_dir.path, sprf.libraryfile.filename)
-                        dest_file = open(dest, 'w')
-                        sprf.libraryfile.open()
-                        copy_and_close(sprf.libraryfile, dest_file)
-                        if dest.endswith('.dsc'):
-                            dsc_file = dest
-                except LookupError:
-                    self.log.warning(
-                        'SPR %d (%s %s) has missing library files.' % (
-                            spr.id, spr.name, spr.version))
-                    continue
-
-                if dsc_file is None:
-                    self.log.warning(
-                        'SPR %d (%s %s) has no DSC.' % (
-                            spr.id, spr.name, spr.version))
-                    continue
-
-                # Extract the source package. Throw away stdout/stderr
-                # -- we only really care about the return code.
-                fnull = open('/dev/null', 'w')
-                ret = subprocess.call(
-                    ['dpkg-source', '-x', dsc_file, os.path.join(
-                        tmp_dir.path, 'extracted')],
-                        stdout=fnull, stderr=fnull,
-                        preexec_fn=subprocess_setup)
-                fnull.close()
-                if ret != 0:
-                    self.log.warning(
-                        'SPR %d (%s %s) failed to unpack: returned %d' % (
-                            spr.id, spr.name, spr.version, ret))
-                    continue
-
-                # We have an extracted source package. Let's get the
-                # changelog. findFile ensures that it's not too huge, and
-                # not a symlink.
-                try:
-                    changelog_path = findFile(
-                        tmp_dir.path, 'debian/changelog')
-                except UploadError, e:
-                    changelog_path = None
-                    self.log.warning(
-                        'SPR %d (%s %s) changelog could not be '
-                        'imported: %s' % (
-                            spr.id, spr.name, spr.version, e))
-                if changelog_path:
-                    # The LFA should be restricted only if there aren't any
-                    # public publications.
-                    restricted = not any(
-                        not a.private for a in spr.published_archives)
-                    spr.changelog = getUtility(ILibraryFileAliasSet).create(
-                        'changelog',
-                        os.stat(changelog_path).st_size,
-                        open(changelog_path, "r"),
-                        "text/x-debian-source-changelog",
-                        restricted=restricted)
-                    self.log.info('SPR %d (%s %s) changelog imported.' % (
-                        spr.id, spr.name, spr.version))
-                else:
-                    self.log.warning('SPR %d (%s %s) had no changelog.' % (
-                        spr.id, spr.name, spr.version))
-
-        self.start_at = spr.id + 1
-        result = getUtility(IMemcacheClient).set(
-            'populate-spr-changelogs', self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -999,93 +866,22 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             % multiprocessing.cpu_count())
 
     def main(self):
-        start_time = time.time()
+        self.start_time = time.time()
 
         # Stores the number of failed tasks.
         self.failure_count = 0
 
+        # Copy the list so we can safely consume it.
+        tunable_loops = list(self.tunable_loops)
         if self.options.experimental:
-            tunable_loops = list(
-                self.tunable_loops + self.experimental_tunable_loops)
-        else:
-            tunable_loops = list(self.tunable_loops)
-
-        a_very_long_time = float(31536000) # 1 year
-        abort_script = self.options.abort_script or a_very_long_time
-
-        def worker():
-            self.logger.debug(
-                "Worker thread %s running.", threading.currentThread().name)
-            self.login()
-            while True:
-                if start_time + abort_script - time.time() <= 0:
-                    # Exit silently. We warn later.
-                    self.logger.debug(
-                        "Worker thread %s detected script timeout.",
-                        threading.currentThread().name)
-                    break
-
-                num_remaining_tasks = len(tunable_loops)
-                if not num_remaining_tasks:
-                    break
-                tunable_loop_class = tunable_loops.pop(0)
-
-                loop_name = tunable_loop_class.__name__
-
-                # Configure logging for this loop to use a prefix. Log
-                # output from multiple threads will be interleaved, and
-                # this lets us tell log output from different tasks
-                # apart.
-                loop_logger = logging.getLogger('garbo.' + loop_name)
-                loop_logger.addFilter(PrefixFilter(loop_name))
-
-                loop_logger.info("Running %s", loop_name)
-
-                # How long until the script should abort.
-                remaining_script_time = (
-                    abort_script + start_time - time.time())
-
-                # How long until the task should abort.
-                if self.options.abort_task is not None:
-                    # Task timeout specified on command line.
-                    abort_task = self.options.abort_task
-
-                elif num_remaining_tasks <= self.options.threads:
-                    # We have a thread for every remaining task. Let the
-                    # task run until the script timeout.
-                    self.logger.debug2("Task may run until script timeout.")
-                    abort_task = remaining_script_time
-
-                else:
-                    # Evenly distribute the remaining time to the
-                    # remaining tasks.
-                    abort_task = (
-                        self.options.threads
-                        * remaining_script_time / num_remaining_tasks)
-
-                abort_time = min(abort_task, remaining_script_time)
-                self.logger.debug2(
-                    "Task will be terminated in %0.3f seconds", abort_time)
-
-                tunable_loop = tunable_loop_class(
-                    abort_time=abort_time, log=loop_logger)
-
-                if self._maximum_chunk_size is not None:
-                    tunable_loop.maximum_chunk_size = self._maximum_chunk_size
-
-                try:
-                    tunable_loop.run()
-                    loop_logger.debug("%s completed sucessfully.", loop_name)
-                except Exception:
-                    loop_logger.exception("Unhandled exception")
-                    self.failure_count += 1
-                finally:
-                    transaction.abort()
+            tunable_loops.extend(self.experimental_tunable_loops)
 
         threads = set()
         for count in range(0, self.options.threads):
             thread = threading.Thread(
-                target=worker, name='Worker-%d' % (count+1,))
+                target=self.run_tasks_in_thread,
+                name='Worker-%d' % (count+1,),
+                args=(tunable_loops,))
             thread.start()
             threads.add(thread)
 
@@ -1095,19 +891,151 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         # down when the script timeout is hit, and the extra time is to
         # give them a chance to clean up.
         for thread in threads:
-            time_to_go = start_time + abort_script - time.time() + 60
+            time_to_go = self.get_remaining_script_time() + 60
             if time_to_go > 0:
                 thread.join(time_to_go)
             else:
                 break
 
         # If the script ran out of time, warn.
-        if start_time + abort_script - time.time() < 0:
+        if self.get_remaining_script_time() < 0:
             self.logger.warn(
-                "Script aborted after %d seconds.", abort_script)
+                "Script aborted after %d seconds.", self.script_timeout)
+
+        if tunable_loops:
+            self.logger.warn("%d tasks did not run.", len(tunable_loops))
 
         if self.failure_count:
+            self.logger.error("%d tasks failed.", self.failure_count)
             raise SilentLaunchpadScriptFailure(self.failure_count)
+
+    def get_remaining_script_time(self):
+        return self.start_time + self.script_timeout - time.time()
+
+    @property
+    def script_timeout(self):
+        a_very_long_time = 31536000 # 1 year
+        return self.options.abort_script or a_very_long_time
+
+    def get_loop_logger(self, loop_name):
+        """Retrieve a logger for use by a particular task.
+
+        The logger will be configured to add the loop_name as a
+        prefix to all log messages, making interleaved output from
+        multiple threads somewhat readable.
+        """
+        loop_logger = logging.getLogger('garbo.' + loop_name)
+        for filter in loop_logger.filters:
+            if isinstance(filter, PrefixFilter):
+                return loop_logger # Already have a PrefixFilter attached.
+        loop_logger.addFilter(PrefixFilter(loop_name))
+        return loop_logger
+
+    def get_loop_abort_time(self, num_remaining_tasks):
+        # How long until the task should abort.
+        if self.options.abort_task is not None:
+            # Task timeout specified on command line.
+            abort_task = self.options.abort_task
+
+        elif num_remaining_tasks <= self.options.threads:
+            # We have a thread for every remaining task. Let
+            # the task run until the script timeout.
+            self.logger.debug2(
+                "Task may run until script timeout.")
+            abort_task = self.get_remaining_script_time()
+
+        else:
+            # Evenly distribute the remaining time to the
+            # remaining tasks.
+            abort_task = (
+                self.options.threads
+                * self.get_remaining_script_time() / num_remaining_tasks)
+
+        return min(abort_task, self.get_remaining_script_time())
+
+    def run_tasks_in_thread(self, tunable_loops):
+        """Worker thread target to run tasks.
+
+        Tasks are removed from tunable_loops and run one at a time,
+        until all tasks that can be run have been run or the script
+        has timed out.
+        """
+        self.logger.debug(
+            "Worker thread %s running.", threading.currentThread().name)
+        self.login()
+
+        while True:
+            # How long until the script should abort.
+            if self.get_remaining_script_time() <= 0:
+                # Exit silently. We warn later.
+                self.logger.debug(
+                    "Worker thread %s detected script timeout.",
+                    threading.currentThread().name)
+                break
+
+            num_remaining_tasks = len(tunable_loops)
+            if not num_remaining_tasks:
+                break
+            tunable_loop_class = tunable_loops.pop(0)
+
+            loop_name = tunable_loop_class.__name__
+
+            loop_logger = self.get_loop_logger(loop_name)
+
+            # Aquire a lock for the task. Multiple garbo processes
+            # might be running simultaneously.
+            loop_lock_path = os.path.join(
+                LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
+            # No logger - too noisy, so report issues ourself.
+            loop_lock = GlobalLock(loop_lock_path, logger=None)
+            try:
+                loop_lock.acquire()
+                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+            except LockAlreadyAcquired:
+                # If the lock cannot be acquired, but we have plenty
+                # of time remaining, just put the task back to the
+                # end of the queue.
+                if self.get_remaining_script_time() > 60:
+                    loop_logger.debug3(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
+                    time.sleep(0.3) # Avoid spinning.
+                    tunable_loops.append(tunable_loop_class)
+                # Otherwise, emit a warning and skip the task.
+                else:
+                    loop_logger.warn(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
+                continue
+
+            try:
+                loop_logger.info("Running %s", loop_name)
+
+                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                loop_logger.debug2(
+                    "Task will be terminated in %0.3f seconds",
+                    abort_time)
+
+                tunable_loop = tunable_loop_class(
+                    abort_time=abort_time, log=loop_logger)
+
+                # Allow the test suite to override the chunk size.
+                if self._maximum_chunk_size is not None:
+                    tunable_loop.maximum_chunk_size = (
+                        self._maximum_chunk_size)
+
+                try:
+                    tunable_loop.run()
+                    loop_logger.debug(
+                        "%s completed sucessfully.", loop_name)
+                except Exception:
+                    loop_logger.exception("Unhandled exception")
+                    self.failure_count += 1
+
+            finally:
+                loop_lock.release()
+                loop_logger.debug("Released lock %s.", loop_lock_path)
+                transaction.abort()
 
 
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1122,7 +1050,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        PopulateSPRChangelogs,
         ]
     experimental_tunable_loops = []
 
