@@ -961,6 +961,7 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
+
 class EditDistributionSourcePackage(AuthorizationBase):
     """DistributionSourcePackage is not editable.
 
