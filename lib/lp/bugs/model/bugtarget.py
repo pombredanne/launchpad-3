@@ -48,6 +48,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    BugTaskStatusSearch,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -213,6 +214,9 @@ class HasBugsBase:
         if statuses is None:
             statuses = BugTaskStatus.items
         statuses = list(statuses)
+        if BugTaskStatus.INCOMPLETE in statuses:
+            statuses.extend([BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE])
 
         count_column = """
             COUNT (CASE WHEN BugTask.status = %s
@@ -232,7 +236,16 @@ class HasBugsBase:
             "SELECT %s FROM BugTask, Bug WHERE %s" % (
                 ', '.join(select_columns), ' AND '.join(conditions)))
         counts = cur.fetchone()
-        return dict(zip(statuses, counts))
+        result = dict(zip(statuses, counts))
+        def fold_status(from_st, to_st):
+            if from_st in result:
+                result[to_st] = result.get(to_st, 0) + result[from_st]
+                del result[from_st]
+        fold_status(BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+            BugTaskStatus.INCOMPLETE)
+        fold_status(BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+            BugTaskStatus.INCOMPLETE)
+        return result
 
     def getBugTaskWeightFunction(self):
         """Default weight function is the simple one."""

@@ -113,6 +113,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     ConjoinedBugTaskEditError,
+    DB_UNRESOLVED_BUGTASK_STATUSES,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
@@ -944,12 +945,12 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             self.date_incomplete = None
 
-        if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
+        if ((old_status in DB_UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.date_closed = when
 
         if ((old_status in RESOLVED_BUGTASK_STATUSES) and
-            (new_status in UNRESOLVED_BUGTASK_STATUSES)):
+            (new_status in DB_UNRESOLVED_BUGTASK_STATUSES)):
             self.date_left_closed = when
 
         # Ensure that we don't have dates recorded for state
@@ -957,7 +958,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # workflow state. We want to ensure that, for example, a
         # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
-        if new_status in UNRESOLVED_BUGTASK_STATUSES:
+        if new_status in DB_UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
 
         if new_status < BugTaskStatus.CONFIRMED:
@@ -2771,7 +2772,7 @@ class BugTaskSet:
                 """ + target_clause + """
                 """ + bug_clause + """
                 """ + bug_privacy_filter + """
-                    AND (BugTask.status = %s OR BugTask.status = %s)
+                    AND BugTask.status in (%s, %s, %s)
                     AND BugTask.assignee IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
@@ -2779,6 +2780,7 @@ class BugTaskSet:
                         AT TIME ZONE 'UTC' - interval '%s days'
                     AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE,
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
                 BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE, min_days_old)
         expirable_bugtasks = BugTask.select(
             query + unconfirmed_bug_condition,
@@ -2943,7 +2945,7 @@ class BugTaskSet:
             ]
 
         product_ids = [product.id for product in products]
-        conditions = And(BugTask._status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        conditions = And(BugTask._status.is_in(DB_UNRESOLVED_BUGTASK_STATUSES),
                          Bug.duplicateof == None,
                          BugTask.productID.is_in(product_ids))
 
@@ -3078,7 +3080,7 @@ class BugTaskSet:
 
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
-                any(*UNRESOLVED_BUGTASK_STATUSES)))
+                any(*DB_UNRESOLVED_BUGTASK_STATUSES)))
 
         sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
         sums = [

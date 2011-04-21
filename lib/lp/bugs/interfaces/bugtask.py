@@ -18,6 +18,7 @@ __all__ = [
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
+    'DB_UNRESOLVED_BUGTASK_STATUSES',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -372,6 +373,12 @@ UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.TRIAGED,
     BugTaskStatus.INPROGRESS,
     BugTaskStatus.FIXCOMMITTED)
+
+# Actual values stored in the DB:
+DB_UNRESOLVED_BUGTASK_STATUSES = UNRESOLVED_BUGTASK_STATUSES + (
+    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE,
+    )
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
