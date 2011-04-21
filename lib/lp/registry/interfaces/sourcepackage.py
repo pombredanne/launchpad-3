@@ -29,7 +29,6 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
-    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -206,6 +205,21 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
+        """
+
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setPackagingReturnSharingDetailPermissions(productseries, owner):
+        """Like setPackaging(), but returns a dictionary which says
+        if the current user can change the series' target branch,
+        if he can change the translation usage settings of the
+        product and if he can change the translation synchronisation
+        setting of the series.
+
+        This method is intended for AJAX usage on the +sharing-details
+        page.
         """
 
     @export_write_operation()

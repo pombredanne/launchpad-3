@@ -992,7 +992,6 @@ will be returned.
      (u'Other Team', u'Owner'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
-     (u'ShipIt Administrators', u'Mark Shuttleworth'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),

@@ -13,6 +13,9 @@ __all__ = [
     'PackageDiffAlreadyRequested',
     ]
 
+import httplib
+
+from lazr.restful.declarations import webservice_error
 from zope.interface import (
     Attribute,
     Interface,
@@ -25,11 +28,15 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
 from lp.soyuz.enums import PackageDiffStatus
 
 
-class PackageDiffAlreadyRequested(Exception):
+class PackageDiffRequestException(Exception):
+    """Base class for package diff request errors."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class PackageDiffAlreadyRequested(PackageDiffRequestException):
     """Raised on attempts to request an already recorded diff request. """
 
 
