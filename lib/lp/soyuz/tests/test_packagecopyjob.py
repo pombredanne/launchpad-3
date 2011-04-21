@@ -15,6 +15,7 @@ from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.distributionjob import (
     IPackageCopyJob,
     IPackageCopyJobSource,
@@ -88,6 +89,19 @@ class PackageCopyJobTests(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertRaises(NoSuchSourcePackageName, job.run)
+
+    def test_target_ppa_non_release_pocket(self):
+        # When copyingto a PPA archive the target must be the release pocket.
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        source = getUtility(IPackageCopyJobSource)
+        job = source.create(
+            source_packages=[], source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            include_binaries=False)
+        self.assertRaises(CannotCopy, job.run)
 
     def test_run(self):
         # A proper test run synchronizes packages.

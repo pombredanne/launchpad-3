@@ -21,7 +21,10 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IPackageCopyJob,
@@ -110,10 +113,10 @@ class PackageCopyJob(DistributionJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-        # if target_archive.is_ppa:
-        #     if self.target_pocket != PackagePublishingPocket.RELEASE:
-        #         raise CannotCopy(
-        #             "Destination pocket must be 'release' for a PPA.")
+        if self.target_archive.is_ppa:
+            if self.target_pocket != PackagePublishingPocket.RELEASE:
+                raise CannotCopy(
+                    "Destination pocket must be 'release' for a PPA.")
 
         get_published_sources = partial(
             self.source_archive.getPublishedSources, exact_match=True)
