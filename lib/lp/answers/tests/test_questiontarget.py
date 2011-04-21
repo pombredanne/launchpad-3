@@ -7,17 +7,10 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -81,14 +74,3 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-
-    test = LayeredDocFileSuite('questiontarget-sourcepackage.txt',
-                setUp=setUp, tearDown=tearDown,
-                layer=DatabaseFunctionalLayer)
-    suite.addTest(test)
-    return suite
-
