@@ -705,5 +705,6 @@ class DistroSeriesDifference(StormBase):
         if self.source_version != self.base_version:
             self.package_diff = base_spr.requestDiffTo(
                 requestor, to_sourcepackagerelease=derived_spr)
-        self.parent_package_diff = base_spr.requestDiffTo(
-            requestor, to_sourcepackagerelease=parent_spr)
+        if self.parent_source_version != self.base_version:
+            self.parent_package_diff = base_spr.requestDiffTo(
+                requestor, to_sourcepackagerelease=parent_spr)
