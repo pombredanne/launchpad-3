@@ -103,23 +103,27 @@ class PackageCopyJob(DistributionJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        # if target_archive.is_ppa:
+        #     if self.target_pocket != PackagePublishingPocket.RELEASE:
+        #         raise CannotCopy(
+        #             "Destination pocket must be 'release' for a PPA.")
+
         get_published_sources = partial(
             self.source_archive.getPublishedSources, exact_match=True)
-        copy = partial(
-            do_copy, archive=self.target_archive,
+
+        source_packages = frozenset(
+            get_published_sources(
+                name=source_name, version=source_version).first()
+            for source_name, source_version in self.source_packages)
+
+        # Check that all packages were found.
+        if None in source_packages:
+            # Look up each name until one of them is not found, at which point
+            # ISourcePackageNameSet will raise a useful error.
+            for source_name, source_version in self.source_packages:
+                getUtility(ISourcePackageNameSet)[source_name]
+
+        do_copy(
+            sources=source_packages, archive=self.target_archive,
             series=self.distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries)
-
-        for source_name, source_version in self.source_packages:
-            # if target_archive.is_ppa:
-            #     if self.target_pocket != PackagePublishingPocket.RELEASE:
-            #         raise CannotCopy(
-            #             "Destination pocket must be 'release' for a PPA.")
-
-            # Check to see if the source package exists, and raise a useful
-            # error if it doesn't.
-            getUtility(ISourcePackageNameSet)[source_name]
-
-            source_package = get_published_sources(
-                name=source_name, version=source_version).first()
-            copy([source_package])
