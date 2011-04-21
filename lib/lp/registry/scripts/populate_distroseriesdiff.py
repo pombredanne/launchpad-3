@@ -273,7 +273,7 @@ class BaseVersionFixer(TunableLoop):
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         for dsd in self._getBatch(self._cutChunk(int(chunk_size))):
-            dsd._updateBaseVersion()
+            dsd.update()
         self.commit()
 
 
