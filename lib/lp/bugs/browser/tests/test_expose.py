@@ -152,7 +152,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             self.user.leave(team)
         expose_user_administered_teams_to_js(self.request, self.user, context,
             absoluteURL=fake_absoluteURL)
-        team_info = self._sort(self.request.objects['administratedTeams'])
+        team_info = self.request.objects['administratedTeams']
         self.assertEquals(len(team_info), 0)
 
     def test_teams_for_distro_with_bug_super(self):
