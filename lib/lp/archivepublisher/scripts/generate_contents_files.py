@@ -17,7 +17,7 @@ from canonical.launchpad.ftests.script import run_command
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import (
-    LaunchpadScript,
+    LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.services.utils import file_exists
@@ -89,7 +89,7 @@ def move_file(old_path, new_path):
     os.rename(old_path, new_path)
 
 
-class GenerateContentsFiles(LaunchpadScript):
+class GenerateContentsFiles(LaunchpadCronScript):
 
     distribution = None
 
