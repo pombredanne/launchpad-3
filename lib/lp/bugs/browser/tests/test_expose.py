@@ -144,6 +144,17 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(team_info[0]['link'],
             Equals('http://example.com/BugSupervisorSubTeam'))
 
+    def test_teams_owned_but_not_joined_are_not_included(self):
+        context = self.factory.makeProduct(owner=self.user)
+        team = self.factory.makeTeam(
+            name='bug-supervisor-team', owner=self.user)
+        with person_logged_in(self.user):
+            self.user.leave(team)
+        expose_user_administered_teams_to_js(self.request, self.user, context,
+            absoluteURL=fake_absoluteURL)
+        team_info = self._sort(self.request.objects['administratedTeams'])
+        self.assertEquals(len(team_info), 0)
+
     def test_teams_for_distro_with_bug_super(self):
         self._setup_teams(self.user)
         context = self.factory.makeDistribution(
