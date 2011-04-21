@@ -428,25 +428,28 @@ def expose_user_administered_teams_to_js(request, user, context,
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
     if user is not None:
-        membership = list(user.teams_participated_in)
-        for team in user.getAdministratedTeams():
-            # If the context is a distro AND a bug supervisor is set AND
-            # the admininistered team is not a member of the bug supervisor
-            # team THEN skip it.
-            if (is_distro and context.bug_supervisor is not None and
-                not team.inTeam(context.bug_supervisor)):
-                continue
-            # If the user is not a member of the team itself, then skip it,
-            # because structural subscriptions and their filters can only be
-            # edited by the subscriber.
-            # This can happen if the user is an owner but not a member.
-            if not team in membership:
-                continue
-            info.append({
-                'link': absoluteURL(team, api_request),
-                'title': team.title,
-                'url': canonical_url(team),
-            })
+        administrated_teams = list(user.getAdministratedTeams())
+        if administrated_teams:
+            # Get this only if we need to.
+            membership = list(user.teams_participated_in)
+            for team in administrated_teams:
+                # If the user is not a member of the team itself, then skip it,
+                # because structural subscriptions and their filters can only be
+                # edited by the subscriber.
+                # This can happen if the user is an owner but not a member.
+                if not team in membership:
+                    continue
+                # If the context is a distro AND a bug supervisor is set AND
+                # the admininistered team is not a member of the bug supervisor
+                # team THEN skip it.
+                if (is_distro and context.bug_supervisor is not None and
+                    not team.inTeam(context.bug_supervisor)):
+                    continue
+                info.append({
+                    'link': absoluteURL(team, api_request),
+                    'title': team.title,
+                    'url': canonical_url(team),
+                })
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
