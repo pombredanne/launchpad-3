@@ -158,6 +158,10 @@ class IPackageCopyJob(IRunnableJob):
         required=True, readonly=True,
         )
 
+    target_distroseries = Reference(
+        schema=IDistroSeries, title=_('Target DistroSeries.'),
+        required=True, readonly=True)
+
     target_pocket = Int(
         title=_('Target package publishing pocket'), required=True,
         readonly=True,

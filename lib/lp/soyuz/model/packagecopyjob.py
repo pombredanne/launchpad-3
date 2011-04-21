@@ -96,8 +96,9 @@ class PackageCopyJob(DistributionJobDerived):
     def target_archive(self):
         return getUtility(IArchiveSet).get(self.target_archive_id)
 
-    # TODO Add target_distroseries property which just returns
-    # self.distroseries.
+    @property
+    def target_distroseries(self):
+        return self.distroseries
 
     @property
     def target_pocket(self):
@@ -131,5 +132,5 @@ class PackageCopyJob(DistributionJobDerived):
 
         do_copy(
             sources=source_packages, archive=self.target_archive,
-            series=self.distroseries, pocket=self.target_pocket,
+            series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries)
