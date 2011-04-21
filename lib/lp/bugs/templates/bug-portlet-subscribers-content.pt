@@ -6,7 +6,6 @@
   tal:define="
     bug context/bug|context;
     direct_subscriptions view/sorted_direct_subscriptions;
-    also_notified_subscribers bug/getAlsoNotifiedSubscribers
   ">
   <div class="section" id="subscribers-direct">
     <h2>Subscribers</h2>
@@ -57,15 +56,18 @@
       <img src="/@@/spinner" />
     </div>
   </div>
-  <div
-    tal:condition="also_notified_subscribers"
-    id="subscribers-indirect"
-    class="Section"
-  >
-    <h2>Also notified</h2>
+  <tal:also_notified condition="not: request/features/malone.advanced-subscriptions.enabled">
     <div
-      tal:repeat="subscriber also_notified_subscribers"
-      tal:content="structure subscriber/fmt:link"
-    />
-  </div>
+      tal:define="also_notified_subscribers bug/getAlsoNotifiedSubscribers"
+      tal:condition="also_notified_subscribers"
+      id="subscribers-indirect"
+      class="Section"
+    >
+      <h2>Also notified</h2>
+      <div
+        tal:repeat="subscriber also_notified_subscribers"
+        tal:content="structure subscriber/fmt:link"
+      />
+    </div>
+  </tal:also_notified>
 </div>
