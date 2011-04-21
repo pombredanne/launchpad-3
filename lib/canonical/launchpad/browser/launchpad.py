@@ -718,12 +718,6 @@ class LaunchpadRootNavigation(Navigation):
         if WebServiceLayer.providedBy(self.request):
             return None
 
-        # If the hostname for our URL isn't under the main site
-        # (e.g. shipit.ubuntu.com), don't redirect.
-        uri = URI(self.request.getURL())
-        if not uri.host.endswith(config.vhost.mainsite.hostname):
-            return None
-
         # If the request is for a bug then redirect straight to that bug.
         bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
         if bug_match:
