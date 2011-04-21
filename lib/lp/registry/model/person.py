@@ -91,6 +91,10 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -2804,6 +2808,14 @@ class Person(
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+
+    def canAccess(self, obj, attribute):
+        """See `IPerson.`"""
+        return canAccess(obj, attribute)
+
+    def canWrite(self, obj, attribute):
+        """See `IPerson.`"""
+        return canWrite(obj, attribute)
 
 
 class PersonSet:
