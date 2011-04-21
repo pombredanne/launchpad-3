@@ -263,7 +263,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         person = self.factory.makePerson()
         with person_logged_in(person):
-            subscription = bug.subscribe(
+            bug.subscribe(
                 person, person, level=BugNotificationLevel.NOTHING)
 
         with FeatureFixture({self.feature_flag: ON}):
@@ -334,7 +334,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     'field.bug_notification_level': level.title,
                     'field.actions.continue': 'Continue',
                     }
-                subscribe_view = create_initialized_view(
+                create_initialized_view(
                     self.bug.default_bugtask, form=form_data,
                     name='+subscribe')
                 self.assertFalse(self.bug.isMuted(self.person))
@@ -355,7 +355,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     'field.bug_notification_level': level.title,
                     'field.actions.continue': 'Continue',
                     }
-                subscribe_view = create_initialized_view(
+                create_initialized_view(
                     self.bug.default_bugtask, form=form_data,
                     name='+subscribe')
                 self.assertFalse(self.bug.isMuted(self.person))
@@ -443,7 +443,7 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
     def test_form_initializes(self):
         # It's a start.
         with person_logged_in(self.subscriber):
-            sub = self.product.addBugSubscription(
+            self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
             harness = LaunchpadFormHarness(
                 self.bug.default_bugtask, BugSubscriptionListView)
@@ -493,7 +493,7 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
         # its form is submitted.
         with person_logged_in(self.person):
             self.assertFalse(self.bug.isMuted(self.person))
-            mute_view = create_initialized_view(
+            create_initialized_view(
                 self.bug.default_bugtask, name="+mute",
                 form={'field.actions.mute': 'Mute bug mail'})
             self.assertTrue(self.bug.isMuted(self.person))
