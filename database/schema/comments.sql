@@ -237,6 +237,12 @@ COMMENT ON COLUMN BugSubscriptionFilterMute.person IS 'The person that muted the
 COMMENT ON COLUMN BugSubscriptionFilterMute.filter IS 'The subscription filter of this record';
 COMMENT ON COLUMN BugSubscriptionFilterMute.date_created IS 'The date at which this mute was created.';
 
+-- BugSummary
+
+COMMENT ON TABLE BugSummary IS 'A fact table for bug metadata aggregate queries. Each row represents the number of bugs that are in the system addressed by all the dimensions (e.g. product or productseries etc). ';
+COMMENT ON COLUMN BugSummary.milestone IS 'A milestone present on the bug. All bugs are also aggregated with a NULL entry for milestone to permit querying totals (because the milestone figures cannot be summed as many milestones can be on a single bug)';
+COMMENT ON COLUMN BugSummary.sourcepackagename IS 'The sourcepackagename for the aggregate. Counting bugs in a distribution/distroseries requires selecting all rows by sourcepackagename. If this is too slow, add the bug to the NULL row and select with sourcepackagename is NULL to exclude them from the calculations';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
