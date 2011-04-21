@@ -800,9 +800,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.product == self, user)
+        return get_bug_tags_open_count(
+            BugTask.product == self, user, wanted_tags=wanted_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
@@ -1378,14 +1379,19 @@ class ProductSet:
 
     @property
     def all_active(self):
+        return self.get_all_active()
+
+    def get_all_active(self, eager_load=True):
         result = IStore(Product).find(Product, Product.active
             ).order_by(Desc(Product.datecreated))
-        def eager_load(rows):
+        if not eager_load:
+            return result
+        def do_eager_load(rows):
             owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
             # +detailed-listing renders the person with team branding.
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 owner_ids, need_validity=True, need_icon=True))
-        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+        return DecoratedResultSet(result, pre_iter_hook=do_eager_load)
 
     def get(self, productid):
         """See `IProductSet`."""

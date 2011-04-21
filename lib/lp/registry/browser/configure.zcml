@@ -112,7 +112,11 @@
             name="+portlet-package-summary"
             facet="overview"
             template="../templates/distroseries-portlet-packaging.pt"/>
-    </browser:pages>
+        <browser:page
+            name="+portlet-derivation"
+            facet="overview"
+            template="../templates/distroseries-portlet-derivation.pt"/>
+     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesPackagesView"
@@ -154,9 +158,21 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+uniquepackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesUniquePackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+     <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferencesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:url
@@ -1936,6 +1952,20 @@
         template="../templates/distribution-series-and-milestones.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionDerivativesView"
+        permission="zope.Public"
+        name="+derivatives"
+        facet="overview"
+        template="../templates/distribution-series.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionView"
+        permission="zope.Public"
+        name="+derivatives-slot"
+        facet="overview"
+        template="../templates/distribution-derivatives.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+details"
@@ -1964,7 +1994,7 @@
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
-        permission="launchpad.Append"
+        permission="launchpad.Moderate"
         template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page

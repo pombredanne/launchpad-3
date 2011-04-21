@@ -20,6 +20,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -152,7 +153,8 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         # Create a job for the derived_series parent, which should create
         # two jobs. One for derived_series, and the other for its child.
         self.getJobSource().createForPackagePublication(
-            derived_series.parent_series, package)
+            derived_series.parent_series, package,
+            PackagePublishingPocket.RELEASE)
         jobs = (list(
             find_waiting_jobs(derived_series.parent_series, package)) +
             list(find_waiting_jobs(derived_series, package)))
@@ -169,7 +171,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         derived_series = self.makeDerivedDistroSeries()
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            derived_series, package)
+            derived_series, package, PackagePublishingPocket.RELEASE)
         jobs = list(find_waiting_jobs(derived_series, package))
         self.assertEqual(1, len(jobs))
         self.assertEqual(package.id, jobs[0].metadata['sourcepackagename'])
@@ -178,14 +180,24 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         distroseries = self.makeDerivedDistroSeries()
         package = self.factory.makeSourcePackageName()
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
-        self.getJobSource().createForPackagePublication(distroseries, package)
+        self.getJobSource().createForPackagePublication(
+            distroseries, package, PackagePublishingPocket.RELEASE)
+        self.assertContentEqual([], find_waiting_jobs(distroseries, package))
+
+    def test_createForPackagePublication_ignores_backports_and_proposed(self):
+        distroseries = self.makeDerivedDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        self.getJobSource().createForPackagePublication(
+            distroseries, package, PackagePublishingPocket.BACKPORTS)
+        self.getJobSource().createForPackagePublication(
+            distroseries, package, PackagePublishingPocket.PROPOSED)
         self.assertContentEqual([], find_waiting_jobs(distroseries, package))
 
     def test_cronscript(self):
         derived_series = self.makeDerivedDistroSeries()
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            derived_series, package)
+            derived_series, package, PackagePublishingPocket.RELEASE)
         transaction.commit() # The cronscript is a different process.
         return_code, stdout, stderr = run_script(
             'cronscripts/distroseriesdifference_job.py', ['-v'])
@@ -207,7 +219,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         derived_series = self.makeDerivedDistroSeries()
         package = self.factory.makeSourcePackageName()
         job = self.getJobSource().createForPackagePublication(
-            derived_series, package)
+            derived_series, package, PackagePublishingPocket.RELEASE)
         job[0].start()
         job[0].run()
         job[0].job.complete() # So we can create another job.
@@ -220,7 +232,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertEqual(1, ds_diff.count())
         # If we run the job again, it will not create another DSD.
         job = self.getJobSource().createForPackagePublication(
-            derived_series, package)
+            derived_series, package, PackagePublishingPocket.RELEASE)
         job[0].start()
         job[0].run()
         ds_diff = store.find(
@@ -338,7 +350,8 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         return self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=archive,
             distroseries=distroseries,
-            status=PackagePublishingStatus.PUBLISHED)
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
 
     def findDSD(self, derived_series, source_package_name):
         return self.store.find(
@@ -548,7 +561,9 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             derived_series.parent_series)
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
-        self.assertIs(None, ds_diff[0].package_diff)
+        # Since the diff showing the changes from 1.0-1 to 1.0-1derived1 is
+        # still valid, it isn't reset, but the parent diff is.
+        self.assertIsNot(None, ds_diff[0].package_diff)
         self.assertIs(None, ds_diff[0].parent_package_diff)
 
 

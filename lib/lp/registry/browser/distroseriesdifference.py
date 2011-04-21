@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import (
@@ -28,7 +27,6 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad.webapp import (
-    canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
@@ -36,7 +34,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
 from lp.app.browser.launchpadform import LaunchpadFormView
-from lp.registry.enum import DistroSeriesDifferenceStatus
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
@@ -50,10 +51,6 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
-    )
-from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease,
     )
 
 
@@ -72,33 +69,27 @@ class DistroSeriesDifferenceNavigation(Navigation):
                 self.context, id)
 
     @property
-    def parent_source_package_url(self):
-        return self._package_url(
-            self.context.derived_series.parent_series,
-            self.context.parent_source_version)
+    def parent_packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the parent.
+        """
+        packagesets = self.context.getParentPackageSets()
+        return self._formatPackageSets(packagesets)
 
     @property
-    def source_package_url(self):
-        return self._package_url(
-            self.context.derived_series,
-            self.context.source_version)
+    def packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the derived series.
+        """
+        packagesets = self.context.getPackageSets()
+        return self._formatPackageSets(packagesets)
 
-    def _package_url(self, distro_series, version):
-        pubs = distro_series.main_archive.getPublishedSources(
-            name=self.context.source_package_name.name,
-            version=version,
-            status=PackagePublishingStatus.PUBLISHED,
-            distroseries=distro_series,
-            exact_match=True)
-
-        # There is only one or zero published package.
-        pub = IResultSet(pubs).one()
-        if pub is None:
-            return None
+    def _formatPackageSets(self, packagesets):
+        """Format a list of packagesets to display in the UI."""
+        if packagesets is not None:
+            return ', '.join([packageset.name for packageset in packagesets])
         else:
-            return canonical_url(
-                DistroSeriesSourcePackageRelease(
-                    distro_series, pub.sourcepackagerelease))
+            return None
 
 
 class IDistroSeriesDifferenceForm(Interface):
@@ -160,16 +151,36 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
                 comment in comments]
 
     @property
+    def can_request_diffs(self):
+        """Does the user have permission to request diff calculation?"""
+        return check_permission('launchpad.Edit', self.context)
+
+    @property
     def show_edit_options(self):
         """Only show the options if an editor requests via JS."""
-        return self.request.is_ajax and check_permission(
-            'launchpad.Edit', self.context)
+        return self.request.is_ajax and self.can_request_diffs
+
+    @property
+    def display_diffs(self):
+        """Only show diffs if there's a base version."""
+        return self.context.base_version is not None
 
     @property
     def display_child_diff(self):
         """Only show the child diff if we need to."""
         return self.context.source_version != self.context.base_version
-  
+
+    @property
+    def display_parent_diff(self):
+        """Only show the parent diff if we need to."""
+        return self.context.parent_source_version != self.context.base_version
+
+    @property
+    def can_have_packages_diffs(self):
+        """Return whether this dsd could have packages diffs."""
+        diff_versions = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        return self.context.difference_type == diff_versions
+
     @property
     def show_package_diffs_request_link(self):
         """Return whether package diffs can be requested.
@@ -180,9 +191,34 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         This method is used in the template to show the package diff
         request link.
         """
-        return (check_permission('launchpad.Edit', self.context) and
-                (not self.context.package_diff or
-                 not self.context.parent_package_diff))
+        derived_diff_computable = (
+            not self.context.package_diff and self.display_child_diff)
+        parent_diff_computable = (
+            not self.context.parent_package_diff and self.display_parent_diff)
+        return (self.display_diffs and
+                self.can_request_diffs and
+                (derived_diff_computable or
+                 parent_diff_computable))
+
+    @property
+    def display_package_diffs_info(self):
+        """Whether or not to show package differences info.
+
+        Show if:
+
+          There are no diffs yet available AND the base version is set AND
+          either the parent or the derived version differs from the base
+          version AND the user can request diff calculation,
+
+        Or:
+
+          There are diffs.
+
+        """
+        return (
+            self.context.package_diff is not None or
+            self.context.parent_package_diff is not None or
+            self.show_package_diffs_request_link)
 
 
 class DistroSeriesDifferenceDisplayComment:

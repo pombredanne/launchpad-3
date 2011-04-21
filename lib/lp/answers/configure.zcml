@@ -108,6 +108,10 @@
       set_attributes="assignee"
       />
     <require
+      permission="launchpad.Moderate"
+      attributes="setCommentVisibility"
+      />
+    <require
       permission="launchpad.Admin"
       attributes="setStatus"
       set_attributes="priority whiteboard"

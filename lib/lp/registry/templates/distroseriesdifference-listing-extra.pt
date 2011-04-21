@@ -37,8 +37,14 @@
         <li tal:repeat="summary view/binary_summaries">
           <tal:description replace="summary" /></li>
       </ul></dd>
+    <tal:package-diffs tal:condition="view/can_have_packages_diffs">
     <dt>Last common version:</dt>
-    <dd tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="context/base_version"
+        tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="not: context/base_version">
+      Unknown
+    </dd>
+    <tal:package-diffs-info condition="view/display_package_diffs_info">
     <dt
       tal:condition="view/show_package_diffs_request_link"
       class="package-diff-placeholder">
@@ -48,10 +54,10 @@
         </span>
     </dt>
     <dt
-      tal:condition="not: view/show_package_diffs_request_link">
+      tal:condition="not:view/show_package_diffs_request_link">
       Differences from last common version:
     </dt>
-    <dd>
+    <dd tal:condition="view/display_diffs">
       <ul class="package-diff-status">
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
@@ -80,8 +86,7 @@
             </span>
           </li>
         </tal:source-diff-option>
-
-        <tal:parent-diff-option condition="context/parent_source_pub">
+        <tal:parent-diff-option condition="view/display_parent_diff">
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
               class="sprite PENDING parent">
@@ -108,9 +113,11 @@
             </span>
           </li>
         </tal:parent-diff-option>
-
       </ul>
     </dd>
+    </tal:package-diffs-info>
+
+    </tal:package-diffs>
   </dl>
 
   <h2>Comments:</h2>

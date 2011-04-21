@@ -19,6 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
@@ -597,6 +598,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
+    @cachedproperty
+    def derivatives(self):
+        """See `IDistribution`."""
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        # XXX rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.id' is only required
+        # because the parent_series attribute has been (mis-)used
+        # to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        ret = Store.of(self).find(
+            DistroSeries,
+            ParentDistroSeries.id==DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID==self.id,
+            DistroSeries.distributionID!=self.id)
+        return ret.config(
+            distinct=True).order_by(Desc(DistroSeries.date_created))
+
     @property
     def architectures(self):
         """See `IDistribution`."""
@@ -630,9 +649,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.distribution == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distribution == self, user, wanted_tags=wanted_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""

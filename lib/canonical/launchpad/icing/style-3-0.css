@@ -828,6 +828,14 @@ button.overlay-close-button {
     border-width: 0 0 1px 0;
     display: block;
     }
+.extra-form-buttons {
+    text-align: center;
+    height: 3em;
+    white-space: nowrap;
+    }
+.extra-form-buttons button {
+    margin-right: 0.7em;
+    }
 .actions * {
     /*
       Action links are those that begin the process of doing something.
@@ -1053,6 +1061,11 @@ table.form .error {
     }
 .sml-informational::before {
     content: url('/@@/info');
+    }
+.important-notice-popup {
+    padding: 1em 1em 0 1em;
+    width: auto;
+    overflow: hidden;
     }
 .important-notice-container {
     text-align: center;

@@ -38,14 +38,16 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+class IDistroSeriesDifferencePublic(Interface):
     """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -115,9 +117,23 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         vocabulary=DistroSeriesDifferenceType,
         required=True, readonly=True)
 
+    source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Derived source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "source_version."))
+
+    parent_source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Parent source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "parent_source_version."))
+
     source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Derived source pub"), readonly=True,
+        title=_("Latest derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
 
@@ -129,7 +145,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Parent source pub"), readonly=True,
+        title=_("Latest parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
@@ -172,8 +188,23 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         :return: True if the record was updated, False otherwise.
         """
 
+    latest_comment = Reference(
+        Interface, # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
+
     def getComments():
         """Return a result set of the comments for this difference."""
+
+    def getPackageSets():
+        """Return a result set of the derived series packagesets for the
+        sourcepackagename of this difference.
+        """
+
+    def getParentPackageSets():
+        """Return a result set of the parent packagesets for the
+        sourcepackagename of this difference.
+        """
 
 
 class IDistroSeriesDifferenceEdit(Interface):
@@ -243,7 +274,8 @@ class IDistroSeriesDifferenceSource(Interface):
         source_package_name_filter=None,
         status=None,
         child_version_higher=False):
-        """Return differences for the derived distro series.
+        """Return differences for the derived distro series sorted by
+        package name.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.

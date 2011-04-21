@@ -33,6 +33,7 @@ from zope.schema.vocabulary import (
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
@@ -48,6 +49,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -353,35 +355,47 @@ class StructuralSubscriptionMenuMixin:
         """
         sst = self._getSST()
 
-        # ProjectGroup milestones aren't really structural subscription
-        # targets as they're not real milestones, so you can't subscribe to
-        # them.
-        enabled = not IProjectGroupMilestone.providedBy(sst)
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if not enabled or (
-            not sst.userCanAlterBugSubscription(self.user, self.user)):
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
+        if (not IProjectGroupMilestone.providedBy(sst) and
+            sst.userCanAlterBugSubscription(self.user, self.user)):
+            enabled = True
+        else:
             enabled = False
+
         return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+    @property
+    def _enabled(self):
+        """Should the link be enabled?
+
+        True if the target uses Launchpad for bugs and the user can alter the
+        bug subscriptions.
+        """
+        sst = self._getSST()
+        target = sst
+        if sst.parent_subscription_target is not None:
+            target = sst.parent_subscription_target
+        return (target.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+                sst.userCanAlterBugSubscription(self.user, self.user))
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True, enabled=enabled)
+        return Link('#', text, icon='add', hidden=True, enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Edit bug mail'
         return Link('+subscriptions', text, icon='edit', site='bugs',
-                    enabled=enabled)
+                    enabled=self._enabled)
 
 
 def expose_structural_subscription_data_to_js(context, request,
@@ -390,10 +404,13 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
-    if subscriptions is None:
+    if subscriptions is None or len(list(subscriptions)) == 0:
         subscriptions = []
+        target = context
+    else:
+        target = None
     expose_user_subscriptions_to_js(
-        user, subscriptions, request)
+        user, subscriptions, request, target)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -421,11 +438,13 @@ def expose_user_administered_teams_to_js(request, user, context,
             info.append({
                 'link': absoluteURL(team, api_request),
                 'title': team.title,
+                'url': canonical_url(team),
             })
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
-def expose_user_subscriptions_to_js(user, subscriptions, request):
+def expose_user_subscriptions_to_js(user, subscriptions, request,
+                                    target=None):
     """Make the user's subscriptions available to JavaScript."""
     info = {}
     api_request = IWebServiceClientRequest(request)
@@ -433,6 +452,19 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
         administered_teams = []
     else:
         administered_teams = user.getAdministratedTeams()
+
+    if target is not None:
+        try:
+            # No subscriptions, which means we are on a target
+            # subscriptions page. Let's at least provide target details.
+            target_info = {}
+            target_info['title'] = target.title
+            target_info['url'] = canonical_url(target, rootsite='mainsite')
+            IJSONRequestCache(request).objects['target_info'] = target_info
+        except NoCanonicalUrl:
+            # We export nothing if the target implements no canonical URL.
+            pass
+
     for subscription in subscriptions:
         target = subscription.target
         record = info.get(target)

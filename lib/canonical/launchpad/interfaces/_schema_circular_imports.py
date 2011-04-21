@@ -437,6 +437,7 @@ IComment['comment_author'].schema = IPerson
 
 # IDistribution
 IDistribution['series'].value_type.schema = IDistroSeries
+IDistribution['derivatives'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
@@ -486,6 +487,9 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
 
+# IDistroSeriesDifference
+patch_reference_property(
+    IDistroSeriesDifference, 'latest_comment', IDistroSeriesDifferenceComment)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson

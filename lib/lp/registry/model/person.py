@@ -91,6 +91,10 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -1423,8 +1427,8 @@ class Person(
         """See `IPerson`."""
         assert self.is_team
         to_addrs = set()
-        for person in self.getDirectAdministrators():
-            to_addrs.update(get_contact_email_addresses(person))
+        for admin in self.adminmembers:
+            to_addrs.update(get_contact_email_addresses(admin))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
@@ -2076,8 +2080,7 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(
-                from_person=self, to_person=self, any_person=True).is_empty()
+            IPersonMergeJobSource).find(from_person=self).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -2805,6 +2808,14 @@ class Person(
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+
+    def canAccess(self, obj, attribute):
+        """See `IPerson.`"""
+        return canAccess(obj, attribute)
+
+    def canWrite(self, obj, attribute):
+        """See `IPerson.`"""
+        return canWrite(obj, attribute)
 
 
 class PersonSet:
@@ -3836,10 +3847,10 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person):
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
@@ -4065,16 +4076,20 @@ class PersonSet:
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
-        if not to_person.isTeam():
+        if to_person.isTeam():
+            mail_text = get_email_template(
+                'team-merged.txt', app='registry')
+            subject = 'Launchpad teams merged'
+        else:
             mail_text = get_email_template(
                 'person-merged.txt', app='registry')
-            mail_text = mail_text % {
-                'dupename': from_person.name,
-                'person': to_person.name,
-                }
             subject = 'Launchpad accounts merged'
-            getUtility(IPersonNotificationSet).addNotification(
-                to_person, subject, mail_text)
+        mail_text = mail_text % {
+            'dupename': from_person.name,
+            'person': to_person.name,
+            }
+        getUtility(IPersonNotificationSet).addNotification(
+            to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
@@ -4596,20 +4611,25 @@ def _get_recipients_for_team(team):
                          Join(Person,
                               TeamMembership.personID==Person.id),
                          LeftJoin(EmailAddress,
-                                  EmailAddress.person == Person.id))
+                                  And(
+                                      EmailAddress.person == Person.id,
+                                      EmailAddress.status ==
+                                        EmailAddressStatus.PREFERRED)))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
+        # Find Persons that have a preferred email address, or are a
+        # team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
                [TeamMembershipStatus.ADMIN.value,
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
-            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
-               And(Not(Person.teamownerID == None),
-                   EmailAddress.status == None))).config(distinct=True)
+            Or(
+                EmailAddress.personID != None,
+                Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,
              preferred_email_marker) in intermediate_transitive_results:

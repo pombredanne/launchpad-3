@@ -8,16 +8,19 @@
 
   <head>
     <tal:head-epilogue metal:fill-slot="head_epilogue">
-      <script type="text/javascript"
-        tal:condition="
-          request/features/malone.advanced-structural-subscriptions.enabled">
-          LPS.use('lp.registry.structural_subscription', function(Y) {
-              var module = Y.lp.registry.structural_subscription;
-              Y.on('domready', function() {
-                module.setup({content_box: "#structural-subscription-content-box"});
-              });
-          });
-      </script>
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript"
+          tal:condition="
+            request/features/malone.advanced-structural-subscriptions.enabled">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
     </tal:head-epilogue>
   </head>
 
@@ -63,7 +66,10 @@
         <div class="yui-u">
           <tal:series replace="structure context/@@+series-and-milestones" />
         </div>
-      </div>
+        <div class="yui-u" tal:condition="features/soyuz.derived-series-ui.enabled">
+          <tal:series replace="structure context/@@+derivatives-slot" />
+        </div>
+       </div>
 
       <div class="yui-g">
         <div class="yui-u first">
