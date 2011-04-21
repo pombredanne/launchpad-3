@@ -1053,7 +1053,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = []
 
-    default_abort_script_time = 60 * 60
+    # 1 hour, minus 5 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled hourly run kicks in.
+    default_abort_script_time = 60 * 55
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1075,4 +1077,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonPruner,
         ]
 
-    default_abort_script_time = 60 * 60 * 24
+    # 1 day, minus 30 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled daily run kicks in.
+    default_abort_script_time = 60 * 60 * 23.5
