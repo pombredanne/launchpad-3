@@ -18,6 +18,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
@@ -39,6 +40,7 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IDistributionJob(Interface):
@@ -138,12 +140,22 @@ class IPackageCopyJob(IRunnableJob):
         required=True, readonly=True,
         )
 
-    source_archive = Int(
+    source_archive_id = Int(
         title=_('Source Archive ID'), required=True, readonly=True,
         )
 
-    target_archive = Int(
+    source_archive = Reference(
+        schema=IArchive, title=_('Source Archive'),
+        required=True, readonly=True,
+        )
+
+    target_archive_id = Int(
         title=_('Target Archive ID'), required=True, readonly=True,
+        )
+
+    target_archive = Reference(
+        schema=IArchive, title=_('Target Archive'),
+        required=True, readonly=True,
         )
 
     target_pocket = Int(

@@ -43,7 +43,9 @@ class PackageCopyJobTests(TestCaseWithFactory):
             include_binaries=False)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(distroseries, job.distroseries)
+        self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
+        self.assertEquals(archive2.id, job.target_archive_id)
         self.assertEquals(archive2, job.target_archive)
         self.assertEquals(PackagePublishingPocket.RELEASE, job.target_pocket)
         self.assertContentEqual(

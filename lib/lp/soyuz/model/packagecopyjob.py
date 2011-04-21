@@ -72,7 +72,7 @@ class PackageCopyJob(DistributionJobDerived):
             DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distribution == archive.distribution)
         jobs = [cls(job) for job in jobs]
-        return (job for job in jobs if job.target_archive == archive)
+        return (job for job in jobs if job.target_archive_id == archive.id)
 
     @property
     def source_packages(self):
@@ -80,15 +80,21 @@ class PackageCopyJob(DistributionJobDerived):
             (name, version) for (name, version) in
             self.metadata['source_packages']]
 
-    # TODO Add source_archive_id and target_archive_id properties.
+    @property
+    def source_archive_id(self):
+        return self.metadata['source_archive_id']
 
     @property
     def source_archive(self):
-        return getUtility(IArchiveSet).get(self.metadata['source_archive_id'])
+        return getUtility(IArchiveSet).get(self.source_archive_id)
+
+    @property
+    def target_archive_id(self):
+        return self.metadata['target_archive_id']
 
     @property
     def target_archive(self):
-        return getUtility(IArchiveSet).get(self.metadata['target_archive_id'])
+        return getUtility(IArchiveSet).get(self.target_archive_id)
 
     # TODO Add target_distroseries property which just returns
     # self.distroseries.
