@@ -201,9 +201,11 @@ class OpenIDLogin(LaunchpadView):
             "openid-association-begin",
             allvhosts.configs[openid_vhost].rooturl,
             allow_nested=True)
-        self.openid_request = consumer.begin(
-            allvhosts.configs[openid_vhost].rooturl)
-        timeline_action.finish()
+        try:
+            self.openid_request = consumer.begin(
+                allvhosts.configs[openid_vhost].rooturl)
+        finally:
+            timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(optional=['email', 'fullname']))
 
@@ -291,9 +293,11 @@ class OpenIDCallbackView(OpenIDLogin):
         requested_url = self._get_requested_url(self.request)
         consumer = self._getConsumer()
         timeline_action = get_request_timeline(self.request).start(
-            "openid-association-complete", None, allow_nested=True)
-        self.openid_response = consumer.complete(params, requested_url)
-        timeline_action.finish()
+            "openid-association-complete", '', allow_nested=True)
+        try:
+            self.openid_response = consumer.complete(params, requested_url)
+        finally:
+            timeline_action.finish()
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)

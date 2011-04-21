@@ -476,11 +476,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         account = self.factory.makeAccount('Test account')
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createViewWithResponse(account)
-        start, stop = get_request_timeline(view.request).actions[:2]
+        start, stop = get_request_timeline(view.request).actions[-2:]
         self.assertEqual(start.category, 'openid-association-complete-start')
-        self.assertEqual(start.detail, None)
+        self.assertEqual(start.detail, '')
         self.assertEqual(stop.category, 'openid-association-complete-stop')
-        self.assertEqual(stop.detail, None)
+        self.assertEqual(stop.detail, '')
 
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
