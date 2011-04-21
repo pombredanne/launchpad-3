@@ -61,7 +61,7 @@ The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It cannot
 be edited.
 
     >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
-    Affects                          Status   Importance  Assigned to  Milestone
+    Affects                        Status   Importance  Assigned to  Milestone
     linux-source-2.6.15 (Ubuntu) ... Invalid  Medium      Unassigned ...
 
 Nor can the bugtask be edited if No Privileges Person accesses the
@@ -117,7 +117,7 @@ He uses the link to Related bug to return to the bug.
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
 
 
-When a question cannot be created from a bug 
+When a question cannot be created from a bug
 ---------------------------------------------
 
 Thunderbird does not use Launchpad to track bugs. Questions cannot be
