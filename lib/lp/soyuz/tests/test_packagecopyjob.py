@@ -113,13 +113,10 @@ class PackageCopyJobTests(TestCaseWithFactory):
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
 
-        publisher.getPubBinaries(
-            distroseries=distroseries, binaryname="libc",
-            version="2.8-1",
-            status=PackagePublishingStatus.PUBLISHED,
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
-        source_package = archive1.getPublishedSources(
-            name="libc", version="2.8-1", exact_match=True).first()
 
         source = getUtility(IPackageCopyJobSource)
         job = source.create(
@@ -129,6 +126,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
             include_binaries=False)
         self.assertContentEqual(
             job.source_packages, [("libc", "2.8-1", source_package)])
+
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
