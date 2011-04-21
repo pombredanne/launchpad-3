@@ -12,6 +12,7 @@ from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -67,6 +68,7 @@ from lp.registry.model.person import (
     Person,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -311,6 +313,51 @@ class TestPerson(TestCaseWithFactory):
         # self-generated bug notifications by default.
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
+
+    def test_canAccess__anonymous(self):
+        # Anonymous users cannot call Person.canAccess()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canAccess')
+
+    def test_canAccess__checking_own_permissions(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, 'licenses'))
+            self.assertFalse(person.canAccess(product, 'newSeries'))
+
+    def test_canAccess__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canAccess() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canAccess')
+
+    def test_canWrite__anonymous(self):
+        # Anonymous users cannot call Person.canWrite()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canWrite')
+
+    def test_canWrite__checking_own_permissions(self):
+        # Logged in users can call Person.canWrite() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertFalse(person.canWrite(product, 'displayname'))
+        with person_logged_in(product.owner):
+            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+
+    def test_canWrite__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canWrite() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canWrite')
 
 
 class TestPersonStates(TestCaseWithFactory):
@@ -1302,7 +1349,7 @@ class TestAPIPartipication(TestCaseWithFactory):
 class TestGetRecipients(TestCaseWithFactory):
     """Tests for get_recipients"""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestGetRecipients, self).setUp()
@@ -1325,6 +1372,19 @@ class TestGetRecipients(TestCaseWithFactory):
         super_team = self.factory.makeTeam(team)
         recipients = get_recipients(super_team)
         self.assertEqual(set([team]), set(recipients))
+
+    def test_get_recipients_team_with_unvalidated_address(self):
+        """Ensure get_recipients handles teams with non-preferred addresses.
+
+        If there is no preferred address but one or more non-preferred ones,
+        email should still be sent to the members.
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        self.assertContentEqual([team], get_recipients(team))
+        team.preferredemail.status = EmailAddressStatus.NEW
+        clear_property_cache(team)
+        self.assertContentEqual([owner], get_recipients(team))
 
     def makePersonWithNoPreferredEmail(self, **kwargs):
         kwargs['email_address_status'] = EmailAddressStatus.NEW
