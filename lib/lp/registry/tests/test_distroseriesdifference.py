@@ -654,11 +654,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             ds_diff.derived_series, ds_diff.base_source_pub.distroseries)
 
-    def _setupDSDsWithChangelog(self, derived_versions,
-                                        parent_versions,
-                                        status=None):
+    def _setupDSDsWithChangelog(self, derived_versions, parent_versions,
+                                status=None):
         # Helper to create DSD with changelogs.
-        # {derived,parent}_changelog must be ordered (e.g. ['1.1',
+        # {derived,parent}_versions must be ordered (e.g. ['1.1',
         # '1.2', '1.3']).
         if status is None:
             status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION
