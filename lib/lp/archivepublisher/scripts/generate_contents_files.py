@@ -13,9 +13,13 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests.script import run_command
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.command_spawner import (
+    CommandSpawner,
+    OutputLineHandler,
+    ReturnCodeReceiver,
+    )
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -63,18 +67,31 @@ def execute(logger, command, args=None):
     """Execute a shell command.
 
     :param logger: Output from the command will be logged here.
-    :param command_line: Command to execute, as a list of tokens.
+    :param command: Command to execute, as a string.
+    :param args: Optional list of arguments for `command`.
     :raises LaunchpadScriptFailure: If the command returns failure.
     """
-    if args is None:
-        description = command
-    else:
-        description = command + ' ' + ' '.join(args)
+    command_line = [command]
+    if args is not None:
+        command_line += args
+    description = ' '.join(command_line)
+
     logger.debug("Execute: %s", description)
-    retval, stdout, stderr = run_command(command, args)
-    logger.debug(stdout)
-    logger.warn(stderr)
-    if retval != 0:
+    # Some of these commands can take a long time.  Use CommandSpawner
+    # and friends to provide "live" log output.  Simpler ways of running
+    # commands tend to save it all up and then dump it at the end, or
+    # have trouble logging it as neat lines.
+    stderr_logger = OutputLineHandler(logger.warn)
+    stdout_logger = OutputLineHandler(logger.debug)
+    receiver = ReturnCodeReceiver()
+    spawner = CommandSpawner()
+    spawner.start(
+        command_line, completion_handler=receiver,
+        stderr_handler=stderr_logger, stdout_handler=stdout_logger)
+    spawner.complete()
+    stdout_logger.finalize()
+    stderr_logger.finalize()
+    if receiver.returncode != 0:
         raise LaunchpadScriptFailure(
             "Failure while running command: %s" % description)
 
