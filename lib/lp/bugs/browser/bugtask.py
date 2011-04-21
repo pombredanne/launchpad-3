@@ -147,6 +147,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
+from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -371,7 +372,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     return comments
 
 
-def get_visible_comments(comments):
+def get_visible_comments(comments, user=None):
     """Return comments, filtering out empty or duplicated ones."""
     visible_comments = []
     previous_comment = None
@@ -395,6 +396,13 @@ def get_visible_comments(comments):
     # getMessagesForView improvements.
     commenters = set(comment.owner for comment in visible_comments)
     getUtility(IPersonSet).getValidPersons(commenters)
+
+    # If a user is supplied, we can also strip out comments that the user
+    # cannot see, because they have been marked invisible.
+    if user is not None:
+        role = PersonRoles(user)
+        if not (role.in_admin or role.in_registry_experts):
+            visible_comments = [c for c in visible_comments if c.visible]
 
     return visible_comments
 
@@ -775,7 +783,9 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 self.context, truncate=True, for_display=True,
                 slice_info=[
                     slice(None, oldest_count), slice(new_count, None)])
-        visible_comments = get_visible_comments(comments)
+
+        visible_comments = get_visible_comments(
+            comments, user=self.user)
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
