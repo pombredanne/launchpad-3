@@ -18,7 +18,7 @@ class GetCookieDomainTestCase(unittest.TestCase):
         self.assertEqual(get_cookie_domain('bugs.launchpad.net'),
                          '.launchpad.net')
 
-    def test_shipit_domain(self):
+    def test_other_domain(self):
         # Other domains do not return a cookie domain.
         self.assertEqual(get_cookie_domain('example.com'), None)
 
