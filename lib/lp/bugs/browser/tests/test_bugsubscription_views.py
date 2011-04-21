@@ -187,7 +187,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         person = self.factory.makePerson()
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(person):
-                level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 subscription_field = (
@@ -207,7 +206,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(person):
                 bug.subscribe(team, person)
-                level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 subscription_field = (
@@ -232,7 +230,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 duplicate.subscribe(person, person)
                 bug.subscribe(team, person)
 
-                level = BugNotificationLevel.METADATA
                 harness = LaunchpadFormHarness(
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 subscription_field = (
@@ -396,7 +393,6 @@ class BugSubscriptionAdvancedFeaturesPortletTestCase(TestCaseWithFactory):
     def get_contents(self, flag):
         with person_logged_in(self.person):
             with FeatureFixture({self.feature_flag: flag}):
-                # Subscribe someone to the target.
                 bug_view = create_initialized_view(
                     self.bug, name="+bug-portlet-subscribers-content")
                 return bug_view.render()
