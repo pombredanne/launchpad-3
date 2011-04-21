@@ -51,7 +51,8 @@ class PackageCopyJobTests(TestCaseWithFactory):
         self.assertEquals(distroseries, job.target_distroseries)
         self.assertEquals(PackagePublishingPocket.RELEASE, job.target_pocket)
         self.assertContentEqual(
-            job.source_packages, [("foo", "1.0-1"), ("bar", "2.4")])
+            job.source_packages,
+            [("foo", "1.0-1", None), ("bar", "2.4", None)])
         self.assertEquals(False, job.include_binaries)
 
     def test_getActiveJobs(self):
@@ -88,7 +89,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
-        self.assertRaises(NoSuchSourcePackageName, job.run)
+        self.assertRaises(CannotCopy, job.run)
 
     def test_target_ppa_non_release_pocket(self):
         # When copyingto a PPA archive the target must be the release pocket.
@@ -117,6 +118,8 @@ class PackageCopyJobTests(TestCaseWithFactory):
             version="2.8-1",
             status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
+        source_package = archive1.getPublishedSources(
+            name="libc", version="2.8-1", exact_match=True).first()
 
         source = getUtility(IPackageCopyJobSource)
         job = source.create(
@@ -124,6 +127,8 @@ class PackageCopyJobTests(TestCaseWithFactory):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
+        self.assertContentEqual(
+            job.source_packages, [("libc", "2.8-1", source_package)])
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()

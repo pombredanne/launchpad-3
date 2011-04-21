@@ -7,8 +7,6 @@ __all__ = [
     "PackageCopyJob",
 ]
 
-from functools import partial
-
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -20,7 +18,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchiveSet,
@@ -79,9 +76,10 @@ class PackageCopyJob(DistributionJobDerived):
 
     @property
     def source_packages(self):
-        return [
-            (name, version) for (name, version) in
-            self.metadata['source_packages']]
+        getPublishedSources = self.source_archive.getPublishedSources
+        for name, version in self.metadata['source_packages']:
+            yield name, version, getPublishedSources(
+                name=name, version=version, exact_match=True).first()
 
     @property
     def source_archive_id(self):
@@ -118,20 +116,13 @@ class PackageCopyJob(DistributionJobDerived):
                 raise CannotCopy(
                     "Destination pocket must be 'release' for a PPA.")
 
-        get_published_sources = partial(
-            self.source_archive.getPublishedSources, exact_match=True)
-
-        source_packages = frozenset(
-            get_published_sources(
-                name=source_name, version=source_version).first()
-            for source_name, source_version in self.source_packages)
-
-        # Check that all packages were found.
-        if None in source_packages:
-            # Look up each name until one of them is not found, at which point
-            # ISourcePackageNameSet will raise a useful error.
-            for source_name, source_version in self.source_packages:
-                getUtility(ISourcePackageNameSet)[source_name]
+        source_packages = set()
+        for name, version, source_package in self.source_packages:
+            if source_package is None:
+                raise CannotCopy(
+                    "Package %r %r not found." % (name, version))
+            else:
+                source_packages.add(source_package)
 
         do_copy(
             sources=source_packages, archive=self.target_archive,

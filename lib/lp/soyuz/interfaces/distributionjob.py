@@ -134,9 +134,8 @@ class IPackageCopyJob(IRunnableJob):
     """A Job that synchronizes packages."""
 
     source_packages = List(
-        title=_("Source Package Names and Versions"),
-        value_type=Tuple(
-            value_type=TextLine(), min_length=2, max_length=2),
+        title=_("Source Packages"),
+        value_type=Tuple(min_length=3, max_length=3),
         required=True, readonly=True,
         )
 
