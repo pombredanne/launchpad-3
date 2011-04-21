@@ -4173,9 +4173,9 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 1, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 1, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
 
 
 ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
