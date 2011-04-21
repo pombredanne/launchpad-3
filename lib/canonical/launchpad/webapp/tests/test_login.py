@@ -469,6 +469,19 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 AssertionError,
                 getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
+    def test_logs_to_timeline(self):
+        # Completing an OpenID association *can* make an HTTP request to the
+        # OP, so it's a potentially long action. It is logged to the
+        # request timeline.
+        account = self.factory.makeAccount('Test account')
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
+        start, stop = get_request_timeline(view.request).actions[:2]
+        self.assertEqual(start.category, 'openid-association-complete-start')
+        self.assertEqual(start.detail, None)
+        self.assertEqual(stop.category, 'openid-association-complete-stop')
+        self.assertEqual(stop.detail, None)
+
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
         self.assertTrue(datetime.utcnow() - last_write < timedelta(minutes=1))

@@ -290,7 +290,10 @@ class OpenIDCallbackView(OpenIDLogin):
         params = self._gather_params(self.request)
         requested_url = self._get_requested_url(self.request)
         consumer = self._getConsumer()
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-complete", None, allow_nested=True)
         self.openid_response = consumer.complete(params, requested_url)
+        timeline_action.finish()
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)
