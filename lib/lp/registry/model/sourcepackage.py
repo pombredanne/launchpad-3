@@ -549,14 +549,35 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                                                    owner):
         """See `ISourcePackage`."""
         self.setPackaging(productseries, owner)
+        return self.getSharingDetailPermissions()
+
+    def getSharingDetailPermissions(self):
         user = getUtility(ILaunchBag).user
-        return {
-            'user_can_change_branch': user.canWrite(productseries, 'branch'),
-            'user_can_change_translation_usage':
-                user.canWrite(productseries.product, 'translations_usage'),
-            'user_can_change_translations_autoimport_mode':
-                user.canWrite(productseries, 'translations_autoimport_mode'),
-            }
+        productseries = self.productseries
+        permissions = {
+                'user_can_change_product_series': False,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False}
+        if user is None:
+            pass
+        elif productseries is None:
+            permissions['user_can_change_product_series'] = user.canAccess(
+                self, 'setPackaging')
+        else:
+            permissions.update({
+                'user_can_change_product_series':
+                    self.direct_packaging.userCanDelete(),
+                'user_can_change_branch':
+                    user.canWrite(productseries, 'branch'),
+                'user_can_change_translation_usage':
+                    user.canWrite(
+                        productseries.product, 'translations_usage'),
+                'user_can_change_translations_autoimport_mode':
+                    user.canWrite(
+                        productseries, 'translations_autoimport_mode'),
+                })
+        return permissions
 
     def deletePackaging(self):
         """See `ISourcePackage`."""

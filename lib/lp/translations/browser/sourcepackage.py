@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageTranslationsExportView',
     'SourcePackageTranslationsView',
-    'SourcePackageTranslationSharingStatus',
     ]
 
 
@@ -145,6 +144,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
             'upstream_branch': self.upstream_branch,
             'product': self.product,
         })
+        cache.objects.update(self.context.getSharingDetailPermissions())
 
     @property
     def branch_link(self):
