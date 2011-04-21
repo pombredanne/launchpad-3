@@ -13,7 +13,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
-from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.distributionjob import (
