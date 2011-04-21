@@ -718,8 +718,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         with person_logged_in(person):
             ds_diff.requestPackageDiffs(person)
 
-        self.assertIs(None, ds_diff.package_diff)
-        self.assertIsNot(None, ds_diff.parent_package_diff)
+        self.assertIsNot(None, ds_diff.package_diff)
+        self.assertIs(None, ds_diff.parent_package_diff)
 
     def test_requestPackageDiffs_with_resolved_DSD(self):
         # Diffs can't be requested for DSDs that are RESOLVED.
