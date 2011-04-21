@@ -19,11 +19,8 @@ class GetCookieDomainTestCase(unittest.TestCase):
                          '.launchpad.net')
 
     def test_shipit_domain(self):
-        # The shipit domains are outside of the Launchpad tree, so do
-        # not return a cookie domain.
-        self.assertEqual(get_cookie_domain('shipit.ubuntu.com'), None)
-        self.assertEqual(get_cookie_domain('shipit.kubuntu.org'), None)
-        self.assertEqual(get_cookie_domain('shipit.edubuntu.org'), None)
+        # Other domains do not return a cookie domain.
+        self.assertEqual(get_cookie_domain('example.com'), None)
 
     def test_other_instances(self):
         # Test that requests to other launchpad instances are scoped right
