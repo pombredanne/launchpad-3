@@ -1198,8 +1198,10 @@ class QuestionTargetMixin:
         question.addComment(
             message.owner, message.text_contents,
             datecreated=message.datecreated)
-        # XXX sinzui 2011-04-22: user who subscribed to the bug should
-        # then be subscribed to the question.
+        # Direct subscribers to the bug want to know the question answer.
+        for subscriber in bug.getDirectSubscribers():
+            if subscriber != question.owner:
+                question.subscribe(subscriber)
         return question
 
     def getQuestion(self, question_id):

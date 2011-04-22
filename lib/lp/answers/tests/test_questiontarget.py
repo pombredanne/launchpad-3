@@ -107,4 +107,11 @@ class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):
 
     def test_bug_subscribers_copied_to_question(self):
         # Users who subscribe to the bug are also interested in the answer.
-        pass
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self.bug.subscribe(subscriber, subscriber)
+        with person_logged_in(self.contributor):
+            self.bug.newMessage(owner=self.contributor, content='comment')
+            question = self.target.createQuestionFromBug(self.bug)
+        self.assertTrue(question.isSubscribed(subscriber))
+        self.assertTrue(question.isSubscribed(question.owner))
