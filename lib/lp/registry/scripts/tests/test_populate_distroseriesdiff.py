@@ -468,7 +468,7 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
 
 
 class FakeDSD:
-    _updateBaseVersion = FakeMethod()
+    update = FakeMethod()
 
 
 class TestBaseVersionFixer(TestCase):
@@ -502,7 +502,7 @@ class TestBaseVersionFixer(TestCase):
         fixer = self.makeFixer([fake_dsd])
         fixer._getBatch.result = fixer.ids
         fixer(1)
-        self.assertNotEqual(0, fake_dsd._updateBaseVersion.call_count)
+        self.assertNotEqual(0, fake_dsd.update.call_count)
 
     def test_loop_commits(self):
         fixer = self.makeFixer([FakeDSD()])
