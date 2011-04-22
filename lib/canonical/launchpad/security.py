@@ -962,6 +962,7 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
+
 class EditDistributionSourcePackage(AuthorizationBase):
     """DistributionSourcePackage is not editable.
 
@@ -1744,12 +1745,16 @@ class AppendQuestion(AdminQuestion):
         if AdminQuestion.checkAuthenticated(self, user):
             return True
         question_target = self.obj.target
+        if IDistributionSourcePackage.providedBy(question_target):
+            question_targets = (question_target, question_target.distribution)
+        else:
+            question_targets = (question_target, )
         questions_person = IQuestionsPerson(user.person)
         for target in questions_person.getDirectAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         for target in questions_person.getTeamAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         return False
 
