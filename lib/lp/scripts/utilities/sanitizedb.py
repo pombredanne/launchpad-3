@@ -13,7 +13,10 @@ import re
 import subprocess
 import sys
 
-from storm.locals import Or
+from storm.expr import (
+    Join,
+    Or,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -254,8 +257,14 @@ class SanitizeDb(LaunchpadScript):
     def removePrivateBugMessages(self):
         """Remove all hidden bug messages."""
         from lp.bugs.model.bugmessage import BugMessage
+        from canonical.launchpad.database.message import Message
+        message_ids = list(self.store.using(*[
+            BugMessage,
+            Join(Message, BugMessage.messageID == Message.id),
+            ]).find(BugMessage.id, Message.visible == False))
+        self.store.flush()
         count = self.store.find(
-            BugMessage, BugMessage.visible == False).remove()
+            BugMessage, BugMessage.id.is_in(message_ids)).remove()
         self.store.flush()
         self.logger.info("Removed %d private bug messages.", count)
 
@@ -578,7 +587,11 @@ class SanitizeDb(LaunchpadScript):
         # deletes because they fail (attempting to change a mutating table).
         # We can repair these caches by forcing the triggers to run for
         # every row.
-        self.store.execute("UPDATE BugMessage SET visible=visible")
+        self.store.execute("""
+            UPDATE Message SET visible=visible
+            FROM BugMessage
+            WHERE BugMessage.message = Message.id
+            """)
 
     def _fail(self, error_message):
         self.logger.fatal(error_message)

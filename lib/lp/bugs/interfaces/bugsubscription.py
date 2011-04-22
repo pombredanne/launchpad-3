@@ -17,6 +17,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
+    operation_for_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -31,23 +32,25 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import (
+    patch_reference_property,
+    )
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bug import IBug
 from lp.services.fields import PersonChoice
 
 
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
-    export_as_webservice_entry(publish_web_link=False)
+    export_as_webservice_entry(publish_web_link=False, as_of="beta")
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address.")))
+        "e-mail address.")), as_of="beta")
     bug = exported(Reference(
-        IBug, title=_("Bug"), required=True, readonly=True))
+        Interface, title=_("Bug"), required=True, readonly=True), as_of="beta")
     # We mark this as doNotSnapshot() because it's a magically-generated
     # Storm attribute and it causes Snapshot to break.
     bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
@@ -60,15 +63,16 @@ class IBugSubscription(Interface):
                 "The volume and type of bug notifications "
                 "this subscription will generate."),
             ),
-        # We want this field to be exported in the devel version of the
-        # API only.
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     date_created = exported(
-        Datetime(title=_('Date subscribed'), required=True, readonly=True))
-    subscribed_by = exported(PersonChoice(
-        title=_('Subscribed by'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_("The person who created this subscription.")))
+        Datetime(title=_('Date subscribed'), required=True, readonly=True),
+        as_of="beta")
+    subscribed_by = exported(
+        PersonChoice(
+            title=_('Subscribed by'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_("The person who created this subscription.")),
+        as_of="beta")
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")
@@ -78,5 +82,14 @@ class IBugSubscription(Interface):
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version("beta")
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
+
+
+
+# In order to avoid circular dependencies, we only import
+# IBug (which itself imports IBugSubscription) here, and assign it as
+# the value type for the `bug` reference.
+from lp.bugs.interfaces.bug import IBug
+patch_reference_property(IBugSubscription, 'bug', IBug)

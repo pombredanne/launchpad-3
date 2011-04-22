@@ -13,21 +13,21 @@ from datetime import (
     datetime,
     timedelta,
     )
-from fixtures import TempDir
+import logging
 import os
-import signal
-import subprocess
+import threading
 import time
 
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
+import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
-from storm.expr import LeftJoin
 from storm.locals import (
-    And,
-    Count,
     Max,
     Min,
-    Select,
     SQL,
     )
 import transaction
@@ -36,21 +36,16 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import (
     cursor,
     session_store,
     sqlvalues,
     )
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
@@ -58,20 +53,16 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
-from canonical.librarian.utils import copy_and_close
-from lp.archiveuploader.dscfile import findFile
-from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -81,22 +72,18 @@ from lp.code.model.revision import (
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
-from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.log.logger import PrefixFilter
 from lp.services.scripts.base import (
     LaunchpadCronScript,
+    LOCK_PATH,
     SilentLaunchpadScriptFailure,
     )
-from lp.soyuz.model.files import SourcePackageReleaseFile
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.services.session.model import SessionData
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
-
-
-def subprocess_setup():
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
 class BulkPruner(TunableLoop):
@@ -125,9 +112,13 @@ class BulkPruner(TunableLoop):
     # from. Must be overridden.
     target_table_class = None
 
-    # The column name in target_table we use as the integer key. May be
-    # overridden.
+    # The column name in target_table we use as the key. The type must
+    # match that returned by the ids_to_prune_query and the
+    # target_table_key_type. May be overridden.
     target_table_key = 'id'
+
+    # SQL type of the target_table_key. May be overridden.
+    target_table_key_type = 'integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -137,16 +128,30 @@ class BulkPruner(TunableLoop):
     # See `TunableLoop`. May be overridden.
     maximum_chunk_size = 10000
 
+    def getStore(self):
+        """The master Store for the table we are pruning.
+
+        May be overridden.
+        """
+        return IMasterStore(self.target_table_class)
+
+    _unique_counter = 0
+
     def __init__(self, log, abort_time=None):
         super(BulkPruner, self).__init__(log, abort_time)
 
-        self.store = IMasterStore(self.target_table_class)
+        self.store = self.getStore()
         self.target_table_name = self.target_table_class.__storm_table__
+
+        self._unique_counter += 1
+        self.cursor_name = (
+            'bulkprunerid_%s_%d'
+            % (self.__class__.__name__, self._unique_counter)).lower()
 
         # Open the cursor.
         self.store.execute(
-            "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
-            % self.ids_to_prune_query)
+            "DECLARE %s NO SCROLL CURSOR WITH HOLD FOR %s"
+            % (self.cursor_name, self.ids_to_prune_query))
 
     _num_removed = None
 
@@ -157,17 +162,20 @@ class BulkPruner(TunableLoop):
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         result = self.store.execute("""
-            DELETE FROM %s WHERE %s IN (
+            DELETE FROM %s
+            WHERE %s IN (
                 SELECT id FROM
-                cursor_fetch('bulkprunerid', %d) AS f(id integer))
+                cursor_fetch('%s', %d) AS f(id %s))
             """
-            % (self.target_table_name, self.target_table_key, chunk_size))
+            % (
+                self.target_table_name, self.target_table_key,
+                self.cursor_name, chunk_size, self.target_table_key_type))
         self._num_removed = result.rowcount
         transaction.commit()
 
     def cleanUp(self):
         """See `ITunableLoop`."""
-        self.store.execute("CLOSE bulkprunerid")
+        self.store.execute("CLOSE %s" % self.cursor_name)
 
 
 class POTranslationPruner(BulkPruner):
@@ -175,9 +183,7 @@ class POTranslationPruner(BulkPruner):
 
     XXX bug=723596 StuartBishop: This job only needs to run once per month.
     """
-
     target_table_class = POTranslation
-
     ids_to_prune_query = """
         SELECT POTranslation.id AS id FROM POTranslation
         EXCEPT (
@@ -204,40 +210,79 @@ class POTranslationPruner(BulkPruner):
         """
 
 
-class OAuthNoncePruner(TunableLoop):
+class SessionPruner(BulkPruner):
+    """Base class for session removal."""
+
+    target_table_class = SessionData
+    target_table_key = 'client_id'
+    target_table_key_type = 'text'
+
+
+class AntiqueSessionPruner(SessionPruner):
+    """Remove sessions not accessed for 60 days"""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE last_accessed < CURRENT_TIMESTAMP - CAST('60 days' AS interval)
+        """
+
+
+class UnusedSessionPruner(SessionPruner):
+    """Remove sessions older than 1 day with no authentication credentials."""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE
+            last_accessed < CURRENT_TIMESTAMP - CAST('1 day' AS interval)
+            AND client_id NOT IN (
+                SELECT client_id
+                FROM SessionPkgData
+                WHERE
+                    product_id = 'launchpad.authenticateduser'
+                    AND key='logintime')
+        """
+
+
+class DuplicateSessionPruner(SessionPruner):
+    """Remove all but the most recent 6 authenticated sessions for a user.
+
+    We sometimes see users with dozens or thousands of authenticated
+    sessions. To limit exposure to replay attacks, we remove all but
+    the most recent 6 of them for a given user.
+    """
+
+    ids_to_prune_query = """
+        SELECT client_id AS id
+        FROM (
+            SELECT
+                sessiondata.client_id,
+                last_accessed,
+                rank() OVER pickle AS rank
+            FROM SessionData, SessionPkgData
+            WHERE
+                SessionData.client_id = SessionPkgData.client_id
+                AND product_id = 'launchpad.authenticateduser'
+                AND key='accountid'
+            WINDOW pickle AS (PARTITION BY pickle ORDER BY last_accessed DESC)
+            ) AS whatever
+        WHERE
+            rank > 6
+            AND last_accessed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 hour' AS interval)
+        """
+
+
+class OAuthNoncePruner(BulkPruner):
     """An ITunableLoop to prune old OAuthNonce records.
 
     We remove all OAuthNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
-
-    def __init__(self, log, abort_time=None):
-        super(OAuthNoncePruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(OAuthNonce)
-        self.oldest_age = self.store.execute("""
-            SELECT COALESCE(EXTRACT(EPOCH FROM
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                - MIN(request_timestamp)), 0)
-            FROM OAuthNonce
-            """).get_one()[0]
-
-    def isDone(self):
-        return self.oldest_age <= ONE_DAY_IN_SECONDS
-
-    def __call__(self, chunk_size):
-        self.oldest_age = max(
-            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
-
-        self.log.debug(
-            "Removed OAuthNonce rows older than %d seconds"
-            % self.oldest_age)
-
-        self.store.find(
-            OAuthNonce,
-            OAuthNonce.request_timestamp < SQL(
-                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
-                % self.oldest_age)).remove()
-        transaction.commit()
+    target_table_class = OAuthNonce
+    ids_to_prune_query = """
+        SELECT id FROM OAuthNonce
+        WHERE request_timestamp
+            < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
@@ -323,90 +368,39 @@ class RevisionCachePruner(TunableLoop):
         transaction.commit()
 
 
-class CodeImportEventPruner(TunableLoop):
+class CodeImportEventPruner(BulkPruner):
     """Prune `CodeImportEvent`s that are more than a month old.
 
     Events that happened more than 30 days ago are really of no
     interest to us.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    def isDone(self):
-        store = IMasterStore(CodeImportEvent)
-        events = store.find(
-            CodeImportEvent,
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO)
-        return events.any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(CodeImportEvent)
-        event_ids = Select(
-            [CodeImportEvent.id],
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO,
-            limit=chunk_size)
-        num_removed = store.find(
-            CodeImportEvent, CodeImportEvent.id.is_in(event_ids)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d old CodeImportEvents" % num_removed)
+    target_table_class = CodeImportEvent
+    ids_to_prune_query = """
+        SELECT id FROM CodeImportEvent
+        WHERE date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
-class CodeImportResultPruner(TunableLoop):
+class CodeImportResultPruner(BulkPruner):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
     Removes CodeImportResult rows if they are older than 30 days
     and they are not one of the most recent results for that
     CodeImport.
     """
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(CodeImportResultPruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(CodeImportResult)
-
-        self.min_code_import = self.store.find(
-            Min(CodeImportResult.code_importID)).one()
-        self.max_code_import = self.store.find(
-            Max(CodeImportResult.code_importID)).one()
-
-        self.next_code_import_id = self.min_code_import
-
-    def isDone(self):
-        return (
-            self.min_code_import is None
-            or self.next_code_import_id > self.max_code_import)
-
-    def __call__(self, chunk_size):
-        self.log.debug(
-            "Removing expired CodeImportResults for CodeImports %d -> %d" % (
-                self.next_code_import_id,
-                self.next_code_import_id + chunk_size - 1))
-
-        self.store.execute("""
-            DELETE FROM CodeImportResult
-            WHERE
-                CodeImportResult.date_created
-                    < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                        - interval '30 days'
-                AND CodeImportResult.code_import >= %s
-                AND CodeImportResult.code_import < %s + %s
-                AND CodeImportResult.id NOT IN (
-                    SELECT LatestResult.id
-                    FROM CodeImportResult AS LatestResult
-                    WHERE
-                        LatestResult.code_import
-                            = CodeImportResult.code_import
-                    ORDER BY LatestResult.date_created DESC
-                    LIMIT %s)
-            """ % sqlvalues(
-                self.next_code_import_id,
-                self.next_code_import_id,
-                chunk_size,
-                config.codeimport.consecutive_failure_limit - 1))
-        self.next_code_import_id += chunk_size
-        transaction.commit()
+    target_table_class = CodeImportResult
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, date_created, rank() OVER w AS rank
+            FROM CodeImportResult
+            WINDOW w AS (PARTITION BY code_import ORDER BY date_created DESC)
+            ) AS whatever
+        WHERE
+            rank > %s
+            AND date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+            """ % sqlvalues(config.codeimport.consecutive_failure_limit - 1)
 
 
 class RevisionAuthorEmailLinker(TunableLoop):
@@ -654,63 +648,35 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
-class BugNotificationPruner(TunableLoop):
+class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
     We discard all rows older than 30 days that have been sent. We
     keep 30 days worth or records to help diagnose email delivery issues.
     """
-    maximum_chunk_size = 10000
-
-    def _to_remove(self):
-        return IMasterStore(BugNotification).find(
-            BugNotification.id,
-            BugNotification.date_emailed < THIRTY_DAYS_AGO)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        num_removed = IMasterStore(BugNotification).find(
-            BugNotification,
-            BugNotification.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d rows" % num_removed)
+    target_table_class = BugNotification
+    ids_to_prune_query = """
+        SELECT BugNotification.id FROM BugNotification
+        WHERE date_emailed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
-class BranchJobPruner(TunableLoop):
+class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
     When a BranchJob is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    _is_done = False
-
-    def isDone(self):
-        return self._is_done
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(BranchJob)
-        ids_to_remove = list(store.find(
-            Job.id,
-            BranchJob.job == Job.id,
-            Job.date_finished < THIRTY_DAYS_AGO)[:chunk_size])
-        if len(ids_to_remove) > 0:
-            # BranchJob is removed too, as the BranchJob.job foreign key
-            # constraint is ON DELETE CASCADE.
-            IMasterStore(Job).find(
-                Job,
-                Job.id.is_in(ids_to_remove)).remove()
-        else:
-            self._is_done = True
-        transaction.commit()
+    target_table_class = Job
+    ids_to_prune_query = """
+        SELECT DISTINCT Job.id
+        FROM Job, BranchJob
+        WHERE
+            Job.id = BranchJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+        """
 
 
 class BugHeatUpdater(TunableLoop):
@@ -764,61 +730,22 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
-class BugWatchActivityPruner(TunableLoop):
+class BugWatchActivityPruner(BulkPruner):
     """A TunableLoop to prune BugWatchActivity entries."""
-
-    maximum_chunk_size = 1000
-
-    def getPrunableBugWatchIds(self, chunk_size):
-        """Return the set of BugWatch IDs whose activity is prunable."""
-        query = """
-            SELECT
-                watch_activity.id
-            FROM (
-                SELECT
-                    BugWatch.id AS id,
-                    COUNT(BugWatchActivity.id) as activity_count
-                FROM BugWatch, BugWatchActivity
-                WHERE BugWatchActivity.bug_watch = BugWatch.id
-                GROUP BY BugWatch.id) AS watch_activity
-            WHERE watch_activity.activity_count > %s
-            LIMIT %s;
-        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
-        store = IMasterStore(BugWatch)
-        results = store.execute(query)
-        return set(result[0] for result in results)
-
-    def pruneBugWatchActivity(self, bug_watch_ids):
-        """Prune the BugWatchActivity for bug_watch_ids."""
-        query = """
-            DELETE FROM BugWatchActivity
-            WHERE id IN (
-                SELECT id
-                FROM BugWatchActivity
-                WHERE bug_watch = %s
-                ORDER BY id DESC
-                OFFSET %s);
-        """
-        store = IMasterStore(BugWatch)
-        for bug_watch_id in bug_watch_ids:
-            results = store.execute(
-                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
-            self.log.debug(
-                "Pruned %s BugWatchActivity entries for watch %s" %
-                (results.rowcount, bug_watch_id))
-
-    def __call__(self, chunk_size):
-        transaction.begin()
-        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
-        self.pruneBugWatchActivity(prunable_ids)
-        transaction.commit()
-
-    def isDone(self):
-        """Return True if there are no watches left to prune."""
-        return len(self.getPrunableBugWatchIds(1)) == 0
+    target_table_class = BugWatchActivity
+    # For each bug_watch, remove all but the most recent MAX_SAMPLE_SIZE
+    # entries.
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, rank() OVER w AS rank
+            FROM BugWatchActivity
+            WINDOW w AS (PARTITION BY bug_watch ORDER BY id DESC)
+            ) AS whatever
+        WHERE rank > %s
+        """ % sqlvalues(MAX_SAMPLE_SIZE)
 
 
-class ObsoleteBugAttachmentDeleter(TunableLoop):
+class ObsoleteBugAttachmentPruner(BulkPruner):
     """Delete bug attachments without a LibraryFileContent record.
 
     Our database schema allows LibraryFileAlias records that have no
@@ -827,28 +754,14 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
     This class deletes bug attachments that reference such "content free"
     and thus completely useless LFA records.
     """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
-        self.store = IMasterStore(BugAttachment)
-
-    def _to_remove(self):
-        return self.store.find(
-            BugAttachment.id,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content == None)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        self.store.find(
-            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
+    target_table_class = BugAttachment
+    ids_to_prune_query = """
+        SELECT BugAttachment.id
+        FROM BugAttachment, LibraryFileAlias
+        WHERE
+            BugAttachment.libraryfile = LibraryFileAlias.id
+            AND LibraryFileAlias.content IS NULL
+        """
 
 
 class OldTimeLimitedTokenDeleter(TunableLoop):
@@ -911,130 +824,15 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
-class PopulateSPRChangelogs(TunableLoop):
-    maximum_chunk_size = 1
-
-    def __init__(self, log, abort_time=None):
-        super(PopulateSPRChangelogs, self).__init__(log, abort_time)
-        value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
-        if not value:
-            self.start_at = 0
-        else:
-            self.start_at = value
-        self.finish_at = self.getCandidateSPRs(0).last()
-
-    def getCandidateSPRs(self, start_at):
-        return IMasterStore(SourcePackageRelease).using(
-            SourcePackageRelease,
-            # Find any SPRFs that have expired (LFA.content IS NULL).
-            LeftJoin(
-                SourcePackageReleaseFile,
-                SourcePackageReleaseFile.sourcepackagereleaseID ==
-                    SourcePackageRelease.id),
-            LeftJoin(
-                LibraryFileAlias,
-                And(LibraryFileAlias.id ==
-                    SourcePackageReleaseFile.libraryfileID,
-                    LibraryFileAlias.content == None)),
-            # And exclude any SPRs that have any expired SPRFs.
-            ).find(
-                SourcePackageRelease.id,
-                SourcePackageRelease.id >= start_at,
-                SourcePackageRelease.changelog == None,
-            ).group_by(SourcePackageRelease.id).having(
-                Count(LibraryFileAlias) == 0
-            ).order_by(SourcePackageRelease.id)
-
-    def isDone(self):
-        return self.start_at > self.finish_at
-
-    def __call__(self, chunk_size):
-        for sprid in self.getCandidateSPRs(self.start_at)[:chunk_size]:
-            spr = SourcePackageRelease.get(sprid)
-            with TempDir() as tmp_dir:
-                dsc_file = None
-
-                # Grab the files from the librarian into a temporary
-                # directory.
-                try:
-                    for sprf in spr.files:
-                        dest = os.path.join(
-                            tmp_dir.path, sprf.libraryfile.filename)
-                        dest_file = open(dest, 'w')
-                        sprf.libraryfile.open()
-                        copy_and_close(sprf.libraryfile, dest_file)
-                        if dest.endswith('.dsc'):
-                            dsc_file = dest
-                except LookupError:
-                    self.log.warning(
-                        'SPR %d (%s %s) has missing library files.' % (
-                            spr.id, spr.name, spr.version))
-                    continue
-
-                if dsc_file is None:
-                    self.log.warning(
-                        'SPR %d (%s %s) has no DSC.' % (
-                            spr.id, spr.name, spr.version))
-                    continue
-
-                # Extract the source package. Throw away stdout/stderr
-                # -- we only really care about the return code.
-                fnull = open('/dev/null', 'w')
-                ret = subprocess.call(
-                    ['dpkg-source', '-x', dsc_file, os.path.join(
-                        tmp_dir.path, 'extracted')],
-                        stdout=fnull, stderr=fnull,
-                        preexec_fn=subprocess_setup)
-                fnull.close()
-                if ret != 0:
-                    self.log.warning(
-                        'SPR %d (%s %s) failed to unpack: returned %d' % (
-                            spr.id, spr.name, spr.version, ret))
-                    continue
-
-                # We have an extracted source package. Let's get the
-                # changelog. findFile ensures that it's not too huge, and
-                # not a symlink.
-                try:
-                    changelog_path = findFile(
-                        tmp_dir.path, 'debian/changelog')
-                except UploadError, e:
-                    changelog_path = None
-                    self.log.warning(
-                        'SPR %d (%s %s) changelog could not be '
-                        'imported: %s' % (
-                            spr.id, spr.name, spr.version, e))
-                if changelog_path:
-                    # The LFA should be restricted only if there aren't any
-                    # public publications.
-                    restricted = not any(
-                        not a.private for a in spr.published_archives)
-                    spr.changelog = getUtility(ILibraryFileAliasSet).create(
-                        'changelog',
-                        os.stat(changelog_path).st_size,
-                        open(changelog_path, "r"),
-                        "text/x-debian-source-changelog",
-                        restricted=restricted)
-                    self.log.info('SPR %d (%s %s) changelog imported.' % (
-                        spr.id, spr.name, spr.version))
-                else:
-                    self.log.warning('SPR %d (%s %s) had no changelog.' % (
-                        spr.id, spr.name, spr.version))
-
-        self.start_at = spr.id + 1
-        result = getUtility(IMemcacheClient).set(
-            'populate-spr-changelogs', self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
     tunable_loops = None # Collection of TunableLoops. Override.
     continue_on_failure = False # If True, an exception in a tunable loop
                                 # does not cause the script to abort.
+
+    # Default run time of the script in seconds. Override.
+    default_abort_script_time = None
 
     # _maximum_chunk_size is used to override the defined
     # maximum_chunk_size to allow our tests to ensure multiple calls to
@@ -1048,60 +846,196 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             test_args=test_args)
 
     def add_my_options(self):
+
         self.parser.add_option("-x", "--experimental", dest="experimental",
             default=False, action="store_true",
             help="Run experimental jobs. Normally this is just for staging.")
         self.parser.add_option("--abort-script",
-            dest="abort_script", default=None, action="store", type="int",
-            metavar="SECS", help="Abort script after SECS seconds.")
+            dest="abort_script", default=self.default_abort_script_time,
+            action="store", type="float", metavar="SECS",
+            help="Abort script after SECS seconds [Default %d]."
+            % self.default_abort_script_time)
         self.parser.add_option("--abort-task",
-            dest="abort_task", default=None, action="store", type="int",
-            metavar="SECS", help="Abort a task if it runs over SECS seconds.")
+            dest="abort_task", default=None, action="store", type="float",
+            metavar="SECS", help="Abort a task if it runs over SECS seconds "
+                "[Default (threads * abort_script / tasks)].")
+        self.parser.add_option("--threads",
+            dest="threads", default=multiprocessing.cpu_count(),
+            action="store", type="int", metavar='NUM',
+            help="Run NUM tasks in parallel [Default %d]."
+            % multiprocessing.cpu_count())
 
     def main(self):
-        start_time = time.time()
-        failure_count = 0
+        self.start_time = time.time()
 
+        # Stores the number of failed tasks.
+        self.failure_count = 0
+
+        # Copy the list so we can safely consume it.
+        tunable_loops = list(self.tunable_loops)
         if self.options.experimental:
-            tunable_loops = (
-                self.tunable_loops + self.experimental_tunable_loops)
-        else:
-            tunable_loops = self.tunable_loops
+            tunable_loops.extend(self.experimental_tunable_loops)
 
-        a_very_long_time = 31536000 # 1 year
-        abort_task = self.options.abort_task or a_very_long_time
-        abort_script = self.options.abort_script or a_very_long_time
+        threads = set()
+        for count in range(0, self.options.threads):
+            thread = threading.Thread(
+                target=self.run_tasks_in_thread,
+                name='Worker-%d' % (count+1,),
+                args=(tunable_loops,))
+            thread.start()
+            threads.add(thread)
 
-        for tunable_loop in tunable_loops:
-            self.logger.info("Running %s" % tunable_loop.__name__)
-
-            if abort_script <= 0:
-                self.logger.warn(
-                    "Script aborted after %d seconds." % abort_script)
+        # Block until all the worker threads have completed. We block
+        # until the script timeout is hit, plus 60 seconds. We wait the
+        # extra time because the loops are supposed to shut themselves
+        # down when the script timeout is hit, and the extra time is to
+        # give them a chance to clean up.
+        for thread in threads:
+            time_to_go = self.get_remaining_script_time() + 60
+            if time_to_go > 0:
+                thread.join(time_to_go)
+            else:
                 break
 
-            abort_time = min(
-                abort_task, abort_script + start_time - time.time())
+        # If the script ran out of time, warn.
+        if self.get_remaining_script_time() < 0:
+            self.logger.warn(
+                "Script aborted after %d seconds.", self.script_timeout)
 
-            tunable_loop = tunable_loop(
-                abort_time=abort_time, log=self.logger)
+        if tunable_loops:
+            self.logger.warn("%d tasks did not run.", len(tunable_loops))
 
-            if self._maximum_chunk_size is not None:
-                tunable_loop.maximum_chunk_size = self._maximum_chunk_size
+        if self.failure_count:
+            self.logger.error("%d tasks failed.", self.failure_count)
+            raise SilentLaunchpadScriptFailure(self.failure_count)
+
+    def get_remaining_script_time(self):
+        return self.start_time + self.script_timeout - time.time()
+
+    @property
+    def script_timeout(self):
+        a_very_long_time = 31536000 # 1 year
+        return self.options.abort_script or a_very_long_time
+
+    def get_loop_logger(self, loop_name):
+        """Retrieve a logger for use by a particular task.
+
+        The logger will be configured to add the loop_name as a
+        prefix to all log messages, making interleaved output from
+        multiple threads somewhat readable.
+        """
+        loop_logger = logging.getLogger('garbo.' + loop_name)
+        for filter in loop_logger.filters:
+            if isinstance(filter, PrefixFilter):
+                return loop_logger # Already have a PrefixFilter attached.
+        loop_logger.addFilter(PrefixFilter(loop_name))
+        return loop_logger
+
+    def get_loop_abort_time(self, num_remaining_tasks):
+        # How long until the task should abort.
+        if self.options.abort_task is not None:
+            # Task timeout specified on command line.
+            abort_task = self.options.abort_task
+
+        elif num_remaining_tasks <= self.options.threads:
+            # We have a thread for every remaining task. Let
+            # the task run until the script timeout.
+            self.logger.debug2(
+                "Task may run until script timeout.")
+            abort_task = self.get_remaining_script_time()
+
+        else:
+            # Evenly distribute the remaining time to the
+            # remaining tasks.
+            abort_task = (
+                self.options.threads
+                * self.get_remaining_script_time() / num_remaining_tasks)
+
+        return min(abort_task, self.get_remaining_script_time())
+
+    def run_tasks_in_thread(self, tunable_loops):
+        """Worker thread target to run tasks.
+
+        Tasks are removed from tunable_loops and run one at a time,
+        until all tasks that can be run have been run or the script
+        has timed out.
+        """
+        self.logger.debug(
+            "Worker thread %s running.", threading.currentThread().name)
+        self.login()
+
+        while True:
+            # How long until the script should abort.
+            if self.get_remaining_script_time() <= 0:
+                # Exit silently. We warn later.
+                self.logger.debug(
+                    "Worker thread %s detected script timeout.",
+                    threading.currentThread().name)
+                break
+
+            num_remaining_tasks = len(tunable_loops)
+            if not num_remaining_tasks:
+                break
+            tunable_loop_class = tunable_loops.pop(0)
+
+            loop_name = tunable_loop_class.__name__
+
+            loop_logger = self.get_loop_logger(loop_name)
+
+            # Aquire a lock for the task. Multiple garbo processes
+            # might be running simultaneously.
+            loop_lock_path = os.path.join(
+                LOCK_PATH, 'launchpad-garbo-%s.lock' % loop_name)
+            # No logger - too noisy, so report issues ourself.
+            loop_lock = GlobalLock(loop_lock_path, logger=None)
+            try:
+                loop_lock.acquire()
+                loop_logger.debug("Aquired lock %s.", loop_lock_path)
+            except LockAlreadyAcquired:
+                # If the lock cannot be acquired, but we have plenty
+                # of time remaining, just put the task back to the
+                # end of the queue.
+                if self.get_remaining_script_time() > 60:
+                    loop_logger.debug3(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
+                    time.sleep(0.3) # Avoid spinning.
+                    tunable_loops.append(tunable_loop_class)
+                # Otherwise, emit a warning and skip the task.
+                else:
+                    loop_logger.warn(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
+                continue
 
             try:
-                tunable_loop.run()
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                if not self.continue_on_failure:
-                    raise
-                self.logger.exception("Unhandled exception")
-                failure_count += 1
+                loop_logger.info("Running %s", loop_name)
+
+                abort_time = self.get_loop_abort_time(num_remaining_tasks)
+                loop_logger.debug2(
+                    "Task will be terminated in %0.3f seconds",
+                    abort_time)
+
+                tunable_loop = tunable_loop_class(
+                    abort_time=abort_time, log=loop_logger)
+
+                # Allow the test suite to override the chunk size.
+                if self._maximum_chunk_size is not None:
+                    tunable_loop.maximum_chunk_size = (
+                        self._maximum_chunk_size)
+
+                try:
+                    tunable_loop.run()
+                    loop_logger.debug(
+                        "%s completed sucessfully.", loop_name)
+                except Exception:
+                    loop_logger.exception("Unhandled exception")
+                    self.failure_count += 1
+
+            finally:
+                loop_lock.release()
+                loop_logger.debug("Released lock %s.", loop_lock_path)
                 transaction.abort()
-            transaction.abort()
-        if failure_count:
-            raise SilentLaunchpadScriptFailure(failure_count)
 
 
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1111,18 +1045,17 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
         RevisionCachePruner,
-        BugHeatUpdater,
         BugWatchScheduler,
-        PopulateSPRChangelogs,
+        AntiqueSessionPruner,
+        UnusedSessionPruner,
+        DuplicateSessionPruner,
+        BugHeatUpdater,
         ]
     experimental_tunable_loops = []
 
-    def add_my_options(self):
-        super(HourlyDatabaseGarbageCollector, self).add_my_options()
-        # By default, abort any tunable loop taking more than 15 minutes.
-        self.parser.set_defaults(abort_task=900)
-        # And abort the script if it takes more than 55 minutes.
-        self.parser.set_defaults(abort_script=55*60)
+    # 1 hour, minus 5 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled hourly run kicks in.
+    default_abort_script_time = 60 * 55
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1134,7 +1067,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
-        ObsoleteBugAttachmentDeleter,
+        ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
@@ -1144,7 +1077,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonPruner,
         ]
 
-    def add_my_options(self):
-        super(DailyDatabaseGarbageCollector, self).add_my_options()
-        # Abort script after 24 hours by default.
-        self.parser.set_defaults(abort_script=86400)
+    # 1 day, minus 30 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled daily run kicks in.
+    default_abort_script_time = 60 * 60 * 23.5

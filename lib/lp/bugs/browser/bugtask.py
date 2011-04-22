@@ -195,6 +195,9 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
@@ -275,12 +278,11 @@ from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache,
     )
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
-    BugTaskStatus.NEW:  True,
+    BugTaskStatus.NEW: True,
     BugTaskStatus.INCOMPLETE: True,
     BugTaskStatus.INVALID: False,
     BugTaskStatus.WONTFIX: False,
@@ -290,7 +292,7 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXCOMMITTED: True,
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
-    BugTaskStatus.EXPIRED: False
+    BugTaskStatus.EXPIRED: False,
     }
 
 
@@ -973,6 +975,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 self.context, target=self.context.distribution)
         else:
             return bugtask_heat_html(self.context)
+
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
 
 
 def calculate_heat_display(heat, max_bug_heat):
@@ -1779,6 +1788,13 @@ class BugsInfoMixin:
         else:
             return get_buglisting_search_filter_url(assignee=self.user.name)
 
+    @property
+    def my_reported_bugs_url(self):
+        """A URL to a list of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(bug_reporter=self.user.name)
+
 
 class BugsStatsMixin(BugsInfoMixin):
     """Contains properties giving bug stats.
@@ -1909,6 +1925,15 @@ class BugsStatsMixin(BugsInfoMixin):
             return self.context.searchTasks(params).count()
 
     @property
+    def my_reported_bugs_count(self):
+        """A count of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.bug_reporter = self.user
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -1924,7 +1949,7 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None):
+        has_patches=None, bug_reporter=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1938,6 +1963,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status_upstream', status_upstream))
     if has_patches is not None:
         search_params.append(('field.has_patch', 'on'))
+    if bug_reporter is not None:
+        search_params.append(('field.bug_reporter', bug_reporter))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -2187,11 +2214,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link(
             '+securitycontact', 'Change security contact', icon='edit')
 
-    def subscribe(self):
-        user = getUtility(ILaunchBag).user
-        if self.context.userCanAlterBugSubscription(user):
-            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
@@ -2327,6 +2349,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         # action. We pass an empty dict to _validate() because all the data
         # needing validation is already available internally to self.
         self._validate(None, {})
+
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def columns_to_show(self):
@@ -3094,19 +3119,26 @@ class BugTasksAndNominationsView(LaunchpadView):
     def initialize(self):
         """Cache the list of bugtasks and set up the release mapping."""
         # Cache some values, so that we don't have to recalculate them
-        # for each bug task. This query is redundant:
-        # the publisher also queries all the bugtasks.
-        self.bugtasks = list(self.context.bugtasks)
+        # for each bug task.
+        # Note: even though the publisher queries all the bugtasks and we in
+        # theory could just reuse that already loaded list here, it's better
+        # to do another query to only load the bug tasks for active projects
+        # so we don't incur the cost of setting up data structures for tasks
+        # we will not be showing in the listing.
+        bugtask_set = getUtility(IBugTaskSet)
+        search_params = BugTaskSearchParams(user=self.user, bug=self.context)
+        self.bugtasks = list(bugtask_set.search(search_params))
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
 
-        # Pull all of the related milestones into the storm cache, since
-        # they'll be needed for the vocabulary used in this view.
-        bugtask_set = getUtility(IBugTaskSet)
-        self.milestones = list(
-            bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
-
+        # Pull all of the related milestones, if any, into the storm cache,
+        # since they'll be needed for the vocabulary used in this view.
+        if self.bugtasks:
+            self.milestones = list(
+                bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
+        else:
+            self.milestones = []    
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
@@ -3178,7 +3210,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
         return view
-    
+
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 

@@ -26,6 +26,7 @@ from lp.registry.interfaces.persontransferjob import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
+from lp.services.mail.sendmail import format_address_for_person
 from lp.testing import (
     run_script,
     person_logged_in,
@@ -39,10 +40,8 @@ class TestPersonMergeJob(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonMergeJob, self).setUp()
-        self.from_person = self.factory.makePerson(
-            name='void', email='void@eg.dom')
-        self.to_person = self.factory.makePerson(
-            name='gestalt', email='gestalt@eg.dom')
+        self.from_person = self.factory.makePerson(name='void')
+        self.to_person = self.factory.makePerson(name='gestalt')
         self.job_source = getUtility(IPersonMergeJobSource)
         self.job = self.job_source.create(
             from_person=self.from_person, to_person=self.to_person)
@@ -58,6 +57,21 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(self.to_person, self.job.to_person)
         self.assertEqual(self.to_person, self.job.major_person)
         self.assertEqual({}, self.job.metadata)
+
+    def test_getErrorRecipients_user(self):
+        # The to_person is the recipient.
+        email_id = format_address_for_person(self.to_person)
+        self.assertEqual([email_id], self.job.getErrorRecipients())
+
+    def test_getErrorRecipients_team(self):
+        # The to_person admins are the recipients.
+        to_team = self.factory.makeTeam()
+        from_team = self.factory.makeTeam()
+        job = self.job_source.create(
+            from_person=from_team, to_person=to_team,
+            reviewer=to_team.teamowner)
+        self.assertEqual(
+            to_team.getTeamAdminsEmailAddresses(), job.getErrorRecipients())
 
     def test_enqueue(self):
         # Newly created jobs are enqueued.
@@ -105,7 +119,9 @@ class TestPersonMergeJob(TestCaseWithFactory):
         from_team = self.factory.makeTeam(name='null')
         with person_logged_in(from_team.teamowner):
             from_team.teamowner.leave(from_team)
-        self.job_source.create(from_person=from_team, to_person=to_team)
+        self.job_source.create(
+            from_person=from_team, to_person=to_team,
+            reviewer=from_team.teamowner)
         transaction.commit()
 
         out, err, exit_code = run_script(

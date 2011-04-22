@@ -50,6 +50,9 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
+    Desc,
+    Exists,
+    Join,
     LeftJoin,
     Max,
     Not,
@@ -87,7 +90,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
@@ -208,6 +214,29 @@ _bug_tag_query_template = """
             %(condition)s GROUP BY BugTag.tag ORDER BY BugTag.tag"""
 
 
+def snapshot_bug_params(bug_params):
+    """Return a snapshot of a `CreateBugParams` object."""
+    return Snapshot(
+        bug_params, names=[
+            "owner", "title", "comment", "description", "msg",
+            "datecreated", "security_related", "private",
+            "distribution", "sourcepackagename", "binarypackagename",
+            "product", "status", "subscribers", "tags",
+            "subscribe_owner", "filed_by"])
+
+
+class BugTag(SQLBase):
+    """A tag belonging to a bug."""
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    tag = StringCol(notNull=True)
+
+
+# We need to always use the same Count instance or the
+# get_bug_tags_open_count is not UNIONable.
+tag_count_columns = (BugTag.tag, Count())
+
+
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
@@ -227,59 +256,39 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_condition, user):
+def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
     """Return all the used bug tags with their open bug count.
 
     :param context_condition: A Storm SQL expression, limiting the
         used tags to a specific context. Only the BugTask table may be
         used to choose the context.
     :param user: The user performing the search.
+    :param wanted_tags: A set of tags within which to restrict the search.
 
     :return: A list of tuples, (tag name, open bug count).
     """
-    open_statuses_condition = BugTask.status.is_in(
-        UNRESOLVED_BUGTASK_STATUSES)
-    columns = [
-        BugTag.tag,
-        Count(),
-        ]
-    tables = [
+    tables = (
         BugTag,
-        LeftJoin(Bug, Bug.id == BugTag.bugID),
-        LeftJoin(
-            BugTask,
-            And(BugTask.bugID == Bug.id, open_statuses_condition)),
-        ]
+        Join(BugTask, BugTask.bugID == BugTag.bugID),
+        )
     where_conditions = [
-        open_statuses_condition,
+        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         context_condition,
         ]
+    if wanted_tags is not None:
+        where_conditions.append(BugTag.tag.is_in(wanted_tags))
     privacy_filter = get_bug_privacy_filter(user)
     if privacy_filter:
-        where_conditions.append(SQLRaw(privacy_filter))
+        # The EXISTS sub-select avoids a join against Bug, improving
+        # performance significantly.
+        where_conditions.append(
+            Exists(Select(
+                columns=[True], tables=[Bug],
+                where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    result = store.execute(Select(
-        columns=columns, where=And(*where_conditions), tables=tables,
-        group_by=BugTag.tag, order_by=BugTag.tag))
-    return shortlist([(row[0], row[1]) for row in result.get_all()])
-
-
-def snapshot_bug_params(bug_params):
-    """Return a snapshot of a `CreateBugParams` object."""
-    return Snapshot(
-        bug_params, names=[
-            "owner", "title", "comment", "description", "msg",
-            "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
-            "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
-
-
-class BugTag(SQLBase):
-    """A tag belonging to a bug."""
-
-    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    tag = StringCol(notNull=True)
+    return store.using(*tables).find(
+        tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
+            Desc(Count()), BugTag.tag)
 
 
 class BugBecameQuestionEvent:
@@ -703,7 +712,7 @@ BugMessage""" % sqlvalues(self.id))
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
-    @property
+    @cachedproperty
     def initial_message(self):
         """See `IBug`."""
         store = Store.of(self)
@@ -752,13 +761,18 @@ BugMessage""" % sqlvalues(self.id))
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if level is None:
-            level = BugNotificationLevel.COMMENTS
 
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if level is not None:
+                    sub.bug_notification_level = level
+                    # Should subscribed_by be changed in this case?  Until
+                    # proven otherwise, we will answer with "no."
                 return sub
+
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by,
@@ -841,6 +855,9 @@ BugMessage""" % sqlvalues(self.id))
 
     def mute(self, person, muted_by):
         """See `IBug`."""
+        if person is None:
+            # This may be a webservice request.
+            person = muted_by
         # If there's an existing subscription, update it.
         store = Store.of(self)
         subscriptions = store.find(
@@ -1151,14 +1168,8 @@ BugMessage""" % sqlvalues(self.id))
             distribution = target.distribution
             source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            if target.distroseries is not None:
-                distro_series = target.distroseries
-                source_package_name = target.sourcepackagename
-            elif target.distribution is not None:
-                distribution = target.distribution
-                source_package_name = target.sourcepackagename
-            else:
-                source_package_name = target.sourcepackagename
+            distro_series = target.distroseries
+            source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
@@ -1790,7 +1801,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):
@@ -1941,10 +1952,11 @@ BugMessage""" % sqlvalues(self.id))
         # See bug 542274 for more details.
         store = Store.of(self)
         return store.find(
-            (BugAttachment, LibraryFileAlias),
+            (BugAttachment, LibraryFileAlias, LibraryFileContent),
             BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+            BugAttachment.libraryfileID == LibraryFileAlias.id,
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            ).order_by(BugAttachment.id)
 
     @property
     def attachments(self):

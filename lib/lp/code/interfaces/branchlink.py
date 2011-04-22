@@ -17,6 +17,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
     REQUEST_USER,
@@ -45,6 +46,7 @@ class IHasLinkedBranches(Interface):
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
+    @operation_for_version('beta')
     def linkBranch(branch, registrant):
         """Associate a branch with this bug.
 
@@ -56,6 +58,7 @@ class IHasLinkedBranches(Interface):
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
+    @operation_for_version('beta')
     def unlinkBranch(branch, user):
         """Unlink a branch from this bug.
 

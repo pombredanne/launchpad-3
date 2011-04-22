@@ -39,7 +39,6 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -76,6 +75,7 @@ from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.utils import (
     re_isadeb,
     re_issource,
@@ -423,9 +423,11 @@ class Archive(SQLBase):
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
 
+        db_pubconf = getUtility(
+            IPublisherConfigSet).getByDistribution(self.distribution)
         if self.is_copy:
             url = urlappend(
-                config.archivepublisher.copy_base_url,
+                db_pubconf.copy_base_url,
                 self.distribution.name + '-' + self.name)
             return urlappend(url, self.distribution.name)
 
@@ -435,8 +437,7 @@ class Archive(SQLBase):
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
         return urlappend(
-            config.archivepublisher.base_url,
-            self.distribution.name + postfix)
+            db_pubconf.base_url, self.distribution.name + postfix)
 
     @property
     def signing_key_fingerprint(self):
@@ -464,7 +465,8 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -525,6 +527,8 @@ class Archive(SQLBase):
         resultset = store.find(SourcePackagePublishingHistory,
             *storm_clauses).order_by(
             *orderBy)
+        if not eager_load:
+            return resultset
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):

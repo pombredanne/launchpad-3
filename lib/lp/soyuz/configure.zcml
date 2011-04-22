@@ -89,6 +89,10 @@
         class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
+        <!-- changelog needs to be updated when unembargoing -->
+        <require
+            permission="launchpad.Edit"
+            set_attributes="changelog"/>
     </class>
     <facet
         facet="overview">
@@ -800,17 +804,10 @@
     <securedutility
         class="lp.soyuz.model.packageset.PackagesetSet"
         provides="lp.soyuz.interfaces.packageset.IPackagesetSet">
-        <allow
-            attributes="
-                __getitem__
-                get
-                getByName
-                getByOwner
-                setsIncludingSource"/>
+        <allow interface=".interfaces.packageset.IPackagesetSet" />
         <require
             permission="launchpad.Edit"
-            attributes="
-                new"/>
+            interface=".interfaces.packageset.IPackagesetSetEdit" />
     </securedutility>
 
     <!-- PackagesetGroup -->

@@ -294,11 +294,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True)
-    attachments = exported(
+    attachments = doNotSnapshot(exported(
         CollectionField(
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
-            readonly=True))
+            readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = exported(
@@ -382,7 +382,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
-    # BugMessage.visible when building bug comments.
+    # BugMessage.message.visible when building bug comments.
     bug_messages = Attribute('The bug messages related to this object.')
     comment_count = Attribute(
         "The number of comments on this bug, not including the initial "
@@ -394,13 +394,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True,
             value_type=Reference(schema=IMessage)))
 
-    indexed_messages = exported(
+    indexed_messages = doNotSnapshot(exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
             value_type=Reference(schema=IMessage)),
-        exported_as='messages')
+        exported_as='messages'))
 
     def _indexed_messages(include_content=False, include_parents=False):
         """Low level query for getting bug messages.

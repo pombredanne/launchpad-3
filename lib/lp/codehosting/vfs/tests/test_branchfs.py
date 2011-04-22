@@ -55,6 +55,7 @@ from canonical.testing.layers import (
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
+    branch_id_alias,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     )
@@ -266,7 +267,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
 
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on = /%s\n' % branch.unique_name,
+                'default_stack_on = %s\n' % branch_id_alias(branch),
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 

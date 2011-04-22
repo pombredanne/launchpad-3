@@ -168,6 +168,10 @@
     <facet
         facet="bugs">
 
+      <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
+        <allow attributes="rank id task"/>
+      </class>
+
         <!-- IBugTask -->
 
         <class
@@ -190,8 +194,12 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    distributionID
+                    distroseriesID
                     milestoneID
+                    productID
                     productseriesID
+                    sourcepackagenameID
                     task_age
                     bug_subscribers
                     is_complete
@@ -233,7 +241,8 @@
                     conjoined_slave
                     subscribe
                     getConjoinedMaster
-                    findSimilarBugs"/>
+                    findSimilarBugs
+                    getContributorInfo"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -659,6 +668,38 @@
               " />
     </class>
 
+    <!-- PersonSubscriptionInfo -->
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptions">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
+    </class>
+
     <facet
         facet="bugs">
 
@@ -861,7 +902,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible index"/>
+            set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -1052,6 +1093,10 @@
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+        <!-- BugNotificationRecipients provides the following
+             attributes/methods in addition. -->
+        <allow
+            attributes="subscription_filters addFilter"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"

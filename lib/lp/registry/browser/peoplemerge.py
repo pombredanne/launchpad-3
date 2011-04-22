@@ -18,7 +18,6 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
@@ -47,7 +46,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IRequestPeopleMerge,
     )
-from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -58,14 +56,14 @@ class ValidatingMergeView(LaunchpadFormView):
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
         dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
-
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge if there is a PPA with published
-        # packages on the duplicate, unless that PPA is removed.
-        if dupe_person is not None:
+        target_person = data.get('target_person') or self.user
+        if dupe_person is None:
+            self.setFieldError(
+                'dupe_person', 'The duplicate is not a valid person or team.')
+        else:
+            if dupe_person == target_person:
+                self.addError(_("You can't merge ${name} into itself.",
+                      mapping=dict(name=dupe_person.name)))
             dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
                 dupe_person, statuses=[ArchiveStatus.ACTIVE,
                                        ArchiveStatus.DELETING])
@@ -75,6 +73,12 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
+            if dupe_person.is_merge_pending:
+                self.addError(_("${name} is already queued for merging.",
+                      mapping=dict(name=dupe_person.name)))
+        if target_person is not None and target_person.is_merge_pending:
+            self.addError(_("${name} is already queued for merging.",
+                  mapping=dict(name=target_person.name)))
 
 
 class AdminMergeBaseView(ValidatingMergeView):
@@ -86,7 +90,8 @@ class AdminMergeBaseView(ValidatingMergeView):
     # subclasses.
     should_confirm_email_reassignment = False
     should_confirm_member_deactivation = False
-    merge_message = _('Merge completed successfully.')
+    merge_message = _(
+        'A merge is queued and is expected to complete in a few minutes.')
 
     dupe_person_emails = ()
     dupe_person = None
@@ -99,25 +104,6 @@ class AdminMergeBaseView(ValidatingMergeView):
     @property
     def success_url(self):
         return canonical_url(self.target_person)
-
-    def validate(self, data):
-        """Check that user is not attempting to merge a person into itself."""
-        dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge the teams if there is a PPA with published
-        # packages on the duplicate person, unless that PPA is removed.
-        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
-            dupe_person, statuses=[ArchiveStatus.ACTIVE,
-                                   ArchiveStatus.DELETING])
-        if dupe_person_ppas is not None:
-            self.addError(_(
-                "${name} has a PPA that must be deleted before it "
-                "can be merged. It may take ten minutes to remove the "
-                "deleted PPA's files.",
-                mapping=dict(name=dupe_person.name)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
@@ -143,19 +129,18 @@ class AdminMergeBaseView(ValidatingMergeView):
         Before merging this moves each email address of the duplicate person
         to the target person, and resets them to `NEW`.
         """
-        for email in self.dupe_person_emails:
-            email = IMasterObject(email)
-            # EmailAddress.person and EmailAddress.account are readonly
-            # fields, so we need to remove the security proxy here.
-            naked_email = removeSecurityProxy(email)
-            naked_email.personID = self.target_person.id
-            naked_email.accountID = self.target_person.accountID
-            # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
-            # should be done only when merging people but not when merging
-            # teams.
-            naked_email.status = EmailAddressStatus.NEW
-        flush_database_updates()
-        getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
+        if not self.dupe_person.is_team:
+            # Transfer user email addresses. Team addresses will be deleted.
+            for email in self.dupe_person_emails:
+                email = IMasterObject(email)
+                # EmailAddress.person and EmailAddress.account are readonly
+                # fields, so we need to remove the security proxy here.
+                naked_email = removeSecurityProxy(email)
+                naked_email.personID = self.target_person.id
+                naked_email.accountID = self.target_person.accountID
+                naked_email.status = EmailAddressStatus.NEW
+        job = getUtility(IPersonSet).mergeAsync(
+            self.dupe_person, self.target_person, reviewer=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
 
@@ -219,49 +204,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
     def registry_experts(self):
         return getUtility(ILaunchpadCelebrities).registry_experts
 
-    def doMerge(self, data):
-        """Purge the non-transferable team data and merge.
-
-        For the duplicate team:
-
-        - If a mailing list exists, and is REGISTERED, DECLINED, FAILED or
-          INACTIVE, it is purged.
-
-        - Unsets the contact address.
-
-        If the target team is the Registry Experts:
-
-        - The duplicate team is withdrawn from all teams that it is itself a
-          member of.
-
-        """
-        # A team cannot have more than one mailing list. The old list will
-        # remain in the archive.
-        purge_list = (self.dupe_person.mailing_list is not None
-            and self.dupe_person.mailing_list.status in PURGE_STATES)
-        if purge_list:
-            self.dupe_person.mailing_list.purge()
-        # Team email addresses are not transferable.
-        self.dupe_person.setContactAddress(None)
-        # The registry experts does not want to acquire super teams from a
-        # merge. This operation requires unrestricted access to ensure
-        # the user who has permission to delete a team can remove the
-        # team from other teams.
-        if self.target_person == self.registry_experts:
-            all_super_teams = set(self.dupe_person.teams_participated_in)
-            indirect_super_teams = set(
-                self.dupe_person.teams_indirectly_participated_in)
-            super_teams = all_super_teams - indirect_super_teams
-            naked_dupe_person = removeSecurityProxy(self.dupe_person)
-            for team in super_teams:
-                naked_dupe_person.retractTeamMembership(team, self.user)
-            del naked_dupe_person
-        # We have sent another series of calls to the db, potentially a long
-        # sequence depending on the merge. We want everything synced up
-        # before proceeding.
-        flush_database_updates()
-        super(AdminTeamMergeView, self).doMerge(data)
-
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
         # If errors have already been discovered there is no need to continue,
@@ -273,16 +215,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
         super(AdminTeamMergeView, self).validate(data)
         dupe_team = data['dupe_person']
         target_team = data['target_person']
-        # Merge cannot reconcile cyclic membership in super teams.
-        # Super team memberships are automatically removed when merging into
-        # the registry experts team. When merging into any other team, an
-        # error must be raised to explain that the user must remove the teams
-        # himself.
-        super_teams_count = dupe_team.super_teams.count()
-        if target_team != self.registry_experts and super_teams_count > 0:
-            self.addError(_(
-                "${name} has super teams, so it can't be merged.",
-                mapping=dict(name=dupe_team.name)))
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
         if self.hasMailingList(dupe_team):
@@ -305,24 +237,14 @@ class AdminTeamMergeView(AdminMergeBaseView):
             # merge.
             self.should_confirm_member_deactivation = True
             return
-        self.doMerge(data)
+        super(AdminTeamMergeView, self).doMerge(data)
 
     @action('Deactivate Members and Merge',
             name='deactivate_members_and_merge')
     def deactivate_members_and_merge_action(self, action, data):
         """Deactivate all members of the team to be merged and merge them."""
         self.setUpPeople(data)
-        comment = (
-            'Deactivating all members as this team is being merged into %s. '
-            'Please contact the administrators of <%s> if you have any '
-            'issues with this change.'
-            % (self.target_person.unique_displayname,
-               canonical_url(self.target_person)))
-        membershipset = getUtility(ITeamMembershipSet)
-        membershipset.deactivateActiveMemberships(
-            self.dupe_person, comment, self.user)
-        flush_database_updates()
-        self.doMerge(data)
+        super(AdminTeamMergeView, self).doMerge(data)
 
 
 class DeleteTeamView(AdminTeamMergeView):
@@ -330,7 +252,7 @@ class DeleteTeamView(AdminTeamMergeView):
 
     page_title = 'Delete'
     field_names = ['dupe_person', 'target_person']
-    merge_message = _('Team deleted.')
+    merge_message = _('The team is queued to be deleted.')
 
     @property
     def label(self):
@@ -545,10 +467,5 @@ class RequestPeopleMergeView(ValidatingMergeView):
         token = logintokenset.new(
             self.user, login, removeSecurityProxy(email).email,
             LoginTokenType.ACCOUNTMERGE)
-
-        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
-        #      improves problems with merge people tests.
-        import canonical.database.sqlbase
-        canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()
         self.next_url = './+mergerequest-sent?dupe=%d' % dupeaccount.id

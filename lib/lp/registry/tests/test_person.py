@@ -12,6 +12,7 @@ from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -24,6 +25,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -34,6 +36,7 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
@@ -46,6 +49,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -55,13 +59,16 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
-from lp.registry.model.person import Person
+from lp.registry.model.person import (
+    get_recipients,
+    Person,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.propertycache import clear_property_cache
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -284,14 +291,14 @@ class TestPerson(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(person.is_merge_pending)
 
-    def test_merge_pending(self):
+    def test_is_merge_pending(self):
         # is_merge_pending returns True when this person is being merged with
         # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertTrue(from_person.is_merge_pending)
-        self.assertTrue(to_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
 
     def test_mergeAsync_success(self):
         # mergeAsync returns a job with the from and to persons.
@@ -306,6 +313,51 @@ class TestPerson(TestCaseWithFactory):
         # self-generated bug notifications by default.
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
+
+    def test_canAccess__anonymous(self):
+        # Anonymous users cannot call Person.canAccess()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canAccess')
+
+    def test_canAccess__checking_own_permissions(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, 'licenses'))
+            self.assertFalse(person.canAccess(product, 'newSeries'))
+
+    def test_canAccess__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canAccess() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canAccess')
+
+    def test_canWrite__anonymous(self):
+        # Anonymous users cannot call Person.canWrite()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canWrite')
+
+    def test_canWrite__checking_own_permissions(self):
+        # Logged in users can call Person.canWrite() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertFalse(person.canWrite(product, 'displayname'))
+        with person_logged_in(product.owner):
+            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+
+    def test_canWrite__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canWrite() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canWrite')
 
 
 class TestPersonStates(TestCaseWithFactory):
@@ -692,36 +744,71 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team, target_team):
-        membershipset = getUtility(ITeamMembershipSet)
-        membershipset.deactivateActiveMemberships(
-            test_team, comment='',
-            reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team)
+    def test_team_with_active_mailing_list_raises_error(self):
+        # A team with an active mailing list cannot be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError, self.person_set.merge, test_team, target_team)
+
+    def test_team_with_inactive_mailing_list(self):
+        # A team with an inactive mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
+        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
+        self.assertEqual(0, emails)
+
+    def test_team_with_purged_mailing_list(self):
+        # A team with a purges mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        mailing_list.purge()
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+
+    def test_team_with_members(self):
+        # Team members are removed before merging.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        former_member = self.factory.makePerson()
+        with person_logged_in(test_team.teamowner):
+            test_team.addMember(former_member, test_team.teamowner)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
         # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
-        self._doMerge(test_team, target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
 
-    def test_team_with_super_teams_raises_error(self):
-        # A team with no members but with superteams
-        # raises an assertion error.
+    def test_team_with_super_teams(self):
+        # A team with superteams can be merged, but the memberships
+        # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError,
-            self._doMerge,
-            test_team,
-            target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(target_team.super_teams))
 
     def test_merge_moves_branches(self):
         # When person/teams are merged, branches owned by the from person
@@ -1253,7 +1340,84 @@ class TestAPIPartipication(TestCaseWithFactory):
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
-        # XXX: This number should really be 10, but see
+        # XXX: This number should really be 12, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(14)))
+        self.assertThat(collector, HasQueryCount(LessThan(16)))
+
+
+class TestGetRecipients(TestCaseWithFactory):
+    """Tests for get_recipients"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetRecipients, self).setUp()
+        login('foo.bar@canonical.com')
+
+    def test_get_recipients_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([owner]), set(recipients))
+
+    def test_get_recipients_team(self):
+        """Ensure get_recipients uses teams with preferredemail."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([team]), set(recipients))
+
+    def test_get_recipients_team_with_unvalidated_address(self):
+        """Ensure get_recipients handles teams with non-preferred addresses.
+
+        If there is no preferred address but one or more non-preferred ones,
+        email should still be sent to the members.
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        self.assertContentEqual([team], get_recipients(team))
+        team.preferredemail.status = EmailAddressStatus.NEW
+        clear_property_cache(team)
+        self.assertContentEqual([owner], get_recipients(team))
+
+    def makePersonWithNoPreferredEmail(self, **kwargs):
+        kwargs['email_address_status'] = EmailAddressStatus.NEW
+        return self.factory.makePerson(**kwargs)
+
+    def get_test_recipients_person(self):
+        person = self.factory.makePerson()
+        recipients = get_recipients(person)
+        self.assertEqual(set([person]), set(recipients))
+
+    def test_get_recipients_empty(self):
+        """get_recipients returns empty set for person with no preferredemail.
+        """
+        recipients = get_recipients(self.makePersonWithNoPreferredEmail())
+        self.assertEqual(set(), set(recipients))
+
+    def test_get_recipients_complex_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team_member_person = self.factory.makePerson(
+            displayname='Bing Bar', email='bing@bar.com')
+        super_team_member_team = self.factory.makeTeam(
+            email='baz@bar.com')
+        super_team = self.factory.makeTeam(
+            team, members=[super_team_member_person,
+                           super_team_member_team,
+                           self.makePersonWithNoPreferredEmail()])
+        super_team_member_team.acceptInvitationToBeMemberOf(
+            super_team, u'Go Team!')
+        recipients = list(get_recipients(super_team))
+        self.assertEqual(set([owner,
+                              super_team_member_person,
+                              super_team_member_team]),
+                         set(recipients))

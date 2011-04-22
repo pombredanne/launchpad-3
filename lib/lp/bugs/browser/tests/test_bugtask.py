@@ -8,7 +8,10 @@ from datetime import datetime
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -20,21 +23,33 @@ from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTask,
+    IBugTaskSet,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
@@ -45,7 +60,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTaskView(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -71,7 +86,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(67)))
+        self.assertThat(recorder, HasQueryCount(LessThan(69)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -83,6 +98,24 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
+
+    def test_rendered_query_counts_constant_with_attachments(self):
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                73, self.factory.makePerson())
+
+            # First test with a single attachment.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
+
+        with celebrity_logged_in('admin'):
+            # And now with 10.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugTask(bug=task.bug)
+            for i in range(10):
+                self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -407,6 +440,59 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
             self.view.getTargetLinkTitle(bug_task.target))
+
+    def _get_object_type(self, task_or_nomination):
+        if IBugTask.providedBy(task_or_nomination):
+            return "bugtask"
+        elif IBugNomination.providedBy(task_or_nomination):
+            return "nomination"
+        else:
+            return "unknown"
+
+    def test_bugtask_listing_for_inactive_projects(self):
+        # Bugtasks should only be listed for active projects.
+
+        product_foo = self.factory.makeProduct(name="foo")
+        product_bar = self.factory.makeProduct(name="bar")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        bugtask_set = getUtility(IBugTaskSet)
+        bugtask_set.createTask(
+            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+
+        removeSecurityProxy(product_bar).active = False
+
+        request = LaunchpadTestRequest()
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
+        foo_bugtasks_and_nominations_view.initialize()
+
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        actual_results = []
+        for task_or_nomination_view in task_and_nomination_views:
+            task_or_nomination = task_or_nomination_view.context
+            actual_results.append((
+                self._get_object_type(task_or_nomination),
+                task_or_nomination.status.title,
+                task_or_nomination.target.bugtargetdisplayname))
+        # Only the one active project's task should be listed.
+        self.assertEqual([("bugtask", "New", "Foo")], actual_results)
+
+    def test_listing_with_no_bugtasks(self):
+        # Test the situation when there are no bugtasks to show.
+
+        product_foo = self.factory.makeProduct(name="foo")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        removeSecurityProxy(product_foo).active = False
+
+        request = LaunchpadTestRequest()
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
+        foo_bugtasks_and_nominations_view.initialize()
+
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        self.assertEqual([], task_and_nomination_views)
 
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):

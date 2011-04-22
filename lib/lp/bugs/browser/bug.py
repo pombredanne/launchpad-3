@@ -199,8 +199,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = [
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
-        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'adddistro', 'subscription', 'addsubscriber', 'editsubscriptions',
+        'addcomment', 'nominate', 'addbranch', 'linktocve', 'unlinkcve',
         'createquestion', 'mute_subscription', 'removequestion',
         'activitylog', 'affectsmetoo']
 
@@ -272,6 +272,13 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def editsubscriptions(self):
+        """Return the 'Edit subscriptions' Link."""
+        text = 'Edit all of your subscriptions'
+        return Link(
+            '+subscriptions', text, icon='edit', summary=(
+                'View and change your subscriptions to this bug'))
 
     def mute_subscription(self):
         """Return the 'Mute subscription' Link."""
@@ -520,6 +527,21 @@ class BugViewMixin:
             return 'muted-true %s' % subscription_class
         else:
             return 'muted-false %s' % subscription_class
+
+    @cachedproperty
+    def user_should_see_mute_link(self):
+        """Return True if the user should see the Mute link."""
+        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+            user_is_subscribed = (
+                # Note that we don't have to check for isMuted(), since
+                # if isMuted() is True isSubscribed() will also be
+                # True.
+                self.context.isSubscribed(self.user) or
+                self.context.isSubscribedToDupes(self.user) or
+                self.context.personIsAlsoNotifiedSubscriber(self.user))
+            return user_is_subscribed
+        else:
+            return False
 
     @cachedproperty
     def _bug_attachments(self):

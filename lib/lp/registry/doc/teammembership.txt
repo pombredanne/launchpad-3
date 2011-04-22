@@ -854,11 +854,14 @@ admin members plus the owner in case he is not one of the admin members.
     >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
     True
 
-    >>> shipit_admins = personset.getByName('shipit-admins')
-    >>> shipit_admins.adminmembers.count() == 0
+    >>> from lp.testing import person_logged_in
+    >>> owner = factory.makePerson()
+    >>> adminless_team = factory.makeTeam(owner=owner)
+    >>> with person_logged_in(owner):
+    ...     owner.leave(adminless_team)
+    >>> adminless_team.adminmembers.count() == 0
     True
-    >>> owner = shipit_admins.teamowner
-    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
+    >>> list(adminless_team.getDirectAdministrators()) == [owner]
     True
 
 Note that the team administrators can contain teams, so if you want to
@@ -897,7 +900,7 @@ If a team is merged it will not show up in the set of administered teams.
     >>> login('foo.bar@canonical.com')
     >>> membershipset.deactivateActiveMemberships(
     ...     cprov_team, "Merging", foobar)
-    >>> personset.merge(cprov_team, guadamen_team)
+    >>> personset.merge(cprov_team, guadamen_team, cprov_team.teamowner)
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 

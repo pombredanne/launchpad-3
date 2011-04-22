@@ -92,7 +92,10 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
@@ -110,6 +113,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -796,9 +800,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.product == self, user)
+        return get_bug_tags_open_count(
+            BugTask.product == self, user, wanted_tags=wanted_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
@@ -1012,6 +1017,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_series(self):
         """See `IProduct`."""
+        if not service_uses_launchpad(self.translations_usage):
+            return []
         translatable_product_series = set(
             product_series
             for product_series in self.series
@@ -1052,7 +1059,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         obsolete_product_series = set(
             product_series for product_series in self.series
-            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+            if product_series.has_obsolete_translation_templates)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property
@@ -1326,6 +1333,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
 
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product.
+
+        Given that there must be a product task for a series of that product
+        to have a task, we give no more weighting to a productseries task than
+        any other.
+        """
+        productID = self.id
+        def weight_function(bugtask):
+            if bugtask.productID == productID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        return weight_function
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1356,10 +1379,19 @@ class ProductSet:
 
     @property
     def all_active(self):
-        results = Product.selectBy(
-            active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["_owner"])
+        return self.get_all_active()
+
+    def get_all_active(self, eager_load=True):
+        result = IStore(Product).find(Product, Product.active
+            ).order_by(Desc(Product.datecreated))
+        if not eager_load:
+            return result
+        def do_eager_load(rows):
+            owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
+            # +detailed-listing renders the person with team branding.
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                owner_ids, need_validity=True, need_icon=True))
+        return DecoratedResultSet(result, pre_iter_hook=do_eager_load)
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1583,6 +1615,7 @@ class ProductSet:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
         result = IStore(Product).find(Product, *conditions)
+
         def eager_load(rows):
             product_ids = set(obj.id for obj in rows)
             if not product_ids:
@@ -1596,7 +1629,7 @@ class ProductSet:
                 if not safe_hasattr(cache, '_cached_licenses'):
                     cache._cached_licenses = []
             for subscription in IStore(CommercialSubscription).find(
-                CommercialSubscription, 
+                CommercialSubscription,
                 CommercialSubscription.productID.is_in(product_ids)):
                 cache = caches[subscription.productID]
                 cache.commercial_subscription = subscription

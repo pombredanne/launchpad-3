@@ -218,18 +218,18 @@ def create_components(distroseries, uploader):
 def create_series(parent, full_name, version, status):
     """Set up a `DistroSeries`."""
     distribution = parent.distribution
-    owner = parent.owner
+    registrant = parent.owner
     name = full_name.split()[0].lower()
     title = "The " + full_name
     displayname = full_name.split()[0]
     new_series = distribution.newSeries(name=name, title=title,
         displayname=displayname, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
-        parent_series=parent, owner=owner)
+        parent_series=None, registrant=registrant)
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    ids = InitialiseDistroSeries(new_series)
+    ids = InitialiseDistroSeries(parent, new_series)
     ids.initialise()
     return new_series
 
@@ -345,10 +345,7 @@ def create_ppa_user(username, options, approver, log):
     if person is None:
         have_email = (options.email != default_email)
         command_line = [
-            'utilities/make-lp-user',
-            username,
-            'ubuntu-team'
-            ]
+            'utilities/make-lp-user', username, 'ubuntu-team']
         if have_email:
             command_line += ['--email', options.email]
 

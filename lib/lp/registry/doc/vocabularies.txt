@@ -778,12 +778,12 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
-    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> login_person(foo_bar)
-    >>> membershipset = getUtility(ITeamMembershipSet)
-    >>> membershipset.deactivateActiveMemberships(
-    ...     ephemeral, "Merging", foo_bar)
-    >>> person_set.merge(ephemeral, foo_bar)
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> person_set.merge(
+    ...     ephemeral, registry_experts, reviewer=ephemeral.teamowner)
     >>> login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
@@ -992,7 +992,6 @@ will be returned.
      (u'Other Team', u'Owner'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
-     (u'ShipIt Administrators', u'Mark Shuttleworth'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),
@@ -1275,8 +1274,6 @@ _clauseTables).
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary
     True

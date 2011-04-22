@@ -71,12 +71,9 @@
         type="text" name="field.name_filter"
         tal:attributes="value request/field.name_filter|nothing"/>
       <input type="submit" value="Filter" />
-      <br />
-      <input
-        id="field.include_blacklisted_filter"
-        type="checkbox" name="field.include_blacklisted_filter"
-        tal:attributes="checked request/field.include_blacklisted_filter|nothing"/>
-      <label for="field.include_blacklisted_filter">include blacklisted packages</label>
+     <br />
+     <tal:package_type
+       replace="structure view/widgets/package_type" />
     </div>
     <div class="clearfix"></div>
   </form>

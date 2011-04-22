@@ -13,11 +13,11 @@ __all__ = [
            'process_pending_submissions',
           ]
 
-
 import bz2
 from cStringIO import StringIO
 
-
+#XXX: Given the version of python we know we're running on now,
+# is the try/except here necessary?
 try:
     import xml.etree.cElementTree as etree
 except ImportError:
@@ -39,14 +39,24 @@ from lp.services.propertycache import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from lp.hardwaredb.interfaces.hwdb import (
-    HWBus, HWSubmissionProcessingStatus, IHWDeviceDriverLinkSet, IHWDeviceSet,
-    IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
-    IHWVendorNameSet)
+    HWBus,
+    HWSubmissionProcessingStatus,
+    IHWDeviceDriverLinkSet,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    IHWVendorNameSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+from lp.services.scripts.base import disable_oops_handler
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -126,10 +136,14 @@ class SubmissionParser(object):
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
 
-    def _logError(self, message, submission_key):
+    def _logError(self, message, submission_key, create_oops=True):
         """Log `message` for an error in submission submission_key`."""
-        self.logger.error(
-            'Parsing submission %s: %s' % (submission_key, message))
+        msg = 'Parsing submission %s: %s' % (submission_key, message)
+        if not create_oops:
+            with disable_oops_handler(self.logger):
+                self.logger.error(msg)
+        else:
+            self.logger.error(msg)
 
     def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
@@ -172,7 +186,8 @@ class SubmissionParser(object):
         if not validator.validate(submission):
             self._logError(
                 'Relax NG validation failed.\n%s' % validator.error_log,
-                submission_key)
+                submission_key,
+                create_oops=False)
             return None
         return submission_doc
 

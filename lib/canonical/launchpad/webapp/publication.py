@@ -708,6 +708,8 @@ class LaunchpadBrowserPublication(
 
         da.clear_request_started()
 
+        getUtility(IOpenLaunchBag).clear()
+
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):
             OpStats.stats['retries'] += 1

@@ -10,9 +10,8 @@ from datetime import (
     datetime,
     timedelta,
     )
-from fixtures import TempDir
-import os
-import subprocess
+import logging
+from StringIO import StringIO
 import time
 
 from pytz import UTC
@@ -20,7 +19,10 @@ from storm.expr import (
     Min,
     SQL,
     )
-from storm.locals import Storm, Int
+from storm.locals import (
+    Int,
+    Storm,
+    )
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -37,7 +39,6 @@ from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -51,7 +52,6 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.archiveuploader.dscfile import findFile
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -68,21 +68,25 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
 from lp.scripts.garbo import (
+    AntiqueSessionPruner,
     BulkPruner,
     DailyDatabaseGarbageCollector,
+    DuplicateSessionPruner,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
+    UnusedSessionPruner,
     )
+from lp.services.log.logger import NullHandler
 from lp.services.job.model.job import Job
-from lp.services.log.logger import BufferLogger
-from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.services.session.model import (
+    SessionData,
+    SessionPkgData,
+    )
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -102,13 +106,6 @@ class TestGarboScript(TestCase):
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
-        # Our sampledata doesn't contain anything that PopulateSPRChangelogs
-        # can process without errors, so it's easier to just set all of the
-        # changelogs to a random LFA. We can't just expire every LFA, since
-        # a bunch of SPRs have no SPRFs at all.
-        IMasterStore(SourcePackageRelease).find(SourcePackageRelease).set(
-            changelogID=1)
-        transaction.commit() # run_script() is a different process.
         rv, out, err = run_script(
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
@@ -138,9 +135,10 @@ class TestBulkPruner(TestCase):
         for i in range(10):
             self.store.add(BulkFoo())
 
+        self.log = logging.getLogger('garbo')
+
     def test_bulkpruner(self):
-        log = BufferLogger()
-        pruner = BulkFooPruner(log)
+        pruner = BulkFooPruner(self.log)
 
         # The loop thinks there is stuff to do. Confirm the initial
         # state is sane.
@@ -190,9 +188,155 @@ class TestBulkPruner(TestCase):
         pruner.cleanUp()
 
         # We can run it again - temporary objects cleaned up.
-        pruner = BulkFooPruner(log)
+        pruner = BulkFooPruner(self.log)
         while not pruner.isDone():
             pruner(chunk_size)
+
+
+class TestSessionPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+
+        # Session database isn't reset between tests. We need to do this
+        # manually.
+        nuke_all_sessions = IMasterStore(SessionData).find(SessionData).remove
+        nuke_all_sessions()
+        self.addCleanup(nuke_all_sessions)
+
+        recent = datetime.now(UTC)
+        yesterday = recent - timedelta(days=1)
+        ancient = recent - timedelta(days=61)
+
+        self.make_session(u'recent_auth', recent, 'auth1')
+        self.make_session(u'recent_unauth', recent, False)
+        self.make_session(u'yesterday_auth', yesterday, 'auth2')
+        self.make_session(u'yesterday_unauth', yesterday, False)
+        self.make_session(u'ancient_auth', ancient, 'auth3')
+        self.make_session(u'ancient_unauth', ancient, False)
+
+        self.log = logging.getLogger('garbo')
+
+    def make_session(self, client_id, accessed, authenticated=None):
+        session_data = SessionData()
+        session_data.client_id = client_id
+        session_data.last_accessed = accessed
+        IMasterStore(SessionData).add(session_data)
+
+        if authenticated:
+            # Add login time information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'logintime'
+            session_pkg_data.pickle = 'value is ignored'
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+            # Add authenticated as information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'accountid'
+            # Normally Account.id, but the session pruning works
+            # at the SQL level and doesn't unpickle anything.
+            session_pkg_data.pickle = authenticated
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+    def sessionExists(self, client_id):
+        store = IMasterStore(SessionData)
+        return not store.find(
+            SessionData, SessionData.client_id == client_id).is_empty()
+
+    def test_antique_session_pruner(self):
+        chunk_size = 2
+        pruner = AntiqueSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            # u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_unused_session_pruner(self):
+        chunk_size = 2
+        pruner = UnusedSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            # u'yesterday_unauth',
+            u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_duplicate_session_pruner(self):
+        # None of the sessions created in setUp() are duplicates, so
+        # they will all survive the pruning.
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            u'ancient_auth',
+            u'ancient_unauth',
+            ])
+
+        now = datetime.now(UTC)
+
+        # Make some duplicate logins from a few days ago.
+        # Only the most recent 6 will be kept. Oldest is 'old dupe 9',
+        # most recent 'old dupe 1'.
+        for count in range(1, 10):
+            self.make_session(
+                u'old dupe %d' % count,
+                now - timedelta(days=2, seconds=count),
+                'old dupe')
+        for count in range(1, 7):
+            expected_sessions.add(u'old dupe %d' % count)
+
+        # Make some other duplicate logins less than an hour old.
+        # All of these will be kept.
+        for count in range(1, 10):
+            self.make_session(u'new dupe %d' % count, now, 'new dupe')
+            expected_sessions.add(u'new dupe %d' % count)
+
+        chunk_size = 2
+        pruner = DuplicateSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
 
 
 class TestGarbo(TestCaseWithFactory):
@@ -200,17 +344,29 @@ class TestGarbo(TestCaseWithFactory):
 
     def setUp(self):
         super(TestGarbo, self).setUp()
+
+        # Silence the root Logger by instructing the garbo logger to not
+        # propagate messages.
+        self.log = logging.getLogger('garbo')
+        self.log.addHandler(NullHandler())
+        self.log.propagate = 0
+
         # Run the garbage collectors to remove any existing garbage,
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+
+        # Capture garbo log output to tests can examine it.
+        self.log_buffer = StringIO()
+        handler = logging.StreamHandler(self.log_buffer)
+        self.log.addHandler(handler)
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
@@ -218,12 +374,12 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
     def test_OAuthNoncePruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
             now - timedelta(days=1) - timedelta(seconds=60), # Garbage
@@ -301,7 +457,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         results_to_keep_count = (
@@ -358,7 +514,7 @@ class TestGarbo(TestCaseWithFactory):
             >= now - timedelta(days=30))
 
     def test_CodeImportEventPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -662,7 +818,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
-    def test_ObsoleteBugAttachmentDeleter(self):
+    def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -718,60 +874,3 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
-
-    def upload_to_debian(self, restricted=False):
-        sid = getUtility(IDistributionSet)['debian']['sid']
-        spn = self.factory.makeSourcePackageName('9wm')
-        spr = self.factory.makeSourcePackageRelease(
-            sourcepackagename=spn, version='1.2-7', distroseries=sid)
-        archive = sid.main_archive
-        if restricted:
-            archive = self.factory.makeArchive(
-                distribution=sid.distribution, private=True)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=archive,
-            status=PackagePublishingStatus.PUBLISHED)
-        for name in (
-            '9wm_1.2-7.diff.gz', '9wm_1.2.orig.tar.gz', '9wm_1.2-7.dsc'):
-            path = os.path.join(
-                'lib/lp/soyuz/scripts/tests/gina_test_archive/pool/main/9',
-                '9wm', name)
-            lfa = getUtility(ILibraryFileAliasSet).create(
-                name, os.stat(path).st_size, open(path, 'r'),
-                'application/octet-stream', restricted=restricted)
-            spr.addFile(lfa)
-        with TempDir() as tmp_dir:
-            fnull = open('/dev/null', 'w')
-            ret = subprocess.call(
-                ['dpkg-source', '-x', path, os.path.join(
-                    tmp_dir.path, 'extracted')],
-                    stdout=fnull, stderr=fnull)
-            fnull.close()
-            self.assertEqual(0, ret)
-            changelog_path = findFile(tmp_dir.path, 'debian/changelog')
-            changelog = open(changelog_path, 'r').read()
-        transaction.commit() # .runHourly() switches dbuser.
-        return (spr, changelog)
-
-    def test_populateSPRChangelogs(self):
-        # We set SPR.changelog for imported records from Debian.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spr, changelog = self.upload_to_debian()
-        collector = self.runHourly()
-        log = collector.logger.getLogBuffer()
-        self.assertTrue(
-            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
-        self.assertFalse(spr.changelog == None)
-        self.assertFalse(spr.changelog.restricted)
-        self.assertEqual(changelog, spr.changelog.read())
-
-    def test_populateSPRChangelogs_restricted_sprf(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        spr, changelog = self.upload_to_debian(restricted=True)
-        collector = self.runHourly()
-        log = collector.logger.getLogBuffer()
-        self.assertTrue(
-            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
-        self.assertFalse(spr.changelog == None)
-        self.assertTrue(spr.changelog.restricted)
-        self.assertEqual(changelog, spr.changelog.read())

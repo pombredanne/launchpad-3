@@ -25,13 +25,13 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
@@ -41,6 +41,7 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -495,12 +496,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distroseries == self.distroseries,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     @property
     def max_bug_heat(self):
@@ -531,19 +532,31 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
-            # we should update the current packaging
-            target.productseries = productseries
-            target.owner = owner
-            target.datecreated = UTC_NOW
-        else:
-            # ok, we need to create a new one
-            Packaging(
-                distroseries=self.distroseries,
-                sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=owner,
-                packaging=PackagingType.PRIME)
+            if target.productseries == productseries:
+                return
+            # Delete the current packaging and create a new one so
+            # that the translation sharing jobs are started.
+            self.direct_packaging.destroySelf()
+        Packaging(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename,
+            productseries=productseries, owner=owner,
+            packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def setPackagingReturnSharingDetailPermissions(self, productseries,
+                                                   owner):
+        """See `ISourcePackage`."""
+        self.setPackaging(productseries, owner)
+        user = getUtility(ILaunchBag).user
+        return {
+            'user_can_change_branch': user.canWrite(productseries, 'branch'),
+            'user_can_change_translation_usage':
+                user.canWrite(productseries.product, 'translations_usage'),
+            'user_can_change_translations_autoimport_mode':
+                user.canWrite(productseries, 'translations_autoimport_mode'),
+            }
 
     def deletePackaging(self):
         """See `ISourcePackage`."""
@@ -676,6 +689,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         collection = collection.restrictDistroSeries(self.distroseries)
         return collection.restrictSourcePackageName(self.sourcepackagename)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        return self.productseries
+
     def getBranch(self, pocket):
         """See `ISourcePackage`."""
         store = Store.of(self.sourcepackagename)
@@ -752,3 +769,28 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def linkedBranches(self):
         """See `ISourcePackage`."""
         return dict((p.name, b) for (p, b) in self.linked_branches)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        We look for the source package task, followed by the distro source
+        package, then the distroseries task, and lastly the distro task.
+        """
+        sourcepackagenameID = self.sourcepackagename.id
+        seriesID = self.distroseries.id
+        distributionID = self.distroseries.distributionID
+
+        def weight_function(bugtask):
+            if bugtask.sourcepackagenameID == sourcepackagenameID:
+                if bugtask.distroseriesID == seriesID:
+                    return OrderedBugTask(1, bugtask.id, bugtask)
+                elif bugtask.distributionID == distributionID:
+                    return OrderedBugTask(2, bugtask.id, bugtask)
+            elif bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(4, bugtask.id, bugtask)
+            # Catch the default case, and where there is a task for the same
+            # sourcepackage on a different distro.
+            return OrderedBugTask(5, bugtask.id, bugtask)
+        return weight_function

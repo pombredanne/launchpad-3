@@ -21,6 +21,26 @@
           use_advanced_subscriptions = false;
         </script>
       </tal:subscriptions-js>
+      <tal:if condition="context/bug/private">
+        <script type="text/javascript">
+          var bug_private = true;
+        </script>
+      </tal:if>
+      <tal:if condition="not:context/bug/private">
+        <script type="text/javascript">
+          var bug_private = false;
+        </script>
+      </tal:if>
+      <tal:if condition="request/features/bugs.private_notification.enabled">
+        <script type="text/javascript">
+          var bugs_private_notification_enabled = true;
+        </script>
+      </tal:if>
+      <tal:if condition="not:request/features/bugs.private_notification.enabled">
+        <script type="text/javascript">
+          var bugs_private_notification_enabled = false;
+        </script>
+      </tal:if>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.bugtask_index.portlets',
@@ -69,6 +89,16 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
+      <tal:if condition="request/features/bugs.private_notification.enabled">
+          <div tal:attributes="class string: global-notification ${view/privacy_notice_classes}">
+            <span class="sprite notification-private"></span>
+            This bug is private
+            <a href="#" class="global-notification-close">
+              <span class="sprite notification-close"></span>
+              Hide
+            </a>
+          </div>
+      </tal:if>
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
@@ -266,9 +296,18 @@
                   class="warning message"
                   id="warning-comment-on-duplicate">
                   Remember, this bug report is a duplicate of
-                    <a href="#" tal:attributes="href
-                      context/bug/duplicateof/fmt:url">bug #<span
-                      tal:replace="context/bug/duplicateof/id">42</span></a>.
+      <a
+        tal:define="duplicateof context/bug/duplicateof"
+        tal:condition="duplicateof/required:launchpad.View"
+        tal:attributes="href duplicateof/fmt:url; title
+           duplicateof/title; style string:margin-right: 4px;
+           id string:duplicate-of-warning-link;"
+        tal:content="string:bug #${duplicateof/id}."
+      >bug #42</a>
+        <span
+          tal:define="duplicateof context/bug/duplicateof"
+          tal:condition="not:duplicateof/required:launchpad.View"
+          tal:replace="string: a private bug." />
                   Comment here only if you think the duplicate status is wrong.
               </div>
               <h2>Add comment</h2>
@@ -282,20 +321,6 @@
                   tal:content="structure
                   comment_form/actions/field.actions.save/render" />
               </form>
-              <tal:comment condition="nothing">
-                <!-- If javascript is enabled, hide the Save Changes button.
-                It will be replaced later by an "Add comment" link,
-                which does commenting inline. The reason for hiding the
-                button is that it's kind of ugly having it transformed
-                into a link. Better to hide it and have it appear after
-                a while. At some point we should be able to hook up
-                inline commenting earlier than in the on-load handler,
-                which would make this hack not needed. -->
-              </tal:comment>
-              <script type="text/javascript">
-                var button = document.getElementById('field.actions.save');
-                button.style.display = 'none';
-              </script>
               <script type="text/javascript">
                 LPS.use('lp.app.comment', function(Y) {
                     var comment = new Y.lp.app.comment.Comment();

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import (
@@ -20,6 +21,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -78,6 +80,149 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
         # package publishing history before adding the packaging entry.
         self.product_series.setPackaging(
             self.debian_series, self.sourcepackagename, self.person)
+
+    def makeSourcePackage(self):
+        # Create a published sourcepackage for self.ubuntu_series.
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.ubuntu_series)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=self.ubuntu_series)
+        return sourcepackage
+
+    def test_setPackaging_two_packagings(self):
+        # More than one sourcepackage from the same distroseries
+        # can be linked to a productseries.
+        sourcepackage_a = self.makeSourcePackage()
+        sourcepackage_b = self.makeSourcePackage()
+        packaging_a = self.product_series.setPackaging(
+            distroseries=self.ubuntu_series,
+            sourcepackagename=sourcepackage_a.sourcepackagename,
+            owner=self.factory.makePerson())
+        packaging_b = self.product_series.setPackaging(
+            distroseries=self.ubuntu_series,
+            sourcepackagename=sourcepackage_b.sourcepackagename,
+            owner=self.factory.makePerson())
+        self.assertEqual(
+            [packaging_b, packaging_a], list(self.product_series.packagings))
+
+    def test_setPackaging_called_for_existing_multiple_packagings(self):
+        # Calling setPackaging for already existing packagings
+        # does not have any effect.
+        sourcepackage_a = self.makeSourcePackage()
+        sourcepackage_b = self.makeSourcePackage()
+        packaging_a = self.product_series.setPackaging(
+            distroseries=self.ubuntu_series,
+            sourcepackagename=sourcepackage_a.sourcepackagename,
+            owner=self.factory.makePerson())
+        packaging_b = self.product_series.setPackaging(
+            distroseries=self.ubuntu_series,
+            sourcepackagename=sourcepackage_b.sourcepackagename,
+            owner=self.factory.makePerson())
+        self.assertEqual(
+            packaging_b,
+            self.product_series.setPackaging(
+                distroseries=self.ubuntu_series,
+                sourcepackagename=sourcepackage_b.sourcepackagename,
+                owner=self.factory.makePerson()))
+        self.assertEqual(
+            packaging_a,
+            self.product_series.setPackaging(
+                distroseries=self.ubuntu_series,
+                sourcepackagename=sourcepackage_a.sourcepackagename,
+                owner=self.factory.makePerson()))
+        self.assertEqual(
+            [packaging_b, packaging_a], list(self.product_series.packagings))
+
+    def test_setPackaging__packagings_created_by_sourcepackage(self):
+        # Calling setPackaging for already existing packagings
+        # created by SourcePackage.setPackaging() does not have any effect.
+        sourcepackage_a = self.makeSourcePackage()
+        sourcepackage_b = self.makeSourcePackage()
+        sourcepackage_a.setPackaging(
+            self.product_series, owner=self.factory.makePerson())
+        sourcepackage_b.setPackaging(
+            self.product_series, owner=self.factory.makePerson())
+        packaging_a = sourcepackage_a.packaging
+        packaging_b = sourcepackage_b.packaging
+        self.assertEqual(
+            packaging_b,
+            self.product_series.setPackaging(
+                distroseries=self.ubuntu_series,
+                sourcepackagename=sourcepackage_b.sourcepackagename,
+                owner=self.factory.makePerson()))
+        self.assertEqual(
+            packaging_a,
+            self.product_series.setPackaging(
+                distroseries=self.ubuntu_series,
+                sourcepackagename=sourcepackage_a.sourcepackagename,
+                owner=self.factory.makePerson()))
+        self.assertEqual(
+            [packaging_b, packaging_a], list(self.product_series.packagings))
+
+
+class TestProductSeriesGetUbuntuTranslationFocusPackage(TestCaseWithFactory):
+    """Test for ProductSeries.getUbuntuTranslationFocusPackage."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _makeSourcePackage(self, productseries,
+                           series_status=SeriesStatus.EXPERIMENTAL):
+        """Make a sourcepckage that packages the productseries."""
+        distroseries = self.factory.makeUbuntuDistroSeries(
+            status=series_status)
+        packaging = self.factory.makePackagingLink(
+            productseries=productseries, distroseries=distroseries)
+        return packaging.sourcepackage
+
+    def _test_packaged_in_series(
+            self, in_translation_focus, in_current_series, in_other_series):
+        """Test the given combination of packagings."""
+        productseries = self.factory.makeProductSeries()
+        package = None
+        if in_other_series:
+            package = self._makeSourcePackage(productseries)
+        if in_current_series:
+            package = self._makeSourcePackage(
+                productseries, SeriesStatus.FROZEN)
+        if in_translation_focus:
+            package = self._makeSourcePackage(productseries)
+            naked_distribution = removeSecurityProxy(
+                package.distroseries.distribution)
+            naked_distribution.translation_focus = package.distroseries
+        self.assertEqual(
+            package,
+            productseries.getUbuntuTranslationFocusPackage())
+
+    def test_no_sourcepackage(self):
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=False,
+            in_other_series=False)
+
+    def test_packaged_in_translation_focus(self):
+        # The productseries is packaged in the translation focus series
+        # and others but only the focus is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=True,
+            in_current_series=True,
+            in_other_series=True)
+
+    def test_packaged_in_current_series(self):
+        # The productseries is packaged in the current series and others but
+        # only the current is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=True,
+            in_other_series=True)
+
+    def test_packaged_in_other_series(self):
+        # The productseries is not packaged in the translation focus or the
+        # current series, so that packaging is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=False,
+            in_other_series=True)
 
 
 class TestProductSeriesDrivers(TestCaseWithFactory):
