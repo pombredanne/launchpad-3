@@ -14,7 +14,10 @@ from canonical.launchpad.ftests import login_person
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
@@ -74,3 +77,27 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
+
+
+class TestQuestionTarget_createQuestionFromBug(TestCaseWithFactory):
+    """Test the createQuestionFromBug from bug behavior."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_first_and_last_messages_copied_to_question(self):
+        # The question is created with the bug's description and the last
+        # message which presumably is about why the bug was converted.
+        bug = self.factory.makeBug(description="first comment")
+        target = bug.bugtasks[0].target
+        contributor = target.owner
+        reporter = bug.owner
+        with person_logged_in(reporter):
+            bug.newMessage(owner=reporter, content='second comment')
+        with person_logged_in(contributor):
+            last_message = bug.newMessage(
+                owner=contributor, content='third comment')
+            question = target.createQuestionFromBug(bug)
+        question_messages = list(question.messages)
+        self.assertEqual(1, len(question_messages))
+        self.assertEqual(last_message.content, question_messages[0].content)
+        self.assertEqual(bug.description, question.description)

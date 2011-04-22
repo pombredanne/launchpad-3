@@ -1184,19 +1184,25 @@ class QuestionTargetMixin:
 
     def createQuestionFromBug(self, bug):
         """See `IQuestionTarget`."""
+        # XXX sinzui 2011-04-22: While the question is correctly attributed
+        # the the bug owner, the email will claim to be from the user who
+        # created the question from the bug.
         question = self.newQuestion(
             bug.owner, bug.title, bug.description,
             datecreated=bug.datecreated)
         # Give the datelastresponse a current datetime, otherwise the
         # Launchpad Janitor would quickly expire questions made from old bugs.
         question.datelastresponse = datetime.now(pytz.timezone('UTC'))
+        # XXX sinzui 2011-04-22: The bug subscribers were already notified;
+        # can the email about this link be supressed. Move to last?
         question.linkBug(bug)
-        for message in bug.messages[1:]:
-            # Bug.message[0] is the original message, and probably a duplicate
-            # of Bug.description.
-            question.addComment(
-                message.owner, message.text_contents,
-                datecreated=message.datecreated)
+        # Copy the last message that explains why the bug is a question.
+        message = bug.messages[-1]
+        question.addComment(
+            message.owner, message.text_contents,
+            datecreated=message.datecreated)
+        # XXX sinzui 2011-04-22: user who subscribed to the bug should
+        # then be subscribed to the question.
         return question
 
     def getQuestion(self, question_id):
