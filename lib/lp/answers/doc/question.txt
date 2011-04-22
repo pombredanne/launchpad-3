@@ -227,8 +227,8 @@ subscribers along with the rationale for contacting them.
     ...         text, header = subscribers.getReason(person)
     ...         print header, person.displayname, text
     >>> print_reason(subscribers)
-    Subscriber Sample Person You received this question notification
-    because you are a direct subscriber of the question.
+    Asker Sample Person
+    You received this question notification because you asked the question.
 
 There is also a list of 'indirect' subscribers to the question.  These are
 people that didn't explicitly subscribe to the question, but that will receive

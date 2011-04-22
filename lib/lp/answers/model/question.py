@@ -67,7 +67,6 @@ from canonical.launchpad.database.message import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
@@ -111,6 +110,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
@@ -566,6 +566,12 @@ class Question(SQLBase, BugLinkTargetMixin):
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
+        if self.owner in subscribers:
+            subscribers.remove(self.owner)
+            reason = (
+                "You received this question notification because you "
+                "asked the question.")
+            subscribers.add(self.owner, reason, 'Asker')
         return subscribers
 
     @cachedproperty

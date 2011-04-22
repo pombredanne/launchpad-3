@@ -64,8 +64,7 @@ footer the reason why the user is receiving the notification.
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 The notification also includes a 'X-Launchpad-Question' header that
 contains information about the question.
@@ -78,7 +77,7 @@ As well as the standard 'X-Launchpad-Message-Rationale' header that
 contains in short format the reason for the user to be contacted.
 
     >>> print add_notification['X-Launchpad-Message-Rationale']
-    Subscriber
+    Asker
 
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
@@ -361,8 +360,7 @@ extra footer.
     this email or enter your reply at the following page:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
@@ -454,8 +452,7 @@ Notification received by the owner:
     entering more information about your problem:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for reopen()
@@ -521,8 +518,7 @@ Notification received by the owner:
     Please provide some help to a newbie.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for giveAnswer()
@@ -588,8 +584,7 @@ Notification received by the owner:
     following page to enter your feedback:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for confirm()
@@ -633,8 +628,7 @@ Notification received by the owner:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for addComment()
@@ -676,8 +670,7 @@ Notification received by the owner:
     be very slow.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for reject()
@@ -726,8 +719,7 @@ Notification received by the owner:
     the following page:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for setStatus()
@@ -771,8 +763,7 @@ Notification received by the owner:
     The rejection was a mistake.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Notifications for linkFAQ()
@@ -1021,8 +1012,7 @@ the question is in a language spoken by none of the answer contacts:
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 No notification will be sent to the answer contacts when this question
 is modified. Only the owner will receive a modification notification
@@ -1050,8 +1040,7 @@ with a warning appended to it.
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     --...
-    You received this question notification because you are a direct
-    subscriber of the question.
+    You received this question notification because you asked the question.
 
 
 Localized Questions and Teams
