@@ -1190,7 +1190,7 @@ class QuestionTargetMixin:
         # Give the datelastresponse a current datetime, otherwise the
         # Launchpad Janitor would quickly expire questions made from old bugs.
         question.datelastresponse = datetime.now(pytz.timezone('UTC'))
-        # Directly create the BugLink so that users do not recieve duplicate
+        # Directly create the BugLink so that users do not receive duplicate
         # messages about the bug.
         question.createBugLink(bug)
         # Copy the last message that explains why the bug is a question.
