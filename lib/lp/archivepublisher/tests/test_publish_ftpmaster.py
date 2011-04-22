@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from apt_pkg import TagFile
+import logging
 import os
 from textwrap import dedent
 from zope.component import getUtility
@@ -22,7 +23,10 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
-from lp.services.log.logger import DevNullLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -33,6 +37,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_env_string,
     compose_shell_boolean,
     find_run_parts_dir,
+    get_working_dists,
     PublishFTPMaster,
     shell_quote,
     )
@@ -78,6 +83,26 @@ def get_distscopy_root(pub_config):
 def get_run_parts_path():
     """Get relative path to run-parts location the Launchpad source."""
     return os.path.join("cronscripts", "publishing", "distro-parts")
+
+
+def write_marker_file(path, contents):
+    """Write a marker file for checking directory movements.
+
+    :param path: A list of path components.
+    :param contents: Text to write into the file.
+    """
+    marker = file(os.path.join(*path), "w")
+    marker.write(contents)
+    marker.flush()
+    marker.close()
+
+
+def read_marker_file(path):
+    """Read the contents of a marker file.
+
+    :param return: Contents of the marker file.
+    """
+    return file(os.path.join(*path)).read()
 
 
 class HelpersMixin:
@@ -205,11 +230,11 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.setUpForScriptRun(ubuntu)
         return ubuntu
 
-    def makeScript(self, distro=None):
+    def makeScript(self, distro=None, extra_args=[]):
         """Produce instance of the `PublishFTPMaster` script."""
         if distro is None:
             distro = self.makeDistro()
-        script = PublishFTPMaster(test_args=["-d", distro.name])
+        script = PublishFTPMaster(test_args=["-d", distro.name] + extra_args)
         script.txn = self.layer.txn
         script.logger = DevNullLogger()
         return script
@@ -219,24 +244,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         sections = list(TagFile(file(filename)))
         self.assertEqual(1, len(sections))
         return dict(sections[0])
-
-    def writeMarkerFile(self, path, contents):
-        """Write a marker file for checking direction movements.
-
-        :param path: A list of path components.
-        :param contents: Text to write into the file.
-        """
-        marker = file(os.path.join(*path), "w")
-        marker.write(contents)
-        marker.flush()
-        marker.close()
-
-    def readMarkerFile(self, path):
-        """Read the contents of a marker file.
-
-        :param return: Contents of the marker file.
-        """
-        return file(os.path.join(*path)).read()
 
     def enableCommercialCompat(self):
         """Enable commercial-compat.sh runs for the duration of the test."""
@@ -349,41 +356,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(distro.displayname, main_release["Label"])
         self.assertEqual("source", main_release["Architecture"])
 
-    def test_cleanup_moves_dists_to_new_if_not_published(self):
-        distro = self.makeDistro()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-        dists_copy_root = get_distscopy_root(pub_config)
-        new_distsroot = dists_root + ".new"
-        os.makedirs(new_distsroot)
-        self.writeMarkerFile([new_distsroot, "marker"], "dists.new")
-        os.makedirs(dists_copy_root)
-
-        script = self.makeScript(distro)
-        script.setUp()
-        script.cleanUp()
-        self.assertEqual(
-            "dists.new",
-            self.readMarkerFile([dists_copy_root, "dists", "marker"]))
-
-    def test_cleanup_moves_dists_to_old_if_published(self):
-        distro = self.makeDistro()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-        old_distsroot = dists_root + ".old"
-        dists_copy_root = get_distscopy_root(pub_config)
-        os.makedirs(old_distsroot)
-        self.writeMarkerFile([old_distsroot, "marker"], "dists.old")
-        os.makedirs(dists_copy_root)
-
-        script = self.makeScript(distro)
-        script.setUp()
-        script.done_pub = True
-        script.cleanUp()
-        self.assertEqual(
-            "dists.old",
-            self.readMarkerFile([dists_copy_root, "dists", "marker"]))
-
     def test_getDirtySuites_returns_suite_with_pending_publication(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         script = self.makeScript(spph.distroseries.distribution)
@@ -446,24 +418,26 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         dists_root = get_dists_root(get_pub_config(distro))
+        dists_backup = os.path.join(
+            get_distscopy_root(get_pub_config(distro)), "dists")
+        os.makedirs(dists_backup)
         os.makedirs(dists_root)
-        os.makedirs(dists_root + ".new")
-        self.writeMarkerFile([dists_root, "new-file"], "New file")
-        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        write_marker_file([dists_root, "new-file"], "New file")
+        script.rsyncBackupDists()
         self.assertEqual(
-            "New file",
-            self.readMarkerFile([dists_root + ".new", "new-file"]))
+            "New file", read_marker_file([dists_backup, "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
-        dists_root = get_dists_root(get_pub_config(distro))
-        os.makedirs(dists_root)
-        os.makedirs(dists_root + ".new")
-        old_file = [dists_root + ".new", "old-file"]
-        self.writeMarkerFile(old_file, "old-file")
-        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        dists_backup = os.path.join(
+            get_distscopy_root(get_pub_config(distro)), "dists")
+        os.makedirs(dists_backup)
+        old_file = [dists_backup, "old-file"]
+        write_marker_file(old_file, "old-file")
+        os.makedirs(get_dists_root(get_pub_config(distro)))
+        script.rsyncBackupDists()
         self.assertFalse(path_exists(*old_file))
 
     def test_setUpDirs_creates_directory_structure(self):
@@ -480,26 +454,15 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
         self.assertTrue(file_exists(archive_root))
         self.assertTrue(file_exists(dists_root))
-        self.assertTrue(file_exists(dists_root + ".new"))
+        self.assertTrue(file_exists(get_distscopy_root(pub_config)))
 
-    def test_setUpDirs_does_not_mind_if_directories_already_exist(self):
+    def test_setUpDirs_does_not_mind_if_dist_directories_already_exist(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
         script.setUpDirs()
         self.assertTrue(file_exists(get_archive_root(get_pub_config(distro))))
-
-    def test_setUpDirs_moves_dists_to_dists_new(self):
-        distro = self.makeDistro()
-        dists_root = get_dists_root(get_pub_config(distro))
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        self.writeMarkerFile([dists_root, "marker"], "X")
-        script.setUpDirs()
-        self.assertEqual(
-            "X", self.readMarkerFile([dists_root + ".new", "marker"]))
 
     def test_publishDistroArchive_runs_parts(self):
         distro = self.makeDistro()
@@ -526,31 +489,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
-
-    def test_installDists_sets_done_pub(self):
-        script = self.makeScript()
-        script.setUp()
-        script.setUpDirs()
-        self.assertFalse(script.done_pub)
-        script.installDists()
-        self.assertTrue(script.done_pub)
-
-    def test_installDists_replaces_distsroot(self):
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        pub_config = get_pub_config(distro)
-        dists_root = get_dists_root(pub_config)
-
-        self.writeMarkerFile([dists_root, "marker"], "old")
-        self.writeMarkerFile([dists_root + ".new", "marker"], "new")
-
-        script.installDists()
-
-        self.assertEqual("new", self.readMarkerFile([dists_root, "marker"]))
-        self.assertEqual("old", self.readMarkerFile(
-            [get_distscopy_root(pub_config), "dists", "marker"]))
 
     def test_runCommercialCompat_runs_commercial_compat_script(self):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
@@ -611,7 +549,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         nonempty_dir = os.path.join(
             get_dists_root(get_pub_config(distro)), 'nonempty-dir')
         os.makedirs(nonempty_dir)
-        self.writeMarkerFile([nonempty_dir, "placeholder"], "Data here!")
+        write_marker_file([nonempty_dir, "placeholder"], "Data here!")
         script.clearEmptyDirs()
         self.assertTrue(file_exists(nonempty_dir))
 
@@ -690,26 +628,12 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(set(), missing_parameters)
 
     def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
-        script = self.makeScript(self.makeDistro())
+        script = self.makeScript()
         script.setUp()
         script.setUpDirs()
         script.installDists = FakeMethod()
         script.publishSecurityUploads()
         self.assertEqual(0, script.installDists.call_count)
-
-    def test_publishSecurityUploads_runs_finalize_parts(self):
-        distro = self.makeDistro()
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=self.factory.makeDistroSeries(distribution=distro),
-            pocket=PackagePublishingPocket.SECURITY)
-        script = self.makeScript(distro)
-        script.setUp()
-        script.setUpDirs()
-        script.runFinalizeParts = FakeMethod()
-        script.publishSecurityUploads()
-        self.assertEqual(1, script.runFinalizeParts.call_count)
-        args, kwargs = script.runFinalizeParts.calls[0]
-        self.assertTrue(kwargs["security_only"])
 
     def test_publishAllUploads_publishes_all_distro_archives(self):
         distro = self.makeDistro()
@@ -733,14 +657,62 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertIn(distro.main_archive, published_archives)
         self.assertIn(partner_archive, published_archives)
 
-    def test_publishAllUploads_runs_finalize_parts(self):
+    def test_recoverWorkingDists_is_quiet_normally(self):
+        script = self.makeScript()
+        script.setUp()
+        script.logger = BufferLogger()
+        script.logger.setLevel(logging.INFO)
+        script.recoverWorkingDists()
+        self.assertEqual('', script.logger.getLogBuffer())
+
+    def test_recoverWorkingDists_recovers_working_directory(self):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
+        script.logger = BufferLogger()
+        script.logger.setLevel(logging.INFO)
         script.setUpDirs()
-        script.runFinalizeParts = FakeMethod()
+        archive_config = script.configs[ArchivePurpose.PRIMARY]
+        backup_dists = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists")
+        working_dists = get_working_dists(archive_config)
+        os.rename(backup_dists, working_dists)
+        write_marker_file([working_dists, "marker"], "Recovered")
+        script.recoverWorkingDists()
+        self.assertEqual(
+            "Recovered", read_marker_file([backup_dists, "marker"]))
+        self.assertNotEqual('', script.logger.getLogBuffer())
+
+    def test_publishes_first_security_updates_then_all_updates(self):
+        script = self.makeScript()
+        script.publish = FakeMethod()
+        script.main()
+        self.assertEqual(2, script.publish.call_count)
+        args, kwargs = script.publish.calls[0]
+        self.assertEqual({'security_only': True}, kwargs)
+        args, kwargs = script.publish.calls[1]
+        self.assertEqual(False, kwargs.get('security_only', False))
+
+    def test_security_run_publishes_only_security_updates(self):
+        script = self.makeScript(extra_args=['--security-only'])
+        script.publish = FakeMethod()
+        script.main()
+        self.assertEqual(1, script.publish.call_count)
+        args, kwargs = script.publish.calls[0]
+        self.assertEqual({'security_only': True}, kwargs)
+
+    def test_publishAllUploads_processes_all_archives(self):
+        distro = self.makeDistro()
+        partner_archive = self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        script = self.makeScript(distro)
+        script.publishDistroArchive = FakeMethod()
+        script.setUp()
         script.publishAllUploads()
-        self.assertEqual(1, script.runFinalizeParts.call_count)
+        published_archives = [
+            args[0] for args, kwargs in script.publishDistroArchive.calls]
+        self.assertContentEqual(
+            [distro.main_archive, partner_archive], published_archives)
 
     def test_runFinalizeParts_quotes_archiveroots(self):
         # Passing ARCHIVEROOTS to the finalize.d scripts is a bit
@@ -784,6 +756,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             archive_root = getPubConfig(archive).archiveroot
             self.assertEqual(
                 "This is an archive root.",
-                self.readMarkerFile([archive_root, "marker file"]).rstrip(),
+                read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)

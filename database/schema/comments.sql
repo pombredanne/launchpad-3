@@ -583,6 +583,12 @@ COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro
 COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
 COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
 
+-- DistroSeriesParent
+COMMENT ON TABLE DistroSeriesParent IS 'A list of all the derived distroseries for a parent series.';
+COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries';
+COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries';
+COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.';
+
 -- DistroSeriesPackageCache
 
 COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';

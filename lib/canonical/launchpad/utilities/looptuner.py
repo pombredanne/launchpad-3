@@ -329,7 +329,8 @@ class TunableLoop:
             "Did not override maximum_chunk_size.")
         DBLoopTuner(
             self, self.goal_seconds,
-            minimum_chunk_size = self.minimum_chunk_size,
-            maximum_chunk_size = self.maximum_chunk_size,
-            cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
+            minimum_chunk_size=self.minimum_chunk_size,
+            maximum_chunk_size=self.maximum_chunk_size,
+            cooldown_time=self.cooldown_time,
+            abort_time=self.abort_time,
+            log=self.log).run()

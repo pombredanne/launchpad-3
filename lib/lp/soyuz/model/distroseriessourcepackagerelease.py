@@ -11,17 +11,16 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from operator import attrgetter
-
 from lazr.delegates import delegates
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
-from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -37,7 +36,9 @@ class DistroSeriesSourcePackageRelease:
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distroseries, sourcepackagerelease):
+        assert IDistroSeries.providedBy(distroseries)
         self.distroseries = distroseries
+        assert ISourcePackageRelease.providedBy(sourcepackagerelease)
         self.sourcepackagerelease = sourcepackagerelease
 
     @property

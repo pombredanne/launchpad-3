@@ -31,6 +31,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
@@ -495,12 +496,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distroseries == self.distroseries,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     @property
     def max_bug_heat(self):
@@ -543,6 +544,19 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def setPackagingReturnSharingDetailPermissions(self, productseries,
+                                                   owner):
+        """See `ISourcePackage`."""
+        self.setPackaging(productseries, owner)
+        user = getUtility(ILaunchBag).user
+        return {
+            'user_can_change_branch': user.canWrite(productseries, 'branch'),
+            'user_can_change_translation_usage':
+                user.canWrite(productseries.product, 'translations_usage'),
+            'user_can_change_translations_autoimport_mode':
+                user.canWrite(productseries, 'translations_autoimport_mode'),
+            }
 
     def deletePackaging(self):
         """See `ISourcePackage`."""

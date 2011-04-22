@@ -56,6 +56,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -212,6 +213,8 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """See `LaunchpadView`."""
         self.form = self.request.form
         self.processDeleteFiles()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def expire_cache_minutes(self):

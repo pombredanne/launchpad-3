@@ -25,7 +25,10 @@ from lp.code.interfaces.branchlookup import (
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -137,28 +140,28 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(owner=owner, private=True)
         with person_logged_in(owner):
-            path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+            path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((None, None), result)
 
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, ''), result)
 
     def test_branch_id_alias_public_slash(self):
         # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s/' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = '%s/' % branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, '/'), result)
 
     def test_branch_id_alias_public_with_path(self):
         # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s/foo' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = '%s/foo' % branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, '/foo'), result)
 

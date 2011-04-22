@@ -1428,12 +1428,14 @@ class IPersonViewRestricted(Interface):
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
-    activemembers = Attribute('List of direct members with ADMIN or APPROVED status')
+    activemembers = Attribute(
+        'List of direct members with ADMIN or APPROVED status')
     # For the API we need eager loading
     api_activemembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("List of direct members with ADMIN or APPROVED status"),
+                title=_(
+                    "List of direct members with ADMIN or APPROVED status"),
                 value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
@@ -1777,6 +1779,33 @@ class IPersonSpecialRestricted(Interface):
         :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
+        """
+
+    # XXX 2011-04-20, Abel Deuring, Bug=767293: The methods canAccess()
+    # and canWrite() are defined in this interface for two reasons:
+    # 1. The functions zope.security.checker.canWrite() and
+    #    zope.security.checker.canAccess() can at present check only
+    #    permissions for the current user, and this interface is
+    #    protected by the permission launchpad.Special, which
+    #    allows users only access to theirs own object.
+    # 2. Allowing users access to check permissions for other persons
+    #    than themselves might leak information.
+    def canAccess(obj, attribute):
+        """True if this person can access the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
+        """
+
+    def canWrite(obj, attribute):
+        """True if this person can write the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
         """
 
 
@@ -2170,7 +2199,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def mergeAsync(from_person, to_person):
+    def mergeAsync(from_person, to_person, reviewer=None):
         """Merge a person/team into another asynchronously.
 
         This schedules a call to `merge()` to happen outside of the current
@@ -2179,10 +2208,13 @@ class IPersonSet(Interface):
         guaranteed to succeed. If either user is in a pending person merge
         job, None is returned.
 
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         :return: A `PersonMergeJob` or None.
         """
 
-    def merge(from_person, to_person):
+    def merge(from_person, to_person, reviewer=None):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -2196,9 +2228,9 @@ class IPersonSet(Interface):
         passing deactivate_members=True. In that case the user who's
         performing the merge must be provided as well.
 
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops. -- StuartBishop 20050812
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
     def getValidPersons(persons):
