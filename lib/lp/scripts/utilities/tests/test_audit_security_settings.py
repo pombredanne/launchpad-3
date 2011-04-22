@@ -8,8 +8,8 @@ __metaclass__ = type
 
 import os
 
-from canonical.config import config
 from canonical.testing.layers import BaseLayer
+from lp.scripts.utilities.settingsauditor import SettingsAuditor
 from lp.testing import TestCase
 
 
@@ -18,9 +18,19 @@ class TestAuditSecuitySettings(TestCase):
     layer = BaseLayer
 
     def test_duplicate_parsing(self):
-        utility = os.path.join(
-            config.root, 'utilities', 'audit-security-settings.py')
-        cmd = '%s smoketest' % utility
-        error_msg = os.popen(cmd).read()
-        expected = '[bad]\n\tDuplicate setting found: public.bar\n'
-        self.assertTrue(expected in error_msg)
+        test_settings = """
+            [good]
+            public.foo = SELECT
+            public.bar = SELECT, INSERT
+            public.baz = SELECT
+
+            [bad]
+            public.foo = SELECT
+            public.bar = SELECT, INSERT
+            public.bar = SELECT
+            public.baz = SELECT
+            """.split('\n')
+        sa = SettingsAuditor()
+        sa.audit(test_settings)
+        expected = '[bad]\n\tDuplicate setting found: public.bar'
+        self.assertTrue(expected in sa.error_data)
