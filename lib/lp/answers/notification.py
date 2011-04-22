@@ -362,7 +362,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
     # Header template used when a new message is added to the question.
     action_header_template = {
         QuestionAction.REQUESTINFO:
-            '%(person)s requested for more information:',
+            '%(person)s requested more information:',
         QuestionAction.CONFIRM:
             '%(person)s confirmed that the question is solved:',
         QuestionAction.COMMENT:

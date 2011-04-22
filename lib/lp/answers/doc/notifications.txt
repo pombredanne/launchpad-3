@@ -336,7 +336,7 @@ subscribers except the question owner will look like this:
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
     <BLANKLINE>
     --...
@@ -353,7 +353,7 @@ extra footer.
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
     <BLANKLINE>
     --...
