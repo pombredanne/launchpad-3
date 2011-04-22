@@ -1184,9 +1184,6 @@ class QuestionTargetMixin:
 
     def createQuestionFromBug(self, bug):
         """See `IQuestionTarget`."""
-        # XXX sinzui 2011-04-22: While the question is correctly attributed
-        # the the bug owner, the email will claim to be from the user who
-        # created the question from the bug.
         question = self.newQuestion(
             bug.owner, bug.title, bug.description,
             datecreated=bug.datecreated)
