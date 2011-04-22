@@ -431,7 +431,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
         recipients = NotificationRecipientSet()
         owner = self.question.owner
         if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectRecipients()
+            original_recipients = self.question.get_direct_recipients
             rationale, header = original_recipients.getReason(owner)
             recipients.add(owner, rationale, header)
         return recipients

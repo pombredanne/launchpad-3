@@ -111,6 +111,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
 
@@ -535,7 +536,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getDirectSubscribers(self):
         """See `IQuestion`.
 
-        This method is sorted so that it iterates like getDirectRecipients().
+        This method is sorted so that it iterates like get_direct_recipients.
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
@@ -544,7 +545,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`.
 
         This method adds the assignee and is sorted so that it iterates like
-        getIndirectRecipients().
+        get_indirect_recipients.
         """
         subscribers = set(
             self.target.getAnswerContactsForLanguage(self.language))
@@ -554,11 +555,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectRecipients()
-        subscribers.update(self.getIndirectRecipients())
+        subscribers = self.get_direct_recipients
+        subscribers.update(self.get_indirect_recipients)
         return subscribers
 
-    def getDirectRecipients(self):
+    @cachedproperty
+    def get_direct_recipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
@@ -566,7 +568,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         subscribers.add(self.subscribers, reason, 'Subscriber')
         return subscribers
 
-    def getIndirectRecipients(self):
+    @cachedproperty
+    def get_indirect_recipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
