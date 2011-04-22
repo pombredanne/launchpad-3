@@ -256,7 +256,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def followup_subject(self):
         """See `IMessageTarget`."""
         if not self.messages:
-            return 'Re: '+ self.title
+            return 'Re: ' + self.title
         subject = self.messages[-1].title
         if subject[:4].lower() == 're: ':
             return subject
@@ -278,7 +278,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         if new_status == self.status:
             raise InvalidQuestionStateError(
                 "New status is same as the old one.")
-
 
         # If the previous state recorded an answer, clear those
         # information as well, but copy it out for the reopening.
@@ -807,7 +806,6 @@ class QuestionSet:
         cur = cursor()
         cur.execute(query)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
-        packages_with_questions = set()
         # Only packages with open questions are included in the query
         # result, so initialize each package to 0.
         counts = dict((package, 0) for package in packages)
