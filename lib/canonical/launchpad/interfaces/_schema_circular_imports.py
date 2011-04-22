@@ -486,6 +486,9 @@ patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+
 
 # IDistroSeriesDifference
 patch_reference_property(
@@ -843,7 +846,7 @@ patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
     IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
     "getDistroArchSeries", "getPackageUploads", "getSourcePackage",
-    "newMilestone")
+    "newMilestone", "getDifferencesTo")
 
 # IDistroSeriesDifference
 patch_entry_explicit_version(IDistroSeriesDifference, 'beta')

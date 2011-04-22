@@ -893,6 +893,41 @@ class IDistroSeriesPublic(
     def getDerivedSeries():
         """Get all `DistroSeries` derived from this one."""
 
+    @operation_parameters(
+        parent_series=TextLine(
+            title=_("The parent series to consider."), required=False),
+        difference_type=TextLine(
+            title=_("Only return differences of this type."), required=False),
+        source_package_name_filter=TextLine(
+            title=_("Only return differences for packages matching this "
+                    " name."),
+            required=False),
+        status=TextLine(
+            title=_("Only return differences of this status."),
+            required=False),
+        child_version_higher=TextLine(
+            title=_("Only return differences for which the child's version "
+                    "is higher than the parent's."),
+            required=False),
+        )
+    @operation_returns_collection_of(Interface) # Really IDistroSeriesDifferences
+    @export_read_operation()
+    def getDifferencesTo(parent_series, difference_type,
+                         source_package_name_filter, status,
+                         child_version_higher):
+        """Return the differences between this series and the specified
+        parent_series (or all the parent series if parent_series is None).
+
+        :param parent_series: The parent series for which the differences
+            should be returned. All the parent are considered if this is None.
+        :param difference_type: The type of the differences to return.
+        :param source_package_name_filter: A package name to use as a filter
+            for the differences.
+        :param status: The status of the differences to return.
+        :param child_version_higher: Only return differences for which the
+            child's version is higher than the parent's version.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
                     IStructuralSubscriptionTarget):

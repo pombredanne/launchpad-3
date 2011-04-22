@@ -280,7 +280,7 @@ class IDistroSeriesDifferenceSource(Interface):
 
     def getForDistroSeries(
         distro_series,
-        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        difference_type=None,
         source_package_name_filter=None,
         status=None,
         child_version_higher=False):
