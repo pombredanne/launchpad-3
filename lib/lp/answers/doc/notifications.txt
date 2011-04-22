@@ -852,15 +852,19 @@ from bugs just like when a question is normally created.
     >>> bug_question = ubuntu.createQuestionFromBug(bug)
     >>> notifications = pop_notifications()
     >>> len(notifications)
-    2
+    4
 
     >>> [email_msg['To'] for email_msg in notifications]
-    ['no-priv@canonical.com', 'support@ubuntu.com']
+    ['no-priv@canonical.com', 'no-priv@canonical.com',
+     'support@ubuntu.com', 'support@ubuntu.com']
 
-    >>> notifications[1]['Subject']
+    >>> notifications[0]['Subject']
     '[Question #...]: Installer fails on a Mac PPC'
 
-    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> notifications[1]['Subject']
+    'Re: [Question #...]: Installer fails on a Mac PPC'
+
+    >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body
     New question #... on Ubuntu:
     http://answers.launchpad.dev/ubuntu/+question/...
