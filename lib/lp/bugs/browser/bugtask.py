@@ -399,10 +399,12 @@ def get_visible_comments(comments, user=None):
 
     # If a user is supplied, we can also strip out comments that the user
     # cannot see, because they have been marked invisible.
+    strip_invisible = True
     if user is not None:
         role = PersonRoles(user)
-        if not (role.in_admin or role.in_registry_experts):
-            visible_comments = [c for c in visible_comments if c.visible]
+        strip_invisible = not (role.in_admin or role.in_registry_experts)
+    if strip_invisible:
+        visible_comments = [c for c in visible_comments if c.visible]
 
     return visible_comments
 

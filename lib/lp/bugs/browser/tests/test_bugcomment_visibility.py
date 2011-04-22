@@ -13,7 +13,6 @@ from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
-from lp.testing.views import create_view, create_initialized_view
 
 
 class TestBugCommentVisibility(BrowserTestCase):
@@ -45,7 +44,7 @@ class TestBugCommentVisibility(BrowserTestCase):
         self.assertTrue(
            comment_text in view.contents,
            "Administrator cannot see the hidden comment.")
-        
+
     def test_registry_can_see_comments(self):
         comment_text = "You can't see me."
         bug = self._makeBugWithHiddenComment(comment_text)
@@ -57,11 +56,10 @@ class TestBugCommentVisibility(BrowserTestCase):
            comment_text in view.contents,
            "Registy member cannot see the hidden comment.")
 
-
     def test_anon_cannot_see_comments(self):
         comment_text = "You can't see me."
         bug = self._makeBugWithHiddenComment(comment_text)
-        view = self.getViewBrowser(context=bug.default_bugtask)
+        view = self.getViewBrowser(context=bug.default_bugtask, no_login=True)
         self.assertFalse(
            comment_text in view.contents,
            "Anonymous person can see the hidden comment.")
@@ -69,8 +67,7 @@ class TestBugCommentVisibility(BrowserTestCase):
     def test_random_cannot_see_comments(self):
         comment_text = "You can't see me."
         bug = self._makeBugWithHiddenComment(comment_text)
-        user = self._getUserForTest()
-        view = self.getViewBrowser(context=bug.default_bugtask, user=user)
+        view = self.getViewBrowser(context=bug.default_bugtask)
         self.assertFalse(
            comment_text in view.contents,
            "Random user can see the hidden comment.")
