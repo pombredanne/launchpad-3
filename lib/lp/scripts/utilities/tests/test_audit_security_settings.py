@@ -13,24 +13,34 @@ from lp.scripts.utilities.settingsauditor import SettingsAuditor
 from lp.testing import TestCase
 
 
-class TestAuditSecuitySettings(TestCase):
+class TestAuditSecuritySettings(TestCase):
 
     layer = BaseLayer
 
-    def test_duplicate_parsing(self):
-        test_settings = """
-            [good]
-            public.foo = SELECT
-            public.bar = SELECT, INSERT
-            public.baz = SELECT
+    def setUp(self):
+        super(TestAuditSecuritySettings, self).setUp()
+        self.test_settings = (
+            '# This is the header.\n'
+            '[good]\n'
+            'public.foo = SELECT\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.baz = SELECT\n'
+            '\n'
+            '[bad]\n'
+            'public.foo = SELECT\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.bar = SELECT\n'
+            'public.baz = SELECT\n')
 
-            [bad]
-            public.foo = SELECT
-            public.bar = SELECT, INSERT
-            public.bar = SELECT
-            public.baz = SELECT
-            """.split('\n')
+    def test_getHeader(self):
         sa = SettingsAuditor()
-        sa.audit(test_settings)
+        header = sa._getHeader(self.test_settings)
+        self.assertEqual(
+            header,
+            '# This is the header.\n')
+
+    def test_duplicate_parsing(self):
+        sa = SettingsAuditor()
+        sa.audit(self.test_settings)
         expected = '[bad]\n\tDuplicate setting found: public.bar'
         self.assertTrue(expected in sa.error_data)
