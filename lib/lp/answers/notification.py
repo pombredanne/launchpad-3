@@ -49,10 +49,15 @@ class QuestionNotification:
         """
         self.question = question
         self.event = event
-        self.user = IPerson(self.event.user)
+        self._user = IPerson(self.event.user)
         self.initialize()
         if self.shouldNotify():
             self.send()
+
+    @property
+    def user(self):
+        """Return the user from the event. """
+        return self._user
 
     def getFromAddress(self):
         """Return a formatted email address suitable for user in the From
@@ -180,6 +185,15 @@ class QuestionNotification:
 class QuestionAddedNotification(QuestionNotification):
     """Notification sent when a question is added."""
 
+    @property
+    def user(self):
+        """Return the question owner.
+
+        Questions can be created by other users for the owner; the
+        question is from the owner.
+        """
+        return self.question.owner
+
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
@@ -222,7 +236,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Textual representation of the changes to the question metadata."""
         question = self.question
         old_question = self.old_question
-        indent = 4*' '
+        indent = 4 * ' '
         info_fields = []
         if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
@@ -306,10 +320,6 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-
-            # XXX sinzui 2007-02-01 bug=164435:
-            # Added an assert to gather better Opps information about
-            # the state of the messages.
             messages = list(self.question.messages)
             assert self.new_message in messages, (
                 "Question %s: message id %s not in %s." % (
@@ -318,7 +328,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             index = messages.index(self.new_message)
             if index > 0:
                 headers['References'] = (
-                    self.question.messages[index-1].rfc822msgid)
+                    self.question.messages[index - 1].rfc822msgid)
         return headers
 
     def shouldNotify(self):
@@ -352,7 +362,6 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """
         original_recipients = QuestionNotification.getRecipients(self)
         recipients = NotificationRecipientSet()
-        owner = self.question.owner
         for person in original_recipients:
             if person != self.question.owner:
                 rationale, header = original_recipients.getReason(person)
@@ -471,5 +480,3 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
             'question_url': canonical_url(question),
             'question_language': question.language.englishname,
             'comment': question.description}
-
-
