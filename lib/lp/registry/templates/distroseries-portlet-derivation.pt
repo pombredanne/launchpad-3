@@ -12,27 +12,33 @@
                          nb_diffs_in_parent view/num_differences_in_parent;
                          nb_diffs_in_child view/num_differences_in_child;">
         <ul id="derivation_stats">
-          <li class="sprite info" tal:condition="nb_diffs">
-            <a tal:attributes="href string:${context/fmt:url}/+localpackagediffs">
+          <li tal:condition="nb_diffs">
+            <a tal:attributes="href string:${context/fmt:url}/+localpackagediffs"
+               class="sprite info"
+               title="Source package differences between this series and his parent">
               <tal:nb_diffs replace="nb_diffs"/> package<tal:plural
                 content="string:s"
-                condition="python:nb_diffs!=1"/> with differences.
+                condition="python:nb_diffs!=1"/> with differences
             </a>
           </li>
-         <li class="sprite info" tal:condition="nb_diffs_in_parent">
-            <a tal:attributes="href string:${context/fmt:url}/+missingpackages">
+         <li tal:condition="nb_diffs_in_parent">
+            <a tal:attributes="href string:${context/fmt:url}/+missingpackages"
+               class="sprite info"
+               title="Source packages only in parent series">
               <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
                 content="string:s"
                 condition="python:nb_diffs_in_parent!=1"/> only in <tal:replace
-                  replace="context/parent_series/displayname">Sid</tal:replace>.
+                  replace="context/parent_series/displayname">Sid</tal:replace>
             </a>
           </li>
-          <li class="sprite info" tal:condition="nb_diffs_in_child">
-            <a tal:attributes="href string:${context/fmt:url}/+uniquepackages">
+          <li tal:condition="nb_diffs_in_child">
+            <a tal:attributes="href string:${context/fmt:url}/+uniquepackages"
+               class="sprite info"
+               title="Source packages only in derived series">
               <tal:nb_diffs replace="nb_diffs_in_child"/> package<tal:plural
                 content="string:s"
                 condition="python:nb_diffs_in_child!=1"/> only in <tal:replace
-                  replace="context/displayname">Natty</tal:replace>.
+                  replace="context/displayname">Natty</tal:replace>
             </a>
           </li>
          </ul>
