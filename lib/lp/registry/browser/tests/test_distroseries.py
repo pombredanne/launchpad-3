@@ -5,16 +5,29 @@
 
 __metaclass__ = type
 
+import difflib
 import re
+from textwrap import TextWrapper
 
 from BeautifulSoup import BeautifulSoup
 from lxml import html
 import soupmatchers
 from storm.zope.interfaces import IResultSet
-from testtools.matchers import EndsWith
+from testtools.content import (
+    Content,
+    text_content,
+    )
+from testtools.content_type import UTF8_TEXT
+from testtools.matchers import (
+    EndsWith,
+    LessThan,
+    Not,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -35,6 +48,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.services.features import (
+    get_relevant_feature_controller,
     getFeatureFlag,
     install_feature_controller,
     )
@@ -47,6 +61,9 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     SourcePackageFormat,
     )
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -56,8 +73,10 @@ from lp.testing import (
     login_person,
     person_logged_in,
     set_feature_flag,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -86,6 +105,168 @@ class TestDistroSeriesView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
+
+    def _createDifferenceAndGetView(self, difference_type):
+        # Helper function to create a valid DSD.
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries, difference_type=difference_type)
+        return create_initialized_view(distroseries, '+index')
+
+    def test_num_differences(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences)
+
+    def test_num_differences_in_parent(self):
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_parent)
+
+    def test_num_differences_in_child(self):
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(1, view.num_differences_in_child)
+
+
+class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
+    """Test the distroseries +index page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _setupDifferences(self, name, parent_name, nb_diff_versions,
+                          nb_diff_child, nb_diff_parent):
+        # Helper to create DSD of the different types.
+        derived_series = self.factory.makeDistroSeries(
+            name=name,
+            parent_series=self.factory.makeDistroSeries(name=parent_name))
+        self.simple_user = self.factory.makePerson()
+        for i in range(nb_diff_versions):
+            diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        for i in range(nb_diff_child):
+            diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        for i in range(nb_diff_parent):
+            diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                difference_type=diff_type)
+        return derived_series
+
+    def test_differences_no_flag_no_portlet(self):
+        # The portlet is not displayed if the feature flag is not enabled.
+        derived_series = self._setupDifferences('deri', 'sid', 1, 2, 2)
+        portlet_header = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            html = view()
+
+        self.assertEqual(
+            None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+        self.assertThat(html, Not(portlet_header))
+
+    def test_differences_portlet_all_differences(self):
+        # The difference portlet shows the differences with the parent
+        # series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 1, 2, 3)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            soupmatchers.Tag(
+                'Differences link', 'a',
+                text=re.compile('\s*1 package with differences.\s*'),
+                attrs={'href': re.compile('.*/\+localpackagediffs')}),
+            soupmatchers.Tag(
+                'Parent diffs link', 'a',
+                text=re.compile('\s*2 packages in Sid.\s*'),
+                attrs={'href': re.compile('.*/\+missingpackages')}),
+            soupmatchers.Tag(
+                'Child diffs link', 'a',
+                text=re.compile('\s*3 packages in Deri.\s*'),
+                attrs={'href': re.compile('.*/\+uniquepackages')}))
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertThat(html, portlet_display)
+
+    def test_differences_portlet_no_differences(self):
+        # The difference portlet displays 'No differences' if there is no
+        # differences with the parent.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from Sid'),
+            soupmatchers.Tag(
+                'Child diffs link', True,
+                text=re.compile('\s*No differences\s*')),
+              )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertThat(html, portlet_display)
+
+    def test_differences_portlet_initialising(self):
+        # The difference portlet displays 'The series is initialising.' if
+        # there is an initialising job for the series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job = job_source.create(derived_series.parent, derived_series)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derived series', 'h2',
+                text='Derived series'),
+            soupmatchers.Tag(
+                'Init message', True,
+                text=re.compile('\s*This series is initialising.\s*')),
+              )
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html = view()
+
+        self.assertTrue(derived_series.is_initialising)
+        self.assertThat(html, portlet_display)
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -319,6 +500,116 @@ class TestDistroSeriesLocalDifferences(
         self._test_packagesets(
             html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
+    def test_queries(self):
+        # With no DistroSeriesDifferences the query count should be low and
+        # fairly static. However, with some DistroSeriesDifferences the query
+        # count will be higher, but it should remain the same no matter how
+        # many differences there are.
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        def add_differences(num):
+            for index in xrange(num):
+                version = self.factory.getUniqueInteger()
+                versions = {
+                    'base': u'1.%d' % version,
+                    'derived': u'1.%dderived1' % version,
+                    'parent': u'1.%d-1' % version,
+                    }
+                dsd = self.factory.makeDistroSeriesDifference(
+                    derived_series=derived_series,
+                    versions=versions)
+
+                # Push a base_version in... not sure how better to do it.
+                removeSecurityProxy(dsd).base_version = versions["base"]
+
+                # Add a couple of comments.
+                self.factory.makeDistroSeriesDifferenceComment(dsd)
+                self.factory.makeDistroSeriesDifferenceComment(dsd)
+
+                # Update the spr, some with recipes, some with signing keys.
+                # SPR.uploader references both, and the uploader is referenced
+                # in the page.
+                spr = dsd.source_pub.sourcepackagerelease
+                if index % 2 == 0:
+                    removeSecurityProxy(spr).source_package_recipe_build = (
+                        self.factory.makeSourcePackageRecipeBuild(
+                            sourcename=spr.sourcepackagename.name,
+                            distroseries=derived_series))
+                else:
+                    removeSecurityProxy(spr).dscsigningkey = (
+                        self.factory.makeGPGKey(owner=spr.creator))
+
+        def flush_and_render():
+            flush_database_caches()
+            # Pull in the calling user's location so that it isn't recorded in
+            # the query count; it causes the total to be fragile for no
+            # readily apparent reason.
+            self.simple_user.location
+            with StormStatementRecorder() as recorder:
+                view = create_initialized_view(
+                    derived_series, '+localpackagediffs',
+                    principal=self.simple_user)
+                view()
+            return recorder, view.cached_differences.batch.trueSize
+
+        def statement_differ(rec1, rec2):
+            wrapper = TextWrapper(break_long_words=False)
+
+            def prepare_statements(rec):
+                for statement in rec.statements:
+                    for line in wrapper.wrap(statement):
+                        yield line
+                    yield "-" * wrapper.width
+
+            def statement_diff():
+                diff = difflib.ndiff(
+                    list(prepare_statements(rec1)),
+                    list(prepare_statements(rec2)))
+                for line in diff:
+                    yield "%s\n" % line
+
+            return statement_diff
+
+        # Render without differences and check the query count isn't silly.
+        recorder1, batch_size = flush_and_render()
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.addDetail(
+            "statement-count-0-differences",
+            text_content(u"%d" % recorder1.count))
+        # Add some differences and render.
+        add_differences(2)
+        recorder2, batch_size = flush_and_render()
+        self.addDetail(
+            "statement-count-2-differences",
+            text_content(u"%d" % recorder2.count))
+        # Add more differences and render again.
+        add_differences(2)
+        recorder3, batch_size = flush_and_render()
+        self.addDetail(
+            "statement-count-4-differences",
+            text_content(u"%d" % recorder3.count))
+        # The last render should not need more queries than the previous.
+        self.addDetail(
+            "statement-diff", Content(
+                UTF8_TEXT, statement_differ(recorder2, recorder3)))
+        # Details about the number of statements per row.
+        statement_count_per_row = (
+            (recorder3.count - recorder1.count) / float(batch_size))
+        self.addDetail(
+            "statement-count-per-row-average",
+            text_content(u"%.2f" % statement_count_per_row))
+        # XXX: GavinPanella 2011-04-12 bug=760733: Reducing the query count
+        # further needs work. Ideally this test would be along the lines of
+        # recorder3.count == recorder2.count. 4 queries above the recorder2
+        # count is 2 queries per difference which is not acceptable, but is
+        # *far* better than without the changes introduced by landing this.
+        compromise_statement_count = recorder2.count + 4
+        self.assertThat(
+            recorder3, HasQueryCount(
+                LessThan(compromise_statement_count + 1)))
+
 
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
     """Test the distroseries +localpackagediffs view."""
@@ -519,6 +810,8 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # Delete the publications.
         difference.source_pub.status = PackagePublishingStatus.DELETED
         difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+        # Flush out the changes and invalidate caches (esp. property caches).
+        flush_database_caches()
 
         set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(

@@ -137,6 +137,20 @@ class TestBug(TestCaseWithFactory):
                     subscriber, subscriber, level=level)
             self.assertEqual(level, subscription.bug_notification_level)
 
+    def test_resubscribe_with_level(self):
+        # If you pass a new level to subscribe with an existing subscription,
+        # the level is set on the existing subscription.
+        bug = self.factory.makeBug()
+        subscriber = self.factory.makePerson()
+        levels = list(BugNotificationLevel.items)
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=levels[-1])
+        for level in levels:
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber, level=level)
+            self.assertEqual(level, subscription.bug_notification_level)
+
     def test_get_direct_subscribers_with_level(self):
         # It's possible to pass a level parameter to
         # getDirectSubscribers() to filter the subscribers returned.

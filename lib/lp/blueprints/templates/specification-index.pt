@@ -46,9 +46,9 @@
       <tal:widget replace="structure view/summary_widget" />
 
       <ul class="horizontal">
-        <li
+        <li id="spec-url"
             tal:condition="context/specurl">
-          <a class="sprite external-link"
+          <a class="sprite external-link" rel="nofollow"
             tal:attributes="href context/specurl">Read the full specification</a>
         </li>
         <tal:block condition="python:context.specurl is None">
