@@ -1,4 +1,3 @@
-
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -33,13 +32,22 @@ class TestAuditSecuritySettings(TestCase):
             'public.baz = SELECT\n')
 
     def test_getHeader(self):
-        sa = SettingsAuditor()
-        header = sa._getHeader(self.test_settings)
+        sa = SettingsAuditor(self.test_settings)
+        header = sa._getHeader()
         self.assertEqual(
             header,
             '# This is the header.\n')
 
-    def test_duplicate_parsing(self):
+    def test_extract_config_blocks(self):
+        test_settings = self.test_settings.replace(
+            '# This is the header.\n', '')
+        sa = SettingsAuditor(test_settings)
+        sa._separateConfigBlocks()
+        self.assertContentEqual(
+            ['[good]', '[bad]'],
+            sa.config_blocks.keys())
+
+    def NOPE_duplicate_parsing(self):
         sa = SettingsAuditor()
         sa.audit(self.test_settings)
         expected = '[bad]\n\tDuplicate setting found: public.bar'
