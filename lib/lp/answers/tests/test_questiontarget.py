@@ -79,25 +79,32 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
 
 
-class TestQuestionTarget_createQuestionFromBug(TestCaseWithFactory):
+class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):
     """Test the createQuestionFromBug from bug behavior."""
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestQuestionTargetCreateQuestionFromBug, self).setUp()
+        self.bug = self.factory.makeBug(description="first comment")
+        self.target = self.bug.bugtasks[0].target
+        self.contributor = self.target.owner
+        self.reporter = self.bug.owner
+
     def test_first_and_last_messages_copied_to_question(self):
         # The question is created with the bug's description and the last
         # message which presumably is about why the bug was converted.
-        bug = self.factory.makeBug(description="first comment")
-        target = bug.bugtasks[0].target
-        contributor = target.owner
-        reporter = bug.owner
-        with person_logged_in(reporter):
-            bug.newMessage(owner=reporter, content='second comment')
-        with person_logged_in(contributor):
-            last_message = bug.newMessage(
-                owner=contributor, content='third comment')
-            question = target.createQuestionFromBug(bug)
+        with person_logged_in(self.reporter):
+            self.bug.newMessage(owner=self.reporter, content='second comment')
+        with person_logged_in(self.contributor):
+            last_message = self.bug.newMessage(
+                owner=self.contributor, content='third comment')
+            question = self.target.createQuestionFromBug(self.bug)
         question_messages = list(question.messages)
         self.assertEqual(1, len(question_messages))
         self.assertEqual(last_message.content, question_messages[0].content)
-        self.assertEqual(bug.description, question.description)
+        self.assertEqual(self.bug.description, question.description)
+
+    def test_bug_subscribers_copied_to_question(self):
+        # Users who subscribe to the bug are also interested in the answer.
+        pass
