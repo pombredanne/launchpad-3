@@ -325,6 +325,7 @@ def handleMail(trans=transaction,
             * commits the current transaction to ensure that the
               message gets sent
         """
+        log.info('error processing mail: %s' % (error_msg,))
         mailbox.delete(mail_id)
         if notify:
             msg = signed_message_from_string(raw_mail)
@@ -372,6 +373,7 @@ def handleMail(trans=transaction,
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
                 file_alias_url = file_alias.http_url
+                log.debug('Uploaded mail to librarian %s' % (file_alias_url,))
 
                 # If something goes wrong when handling the mail, the
                 # transaction will be aborted. Therefore we need to commit the
@@ -426,6 +428,7 @@ def handleMail(trans=transaction,
 
                 addresses = extract_addresses(
                     mail, raw_mail, file_alias_url, log)
+                log.debug('mail was originally to: %r' % (addresses,))
 
                 try:
                     do_paranoid_envelope_to_validation(addresses)
