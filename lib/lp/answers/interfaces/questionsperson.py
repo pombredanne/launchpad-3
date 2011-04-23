@@ -51,4 +51,3 @@ class IQuestionsPerson(IQuestionCollection):
         person requested more information or gave an answer and that are
         back in the OPEN state.
         """
-
