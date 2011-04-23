@@ -133,7 +133,7 @@ Foo Bar, and one to Ubuntu Team:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print edit_notification['Subject']
-    [Question #...]: Installer doesn't work on a Mac
+    Re: [Question #...]: Installer doesn't work on a Mac
 
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... libstdc++ in Ubuntu changed:

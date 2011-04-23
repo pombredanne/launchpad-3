@@ -299,23 +299,9 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         return question_changes
 
     def getSubject(self):
-        """When a comment is added, its title is used as the subject,
-        otherwise the question title is used.
-        """
-        prefix = '[Question #%s]: ' % self.question.id
-        if self.new_message:
-            # Migrate old prefix.
-            subject = self.new_message.subject.replace(
-                '[Support #%s]: ' % self.question.id, prefix)
-            if prefix in subject:
-                return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
-                # Place prefix after possible reply prefix.
-                return subject[0:4] + prefix + subject[4:]
-            else:
-                return prefix + subject
-        else:
-            return prefix + self.question.title
+        """The reply subject line."""
+        line = super(QuestionModifiedDefaultNotification, self).getSubject()
+        return 'Re: %s' % line
 
     def getHeaders(self):
         """Add a References header."""
