@@ -9,7 +9,10 @@ from unittest import TestCase
 
 from zope.interface import implements
 
-from lp.answers.notification import QuestionModifiedDefaultNotification
+from lp.answers.notification import (
+    QuestionAddedNotification,
+    QuestionModifiedDefaultNotification,
+    )
 from lp.registry.interfaces.person import IPerson
 
 
@@ -35,6 +38,7 @@ class StubQuestion:
     def __init__(self, id=1, title="Question title"):
         self.id = id
         self.title = title
+        self.owner = FakeUser()
 
 
 class StubQuestionMessage:
@@ -123,3 +127,30 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         self.assertEquals(
             'Re: [Question #1]: Message subject',
             self.notification.getSubject())
+
+    def test_user_is_event_user(self):
+        """The notification user is always the event user."""
+        question = StubQuestion()
+        event = FakeEvent()
+        notification = TestQuestionModifiedNotification(question, event)
+        self.assertEqual(event.user, notification.user)
+        self.assertNotEqual(question.owner, notification.user)
+
+
+class TestQuestionAddedNotification(QuestionAddedNotification):
+    """A subclass that does not send emails."""
+
+    def shouldNotify(self):
+        return False
+
+
+class QuestionCreatedTestCase(TestCase):
+    """Test cases for mail notifications about created questions."""
+
+    def test_user_is_question_owner(self):
+        """The notification user is always the question owner."""
+        question = StubQuestion()
+        event = FakeEvent()
+        notification = TestQuestionAddedNotification(question, event)
+        self.assertEqual(question.owner, notification.user)
+        self.assertNotEqual(event.user, notification.user)

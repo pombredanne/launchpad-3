@@ -62,6 +62,7 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     logout,
     TestCaseWithFactory,
@@ -468,6 +469,19 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 AssertionError,
                 getUtility(IAccountSet).getByOpenIDIdentifier, u'foo')
 
+    def test_logs_to_timeline(self):
+        # Completing an OpenID association *can* make an HTTP request to the
+        # OP, so it's a potentially long action. It is logged to the
+        # request timeline.
+        account = self.factory.makeAccount('Test account')
+        with SRegResponse_fromSuccessResponse_stubbed():
+            view, html = self._createViewWithResponse(account)
+        start, stop = get_request_timeline(view.request).actions[-2:]
+        self.assertEqual(start.category, 'openid-association-complete-start')
+        self.assertEqual(start.detail, '')
+        self.assertEqual(stop.category, 'openid-association-complete-stop')
+        self.assertEqual(stop.detail, '')
+
     def assertLastWriteIsSet(self, request):
         last_write = ISession(request)['lp.dbpolicy']['last_write']
         self.assertTrue(datetime.utcnow() - last_write < timedelta(minutes=1))
@@ -639,6 +653,22 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
         self.assertEquals(['email', 'fullname'],
                           sorted(sreg_extension.allRequestedFields()))
+
+    def test_logs_to_timeline(self):
+        # Beginning an OpenID association makes an HTTP request to the
+        # OP, so it's a potentially long action. It is logged to the
+        # request timeline.
+        request = LaunchpadTestRequest()
+        # This is a hack to make the request.getURL(1) call issued by the view
+        # not raise an IndexError.
+        request._app_names = ['foo']
+        view = StubbedOpenIDLogin(object(), request)
+        view()
+        start, stop = get_request_timeline(request).actions[-2:]
+        self.assertEqual(start.category, 'openid-association-begin-start')
+        self.assertEqual(start.detail, 'http://testopenid.dev/')
+        self.assertEqual(stop.category, 'openid-association-begin-stop')
+        self.assertEqual(stop.detail, 'http://testopenid.dev/')
 
 
 class TestOpenIDRealm(TestCaseWithFactory):
