@@ -133,7 +133,7 @@ Foo Bar, and one to Ubuntu Team:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print edit_notification['Subject']
-    [Question #...]: Installer doesn't work on a Mac
+    Re: [Question #...]: Installer doesn't work on a Mac
 
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... libstdc++ in Ubuntu changed:
@@ -336,7 +336,7 @@ subscribers except the question owner will look like this:
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
     <BLANKLINE>
     --...
@@ -353,7 +353,7 @@ extra footer.
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
-    No Privileges Person requested for more information:
+    No Privileges Person requested more information:
     What is your Mac model?
     <BLANKLINE>
     --...
@@ -857,23 +857,6 @@ from bugs just like when a question is normally created.
     >>> [email_msg['To'] for email_msg in notifications]
     ['no-priv@canonical.com', 'no-priv@canonical.com',
      'support@ubuntu.com', 'support@ubuntu.com']
-
-    >>> notifications[0]['Subject']
-    '[Question #...]: Installer fails on a Mac PPC'
-
-    >>> notifications[1]['Subject']
-    'Re: [Question #...]: Installer fails on a Mac PPC'
-
-    >>> notification_body = notifications[0].get_payload(decode=True)
-    >>> print notification_body
-    New question #... on Ubuntu:
-    http://answers.launchpad.dev/ubuntu/+question/...
-    <BLANKLINE>
-    I insert the install CD in the CD-ROM drive, but it won't boot.
-    <BLANKLINE>
-    It boots straight into MacOS 9.
-    <BLANKLINE>
-    --...
 
 
 Notifications and Teams
