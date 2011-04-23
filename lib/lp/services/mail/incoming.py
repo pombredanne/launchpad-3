@@ -208,12 +208,13 @@ def authenticateEmail(mail,
                 'success as conclusive')
         else:
             setupInteraction(principal, email_addr)
+            log.debug('message strongly authenticated by dkim') 
             return principal
 
     if signature is None:
         # Mark the principal so that application code can check that the
         # user was weakly authenticated.
-        log.debug('message is only weakly authenticated')
+        log.debug('message has no signature; therefore weakly authenticated')
         directlyProvides(
             principal, directlyProvidedBy(principal),
             IWeaklyAuthenticatedPrincipal)
@@ -238,17 +239,18 @@ def authenticateEmail(mail,
 
     for gpgkey in person.gpg_keys:
         if gpgkey.fingerprint == sig.fingerprint:
+            log.debug('gpg-signed message')
             break
     else:
         # The key doesn't belong to the user. Mark the principal so that the
         # application code knows that the key used to sign the email isn't
         # associated with the authenticated user.
+        log.debug('gpg-signed message but by no known key of principal')
         directlyProvides(
             principal, directlyProvidedBy(principal),
             IWeaklyAuthenticatedPrincipal)
 
     setupInteraction(principal, email_addr)
-    log.debug('message from principal: %s' % (principal,))
     return principal
 
 
@@ -412,6 +414,8 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
                 file_alias_url, ),
             exc_info=True)
         return
+    log.debug('processing mail from %r message-id %r' % 
+        (mail['from'], mail['message-id']))
 
     # If the Return-Path header is '<>', it probably means
     # that it's a bounce from a message we sent.
