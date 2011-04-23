@@ -139,6 +139,14 @@ class QuestionNotification:
         """
         return True
 
+    def buildBody(self, body, rationale):
+        """Wrap the body and ensure the rationale is is separated."""
+        wrapper = MailWrapper()
+        body_parts = [body, wrapper.format(rationale)]
+        if '\n-- ' not in body:
+            body_parts.insert(1, '-- ')
+        return '\n'.join(body_parts)
+
     def send(self):
         """Sends the notification to all the notification recipients.
 
@@ -151,15 +159,12 @@ class QuestionNotification:
         body = self.getBody()
         headers = self.getHeaders()
         recipients = self.getRecipients()
-        wrapper = MailWrapper()
         for email in recipients.getEmails():
             rationale, header = recipients.getReason(email)
             headers['X-Launchpad-Message-Rationale'] = header
-            body_parts = [body, wrapper.format(rationale)]
-            if '-- ' not in body:
-                body_parts.insert(1, '-- ')
+            formatted_body = self.buildBody(body, rationale)
             simple_sendmail(
-                from_address, email, subject, '\n'.join(body_parts), headers)
+                from_address, email, subject, formatted_body, headers)
 
     @property
     def unsupported_language(self):
