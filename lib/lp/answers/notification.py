@@ -144,6 +144,14 @@ class QuestionNotification:
         """
         return True
 
+    def buildBody(self, body, rationale):
+        """Wrap the body and ensure the rationale is is separated."""
+        wrapper = MailWrapper()
+        body_parts = [body, wrapper.format(rationale)]
+        if '\n-- ' not in body:
+            body_parts.insert(1, '-- ')
+        return '\n'.join(body_parts)
+
     def send(self):
         """Sends the notification to all the notification recipients.
 
@@ -156,15 +164,12 @@ class QuestionNotification:
         body = self.getBody()
         headers = self.getHeaders()
         recipients = self.getRecipients()
-        wrapper = MailWrapper()
         for email in recipients.getEmails():
             rationale, header = recipients.getReason(email)
             headers['X-Launchpad-Message-Rationale'] = header
-            body_parts = [body, wrapper.format(rationale)]
-            if '-- ' not in body:
-                body_parts.insert(1, '-- ')
+            formatted_body = self.buildBody(body, rationale)
             simple_sendmail(
-                from_address, email, subject, '\n'.join(body_parts), headers)
+                from_address, email, subject, formatted_body, headers)
 
     @property
     def unsupported_language(self):
@@ -294,23 +299,9 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         return question_changes
 
     def getSubject(self):
-        """When a comment is added, its title is used as the subject,
-        otherwise the question title is used.
-        """
-        prefix = '[Question #%s]: ' % self.question.id
-        if self.new_message:
-            # Migrate old prefix.
-            subject = self.new_message.subject.replace(
-                '[Support #%s]: ' % self.question.id, prefix)
-            if prefix in subject:
-                return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
-                # Place prefix after possible reply prefix.
-                return subject[0:4] + prefix + subject[4:]
-            else:
-                return prefix + subject
-        else:
-            return prefix + self.question.title
+        """The reply subject line."""
+        line = super(QuestionModifiedDefaultNotification, self).getSubject()
+        return 'Re: %s' % line
 
     def getHeaders(self):
         """Add a References header."""
@@ -371,7 +362,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
     # Header template used when a new message is added to the question.
     action_header_template = {
         QuestionAction.REQUESTINFO:
-            '%(person)s requested for more information:',
+            '%(person)s requested more information:',
         QuestionAction.CONFIRM:
             '%(person)s confirmed that the question is solved:',
         QuestionAction.COMMENT:
