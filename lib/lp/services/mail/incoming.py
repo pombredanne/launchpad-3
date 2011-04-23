@@ -171,8 +171,8 @@ def authenticateEmail(mail,
     message sender.
 
     :param signature_timestamp_checker: This callable is
-        passed the message signature timestamp, and it can raise an exception if
-        it dislikes it (for example as a replay attack.)  This parameter is
+        passed the message signature timestamp, and it can raise an exception
+        if it dislikes it (for example as a replay attack.)  This parameter is
         intended for use in tests.  If None, ensure_sane_signature_timestamp
         is used.
     """
@@ -182,6 +182,7 @@ def authenticateEmail(mail,
     name, email_addr = parseaddr(mail['From'])
     authutil = getUtility(IPlacelessAuthUtility)
     principal = authutil.getPrincipalByLogin(email_addr)
+    log = logging.getLogger('process-mail')
 
     # Check that sender is registered in Launchpad and the email is signed.
     if principal is None:
@@ -203,7 +204,6 @@ def authenticateEmail(mail,
 
     if dkim_result:
         if mail.signature is not None:
-            log = logging.getLogger('process-mail')
             log.info('message has gpg signature, therefore not treating DKIM '
                 'success as conclusive')
         else:
@@ -213,6 +213,7 @@ def authenticateEmail(mail,
     if signature is None:
         # Mark the principal so that application code can check that the
         # user was weakly authenticated.
+        log.debug('message is only weakly authenticated')
         directlyProvides(
             principal, directlyProvidedBy(principal),
             IWeaklyAuthenticatedPrincipal)
@@ -247,6 +248,7 @@ def authenticateEmail(mail,
             IWeaklyAuthenticatedPrincipal)
 
     setupInteraction(principal, email_addr)
+    log.debug('message from principal: %s' % (principal,))
     return principal
 
 
@@ -311,39 +313,6 @@ def report_oops(file_alias_url=None, error_msg=None):
 
 def handleMail(trans=transaction,
                signature_timestamp_checker=None):
-    # First we define an error handler. We define it as a local
-    # function, to avoid having to pass a lot of parameters.
-    # pylint: disable-msg=W0631
-    def _handle_error(error_msg, file_alias_url, notify=True):
-        """Handles error occuring in handleMail's for-loop.
-
-        It does the following:
-
-            * deletes the current mail from the mailbox
-            * records an OOPS with error_msg and file_alias_url
-              if notify is True
-            * commits the current transaction to ensure that the
-              message gets sent
-        """
-        log.info('error processing mail: %s' % (error_msg,))
-        mailbox.delete(mail_id)
-        if notify:
-            msg = signed_message_from_string(raw_mail)
-            oops_id = report_oops(
-                file_alias_url=file_alias_url,
-                error_msg=error_msg)
-            send_process_error_notification(
-                msg['From'],
-                'Submit Request Failure',
-                get_error_message('oops.txt', oops_id=oops_id),
-                msg)
-        trans.commit()
-
-    def _handle_user_error(error, mail):
-        mailbox.delete(mail_id)
-        send_process_error_notification(
-            mail['From'], 'Submit Request Failure', str(error), mail)
-        trans.commit()
 
     log = logging.getLogger('process-mail')
     mailbox = getUtility(IMailBox)
@@ -353,146 +322,153 @@ def handleMail(trans=transaction,
         for mail_id, raw_mail in mailbox.items():
             log.info("Processing mail %s" % mail_id)
             try:
-                file_alias_url = None
-                trans.begin()
-
-                # File the raw_mail in the Librarian
-                file_name = str(uuid1()) + '.txt'
-                try:
-                    file_alias = getUtility(ILibraryFileAliasSet).create(
-                            file_name, len(raw_mail),
-                            cStringIO(raw_mail), 'message/rfc822')
-                except UploadFailed:
-                    # Something went wrong in the Librarian. It could be
-                    # that it's not running, but not necessarily. Log
-                    # the error and skip the message, but don't delete
-                    # it.
-                    log.exception('Upload to Librarian failed')
-                    continue
-
+                file_alias = save_mail_to_librarian(trans, log, raw_mail)
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
                 file_alias_url = file_alias.http_url
                 log.debug('Uploaded mail to librarian %s' % (file_alias_url,))
-
-                # If something goes wrong when handling the mail, the
-                # transaction will be aborted. Therefore we need to commit the
-                # transaction now, to ensure that the mail gets stored in the
-                # Librarian.
+            except UploadFailed:
+                # Something went wrong in the Librarian. It could be that it's
+                # not running, but not necessarily. Log the error and skip the
+                # message, but don't delete it: retrying might help.
+                log.exception('Upload to Librarian failed')
+                continue
+            mailbox.delete(mail_id)
+            try:
+                handle_one_mail(trans, log, raw_mail,
+                    file_alias, file_alias_url, signature_timestamp_checker)
                 trans.commit()
-                trans.begin()
-
-                try:
-                    mail = signed_message_from_string(raw_mail)
-                except email.Errors.MessageError, error:
-                    mailbox.delete(mail_id)
-                    log = logging.getLogger('lp.services.mail')
-                    log.warn(
-                        "Couldn't convert email to email.Message: %s" % (
-                            file_alias_url, ),
-                        exc_info=True)
-                    continue
-
-
-                # If the Return-Path header is '<>', it probably means
-                # that it's a bounce from a message we sent.
-                if mail['Return-Path'] == '<>':
-                    _handle_error(
-                        "Message had an empty Return-Path.",
-                        file_alias_url, notify=False)
-                    continue
-                if mail.get_content_type() == 'multipart/report':
-                    # Mails with a content type of multipart/report are
-                    # generally DSN messages and should be ignored.
-                    _handle_error(
-                        "Got a multipart/report message.",
-                        file_alias_url, notify=False)
-                    continue
-                if 'precedence' in mail:
-                    _handle_error(
-                        "Got a message with a precedence header.",
-                        file_alias_url, notify=False)
-                    continue
-
-                try:
-                    principal = authenticateEmail(
-                        mail, signature_timestamp_checker)
-                except InvalidSignature, error:
-                    _handle_user_error(error, mail)
-                    continue
-                except InactiveAccount:
-                    _handle_error(
-                        "Inactive account found for %s" % mail['From'],
-                        file_alias_url, notify=False)
-                    continue
-
-                addresses = extract_addresses(
-                    mail, raw_mail, file_alias_url, log)
-                log.debug('mail was originally to: %r' % (addresses,))
-
-                try:
-                    do_paranoid_envelope_to_validation(addresses)
-                except AssertionError, e:
-                    _handle_error(
-                        "Invalid email address: %s" % e,
-                        file_alias_url, notify=False)
-                    continue
-
-                handler = None
-                for email_addr in addresses:
-                    user, domain = email_addr.split('@')
-                    handler = mail_handlers.get(domain)
-                    if handler is not None:
-                        break
-
-                if handler is None:
-                    _handle_error(
-                        "No handler registered for '%s' " % (
-                            ', '.join(addresses)),
-                        file_alias_url)
-                    continue
-
-                if principal is None and not handler.allow_unknown_users:
-                    _handle_error(
-                        'Unknown user: %s ' % mail['From'],
-                        file_alias_url, notify=False)
-                    continue
-
-                handled = handler.process(mail, email_addr, file_alias)
-
-                if not handled:
-                    _handle_error(
-                        "Handler found, but message was not handled: %s" % (
-                            mail['From'], ),
-                        file_alias_url)
-                    continue
-
-                # Commit the transaction before deleting the mail in
-                # case there are any errors. If an error occur while
-                # commiting the transaction, the mail will be deleted in
-                # the exception handler.
-                trans.commit()
-                mailbox.delete(mail_id)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
                 # This bare except is needed in order to prevent any bug
                 # in the email handling from causing the email interface
-                # to lock up. If an email causes an unexpected
-                # exception, we simply log the error and delete the
-                # email, so that it doesn't stop the rest of the emails
-                # from being processed.
-                _handle_error(
+                # to lock up. We simply log the error, then send an oops, and
+                # continue through the mailbox, so that it doesn't stop the
+                # rest of the emails from being processed.
+                log.exception(
+                    "An exception was raised inside the handler:\n%s"
+                    % (file_alias_url,))
+                _send_email_oops(trans, log,
+                    signed_message_from_string(raw_mail), raw_mail,
                     "Unhandled exception", file_alias_url)
-                if file_alias_url is not None:
-                    email_info = file_alias_url
-                else:
-                    email_info = raw_mail
-
-                log.error(
-                    "An exception was raised inside the handler:\n%s" % (
-                        email_info),
-                    exc_info=True)
     finally:
         log.info("Closing the mail box.")
         mailbox.close()
+
+
+def _send_email_oops(trans, log, mail, raw_mail, error_msg, file_alias_url):
+    """Handle an error that generates an oops.
+
+    It does the following:
+        * records an OOPS with error_msg and file_alias_url
+        * commits the current transaction to ensure that the
+            message gets sent
+    """
+    log.info('error processing mail: %s' % (error_msg,))
+    oops_id = report_oops(
+        file_alias_url=file_alias_url,
+        error_msg=error_msg)
+    log.info('oops %s' % (oops_id,))
+    send_process_error_notification(
+        mail['From'],
+        'Submit Request Failure',
+        get_error_message('oops.txt', oops_id=oops_id),
+        mail)
+    trans.commit()
+
+
+def save_mail_to_librarian(trans, log, raw_mail):
+    """Save the message to the librarian, for reference from errors."""
+    trans.begin()
+    # File the raw_mail in the Librarian
+    file_name = str(uuid1()) + '.txt'
+    file_alias = getUtility(ILibraryFileAliasSet).create(
+            file_name, len(raw_mail),
+            cStringIO(raw_mail), 'message/rfc822')
+    # If something goes wrong when handling the mail, the
+    # transaction will be aborted. Therefore we need to commit the
+    # transaction now, to ensure that the mail gets stored in the
+    # Librarian.
+    trans.commit()
+    return file_alias
+
+
+def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
+    signature_timestamp_checker):
+    """Process one message.
+
+    Returns None when the message has either been successfully processed, or
+    handled as a known error condition, in which case a reply will have been
+    sent if appropriate.
+    """
+
+    trans.begin()
+
+    try:
+        mail = signed_message_from_string(raw_mail)
+    except email.Errors.MessageError, error:
+        log.warn("Couldn't convert email to email.Message: %s" % (
+                file_alias_url, ),
+            exc_info=True)
+        return
+
+    # If the Return-Path header is '<>', it probably means
+    # that it's a bounce from a message we sent.
+    if mail['Return-Path'] == '<>':
+        log.info("Message had an empty Return-Path.")
+        return
+    if mail.get_content_type() == 'multipart/report':
+        # Mails with a content type of multipart/report are
+        # generally DSN messages and should be ignored.
+        log.info("Got a multipart/report message.")
+        return
+    if 'precedence' in mail:
+        log.info("Got a message with a precedence header.")
+        return
+
+    try:
+        principal = authenticateEmail(
+            mail, signature_timestamp_checker)
+    except InvalidSignature, error:
+        send_process_error_notification(
+            mail['From'], 'Submit Request Failure', str(error), mail)
+        return
+    except InactiveAccount:
+        log.info("Inactive account found for %s" % mail['From'])
+        return
+
+    addresses = extract_addresses(mail, raw_mail, file_alias_url, log)
+    log.debug('mail was originally to: %r' % (addresses,))
+
+    try:
+        do_paranoid_envelope_to_validation(addresses)
+    except AssertionError, e:
+        log.info("Invalid email address: %s" % e)
+        return
+
+    handler = None
+    for email_addr in addresses:
+        user, domain = email_addr.split('@')
+        handler = mail_handlers.get(domain)
+        if handler is not None:
+            break
+    else:
+        _send_email_oops(trans, log, mail, raw_mail,
+            "No handler registered for '%s' " % (
+                ', '.join(addresses)),
+            file_alias_url)
+        return
+
+    if principal is None and not handler.allow_unknown_users:
+        log.info('Unknown user: %s ' % mail['From'])
+        return
+
+    handled = handler.process(mail, email_addr, file_alias)
+    if not handled:
+        _send_email_oops(
+            trans, log, mail, raw_mail,
+            "Handler found, but message was not handled: %s" % (
+                mail['From'], ),
+            file_alias_url)
+        return
