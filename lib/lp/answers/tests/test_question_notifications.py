@@ -80,52 +80,10 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         self.assertEqual(
             "body -- mdash\n-- \nrationale", formatted_body)
 
-    def test_getSubject_no_new_message(self):
+    def test_getSubject(self):
         """getSubject() when there is no message added to the question."""
         self.assertEquals(
-            '[Question #1]: Question title', self.notification.getSubject())
-
-    def test_getSubject_new_message(self):
-        """Test getSubject() when there is a new message."""
-        self.notification.new_message = StubQuestionMessage()
-        self.assertEquals(
-            '[Question #1]: Message subject',
-            self.notification.getSubject())
-
-    def test_getSubject_new_message_with_reply_prefix(self):
-        """getSubject() when there is a new message with a reply prefix."""
-        self.notification.new_message = StubQuestionMessage(
-            'RE: Message subject')
-        self.assertEquals('RE: [Question #1]: Message subject',
-            self.notification.getSubject())
-
-        self.notification.new_message.subject = 'Re: Message subject'
-        self.assertEquals('Re: [Question #1]: Message subject',
-            self.notification.getSubject())
-
-        self.notification.new_message.subject = 're: Message subject'
-        self.assertEquals('re: [Question #1]: Message subject',
-            self.notification.getSubject())
-
-    def test_getSubject_with_existing_prefix(self):
-        """Test getSubject() when there is already a [Question #xx] prefix."""
-        self.notification.new_message = StubQuestionMessage(
-            '[Question #1]: Question title')
-        self.assertEquals('[Question #1]: Question title',
-            self.notification.getSubject())
-
-        self.notification.new_message.subject = (
-            'Re: [Question #1]: Message subject')
-        self.assertEquals(
-            'Re: [Question #1]: Message subject',
-            self.notification.getSubject())
-
-    def test_getSubject_old_prefix(self):
-        """Test that getSubject() with an old [Support #dd] prefix."""
-        self.notification.new_message = StubQuestionMessage(
-            'Re: [Support #1]: Message subject')
-        self.assertEquals(
-            'Re: [Question #1]: Message subject',
+            'Re: [Question #1]: Question title',
             self.notification.getSubject())
 
     def test_user_is_event_user(self):
