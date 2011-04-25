@@ -84,12 +84,12 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         self.assertTrue(verifyObject(job, IRunnableJob))
         self.assertTrue(verifyObject(job, IDistributionJob))
 
-    def test_job_identifies_distroseries_suites(self):
+    def test_getSuites_identifies_distroseries_suites(self):
         distroseries = self.factory.makeDistroSeries()
         job = self.makeJob(distroseries)
         self.assertContentEqual(self.getSuites(distroseries), job.getSuites())
 
-    def test_job_ignores_suites_for_other_distroseries(self):
+    def test_getSuites_ignores_suites_for_other_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeDistroSeries(distribution=distroseries.distribution)
         job = self.makeJob(distroseries)
