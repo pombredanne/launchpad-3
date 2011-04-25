@@ -23,6 +23,7 @@ from lp.archivepublisher.model.initializedistroseriesindexesjob import (
     )
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
@@ -80,7 +81,9 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         """Create an `InitializeDistroSeriesIndexesJob`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
-        return removeSecurityProxy(self.getJobSource().makeFor(distroseries))
+        job = removeSecurityProxy(self.getJobSource().makeFor(distroseries))
+        job.logger = DevNullLogger()
+        return job
 
     def getSuites(self, distroseries):
         """Get the list of suites for `distroseries`."""
