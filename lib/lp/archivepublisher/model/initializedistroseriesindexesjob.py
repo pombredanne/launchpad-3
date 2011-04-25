@@ -8,13 +8,17 @@ __all__ = [
     'InitializeDistroSeriesIndexesJob',
     ]
 
+from optparse import OptionParser
+from storm.locals import Store
 from textwrap import dedent
+import transaction
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
+from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     IInitializeDistroSeriesIndexesJobSource,
@@ -22,6 +26,7 @@ from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.mail.sendmail import MailController
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistributionJob,
@@ -30,6 +35,7 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+from lp.soyuz.scripts import publishdistro
 
 
 class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
@@ -83,7 +89,19 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
         Publishes only the distroseries in question, in careful mode.
         """
-# XXX: Implement
+        arguments = [
+            "-A",
+            "-d", self.distribution.name,
+            ]
+        for suite in self.getSuites():
+            arguments += ["-s", suite]
+        if extra_args is not None:
+            arguments.append(extra_args)
+
+        parser = OptionParser()
+        publishdistro.add_options(parser)
+        options, args = parser.parse_args(arguments)
+        publishdistro.run_publisher(options, transaction)
 
     def getMailRecipients(self):
         """List email addresses to notify of success or failure."""
@@ -91,10 +109,19 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     def notifySuccess(self):
         """Notify the distribution's owners of success."""
+        subject = "Launchpad has created archive indexes for %s." % (
+            self.distroseries.name)
         message = dedent("""\
-            The archive indexes for %s have been successfully initialized.
-            """ % self.distroseries.title)
-# XXX: Implement
+            You are receiving this email because you are registered in
+            Launchpad as the owner of %s.
+
+            The archive indexes for %s have been successfully created.
+            """ % (self.distribution.displayname, self.distroseries.title))
+        from_addr = config.canonical.noreply_from_address
+        controller = MailController(
+            from_addr, self.getMailRecipients(), subject, message)
+        if controller is not None:
+            controller.send()
 
     def getErrorRecipients(self):
         """See `BaseRunnableJob`."""
@@ -102,4 +129,4 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     def destroySelf(self):
         """See `IDistributionJob`."""
-# XXX: Implement
+        Store.of(self.context).remove(self.context)

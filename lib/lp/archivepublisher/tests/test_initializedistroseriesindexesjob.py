@@ -10,8 +10,9 @@ from storm.locals import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     IInitializeDistroSeriesIndexesJobSource,
@@ -20,20 +21,26 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.model.initializedistroseriesindexesjob import (
     InitializeDistroSeriesIndexesJob,
     )
-from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.mail import stub
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    celebrity_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def removePublisherConfig(self, distribution):
         publisher_config = getUtility(IPublisherConfigSet).getByDistribution(
@@ -63,10 +70,10 @@ class HorribleFailure(Exception):
     """A sample error for testing purposes."""
 
 
-# XXX: Test for scenarios where distro owner has no email?
 class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
+# XXX: Test for scenarios where distro owner has no email?
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def getJobSource(self):
         """Shorthand for getting at the job-source utility."""
@@ -83,6 +90,12 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         return [
             distroseries.name + suffix
             for suffix in pocketsuffix.itervalues()]
+
+    def makeDistsDirs(self, distsroot, distroseries):
+        """Create dists directories in `distsroot` for `distroseries`."""
+        base = os.path.join(distsroot, distroseries.name)
+        for suffix in pocketsuffix.itervalues():
+            os.makedirs(base + suffix)
 
     def test_baseline(self):
         job = self.makeJob()
@@ -148,8 +161,9 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job.notifySuccess()
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
-        self.assertIn(
-            distroseries.distribution.owner.preferredemail.email, recipients)
+        owner_email = removeSecurityProxy(
+            distroseries.distribution.owner.preferredemail).email
+        self.assertIn(owner_email, recipients)
 
     def test_notifySuccess_sends_email(self):
         distroseries = self.factory.makeDistroSeries()
@@ -163,8 +177,22 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         distro = self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
         distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distro.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=das, archive=distro.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        self.factory.makeSuiteSourcePackage(
+            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
         job = self.makeJob(distroseries)
-        job.run()
-        config = getPubConfig(distro.main_archive)
-        output = os.path.join(config.distsroot, distroseries.name, "Release")
+
+        with celebrity_logged_in('admin'):
+            distsroot = getPubConfig(distro.main_archive).distsroot
+            self.makeDistsDirs(distsroot, distroseries)
+            self.becomeDbUser(config.archivepublisher.dbuser)
+            job.run()
+
+        output = os.path.join(distsroot, distroseries.name, "Release")
         self.assertTrue(file_exists(output))
