@@ -59,6 +59,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -380,10 +381,8 @@ class StructuralSubscriptionMenuMixin:
         bug subscriptions.
         """
         sst = self._getSST()
-        target = sst
-        if sst.parent_subscription_target is not None:
-            target = sst.parent_subscription_target
-        return (target.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+        pillar = IStructuralSubscriptionTargetHelper(sst).pillar
+        return (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
                 sst.userCanAlterBugSubscription(self.user, self.user))
 
     @enabled_with_permission('launchpad.AnyPerson')

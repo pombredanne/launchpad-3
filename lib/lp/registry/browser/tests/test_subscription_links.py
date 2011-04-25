@@ -576,11 +576,11 @@ class ProductSeriesMilestoneView(ProductMilestoneView):
 # Tests for when the IStructuralSubscriptionTarget does not use Launchpad for
 # bug tracking.  In those cases the links should not be shown.
 
-class ProductDoesNotUseLPView(ProductView):
+class _DoesNotUseLP(ProductView):
     """Test structural subscriptions on the product view."""
 
     def setUp(self):
-        super(ProductDoesNotUseLPView, self).setUp()
+        super(_DoesNotUseLP, self).setUp()
         self.target = self.factory.makeProduct(official_malone=False)
 
     def test_subscribe_link_feature_flag_on_owner(self):
@@ -597,6 +597,21 @@ class ProductDoesNotUseLPView(ProductView):
     def test_subscribe_link_feature_flag_on_anonymous(self):
         self._create_scenario(ANONYMOUS, 'on')
         # The subscribe link is not shown to anonymous.
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
+
+
+class ProductDoesNotUseLPView(_DoesNotUseLP):
+
+    def test_subscribe_link_no_bugtracker_parent_bugtracker(self):
+        # If there is no bugtracker, do not render links, even if the
+        # parent has a bugtracker (see bug 770287).
+        project = self.factory.makeProject()
+        with person_logged_in(self.target.owner):
+            self.target.project = project
+        another_product = self.factory.makeProduct(
+            project=project, official_malone=True)
+        self._create_scenario(self.regular_user, 'on')
         self.assertOldLinkMissing()
         self.assertNewLinksMissing()
 
@@ -625,7 +640,7 @@ class ProductDoesNotUseLPBugs(ProductDoesNotUseLPView):
         self.assertNewLinksMissing()
 
 
-class ProjectGroupDoesNotUseLPView(ProductDoesNotUseLPView):
+class ProjectGroupDoesNotUseLPView(_DoesNotUseLP):
     """Test structural subscriptions on the project group view."""
 
     rootsite = None
@@ -650,8 +665,9 @@ class ProjectGroupDoesNotUseLPBugs(ProductDoesNotUseLPBugs):
         self.factory.makeProduct(
             project=self.target, official_malone=False)
 
+    test_subscribe_link_no_bugtracker_parent_bugtracker = None
 
-class ProductSeriesDoesNotUseLPView(ProductDoesNotUseLPView):
+class ProductSeriesDoesNotUseLPView(_DoesNotUseLP):
 
     def setUp(self):
         super(ProductSeriesDoesNotUseLPView, self).setUp()
@@ -659,7 +675,7 @@ class ProductSeriesDoesNotUseLPView(ProductDoesNotUseLPView):
         self.target = self.factory.makeProductSeries(product=product)
 
 
-class ProductSeriesDoesNotUseLPBugs(ProductDoesNotUseLPView):
+class ProductSeriesDoesNotUseLPBugs(_DoesNotUseLP):
 
     def setUp(self):
         super(ProductSeriesDoesNotUseLPBugs, self).setUp()
@@ -667,7 +683,7 @@ class ProductSeriesDoesNotUseLPBugs(ProductDoesNotUseLPView):
         self.target = self.factory.makeProductSeries(product=product)
 
 
-class DistributionSourcePackageDoesNotUseLPView(ProductDoesNotUseLPView):
+class DistributionSourcePackageDoesNotUseLPView(_DoesNotUseLP):
     """Test structural subscriptions on the distro src pkg view."""
 
     def setUp(self):
