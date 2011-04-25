@@ -667,6 +667,7 @@ class ProjectGroupDoesNotUseLPBugs(ProductDoesNotUseLPBugs):
 
     test_subscribe_link_no_bugtracker_parent_bugtracker = None
 
+
 class ProductSeriesDoesNotUseLPView(_DoesNotUseLP):
 
     def setUp(self):
