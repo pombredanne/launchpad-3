@@ -47,7 +47,25 @@ class TestAuditSecuritySettings(TestCase):
             ['[good]', '[bad]'],
             sa.config_blocks.keys())
 
-    def NOPE_duplicate_parsing(self):
+    def test_audit_block(self):
+        sa = SettingsAuditor('')
+        test_block = (
+            '[bad]\n'
+            'public.foo = SELECT\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.bar = SELECT\n'
+            'public.baz = SELECT\n')
+        sa.config_blocks = {'[bad]': test_block}
+        sa._processBlocks()
+        expected = (
+            '[bad]\n'
+            'public.bar = SELECT\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.baz = SELECT\n'
+            'public.foo = SELECT')
+        self.assertEqual(expected, sa.config_blocks['[bad]'])
+
+def NOPE_duplicate_parsing(self):
         sa = SettingsAuditor()
         sa.audit(self.test_settings)
         expected = '[bad]\n\tDuplicate setting found: public.bar'
