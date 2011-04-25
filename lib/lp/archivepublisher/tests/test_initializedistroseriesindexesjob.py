@@ -8,6 +8,7 @@ __metaclass__ = type
 import os.path
 from storm.locals import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -73,7 +74,7 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         """Create an `InitializeDistroSeriesIndexesJob`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
-        return self.getJobSource().makeFor(distroseries)
+        return removeSecurityProxy(self.getJobSource().makeFor(distroseries))
 
     def getSuites(self, distroseries):
         """Get the list of suites for `distroseries`."""
@@ -120,7 +121,7 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job = self.makeJob()
         job.runPublishDistro = FakeMethod()
         job.run()
-        self.assertEqual(1, job.runPublishDistro.call_count)
+        self.assertEqual(0, job.runPublishDistro.call_count)
 
     def test_job_notifies_distro_owners_if_successful(self):
         job = self.makeJob()
@@ -149,7 +150,7 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
 
     def test_integration(self):
         distro = self.factory.makeDistribution(
-            publish_root_dir=self.makeTemporaryDirectory())
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         job = self.makeJob(distroseries)
         job.run()
