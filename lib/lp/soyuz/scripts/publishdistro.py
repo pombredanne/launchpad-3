@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script functions."""
@@ -97,15 +97,6 @@ def run_publisher(options, txn, log=None):
             return "Careful"
         return "Normal"
 
-    def try_and_commit(description, func, *args):
-        try:
-            func(*args)
-            txn.commit()
-        except:
-            log.exception("Unexpected exception while %s" % description)
-            txn.abort()
-            raise
-
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
         options.primary_debug, options.copy_archive)
@@ -195,34 +186,35 @@ def run_publisher(options, txn, log=None):
         # Do we need to delete the archive or publish it?
         if archive.status == ArchiveStatus.DELETING:
             if archive.purpose == ArchivePurpose.PPA:
-                try_and_commit("deleting archive", publisher.deleteArchive)
+                publisher.deleteArchive()
+                txn.commit()
             else:
                 # Other types of archives do not currently support deletion.
                 log.warning(
                     "Deletion of %s skipped: operation not supported on %s"
                     % archive.displayname)
         else:
-            try_and_commit(
-                "publishing", publisher.A_publish,
-                options.careful or options.careful_publishing)
+            publisher.A_publish(options.careful or options.careful_publishing)
+            txn.commit()
+
             # Flag dirty pockets for any outstanding deletions.
             publisher.A2_markPocketsWithDeletionsDirty()
-            try_and_commit(
-                "dominating", publisher.B_dominate,
+            publisher.B_dominate(
                 options.careful or options.careful_domination)
+            txn.commit()
 
             # The primary and copy archives use apt-ftparchive to generate the
             # indexes, everything else uses the newer internal LP code.
             if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-                try_and_commit(
-                    "doing apt-ftparchive", publisher.C_doFTPArchive,
+                publisher.C_doFTPArchive(
                     options.careful or options.careful_apt)
             else:
-                try_and_commit("building indexes", publisher.C_writeIndexes,
-                               options.careful or options.careful_apt)
+                publisher.C_writeIndexes(
+                    options.careful or options.careful_apt)
+            txn.commit()
 
-            try_and_commit(
-                "doing release files", publisher.D_writeReleaseFiles,
+            publisher.D_writeReleaseFiles(
                 options.careful or options.careful_apt)
+            txn.commit()
 
     log.debug("Ciao")
