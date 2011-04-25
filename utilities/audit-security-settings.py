@@ -14,7 +14,8 @@ __metatype__ = type
 import os
 import sys
 
-from lp.scripts.utilities import SettingsAuditor
+import _pythonpath
+from lp.scripts.utilities.settingsauditor import SettingsAuditor
 
 
 BRANCH_ROOT = os.path.split(
@@ -22,14 +23,13 @@ BRANCH_ROOT = os.path.split(
 SECURITY_PATH = os.path.join(
     BRANCH_ROOT, 'database', 'schema', 'security.cfg')
 
-def main(test=False):
+def main():
     # This is a cheap hack to allow testing in the testrunner.
-    data = file(SECURITY_PATH).readlines()
-    data = strip(data)
-    auditor = SettingsAuditor()
-    auditor.audit(data)
+    data = file(SECURITY_PATH).read()
+    auditor = SettingsAuditor(data)
+    settings = auditor.audit()
+    file(SECURITY_PATH, 'w').write(settings)
     print auditor.error_data
 
 if __name__ == '__main__':
-    # smoketest check is a cheap hack to test the utility in the testrunner.
     main()
