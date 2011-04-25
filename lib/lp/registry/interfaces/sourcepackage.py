@@ -212,11 +212,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     @export_write_operation()
     @operation_for_version('devel')
     def setPackagingReturnSharingDetailPermissions(productseries, owner):
-        """Like setPackaging(), but returns a dictionary which says
-        if the current user can change the series' target branch,
-        if he can change the translation usage settings of the
-        product and if he can change the translation synchronisation
-        setting of the series.
+        """Like setPackaging(), but returns getSharingDetailPermissions().
 
         This method is intended for AJAX usage on the +sharing-details
         page.
@@ -226,6 +222,16 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     @operation_for_version('devel')
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
+
+    def getSharingDetailPermissions(self):
+        """Return a dictionary of user permissions for +sharing-details page.
+
+        This shows whether the user can change
+        - The project series
+        - The project series target branch
+        - The project series autoimport mode
+        - The project translation usage setting
+        """
 
     def getSuiteSourcePackage(pocket):
         """Return the `ISuiteSourcePackage` for this package in 'pocket'.

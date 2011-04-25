@@ -85,7 +85,7 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         :needs_attention_from: Selects questions that nee attention from an
         IPerson. These are the questions in the NEEDSINFO or ANSWERED state
         owned by the person. The questions not owned by the person but on
-        which the person requested for more information or gave an answer
+        which the person requested more information or gave an answer
         and that are back in the OPEN state are also included.
         """
 
