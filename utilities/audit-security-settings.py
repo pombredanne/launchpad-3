@@ -12,7 +12,6 @@ Usage hint:
 __metatype__ = type
 
 import os
-import sys
 
 import _pythonpath
 from lp.scripts.utilities.settingsauditor import SettingsAuditor
@@ -23,8 +22,8 @@ BRANCH_ROOT = os.path.split(
 SECURITY_PATH = os.path.join(
     BRANCH_ROOT, 'database', 'schema', 'security.cfg')
 
+
 def main():
-    # This is a cheap hack to allow testing in the testrunner.
     data = file(SECURITY_PATH).read()
     auditor = SettingsAuditor(data)
     settings = auditor.audit()

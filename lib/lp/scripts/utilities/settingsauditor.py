@@ -12,6 +12,7 @@ __all__ = [
 from collections import defaultdict
 import re
 
+
 class SettingsAuditor:
     """Reads the security.cfg file and collects errors.
 
@@ -19,9 +20,10 @@ class SettingsAuditor:
     specialized parsing--not interpreting the settings, but verifying."""
 
     header_regex = re.compile(r'.*?(?=\[)', re.MULTILINE|re.DOTALL)
-    section_regex = re.compile(r'\[.*?\].*?(?=(\[)|($\Z))', re.MULTILINE|re.DOTALL)
+    section_regex = re.compile(
+        r'\[.*?\].*?(?=(\[)|($\Z))', re.MULTILINE|re.DOTALL)
     section_label_regex = re.compile(r'\[.*\]')
-    
+
     def __init__(self, data):
         self.data = data
         self.errors = {}
@@ -31,7 +33,8 @@ class SettingsAuditor:
     def _getHeader(self):
         """Removes the header comments from the security file.
 
-        The comments at the start of the file aren't something we want to kill.
+        The comments at the start of the file aren't something we
+        want to kill.
         """
         header = self.header_regex.match(self.data)
         if header is not None:
@@ -60,7 +63,7 @@ class SettingsAuditor:
             label = self.section_label_regex.match(section).group()
             self.config_labels.append(label)
             self.config_blocks[label] = section
-        
+
     def _processBlocks(self):
         for block in self.config_labels:
             data = set(self.config_blocks[block].split('\n')[1:])
@@ -92,7 +95,6 @@ class SettingsAuditor:
         for label in self.config_labels:
             data.append(self.config_blocks[label])
         return '%s%s' % (header, '\n\n'.join(data))
-       
 
     @property
     def error_data(self):

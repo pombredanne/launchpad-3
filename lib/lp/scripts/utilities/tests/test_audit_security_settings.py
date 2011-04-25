@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import os
 
 from canonical.testing.layers import BaseLayer
 from lp.scripts.utilities.settingsauditor import SettingsAuditor
