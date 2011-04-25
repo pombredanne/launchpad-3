@@ -21,10 +21,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.model.initializedistroseriesindexesjob import (
     InitializeDistroSeriesIndexesJob,
     )
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.mail import stub
 from lp.services.utils import file_exists
