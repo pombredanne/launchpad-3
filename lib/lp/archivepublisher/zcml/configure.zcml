@@ -28,6 +28,16 @@
             set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
     </class>
 
+    <class class="lp.archivepublisher.model.initializedistroseriesindexesjob.InitializeDistroSeriesIndexesJob">
+        <allow
+          interface="lp.soyuz.interfaces.distributionjob.IDistributionJob"/>
+        <allow interface="lp.services.job.interfaces.job.IRunnableJob"/>
+    </class>
+    <securedutility
+      component="lp.archivepublisher.model.initializedistroseriesindexesjob.InitializeDistroSeriesIndexesJob"
+      provides="lp.archivepublisher.interfaces.initializedistroseriesindexesjob.IInitializeDistroSeriesIndexesJobSource">
+        <allow
+          interface="lp.archivepublisher.interfaces.initializedistroseriesindexesjob.IInitializeDistroSeriesIndexesJobSource"/>
+    </securedutility>
 
 </configure>
-

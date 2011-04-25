@@ -16,7 +16,7 @@ from zope.interface import (
 from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     IInitializeDistroSeriesIndexesJobSource,
     )
-from lp.services.job import IRunnableJob
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
 from lp.soyuz.model.distributionjob import DistributionJobDerived
 

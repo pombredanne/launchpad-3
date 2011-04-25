@@ -20,7 +20,7 @@ from lp.archivepublisher.model.initializedistroseriesindexesjob import (
     InitializeDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
-from lp.services.job.interfaces import IRunnableJob
+from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.mail import stub
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
@@ -62,6 +62,8 @@ class HorribleFailure(Exception):
 
 
 class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
 
     def getJobSource(self):
         """Shorthand for getting at the job-source utility."""
