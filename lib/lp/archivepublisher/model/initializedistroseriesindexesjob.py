@@ -34,6 +34,14 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
         """See `IInitializeDistroSeriesIndexesJob`."""
         pass
 
+    @classmethod
+    def iterReady(cls):
+        """See `IJobSource`."""
+
+    @classmethod
+    def contextManager(cls):
+        """See `IJobSource`."""
+
     def run(self):
         """See `IRunnableJob`."""
 
@@ -51,3 +59,6 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
         :param message_text: Text of the message to send to the owners.
         """
+
+    def getErrorRecipients(self):
+        """See `BaseRunnableJob`."""
