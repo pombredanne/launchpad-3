@@ -536,7 +536,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getDirectSubscribers(self):
         """See `IQuestion`.
 
-        This method is sorted so that it iterates like get_direct_recipients.
+        This method is sorted so that it iterates like direct_recipients.
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
@@ -545,7 +545,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`.
 
         This method adds the assignee and is sorted so that it iterates like
-        get_indirect_recipients.
+        indirect_recipients.
         """
         subscribers = set(
             self.target.getAnswerContactsForLanguage(self.language))
@@ -555,12 +555,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.get_direct_recipients
-        subscribers.update(self.get_indirect_recipients)
+        subscribers = self.direct_recipients
+        subscribers.update(self.indirect_recipients)
         return subscribers
 
     @cachedproperty
-    def get_direct_recipients(self):
+    def direct_recipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
@@ -575,7 +575,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return subscribers
 
     @cachedproperty
-    def get_indirect_recipients(self):
+    def indirect_recipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:

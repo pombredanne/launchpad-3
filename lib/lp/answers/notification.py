@@ -430,8 +430,8 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
         """Return the owner of the question if he's still subscribed."""
         recipients = NotificationRecipientSet()
         owner = self.question.owner
-        original_recipients = self.question.get_direct_recipients
-        if owner in self.question.get_direct_recipients:
+        original_recipients = self.question.direct_recipients
+        if owner in self.question.direct_recipients:
             rationale, header = original_recipients.getReason(owner)
             recipients.add(owner, rationale, header)
         return recipients

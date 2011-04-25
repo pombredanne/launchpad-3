@@ -458,11 +458,11 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    get_direct_recipients = Attribute(
+    direct_recipients = Attribute(
         "Return An `INotificationRecipientSet` containing the persons to "
         "notify along the rationale for doing so.")
 
-    get_indirect_recipients = Attribute(
+    indirect_recipients = Attribute(
         "Return the INotificationRecipientSet of answer contacts for the "
         "question's target as well as the question's assignee.")
 
