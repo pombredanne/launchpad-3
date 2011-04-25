@@ -12,7 +12,7 @@ __all__ = [
     "BugTargetBugTagsView",
     "BugTargetBugsView",
     "FileBugAdvancedView",
-    "FileBugDetailsView",
+    "FileBugExtraInformation",
     "FileBugGuidedView",
     "FileBugViewBase",
     "IProductBugConfiguration",
@@ -247,7 +247,7 @@ class FileBugExtraInformation(LaunchpadFormView):
     """
 
     schema = IBug
-    
+
     @property
     def field_names(self):
         """Return the list of field names to display."""
