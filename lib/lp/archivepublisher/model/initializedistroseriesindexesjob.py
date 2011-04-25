@@ -8,6 +8,7 @@ __all__ = [
     'InitializeDistroSeriesIndexesJob',
     ]
 
+from textwrap import dedent
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -66,6 +67,12 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
         if self.distribution.getArchiveByComponent('partner') is not None:
             self.runPublishDistro('--partner')
 
+        self.notifySuccess()
+
+    def getOperationDescription(self):
+        """See `IRunnableJob`."""
+        return "initializing archive indexes for %s" % self.distroseries.title
+
     def getSuites(self):
         """List the suites for this `DistroSeries`."""
         series_name = self.distroseries.name
@@ -78,13 +85,21 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
         """
 # XXX: Implement
 
-    def notifyOwners(self, message_text):
-        """Notify the distribution's owners of success, or failure.
+    def getMailRecipients(self):
+        """List email addresses to notify of success or failure."""
+        return [self.distribution.owner.preferredemail.email]
 
-        :param message_text: Text of the message to send to the owners.
-        """
+    def notifySuccess(self):
+        """Notify the distribution's owners of success."""
+        message = dedent("""\
+            The archive indexes for %s have been successfully initialized.
+            """ % self.distroseries.title)
 # XXX: Implement
 
     def getErrorRecipients(self):
         """See `BaseRunnableJob`."""
+        return self.getMailRecipients()
+
+    def destroySelf(self):
+        """See `IDistributionJob`."""
 # XXX: Implement

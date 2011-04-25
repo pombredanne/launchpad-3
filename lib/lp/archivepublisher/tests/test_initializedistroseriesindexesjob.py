@@ -28,6 +28,7 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.mail_helpers import run_mail_jobs
 
 
 class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
@@ -62,6 +63,7 @@ class HorribleFailure(Exception):
     """A sample error for testing purposes."""
 
 
+# XXX: Test for scenarios where distro owner has no email?
 class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -84,8 +86,8 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
 
     def test_baseline(self):
         job = self.makeJob()
-        self.assertTrue(verifyObject(job, IRunnableJob))
-        self.assertTrue(verifyObject(job, IDistributionJob))
+        self.assertTrue(verifyObject(IRunnableJob, job))
+        self.assertTrue(verifyObject(IDistributionJob, job))
 
     def test_getSuites_identifies_distroseries_suites(self):
         distroseries = self.factory.makeDistroSeries()
@@ -123,30 +125,39 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job.run()
         self.assertEqual(1, job.runPublishDistro.call_count)
 
-    def test_job_notifies_distro_owners_if_successful(self):
+    def test_job_notifies_if_successful(self):
         job = self.makeJob()
         job.runPublishDistro = FakeMethod()
-        job.notifyOwners = FakeMethod()
-        self.assertEqual(1, job.notifyOwners.call_count)
-        args, kwargs = job.notifyOwners.calls[0]
-        self.assertIn("success", args)
+        job.notifySuccess = FakeMethod()
+        job.run()
+        self.assertEqual(1, job.notifySuccess.call_count)
 
-    def test_job_notifies_distro_owners_on_failure(self):
-        job = self.makeJob()
-        job.runPublishDistro = FakeMethod()
-        job.notifyOwners = FakeMethod(failure=HorribleFailure("Ouch"))
-        self.assertEqual(1, job.notifyOwners.call_count)
-        args, kwargs = job.notifyOwners.calls[0]
-        self.assertIn("Ouch", args)
-
-    def test_notifyOwners_sends_email(self):
+    def test_error_notifies_distribution_owner(self):
         distroseries = self.factory.makeDistroSeries()
         job = self.makeJob(distroseries)
-        job.notifyOwners("Hello")
+        job.notifyUserError(HorribleFailure("Boom!"))
+        run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
-        self.assertEqual("Hello", body.strip())
-        self.assertEqual(
-            [distroseries.distribution.owner.preferredemail], recipients)
+        owner_email = removeSecurityProxy(
+            distroseries.distribution.owner.preferredemail).email
+        self.assertIn(owner_email, recipients)
+
+    def test_success_notification_goes_to_distribution_owner(self):
+        distroseries = self.factory.makeDistroSeries()
+        job = self.makeJob(distroseries)
+        job.notifySuccess()
+        run_mail_jobs()
+        sender, recipients, body = stub.test_emails.pop()
+        self.assertIn(
+            distroseries.distribution.owner.preferredemail.email, recipients)
+
+    def test_notifySuccess_sends_email(self):
+        distroseries = self.factory.makeDistroSeries()
+        job = self.makeJob(distroseries)
+        job.notifySuccess()
+        run_mail_jobs()
+        sender, recipients, body = stub.test_emails.pop()
+        self.assertIn("success", body)
 
     def test_integration(self):
         distro = self.factory.makeDistribution(
