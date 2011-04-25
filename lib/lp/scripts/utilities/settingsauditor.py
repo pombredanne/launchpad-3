@@ -65,7 +65,9 @@ class SettingsAuditor:
         for block in self.config_labels:
             data = set(self.config_blocks[block].split('\n')[1:])
             data.discard('')
-            data = sorted(data)
+            data = [line for line in sorted(data)
+                    if line.strip() != '' and
+                    not line.strip().startswith('#')]
             self._checkForDupes(data, block)
             data = '\n'.join([block] + data)
             self.config_blocks[block] = data
