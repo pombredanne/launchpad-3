@@ -29,7 +29,7 @@ class TestAuditSecuritySettings(TestCase):
             'public.foo = SELECT\n'
             'public.bar = SELECT, INSERT\n'
             'public.bar = SELECT\n'
-            'public.baz = SELECT\n')
+            'public.baz = SELECT')
 
     def test_getHeader(self):
         sa = SettingsAuditor(self.test_settings)
@@ -56,6 +56,7 @@ class TestAuditSecuritySettings(TestCase):
             'public.bar = SELECT\n'
             'public.baz = SELECT\n')
         sa.config_blocks = {'[bad]': test_block}
+        sa.config_labels = ['[bad]']
         sa._processBlocks()
         expected = (
             '[bad]\n'
@@ -66,3 +67,20 @@ class TestAuditSecuritySettings(TestCase):
         self.assertEqual(expected, sa.config_blocks['[bad]'])
         expected_error = '[bad]\n\tDuplicate setting found: public.bar'
         self.assertTrue(expected_error in sa.error_data)
+
+    def test_audit(self):
+        sa = SettingsAuditor(self.test_settings)
+        new_settings = sa.audit()
+        expected_settings = (
+            '# This is the header.\n'
+            '[good]\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.baz = SELECT\n'
+            'public.foo = SELECT\n'
+            '\n'
+            '[bad]\n'
+            'public.bar = SELECT\n'
+            'public.bar = SELECT, INSERT\n'
+            'public.baz = SELECT\n'
+            'public.foo = SELECT')
+        self.assertEqual(expected_settings, new_settings)
