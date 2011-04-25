@@ -177,15 +177,6 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         distro = self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
         distroseries = self.factory.makeDistroSeries(distribution=distro)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=distro.main_archive,
-            pocket=PackagePublishingPocket.RELEASE)
-        self.factory.makeBinaryPackagePublishingHistory(
-            distroarchseries=das, archive=distro.main_archive,
-            pocket=PackagePublishingPocket.RELEASE)
-        self.factory.makeSuiteSourcePackage(
-            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
         job = self.makeJob(distroseries)
 
         with celebrity_logged_in('admin'):
