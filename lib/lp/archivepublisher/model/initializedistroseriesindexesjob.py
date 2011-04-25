@@ -62,7 +62,9 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
-# XXX: Implement
+        self.runPublishDistro()
+        if self.distribution.getArchiveByComponent('partner') is not None:
+            self.runPublishDistro('--partner')
 
     def getSuites(self):
         """List the suites for this `DistroSeries`."""

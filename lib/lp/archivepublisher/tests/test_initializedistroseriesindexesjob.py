@@ -103,7 +103,7 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job.runPublishDistro = FakeMethod()
         job.run()
         args, kwargs = job.runPublishDistro.calls[-1]
-        self.assertEqual((None, ), args)
+        self.assertEqual((), args)
 
     def test_job_runs_publish_distro_for_partner_if_present(self):
         distroseries = self.factory.makeDistroSeries()
@@ -114,14 +114,14 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job.runPublishDistro = FakeMethod()
         job.run()
         self.assertIn(
-            '--partner',
+            ('--partner', ),
             [args for args, kwargs in job.runPublishDistro.calls])
 
     def test_job_does_not_run_publish_distro_for_partner_if_not_present(self):
         job = self.makeJob()
         job.runPublishDistro = FakeMethod()
         job.run()
-        self.assertEqual(0, job.runPublishDistro.call_count)
+        self.assertEqual(1, job.runPublishDistro.call_count)
 
     def test_job_notifies_distro_owners_if_successful(self):
         job = self.makeJob()
