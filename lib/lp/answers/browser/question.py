@@ -64,6 +64,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -878,6 +879,18 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
             if action.available():
                 return True
         return False
+
+    @property
+    def visible_messages(self):
+        messages = self.context.messages
+        strip_invisible = True
+        if self.user is not None:
+            role = PersonRoles(self.user)
+            strip_invisible = not (role.in_admin or role.in_registry_experts)
+        if strip_invisible:
+            messages = [message for message in messages if message.visible]
+        return messages
+
 
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
