@@ -80,7 +80,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         self.assertRaises(CannotCopy, job.run)
 
     def test_target_ppa_non_release_pocket(self):
-        # When copyingto a PPA archive the target must be the release pocket.
+        # When copying to a PPA archive the target must be the release pocket.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
@@ -118,7 +118,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
-        # XXX: GavinPanella 2011-04-20 bug=??????: The sync_packages database
+        # XXX: GavinPanella 2011-04-20 bug=770297: The sync_packages database
         # user should be renamed to copy_packages.
         self.layer.switchDbUser('sync_packages')
         job.run()
