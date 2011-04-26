@@ -11,7 +11,6 @@ __all__ = [
     'IQuestionCollection',
     'IQuestionSet',
     'ISearchableByQuestionOwner',
-    'QUESTION_STATUS_DEFAULT_SEARCH',
     ]
 
 from zope.interface import (
@@ -30,12 +29,7 @@ from lazr.restful.declarations import (
     )
 
 from canonical.launchpad import _
-from lp.answers.enums import QuestionStatus
-
-
-QUESTION_STATUS_DEFAULT_SEARCH = (
-    QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
-    QuestionStatus.SOLVED)
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 
 
 class IQuestionCollection(Interface):

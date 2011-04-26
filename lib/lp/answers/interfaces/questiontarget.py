@@ -24,11 +24,11 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.enums import (
     QuestionSort,
     QuestionStatus,
+    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.services.fields import PublicPersonChoice
 

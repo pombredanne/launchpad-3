@@ -69,9 +69,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.faq import (
     FAQ,

@@ -25,10 +25,10 @@ from lp.answers.interfaces.faqcollection import (
     IFAQCollection,
     ISearchFAQsForm,
     )
-from lp.answers.interfaces.questioncollection import (
+from lp.answers.enums import (
+    QuestionSort,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
-from lp.answers.enums import QuestionSort
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
