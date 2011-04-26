@@ -102,6 +102,8 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         self.assertTrue('/+subscriptions' not in html)
 
     def test_bug_mute_for_individual_structural_subscription(self):
+        # If the person has a structural subscription to the pillar,
+        # then the mute link will be displayed to them.
         person = self.factory.makePerson(name="a-person")
         with FeatureFixture({self.feature_flag_1: 'on'}):
             with person_logged_in(person):
@@ -121,7 +123,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
 
     def test_mute_subscription_link_shown_for_team_subscription(self):
         # If the person belongs to a team with a structural subscription,
-        # then the mute link will not displayed to them.
+        # then the mute link will be displayed to them.
         person = self.factory.makePerson(name="a-person")
         team_owner = self.factory.makePerson(name="team-owner")
         team = self.factory.makeTeam(owner=team_owner, name="subscribed-team")
