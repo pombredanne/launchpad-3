@@ -363,9 +363,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.useFixture(FeatureFixture({feature_flag: u'on'}))
         child = self.factory.makeDistroSeries()
         ids = InitialiseDistroSeries(self.parent, child)
-# XXX: ids.check()?
         ids.initialise()
-# XXX: Feature fixture
         job = Store.of(child).find(
             DistributionJob,
             DistributionJob.job_type ==

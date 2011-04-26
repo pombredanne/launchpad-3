@@ -7,10 +7,12 @@ __metaclass__ = type
 
 import os.path
 from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
@@ -270,7 +272,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         self.assertIn(
             format_address_for_person(owner), job.getMailRecipients())
 
-    def test_integration(self):
+    def test_run_does_the_job(self):
         # The job runs publish_distro and generates the expected output
         # files.
         distro = self.factory.makeDistribution(
@@ -284,6 +286,23 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
             self.becomeDbUser(config.archivepublisher.dbuser)
             self.addCleanup(self.becomeDbUser, 'launchpad')
             job.run()
+
+        output = os.path.join(distsroot, distroseries.name, "Release")
+        self.assertTrue(file_exists(output))
+
+    def test_job_runner_runs_jobs(self):
+        # The job runner script successfully runs the jobs.
+        distro = self.factory.makeDistribution(
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.makeJob(distroseries)
+        with celebrity_logged_in('admin'):
+            distsroot = getPubConfig(distro.main_archive).distsroot
+            self.makeDistsDirs(distsroot, distroseries)
+        transaction.commit()
+
+        returncode, stdout, stderr = run_script(
+            "cronscripts/create-distroseries-indexes.py", ["-vvvv"])
 
         output = os.path.join(distsroot, distroseries.name, "Release")
         self.assertTrue(file_exists(output))
