@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionJobType
-from lp.answers.model.questionjob import QuestionJob
+from lp.answers.model.questionjob import (
+    QuestionJob,
+    QuestionEmailJob,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -19,13 +22,13 @@ class QuestionJobTestCase(TestCaseWithFactory):
     def test_instantiate(self):
         question = self.factory.makeQuestion()
         metadata = ('some', 'arbitrary', 'metadata')
-        question_job = QuestionJob(
+        job = QuestionJob(
             question, QuestionJobType.EMAIL, metadata)
-        self.assertEqual(QuestionJobType.EMAIL, question_job.job_type)
-        self.assertEqual(question, question_job.question)
+        self.assertEqual(QuestionJobType.EMAIL, job.job_type)
+        self.assertEqual(question, job.question)
         # Metadata is unserialized from JSON.
         metadata_expected = list(metadata)
-        self.assertEqual(metadata_expected, question_job.metadata)
+        self.assertEqual(metadata_expected, job.metadata)
 
     def test_repr(self):
         question = self.factory.makeQuestion()
@@ -35,3 +38,21 @@ class QuestionJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             '<QuestionJob for question %s; status=Waiting>' % question.id,
             repr(question_job))
+
+
+class QuestionEmailJobTestCase(TestCaseWithFactory):
+    """Test case for QuestionEmailJob class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_create(self):
+        question = self.factory.makeQuestion()
+        user = self.factory.makePerson()
+        email_body = 'email body'
+        email_headers = {'X-Launchpad-Question': 'question metadata'}
+        job = QuestionEmailJob.create(
+            question, user, email_body, email_headers)
+        self.assertEqual(QuestionJobType.EMAIL, job.job_type)
+        self.assertEqual(question, job.question)
+        self.assertEqual(
+            ['body', 'headers', 'user'], sorted(job.metadata.keys()))

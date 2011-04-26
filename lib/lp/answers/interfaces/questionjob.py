@@ -12,12 +12,14 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import (
+    Choice,
     Field,
     Int,
     Object,
     )
 
 from canonical.launchpad import _
+from lp.answers.enums import QuestionJobType
 from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
@@ -35,6 +37,10 @@ class IQuestionJob(IRunnableJob):
     job = Object(
         title=_('The common Job attributes'),
         schema=IJob, required=True)
+
+    job_type = Choice(
+        title=_('Job type'), vocabulary=QuestionJobType,
+        required=True, readonly=True)
 
     question = Field(
         title=_("The question related to this job."),

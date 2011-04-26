@@ -9,23 +9,47 @@ __all__ = [
     ]
 
 import simplejson
+from storm.expr import (
+    And,
+    )
 from storm.locals import (
     Int,
     Reference,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import (
+    classProvides,
     implements,
     )
 
+from lazr.delegates import delegates
+
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    )
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
+from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.webapp import canonical_url
 from lp.answers.enums import QuestionJobType
 from lp.answers.interfaces.questionjob import (
     IQuestionJob,
+    IQuestionEmailJob,
+    IQuestionEmailJobSource,
     )
 from lp.answers.model.question import Question
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 
 
 class QuestionJob(StormBase):
@@ -70,3 +94,27 @@ class QuestionJob(StormBase):
     @property
     def metadata(self):
         return simplejson.loads(self._json_data)
+
+
+class QuestionEmailJob(BaseRunnableJob):
+    """Intermediate class for deriving from QuestionJob."""
+    delegates(IQuestionJob)
+    implements(IQuestionEmailJob)
+    classProvides(IQuestionEmailJobSource)
+
+    def __init__(self, job):
+        self.context = job
+
+    class_job_type = QuestionJobType.EMAIL
+
+    @classmethod
+    def create(cls, question, user, email_body, email_headers):
+        """See `IQuestionJob`."""
+        metadata = {
+            'user': user.id,
+            'body': email_body,
+            'headers': email_headers,
+            }
+        job = QuestionJob(
+            question=question, job_type=cls.class_job_type, metadata=metadata)
+        return cls(job)
