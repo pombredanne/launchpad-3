@@ -69,7 +69,8 @@ As shown above, expired and invalid questions are not returned.  The status
 parameter can be used to control the list of statuses to select.
 
     >>> from lp.answers.enums import QuestionStatus
-    >>> for question in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
+    >>> for question in foo_bar.searchQuestions(
+    ...         status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title
     Firefox is slow and consumes too much RAM   Invalid
 

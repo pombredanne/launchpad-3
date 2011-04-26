@@ -54,7 +54,7 @@ QuestionAction2KarmaAction = {
     QuestionAction.SETSTATUS: None,
     QuestionAction.COMMENT: 'questioncommentadded',
     QuestionAction.ANSWER: 'questiongaveanswer',
-    QuestionAction.CONFIRM: None,# Handled in giveAnswer() and confirmAnswer()
+    QuestionAction.CONFIRM: None,
     QuestionAction.EXPIRE: None,
     QuestionAction.REJECT: 'questionrejected',
     QuestionAction.REOPEN: 'questionreopened',

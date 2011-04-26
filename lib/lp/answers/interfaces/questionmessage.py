@@ -52,4 +52,3 @@ class IQuestionMessage(IMessage):
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),
         readonly=True)
-

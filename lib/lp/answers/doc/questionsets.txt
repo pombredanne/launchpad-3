@@ -179,7 +179,7 @@ we'll set those up.
     >>> login('admin@canonical.com')
     >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
     >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
-    >>> transaction.commit()    
+    >>> transaction.commit()
 
 This method can be used to retrieve the projects that are the most actively
 using the Answer Tracker in the last 60 days.  By active, we mean that the
