@@ -89,7 +89,7 @@
                     can_request_info can_give_info can_give_answer
                     can_confirm_answer can_reopen
                     subscriptions isSubscribed getRecipients
-                    getDirectRecipients getIndirectRecipients
+                    direct_recipients indirect_recipients
                     getDirectSubscribers getIndirectSubscribers"
       />
     <require
