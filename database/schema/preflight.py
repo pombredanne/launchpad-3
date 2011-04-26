@@ -10,6 +10,8 @@ from datetime import timedelta
 from optparse import OptionParser
 import sys
 
+import psycopg2
+
 from canonical.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -28,7 +30,7 @@ SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios'])
 
 # How lagged the cluster can be before failing the preflight check.
 # In seconds.
-MAX_LAG = 45
+MAX_LAG = timedelta(seconds=45)
 
 
 class DatabasePreflight:
@@ -74,7 +76,9 @@ class DatabasePreflight:
             cur.execute("""
                 SELECT datname, usename, COUNT(*) AS num_connections
                 FROM pg_stat_activity
-                WHERE datname=current_database()
+                WHERE
+                    datname=current_database()
+                    AND procpid <> pg_backend_pid()
                 GROUP BY datname, usename
                 """)
             for datname, usename, num_connections in cur.fetchall():
@@ -87,6 +91,8 @@ class DatabasePreflight:
                         "%s has %d connections by %s",
                         datname, num_connections, usename)
                     success = False
+        if success:
+            self.log.info("Only system users connected to the cluster")
         return success
 
     def check_long_running_transactions(self, max_secs=10):
@@ -113,6 +119,8 @@ class DatabasePreflight:
                     "%s has transaction by %s open %s",
                     datname, usename, age)
                 success = False
+        if success:
+            self.log.info("No long running transactions detected.")
         return success
 
     def check_replication_lag(self):
@@ -123,7 +131,7 @@ class DatabasePreflight:
 
         # Check replication lag on every node just in case there are
         # disagreements.
-        max_lag = -1
+        max_lag = timedelta(seconds=-1)
         max_lag_node = None
         for node in self.nodes:
             cur = node.con.cursor()
@@ -136,13 +144,35 @@ class DatabasePreflight:
                 max_lag = lag
                 max_lag_node = node
             self.log.debug(
-                "%s reports database lag of %0.2f seconds.", dbname, lag)
-        if max_lag_node.lag <= MAX_LAG:
-            self.log.info("Database cluster lag is ok (%0.2fs)", max_lag)
+                "%s reports database lag of %s.", dbname, lag)
+        if max_lag <= MAX_LAG:
+            self.log.info("Database cluster lag is ok (%s)", max_lag)
             return True
         else:
-            self.log.fatal("Database cluster lag is high (%0.2fs)", max_lag)
+            self.log.fatal("Database cluster lag is high (%s)", max_lag)
             return False
+
+    def check_can_sync(self):
+        """Return True if a sync event is acknowledged by all nodes.
+
+        We only wait 30 seconds for the sync, because we require the
+        cluster to be quiescent.
+        """
+        if self.is_replicated:
+            success = replication.helpers.sync(30)
+            if success:
+                self.log.info(
+                    "Replication events are being propagated.")
+            else:
+                self.log.fatal(
+                    "Replication events are not being propagated.")
+                self.log.fatal(
+                    "One or more replication daemons may be down.")
+                self.log.fatal(
+                    "Bounce the replication daemons and check the logs.")
+            return success
+        else:
+            return True
 
     def check_all(self):
         """Run all checks.
@@ -182,8 +212,10 @@ def main():
     preflight_check = DatabasePreflight(log, master_con)
 
     if preflight_check.check_all():
+        log.info('Preflight check succeeded. Good to go.')
         return 0
     else:
+        log.error('Preflight check failed.')
         return 1
 
 
