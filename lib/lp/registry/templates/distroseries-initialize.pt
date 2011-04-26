@@ -30,8 +30,10 @@
           Y.on('domready', Y.lp.registry.distroseries.initseries.setup);
         });
       </script>
-      <p class="formHelp">Note that initializing with many thousands
-      of packages is likely to take hours to complete.</p>
+      <p class="formHelp">
+        Note that initialization is not instantaneous; initializing with
+        many thousands of packages is likely to take hours to complete.
+      </p>
       </tal:enabled>
       <tal:disabled condition="not:view/is_derived_series_feature_enabled">
       <p class="error message">

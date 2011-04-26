@@ -612,7 +612,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     label = 'Initialize series'
     page_title = label
 
-    @action(u"Commence initialization", name='initialize')
+    @action(u"Initialize Series", name='initialize')
     def submit(self, action, data):
         """Stub for the Javascript in the page to use."""
 
