@@ -126,7 +126,7 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     def getMailRecipients(self):
         """List email addresses to notify of success or failure."""
-        recipient = self.distribution.driver or self.distribution.owner
+        recipient = self.distroseries.driver or self.distribution.owner
         return get_addresses_for(recipient)
 
     def notifySuccess(self):

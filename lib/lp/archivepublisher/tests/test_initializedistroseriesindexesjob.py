@@ -12,7 +12,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     IInitializeDistroSeriesIndexesJobSource,
@@ -20,6 +23,7 @@ from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.model.initializedistroseriesindexesjob import (
     FEATURE_FLAG_ENABLE_MODULE,
+    get_addresses_for,
     InitializeDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -39,7 +43,22 @@ from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import run_mail_jobs
 
 
+class TestHelpers(TestCaseWithFactory):
+    """Test module's helpers."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_notifying_team_notifies_members(self):
+        release_manager = self.factory.makePerson()
+        drivers_team = self.factory.makeTeam(
+            owner=self.factory.makePerson(), members=[release_manager])
+        self.assertIn(
+            removeSecurityProxy(release_manager.preferredemail).email,
+            get_addresses_for(drivers_team))
+
+
 class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
+    """Test utility."""
 
     layer = LaunchpadZopelessLayer
 
@@ -81,6 +100,7 @@ class HorribleFailure(Exception):
 
 
 class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
+    """Test job class."""
 
     layer = LaunchpadZopelessLayer
 
@@ -186,30 +206,21 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         sender, recipients, body = stub.test_emails.pop()
         self.assertIn("success", body)
 
-    def test_driver_gets_notified(self):
+    def test_release_manager_gets_notified(self):
         distroseries = self.factory.makeDistroSeries()
         driver = self.factory.makePerson()
-        distroseries.distribution.driver = driver
+        distroseries.driver = driver
         job = self.makeJob(distroseries)
         self.assertIn(
             format_address_for_person(driver), job.getMailRecipients())
 
-    def test_owner_gets_notified_if_no_driver(self):
+    def test_distribution_owner_gets_notified_if_no_release_manager(self):
         distroseries = self.factory.makeDistroSeries()
-        distroseries.distribution.driver = None
+        distroseries.driver = None
         job = self.makeJob(distroseries)
         owner = distroseries.distribution.owner
         self.assertIn(
             format_address_for_person(owner), job.getMailRecipients())
-
-    def test_owner_team_owner_gets_notified_if_no_driver(self):
-        distroseries = self.factory.makeDistroSeries()
-        distroseries.distribution.driver = None
-        distroseries.distribution.owner = self.factory.makeTeam()
-        job = self.makeJob(distroseries)
-        owner = distroseries.distribution.owner.teamowner
-        owner_address = removeSecurityProxy(owner.preferredemail).email
-        self.assertIn(owner_address, job.getMailRecipients())
 
     def test_integration(self):
         distro = self.factory.makeDistribution(
