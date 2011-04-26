@@ -378,3 +378,18 @@ class TestFileBugViewBase(TestCaseWithFactory):
         view = self.create_initialized_view(form=form)
         self.assertEqual(0, len(view.errors))
         self.assertTrue(view.added_bug is not None)
+
+
+class TestFileBugExtraInformationView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_filebug_reporting_details(self):
+        login('foo.bar@canonical.com')
+        product = self.factory.makeProduct()
+        product.bug_reporting_guidelines = "Include bug details"
+        view = create_initialized_view(product, '+filebug-reporting-details')
+        expected_guidelines = [{
+            "source": product.displayname, "content": u"Include bug details",
+            }]
+        self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
