@@ -108,12 +108,12 @@ class QuestionEmailJob(BaseRunnableJob):
     class_job_type = QuestionJobType.EMAIL
 
     @classmethod
-    def create(cls, question, user, email_body, email_headers):
+    def create(cls, question, user, body, headers):
         """See `IQuestionJob`."""
         metadata = {
             'user': user.id,
-            'body': email_body,
-            'headers': email_headers,
+            'body': body,
+            'headers': headers,
             }
         job = QuestionJob(
             question=question, job_type=cls.class_job_type, metadata=metadata)

@@ -63,5 +63,12 @@ class IQuestionEmailJob(IQuestionJob):
 class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""
 
-    def create(question, metadata):
-        """Create a new IQuestionJob."""
+    def create(question, user, body, headers):
+        """Create a new IQuestionJob.
+
+        :param question: An `IQuestion`.
+        :param user: An `IPerson`.
+        :param body: The text of the email that is common to all recpients.
+        :parma headers: A dict of headers for the email that are common to
+            all recpients.
+        """
