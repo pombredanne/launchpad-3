@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -910,8 +911,9 @@ class IDistroSeriesPublic(
                     "is higher than the parent's."),
             required=False),
         )
-    @operation_returns_collection_of(Interface) # Really IDistroSeriesDifferences
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
+    @operation_for_version('devel')
     def getDifferencesTo(parent_series, difference_type,
                          source_package_name_filter, status,
                          child_version_higher):

@@ -846,7 +846,7 @@ patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
     IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
     "getDistroArchSeries", "getPackageUploads", "getSourcePackage",
-    "newMilestone", "getDifferencesTo")
+    "newMilestone")
 
 # IDistroSeriesDifference
 patch_entry_explicit_version(IDistroSeriesDifference, 'beta')

@@ -21,11 +21,13 @@ class DistroSeriesWebServiceTestCase(TestCaseWithFactory):
 
     def _wsFor(self, obj):
         return ws_object(
-            self.factory.makeLaunchpadService(version="beta"), obj)
+            self.factory.makeLaunchpadService(version="devel"), obj)
 
     def test_getDifferencesTo(self):
         # Distroseries' DistroSeriesDifferences are available
         # on the web service.
+        # This method is a simple wrapper around getForDistroSeries
+        # that is thoroughly tested in test_distroseriesdifference.
         ds_diff = self.factory.makeDistroSeriesDifference()
         ds_diff_ws = self._wsFor(ds_diff.derived_series)
 
