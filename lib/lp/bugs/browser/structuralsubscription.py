@@ -59,6 +59,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -380,10 +381,8 @@ class StructuralSubscriptionMenuMixin:
         bug subscriptions.
         """
         sst = self._getSST()
-        target = sst
-        if sst.parent_subscription_target is not None:
-            target = sst.parent_subscription_target
-        return (target.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+        pillar = IStructuralSubscriptionTargetHelper(sst).pillar
+        return (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
                 sst.userCanAlterBugSubscription(self.user, self.user))
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -433,15 +432,15 @@ def expose_user_administered_teams_to_js(request, user, context,
             # Get this only if we need to.
             membership = list(user.teams_participated_in)
             for team in administrated_teams:
-                # If the user is not a member of the team itself, then skip it,
-                # because structural subscriptions and their filters can only be
-                # edited by the subscriber.
+                # If the user is not a member of the team itself, then
+                # skip it, because structural subscriptions and their
+                # filters can only be edited by the subscriber.
                 # This can happen if the user is an owner but not a member.
                 if not team in membership:
                     continue
-                # If the context is a distro AND a bug supervisor is set AND
-                # the admininistered team is not a member of the bug supervisor
-                # team THEN skip it.
+                # If the context is a distro AND a bug supervisor is set
+                # AND the admininistered team is not a member of the bug
+                # supervisor team THEN skip it.
                 if (is_distro and context.bug_supervisor is not None and
                     not team.inTeam(context.bug_supervisor)):
                     continue
