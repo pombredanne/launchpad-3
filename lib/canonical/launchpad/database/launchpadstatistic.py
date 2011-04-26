@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatistic,
     ILaunchpadStatisticSet,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.app.enums import ServiceUsage
 from lp.bugs.model.bug import Bug

@@ -30,7 +30,7 @@ from lazr.restful.declarations import (
     )
 
 from canonical.launchpad import _
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 
 
 QUESTION_STATUS_DEFAULT_SEARCH = (

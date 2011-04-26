@@ -733,7 +733,7 @@ Notification received by the owner:
 Notifications for setStatus()
 .............................
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")

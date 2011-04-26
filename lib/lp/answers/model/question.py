@@ -77,7 +77,7 @@ from lp.answers.interfaces.questioncollection import (
     IQuestionSet,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,

@@ -26,7 +26,7 @@ from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionSort,
     QuestionStatus,
     )

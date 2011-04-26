@@ -28,7 +28,7 @@ from lp.answers.interfaces.faqcollection import (
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
-from lp.answers.interfaces.questionenums import QuestionSort
+from lp.answers.enums import QuestionSort
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
