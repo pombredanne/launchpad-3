@@ -48,7 +48,9 @@ FEATURE_FLAG_ENABLE_MODULE = u"archivepublisher.auto_create_indexes.enabled"
 def get_addresses_for(person):
     """Get list of contact email address(es) for `person`."""
     if person.is_team:
-        return person.getTeamAdminsEmailAddresses()
+        return [
+        format_address_for_person(member)
+        for member in person.getMembersWithPreferredEmails()]
     else:
         return [format_address_for_person(person)]
 

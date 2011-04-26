@@ -48,13 +48,25 @@ class TestHelpers(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def test_notifying_person_uses_preferred_email(self):
+        person = self.factory.makePerson()
+        self.assertEqual(
+            [format_address_for_person(person)], get_addresses_for(person))
+
     def test_notifying_team_notifies_members(self):
-        release_manager = self.factory.makePerson()
-        drivers_team = self.factory.makeTeam(
-            owner=self.factory.makePerson(), members=[release_manager])
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=self.factory.makePerson(), members=[member])
         self.assertIn(
-            removeSecurityProxy(release_manager.preferredemail).email,
-            get_addresses_for(drivers_team))
+            format_address_for_person(member), get_addresses_for(team))
+
+    def test_notifying_team_without_members_notifies_owners(self):
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner, members=[])
+        addresses = get_addresses_for(team)
+        self.assertEqual(1, len(addresses))
+        self.assertIn(
+            removeSecurityProxy(owner.preferredemail).email, addresses[0])
 
 
 class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
