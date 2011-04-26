@@ -35,24 +35,31 @@ CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN
 -- once for each sourcepackage name + one with sourcepackagename=NULL (two queries unioned)
 -- once for each tag + one with tag=NULL (two queries unioned)
 -- bugs with duplicateof non null are excluded because we exclude them from all our aggregates.
-INSERT INTO bugsummary SELECT sum(count), product, productseries, distribution, distroseries, sourcepackagename, person, tag, status, milestone FROM (
--- bugs with tags against the tag=NULL aggregate with sourcepackagename
-(SELECT DISTINCT ON (bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone) count(*), product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, NULL::text AS tag, status, milestone FROM bug left join bugsubscription ON (bug.private AND bugsubscription.bug=bug.id), bugtask WHERE bug.id=bugtask.bug AND EXISTS (SELECT true FROM bugtag WHERE bugtag.bug=bug.id) AND duplicateof IS NULL GROUP BY bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone)
-UNION ALL
--- bugs with tags against the tag=NULL aggregate, with sourcepackagenames against their distro[series] aggregate
-(SELECT DISTINCT ON (bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone) count(*), product, productseries, distribution, distroseries, NULL::integer AS sourcepackagename, bugsubscription.person, NULL::text AS tag, status, milestone FROM bug left join bugsubscription ON (bug.private AND bugsubscription.bug=bug.id), bugtask WHERE bug.id=bugtask.bug AND EXISTS (SELECT true FROM bugtag WHERE bugtag.bug=bug.id) AND duplicateof IS NULL AND sourcepackagename IS NOT NULL GROUP BY bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone)
-
-UNION ALL
--- bugs with tags with sourcepackagename
-(SELECT DISTINCT ON (bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone) count(*), product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, tag, status, milestone FROM bug left join bugtag ON bugtag.bug=bug.id left join bugsubscription ON (bug.private AND bugsubscription.bug=bug.id), bugtask WHERE bug.id=bugtask.bug AND duplicateof IS NULL GROUP BY bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, tag, status, milestone)
-UNION ALL
--- bugs with tags for distro[series] level aggregation (sourcepackagename clamped to NULL, once per bug))
-(SELECT DISTINCT ON (bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, status, milestone) count(*), product, productseries, distribution, distroseries, NULL::integer AS sourcepackagename, bugsubscription.person, tag, status, milestone FROM bug left join bugtag ON bugtag.bug=bug.id left join bugsubscription ON (bug.private AND bugsubscription.bug=bug.id), bugtask WHERE bug.id=bugtask.bug AND duplicateof IS NULL AND sourcepackagename IS NOT NULL GROUP BY bug.id, product, productseries, distribution, distroseries, sourcepackagename, bugsubscription.person, tag, status, milestone)
-
-) AS _tmp
+INSERT INTO bugsummary WITH
+-- kill dupes
+relevant_bug AS (SELECT * FROM bug where duplicateof is NULL),
+-- (bug.id, tag) for all bug-tag pairs plus (bug.id, NULL) for all bugs
+bug_tags AS (
+    (SELECT relevant_bug.id, NULL::text AS tag FROM relevant_bug)
+    UNION
+    (SELECT relevant_bug.id, tag FROM relevant_bug INNER JOIN bugtag ON relevant_bug.id=bugtag.bug)),
+-- (bug.id, NULL) for all public bugs + (bug.id, viewer) for all (subscribers+assignee) on private bugs
+bug_viewers AS (
+    (SELECT relevant_bug.id, NULL::integer AS person FROM relevant_bug WHERE NOT relevant_bug.private)
+    UNION
+    (SELECT relevant_bug.id, assignee AS person FROM relevant_bug INNER JOIN bugtask ON relevant_bug.id=bugtask.bug WHERE relevant_bug.private and bugtask.assignee IS NOT NULL)
+    UNION
+    (SELECT relevant_bug.id, bugsubscription.person FROM relevant_bug INNER JOIN bugsubscription ON bugsubscription.bug=relevant_bug.id WHERE relevant_bug.private)),
+-- (bugtask.(bug, product, productseries, distribution, distroseries, sourcepackagename, status, milestone) for all bugs + the same with sourcepackage squashed to NULL)
+tasks AS (
+    (SELECT bug, product, productseries, distribution, distroseries, sourcepackagename, status, milestone FROM bugtask)
+    UNION
+    (SELECT DISTINCT ON (bug, product, productseries, distribution, distroseries, sourcepackagename, milestone) bug, product, productseries, distribution, distroseries, NULL::integer as sourcepackagename, status, milestone FROM bugtask where sourcepackagename IS NOT NULL))
+-- Now combine
+SELECT count(*), product, productseries, distribution, distroseries, sourcepackagename, person, tag, status, milestone FROM relevant_bug INNER JOIN bug_tags ON relevant_bug.id=bug_tags.id INNER JOIN bug_viewers ON relevant_bug.id=bug_viewers.id INNER JOIN tasks on tasks.bug=relevant_bug.id
 GROUP BY product, productseries, distribution, distroseries, sourcepackagename, person, tag, status, milestone;
 
-
+-- Need indices for FK CASCADE DELETE to find any FK easily
 CREATE INDEX bugsummary_distribution on bugsummary using btree(distribution);
 CREATE INDEX bugsummary_distroseries on bugsummary using btree(distroseries);
 CREATE INDEX bugsummary_privates on bugsummary using btree(viewedby) where viewedby is not null;
@@ -69,6 +76,15 @@ CREATE UNIQUE INDEX bugsummary_dimensions_unique_idx ON bugsummary USING btree (
     COALESCE(tag, ('')),
     status,
     COALESCE(milestone, (-1)));
+-- While querying is tolerably fast with the base dimension indices, we want snappy:
+-- Distribution bug counts
+CREATE INDEX bugsummary_distribution_count_idx on bugsummary using btree(distribution) where sourcepackagename is null and tag is null;
+-- Distribution wide tag counts
+CREATE INDEX bugsummary_distribution_tag_count_idx on bugsummary using btree(distribution) where sourcepackagename is null and tag is not null;
+-- Everything (counts)
+CREATE INDEX bugsummary_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is null;
+-- Everything (tags)
+CREATE INDEX bugsummary_tag_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is not null;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
 
