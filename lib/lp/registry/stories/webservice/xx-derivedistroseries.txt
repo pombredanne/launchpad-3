@@ -89,14 +89,63 @@ If we call it with all of the arguments, it also works.
 
 And we can verify both jobs exist.
 
-    >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
     ...     IInitialiseDistroSeriesJobSource)
-    >>> login(ADMIN_EMAIL)
-    >>> jobs = sorted(
-    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady(),
-    ...     key=lambda x: x.distroseries.name)
-    >>> for job in jobs:
-    ...     print job.distroseries.name
+    >>> from lp.testing import celebrity_logged_in
+    >>> from zope.component import getUtility
+
+    >>> def get_jobs_by_name():
+    ...     jobs = getUtility(IInitialiseDistroSeriesJobSource).iterReady()
+    ...     return dict((job.distroseries.name, job) for job in jobs)
+
+    >>> with celebrity_logged_in("admin"):
+    ...     for name in sorted(get_jobs_by_name()):
+    ...         print name
     child1
     child2
+
+
+Sequence arguments
+==================
+
+    >>> from pprint import pprint
+    >>> from zope.proxy import removeAllProxies
+
+The `architectures` and `packagesets` arguments accept a sequence of
+zero or more options.
+
+    >>> text = 'The Third Child'
+    >>> print soyuz_team_webservice.named_post(
+    ...     ws_parent_series['self_link'], 'deriveDistroSeries', {},
+    ...     name='child3', distribution=ws_distribution['self_link'],
+    ...     displayname=text, title=text, summary=text,
+    ...     description=text, version=version,
+    ...     architectures=('i386', 'arm'),
+    ...     packagesets=('test1', 'test2'),
+    ...     rebuild=False)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> with celebrity_logged_in("admin"):
+    ...     job = get_jobs_by_name().get("child3")
+    ...     pprint(removeAllProxies(job).metadata)
+    {u'arches': [u'i386', u'arm'],
+     u'packagesets': [u'test1', u'test2'],
+     u'parent': 14,
+     u'rebuild': False}
+
+    >>> text = 'The Fourth Child'
+    >>> print soyuz_team_webservice.named_post(
+    ...     ws_parent_series['self_link'], 'deriveDistroSeries', {},
+    ...     name='child4', distribution=ws_distribution['self_link'],
+    ...     displayname=text, title=text, summary=text,
+    ...     description=text, version=version,
+    ...     architectures=(), packagesets=(),
+    ...     rebuild=False)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> with celebrity_logged_in("admin"):
+    ...     job = get_jobs_by_name().get("child4")
+    ...     pprint(removeAllProxies(job).metadata)
+    {u'arches': [], u'packagesets': [], u'parent': 14, u'rebuild': False}
