@@ -787,7 +787,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         verifyObject(IDistroSeriesDifferenceSource, dsd_source)
 
-    def makeDiffsForDistroSeries(self, derived_series):
+    def makeDiffsForDistroSeries(self, derived_series, parent_series=None):
         # Helper that creates a range of differences for a derived
         # series.
         diffs = {
@@ -797,21 +797,24 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             }
         diffs['normal'].append(
             self.factory.makeDistroSeriesDifference(
-                derived_series=derived_series))
+                derived_series=derived_series, parent_series=parent_series))
         diffs['unique'].append(
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
+                parent_series=parent_series,
                 difference_type=(
                     DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)))
         diffs['ignored'].append(
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
+                parent_series=parent_series,
                 status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
         return diffs
 
-    def makeDerivedSeries(self):
+    def makeDerivedSeries(self, derived_series=None):
         # Keep tests DRY.
-        dsp = self.factory.makeDistroSeriesParent()
+        dsp = self.factory.makeDistroSeriesParent(
+            derived_series=derived_series)
         return dsp.derived_series
 
     def test_getForDistroSeries_default(self):
@@ -845,6 +848,8 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series,
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+
+        self.assertContentEqual(diffs['unique'], result)
 
     def test_getForDistroSeries_filters_by_status(self):
         # A single status can be used to filter results.
@@ -886,6 +891,31 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             sorted(names),
             [result.source_package_name.name for result in results])
+
+    def test_getForDistroSeries_filters_by_parent(self):
+        # The differences can be filtered by parent series.
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
+        parent_series = dsp.parent_series
+
+        # Add another parent to this series.
+        parent_series2 = self.factory.makeDistroSeriesParent(
+            derived_series=derived_series).parent_series
+
+        diffs = self.makeDiffsForDistroSeries(
+            derived_series, parent_series=parent_series)
+        diffs2 = self.makeDiffsForDistroSeries(
+            derived_series, parent_series=parent_series2)
+
+        results = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                derived_series, parent_series=parent_series)
+        results2 = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                derived_series, parent_series=parent_series2)
+
+        self.assertContentEqual(diffs['normal'], results)
+        self.assertContentEqual(diffs2['normal'], results2)
 
     def test_getByDistroSeriesAndName(self):
         # An individual difference is obtained using the name.
