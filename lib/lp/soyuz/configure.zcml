@@ -908,14 +908,14 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-    <!-- SyncPackageJobSource -->
+    <!-- PackageCopyJobSource -->
     <securedutility
-      component="lp.soyuz.model.syncpackagejob.SyncPackageJob"
-      provides="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource"/>
+      component="lp.soyuz.model.packagecopyjob.PackageCopyJob"
+      provides="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.syncpackagejob.SyncPackageJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJob" />
+    <class class="lp.soyuz.model.packagecopyjob.PackageCopyJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
