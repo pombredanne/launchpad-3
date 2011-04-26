@@ -25,8 +25,12 @@ from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.mail.sendmail import MailController
+from lp.services.mail.sendmail import (
+    format_address_for_person,
+    MailController,
+    )
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistributionJob,
@@ -36,6 +40,17 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts import publishdistro
+
+
+FEATURE_FLAG_ENABLE_MODULE = u"archivepublisher.auto_create_indexes.enabled"
+
+
+def get_addresses_for(person):
+    """Get list of contact email address(es) for `person`."""
+    if person.is_team:
+        return person.getTeamAdminsEmailAddresses()
+    else:
+        return [format_address_for_person(person)]
 
 
 class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
@@ -62,6 +77,9 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
     @classmethod
     def makeFor(cls, distroseries):
         """See `IInitializeDistroSeriesIndexesJob`."""
+        if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
+            return None
+
         distro = distroseries.distribution
         config_set = getUtility(IPublisherConfigSet)
         publisher_config = config_set.getByDistribution(distro)
@@ -108,7 +126,8 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     def getMailRecipients(self):
         """List email addresses to notify of success or failure."""
-        return [self.distribution.owner.preferredemail.email]
+        recipient = self.distribution.driver or self.distribution.owner
+        return get_addresses_for(recipient)
 
     def notifySuccess(self):
         """Notify the distribution's owners of success."""

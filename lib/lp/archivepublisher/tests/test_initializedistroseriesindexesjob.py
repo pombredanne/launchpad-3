@@ -19,12 +19,15 @@ from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.model.initializedistroseriesindexesjob import (
+    FEATURE_FLAG_ENABLE_MODULE,
     InitializeDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
@@ -39,6 +42,10 @@ from lp.testing.mail_helpers import run_mail_jobs
 class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestInitializeDistroSeriesIndexesJobSource, self).setUp()
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def removePublisherConfig(self, distribution):
         publisher_config = getUtility(IPublisherConfigSet).getByDistribution(
@@ -63,15 +70,23 @@ class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
         job = jobset.makeFor(distroseries)
         self.assertIs(None, job)
 
+    def test_feature_flag_disables_feature(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u''}))
+        jobset = getUtility(IInitializeDistroSeriesIndexesJobSource)
+        self.assertIs(None, jobset.makeFor(self.factory.makeDistroSeries()))
+
 
 class HorribleFailure(Exception):
     """A sample error for testing purposes."""
 
 
 class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
-# XXX: Test for scenarios where distro owner has no email?
 
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestInitializeDistroSeriesIndexesJob, self).setUp()
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def getJobSource(self):
         """Shorthand for getting at the job-source utility."""
@@ -145,25 +160,23 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         job.run()
         self.assertEqual(1, job.notifySuccess.call_count)
 
-    def test_error_notifies_distribution_owner(self):
+    def test_error_notifies_recipients(self):
         distroseries = self.factory.makeDistroSeries()
         job = self.makeJob(distroseries)
+        job.getMailRecipients = FakeMethod(result=["foo@example.com"])
         job.notifyUserError(HorribleFailure("Boom!"))
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
-        owner_email = removeSecurityProxy(
-            distroseries.distribution.owner.preferredemail).email
-        self.assertIn(owner_email, recipients)
+        self.assertIn("foo@example.com", recipients)
 
-    def test_success_notification_goes_to_distribution_owner(self):
+    def test_success_notifies_recipients(self):
         distroseries = self.factory.makeDistroSeries()
         job = self.makeJob(distroseries)
+        job.getMailRecipients = FakeMethod(result=["bar@example.com"])
         job.notifySuccess()
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
-        owner_email = removeSecurityProxy(
-            distroseries.distribution.owner.preferredemail).email
-        self.assertIn(owner_email, recipients)
+        self.assertIn("bar@example.com", recipients)
 
     def test_notifySuccess_sends_email(self):
         distroseries = self.factory.makeDistroSeries()
@@ -172,6 +185,31 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
         self.assertIn("success", body)
+
+    def test_driver_gets_notified(self):
+        distroseries = self.factory.makeDistroSeries()
+        driver = self.factory.makePerson()
+        distroseries.distribution.driver = driver
+        job = self.makeJob(distroseries)
+        self.assertIn(
+            format_address_for_person(driver), job.getMailRecipients())
+
+    def test_owner_gets_notified_if_no_driver(self):
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.distribution.driver = None
+        job = self.makeJob(distroseries)
+        owner = distroseries.distribution.owner
+        self.assertIn(
+            format_address_for_person(owner), job.getMailRecipients())
+
+    def test_owner_team_owner_gets_notified_if_no_driver(self):
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.distribution.driver = None
+        distroseries.distribution.owner = self.factory.makeTeam()
+        job = self.makeJob(distroseries)
+        owner = distroseries.distribution.owner.teamowner
+        owner_address = removeSecurityProxy(owner.preferredemail).email
+        self.assertIn(owner_address, job.getMailRecipients())
 
     def test_integration(self):
         distro = self.factory.makeDistribution(
@@ -183,6 +221,7 @@ class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
             distsroot = getPubConfig(distro.main_archive).distsroot
             self.makeDistsDirs(distsroot, distroseries)
             self.becomeDbUser(config.archivepublisher.dbuser)
+            self.addCleanup(self.becomeDbUser, 'launchpad')
             job.run()
 
         output = os.path.join(distsroot, distroseries.name, "Release")
