@@ -23,6 +23,7 @@ from lp.answers.interfaces.questionenums import (
     QuestionStatus,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionMessage(SQLBase):
@@ -48,6 +49,11 @@ class QuestionMessage(SQLBase):
         """See IMessage."""
         # Delegates do not proxy __ methods, because of the name mangling.
         return iter(self.chunks)
+
+    @cachedproperty
+    def index(self):
+        # Return the index + 1 so that messages appear 1-indexed in the UI.
+        return list(self.question.messages).index(self) + 1
 
     @property
     def visible(self):
