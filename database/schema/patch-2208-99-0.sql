@@ -62,8 +62,10 @@ SET client_min_messages=ERROR;
 --    WHERE
 --        StructuralSubscription.product = Subscription.product
 --        AND StructuralSubscription.subscriber = Subscription.subscriber
---    GROUP BY StructuralSubscription.product, StructuralSubscription.subscriber
---    HAVING Count(*)>1) ORDER BY Subscription.product, Subscription.subscriber, Subscription.id;
+--    GROUP BY StructuralSubscription.product,
+--             StructuralSubscription.subscriber
+--    HAVING Count(*)>1)
+--    ORDER BY Subscription.product, Subscription.subscriber, Subscription.id;
 --  product | subscriber |  id   
 -- ---------+------------+-------
 --     2461 |    2212151 |  7570
@@ -86,12 +88,14 @@ SET client_min_messages=ERROR;
 --             Subscription.id
 --      FROM StructuralSubscription AS Subscription
 --      WHERE EXISTS (                                                        
---         SELECT StructuralSubscription.product, StructuralSubscription.subscriber
+--         SELECT StructuralSubscription.product,
+--                StructuralSubscription.subscriber
 --         FROM StructuralSubscription
 --         WHERE                                               
 --             StructuralSubscription.product = Subscription.product
 --             AND StructuralSubscription.subscriber = Subscription.subscriber
---         GROUP BY StructuralSubscription.product, StructuralSubscription.subscriber
+--         GROUP BY StructuralSubscription.product,
+--                  StructuralSubscription.subscriber
 --         HAVING Count(*)>1))
 --  SELECT duped_values.id
 --  FROM duped_values
@@ -117,12 +121,14 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.product, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.product,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.product = Subscription.product
                     AND StructuralSubscription.subscriber = Subscription.subscriber
-                GROUP BY StructuralSubscription.product, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.product,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
@@ -142,12 +148,14 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.project, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.project,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.project = Subscription.project
                     AND StructuralSubscription.subscriber = Subscription.subscriber
-                GROUP BY StructuralSubscription.project, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.project,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
@@ -168,12 +176,14 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.distroseries, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.distroseries,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.distroseries = Subscription.distroseries
                     AND StructuralSubscription.subscriber = Subscription.subscriber
-                GROUP BY StructuralSubscription.distroseries, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.distroseries,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
@@ -193,12 +203,14 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.milestone, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.milestone,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.milestone = Subscription.milestone
                     AND StructuralSubscription.subscriber = Subscription.subscriber
-                GROUP BY StructuralSubscription.milestone, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.milestone,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
@@ -218,12 +230,14 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.productseries, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.productseries,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.productseries = Subscription.productseries
                     AND StructuralSubscription.subscriber = Subscription.subscriber
-                GROUP BY StructuralSubscription.productseries, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.productseries,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
@@ -246,14 +260,16 @@ DELETE FROM StructuralSubscription WHERE
                     Subscription.id
              FROM StructuralSubscription AS Subscription
              WHERE EXISTS (
-                SELECT StructuralSubscription.distribution, StructuralSubscription.subscriber
+                SELECT StructuralSubscription.distribution,
+                       StructuralSubscription.subscriber
                 FROM StructuralSubscription
                 WHERE
                     StructuralSubscription.distribution = Subscription.distribution
                     AND StructuralSubscription.subscriber = Subscription.subscriber
 -- This is the new line.
                     AND StructuralSubscription.sourcepackagename IS NULL
-                GROUP BY StructuralSubscription.distribution, StructuralSubscription.subscriber
+                GROUP BY StructuralSubscription.distribution,
+                         StructuralSubscription.subscriber
                 HAVING Count(*)>1))
          SELECT duped_values.id
          FROM duped_values
