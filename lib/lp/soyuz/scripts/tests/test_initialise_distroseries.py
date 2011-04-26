@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialise_distroseries script machinery."""
@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 
+from storm.locals import Store
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 import transaction
@@ -17,8 +18,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.archivepublisher.model import createdistroseriesindexesjob
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import (
@@ -28,6 +31,10 @@ from lp.soyuz.interfaces.packageset import (
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.model.distributionjob import (
+    DistributionJob,
+    DistributionJobType,
     )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.scripts.initialise_distroseries import (
@@ -348,6 +355,23 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
+
+    def test_schedule_index_creation(self):
+        # One follow-up step is creation of the new series' archive
+        # indexes.  The initialise() method schedules a job for this.
+        feature_flag = createdistroseriesindexesjob.FEATURE_FLAG_ENABLE_MODULE
+        self.useFixture(FeatureFixture({feature_flag : u'on'}))
+        child = self.factory.makeDistroSeries()
+        ids = InitialiseDistroSeries(self.parent, child)
+# XXX: ids.check()?
+        ids.initialise()
+# XXX: Feature fixture
+        job = Store.of(child).find(
+            DistributionJob, 
+            DistributionJob.job_type ==
+                DistributionJobType.CREATEDISTROSERIESINDEXES,
+            DistributionJob.distroseries == child).one()
+        self.assertNotEqual(None, job)
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool.
