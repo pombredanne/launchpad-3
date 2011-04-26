@@ -17,7 +17,6 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
     BrowserTestCase,
-    feature_flags,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -50,10 +49,14 @@ class TestPrivateBugLinks(BrowserTestCase):
 class TestBugPortletSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+    feature_flag_1 = 'malone.advanced-subscriptions.enabled'
+    feature_flag_2 = 'malone.advanced-structural-subscriptions.enabled'
 
     def setUp(self):
         super(TestBugPortletSubscribers, self).setUp()
-        self.bug = self.factory.makeBug()
+        self.target = self.factory.makeProduct()
+        bug_owner = self.factory.makePerson(name="bug-owner")
+        self.bug = self.factory.makeBug(owner=bug_owner, product=self.target)
         # We need to put the Bug and default BugTask into the LaunchBag
         # because BugContextMenu relies on the LaunchBag to populate its
         # context property
@@ -66,7 +69,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         # the mute link will not be displayed to them.
         person = self.factory.makePerson()
         with person_logged_in(person):
-            with feature_flags():
+            with FeatureFixture({self.feature_flag_2: None}):
                 # The user isn't subscribed or muted already.
                 self.assertFalse(self.bug.isSubscribed(person))
                 self.assertFalse(self.bug.isMuted(person))
@@ -82,8 +85,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertFalse('mute_subscription' in html)
 
     def test_edit_subscriptions_link_shown_when_feature_enabled(self):
-        flag = 'malone.advanced-structural-subscriptions.enabled'
-        with FeatureFixture({flag: 'on'}):
+        with FeatureFixture({self.feature_flag_2: 'on'}):
             request = LaunchpadTestRequest()
             request.features = get_relevant_feature_controller()
             view = create_initialized_view(
@@ -98,3 +100,48 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         html = view.render()
         self.assertTrue('menu-link-editsubscriptions' not in html)
         self.assertTrue('/+subscriptions' not in html)
+
+    def test_bug_mute_for_individual_structural_subscription(self):
+        person = self.factory.makePerson(name="a-person")
+        with FeatureFixture({self.feature_flag_1: 'on'}):
+            with person_logged_in(person):
+                self.target.addBugSubscription(person, person)
+                self.assertFalse(self.bug.isMuted(person))
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertTrue(view.user_should_see_mute_link,
+                                "User should see mute link.")
+                contents = view.render()
+                self.assertTrue('mute_subscription' in contents,
+                                "'mute_subscription' not in contents.")
+                create_initialized_view(
+                    self.bug.default_bugtask, name="+mute",
+                    form={'field.actions.mute': 'Mute bug mail'})
+                self.assertTrue(self.bug.isMuted(person))
+
+    def test_mute_subscription_link_shown_for_team_subscription(self):
+        # If the person belongs to a team with a structural subscription,
+        # then the mute link will not displayed to them.
+        person = self.factory.makePerson(name="a-person")
+        team_owner = self.factory.makePerson(name="team-owner")
+        team = self.factory.makeTeam(owner=team_owner, name="subscribed-team")
+        with FeatureFixture({self.feature_flag_1: 'on'}):
+            with person_logged_in(team_owner):
+                team.addMember(person, team_owner)
+                self.target.addBugSubscription(team, team_owner)
+            with person_logged_in(person):
+                self.assertFalse(self.bug.isMuted(person))
+                self.assertTrue(
+                    self.bug.personIsAlsoNotifiedSubscriber(
+                        person), "Person should be a notified subscriber")
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertTrue(view.user_should_see_mute_link,
+                                "User should see mute link.")
+                contents = view.render()
+                self.assertTrue('mute_subscription' in contents,
+                                "'mute_subscription' not in contents.")
+                create_initialized_view(
+                    self.bug.default_bugtask, name="+mute",
+                    form={'field.actions.mute': 'Mute bug mail'})
+                self.assertTrue(self.bug.isMuted(person))
