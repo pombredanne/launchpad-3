@@ -1341,10 +1341,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         any other.
         """
         productID = self.id
+
         def weight_function(bugtask):
             if bugtask.productID == productID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
             return OrderedBugTask(2, bugtask.id, bugtask)
+
         return weight_function
 
 
@@ -1384,11 +1386,13 @@ class ProductSet:
             ).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
+
         def do_eager_load(rows):
             owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
             # +detailed-listing renders the person with team branding.
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 owner_ids, need_validity=True, need_icon=True))
+
         return DecoratedResultSet(result, pre_iter_hook=do_eager_load)
 
     def get(self, productid):
@@ -1649,7 +1653,6 @@ class ProductSet:
 
     def search_sqlobject(self, text):
         """See `IProductSet`"""
-        clauseTables = ['Product']
         queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
         queries.append('Product.active IS TRUE')
         query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
@@ -1670,7 +1673,6 @@ class ProductSet:
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
-
 
         # We only want Product - the other tables are just to populate
         # the cache.

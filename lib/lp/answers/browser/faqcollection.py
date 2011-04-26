@@ -147,5 +147,5 @@ class SearchFAQsView(LaunchpadFormView):
                 status.title for status in QUESTION_STATUS_DEFAULT_SEARCH],
              'field.search_text': self.search_text,
              'field.actions.search': 'Search',
-             'field.sort' : QuestionSort.RELEVANCY.title,
+             'field.sort': QuestionSort.RELEVANCY.title,
              'field.language-empty-marker': 1}, doseq=True)
