@@ -51,10 +51,10 @@ class IQuestionMessage(IMessage):
         vocabulary=QuestionStatus)
     index = Int(
         title=_("Message index."),
-        description=_("The messages index in the question's list of messages."),
+        description=_("The messages index in the question's list of "
+        "messages."),
         readonly=True)
     visible = Bool(
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),
         readonly=True)
-

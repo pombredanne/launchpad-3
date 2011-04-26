@@ -4,7 +4,7 @@
   omit-tag="">
 <div
   tal:define="css_classes view/getBoardCommentCSSClass"
-  tal:attributes="class string:boardComment ${css_classes}"> 
+  tal:attributes="class string:boardComment ${css_classes}">
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
