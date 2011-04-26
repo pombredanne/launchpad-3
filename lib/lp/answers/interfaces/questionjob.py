@@ -6,7 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'IQuestionJob',
-    'IQuestionJobSource',
+    'IQuestionEmailJob',
+    'IQuestionEmailJobSource',
     ]
 
 from zope.interface import Attribute
@@ -42,7 +43,18 @@ class IQuestionJob(IRunnableJob):
     metadata = Attribute('A dict of data about the job.')
 
 
-class IQuestionJobSource(IJobSource):
+class IQuestionEmailJob(IQuestionJob):
+
+    user = Attribute('The `IPerson` who triggered the email.')
+
+    body = Attribute(
+        'The body of the email that is common to all recpients.')
+
+    headers = Attribute(
+        'The headers of the email that are common to all recpients.')
+
+
+class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""
 
     def create(question, metadata):
