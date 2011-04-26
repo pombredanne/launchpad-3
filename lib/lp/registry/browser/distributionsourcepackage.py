@@ -55,7 +55,7 @@ from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage

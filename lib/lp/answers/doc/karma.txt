@@ -154,7 +154,7 @@ Changing the status
 We do not grant karma for status change made outside of workflow:
 
     >>> login('foo.bar@canonical.com')
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> msg = firefox_question.setStatus(
     ...     foo_bar, QuestionStatus.OPEN, 'That rejection was an error.',
     ...     datecreated=now.next())

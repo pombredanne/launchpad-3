@@ -90,7 +90,7 @@ from lp.answers.interfaces.question import (
     IQuestionLinkFAQForm,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionSort,
     QuestionStatus,
@@ -649,7 +649,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             # Remove the description widget.
             widgets = [(True, self.widgets[name])
                        for name in self.search_field_names]
-            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
+            self.widgets = form.Widgets(widgets, len(self.prefix) + 1)
             return self.search_template()
         return self.continue_action.success(data)
 
