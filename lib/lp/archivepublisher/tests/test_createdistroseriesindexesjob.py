@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for `InitializeDistroSeriesIndexesJob`."""
+"""Tests for `CreateDistroSeriesIndexesJob`."""
 
 __metaclass__ = type
 
@@ -17,14 +17,14 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
-    IInitializeDistroSeriesIndexesJobSource,
+from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
+    ICreateDistroSeriesIndexesJobSource,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
-from lp.archivepublisher.model.initializedistroseriesindexesjob import (
+from lp.archivepublisher.model.createdistroseriesindexesjob import (
     FEATURE_FLAG_ENABLE_MODULE,
     get_addresses_for,
-    InitializeDistroSeriesIndexesJob,
+    CreateDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.features.testing import FeatureFixture
@@ -69,13 +69,13 @@ class TestHelpers(TestCaseWithFactory):
             removeSecurityProxy(owner.preferredemail).email, addresses[0])
 
 
-class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
+class TestCreateDistroSeriesIndexesJobSource(TestCaseWithFactory):
     """Test utility."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestInitializeDistroSeriesIndexesJobSource, self).setUp()
+        super(TestCreateDistroSeriesIndexesJobSource, self).setUp()
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def removePublisherConfig(self, distribution):
@@ -84,26 +84,26 @@ class TestInitializeDistroSeriesIndexesJobSource(TestCaseWithFactory):
         Store.of(publisher_config).remove(publisher_config)
 
     def test_baseline(self):
-        jobsource = getUtility(IInitializeDistroSeriesIndexesJobSource)
+        jobsource = getUtility(ICreateDistroSeriesIndexesJobSource)
         self.assertTrue(
-            verifyObject(IInitializeDistroSeriesIndexesJobSource, jobsource))
+            verifyObject(ICreateDistroSeriesIndexesJobSource, jobsource))
 
     def test_creates_job_for_distro_with_publisher_config(self):
         distroseries = self.factory.makeDistroSeries()
-        jobset = getUtility(IInitializeDistroSeriesIndexesJobSource)
+        jobset = getUtility(ICreateDistroSeriesIndexesJobSource)
         job = jobset.makeFor(distroseries)
-        self.assertIsInstance(job, InitializeDistroSeriesIndexesJob)
+        self.assertIsInstance(job, CreateDistroSeriesIndexesJob)
 
     def test_does_not_create_job_for_distro_without_publisher_config(self):
         distroseries = self.factory.makeDistroSeries()
         self.removePublisherConfig(distroseries.distribution)
-        jobset = getUtility(IInitializeDistroSeriesIndexesJobSource)
+        jobset = getUtility(ICreateDistroSeriesIndexesJobSource)
         job = jobset.makeFor(distroseries)
         self.assertIs(None, job)
 
     def test_feature_flag_disables_feature(self):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u''}))
-        jobset = getUtility(IInitializeDistroSeriesIndexesJobSource)
+        jobset = getUtility(ICreateDistroSeriesIndexesJobSource)
         self.assertIs(None, jobset.makeFor(self.factory.makeDistroSeries()))
 
 
@@ -111,21 +111,21 @@ class HorribleFailure(Exception):
     """A sample error for testing purposes."""
 
 
-class TestInitializeDistroSeriesIndexesJob(TestCaseWithFactory):
+class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
     """Test job class."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestInitializeDistroSeriesIndexesJob, self).setUp()
+        super(TestCreateDistroSeriesIndexesJob, self).setUp()
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def getJobSource(self):
         """Shorthand for getting at the job-source utility."""
-        return getUtility(IInitializeDistroSeriesIndexesJobSource)
+        return getUtility(ICreateDistroSeriesIndexesJobSource)
 
     def makeJob(self, distroseries=None):
-        """Create an `InitializeDistroSeriesIndexesJob`."""
+        """Create an `CreateDistroSeriesIndexesJob`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         job = removeSecurityProxy(self.getJobSource().makeFor(distroseries))

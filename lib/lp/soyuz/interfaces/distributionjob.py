@@ -85,8 +85,8 @@ class DistributionJobType(DBEnumeratedType):
         distribution release series and its parent series.
         """)
 
-    INITIALIZEDISTROSERIESINDEXES = DBItem(4, """
-        Initialize a series' archive indexes.
+    CREATEDISTROSERIESINDEXES = DBItem(4, """
+        Set up a series' archive indexes.
 
         Performans an initial run of the publish-distro script to
         create indexes for the distroseries.

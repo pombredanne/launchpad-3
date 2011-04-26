@@ -1,11 +1,11 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Job to initialize a distroseries' archive indexes."""
+"""Job to create a distroseries' archive indexes."""
 
 __metaclass__ = type
 __all__ = [
-    'InitializeDistroSeriesIndexesJob',
+    'CreateDistroSeriesIndexesJob',
     ]
 
 from optparse import OptionParser
@@ -20,8 +20,8 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from lp.archivepublisher.interfaces.initializedistroseriesindexesjob import (
-    IInitializeDistroSeriesIndexesJobSource,
+from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
+    ICreateDistroSeriesIndexesJobSource,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -48,22 +48,22 @@ FEATURE_FLAG_ENABLE_MODULE = u"archivepublisher.auto_create_indexes.enabled"
 def get_addresses_for(person):
     """Get list of contact email address(es) for `person`."""
     if person.is_team:
-        return [
-        format_address_for_person(member)
-        for member in person.getMembersWithPreferredEmails()]
+        recipients = person.getMembersWithPreferredEmails()
     else:
-        return [format_address_for_person(person)]
+        recipients = [person]
+
+    return [format_address_for_person(recipient) for recipient in recipients]
 
 
-class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
-    """Job to initialize a distroseries's archive indexes.
+class CreateDistroSeriesIndexesJob(DistributionJobDerived):
+    """Job to create a distroseries's archive indexes.
 
     To do this it runs publish-distro on the distribution, in careful mode.
     """
     implements(IDistributionJob, IRunnableJob)
-    classProvides(IInitializeDistroSeriesIndexesJobSource)
+    classProvides(ICreateDistroSeriesIndexesJobSource)
 
-    class_job_type = DistributionJobType.INITIALIZEDISTROSERIESINDEXES
+    class_job_type = DistributionJobType.CREATEDISTROSERIESINDEXES
 
     # Injection point for tests: optional publish_distro logger.
     logger = None
@@ -78,7 +78,7 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
 
     @classmethod
     def makeFor(cls, distroseries):
-        """See `IInitializeDistroSeriesIndexesJob`."""
+        """See `ICreateDistroSeriesIndexesJob`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return None
 
@@ -108,7 +108,7 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
         return [series_name + suffix for suffix in pocketsuffix.itervalues()]
 
     def runPublishDistro(self, extra_args=None):
-        """Invoke the publish-distro script to initialize indexes.
+        """Invoke the publish-distro script to create indexes.
 
         Publishes only the distroseries in question, in careful mode.
         """
