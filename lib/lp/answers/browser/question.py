@@ -891,7 +891,6 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
             messages = [message for message in messages if message.visible]
         return messages
 
-
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
@@ -1106,6 +1105,14 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    def getBoardCommentCSSClass(self):
+        css_classes = ["boardComment"]
+        if not self.context.visible:
+            # If a comment that isn't visible is being rendered, it's being
+            # rendered for an admin or registry_expert.
+            css_classes.append("adminHiddenComment")
+        return " ".join(css_classes)
 
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""
