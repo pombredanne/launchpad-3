@@ -360,14 +360,14 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # One follow-up step is creation of the new series' archive
         # indexes.  The initialise() method schedules a job for this.
         feature_flag = createdistroseriesindexesjob.FEATURE_FLAG_ENABLE_MODULE
-        self.useFixture(FeatureFixture({feature_flag : u'on'}))
+        self.useFixture(FeatureFixture({feature_flag: u'on'}))
         child = self.factory.makeDistroSeries()
         ids = InitialiseDistroSeries(self.parent, child)
 # XXX: ids.check()?
         ids.initialise()
 # XXX: Feature fixture
         job = Store.of(child).find(
-            DistributionJob, 
+            DistributionJob,
             DistributionJob.job_type ==
                 DistributionJobType.CREATEDISTROSERIESINDEXES,
             DistributionJob.distroseries == child).one()
