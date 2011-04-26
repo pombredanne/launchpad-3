@@ -137,9 +137,17 @@ class InitializeDistroSeriesIndexesJob(DistributionJobDerived):
             self.distroseries.name)
         message = dedent("""\
             You are receiving this email because you are registered in
-            Launchpad as the owner of %s.
+            Launchpad as a release manager for %s.
 
             The archive indexes for %s have been successfully created.
+
+            This automated process is one of many steps in setting up a
+            new distribution release series in Launchpad.  The fact that
+            this part of the work is now done may mean that you can now
+            proceed with subsequent steps.
+
+            This is an automated email; please do not reply.  Contact
+            the Launchpad development team if you have any problems.
             """ % (self.distribution.displayname, self.distroseries.title))
         from_addr = config.canonical.noreply_from_address
         controller = MailController(
