@@ -15,22 +15,12 @@
             tal:condition="devmode"
             tal:content="string:var yui_base='${yui}';"></script>
 
-    <script type="text/javascript"
-            tal:content="string:var
-                         is_subscribed='${view/user_is_subscribed}';">
-    </script>
-
     <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event',
                 'lp.bugs.bug_notification_level',
             function(Y) {
-                var really_is_subscribed = (
-                    (is_subscribed === 'True') ? true : false);
                 Y.on('domready', function () {
-                    var config = {
-                        is_subscribed_already: really_is_subscribed,
-                    }
-                    Y.lp.bugs.bug_notification_level.setup(config);
+                    Y.lp.bugs.bug_notification_level.setup();
                 });
             });
     </script>
