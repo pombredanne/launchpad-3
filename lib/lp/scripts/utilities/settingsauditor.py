@@ -43,8 +43,9 @@ class SettingsAuditor:
         return header
 
     def _strip(self, data):
+        data = data.split('\n')
         data = [d.strip() for d in data]
-        return [d for d in data if not (d.startswith('#') or d == '')]
+        return '\n'.join(d for d in data if not (d.startswith('#') or d == ''))
 
     def _getSectionName(self, line):
         if line.strip().startswith('['):
@@ -56,6 +57,7 @@ class SettingsAuditor:
         # We keep the copy of config_labels so we can keep them in order.
         self.config_blocks = {}
         self.config_labels = []
+        self.data = self._strip(self.data)
         while self.data != '':
             section = self.section_regex.match(self.data)
             section = section.group()

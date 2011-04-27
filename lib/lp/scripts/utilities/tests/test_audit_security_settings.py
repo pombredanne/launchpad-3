@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-
 from canonical.testing.layers import BaseLayer
 from lp.scripts.utilities.settingsauditor import SettingsAuditor
 from lp.testing import TestCase
@@ -83,3 +82,13 @@ class TestAuditSecuritySettings(TestCase):
             'public.baz = SELECT\n'
             'public.foo = SELECT')
         self.assertEqual(expected_settings, new_settings)
+
+    def test_comments_stipped(self):
+        sa = SettingsAuditor('')
+        test_data = (
+            '#[foo]\n'
+            '#public.foo = SELECT\n')
+        data = sa._strip(test_data)
+        self.assertEqual('', data)
+
+
