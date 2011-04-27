@@ -60,9 +60,8 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job = QuestionEmailJob.create(question, user, subject, body, headers)
         self.assertEqual(QuestionJobType.EMAIL, job.job_type)
         self.assertEqual(question, job.question)
-        self.assertEqual(
-            ['body', 'headers', 'subject', 'user'],
-            sorted(job.metadata.keys()))
+        self.assertContentEqual(
+            ['body', 'headers', 'subject', 'user'], job.metadata.keys())
         self.assertEqual(user.id, job.metadata['user'])
         self.assertEqual(subject, job.metadata['subject'])
         self.assertEqual(body, job.metadata['body'])
@@ -82,8 +81,8 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             question, user, subject, 'three', headers)
         job_1.start()
         job_1.complete()
-        job_ids = sorted(job.id for job in QuestionEmailJob.iterReady())
-        self.assertEqual(sorted([job_2.id, job_3.id]), job_ids)
+        job_ids = [job.id for job in QuestionEmailJob.iterReady()]
+        self.assertContentEqual([job_2.id, job_3.id], job_ids)
 
     def test_user(self):
         # The user property matches the user passed to create().
