@@ -152,11 +152,9 @@ CREATE INDEX bugsummary_tag_count_idx on bugsummary using btree(status) where so
 -- the BugSummary table definition.
 --
 
-CREATE OR REPLACE FUNCTION bug_summary_inc(r bugsummary) RETURNS VOID
+CREATE OR REPLACE FUNCTION bug_summary_inc(d bugsummary) RETURNS VOID
 LANGUAGE plpgsql AS
 $$
-declare
-    d bugsummary%ROWTYPE;
 BEGIN
     -- Shameless adaption from postgresql manual
     LOOP
