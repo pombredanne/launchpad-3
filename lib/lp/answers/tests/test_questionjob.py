@@ -184,6 +184,22 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             'body -- mdash\n-- \nrationale', formatted_body)
 
+    def test_buildBody_wrapping(self):
+        # The ratonale is wrapped and added to the body.
+        question = self.factory.makeQuestion()
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        body = 'body\n-- '
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        rationale_1 = (
+            'You received this email because you are indirectly subscribed '
+            'to this')
+        rationale_2 = 'question via the ~illuminati team.'
+        rationale = '%s %s' % (rationale_1, rationale_2)
+        formatted_body = job.buildBody(rationale)
+        expected_rationale = '%s\n%s' % (rationale_1, rationale_2)
+        self.assertEqual(
+            body + '\n' + expected_rationale, formatted_body)
+
     def test_run(self):
         # The email is sent to all the recipents.
         pass
