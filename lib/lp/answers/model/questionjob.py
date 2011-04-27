@@ -93,6 +93,7 @@ class QuestionJob(StormBase):
 
     @property
     def metadata(self):
+        """See `IQuestionJob`."""
         return simplejson.loads(self._json_data)
 
 
@@ -121,7 +122,7 @@ class QuestionEmailJob(BaseRunnableJob):
 
     @classmethod
     def iterReady(cls):
-        """Iterate through all ready IQuestionEmailJobs."""
+        """See `IJobSource`."""
         store = IMasterStore(QuestionJob)
         jobs = store.find(
             QuestionJob,
@@ -131,16 +132,29 @@ class QuestionEmailJob(BaseRunnableJob):
 
     @property
     def user(self):
+        """See `IQuestionEmailJob`."""
         return getUtility(IPersonSet).get(self.metadata['user'])
 
     @property
     def body(self):
+        """See `IQuestionEmailJob`."""
         return self.metadata['body']
 
     @property
     def headers(self):
+        """See `IQuestionEmailJob`."""
         return self.metadata['headers']
 
     @property
     def log_name(self):
+        """See `IRunnableJob`."""
         return self.__class__.__name__
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        vars = BaseRunnableJob.getOopsVars(self)
+        vars.extend([
+            ('question', self.context.question.id),
+            ('user', self.context.user),
+            ])
+        return vars
