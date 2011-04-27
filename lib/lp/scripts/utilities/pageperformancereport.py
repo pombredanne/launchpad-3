@@ -275,6 +275,22 @@ class Stats:
         return self.mean + 3*self.std
 
     @property
+    def ninetyninth_percentile_sqltime(self):
+        """SQL time under which 99% of requests are rendered.
+
+        This is estimated as 3 std deviations from the mean.
+        """
+        return self.mean_sqltime + 3*self.std_sqltime
+
+    @property
+    def ninetyninth_percentile_sqlstatements(self):
+        """Number of SQL statements under which 99% of requests are rendered.
+
+        This is estimated as 3 std deviations from the mean.
+        """
+        return self.mean_sqlstatements + 3*self.std_sqlstatements
+
+    @property
     def relative_histogram(self):
         """Return an histogram where the frequency is relative."""
         if self.histogram:
@@ -905,12 +921,12 @@ def html_report(
             <th class="clickable">Median Time (secs)</th>
             <th class="sorttable_nosort">Time Distribution</th>
 
-            <th class="clickable">Total SQL Time (secs)</th>
+            <th class="clickable">99% Under SQL Time (secs)</th>
             <th class="clickable">Mean SQL Time (secs)</th>
             <th class="clickable">SQL Time Standard Deviation</th>
             <th class="clickable">Median SQL Time (secs)</th>
 
-            <th class="clickable">Total SQL Statements</th>
+            <th class="clickable">99% Under SQL Statements</th>
             <th class="clickable">Mean SQL Statements</th>
             <th class="clickable">SQL Statement Standard Deviation</th>
             <th class="clickable">Median SQL Statements</th>
@@ -954,9 +970,10 @@ def html_report(
                 stats.ninetyninth_percentile_time,
                 stats.mean, stats.std, stats.median,
                 len(histograms) - 1,
-                stats.total_sqltime, stats.mean_sqltime,
+                stats.ninetyninth_percentile_sqltime, stats.mean_sqltime,
                 stats.std_sqltime, stats.median_sqltime,
-                stats.total_sqlstatements, stats.mean_sqlstatements,
+                stats.ninetyninth_percentile_sqlstatements,
+                stats.mean_sqlstatements,
                 stats.std_sqlstatements, stats.median_sqlstatements))
 
     # Table of contents
