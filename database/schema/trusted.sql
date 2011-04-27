@@ -1076,6 +1076,102 @@ $$;
 COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
 
 
+CREATE OR REPLACE FUNCTION summarise_bug(BUG_ROW bug) RETURNS VOID
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+END;
+$$;
+
+COMMENT ON FUNCTION summarise_bug(bug) IS
+'AFTER summarise a bug row into bugsummary.';
+
+CREATE OR REPLACE FUNCTION unsummarise_bug(BUG_ROW bug) RETURNS VOID
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+END;
+$$;
+
+COMMENT ON FUNCTION unsummarise_bug(bug) IS
+'AFTER unsummarise a bug row from bugsummary.';
+
+
+CREATE OR REPLACE FUNCTION bug_maintain_bug_summary() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.duplicateof IS NOT NULL and OLD.duplicateof IS NOT NULL THEN
+            -- Duplicates are not summarised
+            RETURN NULL; -- Ignored - this is an AFTER trigger
+        END IF;
+        IF NEW.duplicateof = OLD.duplicateof AND 
+           NEW.private = OLD.private THEN
+            -- Short circuit on an update that doesn't change inclusion or
+            -- summary logic
+            RETURN NULL; -- Ignored - this is an AFTER trigger
+        END IF;
+        IF OLD.duplicateof IS NOT NULL THEN
+            -- Newly unduplicated: publish fresh
+            SELECT summarise_bug(NEW);
+        ELSIF NEW.duplicateof IS NOT NULL THEN
+            -- Newly duplicated: unsummarise
+            SELECT unsummarise_bug(OLD);
+        ELSIF NEW.private = OLD.private THEN
+            -- Not changed in a relevant way, we're done.
+            RETURN NULL; -- Ignored - this is an AFTER trigger
+        ELSE
+            -- Either becoming private or public; none of the summary rows are
+            -- in common - remove and add.
+            SELECT unsummarise_bug(OLD);
+            SELECT summarise_bug(NEW);
+        END IF;
+        RETURN NULL; -- Ignored - this is an AFTER trigger
+    END IF;
+
+    -- For delete remove the bugs summary rows
+    SELECT unsummarise_bug(OLD);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bug_maintain_bug_summary() IS
+'AFTER trigger on bug maintaining the bugs summaries in bugsummary.';
+
+CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bugtask_maintain_bug_summary() IS
+'AFTER trigger on bugtask maintaining the bugs summaries in bugsummary.';
+
+CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bugsubscription_maintain_bug_summary() IS
+'AFTER trigger on bugsubscription maintaining the bugs summaries in bugsummary.';
+
+CREATE OR REPLACE FUNCTION bugtag_maintain_bug_summary() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bugtag_maintain_bug_summary() IS
+'AFTER trigger on bugtag maintaining the bugs summaries in bugsummary.';
+
 CREATE OR REPLACE FUNCTION set_bug_number_of_duplicates() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$

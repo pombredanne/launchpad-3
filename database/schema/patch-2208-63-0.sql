@@ -9,7 +9,7 @@ product INTEGER REFERENCES Product ON DELETE CASCADE,
 productseries INTEGER REFERENCES ProductSeries ON DELETE CASCADE,
 distribution INTEGER REFERENCES Distribution ON DELETE CASCADE,
 distroseries INTEGER REFERENCES DistroSeries ON DELETE CASCADE,
-sourcepackagename INTEGER REFERENCES SourcesPackageName ON DELETE CASCADE,
+sourcepackagename INTEGER REFERENCES SourcePackageName ON DELETE CASCADE,
 viewed_by INTEGER REFERENCES Person ON DELETE CASCADE,
 tag TEXT,
 status INTEGER NOT NULL,
@@ -86,5 +86,16 @@ CREATE INDEX bugsummary_count_idx on bugsummary using btree(status) where source
 -- Everything (tags)
 CREATE INDEX bugsummary_tag_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is not null;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
+-- we need to maintain the summaries when things change. Each variable the
+-- population script above uses needs to be accounted for.
 
+-- bug: duplicateof, private (not INSERT because a task is needed to be included in summaries.
+CREATE TRIGGER bug_maintain_bug_summary_trigger AFTER UPDATE OR DELETE ON bug FOR EACH ROW EXECUTE PROCEDURE bug_maintain_bug_summary();
+-- bugtask: target, status, milestone
+CREATE TRIGGER bugtask_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtask FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
+-- bugsubscription: existence
+CREATE TRIGGER bugsubscription_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugsubscription FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
+-- bugtag: existence
+CREATE TRIGGER bugtag_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtag FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
