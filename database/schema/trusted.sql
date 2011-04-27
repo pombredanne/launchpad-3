@@ -1076,13 +1076,27 @@ $$;
 COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
 
 
-CREATE OR REPLACE FUNCTION bug_summary_inc(product INT, productseries INT, distribution INT, distroseries INT, sourcepackagename INT, viewed_by INT, tag TEXT, status INT, milestone INT) RETURNS VOID AS
+CREATE OR REPLACE FUNCTION bug_summary_inc(
+    product INT, productseries INT, distribution INT, distroseries INT,
+    sourcepackagename INT, viewed_by INT, tag TEXT, status INT,
+    milestone INT) RETURNS VOID AS
 $$
 BEGIN
     -- Shameless adaption from postgresql manual
     LOOP
         -- first try to update the row
-        UPDATE bugsummary SET count = count + 1 WHERE --deal with nulls!
+        UPDATE BugSummary SET count = count + 1
+        WHERE
+            BugSummary.product IS NOT DISTINCT FROM product
+            AND BugSummary.productseries IS NOT DISTINCT FROM productseries
+            AND BugSummary.distribution IS NOT DISTINCT FROM distribution
+            AND BugSummary.distroseries IS NOT DISTINCT FROM distroseries
+            AND BugSummary.sourcepackagename
+                IS NOT DISTINCT FROM sourcepackagename
+            AND BugSummary.viewed_by IS NOT DISTINCT FROM viewed_by
+            AND BugSummary.tag IS NOT DISTINCT FROM tag
+            AND BugSummary.status IS NOT DISTINCT FROM status
+            AND BugSummary.milestone IS NOT DISTINCT FROM milestone;
         IF found THEN
             RETURN;
         END IF;
@@ -1090,10 +1104,14 @@ BEGIN
         -- if someone else inserts the same key concurrently,
         -- we could get a unique-key failure
         BEGIN
-            INSERT INTO bugsummary(count, product, productseries, distribution,
-                distroseries, sourcepackagename, viewed_by, tag, status,
-                milestone) VALUES (1, product, productseries, distribution,
-                distroseries, sourcepackagename, viewed_by, tag, status, milestone);
+            INSERT INTO BugSummary(
+                count, product, productseries, distribution,
+                distroseries, sourcepackagename, viewed_by, tag,
+                status, milestone)
+            VALUES (
+                1, product, productseries, distribution,
+                distroseries, sourcepackagename, viewed_by, tag,
+                status, milestone);
             RETURN;
         EXCEPTION WHEN unique_violation THEN
             -- do nothing, and loop to try the UPDATE again
