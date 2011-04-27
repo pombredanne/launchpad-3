@@ -3,18 +3,36 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE bugsummary(
-count INTEGER NOT NULL default 0,
-product INTEGER REFERENCES Product ON DELETE CASCADE,
-productseries INTEGER REFERENCES ProductSeries ON DELETE CASCADE,
-distribution INTEGER REFERENCES Distribution ON DELETE CASCADE,
-distroseries INTEGER REFERENCES DistroSeries ON DELETE CASCADE,
-sourcepackagename INTEGER REFERENCES SourcePackageName ON DELETE CASCADE,
-viewed_by INTEGER REFERENCES Person ON DELETE CASCADE,
-tag TEXT,
-status INTEGER NOT NULL,
-milestone INTEGER REFERENCES Milestone ON DELETE CASCADE,
-CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN ((((productseries IS NULL) AND (distribution IS NULL)) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (productseries IS NOT NULL) THEN (((distribution IS NULL) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (distribution IS NOT NULL) THEN (distroseries IS NULL) WHEN (distroseries IS NOT NULL) THEN true ELSE false END)
+CREATE TABLE BugSummary(
+    id serial PRIMARY KEY,
+    count INTEGER NOT NULL default 0,
+    product INTEGER REFERENCES Product ON DELETE CASCADE,
+    productseries INTEGER REFERENCES ProductSeries ON DELETE CASCADE,
+    distribution INTEGER REFERENCES Distribution ON DELETE CASCADE,
+    distroseries INTEGER REFERENCES DistroSeries ON DELETE CASCADE,
+    sourcepackagename INTEGER REFERENCES SourcePackageName ON DELETE CASCADE,
+    viewed_by INTEGER REFERENCES Person ON DELETE CASCADE,
+    tag TEXT,
+    status INTEGER NOT NULL,
+    milestone INTEGER REFERENCES Milestone ON DELETE CASCADE,
+    CONSTRAINT bugtask_assignment_checks CHECK (
+        CASE
+            WHEN product IS NOT NULL THEN
+                productseries IS NULL
+                AND distribution IS NULL
+                AND distroseries IS NULL
+                AND sourcepackagename IS NULL
+            WHEN productseries IS NOT NULL THEN
+                distribution IS NULL
+                AND distroseries IS NULL
+                AND sourcepackagename IS NULL
+            WHEN distribution IS NOT NULL THEN
+                distroseries IS NULL
+            WHEN distroseries IS NOT NULL THEN
+                TRUE
+            ELSE
+                FALSE
+        END)
 );
 
 ---- Bulk load into the table - after this it is maintained by trigger. Timed
