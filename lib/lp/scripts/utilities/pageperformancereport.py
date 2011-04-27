@@ -894,8 +894,8 @@ def html_report(
                 padding: 1em;
                 }
             .clickable { cursor: hand; }
-            .total_hits, .histogram, .median_sqltime,
-            .median_sqlstatements { border-right: 1px dashed #000000; }
+            .total-hits, .histogram, .median-sqltime,
+            .median-sqlstatements { border-right: 1px dashed #000000; }
         </style>
         </head>
         <body>
@@ -945,24 +945,24 @@ def html_report(
         print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
-            <td class="numeric total_hits">%d</td>
-            <td class="numeric total_time">%.2f</td>
-            <td class="numeric 99pc_under">%.2f</td>
-            <td class="numeric mean_time">%.2f</td>
-            <td class="numeric std_time">%.2f</td>
-            <td class="numeric median_time">%.2f</td>
+            <td class="numeric total-hits">%d</td>
+            <td class="numeric total-time">%.2f</td>
+            <td class="numeric 99pc-under-time">%.2f</td>
+            <td class="numeric mean-time">%.2f</td>
+            <td class="numeric std-time">%.2f</td>
+            <td class="numeric median-time">%.2f</td>
             <td>
                 <div class="histogram" id="histogram%d"></div>
             </td>
-            <td class="numeric total_sqltime">%.2f</td>
-            <td class="numeric mean_sqltime">%.2f</td>
-            <td class="numeric std_sqltime">%.2f</td>
-            <td class="numeric median_sqltime">%.2f</td>
+            <td class="numeric 99pc-under-sqltime">%.2f</td>
+            <td class="numeric mean-sqltime">%.2f</td>
+            <td class="numeric std-sqltime">%.2f</td>
+            <td class="numeric median-sqltime">%.2f</td>
 
-            <td class="numeric total_sqlstatements">%.f</td>
-            <td class="numeric mean_sqlstatements">%.2f</td>
-            <td class="numeric std_sqlstatements">%.2f</td>
-            <td class="numeric median_sqlstatements">%.2f</td>
+            <td class="numeric 99pc-under-sqlstatement">%.f</td>
+            <td class="numeric mean-sqlstatements">%.2f</td>
+            <td class="numeric std-sqlstatements">%.2f</td>
+            <td class="numeric median-sqlstatements">%.2f</td>
             </tr>
             """ % (
                 html_title,
