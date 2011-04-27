@@ -5,15 +5,20 @@
 
 __metaclass__ = type
 
+import transaction
+
 from zope.component import getUtility
 
 from canonical.launchpad.mail import format_address
+from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionJobType
 from lp.answers.model.questionjob import (
     QuestionJob,
     QuestionEmailJob,
     )
+from lp.services.log.logger import BufferLogger
+from lp.services.mail import stub
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
@@ -153,15 +158,15 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.assertEqual(user, job.getErrorRecipients())
 
     def test_recipients(self):
-        # The recipients property mathes the question recipients.
+        # The recipients property macthes the question recipients.
         question = self.factory.makeQuestion()
-        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
         contact = self.factory.makePerson()
         with person_logged_in(contact):
             lang_set = getUtility(ILanguageSet)
             contact.addLanguage(lang_set['en'])
             question.target.addAnswerContact(contact)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
         self.assertEqual(question.getRecipients(), job.recipients)
 
     def test_buildBody_with_separator(self):
@@ -202,4 +207,22 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
 
     def test_run(self):
         # The email is sent to all the recipents.
-        pass
+        question = self.factory.makeQuestion()
+        contact = self.factory.makePerson()
+        with person_logged_in(contact):
+            lang_set = getUtility(ILanguageSet)
+            contact.addLanguage(lang_set['en'])
+            question.target.addAnswerContact(contact)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        logger = BufferLogger()
+        with log.use(logger):
+            job.run()
+        self.assertEqual(
+            ["DEBUG QuestionEmailJob will send email for question %s." %
+             question.id,
+             "DEBUG QuestionEmailJob has sent email for question %s." %
+             question.id],
+            logger.getLogBuffer().splitlines())
+        transaction.commit()
+        self.assertEqual(2, len(stub.test_emails))
