@@ -99,3 +99,10 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, body, headers = self.makeUserBodyHeaders()
         job = QuestionEmailJob.create(question, user, body, headers)
         self.assertEqual(headers, job.headers)
+
+    def test_log_name(self):
+        # The log_name property matches the class name.
+        question = self.factory.makeQuestion()
+        user, body, headers = self.makeUserBodyHeaders()
+        job = QuestionEmailJob.create(question, user, body, headers)
+        self.assertEqual(job.__class__.__name__, job.log_name)

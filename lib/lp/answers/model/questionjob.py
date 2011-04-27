@@ -140,3 +140,7 @@ class QuestionEmailJob(BaseRunnableJob):
     @property
     def headers(self):
         return self.metadata['headers']
+
+    @property
+    def log_name(self):
+        return self.__class__.__name__
