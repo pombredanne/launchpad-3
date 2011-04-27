@@ -697,7 +697,7 @@ def main():
                 writer.writerows([
                     ("%s_99" % option, "%f@%d" % (
                         stats.ninetyninth_percentile_time, date)),
-                    ("%s_mean" % option, "%f@%d" % (stats.mean, date))])
+                    ("%s_hits" % option, "%d@%d" % (stats.total_hits, date))])
                 break
         else:
             log.warning("Can't find category %s for metric %s" % (
