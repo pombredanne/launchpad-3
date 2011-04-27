@@ -53,8 +53,7 @@ class IQuestionEmailJob(IQuestionJob):
 
     user = Attribute('The `IPerson` who triggered the email.')
 
-    body = Attribute(
-        'The subject of the email.')
+    subject = Attribute('The subject of the email.')
 
     body = Attribute(
         'The body of the email that is common to all recpients.')
