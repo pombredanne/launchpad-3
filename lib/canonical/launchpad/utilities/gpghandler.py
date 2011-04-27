@@ -76,7 +76,7 @@ class GPGHandler:
         a new directory (name randomly generated with the 'gpg-' prefix)
         containing the proper file configuration and options.
 
-        Also touches the config directory every 5 hours.
+        Also touches the config directory every 12 hours.
         Also installs an atexit handler to remove the directory on normal
         process termination.
         """
@@ -92,12 +92,12 @@ class GPGHandler:
                    'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
 
-        # create a job to touch the home directory every 5 hours so that it
+        # create a job to touch the home directory every 12 hours so that it
         # does not get cleaned up by any reaper scripts which look at
         # time last modified.
         self.touch_home_call = task.LoopingCall(os.utime, *(self.home, None))
         # 1 hour = 3600 seconds
-        self.touch_home_call.start(5*3600)
+        self.touch_home_call.start(12*3600)
 
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
