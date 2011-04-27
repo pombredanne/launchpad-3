@@ -62,6 +62,9 @@ class IQuestionEmailJob(IQuestionJob):
     headers = Attribute(
         'The headers of the email that are common to all recpients.')
 
+    from_address = Attribute(
+        'The formatted email address for the user and question.')
+
 
 class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""

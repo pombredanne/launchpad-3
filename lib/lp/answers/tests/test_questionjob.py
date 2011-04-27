@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.mail import format_address
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionJobType
 from lp.answers.model.questionjob import (
@@ -112,6 +113,16 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(question, user, subject, body, headers)
         self.assertEqual(headers, job.headers)
+
+    def test_from_address(self):
+        # The from_address is the question with the user displayname.
+        question = self.factory.makeQuestion()
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        address = format_address(
+            user.displayname,
+            "question%s@answers.launchpad.net" % question.id)
+        self.assertEqual(address, job.from_address)
 
     def test_log_name(self):
         # The log_name property matches the class name.

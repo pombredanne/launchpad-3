@@ -169,7 +169,7 @@ class QuestionEmailJob(BaseRunnableJob):
 
     @property
     def from_address(self):
-        """The formatted email address for the user and question."""
+        """See `IQuestionEmailJob`."""
         address = 'question%s@%s' % (
             self.question.id, config.answertracker.email_domain)
         return format_address(self.user.displayname, address)
