@@ -60,7 +60,7 @@
   </metal:description>
 
   <tr id="extra-filebug-details"
-    tal:replace="structure context/@@+filebug-reporting-details" />
+    tal:replace="structure context/@@+filebug-reporting-guidelines" />
 
   <tr>
     <td colspan="2">
@@ -470,7 +470,7 @@
 </metal:similar-bugs-and-filebug-form>
 
 <metal:inline-filebug-form define-macro="inline-filebug-form">
-  <div id="bug_reporting_form">
+  <div id="bug-reporting-form">
     <metal:form use-macro="context/@@launchpad_form/form">
       <a name="form-start" />
       <metal:widgets metal:fill-slot="widgets">

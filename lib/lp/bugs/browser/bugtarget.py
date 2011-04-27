@@ -26,6 +26,7 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
+import simplejson
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -72,7 +73,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY, UserAttributeCache
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -236,7 +237,7 @@ class ProductConfigureBugTrackerView(BugRoleMixin, ProductConfigureBase):
         self.updateContextFromData(data)
 
 
-class FileBugExtraInformation(LaunchpadFormView):
+class FileBugReportingGuidelines(LaunchpadFormView):
     """Provides access to common bug reporting attributes.
 
     Attributes provided are: security_related and bug_reporting_guidelines.
@@ -255,7 +256,7 @@ class FileBugExtraInformation(LaunchpadFormView):
 
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
-        super(FileBugExtraInformation, self).setUpFields()
+        super(FileBugReportingGuidelines, self).setUpFields()
 
         security_related_field = Bool(
             __name__='security_related',
@@ -282,7 +283,7 @@ class FileBugExtraInformation(LaunchpadFormView):
             if IBugTarget.providedBy(target):
                 return target.bugtargetdisplayname
             else:
-                return target.title
+                return target.displayname
 
         guidelines = []
         bugtarget = self.context
@@ -313,7 +314,33 @@ class FileBugExtraInformation(LaunchpadFormView):
             return self.context
 
 
-class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
+class FileBugExtraInformation(UserAttributeCache):
+    """Returns extra information used to taylor the file bug page.
+
+    Given a context, this view returns a dict of of values which are used by
+    the calling Javascript to taylor the HTML on the file bug page.
+
+    The dict keys are:
+    hide_fields: form field names to hide
+    shoe_fields: form field names to show
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        optional_field_names = [
+            'assignee', 'importance', 'milestone', 'status']
+        fields_key = "hide_fields"
+        if IHasBugSupervisor.providedBy(self.context):
+            if self.user.inTeam(self.context.bug_supervisor):
+                fields_key = "show_fields"
+        result = {fields_key: optional_field_names}
+        return simplejson.dumps(result)
+
+
+class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
     implements(IBrowserPublisher)
@@ -617,14 +644,17 @@ class FileBugViewBase(FileBugExtraInformation, LaunchpadFormView):
 
         # Apply any extra options given by a bug supervisor.
         bugtask = self.added_bug.default_bugtask
-        if 'assignee' in data:
-            bugtask.transitionToAssignee(data['assignee'])
-        if 'status' in data:
-            bugtask.transitionToStatus(data['status'], self.user)
-        if 'importance' in data:
-            bugtask.transitionToImportance(data['importance'], self.user)
-        if 'milestone' in data:
-            bugtask.milestone = data['milestone']
+        if IHasBugSupervisor.providedBy(context):
+            if self.user.inTeam(context.bug_supervisor):
+                if 'assignee' in data:
+                    bugtask.transitionToAssignee(data['assignee'])
+                if 'status' in data:
+                    bugtask.transitionToStatus(data['status'], self.user)
+                if 'importance' in data:
+                    bugtask.transitionToImportance(
+                        data['importance'], self.user)
+                if 'milestone' in data:
+                    bugtask.milestone = data['milestone']
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)

@@ -388,7 +388,7 @@ class TestFileBugExtraInformationView(TestCaseWithFactory):
         login('foo.bar@canonical.com')
         product = self.factory.makeProduct()
         product.bug_reporting_guidelines = "Include bug details"
-        view = create_initialized_view(product, '+filebug-reporting-details')
+        view = create_initialized_view(product, '++filebug-reporting-guidelines')
         expected_guidelines = [{
             "source": product.displayname, "content": u"Include bug details",
             }]

@@ -109,10 +109,16 @@
             permission="launchpad.AnyPerson"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtarget.FileBugExtraInformation"
+            class="lp.bugs.browser.bugtarget.FileBugReportingGuidelines"
             template="../templates/bugtarget-filebug-guidelines.pt"
             permission="launchpad.AnyPerson"
-            name="+filebug-reporting-details"/>
+            name="+filebug-reporting-guidelines"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.FileBugExtraInformation"
+            permission="launchpad.AnyPerson"
+            name="+filebug-extra-options"
+            attribute="__call__"/>
         <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
