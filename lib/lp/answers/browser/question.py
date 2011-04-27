@@ -243,7 +243,8 @@ class QuestionSetNavigation(Navigation):
         if hasattr(self.request, 'version'):
             return question
         else:
-            return redirection(canonical_url(question, self.request), status=301)
+            return redirection(
+                canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):

@@ -20,7 +20,7 @@ from lp.testing import (
     launchpadlib_for,
     logout,
     person_logged_in,
-    ws_object
+    ws_object,
     )
 
 
