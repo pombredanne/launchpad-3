@@ -190,15 +190,15 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 text='Derived from Sid'),
             soupmatchers.Tag(
                 'Differences link', 'a',
-                text=re.compile('\s*1 package with differences.\s*'),
+                text=re.compile('\s*1 package with differences\s*'),
                 attrs={'href': re.compile('.*/\+localpackagediffs')}),
             soupmatchers.Tag(
                 'Parent diffs link', 'a',
-                text=re.compile('\s*2 packages in Sid.\s*'),
+                text=re.compile('\s*2 packages only in Sid\s*'),
                 attrs={'href': re.compile('.*/\+missingpackages')}),
             soupmatchers.Tag(
                 'Child diffs link', 'a',
-                text=re.compile('\s*3 packages in Deri.\s*'),
+                text=re.compile('\s*3 packages only in Deri\s*'),
                 attrs={'href': re.compile('.*/\+uniquepackages')}))
 
         with person_logged_in(self.simple_user):
@@ -249,7 +249,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Derived series'),
+                text='Series initialisation in progress'),
             soupmatchers.Tag(
                 'Init message', True,
                 text=re.compile('\s*This series is initialising.\s*')),

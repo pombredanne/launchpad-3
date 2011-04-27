@@ -67,22 +67,19 @@ from canonical.launchpad.database.message import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
     IQuestion,
     )
-from lp.answers.interfaces.questioncollection import (
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.enums import (
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,
     QuestionSort,
     QuestionStatus,
+    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
@@ -111,6 +108,8 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
 
@@ -535,7 +534,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getDirectSubscribers(self):
         """See `IQuestion`.
 
-        This method is sorted so that it iterates like getDirectRecipients().
+        This method is sorted so that it iterates like direct_recipients.
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
@@ -544,7 +543,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`.
 
         This method adds the assignee and is sorted so that it iterates like
-        getIndirectRecipients().
+        indirect_recipients.
         """
         subscribers = set(
             self.target.getAnswerContactsForLanguage(self.language))
@@ -554,19 +553,27 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectRecipients()
-        subscribers.update(self.getIndirectRecipients())
+        subscribers = self.direct_recipients
+        subscribers.update(self.indirect_recipients)
         return subscribers
 
-    def getDirectRecipients(self):
+    @cachedproperty
+    def direct_recipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
+        if self.owner in subscribers:
+            subscribers.remove(self.owner)
+            reason = (
+                "You received this question notification because you "
+                "asked the question.")
+            subscribers.add(self.owner, reason, 'Asker')
         return subscribers
 
-    def getIndirectRecipients(self):
+    @cachedproperty
+    def indirect_recipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:

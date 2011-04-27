@@ -9,10 +9,8 @@ __all__ = [
     ]
 
 
-from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.questioncollection import IQuestionCollection
 
 
 class IQuestionsPerson(IQuestionCollection):

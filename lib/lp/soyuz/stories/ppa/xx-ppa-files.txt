@@ -291,6 +291,13 @@ binaries across to no-priv's public ppa.
     Location: http://.../test-pkg_1.0.dsc
     ...
 
+The filename must be at the end of the URL. No further segments are permitted.
+
+    >>> browser.open(file_lp_url + '/foo')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+
 
 == Compatibility URL Redirection ==
 
