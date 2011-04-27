@@ -53,7 +53,7 @@ class IQuestionEmailJob(IQuestionJob):
 
     user = Attribute('The `IPerson` who triggered the email.')
 
-    body = Attribute(
+    subject = Attribute(
         'The subject of the email.')
 
     body = Attribute(

@@ -25,9 +25,14 @@ from zope.interface import (
 
 from lazr.delegates import delegates
 
+from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
+    )
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
     )
 from canonical.launchpad.scripts import log
 from lp.answers.enums import QuestionJobType
@@ -41,6 +46,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 
 
@@ -161,12 +167,40 @@ class QuestionEmailJob(BaseRunnableJob):
         """See `IRunnableJob`."""
         return self.user
 
+    @property
+    def from_address(self):
+        """The formatted email address for the user and question."""
+        address = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
+        return format_address(self.user.displayname, address)
+
+    @property
+    def getRecipients(self):
+        """The recipient of the notification."""
+        return self.question.getRecipients()
+
+    def buildBody(self, rationale):
+        """Wrap the body and ensure the rationale is is separated."""
+        wrapper = MailWrapper()
+        body_parts = [self.body, wrapper.format(rationale)]
+        if '\n-- ' not in self.body:
+            body_parts.insert(1, '-- ')
+        return '\n'.join(body_parts)
+
     def run(self):
         """Send emails."""
         log.debug(
             "%s will send email for question %s.",
             self.log_name, self.question.id)
-        # Extract and adapt QuestionNotification.send().
+        headers = self.headers
+        recipients = self.recipients
+        for email in recipients.getEmails():
+            rationale, header = recipients.getReason(email)
+            headers['X-Launchpad-Message-Rationale'] = header
+            formatted_body = self.buildBody(rationale)
+            simple_sendmail(
+                self.from_address, email, self.subject, formatted_body,
+                headers)
         log.debug(
             "%s has sent email for question %s.",
             self.log_name, self.question.id)
