@@ -1123,11 +1123,17 @@ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION bug_summary_inc(INT, INT, INT, INT, INT, INT, TEXT, INT, INT) IS 'UPSERT into bugsummary incrementing one row';
 
+---- needs a function
+summary_locations(BUG_ROW bug)
+which will return (product, productseries distribution distroseries sourcepackagename viewed_by tag status milestone) per the rules in the db bulk loader
 
 CREATE OR REPLACE FUNCTION summarise_bug(BUG_ROW bug) RETURNS VOID
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+something like
+for summary-address in SELECT(summary_locations(BUG_ROW)
+    bug_summary_inc(summary-address);
 END;
 $$;
 
@@ -1138,6 +1144,10 @@ CREATE OR REPLACE FUNCTION unsummarise_bug(BUG_ROW bug) RETURNS VOID
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+something like
+for summary-address in SELECT(summary_locations(BUG_ROW)
+    bug_summary_dec(summary-address);
+
 END;
 $$;
 
@@ -1191,6 +1201,11 @@ CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+    if the target changes needs to dec all the rows for the old target and inc for the new target. 
+    special mention:
+       the counting of /bugs/ once at distribution/distroseris scope even if they have many sourcepackage tasks means that this needs to cooperate with the bug - when decrementing rows if any other task also qualifies for the matching distroseries/distribution aggregate, don't alter it - it was only counted once.
+    milestone changes are easy - just multiple out by subscribers and tags , dev the old milestone value inc the new
+    status changes likewise
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
@@ -1202,6 +1217,8 @@ CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary() RETURNS TRIGGE
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+    if the bug is public this is a noop 
+        otherwise take the public summary locations and inc/dec each location with the subscriber person as the viewed_by 
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
@@ -1213,6 +1230,10 @@ CREATE OR REPLACE FUNCTION bugtag_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+    similar to sourcepackages, tags have two cases:
+     - all bugs are recorded against tag is NULL
+     - bugs with tags are additionally recorded against each tag (cross-product multiply with all the other fields)
+     
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
