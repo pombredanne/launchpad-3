@@ -305,7 +305,7 @@ class IDistroSeriesDifferenceSource(Interface):
         :param parent_series: The parent series to consider. Consider all
             parent series if this parameter is None.
         :type distro_series: `IDistroSeries`.
-        :return: A result set of differences.
+        :return: A result set of `IDistroSeriesDifference`.
         """
 
     def getByDistroSeriesAndName(distro_series, source_package_name):

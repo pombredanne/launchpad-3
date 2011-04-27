@@ -895,18 +895,22 @@ class IDistroSeriesPublic(
         """Get all `DistroSeries` derived from this one."""
 
     @operation_parameters(
-        parent_series=TextLine(
-            title=_("The parent series to consider."), required=False),
-        difference_type=TextLine(
+        parent_series=Reference(
+            schema=Interface, # IDistroSeries
+            title=_("The parent series to consider."),
+            required=False),
+        difference_type=Choice(
+            vocabulary=DBEnumeratedType, # DistroSeriesDifferenceType
             title=_("Only return differences of this type."), required=False),
         source_package_name_filter=TextLine(
             title=_("Only return differences for packages matching this "
-                    " name."),
+                    "name."),
             required=False),
-        status=TextLine(
+        status=Choice(
+            vocabulary=DBEnumeratedType, # DistroSeriesDifferenceStatus
             title=_("Only return differences of this status."),
             required=False),
-        child_version_higher=TextLine(
+        child_version_higher=Bool(
             title=_("Only return differences for which the child's version "
                     "is higher than the parent's."),
             required=False),
@@ -921,7 +925,7 @@ class IDistroSeriesPublic(
         parent_series (or all the parent series if parent_series is None).
 
         :param parent_series: The parent series for which the differences
-            should be returned. All the parent are considered if this is None.
+            should be returned. All parents are considered if this is None.
         :param difference_type: The type of the differences to return.
         :param source_package_name_filter: A package name to use as a filter
             for the differences.
