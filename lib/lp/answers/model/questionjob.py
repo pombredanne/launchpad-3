@@ -128,3 +128,7 @@ class QuestionEmailJob(BaseRunnableJob):
             And(QuestionJob.job_type == cls.class_job_type,
                 QuestionJob.job_id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
+
+    @property
+    def body(self):
+        return self.metadata['body']
