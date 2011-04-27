@@ -136,3 +136,7 @@ class QuestionEmailJob(BaseRunnableJob):
     @property
     def body(self):
         return self.metadata['body']
+
+    @property
+    def headers(self):
+        return self.metadata['headers']

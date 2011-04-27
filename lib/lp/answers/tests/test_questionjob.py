@@ -92,3 +92,10 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, body, headers = self.makeUserBodyHeaders()
         job = QuestionEmailJob.create(question, user, body, headers)
         self.assertEqual(body, job.body)
+
+    def test_headers(self):
+        # The headers property matches the headers passed to create().
+        question = self.factory.makeQuestion()
+        user, body, headers = self.makeUserBodyHeaders()
+        job = QuestionEmailJob.create(question, user, body, headers)
+        self.assertEqual(headers, job.headers)
