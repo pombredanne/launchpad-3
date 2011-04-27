@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'AnonymousAuthorization',
     ]
 
 from zope.component import (
@@ -39,7 +38,10 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.security import IAuthorization
-from lp.app.security import AuthorizationBase
+from lp.app.security import(
+    AnonymousAuthorization,
+    AuthorizationBase,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -219,20 +221,6 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
-
-
-class AnonymousAuthorization(AuthorizationBase):
-    """Allow any authenticated and unauthenticated user access."""
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """Any unauthorized user can see this object."""
-        return True
-
-    def checkAuthenticated(self, user):
-        """Any authorized user can see this object."""
-        return True
-
 
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnonymousAuthorization',
     'AuthorizationBase',
     ]
 
@@ -81,3 +82,16 @@ class AuthorizationBase:
             return self.checkUnauthenticated()
         else:
             return self.checkAuthenticated(IPersonRoles(person))
+
+
+class AnonymousAuthorization(AuthorizationBase):
+    """Allow any authenticated and unauthenticated user access."""
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """Any unauthorized user can see this object."""
+        return True
+
+    def checkAuthenticated(self, user):
+        """Any authorized user can see this object."""
+        return True
