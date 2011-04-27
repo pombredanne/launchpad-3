@@ -41,5 +41,10 @@
               value="This Solved My Problem" />
     </form>
   </div>
+  
+  <div class="boardCommentFooter"
+    tal:condition="not: context/visible">
+    <a href="#">Mark as spam</a>
+  </div>
 </div>
 </tal:root>
