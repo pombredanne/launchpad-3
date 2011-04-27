@@ -66,6 +66,9 @@ class IQuestionEmailJob(IQuestionJob):
 
     recipients = Attribute('The recipient of the email.')
 
+    def buildBody(rationale):
+        """Return the formatted email body with the rationale included."""
+
 
 class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""

@@ -164,6 +164,26 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             question.target.addAnswerContact(contact)
         self.assertEqual(question.getRecipients(), job.recipients)
 
+    def test_buildBody_with_separator(self):
+        # A body with a separator is preserved.
+        question = self.factory.makeQuestion()
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        body = 'body\n-- '
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        formatted_body = job.buildBody('rationale')
+        self.assertEqual(
+            'body\n-- \nrationale', formatted_body)
+
+    def test_buildBody_without_separator(self):
+        # A separator will added to body if one is not present.
+        question = self.factory.makeQuestion()
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        body = 'body -- mdash'
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        formatted_body = job.buildBody('rationale')
+        self.assertEqual(
+            'body -- mdash\n-- \nrationale', formatted_body)
+
     def test_run(self):
         # The email is sent to all the recipents.
         pass

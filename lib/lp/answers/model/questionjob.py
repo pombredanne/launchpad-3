@@ -180,7 +180,7 @@ class QuestionEmailJob(BaseRunnableJob):
         return self.question.getRecipients()
 
     def buildBody(self, rationale):
-        """Wrap the body and ensure the rationale is is separated."""
+        """See `IQuestionEmailJob`."""
         wrapper = MailWrapper()
         body_parts = [self.body, wrapper.format(rationale)]
         if '\n-- ' not in self.body:
