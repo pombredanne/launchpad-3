@@ -106,3 +106,19 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, body, headers = self.makeUserBodyHeaders()
         job = QuestionEmailJob.create(question, user, body, headers)
         self.assertEqual(job.__class__.__name__, job.log_name)
+
+    def test_getOopsVars(self):
+        # The getOopsVars() method adds the question and user to the vars.
+        question = self.factory.makeQuestion()
+        user, body, headers = self.makeUserBodyHeaders()
+        job = QuestionEmailJob.create(question, user, body, headers)
+        oops_vars = job.getOopsVars()
+        self.assertTrue(('question', question.id) in oops_vars)
+        self.assertTrue(('user', user.name) in oops_vars)
+
+    def test_getErrorRecipients(self):
+        # The getErrorRecipients method matches the user.
+        question = self.factory.makeQuestion()
+        user, body, headers = self.makeUserBodyHeaders()
+        job = QuestionEmailJob.create(question, user, body, headers)
+        self.assertEqual(user, job.getErrorRecipients())

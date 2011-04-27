@@ -50,6 +50,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionJob(StormBase):
@@ -130,7 +131,7 @@ class QuestionEmailJob(BaseRunnableJob):
                 QuestionJob.job_id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
-    @property
+    @cachedproperty
     def user(self):
         """See `IQuestionEmailJob`."""
         return getUtility(IPersonSet).get(self.metadata['user'])
@@ -154,7 +155,11 @@ class QuestionEmailJob(BaseRunnableJob):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
-            ('question', self.context.question.id),
-            ('user', self.context.user),
+            ('question', self.question.id),
+            ('user', self.user.name),
             ])
         return vars
+
+    def getErrorRecipients(self):
+        """See `IRunnableJob`."""
+        return self.user
