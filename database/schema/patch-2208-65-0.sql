@@ -311,49 +311,49 @@ DELETE FROM StructuralSubscription WHERE
                       duped_values.subscriber));
 
 
-
 -- CREATE CONSTRAINTS ----------------------------------------------------
 
--- Now we add our constraints.  Note that, per SQL standard, Postgres does not
--- consider two NULLs to be equal.
+CREATE UNIQUE INDEX structuralsubscription__product__subscriber__key
+ON StructuralSubscription(product, subscriber) WHERE product IS NOT NULL;
 
-ALTER TABLE ONLY StructuralSubscription
-    ADD CONSTRAINT structuralsubscription__product__subscriber__unique
-        UNIQUE (product, subscriber);
+CREATE UNIQUE INDEX structuralsubscription__project__subscriber__key
+ON StructuralSubscription(project, subscriber) WHERE project IS NOT NULL;
 
-ALTER TABLE ONLY StructuralSubscription
-    ADD CONSTRAINT structuralsubscription__project__subscriber__unique
-        UNIQUE (project, subscriber);
-
--- We want to do this.
--- ALTER TABLE ONLY StructuralSubscription
---     ADD CONSTRAINT structuralsubscription__distribution__sourcepackagename__subscriber__unique
---        UNIQUE (distribution, sourcepackagename, subscriber);
--- However, we also want to do this, *if* the sourcepackagename is NULL.
--- ALTER TABLE ONLY StructuralSubscription
---     ADD CONSTRAINT structuralsubscription__distribution__subscriber__unique
---         UNIQUE (distribution, subscriber);
--- The second constraint will disallow sourcepackagename flexibility in the
--- first.  Therefore, we use a unique index instead, as seen below.
-
+-- This represents a subscription to a sourcepackage within a distribution.
 CREATE UNIQUE INDEX
-    structuralsubscription__distribution__sourcepackagename__subscriber__unique
-    ON structuralsubscription
-    USING btree (distribution,
-                 (COALESCE(sourcepackagename, (-1))),
-                 subscriber)
-    WHERE ((distribution IS NOT NULL) AND (subscriber IS NOT NULL));
+    structuralsubscription__distribution__sourcepackagename__subscriber__key
+ON StructuralSubscription(distribution, sourcepackagename, subscriber)
+WHERE distribution IS NOT NULL AND sourcepackagename IS NOT NULL;
 
-ALTER TABLE ONLY StructuralSubscription
-    ADD CONSTRAINT structuralsubscription__distroseries__subscriber__unique
-        UNIQUE (distroseries, subscriber);
+-- This represents a subscription to an entire distribution.  Even though this
+-- kind of distribution subsumes a sourcepackage distrubution (above), the
+-- configuration may be very different, so they are not necessarily redundant.
+CREATE UNIQUE INDEX structuralsubscription__distribution__subscriber__key
+ON StructuralSubscription(distribution, subscriber)
+WHERE distribution IS NOT NULL AND sourcepackagename IS NULL;
 
-ALTER TABLE ONLY StructuralSubscription
-    ADD CONSTRAINT structuralsubscription__milestone__subscriber__unique
-        UNIQUE (milestone, subscriber);
+CREATE UNIQUE INDEX structuralsubscription__distroseries__subscriber__key
+ON StructuralSubscription(distroseries, subscriber)
+WHERE distroseries IS NOT NULL;
 
-ALTER TABLE ONLY StructuralSubscription
-    ADD CONSTRAINT structuralsubscription__productseries__subscriber__unique
-        UNIQUE (productseries, subscriber);
+-- NB. Currently we can't subscribe to a (distroseries, sourcepackagename)
+-- so no need for the second partial distroseries index like the two
+-- distribution indexes.
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+CREATE UNIQUE INDEX structuralsubscription__milestone__subscriber__key
+ON StructuralSubscription(milestone, subscriber)
+WHERE milestone IS NOT NULL;
+
+CREATE UNIQUE INDEX structuralsubscription__productseries__subscriber__key
+ON StructuralSubscription(productseries, subscriber)
+WHERE productseries IS NOT NULL;
+
+-- Drop obsolete indexes - the above constraints make them redundant.
+DROP INDEX structuralsubscription__distribution__sourcepackagename__idx;
+DROP INDEX structuralsubscription__distroseries__idx;
+DROP INDEX structuralsubscription__milestone__idx;
+DROP INDEX structuralsubscription__product__idx;
+DROP INDEX structuralsubscription__productseries__idx;
+DROP INDEX structuralsubscription__project__idx;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 65, 0);
