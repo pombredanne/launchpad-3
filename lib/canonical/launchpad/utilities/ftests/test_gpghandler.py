@@ -186,10 +186,21 @@ class TestImportKeyRing(unittest.TestCase):
         # It should be initially scheduled for every 12 hours.
         self.assertEqual(12*3600, naked_gpgjandler._touch_home_call.interval)
 
-        first_time_modified = os.path.getmtime(naked_gpgjandler.home)
+        # Get a list of all the files in the home directory.
+        files_to_check = [os.path.join(naked_gpgjandler.home, f)
+            for f in os.listdir(naked_gpgjandler.home)]
+        files_to_check.append(naked_gpgjandler.home)
+        self.assertTrue(len(files_to_check)>1)
+        # Record the initial last modified times.
+        first_last_modified_times = dict((fname, os.path.getmtime(fname))
+            for fname in files_to_check)
         # Reschedule the job to run every 2 seconds
         naked_gpgjandler._scheduleTouchHomeDirectoryJob(2)
         # Wait and re-check last modified time
         time.sleep(3)
-        second_time_modified = os.path.getmtime(naked_gpgjandler.home)
-        self.assertTrue(first_time_modified+2<second_time_modified)
+        second_last_modified_times = dict((fname, os.path.getmtime(fname))
+            for fname in files_to_check)
+        for fname in files_to_check:
+            self.assertTrue(
+                first_last_modified_times[fname]+2 <
+                second_last_modified_times[fname])

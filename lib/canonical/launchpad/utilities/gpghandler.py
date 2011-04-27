@@ -115,9 +115,20 @@ class GPGHandler:
         # test to be written which sets the touch interval to a value short
         # enough for a viable test.
 
+        def touchFilesInHomeDirectory():
+            os.utime(self.home, None)
+            files_snapshot = [os.path.join(self.home, f)
+                for f in os.listdir(self.home)]
+            for file in files_snapshot:
+                try:
+                    os.utime(file, None)
+                except OSError:
+                    # The file has been deleted.
+                    pass
+
         if self._touch_home_call:
             self._touch_home_call.stop()
-        self._touch_home_call = task.LoopingCall(os.utime, *(self.home, None))
+        self._touch_home_call = task.LoopingCall(touchFilesInHomeDirectory)
         self._touch_home_call.start(touch_interval)
 
     def sanitizeFingerprint(self, fingerprint):
