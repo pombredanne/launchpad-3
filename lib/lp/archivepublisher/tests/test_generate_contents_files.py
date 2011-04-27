@@ -20,6 +20,7 @@ from lp.archivepublisher.scripts.generate_contents_files import (
     GenerateContentsFiles,
     move_file,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
@@ -215,6 +216,17 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         package = self.factory.makeSuiteSourcePackage(distroseries)
+        script = self.makeScript(distro)
+        os.makedirs(os.path.join(script.config.distsroot, package.suite))
+        self.assertEqual([package.suite], script.getPockets())
+
+    def test_getPocket_includes_release_pocket(self):
+        # getPockets also includes the release pocket, which is named
+        # after the distroseries without a suffix.
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        package = self.factory.makeSuiteSourcePackage(
+            distroseries, pocket=PackagePublishingPocket.RELEASE)
         script = self.makeScript(distro)
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertEqual([package.suite], script.getPockets())
