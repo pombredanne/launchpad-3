@@ -1894,8 +1894,14 @@ BugMessage""" % sqlvalues(self.id))
         # and assignees. As such, it's not possible to get them all with
         # one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
-
-        return person in also_notified_subscribers
+        if person in also_notified_subscribers:
+            return True
+        # Otherwise check to see if the person is a member of any of the
+        # subscribed teams.
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
+        return False
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""

@@ -120,7 +120,7 @@
     </tal:package-diffs>
   </dl>
 
-  <h2>Comments:</h2>
+  <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
   <tal:show_options condition="view/show_edit_options"
                     define="src_name context/source_package_name/name">
