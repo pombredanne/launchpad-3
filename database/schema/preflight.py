@@ -29,7 +29,6 @@ import replication.helpers
 SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios'])
 
 # How lagged the cluster can be before failing the preflight check.
-# In seconds.
 MAX_LAG = timedelta(seconds=45)
 
 
