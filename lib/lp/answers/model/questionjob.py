@@ -188,7 +188,10 @@ class QuestionEmailJob(BaseRunnableJob):
         return '\n'.join(body_parts)
 
     def run(self):
-        """Send emails."""
+        """See `IRunnableJob`.
+
+        Send emails to all the question recipients.
+        """
         log.debug(
             "%s will send email for question %s.",
             self.log_name, self.question.id)

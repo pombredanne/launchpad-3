@@ -158,7 +158,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.assertEqual(user, job.getErrorRecipients())
 
     def test_recipients(self):
-        # The recipients property macthes the question recipients.
+        # The recipients property matches the question recipients.
         question = self.factory.makeQuestion()
         contact = self.factory.makePerson()
         with person_logged_in(contact):
@@ -190,7 +190,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             'body -- mdash\n-- \nrationale', formatted_body)
 
     def test_buildBody_wrapping(self):
-        # The ratonale is wrapped and added to the body.
+        # The rationale is wrapped and added to the body.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         body = 'body\n-- '
@@ -206,7 +206,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             body + '\n' + expected_rationale, formatted_body)
 
     def test_run(self):
-        # The email is sent to all the recipents.
+        # The email is sent to all the recipients.
         question = self.factory.makeQuestion()
         contact = self.factory.makePerson()
         with person_logged_in(contact):
