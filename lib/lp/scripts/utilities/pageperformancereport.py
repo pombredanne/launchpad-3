@@ -447,8 +447,8 @@ class RequestTimes:
         # distribution become very different than what it currently is.
         self.top_urls_cache_size = self.top_urls * 50
 
-        # Histogram has a bin per second up to 1.5 our timeout.
-        self.histogram_width = int(options.timeout*1.5)
+        # Histogram has a bin per second up to our timeout (and an extra bin).
+        self.histogram_width = int(options.timeout) + 1
         self.category_times = [
             (category, OnlineStats(self.histogram_width))
             for category in categories]
@@ -567,14 +567,16 @@ def main():
         help="Output reports in DIR directory")
     parser.add_option(
         "--timeout", dest="timeout",
-        # Default to 12: the staging timeout.
-        default=12, type="int",
-        help="The configured timeout value : determines high risk page ids.")
+        # Default to 9: our production timeout.
+        default=9, type="int", metavar="SECONDS",
+        help="The configured timeout value: used to determine high risk " +
+        "page ids. That would be pages which 99% under render time is "
+        "greater than timeoout - 2s. Default is %defaults.")
     parser.add_option(
         "--merge", dest="merge",
         default=False, action='store_true',
-        help="Files are interpreted as pickled stats and are aggregated for" +
-        "the report.")
+        help="Files are interpreted as pickled stats and are aggregated " +
+        "for the report.")
 
     options, args = parser.parse_args()
 
