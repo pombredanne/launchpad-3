@@ -413,10 +413,16 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         elif not IProduct.providedBy(context):
             raise AssertionError('Unknown context: %r' % context)
 
-        if IHasBugSupervisor.providedBy(context):
-            if self.user.inTeam(context.bug_supervisor):
-                field_names.extend(
-                    ['assignee', 'importance', 'milestone', 'status'])
+        # If the context is a project group we want to render the optional
+        # fields since they will initially be hidden and later exposed if the
+        # selected project supports them.
+        include_extra_fields = IProjectGroup.providedBy(context)
+        if not include_extra_fields and IHasBugSupervisor.providedBy(context):
+            include_extra_fields = self.user.inTeam(context.bug_supervisor)
+
+        if include_extra_fields:
+            field_names.extend(
+                ['assignee', 'importance', 'milestone', 'status'])
 
         return field_names
 
