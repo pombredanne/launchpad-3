@@ -39,15 +39,13 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization,
-    ILaunchpadRoot,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.security import IAuthorization
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,

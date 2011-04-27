@@ -30,7 +30,6 @@ from canonical.launchpad.webapp.authorization import (
     )
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
-    IAuthorization,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
     IStoreSelector,
@@ -42,6 +41,7 @@ from canonical.launchpad.webapp.servers import (
     )
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.security import IAuthorization
 from lp.testing import (
     ANONYMOUS,
     login,
