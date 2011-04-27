@@ -4222,10 +4222,9 @@ class PersonEditView(BasePersonEditView):
             new_name = data['name']
             removeSecurityProxy(self.context).name = new_name
             del data['name']
-        was_changed = self.updateContextFromData(data)
-        if was_changed:
-            self.request.response.addInfoNotification(
-                'The changes to your personal details have been saved.')
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):
