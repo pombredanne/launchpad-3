@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for DistributionUpstreamBugReport."""
@@ -85,7 +85,7 @@ class TestDistributionUpstreamBugReport(TestCaseWithFactory):
                 "Sort order should be reversed for a sort_by value of "
                 "%s" % reversed_key)
 
-    def test_has_upstream_report__no_series_no_bugracking(self):
+    def test_has_upstream_report__no_series_no_bug_tracking(self):
         # The property DistributionUpstreamBugReport.has_upstream_report
         # is False if a distribution does not use Launchpad for bug
         # tracking and if no current distroseries exists.
