@@ -13,6 +13,7 @@ __all__ = [
     'QuestionAction',
     'QuestionParticipation',
     'QuestionPriority',
+    'QUESTION_STATUS_DEFAULT_SEARCH',
     'QuestionSort',
     'QuestionStatus',
     ]
@@ -205,7 +206,7 @@ class QuestionSort(EnumeratedType):
     RECENT_OWNER_ACTIVITY = Item("""
     recently updated first
 
-    Sort questions that recently received new information from the owner first.
+    Sort questions that received new information from the owner first.
     """)
 
 
@@ -262,3 +263,8 @@ class QuestionStatus(DBEnumeratedType):
         question, spam or anything that should not appear in the
         Answer Tracker.
         """)
+
+
+QUESTION_STATUS_DEFAULT_SEARCH = (
+    QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
+    QuestionStatus.SOLVED)

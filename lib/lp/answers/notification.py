@@ -16,7 +16,7 @@ from canonical.launchpad.mail import (
     simple_sendmail,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.answers.interfaces.questionenums import QuestionAction
+from lp.answers.enums import QuestionAction
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet

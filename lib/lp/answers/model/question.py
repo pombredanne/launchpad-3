@@ -72,16 +72,14 @@ from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
     IQuestion,
     )
-from lp.answers.interfaces.questioncollection import (
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.enums import (
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,
     QuestionSort,
     QuestionStatus,
+    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
