@@ -51,8 +51,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         # a question by id via redirect without url hacking.
         response = self.webservice.get(
             '/questions/%s' % self.question.id, 'application/xhtml+xml')
-        self.assertEqual(response.status, 301)
-
+        self.assertEqual(response.status, 200)
 
     def test_GET_xhtml_representation(self):
         # A question's xhtml representation is available on the api.
@@ -107,14 +106,6 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         """Convenience function to get the api question reference."""
         # End any open lplib instance.
         logout()
-        if user is not None:
-            lp = launchpadlib_for("test", user)
-        else:
-            lp = launchpadlib_for("test")
-
-        question_entry = lp.load(
-            '/%s/+question/%d/' % (
-                self.question.target.name, self.question.id))
         lp = launchpadlib_for("test", user)
         return ws_object(lp, self.question)
 

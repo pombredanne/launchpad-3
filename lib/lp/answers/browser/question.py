@@ -227,6 +227,7 @@ class QuestionSetContextMenu(ContextMenu):
 
 class QuestionSetNavigation(Navigation):
     """Navigation for the IQuestionSet."""
+
     usedfor = IQuestionSet
 
     def traverse(self, name):
@@ -237,7 +238,12 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return redirection(canonical_url(question, self.request), status=301)
+        # We need to check if this is an API request, as we don't want to
+        # send a redirect in that instance (it breaks launchpadlib).
+        if hasattr(self.request, 'version'):
+            return question
+        else:
+            return redirection(canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
