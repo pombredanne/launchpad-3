@@ -5,7 +5,7 @@ Answer tracker workflow
 The state of a question is tracked through its status, which model a
 question's lifecycle.  These are defined in the QuestionStatus enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> for status in QuestionStatus.items:
     ...     print status.name
     OPEN
@@ -18,7 +18,7 @@ question's lifecycle.  These are defined in the QuestionStatus enumeration.
 Status change occurs as a consequence of a user's action.  The possible
 actions are defined in the QuestionAction enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionAction
+    >>> from lp.answers.enums import QuestionAction
     >>> for status in QuestionAction.items:
     ...     print status.name
     REQUESTINFO
