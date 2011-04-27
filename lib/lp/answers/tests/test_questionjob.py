@@ -46,6 +46,8 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_create(self):
+        # The create class method converts the extra job arguments
+        # to metadata.
         question = self.factory.makeQuestion()
         user = self.factory.makePerson()
         body = 'email body'
@@ -60,3 +62,16 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.assertEqual(
             headers['X-Launchpad-Question'],
             job.metadata['headers']['X-Launchpad-Question'])
+
+    def test_iterReady(self):
+        # Jobs in the ready state are returned by the iterator.
+        question = self.factory.makeQuestion()
+        user = self.factory.makePerson()
+        headers = {'X-Launchpad-Question': 'question metadata'}
+        job_1 = QuestionEmailJob.create(question, user, 'one', headers)
+        job_2 = QuestionEmailJob.create(question, user, 'two', headers)
+        job_3 = QuestionEmailJob.create(question, user, 'three', headers)
+        job_1.start()
+        job_1.complete()
+        job_ids = sorted(job.id for job in QuestionEmailJob.iterReady())
+        self.assertEqual(sorted([job_2.id, job_3.id]), job_ids)

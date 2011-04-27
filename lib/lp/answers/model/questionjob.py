@@ -118,3 +118,13 @@ class QuestionEmailJob(BaseRunnableJob):
         job = QuestionJob(
             question=question, job_type=cls.class_job_type, metadata=metadata)
         return cls(job)
+
+    @classmethod
+    def iterReady(cls):
+        """Iterate through all ready IQuestionEmailJobs."""
+        store = IMasterStore(QuestionJob)
+        jobs = store.find(
+            QuestionJob,
+            And(QuestionJob.job_type == cls.class_job_type,
+                QuestionJob.job_id.is_in(Job.ready_jobs)))
+        return (cls(job) for job in jobs)
