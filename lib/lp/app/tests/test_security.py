@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.security import AuthorizationBase
 from lp.testing import TestCaseWithFactory
