@@ -26,19 +26,10 @@ from zope.interface import (
 from lazr.delegates import delegates
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.scripts import log
-from canonical.launchpad.webapp import canonical_url
 from lp.answers.enums import QuestionJobType
 from lp.answers.interfaces.questionjob import (
     IQuestionJob,
@@ -50,7 +41,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.sendmail import format_address_for_person
 from lp.services.propertycache import cachedproperty
 
 
@@ -170,3 +160,13 @@ class QuestionEmailJob(BaseRunnableJob):
     def getErrorRecipients(self):
         """See `IRunnableJob`."""
         return self.user
+
+    def run(self):
+        """Send emails."""
+        log.debug(
+            "%s will send email for question %s.",
+            self.log_name, self.question.id)
+        # Extract and adapt QuestionNotification.send().
+        log.debug(
+            "%s has sent email for question %s.",
+            self.log_name, self.question.id)

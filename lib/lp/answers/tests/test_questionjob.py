@@ -135,3 +135,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(question, user, subject, body, headers)
         self.assertEqual(user, job.getErrorRecipients())
+
+    def test_run(self):
+        # The email is sent to all the recipents.
+        pass
