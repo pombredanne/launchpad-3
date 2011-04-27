@@ -56,10 +56,10 @@ class IQuestionEmailJob(IQuestionJob):
     subject = Attribute('The subject of the email.')
 
     body = Attribute(
-        'The body of the email that is common to all recpients.')
+        'The body of the email that is common to all recipients.')
 
     headers = Attribute(
-        'The headers of the email that are common to all recpients.')
+        'The headers of the email that are common to all recipients.')
 
 
 class IQuestionEmailJobSource(IJobSource):
@@ -71,7 +71,7 @@ class IQuestionEmailJobSource(IJobSource):
         :param question: An `IQuestion`.
         :param user: An `IPerson`.
         :param subject: A'The subject of the email.
-        :param body: The text of the email that is common to all recpients.
-        :parma headers: A dict of headers for the email that are common to
-            all recpients.
+        :param body: The text of the email that is common to all recipients.
+        :param headers: A dict of headers for the email that are common to
+            all recipients.
         """
