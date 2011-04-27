@@ -1123,17 +1123,40 @@ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION bug_summary_inc(INT, INT, INT, INT, INT, INT, TEXT, INT, INT) IS 'UPSERT into bugsummary incrementing one row';
 
-CREATE OR REPLACE FUNCTION bug_summary_dec(product INT, productseries INT, distribution INT, distroseries INT, sourcepackagename INT, viewed_by INT, tag TEXT, status INT, milestone INT) RETURNS VOID AS
+CREATE OR REPLACE FUNCTION bug_summary_dec(
+    product INT, productseries INT, distribution INT, distroseries INT,
+    sourcepackagename INT, viewed_by INT, tag TEXT,
+    status INT, milestone INT) RETURNS VOID AS
 $$
 BEGIN
     -- We own the row reference, so in the absence of bugs this cannot
     -- fail - just decrement the row.
-    UPDATE bugsummary SET count = count - 1 WHERE --deal with nulls!
-    ;
+    UPDATE BugSummary SET count = count - 1
+    WHERE
+        BugSummary.product IS NOT DISTINCT FROM product
+        AND BugSummary.productseries IS NOT DISTINCT FROM productseries
+        AND BugSummary.distribution IS NOT DISTINCT FROM distribution
+        AND BugSummary.distroseries IS NOT DISTINCT FROM distroseries
+        AND BugSummary.sourcepackagename
+            IS NOT DISTINCT FROM sourcepackagename
+        AND BugSummary.viewed_by IS NOT DISTINCT FROM viewed_by
+        AND BugSummary.tag IS NOT DISTINCT FROM tag
+        AND BugSummary.status IS NOT DISTINCT FROM status
+        AND BugSummary.milestone IS NOT DISTINCT FROM milestone;
     -- gc the row (perhaps should be garbo but easy enough to add here:
-    DELETE FROM bugsummary WHERE count=0 AND 
-       --(all params, deal with nulls)
-    ;
+    DELETE FROM bugsummary
+    WHERE
+        count=0
+        AND BugSummary.product IS NOT DISTINCT FROM product
+        AND BugSummary.productseries IS NOT DISTINCT FROM productseries
+        AND BugSummary.distribution IS NOT DISTINCT FROM distribution
+        AND BugSummary.distroseries IS NOT DISTINCT FROM distroseries
+        AND BugSummary.sourcepackagename
+            IS NOT DISTINCT FROM sourcepackagename
+        AND BugSummary.viewed_by IS NOT DISTINCT FROM viewed_by
+        AND BugSummary.tag IS NOT DISTINCT FROM tag
+        AND BugSummary.status IS NOT DISTINCT FROM status
+        AND BugSummary.milestone IS NOT DISTINCT FROM milestone;
     -- If its not found then someone else also dec'd and won concurrently.
 END;
 $$
