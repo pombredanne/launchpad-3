@@ -37,6 +37,7 @@ from canonical.launchpad.mail import (
     simple_sendmail,
     )
 from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.scripts import log
 from canonical.launchpad.webapp import canonical_url
 from lp.answers.enums import QuestionJobType
 from lp.answers.interfaces.questionjob import (
@@ -110,10 +111,11 @@ class QuestionEmailJob(BaseRunnableJob):
     class_job_type = QuestionJobType.EMAIL
 
     @classmethod
-    def create(cls, question, user, body, headers):
+    def create(cls, question, user, subject, body, headers):
         """See `IQuestionJob`."""
         metadata = {
             'user': user.id,
+            'subject': subject,
             'body': body,
             'headers': headers,
             }
@@ -135,6 +137,11 @@ class QuestionEmailJob(BaseRunnableJob):
     def user(self):
         """See `IQuestionEmailJob`."""
         return getUtility(IPersonSet).get(self.metadata['user'])
+
+    @property
+    def subject(self):
+        """See `IQuestionEmailJob`."""
+        return self.metadata['subject']
 
     @property
     def body(self):

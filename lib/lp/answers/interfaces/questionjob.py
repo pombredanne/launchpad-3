@@ -54,6 +54,9 @@ class IQuestionEmailJob(IQuestionJob):
     user = Attribute('The `IPerson` who triggered the email.')
 
     body = Attribute(
+        'The subject of the email.')
+
+    body = Attribute(
         'The body of the email that is common to all recpients.')
 
     headers = Attribute(
@@ -63,11 +66,12 @@ class IQuestionEmailJob(IQuestionJob):
 class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""
 
-    def create(question, user, body, headers):
+    def create(question, user, subject, body, headers):
         """Create a new IQuestionJob.
 
         :param question: An `IQuestion`.
         :param user: An `IPerson`.
+        :param subject: A'The subject of the email.
         :param body: The text of the email that is common to all recpients.
         :parma headers: A dict of headers for the email that are common to
             all recpients.
