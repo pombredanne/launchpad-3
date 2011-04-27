@@ -1076,6 +1076,54 @@ $$;
 COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
 
 
+CREATE OR REPLACE FUNCTION bug_summary_inc(product INT, productseries INT, distribution INT, distroseries INT, sourcepackagename INT, viewed_by INT, tag TEXT, status INT, milestone INT) RETURNS VOID AS
+$$
+BEGIN
+    -- Shameless adaption from postgresql manual
+    LOOP
+        -- first try to update the row
+        UPDATE bugsummary SET count = count + 1 WHERE --deal with nulls!
+        IF found THEN
+            RETURN;
+        END IF;
+        -- not there, so try to insert the key
+        -- if someone else inserts the same key concurrently,
+        -- we could get a unique-key failure
+        BEGIN
+            INSERT INTO bugsummary(count, product, productseries, distribution,
+                distroseries, sourcepackagename, viewed_by, tag, status,
+                milestone) VALUES (1, product, productseries, distribution,
+                distroseries, sourcepackagename, viewed_by, tag, status, milestone);
+            RETURN;
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing, and loop to try the UPDATE again
+        END;
+    END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION bug_summary_inc(INT, INT, INT, INT, INT, INT, TEXT, INT, INT) IS 'UPSERT into bugsummary incrementing one row';
+
+CREATE OR REPLACE FUNCTION bug_summary_dec(product INT, productseries INT, distribution INT, distroseries INT, sourcepackagename INT, viewed_by INT, tag TEXT, status INT, milestone INT) RETURNS VOID AS
+$$
+BEGIN
+    -- We own the row reference, so in the absence of bugs this cannot
+    -- fail - just decrement the row.
+    UPDATE bugsummary SET count = count - 1 WHERE --deal with nulls!
+    ;
+    -- gc the row (perhaps should be garbo but easy enough to add here:
+    DELETE FROM bugsummary WHERE count=0 AND 
+       --(all params, deal with nulls)
+    ;
+    -- If its not found then someone else also dec'd and won concurrently.
+END;
+$$
+LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION bug_summary_inc(INT, INT, INT, INT, INT, INT, TEXT, INT, INT) IS 'UPSERT into bugsummary incrementing one row';
+
+
 CREATE OR REPLACE FUNCTION summarise_bug(BUG_ROW bug) RETURNS VOID
 LANGUAGE plpgsql VOLATILE AS
 $$
