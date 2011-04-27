@@ -48,11 +48,15 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     def test_create(self):
         question = self.factory.makeQuestion()
         user = self.factory.makePerson()
-        email_body = 'email body'
-        email_headers = {'X-Launchpad-Question': 'question metadata'}
-        job = QuestionEmailJob.create(
-            question, user, email_body, email_headers)
+        body = 'email body'
+        headers = {'X-Launchpad-Question': 'question metadata'}
+        job = QuestionEmailJob.create(question, user, body, headers)
         self.assertEqual(QuestionJobType.EMAIL, job.job_type)
         self.assertEqual(question, job.question)
         self.assertEqual(
             ['body', 'headers', 'user'], sorted(job.metadata.keys()))
+        self.assertEqual(user.id, job.metadata['user'])
+        self.assertEqual(body, job.metadata['body'])
+        self.assertEqual(
+            headers['X-Launchpad-Question'],
+            job.metadata['headers']['X-Launchpad-Question'])
