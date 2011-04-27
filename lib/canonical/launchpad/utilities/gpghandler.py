@@ -24,6 +24,7 @@ import urllib2
 
 import gpgme
 from gpgme import editutil as gpgme_editutil
+from twisted.internet import task
 from zope.interface import implements
 
 from canonical.config import config
@@ -72,9 +73,10 @@ class GPGHandler:
         """Create a new directory containing the required configuration.
 
         This method is called inside the class constructor and genereates
-        a new directory (name ramdomly generated with the 'gpg-' prefix)
+        a new directory (name randomly generated with the 'gpg-' prefix)
         containing the proper file configuration and options.
 
+        Also touches the config directory every 5 hours.
         Also installs an atexit handler to remove the directory on normal
         process termination.
         """
@@ -89,10 +91,19 @@ class GPGHandler:
                    'keyserver-options auto-key-retrieve\n'
                    'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
+
+        # create a job to touch the home directory every 5 hours so that it
+        # does not get cleaned up by any reaper scripts which look at
+        # time last modified.
+        self.touch_home_call = task.LoopingCall(os.utime, *(self.home, None))
+        # 1 hour = 3600 seconds
+        self.touch_home_call.start(5*3600)
+
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
         def removeHome(home):
-            """Remove GNUPGHOME directory."""
+            """Remove GNUPGHOME directory and stop the twisted job."""
+            self.touch_home_call.stop()
             if os.path.exists(home):
                 shutil.rmtree(home)
 
