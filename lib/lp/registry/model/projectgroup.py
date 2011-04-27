@@ -43,10 +43,10 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.model.faq import (
     FAQ,
