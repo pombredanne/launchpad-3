@@ -14,10 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
     ICreateDistroSeriesIndexesJobSource,
@@ -25,7 +22,6 @@ from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.model.createdistroseriesindexesjob import (
     FEATURE_FLAG_ENABLE_MODULE,
-    get_addresses_for,
     CreateDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
@@ -43,38 +39,6 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import run_mail_jobs
-
-
-class TestHelpers(TestCaseWithFactory):
-    """Test module's helpers."""
-
-    layer = ZopelessDatabaseLayer
-
-    def test_get_addresses_for_person_returns_person_address(self):
-        # For a single person, get_addresses_for returns that person's
-        # email address.
-        person = self.factory.makePerson()
-        self.assertEqual(
-            [format_address_for_person(person)], get_addresses_for(person))
-
-    def test_get_addresses_for_team_returns_member_addresses(self):
-        # For a team with members that have preferred email addresses,
-        # get_addresses_for returns the list of email addresses of the
-        # team's members.
-        member = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=self.factory.makePerson(), members=[member])
-        self.assertIn(
-            format_address_for_person(member), get_addresses_for(team))
-
-    def test_get_addresses_for_team_returns_owner_address(self):
-        # For a team, get_addresses_for includes the owner's address.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=owner, members=[])
-        addresses = get_addresses_for(team)
-        self.assertEqual(1, len(addresses))
-        self.assertIn(
-            removeSecurityProxy(owner.preferredemail).email, addresses[0])
 
 
 class TestCreateDistroSeriesIndexesJobSource(TestCaseWithFactory):

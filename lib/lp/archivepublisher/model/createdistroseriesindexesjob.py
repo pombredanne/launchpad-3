@@ -25,6 +25,7 @@ from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.model.person import get_recipients
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.mail.sendmail import (
@@ -45,16 +46,6 @@ from lp.soyuz.scripts import publishdistro
 FEATURE_FLAG_ENABLE_MODULE = u"archivepublisher.auto_create_indexes.enabled"
 
 
-def get_addresses_for(person):
-    """Get list of contact email address(es) for `person`."""
-    if person.is_team:
-        recipients = person.getMembersWithPreferredEmails()
-    else:
-        recipients = [person]
-
-    return [format_address_for_person(recipient) for recipient in recipients]
-
-
 class CreateDistroSeriesIndexesJob(DistributionJobDerived):
     """Job to create a distroseries's archive indexes.
 
@@ -63,7 +54,7 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
     implements(IDistributionJob, IRunnableJob)
     classProvides(ICreateDistroSeriesIndexesJobSource)
 
-    class_job_type = DistributionJobType.CREATEDISTROSERIESINDEXES
+    class_job_type = DistributionJobType.CREATE_DISTROSERIES_INDEXES
 
     # Injection point for tests: optional publish_distro logger.
     logger = None
@@ -100,7 +91,7 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
 
     def getOperationDescription(self):
         """See `IRunnableJob`."""
-        return "initializing archive indexes for %s" % self.distroseries.title
+        return "initializing archive indexes for %s" % self.distroseries
 
     def getSuites(self):
         """List the suites for this `DistroSeries`."""
@@ -110,7 +101,8 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
     def runPublishDistro(self, extra_args=None):
         """Invoke the publish-distro script to create indexes.
 
-        Publishes only the distroseries in question, in careful mode.
+        Publishes only the distroseries in question, in careful indices
+        mode.
         """
         arguments = [
             "-A",
@@ -129,12 +121,14 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
     def getMailRecipients(self):
         """List email addresses to notify of success or failure."""
         recipient = self.distroseries.driver or self.distribution.owner
-        return get_addresses_for(recipient)
+        return [
+            format_address_for_person(recipient)
+            for person in get_recipients(recipient)]
 
     def notifySuccess(self):
         """Notify the distribution's owners of success."""
-        subject = "Launchpad has created archive indexes for %s." % (
-            self.distroseries.name)
+        subject = "Launchpad has created archive indexes for %s %s" % (
+            self.distribution.displayname, self.distroseries.displayname)
         message = dedent("""\
             You are receiving this email because you are registered in
             Launchpad as a release manager for %s.

@@ -20,7 +20,7 @@ class ICreateDistroSeriesIndexesJobSource(IJobSource):
         If the `Distribution` that `distroseries` belongs to has no
         publisher configuration, no job will be returned.
 
-        :param distroseries: A newly created `DistroSeries` that needs
-            its archive indexes created.
+        :param distroseries: A `DistroSeries` that needs its archive
+            indexes created.
         :return: An `ICreateDistroSeriesIndexesJob`, or None.
         """

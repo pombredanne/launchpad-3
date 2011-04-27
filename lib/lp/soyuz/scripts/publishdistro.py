@@ -47,7 +47,7 @@ def add_options(parser):
 
     parser.add_option("-A", "--careful-apt", action="store_true",
                       dest="careful_apt", metavar="", default=False,
-                      help="Make the apt-ftparchive run careful.")
+                      help="Make index generation (e.g. apt-ftparchive) careful.")
 
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO", default="ubuntu",
