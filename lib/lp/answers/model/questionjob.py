@@ -130,5 +130,9 @@ class QuestionEmailJob(BaseRunnableJob):
         return (cls(job) for job in jobs)
 
     @property
+    def user(self):
+        return getUtility(IPersonSet).get(self.metadata['user'])
+
+    @property
     def body(self):
         return self.metadata['body']

@@ -79,6 +79,13 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job_ids = sorted(job.id for job in QuestionEmailJob.iterReady())
         self.assertEqual(sorted([job_2.id, job_3.id]), job_ids)
 
+    def test_user(self):
+        # The user property matches the user passed to create().
+        question = self.factory.makeQuestion()
+        user, body, headers = self.makeUserBodyHeaders()
+        job = QuestionEmailJob.create(question, user, body, headers)
+        self.assertEqual(user, job.user)
+
     def test_body(self):
         # The body property matches the body passed to create().
         question = self.factory.makeQuestion()
