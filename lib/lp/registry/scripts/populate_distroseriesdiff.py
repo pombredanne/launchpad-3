@@ -227,8 +227,8 @@ def find_derived_series():
 class DSDUpdater(TunableLoop):
     """Call `DistroSeriesDifference.update()` where appropriate.
 
-    The `DistroSeriesDifference` records we create don't have any
-    special fields set, such as base version or their diffs.
+    The `DistroSeriesDifference` records we create don't have their
+    details filled out, such as base version or their diffs.
 
     Since this is likely to be much, much slower than the rest of the
     work of creating and initializing `DistroSeriesDifference`s, it is
@@ -369,8 +369,8 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
     def update(self, distroseries):
         """Call `DistroSeriesDifference.update()` where appropriate.
 
-        The `DistroSeriesDifference` records we create don't have any
-        special fields set, such as base version or their diffs.
+        The `DistroSeriesDifference` records we create don't have their
+        details filled out, such as base version or their diffs.
 
         Only instances where the source package is published in both the
         parent series and the derived series need to have this done.
