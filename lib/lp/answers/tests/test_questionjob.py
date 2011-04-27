@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.launchpad.mail import format_address
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionJobType
@@ -12,7 +14,11 @@ from lp.answers.model.questionjob import (
     QuestionJob,
     QuestionEmailJob,
     )
-from lp.testing import TestCaseWithFactory
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class QuestionJobTestCase(TestCaseWithFactory):
@@ -146,6 +152,18 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(question, user, subject, body, headers)
         self.assertEqual(user, job.getErrorRecipients())
+
+    def test_recipients(self):
+        # The recipients property mathes the question recipients.
+        question = self.factory.makeQuestion()
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        contact = self.factory.makePerson()
+        with person_logged_in(contact):
+            lang_set = getUtility(ILanguageSet)
+            contact.addLanguage(lang_set['en'])
+            question.target.addAnswerContact(contact)
+        self.assertEqual(question.getRecipients(), job.recipients)
 
     def test_run(self):
         # The email is sent to all the recipents.

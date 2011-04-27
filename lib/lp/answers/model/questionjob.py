@@ -175,8 +175,8 @@ class QuestionEmailJob(BaseRunnableJob):
         return format_address(self.user.displayname, address)
 
     @property
-    def getRecipients(self):
-        """The recipient of the notification."""
+    def recipients(self):
+        """See `IQuestionEmailJob`."""
         return self.question.getRecipients()
 
     def buildBody(self, rationale):
