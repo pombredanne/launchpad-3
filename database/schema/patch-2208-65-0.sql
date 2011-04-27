@@ -266,8 +266,9 @@ DELETE FROM StructuralSubscription WHERE
                 WHERE
                     StructuralSubscription.distribution = Subscription.distribution
                     AND StructuralSubscription.subscriber = Subscription.subscriber
--- This is the new line.
+-- These are the two new lines.
                     AND StructuralSubscription.sourcepackagename IS NULL
+                    AND Subscription.sourcepackagename IS NULL
                 GROUP BY StructuralSubscription.distribution,
                          StructuralSubscription.subscriber
                 HAVING Count(*)>1))
