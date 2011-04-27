@@ -64,6 +64,9 @@ class GPGHandler:
 
     implements(IGPGHandler)
 
+    # The twisted job to touch the home directory.
+    _touch_home_call = None
+
     def __init__(self):
         """Initialize environment variable."""
         self._setNewHome()
@@ -92,22 +95,30 @@ class GPGHandler:
                    'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
 
-        # create a job to touch the home directory every 12 hours so that it
-        # does not get cleaned up by any reaper scripts which look at
-        # time last modified.
-        self.touch_home_call = task.LoopingCall(os.utime, *(self.home, None))
         # 1 hour = 3600 seconds
-        self.touch_home_call.start(12*3600)
+        self._scheduleTouchHomeDirectoryJob(12*3600)
 
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
         def removeHome(home):
             """Remove GNUPGHOME directory and stop the twisted job."""
-            self.touch_home_call.stop()
+            self._touch_home_call.stop()
             if os.path.exists(home):
                 shutil.rmtree(home)
 
         atexit.register(removeHome, self.home)
+
+    def _scheduleTouchHomeDirectoryJob(self, touch_interval):
+        # Create a job to touch the home directory every 12 hours so that it
+        # does not get cleaned up by any reaper scripts which look at
+        # time last modified. This is done outside of _setHome to allow a
+        # test to be written which sets the touch interval to a value short
+        # enough for a viable test.
+
+        if self._touch_home_call:
+            self._touch_home_call.stop()
+        self._touch_home_call = task.LoopingCall(os.utime, *(self.home, None))
+        self._touch_home_call.start(touch_interval)
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""

@@ -4,7 +4,10 @@
 import unittest
 
 import gpgme
+import os
+import time
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -176,11 +179,17 @@ class TestImportKeyRing(unittest.TestCase):
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def testHomeDirectoryJob(self):
+        """Does the job to touch the home work."""
+        naked_gpgjandler = removeSecurityProxy(self.gpg_handler)
+        self.assertTrue(naked_gpgjandler._touch_home_call.running)
+        # It should be initially scheduled for every 12 hours.
+        self.assertEqual(12*3600, naked_gpgjandler._touch_home_call.interval)
 
-
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
-
-
+        first_time_modified = os.path.getmtime(naked_gpgjandler.home)
+        # Reschedule the job to run every 2 seconds
+        naked_gpgjandler._scheduleTouchHomeDirectoryJob(2)
+        # Wait and re-check last modified time
+        time.sleep(3)
+        second_time_modified = os.path.getmtime(naked_gpgjandler.home)
+        self.assertTrue(first_time_modified+2<second_time_modified)
