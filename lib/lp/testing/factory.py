@@ -1992,8 +1992,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
-        return target.newQuestion(
-            owner=target.owner, title=title, description='description')
+        with person_logged_in(target.owner):
+            question = target.newQuestion(
+                owner=target.owner, title=title, description='description')
+        return question
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
