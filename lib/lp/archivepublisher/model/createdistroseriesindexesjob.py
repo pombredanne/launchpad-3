@@ -141,10 +141,8 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
             the Launchpad development team if you have any problems.
             """ % (self.distribution.displayname, self.distroseries.title))
         from_addr = config.canonical.noreply_from_address
-        controller = MailController(
-            from_addr, self.getMailRecipients(), subject, message)
-        if controller is not None:
-            controller.send()
+        MailController(
+            from_addr, self.getMailRecipients(), subject, message).send()
 
     def getErrorRecipients(self):
         """See `BaseRunnableJob`."""

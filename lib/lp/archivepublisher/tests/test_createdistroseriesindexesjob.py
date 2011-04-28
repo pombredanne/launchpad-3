@@ -117,8 +117,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         """Create an `CreateDistroSeriesIndexesJob`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
-        job = removeSecurityProxy(self.getJobSource().makeFor(distroseries))
-        return job
+        return self.getJobSource().makeFor(distroseries)
 
     def getDistsRoot(self, distribution):
         """Get distsroot directory for `distribution`."""
@@ -163,22 +162,25 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         # getSuites lists all suites in the distroseries.
         job = self.makeJob()
         self.assertContentEqual(
-            self.getSuites(job.distroseries), job.getSuites())
+            self.getSuites(job.distroseries),
+            removeSecurityProxy(job).getSuites())
 
     def test_getSuites_ignores_suites_for_other_distroseries(self):
         # getSuites does not list suites in the distribution that do not
         # belong to the right distroseries.
         job = self.makeJob()
         self.assertContentEqual(
-            self.getSuites(job.distroseries), job.getSuites())
+            self.getSuites(job.distroseries),
+            removeSecurityProxy(job).getSuites())
 
     def test_job_runs_publish_distro_for_main(self):
         # The job always runs publish_distro for the distribution's main
         # archive.
         job = self.makeJob()
-        job.runPublishDistro = FakeMethod()
+        naked_job = removeSecurityProxy(job)
+        naked_job.runPublishDistro = FakeMethod()
         job.run()
-        args, kwargs = job.runPublishDistro.calls[-1]
+        args, kwargs = naked_job.runPublishDistro.calls[-1]
         self.assertEqual((), args)
 
     def test_job_runs_publish_distro_for_partner_if_present(self):
@@ -190,35 +192,39 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
             distribution=distroseries.distribution,
             purpose=ArchivePurpose.PARTNER)
         job = self.makeJob(distroseries)
-        job.runPublishDistro = FakeMethod()
+        naked_job = removeSecurityProxy(job)
+        naked_job.runPublishDistro = FakeMethod()
         job.run()
         self.assertIn(
             ('--partner', ),
-            [args for args, kwargs in job.runPublishDistro.calls])
+            [args for args, kwargs in naked_job.runPublishDistro.calls])
 
     def test_job_does_not_run_publish_distro_for_partner_if_not_present(self):
         # If the distribution does not have a partner archive,
         # publish_distro is not run for the partner archive.
         job = self.makeJob()
-        job.runPublishDistro = FakeMethod()
+        naked_job = removeSecurityProxy(job)
+        naked_job.runPublishDistro = FakeMethod()
         job.run()
-        self.assertEqual(1, job.runPublishDistro.call_count)
+        self.assertEqual(1, naked_job.runPublishDistro.call_count)
 
     def test_job_notifies_if_successful(self):
         # Once the indexes have been created, the job calls its
         # notifySuccess method to let stakeholders know that they may
         # proceed with their release process.
         job = self.makeJob()
-        job.runPublishDistro = FakeMethod()
-        job.notifySuccess = FakeMethod()
+        naked_job = removeSecurityProxy(job)
+        naked_job.runPublishDistro = FakeMethod()
+        naked_job.notifySuccess = FakeMethod()
         job.run()
-        self.assertEqual(1, job.notifySuccess.call_count)
+        self.assertEqual(1, naked_job.notifySuccess.call_count)
 
     def test_failure_notifies_recipients(self):
         # Failure notices are sent to the addresses returned by
         # getMailRecipients.
         job = self.makeJob()
-        job.getMailRecipients = FakeMethod(result=["foo@example.com"])
+        removeSecurityProxy(job).getMailRecipients = FakeMethod(
+            result=["foo@example.com"])
         job.notifyUserError(HorribleFailure("Boom!"))
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
@@ -228,8 +234,9 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         # Success notices are sent to the addresses returned by
         # getMailRecipients.
         job = self.makeJob()
-        job.getMailRecipients = FakeMethod(result=["bar@example.com"])
-        job.notifySuccess()
+        naked_job = removeSecurityProxy(job)
+        naked_job.getMailRecipients = FakeMethod(result=["bar@example.com"])
+        naked_job.notifySuccess()
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
         self.assertIn("bar@example.com", recipients)
@@ -237,7 +244,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
     def test_notifySuccess_sends_email(self):
         # notifySuccess sends out a success notice by email.
         job = self.makeJob()
-        job.notifySuccess()
+        removeSecurityProxy(job).notifySuccess()
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
         self.assertIn("success", body)
@@ -250,7 +257,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         job = self.makeJob(distroseries)
         self.assertIn(
             format_address_for_person(distroseries.driver),
-            job.getMailRecipients())
+            removeSecurityProxy(job).getMailRecipients())
 
     def test_distribution_owner_gets_notified_if_no_release_manager(self):
         # If no release manager is available, the distribution owners
@@ -260,11 +267,11 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         job = self.makeJob(distroseries)
         self.assertIn(
             format_address_for_person(distroseries.distribution.owner),
-            job.getMailRecipients())
+            removeSecurityProxy(job).getMailRecipients())
 
     def test_destroySelf_destroys_job(self):
         job = self.makeJob()
-        job_id = job.job.id
+        job_id = removeSecurityProxy(job).job.id
         self.becomeArchivePublisher()
         job.destroySelf()
         store = IMasterStore(Job)
@@ -298,4 +305,5 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
             commandline_config=True)
         script.logger = DevNullLogger()
         script.main()
-        self.assertEqual(JobStatus.COMPLETED, job.context.job.status)
+        self.assertEqual(
+            JobStatus.COMPLETED, removeSecurityProxy(job).context.job.status)
