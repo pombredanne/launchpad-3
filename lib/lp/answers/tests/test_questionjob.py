@@ -201,10 +201,29 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.ASKER,
             subject, body, headers)
-        recipients = job.recipients.getRecipientPersons()
+        recipients = [
+            person for email, person in job.recipients.getRecipientPersons()]
         self.assertEqual(1, len(recipients))
-        email, recipient = recipients.pop()
-        self.assertEqual(question.owner, recipient)
+        self.assertEqual(question.owner, recipients[0])
+
+    def test_recipients_subscriber(self):
+        # The recipients property matches the question recipients,
+        # excluding the question owner.
+        question = self.factory.makeQuestion()
+        self.addAnswerContact(question)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
+        recipients = [
+            person for email, person in job.recipients.getRecipientPersons()]
+        self.assertFalse(question.owner in recipients)
+        question_recipients = [
+            person
+            for em, person in question.getRecipients().getRecipientPersons()
+            if person != question.owner]
+        self.assertContentEqual(
+            question_recipients, recipients)
 
     def test_recipients_asker_subscriber(self):
         # The recipients property matches the question recipients.
