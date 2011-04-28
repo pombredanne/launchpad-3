@@ -268,6 +268,8 @@ class ProcessAccepted(LaunchpadScript):
                     queue_items = distroseries.getQueueItems(
                         PackageUploadStatus.ACCEPTED, archive=archive)
                     for queue_item in queue_items:
+                        self.logger.debug(
+                            "Processing queue item %d" % queue_item.id)
                         try:
                             queue_item.realiseUpload(self.logger)
                         except Exception:
@@ -280,7 +282,14 @@ class ProcessAccepted(LaunchpadScript):
                             self.logger.error('%s (%s)' % (message,
                                 request.oopsid))
                         else:
+                            self.logger.debug(
+                                "Successfully processed queue item %d" %
+                                queue_item.id)
                             processed_queue_ids.append(queue_item.id)
+                        # Commit even on error; we may have altered the
+                        # on-disk archive, so the partial state must
+                        # make it to the DB.
+                        self.txn.commit()
 
             if not self.options.dryrun:
                 self.txn.commit()
