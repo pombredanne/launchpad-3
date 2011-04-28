@@ -348,21 +348,21 @@ $$;
 COMMENT ON FUNCTION summarise_bug(bug) IS
 'AFTER summarise a bug row into bugsummary.';
 
-/*
+
 CREATE OR REPLACE FUNCTION unsummarise_bug(BUG_ROW bug) RETURNS VOID
 LANGUAGE plpgsql VOLATILE AS
 $$
+DECLARE
+    d bugsummary%ROWTYPE;
 BEGIN
-something like
-for summary-address in SELECT(summary_locations(BUG_ROW)
-    bug_summary_dec(summary-address);
-
+    FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
+        PERFORM bug_summary_dec(d);
+    END LOOP;
 END;
 $$;
 
 COMMENT ON FUNCTION unsummarise_bug(bug) IS
 'AFTER unsummarise a bug row from bugsummary.';
-*/
 
 
 CREATE OR REPLACE FUNCTION bug_maintain_bug_summary() RETURNS TRIGGER
@@ -382,24 +382,24 @@ BEGIN
         END IF;
         IF OLD.duplicateof IS NOT NULL THEN
             -- Newly unduplicated: publish fresh
-            SELECT summarise_bug(NEW);
+            PERFORM summarise_bug(NEW);
         ELSIF NEW.duplicateof IS NOT NULL THEN
             -- Newly duplicated: unsummarise
-            SELECT unsummarise_bug(OLD);
+            PERFORM unsummarise_bug(OLD);
         ELSIF NEW.private = OLD.private THEN
             -- Not changed in a relevant way, we're done.
             RETURN NULL; -- Ignored - this is an AFTER trigger
         ELSE
             -- Either becoming private or public; none of the summary rows are
             -- in common - remove and add.
-            SELECT unsummarise_bug(OLD);
-            SELECT summarise_bug(NEW);
+            PERFORM unsummarise_bug(OLD);
+            PERFORM summarise_bug(NEW);
         END IF;
         RETURN NULL; -- Ignored - this is an AFTER trigger
     END IF;
 
     -- For delete remove the bugs summary rows
-    SELECT unsummarise_bug(OLD);
+    PERFORM unsummarise_bug(OLD);
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
@@ -453,9 +453,7 @@ COMMENT ON FUNCTION bugtag_maintain_bug_summary() IS
 'AFTER trigger on bugtag maintaining the bugs summaries in bugsummary.';
 
 
-
-
-
+*/
 
 
 
@@ -464,6 +462,8 @@ COMMENT ON FUNCTION bugtag_maintain_bug_summary() IS
 
 -- bug: duplicateof, private (not INSERT because a task is needed to be included in summaries.
 CREATE TRIGGER bug_maintain_bug_summary_trigger AFTER UPDATE OR DELETE ON bug FOR EACH ROW EXECUTE PROCEDURE bug_maintain_bug_summary();
+
+/*
 -- bugtask: target, status, milestone
 CREATE TRIGGER bugtask_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtask FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
 -- bugsubscription: existence
