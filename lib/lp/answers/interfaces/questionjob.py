@@ -79,7 +79,7 @@ class IQuestionEmailJobSource(IJobSource):
         :param question: An `IQuestion`.
         :param user: An `IPerson`.
         :param recipient_set: A `QuestionRecipientSet`.
-        :param subject: A'The subject of the email.
+        :param subject: The subject of the email.
         :param body: The text of the email that is common to all recipients.
         :param headers: A dict of headers for the email that are common to
             all recipients.
