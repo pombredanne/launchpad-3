@@ -482,10 +482,14 @@ class TwistedJobRunner(BaseJobRunner):
 
 
 class JobCronScript(LaunchpadCronScript):
-    """Generic job runner."""
+    """Generic job runner.
 
-    # The name of a configuration section that describes the job type to
-    # run.
+    :ivar config_name: Optional name of a configuration section that specifies
+        the jobs to run.  Alternatively, may be taken from the command line.
+    :ivar source_interface: `IJobSource`-derived utility to iterate pending
+        jobs of the type that is to be run.
+    """
+
     config_name = None
 
     usage = dedent("""\
@@ -507,6 +511,20 @@ class JobCronScript(LaunchpadCronScript):
 
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
                  commandline_config=False):
+        """Initialize a `JobCronScript`.
+
+        :param runner_class: The runner class to use.  Defaults to
+            `JobRunner`, which runs synchronously, but could also be
+            `TwistedJobRunner` which is asynchronous.
+        :param test_args: For tests: pretend that this list of arguments has
+            been passed on the command line.
+        :param name: Identifying name for this type of job.  Is also used to
+            compose a lock file name.
+        :param commandline_config: If True, take configuration from the
+            command line (in the form of a config section name).  Otherwise,
+            rely on the subclass providing `config_name` and
+            `source_interface`.
+        """
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
