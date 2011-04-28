@@ -107,7 +107,8 @@ class TestAuthorizationBase(TestCaseWithFactory):
             (1, next_adapter.checkAuthenticated.call_count))
 
     def test_forwardCheckAuthenticated_both_change(self):
-        # Requesting a check for a different permission and a different object.
+        # Requesting a check for a different permission and a different
+        # object.
         next_permission = self.factory.getUniqueString()
         next_adapter = self._registerFakeSecurityAdpater(
             DummyInterface, next_permission)
@@ -122,3 +123,13 @@ class TestAuthorizationBase(TestCaseWithFactory):
         self.assertVectorEqual(
             (1, adapter.checkPermissionIsRegistered.call_count),
             (1, next_adapter.checkAuthenticated.call_count))
+
+    def test_forwardCheckAuthenticated_no_forwarder(self):
+        # If the requested forwarding adapter does not exist, return False.
+        adapter = FakeSecurityAdapter()
+        adapter.permission = self.factory.getUniqueString()
+        adapter.usedfor = DummyInterface
+        adapter.checkPermissionIsRegistered = FakeMethod(result=True)
+
+        self.assertFalse(
+            adapter.forwardCheckAuthenticated(None, DummyClass()))
