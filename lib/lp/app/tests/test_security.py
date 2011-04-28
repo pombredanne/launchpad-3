@@ -63,11 +63,13 @@ class TestAuthorizationBase(TestCaseWithFactory):
         """Register an instance of FakeSecurityAdapter.
 
         Create a factory for an instance of FakeSecurityAdapter and register
-        it as an adapter for the given interface and permission name. 
+        it as an adapter for the given interface and permission name.
         """
         adapter = FakeSecurityAdapter()
+
         def adapter_factory(adaptee):
             return adapter
+
         getSiteManager().registerAdapter(
             adapter_factory, (interface,), IAuthorization, permission)
         return adapter
