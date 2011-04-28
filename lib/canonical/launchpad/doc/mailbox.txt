@@ -27,11 +27,11 @@ run with something like this::
     make harness
     from lp.testing import mail
     mail.create_mail_for_directoryMailBox(
-	'me@example.com',
-	'new@bugs.launchpad.net',
-	'help',
-	'message body',
-	)
+        'me@example.com',
+        'new@bugs.launchpad.net',
+        'help',
+        'message body',
+        )
 
 Let's look at the one we use in tests:
 
@@ -43,13 +43,13 @@ Now it's empty, so let's add some mails to it by using simple_sendmail:
     >>> import transaction
     >>> from canonical.launchpad.mail import simple_sendmail
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '123@bugs.canonical.com', 
+    ...                         '123@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test1>'})
     >>> transaction.commit()
     >>> msgid = simple_sendmail('test@canonical.com',
-    ...                         '456@bugs.canonical.com', 
+    ...                         '456@bugs.canonical.com',
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test2>'})
@@ -72,7 +72,7 @@ before:
 
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> import email
     >>> mail = email.message_from_string(raw_mail)
@@ -88,7 +88,7 @@ Since we didn't delete the mail, it's still in there:
     >>> mailbox.open()
     >>> mails = list(mailbox.items())
     >>> len(mails)
-    2 
+    2
     >>> id, raw_mail = mails[0]
     >>> mail = email.message_from_string(raw_mail)
     >>> print mail['Message-ID']

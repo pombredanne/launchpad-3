@@ -208,7 +208,7 @@ def authenticateEmail(mail,
                 'success as conclusive')
         else:
             setupInteraction(principal, email_addr)
-            log.debug('message strongly authenticated by dkim') 
+            log.debug('message strongly authenticated by dkim')
             return principal
 
     if signature is None:
@@ -415,7 +415,7 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
                 file_alias_url, ),
             exc_info=True)
         return
-    log.debug('processing mail from %r message-id %r' % 
+    log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
 
     # If the Return-Path header is '<>', it probably means
