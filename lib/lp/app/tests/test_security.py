@@ -34,13 +34,13 @@ class FakeSecurityAdapter(AuthorizationBase):
             self.checkUnauthenticated.call_count
             )
 
-class NextInterface(Interface):
+class DummyInterface(Interface):
     """Marker interface to test forwarding."""
 
 
-class NextClass:
-    """An implementation of NextInterface."""
-    implements(NextInterface)
+class DummyClass:
+    """An implementation of DummyInterface."""
+    implements(DummyInterface)
 
 
 class TestAuthorizationBase(TestCaseWithFactory):
@@ -73,22 +73,39 @@ class TestAuthorizationBase(TestCaseWithFactory):
         """
         adapter = FakeSecurityAdapter()
         def adapter_factory(adaptee):
+            adapter.obj = adaptee
             return adapter
         getSiteManager().registerAdapter(
             adapter_factory, (interface,), IAuthorization, permission)
         return adapter
 
     def test_forwardCheckAuthenticated_object_changes(self):
+        # Requesting a check for the same permission on a different object.
         permission = self.factory.getUniqueString()
-        next_object = NextClass()
         next_adapter = self._registerFakeSecurityAdpater(
-            NextInterface, permission)
+            DummyInterface, permission)
 
         adapter = FakeSecurityAdapter()
         adapter.permission = permission
         adapter.usedfor = None
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
 
-        adapter.forwardCheckAuthenticated(None, next_object)
+        adapter.forwardCheckAuthenticated(None, DummyClass())
+
+        self.assertEqual(1, next_adapter.checkAuthenticated.call_count)
+
+    def test_forwardCheckAuthenticated_permission_changes(self):
+        # Requesting a check for a different permission on the same object.
+        next_permission = self.factory.getUniqueString()
+        next_adapter = self._registerFakeSecurityAdpater(
+            DummyInterface, next_permission)
+
+        adapter = FakeSecurityAdapter()
+        adapter.obj = DummyClass()
+        adapter.permission = self.factory.getUniqueString()
+        adapter.usedfor = DummyInterface
+        adapter.checkPermissionIsRegistered = FakeMethod(result=True)
+
+        adapter.forwardCheckAuthenticated(None, permission=next_permission)
 
         self.assertEqual(1, next_adapter.checkAuthenticated.call_count)
