@@ -200,38 +200,36 @@ $$;
 COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
 
-CREATE OR REPLACE FUNCTION bug_summary_dec(d bugsummary) RETURNS VOID
-LANGUAGE plpgsql AS
+CREATE OR REPLACE FUNCTION bug_summary_dec(bugsummary) RETURNS VOID
+LANGUAGE SQL AS
 $$
-BEGIN
     -- We own the row reference, so in the absence of bugs this cannot
     -- fail - just decrement the row.
     UPDATE BugSummary SET count = count - 1
     WHERE
-        product IS NOT DISTINCT FROM d.product
-        AND productseries IS NOT DISTINCT FROM d.productseries
-        AND distribution IS NOT DISTINCT FROM d.distribution
-        AND distroseries IS NOT DISTINCT FROM d.distroseries
-        AND sourcepackagename IS NOT DISTINCT FROM d.sourcepackagename
-        AND viewed_by IS NOT DISTINCT FROM d.viewed_by
-        AND tag IS NOT DISTINCT FROM d.tag
-        AND status IS NOT DISTINCT FROM d.status
-        AND milestone IS NOT DISTINCT FROM d.milestone;
+        product IS NOT DISTINCT FROM $1.product
+        AND productseries IS NOT DISTINCT FROM $1.productseries
+        AND distribution IS NOT DISTINCT FROM $1.distribution
+        AND distroseries IS NOT DISTINCT FROM $1.distroseries
+        AND sourcepackagename IS NOT DISTINCT FROM $1.sourcepackagename
+        AND viewed_by IS NOT DISTINCT FROM $1.viewed_by
+        AND tag IS NOT DISTINCT FROM $1.tag
+        AND status IS NOT DISTINCT FROM $1.status
+        AND milestone IS NOT DISTINCT FROM $1.milestone;
     -- gc the row (perhaps should be garbo but easy enough to add here:
     DELETE FROM bugsummary
     WHERE
         count=0
-        AND product IS NOT DISTINCT FROM d.product
-        AND productseries IS NOT DISTINCT FROM d.productseries
-        AND distribution IS NOT DISTINCT FROM d.distribution
-        AND distroseries IS NOT DISTINCT FROM d.distroseries
-        AND sourcepackagename IS NOT DISTINCT FROM d.sourcepackagename
-        AND viewed_by IS NOT DISTINCT FROM d.viewed_by
-        AND tag IS NOT DISTINCT FROM d.tag
-        AND status IS NOT DISTINCT FROM d.status
-        AND milestone IS NOT DISTINCT FROM d.milestone;
+        AND product IS NOT DISTINCT FROM $1.product
+        AND productseries IS NOT DISTINCT FROM $1.productseries
+        AND distribution IS NOT DISTINCT FROM $1.distribution
+        AND distroseries IS NOT DISTINCT FROM $1.distroseries
+        AND sourcepackagename IS NOT DISTINCT FROM $1.sourcepackagename
+        AND viewed_by IS NOT DISTINCT FROM $1.viewed_by
+        AND tag IS NOT DISTINCT FROM $1.tag
+        AND status IS NOT DISTINCT FROM $1.status
+        AND milestone IS NOT DISTINCT FROM $1.milestone;
     -- If its not found then someone else also dec'd and won concurrently.
-END;
 $$;
 
 COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
