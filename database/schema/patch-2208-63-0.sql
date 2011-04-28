@@ -234,12 +234,102 @@ COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
 
 
+-- immutable ?
+CREATE OR REPLACE FUNCTION bugsummary_viewers(BUG_ROW bug)
+RETURNS SETOF bugsubscription LANGUAGE plpgsql AS
+$$
+DECLARE
+    r bugsubscription%ROWTYPE;
+BEGIN
+    IF NOT bug.private THEN
+        RETURN;
+    END IF;
+    FOR r IN SELECT * FROM bugsubscription WHERE bugsubscription.bug=bug.id LOOP
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION bugsummary_viewers(bug) IS
+'Return (bug, viewer) for all viewers if private, nothing otherwise';
+
+
+-- IMMUTABLE?
+CREATE OR REPLACE FUNCTION bugsummary_tags(BUG_ROW bug)
+RETURNS SETOF bugtag LANGUAGE plpgsql AS
+$$
+DECLARE
+    r bugtag%ROWTYPE;
+BEGIN
+    -- The NULL aggregate;
+    r.bug = bug.id;
+    r.tag = NULL::text;
+    RETURN NEXT r;
+    FOR r IN SELECT * FROM bugtag WHERE bugtag.bug=bug.id LOOP
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION bugsummary_tags(bug) IS
+'Return (bug, tag) for all tags + (bug, NULL::text)';
+
+-- IMMUTABLE?
+CREATE OR REPLACE FUNCTION bugsummary_tasks(BUG_ROW bug)
+RETURNS SETOF bugtask LANGUAGE plpgsql AS
+$$
+DECLARE
+    r bugtask%ROWTYPE;
+BEGIN
+    -- One row only for each target permutation - need to ignore other fields
+    -- like date last modified to deal with conjoined masters and multiple
+    -- sourcepackage tasks in a distro.
+    FOR r IN (SELECT DISTINCT ON (
+        bug, product, productseries, distribution, distroseries, sourcepackagename, status, milestone
+        ) * FROM (SELECT * FROM bugtask WHERE bugtask.bug=bug.id
+        UNION
+        SELECT DISTINCT ON (
+            bug, product, productseries, distribution, distroseries,
+            sourcepackagename, milestone)
+            bug, product, productseries, distribution, distroseries,
+            NULL::integer as sourcepackagename,
+            status, milestone
+            FROM bugtask where sourcepackagename IS NOT NULL and bugtask.bug=bug.id) as _tmp)
+        LOOP
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION bugsummary_tasks(bug) IS
+'Return all tasks for the bug + all sourcepackagename tasks again with the sourcepackagename squashed';
+
 CREATE OR REPLACE FUNCTION bugsummary_locations(BUG_ROW bug)
 RETURNS SETOF bugsummary LANGUAGE plpgsql AS
 $$
 DECLARE
     r bugsummary%ROWTYPE;
+    tags bugtag%ROWTYPE;
 BEGIN
+    IF bug.duplicateof THEN
+        RETURN;
+    END IF;
+    -- gets tag coordinates
+    tags = SELECT * FROM bugsummary_tags(bug);
+    viewers = SELECT * FROM bugsummary_viewers(bug);
+    tasks = SELECT * FROM bugsummary_tasks(bug);
+    /* next step - turn this old aggregate into a combo of the above three function results as a setof rows rather than a counted result - because it may be incrementing or decrementing */
+    SELECT
+        count(*), product, productseries, distribution, distroseries,
+        sourcepackagename, person, tag, status, milestone
+    FROM relevant_bug
+    INNER JOIN bug_tags ON relevant_bug.id=bug_tags.id
+    INNER JOIN bug_viewers ON relevant_bug.id=bug_viewers.id
+    INNER JOIN tasks on tasks.bug=relevant_bug.id
+    GROUP BY
+        product, productseries, distribution, distroseries,
+        sourcepackagename, person, tag, status, milestone;
+
     -- 
     r.product = 1; -- XXX: Fill in with real data.
     RETURN NEXT r;
