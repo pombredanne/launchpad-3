@@ -2418,27 +2418,17 @@ class BugSet:
         if params.product:
             getUtility(IBugTaskSet).createTask(
                 bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                status=params.status, assignee=params.assignee,
+                importance=params.importance, milestone=params.milestone)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
             getUtility(IBugTaskSet).createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
-
-        # Set the BugTask's properties, using the appropriate methods,
-        # if necessary.
-        bug_task = bug.default_bugtask
-        if params.importance is not None:
-            bug_task.transitionToImportance(
-                params.importance, params.owner)
-        if params.assignee is not None:
-            bug_task.transitionToAssignee(
-                params.assignee)
-        if params.milestone is not None:
-            bug_task.transitionToMilestone(
-                params.milestone, params.owner)
+                owner=params.owner, status=params.status,
+                assignee=params.assignee, importance=params.importance,
+                milestone=params.milestone)
 
         # Tell everyone.
         notify(event)

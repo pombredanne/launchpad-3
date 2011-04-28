@@ -10,6 +10,7 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.bugs.enum import BugNotificationLevel
@@ -20,7 +21,12 @@ from lp.bugs.interfaces.bug import(
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
+    UserCannotEditBugTaskAssignee,
+    UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone,
+    UserCannotEditBugTaskStatus,
     )
+from lp.bugs.model.bug import Bug
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -161,13 +167,14 @@ class TestBugCreation(TestCaseWithFactory):
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        params = CreateBugParams(
-            owner=owner, title="A bug", comment="Nothing important.",
-            importance=BugTaskImportance.HIGH)
-        params.setBugTarget(product=target)
-        bug = getUtility(IBugSet).createBug(params)
-        self.assertEqual(
-            bug.default_bugtask.importance, params.importance)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                importance=BugTaskImportance.HIGH)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.importance, params.importance)
 
     def test_CreateBugParams_accepts_assignee(self):
         # The assignee of the initial bug task can be set using
@@ -188,23 +195,94 @@ class TestBugCreation(TestCaseWithFactory):
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        params = CreateBugParams(
-            owner=owner, title="A bug", comment="Nothing important.",
-            milestone=self.factory.makeMilestone(product=target))
-        params.setBugTarget(product=target)
-        bug = getUtility(IBugSet).createBug(params)
-        self.assertEqual(
-            bug.default_bugtask.milestone, params.milestone)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                milestone=self.factory.makeMilestone(product=target))
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.milestone, params.milestone)
 
     def test_CreateBugParams_accepts_status(self):
         # The status of the initial bug task can be set using
         # CreateBugParams
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
-        params = CreateBugParams(
-            owner=owner, title="A bug", comment="Nothing important.",
-            status=BugTaskStatus.TRIAGED)
-        params.setBugTarget(product=target)
-        bug = getUtility(IBugSet).createBug(params)
-        self.assertEqual(
-            bug.default_bugtask.status, params.status)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                status=BugTaskStatus.TRIAGED)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.status, params.status)
+
+    def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the importance.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                importance=BugTaskImportance.HIGH)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskImportance,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_assignee_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the assignee.
+        person = self.factory.makePerson()
+        person_2 = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        # Setting the target's bug supervisor means that
+        # canTransitionToAssignee() will return False for `person` if
+        # another Person is passed as `assignee`.
+        with person_logged_in(target.owner):
+            target.setBugSupervisor(target.owner, target.owner)
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                assignee=person_2)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskAssignee,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_milestone_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the milestone.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                milestone=self.factory.makeMilestone(product=target))
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskMilestone,
+                getUtility(IBugSet).createBug, params)
+
+    def test_failing_createBug_doesnt_leave_bug_behind(self):
+        # If createBug() fails because of a permission problem when
+        # setting importance, status, assignee or milestone, a
+        # BugTask-less bug won't be left behind.
+        store = IStore(Bug)
+        latest_bug = store.find(Bug).order_by('-id').first()
+        latest_bug_id = latest_bug.id
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                status=BugTaskStatus.TRIAGED)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskStatus,
+                getUtility(IBugSet).createBug, params)
+        store.flush()
+        latest_bug = store.find(Bug).order_by('-id').first()
+        self.assertEqual(latest_bug_id, latest_bug.id)
