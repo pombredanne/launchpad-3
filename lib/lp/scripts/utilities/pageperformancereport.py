@@ -898,7 +898,8 @@ def html_report(
         <style type="text/css">
             h3 { font-weight: normal; font-size: 1em; }
             thead th { padding-left: 1em; padding-right: 1em; }
-            .category-title { text-align: right; padding-right: 2em; }
+            .category-title { text-align: right; padding-right: 2em;
+                              max-width: 25em; }
             .regexp { font-size: x-small; font-weight: normal; }
             .mean { text-align: right; padding-right: 1em; }
             .median { text-align: right; padding-right: 1em; }
