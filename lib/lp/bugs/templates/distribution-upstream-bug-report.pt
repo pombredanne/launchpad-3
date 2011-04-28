@@ -25,268 +25,273 @@
 
   <div metal:fill-slot="main">
     <div class="top-portlet">
-      <tal:no-bugs tal:condition="not: view/data">
-        <span tal:replace="context/displayname" /> has no bugs filed
-        against it.
-      </tal:no-bugs>
+      <div tal:condition="not:view/has_upstream_report"
+           id="no-lp-usage">
+        This distribution does not use Launchpad for development.
+      </div>
+      <div tal:condition="view/has_upstream_report"
+           id="lp-used">
+        <tal:no-bugs tal:condition="not: view/data">
+          <span tal:replace="context/displayname" /> has no bugs filed
+          against it.
+        </tal:no-bugs>
 
-      <p tal:condition="view/data">
-        See the
-        <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
-          >UpstreamReport wiki page</a>
-        for information on how to read this report.
-      </p>
+        <p tal:condition="view/data">
+          See the
+          <a href="https://wiki.ubuntu.com/Bugs/Upstream/UpstreamReport"
+            >UpstreamReport wiki page</a>
+          for information on how to read this report.
+        </p>
 
-      <table class="listing" id="upstream-report"
-             tal:condition="view/data">
-        <thead tal:define="links view/sort_order_links">
-          <tr>
-            <th>
-              <a id="sort-dsp" tal:attributes="href links/dsp/link">Package</a>
-              <img id="sortarrow-dsp" tal:attributes="src links/dsp/arrow" />
-            </th>
-            <th colspan="2">
-              <a id="sort-product" tal:attributes="href links/product/link">Project</a>
-              <img id="sortarrow-product" tal:attributes="src links/product/arrow" />
-            </th>
-            <th>
-              <a id="sort-bugtracker-name"
-                  tal:attributes="href links/bugtracker_name/link"
-              >Bugtracker</a>
-              <img id="sortarrow-bugtracker-name"
-                  tal:attributes="src links/bugtracker_name/arrow" />
-            </th>
-            <th>
-              <a id="sort-bug-supervisor-name"
-                  tal:attributes="href links/bug_supervisor_name/link"
-              >Upstream Contact</a>
-              <img id="sortarrow-bug-supervisor-name"
-                  tal:attributes="src links/bug_supervisor_name/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-open-bugs"
-                  tal:attributes="href links/open_bugs/link">Open</a>
-              <img id="sortarrow-open-bugs"
-                  tal:attributes="src links/open_bugs/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-triaged-bugs"
-                  tal:attributes="href links/triaged_bugs/link"
-              >Triaged</a>
-              <img id="sortarrow-triaged-bugs"
-                  tal:attributes="src links/triaged_bugs/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-triaged-percentage"
-                  tal:attributes="href links/triaged_bugs_percentage/link"
-              >%</a>
-              <img id="sortarrow-triaged-percentage"
-                  tal:attributes="src links/triaged_bugs_percentage/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-triaged-delta"
-                  tal:attributes="href links/triaged_bugs_delta/link"
-              >&Delta;</a>
-              <img id="sortarrow-triaged-delta"
-                  tal:attributes="src links/triaged_bugs_delta/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-upstream-bugs"
-                  tal:attributes="href links/upstream_bugs/link"
-              >Upstream</a>
-              <img id="sortarrow-upstream-bugs"
-                  tal:attributes="src links/upstream_bugs/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-upstream-percentage"
-                  tal:attributes="href links/upstream_bugs_percentage/link"
-              >%</a>
-              <img id="sortarrow-upstream-percentage"
-                  tal:attributes="src links/upstream_bugs_percentage/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-upstream-delta"
-                  tal:attributes="href links/upstream_bugs_delta/link"
-              >&Delta;</a>
-              <img id="sortarrow-upstream-delta"
-                  tal:attributes="src links/upstream_bugs_delta/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-watched-bugs"
-                  tal:attributes="href links/watched_bugs/link">Watch</a>
-              <img id="sortarrow-watched-bugs"
-                  tal:attributes="src links/watched_bugs/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-watched-percentage"
-                  tal:attributes="href links/watched_bugs_percentage/link"
-              >%</a>
-              <img id="sortarrow-watched-percentage"
-                  tal:attributes="src links/watched_bugs_percentage/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-watched-delta"
-                  tal:attributes="href links/watched_bugs_delta/link"
-              >&Delta;</a>
-              <img id="sortarrow-watched-delta"
-                  tal:attributes="src links/watched_bugs_delta/arrow" />
-            </th>
-            <th class="amount">
-              <a id="sort-bugs-with-upstream-patches"
-                  tal:attributes="href links/bugs_with_upstream_patches/link"
-              >Patches for upstream</a>
-              <img id="sortarrow-bugs-with-upstream-patches"
-                  tal:attributes="src links/bugs_with_upstream_patches/arrow" />
-            </th>
-          </tr>
-        </thead>
-        <tbody id="upstream-report-content">
-          <tr tal:repeat="item view/data" tal:attributes="class item/row_class">
-            <td>
-              <a tal:attributes="href item/dsp/fmt:url"
-                 tal:content="item/dsp/name"></a>
-            </td>
-            <tal:has-product condition="item/product">
-              <td style="padding-right: 0" align="center">
-                <a tal:attributes="href item/branch/fmt:url;
-                   title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
-                   tal:condition="item/branch">
-                  <img alt="(branch)" src="/@@/branch" /></a>
+        <table class="listing" id="upstream-report"
+               tal:condition="view/data">
+          <thead tal:define="links view/sort_order_links">
+            <tr>
+              <th>
+                <a id="sort-dsp" tal:attributes="href links/dsp/link">Package</a>
+                <img id="sortarrow-dsp" tal:attributes="src links/dsp/arrow" />
+              </th>
+              <th colspan="2">
+                <a id="sort-product" tal:attributes="href links/product/link">Project</a>
+                <img id="sortarrow-product" tal:attributes="src links/product/arrow" />
+              </th>
+              <th>
+                <a id="sort-bugtracker-name"
+                    tal:attributes="href links/bugtracker_name/link"
+                >Bugtracker</a>
+                <img id="sortarrow-bugtracker-name"
+                    tal:attributes="src links/bugtracker_name/arrow" />
+              </th>
+              <th>
+                <a id="sort-bug-supervisor-name"
+                    tal:attributes="href links/bug_supervisor_name/link"
+                >Upstream Contact</a>
+                <img id="sortarrow-bug-supervisor-name"
+                    tal:attributes="src links/bug_supervisor_name/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-open-bugs"
+                    tal:attributes="href links/open_bugs/link">Open</a>
+                <img id="sortarrow-open-bugs"
+                    tal:attributes="src links/open_bugs/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-triaged-bugs"
+                    tal:attributes="href links/triaged_bugs/link"
+                >Triaged</a>
+                <img id="sortarrow-triaged-bugs"
+                    tal:attributes="src links/triaged_bugs/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-triaged-percentage"
+                    tal:attributes="href links/triaged_bugs_percentage/link"
+                >%</a>
+                <img id="sortarrow-triaged-percentage"
+                    tal:attributes="src links/triaged_bugs_percentage/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-triaged-delta"
+                    tal:attributes="href links/triaged_bugs_delta/link"
+                >&Delta;</a>
+                <img id="sortarrow-triaged-delta"
+                    tal:attributes="src links/triaged_bugs_delta/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-upstream-bugs"
+                    tal:attributes="href links/upstream_bugs/link"
+                >Upstream</a>
+                <img id="sortarrow-upstream-bugs"
+                    tal:attributes="src links/upstream_bugs/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-upstream-percentage"
+                    tal:attributes="href links/upstream_bugs_percentage/link"
+                >%</a>
+                <img id="sortarrow-upstream-percentage"
+                    tal:attributes="src links/upstream_bugs_percentage/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-upstream-delta"
+                    tal:attributes="href links/upstream_bugs_delta/link"
+                >&Delta;</a>
+                <img id="sortarrow-upstream-delta"
+                    tal:attributes="src links/upstream_bugs_delta/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-watched-bugs"
+                    tal:attributes="href links/watched_bugs/link">Watch</a>
+                <img id="sortarrow-watched-bugs"
+                    tal:attributes="src links/watched_bugs/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-watched-percentage"
+                    tal:attributes="href links/watched_bugs_percentage/link"
+                >%</a>
+                <img id="sortarrow-watched-percentage"
+                    tal:attributes="src links/watched_bugs_percentage/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-watched-delta"
+                    tal:attributes="href links/watched_bugs_delta/link"
+                >&Delta;</a>
+                <img id="sortarrow-watched-delta"
+                    tal:attributes="src links/watched_bugs_delta/arrow" />
+              </th>
+              <th class="amount">
+                <a id="sort-bugs-with-upstream-patches"
+                    tal:attributes="href links/bugs_with_upstream_patches/link"
+                >Patches for upstream</a>
+                <img id="sortarrow-bugs-with-upstream-patches"
+                    tal:attributes="src links/bugs_with_upstream_patches/arrow" />
+              </th>
+            </tr>
+          </thead>
+          <tbody id="upstream-report-content">
+            <tr tal:repeat="item view/data" tal:attributes="class item/row_class">
+              <td>
+                <a tal:attributes="href item/dsp/fmt:url"
+                   tal:content="item/dsp/name"></a>
               </td>
-              <td style="padding-left: 0" align="center">
-                <a tal:attributes="href item/product/fmt:url"
-                  ><img src="/@@/yes"
-                      tal:attributes="title item/product/title" /></a>
+              <tal:has-product condition="item/product">
+                <td style="padding-right: 0" align="center">
+                  <a tal:attributes="href item/branch/fmt:url;
+                     title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
+                     tal:condition="item/branch">
+                    <img alt="(branch)" src="/@@/branch" /></a>
+                </td>
+                <td style="padding-left: 0" align="center">
+                  <a tal:attributes="href item/product/fmt:url"
+                    ><img src="/@@/yes"
+                        tal:attributes="title item/product/title" /></a>
+                </td>
+                <tal:has-bugtracker condition="item/bugtracker">
+                  <td align="center">
+                    <a tal:attributes="href item/bugtracker/fmt:url"
+                       ><img src="/@@/yes"
+                          tal:attributes="title item/bugtracker/title" /></a>
+                  </td>
+                </tal:has-bugtracker>
+                <tal:has-no-bugtracker condition="not: item/bugtracker">
+                  <td tal:condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                    align="center">
+                      <img src="/@@/yes" title="Launchpad" />
+                  </td>
+                  <td tal:condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD"
+                    align="center">
+                      <img src="/@@/no" title="Unknown" />
+                      <a tal:condition="item/product/required:launchpad.Edit"
+                         tal:attributes="href item/product_edit_url">
+                         <small>(fix)</small></a></td>
+                </tal:has-no-bugtracker>
+                <tal:has-bug-supervisor condition="item/product/bug_supervisor">
+                  <td align="center">
+                    <a tal:attributes="href item/product/bug_supervisor/fmt:url"
+                       ><img src="/@@/yes"
+                          tal:attributes="title item/product/bug_supervisor/fmt:displayname"
+                          /></a>
+                  </td>
+                </tal:has-bug-supervisor>
+                <tal:has-no-bug-supervisor condition="not: item/product/bug_supervisor">
+                  <td align="center">
+                      <img src="/@@/no" title="Unspecified" />
+                      <a tal:condition="item/product/required:launchpad.Edit"
+                         tal:attributes="href item/bug_supervisor_url">
+                        <small>(change)</small></a></td>
+                </tal:has-no-bug-supervisor>
+              </tal:has-product>
+              <tal:has-no-product condition="not: item/product">
+                  <td align="center" class="bad" colspan="4">
+                      Missing corresponding project.
+                      <a href="/projects"><small>(find)</small></a>
+                      <a tal:attributes="href item/packaging_url">
+                         <small>(link)</small></a>
+                  </td>
+              </tal:has-no-product>
+              <td class="amount">
+                <a tal:attributes="href item/open_bugs_url"
+                   tal:content="item/open_bugs"></a>
               </td>
-              <tal:has-bugtracker condition="item/bugtracker">
-                <td align="center">
-                  <a tal:attributes="href item/bugtracker/fmt:url"
-                     ><img src="/@@/yes"
-                        tal:attributes="title item/bugtracker/title" /></a>
-                </td>
-              </tal:has-bugtracker>
-              <tal:has-no-bugtracker condition="not: item/bugtracker">
-                <td tal:condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD"
-                  align="center">
-                    <img src="/@@/yes" title="Launchpad" />
-                </td>
-                <td tal:condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD"
-                  align="center">
-                    <img src="/@@/no" title="Unknown" />
-                    <a tal:condition="item/product/required:launchpad.Edit"
-                       tal:attributes="href item/product_edit_url">
-                       <small>(fix)</small></a></td>
-              </tal:has-no-bugtracker>
-              <tal:has-bug-supervisor condition="item/product/bug_supervisor">
-                <td align="center">
-                  <a tal:attributes="href item/product/bug_supervisor/fmt:url"
-                     ><img src="/@@/yes"
-                        tal:attributes="title item/product/bug_supervisor/fmt:displayname"
-                        /></a>
-                </td>
-              </tal:has-bug-supervisor>
-              <tal:has-no-bug-supervisor condition="not: item/product/bug_supervisor">
-                <td align="center">
-                    <img src="/@@/no" title="Unspecified" />
-                    <a tal:condition="item/product/required:launchpad.Edit"
-                       tal:attributes="href item/bug_supervisor_url">
-                      <small>(change)</small></a></td>
-              </tal:has-no-bug-supervisor>
-            </tal:has-product>
-            <tal:has-no-product condition="not: item/product">
-                <td align="center" class="bad" colspan="4">
-                    Missing corresponding project.
-                    <a href="/projects"><small>(find)</small></a>
-                    <a tal:condition="item/dssp"
-                       tal:attributes="href item/packaging_url">
-                       <small>(link)</small></a>
-                </td>
-            </tal:has-no-product>
-            <td class="amount">
-              <a tal:attributes="href item/open_bugs_url"
-                 tal:content="item/open_bugs"></a>
-            </td>
-            <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
-              <a tal:attributes="href item/triaged_bugs_url"
-                 tal:content="item/triaged_bugs"></a>
-            </td>
-            <td tal:attributes="class string:amount ${item/triaged_bugs_class}"
-                tal:content="item/triaged_bugs_percentage/fmt:float/.2" />
-            <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
-              <a tal:attributes="href item/triaged_bugs_delta_url"
-                 tal:content="item/triaged_bugs_delta"></a>
-            </td>
-            <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
-              <a tal:attributes="href item/upstream_bugs_url"
-                 tal:content="item/upstream_bugs"></a>
-            </td>
-            <td tal:attributes="class string:amount ${item/upstream_bugs_class}"
-                tal:content="item/upstream_bugs_percentage/fmt:float/.2" />
-            <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
-              <a tal:attributes="href item/upstream_bugs_delta_url"
-                 tal:content="item/upstream_bugs_delta"></a>
-            </td>
-            <tal:upstream-in-launchpad
-                condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD">
-                <td colspan="4" class="good">&nbsp;</td>
-            </tal:upstream-in-launchpad>
-            <tal:upstream-not-in-launchpad
-                condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD">
-              <td tal:attributes="class string:amount ${item/watched_bugs_class}"
-                  tal:content="item/watched_bugs" />
-              <td tal:attributes="class string:amount ${item/watched_bugs_class}"
-                  tal:content="item/watched_bugs_percentage/fmt:float/.2" />
-              <td tal:attributes="class string:amount ${item/watched_bugs_class}">
-                <a tal:attributes="href item/watched_bugs_delta_url"
-                   tal:content="item/watched_bugs_delta"></a>
+              <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
+                <a tal:attributes="href item/triaged_bugs_url"
+                   tal:content="item/triaged_bugs"></a>
               </td>
-              <td tal:attributes="class string:amount ${item/watched_bugs_class}">
-                <tal:has-bugs-with-upstream-patches
-                    condition="item/bugs_with_upstream_patches">
-                  <a tal:attributes="href item/bugs_with_upstream_patches_url"
-                      tal:content="item/bugs_with_upstream_patches"></a>
-                </tal:has-bugs-with-upstream-patches>
-                <tal:has-no-bugs-with-upstream-patches
-                    condition="not: item/bugs_with_upstream_patches">
-                   -
-                </tal:has-no-bugs-with-upstream-patches>
+              <td tal:attributes="class string:amount ${item/triaged_bugs_class}"
+                  tal:content="item/triaged_bugs_percentage/fmt:float/.2" />
+              <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
+                <a tal:attributes="href item/triaged_bugs_delta_url"
+                   tal:content="item/triaged_bugs_delta"></a>
               </td>
-            </tal:upstream-not-in-launchpad>
-          </tr>
-        </tbody>
-        <tfoot id="upstream-report-totals">
-          <tr>
-            <td colspan="5" class="amount"><b>Totals:</b></td>
-            <td class="amount"
-                tal:content="view/total/open_bugs" />
-            <td class="amount"
-                tal:content="view/total/triaged_bugs" />
-            <td class="amount"
-                tal:content="view/total/triaged_bugs_percentage/fmt:float/.2" />
-            <td class="amount"
-                tal:content="view/total/triaged_bugs_delta" />
-            <td class="amount"
-                tal:content="view/total/upstream_bugs" />
-            <td class="amount"
-                tal:content="view/total/upstream_bugs_percentage/fmt:float/.2" />
-            <td class="amount"
-                tal:content="view/total/upstream_bugs_delta" />
-            <td class="amount"
-                tal:content="view/total/watched_bugs" />
-            <td class="amount"
-                tal:content="view/total/watched_bugs_percentage/fmt:float/.2" />
-            <td class="amount"
-                tal:content="view/total/watched_bugs_delta" />
-            <td class="amount"
-                tal:content="view/total/bugs_with_upstream_patches" />
-          </tr>
-        </tfoot>
-      </table>
+              <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
+                <a tal:attributes="href item/upstream_bugs_url"
+                   tal:content="item/upstream_bugs"></a>
+              </td>
+              <td tal:attributes="class string:amount ${item/upstream_bugs_class}"
+                  tal:content="item/upstream_bugs_percentage/fmt:float/.2" />
+              <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
+                <a tal:attributes="href item/upstream_bugs_delta_url"
+                   tal:content="item/upstream_bugs_delta"></a>
+              </td>
+              <tal:upstream-in-launchpad
+                  condition="item/bug_tracking_usage/enumvalue:LAUNCHPAD">
+                  <td colspan="4" class="good">&nbsp;</td>
+              </tal:upstream-in-launchpad>
+              <tal:upstream-not-in-launchpad
+                  condition="not: item/bug_tracking_usage/enumvalue:LAUNCHPAD">
+                <td tal:attributes="class string:amount ${item/watched_bugs_class}"
+                    tal:content="item/watched_bugs" />
+                <td tal:attributes="class string:amount ${item/watched_bugs_class}"
+                    tal:content="item/watched_bugs_percentage/fmt:float/.2" />
+                <td tal:attributes="class string:amount ${item/watched_bugs_class}">
+                  <a tal:attributes="href item/watched_bugs_delta_url"
+                     tal:content="item/watched_bugs_delta"></a>
+                </td>
+                <td tal:attributes="class string:amount ${item/watched_bugs_class}">
+                  <tal:has-bugs-with-upstream-patches
+                      condition="item/bugs_with_upstream_patches">
+                    <a tal:attributes="href item/bugs_with_upstream_patches_url"
+                        tal:content="item/bugs_with_upstream_patches"></a>
+                  </tal:has-bugs-with-upstream-patches>
+                  <tal:has-no-bugs-with-upstream-patches
+                      condition="not: item/bugs_with_upstream_patches">
+                     -
+                  </tal:has-no-bugs-with-upstream-patches>
+                </td>
+              </tal:upstream-not-in-launchpad>
+            </tr>
+          </tbody>
+          <tfoot id="upstream-report-totals">
+            <tr>
+              <td colspan="5" class="amount"><b>Totals:</b></td>
+              <td class="amount"
+                  tal:content="view/total/open_bugs" />
+              <td class="amount"
+                  tal:content="view/total/triaged_bugs" />
+              <td class="amount"
+                  tal:content="view/total/triaged_bugs_percentage/fmt:float/.2" />
+              <td class="amount"
+                  tal:content="view/total/triaged_bugs_delta" />
+              <td class="amount"
+                  tal:content="view/total/upstream_bugs" />
+              <td class="amount"
+                  tal:content="view/total/upstream_bugs_percentage/fmt:float/.2" />
+              <td class="amount"
+                  tal:content="view/total/upstream_bugs_delta" />
+              <td class="amount"
+                  tal:content="view/total/watched_bugs" />
+              <td class="amount"
+                  tal:content="view/total/watched_bugs_percentage/fmt:float/.2" />
+              <td class="amount"
+                  tal:content="view/total/watched_bugs_delta" />
+              <td class="amount"
+                  tal:content="view/total/bugs_with_upstream_patches" />
+            </tr>
+          </tfoot>
+        </table>
 
-      <div tal:condition="view/data"
-           align="right"><small>Top <span tal:content="view/data/count:len" />
-        packages listed.</small></div>
-
+        <div tal:condition="view/data"
+             align="right"><small>Top <span tal:content="view/data/count:len" />
+          packages listed.</small></div>
+      </div>
     </div>
   </div>
 
