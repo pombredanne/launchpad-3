@@ -12,6 +12,7 @@ from testtools.content_type import UTF8_TEXT
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
@@ -24,6 +25,7 @@ from lp.answers.model.questionjob import (
     QuestionJob,
     QuestionEmailJob,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -323,7 +325,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         question = self.factory.makeQuestion()
         self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        QuestionEmailJob.create(
+        job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)
         transaction.commit()
@@ -333,5 +335,11 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
                 IQuestionEmailJobSource.getName()))
         self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
         self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
-        transaction.commit()
         self.assertEqual(0, exit_code)
+        message = (
+            'QuestionEmailJob has sent email for question %s.' % question.id)
+        self.assertTrue(
+            message in err,
+            'Cound not find "%s" in err log:\n%s.' % (message, err))
+        IStore(job.job).invalidate()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
