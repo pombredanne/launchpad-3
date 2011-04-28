@@ -18,8 +18,8 @@ from lp.testing.fakemethod import FakeMethod
 
 class FakeSecurityAdapter(AuthorizationBase):
 
-    def __init__(self):
-        super(FakeSecurityAdapter, self).__init__(None)
+    def __init__(self, adaptee=None):
+        super(FakeSecurityAdapter, self).__init__(adaptee)
         self.checkAuthenticated = FakeMethod()
         self.checkUnauthenticated = FakeMethod()
 
@@ -68,12 +68,11 @@ class TestAuthorizationBase(TestCaseWithFactory):
     def _registerFakeSecurityAdpater(self, interface, permission):
         """Register an instance of FakeSecurityAdapter.
 
-        Create an instance of FakeSecurityAdapter and register it as an
-        adapter for the given interface and permission name.
+        Create a factory for an instance of FakeSecurityAdapter and register
+        it as an adapter for the given interface and permission name. 
         """
         adapter = FakeSecurityAdapter()
         def adapter_factory(adaptee):
-            adapter.obj = adaptee
             return adapter
         getSiteManager().registerAdapter(
             adapter_factory, (interface,), IAuthorization, permission)
@@ -100,8 +99,7 @@ class TestAuthorizationBase(TestCaseWithFactory):
         next_adapter = self._registerFakeSecurityAdpater(
             DummyInterface, next_permission)
 
-        adapter = FakeSecurityAdapter()
-        adapter.obj = DummyClass()
+        adapter = FakeSecurityAdapter(DummyClass())
         adapter.permission = self.factory.getUniqueString()
         adapter.usedfor = DummyInterface
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
