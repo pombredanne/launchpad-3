@@ -616,7 +616,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param component: The `Component` being uploaded to.
         :param pocket: The `PackagePublishingPocket` of 'distroseries' being
             uploaded to.
-        :return: The reason for not being able to upload, None otherwise.
+        :param strict_component: True if access to the specific component for
+            the package is needed to upload to it. If False, then access to
+            any package will do.
+         :return: The reason for not being able to upload, None otherwise.
         """
 
     def verifyUpload(person, sourcepackagename, component,
