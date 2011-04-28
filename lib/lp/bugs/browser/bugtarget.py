@@ -556,6 +556,8 @@ class FileBugViewBase(LaunchpadFormView):
 
         if extra_data.private:
             params.private = extra_data.private
+        if 'status' in data:
+            params.status = data['status']
         if 'assignee' in data:
             params.assignee = data['assignee']
         if 'status' in data:
