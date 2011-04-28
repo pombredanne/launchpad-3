@@ -16,7 +16,7 @@ Salgado is the owner of any FooObject we create, so he can edit it.
 
     >>> foo = FooObject()
     >>> from zope.component import queryAdapter
-    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from lp.app.interfaces.security import IAuthorization
     >>> authorization = queryAdapter(foo, IAuthorization, 'launchpad.Edit')
     >>> print authorization.checkAccountAuthenticated(salgado.account)
     True
