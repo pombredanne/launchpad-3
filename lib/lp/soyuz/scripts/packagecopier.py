@@ -374,7 +374,7 @@ class CopyChecker:
                         "%s already exists in destination archive with "
                         "different contents." % lf.libraryfile.filename)
 
-    def checkCopy(self, source, series, pocket):
+    def checkCopy(self, source, series, pocket, person=None):
         """Check if the source can be copied to the given location.
 
         Check possible conflicting publications in the destination archive.
@@ -384,6 +384,9 @@ class CopyChecker:
         higher than any version of the same source present in the
         destination suite (series + pocket).
 
+        If person is not None, check the this person has the right t
+        upload to the destination archive.
+
         :param source: copy candidate, `ISourcePackagePublishingHistory`.
         :param series: destination `IDistroSeries`.
         :param pocket: destination `PackagePublishingPocket`.
@@ -391,6 +394,17 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
+        # If there is a requestor, check that he has upload permission
+        # into the destination archive. This check is done here rather than
+        # in the security adapter because it requires more info than is
+        # available in the security adapter.
+        if person is not None:
+            reason = self.archive.checkUpload(
+                person, series, source.sourcepackagerelease.sourcepackagename,
+                source.component, pocket, strict_component=True)
+            if reason:
+                raise CannotCopy(reason)
+
         if series not in self.archive.distribution.series:
             raise CannotCopy(
                 "No such distro series %s in distribution %s." %
@@ -459,7 +473,7 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True):
+            allow_delayed_copies=True, person=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -481,6 +495,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param allow_delayed_copies: boolean indicating whether or not private
         sources can be copied to public archives using delayed_copies.
         Defaults to True, only set as False in the UnembargoPackage context.
+    :param: person: the requestor `IPerson`.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -500,7 +515,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         else:
             destination_series = series
         try:
-            copy_checker.checkCopy(source, destination_series, pocket)
+            copy_checker.checkCopy(source, destination_series, pocket, person)
         except CannotCopy, reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
