@@ -26,6 +26,7 @@ from signal import (
     signal,
     )
 import sys
+from textwrap import dedent
 
 from ampoule import (
     child,
@@ -481,9 +482,28 @@ class TwistedJobRunner(BaseJobRunner):
 
 
 class JobCronScript(LaunchpadCronScript):
-    """Base class for scripts that run jobs."""
+    """Generic job runner."""
 
+    # The name of a configuration section that describes the job type to
+    # run.
     config_name = None
+
+    usage = dedent("""\
+        run_jobs.py [options] [lazr-configuration-section]
+
+        Run Launchpad Jobs of one particular type.
+
+        The lazr configuration section specifies what jobs to run, and how.
+        It should provide at least:
+
+         * source_interface, the name of the IJobSource-derived utility
+           interface for the job type that you want to run.
+
+         * dbuser, the name of the database role to run the job under.
+        """).rstrip()
+
+    description = (
+        "Takes pending jobs of the given type off the queue and runs them.")
 
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
                  commandline_config=False):
