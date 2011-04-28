@@ -314,32 +314,6 @@ class FileBugReportingGuidelines(LaunchpadFormView):
             return self.context
 
 
-class FileBugExtraInformation(UserAttributeCache):
-    """Returns extra information used to taylor the file bug page.
-
-    Given a context, this view returns a dict of of values which are used by
-    the calling Javascript to taylor the HTML on the file bug page.
-
-    The dict keys are:
-    hide_fields: form field names to hide
-    shoe_fields: form field names to show
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        optional_field_names = [
-            'assignee', 'importance', 'milestone', 'status']
-        fields_key = "hide_fields"
-        if IHasBugSupervisor.providedBy(self.context):
-            if self.user.inTeam(self.context.bug_supervisor):
-                fields_key = "show_fields"
-        result = {fields_key: optional_field_names}
-        return simplejson.dumps(result)
-
-
 class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
     """Base class for views related to filing a bug."""
 
@@ -1070,6 +1044,8 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
+    _PROJECTGROUP_SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/projectgroup-filebug-search.pt")
     _FILEBUG_FORM = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-submit-bug.pt")
 
@@ -1091,6 +1067,15 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             # explaining the preferred bug-filing procedure.
             self.request.response.redirect(
                 config.malone.ubuntu_bug_filing_url)
+
+    @safe_action
+    @action("Next", name="projectgroupsearch", validator="validate_search")
+    def projectgroup_search_action(self, action, data):
+        """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
+        return self._PROJECTGROUP_SEARCH_FOR_DUPES()
 
     @safe_action
     @action("Continue", name="search", validator="validate_search")
