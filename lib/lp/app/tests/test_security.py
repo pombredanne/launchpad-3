@@ -3,43 +3,48 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.security import AuthorizationBase
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
+
+class FakeSecurityAdapter(AuthorizationBase):
+
+    def __init__(self):
+        super(FakeSecurityAdapter, self).__init__(None)
+        self.checkAuthenticated = FakeMethod()
+        self.checkUnauthenticated = FakeMethod()
+
+    def getCallCounts(self):
+        """Helper method to create a tuple of the call counts.
+
+        :returns: A tuple of the call counts for
+            (checkAuthenticated, checkUnauthenticated).
+        """
+        return (
+            self.checkAuthenticated.call_count,
+            self.checkUnauthenticated.call_count
+            )
 
 class TestAuthorizationBase(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def test_default_checkAccountAuthenticated_for_full_fledged_account(self):
         # AuthorizationBase.checkAccountAuthenticated should delegate to
         # checkAuthenticated() when the given account can be adapted into an
         # IPerson.
         full_fledged_account = self.factory.makePerson().account
-        adapter = TestSecurityAdapter(None)
+        adapter = FakeSecurityAdapter()
         adapter.checkAccountAuthenticated(full_fledged_account)
-        self.failUnless(adapter.checkAuthenticated_called)
-        self.failIf(adapter.checkUnauthenticated_called)
+        self.assertEquals((1, 0), adapter.getCallCounts())
 
     def test_default_checkAccountAuthenticated_for_personless_account(self):
         # AuthorizationBase.checkAccountAuthenticated should delegate to
         # checkUnauthenticated() when the given account can't be adapted into
         # an IPerson.
         personless_account = self.factory.makeAccount('Test account')
-        adapter = TestSecurityAdapter(None)
+        adapter = FakeSecurityAdapter()
         adapter.checkAccountAuthenticated(personless_account)
-        self.failUnless(adapter.checkUnauthenticated_called)
-        self.failIf(adapter.checkAuthenticated_called)
-
-
-class TestSecurityAdapter(AuthorizationBase):
-
-    checkAuthenticated_called = False
-    checkUnauthenticated_called = False
-
-    def checkAuthenticated(self, user):
-        self.checkAuthenticated_called = True
-
-    def checkUnauthenticated(self):
-        self.checkUnauthenticated_called = True
+        self.assertEquals((0, 1), adapter.getCallCounts())
