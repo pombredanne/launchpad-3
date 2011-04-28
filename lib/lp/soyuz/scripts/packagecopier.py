@@ -27,11 +27,13 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.soyuz.adapters.packagelocation import build_package_location
-from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import (
-    CannotCopy,
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
     )
+from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -44,7 +46,6 @@ from lp.soyuz.interfaces.queue import (
     IPackageUploadCustom,
     IPackageUploadSet,
     )
-from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -399,9 +400,15 @@ class CopyChecker:
         # in the security adapter because it requires more info than is
         # available in the security adapter.
         if person is not None:
-            reason = self.archive.checkUpload(
-                person, series, source.sourcepackagerelease.sourcepackagename,
-                source.component, pocket, strict_component=True)
+            suitesourcepackage = SuiteSourcePackage(
+                series, pocket, source.sourcepackagerelease.sourcepackagename)
+            reason = self.archive.canUploadSuiteSourcePackage(
+                person, suitesourcepackage)
+            # XXX this fails ... only(?) difference is source.component
+            # (as opposed to None: destination component(?))
+            # reason2 = self.archive.checkUpload(
+            #   person, series, source.sourcepackagerelease.sourcepackagename,
+            #   source.component, pocket, strict_component=True)
             if reason:
                 raise CannotCopy(reason)
 
