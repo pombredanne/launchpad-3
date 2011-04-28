@@ -40,6 +40,9 @@ be stripped)
 
     >>> browser.url
     'http://launchpad.dev/~rayjay'
+    >>> ('The changes to your personal details have been saved.'
+    ...  in browser.contents)
+    True
 
 Now we check to make sure the displayname was changed and stripped.
 
