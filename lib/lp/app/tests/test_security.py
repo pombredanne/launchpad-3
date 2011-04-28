@@ -23,16 +23,6 @@ class FakeSecurityAdapter(AuthorizationBase):
         self.checkAuthenticated = FakeMethod()
         self.checkUnauthenticated = FakeMethod()
 
-    def getCallCounts(self):
-        """Helper method to create a tuple of the call counts.
-
-        :returns: A tuple of the call counts for
-            (checkAuthenticated, checkUnauthenticated).
-        """
-        return (
-            self.checkAuthenticated.call_count,
-            self.checkUnauthenticated.call_count
-            )
 
 class DummyInterface(Interface):
     """Marker interface to test forwarding."""
@@ -54,7 +44,9 @@ class TestAuthorizationBase(TestCaseWithFactory):
         full_fledged_account = self.factory.makePerson().account
         adapter = FakeSecurityAdapter()
         adapter.checkAccountAuthenticated(full_fledged_account)
-        self.assertEquals((1, 0), adapter.getCallCounts())
+        self.assertVectorEqual(
+            (1, adapter.checkAuthenticated.call_count),
+            (0, adapter.checkUnauthenticated.call_count))
 
     def test_checkAccountAuthenticated_for_personless_account(self):
         # AuthorizationBase.checkAccountAuthenticated should delegate to
@@ -63,7 +55,9 @@ class TestAuthorizationBase(TestCaseWithFactory):
         personless_account = self.factory.makeAccount('Test account')
         adapter = FakeSecurityAdapter()
         adapter.checkAccountAuthenticated(personless_account)
-        self.assertEquals((0, 1), adapter.getCallCounts())
+        self.assertVectorEqual(
+            (0, adapter.checkAuthenticated.call_count),
+            (1, adapter.checkUnauthenticated.call_count))
 
     def _registerFakeSecurityAdpater(self, interface, permission):
         """Register an instance of FakeSecurityAdapter.
@@ -91,10 +85,9 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
         adapter.forwardCheckAuthenticated(None, DummyClass())
 
-        self.assertEqual(
-            (1, 1),
-            (adapter.checkPermissionIsRegistered.call_count,
-             next_adapter.checkAuthenticated.call_count))
+        self.assertVectorEqual(
+            (1, adapter.checkPermissionIsRegistered.call_count),
+            (1, next_adapter.checkAuthenticated.call_count))
 
     def test_forwardCheckAuthenticated_permission_changes(self):
         # Requesting a check for a different permission on the same object.
@@ -109,10 +102,9 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
         adapter.forwardCheckAuthenticated(None, permission=next_permission)
 
-        self.assertEqual(
-            (1, 1),
-            (adapter.checkPermissionIsRegistered.call_count,
-             next_adapter.checkAuthenticated.call_count))
+        self.assertVectorEqual(
+            (1, adapter.checkPermissionIsRegistered.call_count),
+            (1, next_adapter.checkAuthenticated.call_count))
 
     def test_forwardCheckAuthenticated_both_change(self):
         # Requesting a check for a different permission and a different object.
@@ -127,7 +119,6 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
         adapter.forwardCheckAuthenticated(None, DummyClass(), next_permission)
 
-        self.assertEqual(
-            (1, 1),
-            (adapter.checkPermissionIsRegistered.call_count,
-             next_adapter.checkAuthenticated.call_count))
+        self.assertVectorEqual(
+            (1, adapter.checkPermissionIsRegistered.call_count),
+            (1, next_adapter.checkAuthenticated.call_count))
