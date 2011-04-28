@@ -152,4 +152,6 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
 
     def destroySelf(self):
         """See `IDistributionJob`."""
+        job = self.context.job
         Store.of(self.context).remove(self.context)
+        Store.of(job).remove(job)

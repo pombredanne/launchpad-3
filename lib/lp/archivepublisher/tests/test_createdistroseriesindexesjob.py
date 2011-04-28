@@ -27,6 +27,7 @@ from lp.archivepublisher.model.createdistroseriesindexesjob import (
     CreateDistroSeriesIndexesJob,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.services.job.model.job import Job
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -39,6 +40,7 @@ from lp.services.mail.sendmail import format_address_for_person
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
+from lp.soyuz.model.distributionjob import DistributionJob
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import run_mail_jobs
@@ -259,6 +261,24 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         self.assertIn(
             format_address_for_person(distroseries.distribution.owner),
             job.getMailRecipients())
+
+    def test_destroySelf_destroys_job(self):
+        job = self.makeJob()
+        job_id = job.job.id
+        self.becomeArchivePublisher()
+        job.destroySelf()
+        store = IMasterStore(Job)
+        self.assertIs(None, store.find(Job, Job.id == job_id).one())
+
+    def test_destroySelf_destroys_DistributionJob(self):
+        job = self.makeJob()
+        job_id = job.id
+        self.becomeArchivePublisher()
+        job.destroySelf()
+        store = IMasterStore(DistributionJob)
+        self.assertIs(
+            None,
+            store.find(DistributionJob, DistributionJob.id == job_id).one())
 
     def test_run_does_the_job(self):
         # The job runs publish_distro and generates the expected output
