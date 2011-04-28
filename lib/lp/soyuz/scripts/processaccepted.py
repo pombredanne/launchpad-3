@@ -268,6 +268,8 @@ class ProcessAccepted(LaunchpadScript):
                     queue_items = distroseries.getQueueItems(
                         PackageUploadStatus.ACCEPTED, archive=archive)
                     for queue_item in queue_items:
+                        self.logger.debug(
+                            "Processing queue item %d" % queue_item.id)
                         try:
                             queue_item.realiseUpload(self.logger)
                         except Exception:
