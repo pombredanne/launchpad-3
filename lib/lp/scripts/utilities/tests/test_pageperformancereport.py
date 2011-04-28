@@ -19,7 +19,7 @@ from lp.testing import TestCase
 
 
 class FakeOptions:
-    timeout = 4
+    timeout = 5
     db_file = None
     pageids = True
     top_urls = 3
