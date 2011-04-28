@@ -217,3 +217,51 @@ class TestBugCreation(TestCaseWithFactory):
             bug = getUtility(IBugSet).createBug(params)
             self.assertEqual(
                 bug.default_bugtask.status, params.status)
+
+    def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the importance.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                importance=BugTaskImportance.HIGH)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskImportance,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_assignee_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the assignee.
+        person = self.factory.makePerson()
+        person_2 = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        # Setting the target's bug supervisor means that
+        # canTransitionToAssignee() will return False for `person` if
+        # another Person is passed as `assignee`.
+        with person_logged_in(target.owner):
+            target.setBugSupervisor(target.owner, target.owner)
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                assignee=person_2)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskAssignee,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_milestone_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the milestone.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                milestone=self.factory.makeMilestone(product=target))
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskMilestone,
+                getUtility(IBugSet).createBug, params)
