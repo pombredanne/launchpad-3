@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'GPGHandler',
+    'LongRunningGPGHandler',
     'PymeKey',
     'PymeSignature',
     'PymeUserId',
@@ -25,6 +26,7 @@ import urllib2
 import gpgme
 from gpgme import editutil as gpgme_editutil
 from twisted.internet import task
+from twisted.internet.error import AlreadyCancelled
 from zope.interface import implements
 
 from canonical.config import config
@@ -35,6 +37,7 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGUploadFailure,
     GPGVerificationError,
     IGPGHandler,
+    ILongRunningGPGHandler,
     IPymeKey,
     IPymeSignature,
     IPymeUserId,
@@ -64,22 +67,18 @@ class GPGHandler:
 
     implements(IGPGHandler)
 
-    # The twisted job to touch the home directory.
-    _touch_home_call = None
-
     def __init__(self):
         """Initialize environment variable."""
-        self._setNewHome()
+        self._startup()
         os.environ['GNUPGHOME'] = self.home
 
-    def _setNewHome(self):
+    def _startup(self):
         """Create a new directory containing the required configuration.
 
         This method is called inside the class constructor and genereates
         a new directory (name randomly generated with the 'gpg-' prefix)
         containing the proper file configuration and options.
 
-        Also touches the config directory every 12 hours.
         Also installs an atexit handler to remove the directory on normal
         process termination.
         """
@@ -94,42 +93,14 @@ class GPGHandler:
                    'keyserver-options auto-key-retrieve\n'
                    'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
-
-        # 1 hour = 3600 seconds
-        self._scheduleTouchHomeDirectoryJob(12*3600)
-
-        # create a local atexit handler to remove the configuration directory
+        # register an atexit handler to remove the configuration directory
         # on normal termination.
-        def removeHome(home):
-            """Remove GNUPGHOME directory and stop the twisted job."""
-            self._touch_home_call.stop()
-            if os.path.exists(home):
-                shutil.rmtree(home)
+        atexit.register(self._shutdown)
 
-        atexit.register(removeHome, self.home)
-
-    def _scheduleTouchHomeDirectoryJob(self, touch_interval):
-        # Create a job to touch the home directory every 12 hours so that it
-        # does not get cleaned up by any reaper scripts which look at
-        # time last modified. This is done outside of _setHome to allow a
-        # test to be written which sets the touch interval to a value short
-        # enough for a viable test.
-
-        def touchFilesInHomeDirectory():
-            os.utime(self.home, None)
-            files_snapshot = [os.path.join(self.home, f)
-                for f in os.listdir(self.home)]
-            for file in files_snapshot:
-                try:
-                    os.utime(file, None)
-                except OSError:
-                    # The file has been deleted.
-                    pass
-
-        if self._touch_home_call:
-            self._touch_home_call.stop()
-        self._touch_home_call = task.LoopingCall(touchFilesInHomeDirectory)
-        self._touch_home_call.start(touch_interval)
+    def _shutdown(self):
+        """Remove GNUPGHOME directory."""
+        if os.path.exists(self.home):
+            shutil.rmtree(self.home)
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
@@ -579,6 +550,60 @@ class GPGHandler:
                              stderr=subprocess.STDOUT)
         p.communicate()
         return p.returncode
+
+
+class LongRunningGPGHandler(GPGHandler):
+    """See ILongRunningGPGHandler."""
+
+    implements(ILongRunningGPGHandler)
+
+    def _startup(self):
+        """Set up the twisted job to periodically touch the config directory.
+        """
+        super(LongRunningGPGHandler, self)._startup()
+        self._touch_home_call = None
+        self._scheduleTouchHomeDirectoryJob()
+
+    def _shutdown(self):
+        """Stop the twisted job as part of shutting down."""
+        try:
+            self.stopConfigJob()
+        except AlreadyCancelled:
+            # So we're already cancelled, meh.
+            pass
+        super(LongRunningGPGHandler, self)._shutdown()
+
+    def stopConfigJob(self):
+        """Required for tests.
+
+        Tests which extend _DeferredRunTest complain if there are any
+        pending jobs when they complete. So we need a way to allow them to
+        manually stop the config job rather than waiting for the atexit
+        callback to do it.
+        """
+        if self._touch_home_call and self._touch_home_call.running:
+            self._touch_home_call.stop()
+
+    def _touchFilesInHomeDirectory(self):
+        os.utime(self.home, None)
+        for file in os.listdir(self.home):
+            try:
+                os.utime(os.path.join(self.home, file), None)
+            except OSError:
+                # The file has been deleted.
+                pass
+
+    def _scheduleTouchHomeDirectoryJob(self, touch_interval=12*3600):
+        # Create a job to touch the home directory every 12 hours so that it
+        # does not get cleaned up by any reaper scripts which look at
+        # time last modified. This is done outside of _setHome to allow a
+        # test to be written which sets the touch interval to a value short
+        # enough for a viable test.
+
+        self.stopConfigJob()
+        self._touch_home_call = task.LoopingCall(
+            self._touchFilesInHomeDirectory)
+        return self._touch_home_call.start(touch_interval)
 
 
 class PymeSignature(object):

@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import ILongRunningGPGHandler
 from canonical.testing.layers import ZopelessDatabaseLayer
 
 from lp.poppy.twistedftp import PoppyFileWriter
@@ -44,7 +44,11 @@ class TestPoppyFileWriter(TestCaseWithFactory):
         self.addCleanup(self.tac.tearDown)
 
         # Load a key.
-        gpg_handler = getUtility(IGPGHandler)
+        gpg_handler = getUtility(ILongRunningGPGHandler)
+        # We don't care about the config job for this test but we need to
+        # stop it running or else the test harness will complain about
+        # pending jobs when the test completes.
+        gpg_handler.stopConfigJob()
         key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
         key_data = open(key_path).read()
         key = gpg_handler.importPublicKey(key_data)
@@ -64,6 +68,16 @@ class TestPoppyFileWriter(TestCaseWithFactory):
         # Locate the directory with test files.
         self.test_files_dir = os.path.join(
             config.root, "lib/lp/soyuz/scripts/tests/upload_test_files/")
+
+    def test_correct_gpghandler(self):
+        valid_changes_file = os.path.join(
+            self.test_files_dir, "etherwake_1.08-1_source.changes")
+
+        with open(valid_changes_file) as opened_file:
+            file_writer = PoppyFileWriter(opened_file)
+            self.assertTrue(
+                ILongRunningGPGHandler.providedBy(file_writer._gpghandler))
+            file_writer.close()
 
     def test_changes_file_with_valid_GPG(self):
         valid_changes_file = os.path.join(

@@ -25,7 +25,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
-    IGPGHandler,
+    ILongRunningGPGHandler,
     )
 
 from canonical.config import config
@@ -157,6 +157,10 @@ class PoppyFileWriter(ftp._FileWriter):
                 return defer.fail(ftp.PermissionDeniedError(error))
         return defer.succeed(None)
 
+    @property
+    def _gpghandler(self):
+        return getUtility(ILongRunningGPGHandler)
+
     @read_transaction
     def validateGPG(self, signed_file):
         """Check the GPG signature in the file referenced by signed_file.
@@ -164,7 +168,7 @@ class PoppyFileWriter(ftp._FileWriter):
         Return an error string if there's a problem, or None.
         """
         try:
-            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
+            sig = self._gpghandler.getVerifiedSignatureResilient(
                 file(signed_file, "rb").read())
         except GPGVerificationError, error:
             return ("Changes file must be signed with a valid GPG "

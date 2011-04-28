@@ -3,9 +3,14 @@
 
 import unittest
 
+from calendar import timegm
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import UTC
 import gpgme
 import os
-import time
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -15,7 +20,10 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    IGPGHandler,
+    ILongRunningGPGHandler,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
@@ -178,29 +186,32 @@ class TestImportKeyRing(unittest.TestCase):
             self.gpg_handler.importKeyringFile(ring)
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
-
     def testHomeDirectoryJob(self):
         """Does the job to touch the home work."""
-        naked_gpgjandler = removeSecurityProxy(self.gpg_handler)
-        self.assertTrue(naked_gpgjandler._touch_home_call.running)
+        gpg_handler = getUtility(ILongRunningGPGHandler)
+        naked_gpghandler = removeSecurityProxy(gpg_handler)
+        self.assertTrue(naked_gpghandler._touch_home_call.running)
+
         # It should be initially scheduled for every 12 hours.
-        self.assertEqual(12*3600, naked_gpgjandler._touch_home_call.interval)
+        self.assertEqual(12*3600, naked_gpghandler._touch_home_call.interval)
 
         # Get a list of all the files in the home directory.
-        files_to_check = [os.path.join(naked_gpgjandler.home, f)
-            for f in os.listdir(naked_gpgjandler.home)]
-        files_to_check.append(naked_gpgjandler.home)
-        self.assertTrue(len(files_to_check)>1)
-        # Record the initial last modified times.
-        first_last_modified_times = dict((fname, os.path.getmtime(fname))
-            for fname in files_to_check)
-        # Reschedule the job to run every 2 seconds
-        naked_gpgjandler._scheduleTouchHomeDirectoryJob(2)
-        # Wait and re-check last modified time
-        time.sleep(3)
-        second_last_modified_times = dict((fname, os.path.getmtime(fname))
-            for fname in files_to_check)
+        files_to_check = [os.path.join(naked_gpghandler.home, f)
+            for f in os.listdir(naked_gpghandler.home)]
+        files_to_check.append(naked_gpghandler.home)
+        self.assertTrue(len(files_to_check) > 1)
+
+        # Set the last modified times to 12 hours ago
+        nowless12 = (datetime.now(UTC) - timedelta(hours=12)).utctimetuple()
+        lm_time = timegm(nowless12)
+        for fname in files_to_check:
+            os.utime(fname, (lm_time, lm_time))
+
+        # Reschedule the job. It will also be executed now so we can check the
+        # last modified dates immediately.
+        naked_gpghandler._scheduleTouchHomeDirectoryJob(3600)
+        second_last_modified_times = dict(
+            (fname, os.path.getmtime(fname)) for fname in files_to_check)
         for fname in files_to_check:
             self.assertTrue(
-                first_last_modified_times[fname]+2 <
-                second_last_modified_times[fname])
+                lm_time+12*3600 <= second_last_modified_times[fname])
