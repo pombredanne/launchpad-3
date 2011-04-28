@@ -12,9 +12,7 @@ __all__ = [
 
 from zope.component import getAdapter
 from zope.interface import implements
-from zope.security.permission import (
-    checkPermission as check_permission_is_registered,
-    )
+from zope.security.permission import checkPermission
 
 from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.app.interfaces.security import IAuthorization
@@ -46,6 +44,13 @@ class AuthorizationBase:
         """
         return False
 
+    def checkPermissionIsRegistered(self, obj, permission):
+        """Pass through to checkPermission.
+
+        To be replaced during testing.
+        """
+        return checkPermission(obj, permission)
+
     def forwardCheckAuthenticated(self, user,
                                   obj=None, permission=None):
         """Forward request to another security adapter.
@@ -66,7 +71,7 @@ class AuthorizationBase:
             permission = self.permission
         else:
             # This will raise ValueError if the permission doesn't exist.
-            check_permission_is_registered(obj, permission)
+            self.checkPermissionIsRegistered(obj, permission)
         next_adapter = getAdapter(obj, IAuthorization, permission)
         return next_adapter.checkAuthenticated(user)
 
