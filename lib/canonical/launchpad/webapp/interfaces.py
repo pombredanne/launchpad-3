@@ -68,22 +68,6 @@ class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
 
 
-class IAuthorization(Interface):
-    """Authorization policy for a particular object and permission."""
-
-    def checkUnauthenticated():
-        """Returns True if an unauthenticated user has that permission
-        on the adapted object.  Otherwise returns False.
-        """
-
-    def checkAccountAuthenticated(account):
-        """Returns True if the account has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument `account` is the account who is authenticated.
-        """
-
-
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
 
