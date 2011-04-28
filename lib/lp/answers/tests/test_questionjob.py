@@ -193,15 +193,17 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             subject, body, headers)
         self.assertEqual(user, job.getErrorRecipients())
 
-    def test_recipients(self):
+    def test_recipients_asker_subscriber(self):
         # The recipients property matches the question recipients.
         question = self.factory.makeQuestion()
         self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(
-            question, user, QuestionRecipientSet.SUBSCRIBER,
+            question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)
-        self.assertEqual(question.getRecipients(), job.recipients)
+        self.assertContentEqual(
+            question.getRecipients().getRecipientPersons(),
+            job.recipients.getRecipientPersons())
 
     def test_buildBody_with_separator(self):
         # A body with a separator is preserved.
@@ -251,7 +253,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(
-            question, user, QuestionRecipientSet.SUBSCRIBER,
+            question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)
         logger = BufferLogger()
         with log.use(logger):

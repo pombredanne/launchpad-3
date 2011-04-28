@@ -50,6 +50,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -181,7 +182,30 @@ class QuestionEmailJob(BaseRunnableJob):
     @property
     def recipients(self):
         """See `IQuestionEmailJob`."""
-        return self.question.getRecipients()
+        term = QuestionRecipientSet.getTermByToken(
+            self.metadata['recipient_set'])
+        question_recipient_set = term.value
+        if question_recipient_set == QuestionRecipientSet.ASKER:
+            recipients = NotificationRecipientSet()
+            owner = self.question.owner
+            original_recipients = self.question.direct_recipients
+            if owner in original_recipients:
+                rationale, header = original_recipients.getReason(owner)
+                recipients.add(owner, rationale, header)
+            return recipients
+        elif question_recipient_set == QuestionRecipientSet.SUBSCRIBER:
+            recipients = self.question.getRecipients()
+            if self.question.owner in recipients:
+                recipients.remove(self.question.owner)
+            return recipients
+        elif question_recipient_set == QuestionRecipientSet.ASKER_SUBSCRIBER:
+            return self.question.getRecipients()
+        elif question_recipient_set == QuestionRecipientSet.CONTACT:
+            return self.question.target.getAnswerContactRecipients(None)
+        else:
+            raise ValueError(
+                'Unsupported QuestionRecipientSet value: %s' %
+                question_recipient_set)
 
     def buildBody(self, rationale):
         """See `IQuestionEmailJob`."""
