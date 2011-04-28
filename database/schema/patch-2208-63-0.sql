@@ -234,12 +234,13 @@ COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
 
 
-CREATE OR REPLACE FUNCTION bugsummary_locations(bugid integer)
+CREATE OR REPLACE FUNCTION bugsummary_locations(BUG_ROW bug)
 RETURNS SETOF bugsummary LANGUAGE plpgsql AS
 $$
 DECLARE
     r bugsummary%ROWTYPE;
 BEGIN
+    -- 
     r.product = 1; -- XXX: Fill in with real data.
     RETURN NEXT r;
     r.product = NULL;
@@ -252,13 +253,13 @@ COMMENT ON FUNCTION bugsummary_locations(int) IS
 'Calculate what BugSummary rows should exist for a given Bug.';
 
 
-CREATE OR REPLACE FUNCTION summarise_bug(bugid integer) RETURNS VOID
+CREATE OR REPLACE FUNCTION summarise_bug(BUG_ROW bug) RETURNS VOID
 LANGUAGE plpgsql VOLATILE AS
 $$
 DECLARE
     d bugsummary%ROWTYPE;
 BEGIN
-    FOR d IN SELECT * FROM bugsummary_locations(bugid) LOOP
+    FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
         PERFORM bug_summary_inc(d);
     END LOOP;
 END;
