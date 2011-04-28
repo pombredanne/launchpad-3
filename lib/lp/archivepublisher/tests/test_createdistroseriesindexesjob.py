@@ -141,8 +141,9 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         return self.makeJob(distroseries)
 
     def becomeArchivePublisher(self):
-        """Become the archive publisher database user."""
+        """Become the archive publisher database user (and clean up later)."""
         self.becomeDbUser(config.archivepublisher.dbuser)
+        self.addCleanup(self.becomeDbUser, 'launchpad')
 
     def getSuites(self, distroseries):
         """Get the list of suites for `distroseries`."""
