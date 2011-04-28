@@ -35,7 +35,10 @@ from canonical.launchpad.mail import (
     simple_sendmail,
     )
 from canonical.launchpad.scripts import log
-from lp.answers.enums import QuestionJobType
+from lp.answers.enums import (
+    QuestionJobType,
+    QuestionRecipientSet,
+    )
 from lp.answers.interfaces.questionjob import (
     IQuestionJob,
     IQuestionEmailJob,
@@ -107,10 +110,11 @@ class QuestionEmailJob(BaseRunnableJob):
     class_job_type = QuestionJobType.EMAIL
 
     @classmethod
-    def create(cls, question, user, subject, body, headers):
+    def create(cls, question, user, recipient_set, subject, body, headers):
         """See `IQuestionJob`."""
         metadata = {
             'user': user.id,
+            'recipient_set': recipient_set.name,
             'subject': subject,
             'body': body,
             'headers': headers,

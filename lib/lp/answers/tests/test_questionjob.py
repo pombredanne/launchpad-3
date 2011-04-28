@@ -12,7 +12,10 @@ from zope.component import getUtility
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
-from lp.answers.enums import QuestionJobType
+from lp.answers.enums import (
+    QuestionJobType,
+    QuestionRecipientSet,
+    )
 from lp.answers.model.questionjob import (
     QuestionJob,
     QuestionEmailJob,
@@ -69,12 +72,18 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         # to metadata.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(QuestionJobType.EMAIL, job.job_type)
         self.assertEqual(question, job.question)
         self.assertContentEqual(
-            ['body', 'headers', 'subject', 'user'], job.metadata.keys())
+            ['body', 'headers', 'recipient_set', 'subject', 'user'],
+            job.metadata.keys())
         self.assertEqual(user.id, job.metadata['user'])
+        self.assertEqual(
+            QuestionRecipientSet.SUBSCRIBER.name,
+            job.metadata['recipient_set'])
         self.assertEqual(subject, job.metadata['subject'])
         self.assertEqual(body, job.metadata['body'])
         self.assertEqual(
@@ -86,11 +95,14 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         question = self.factory.makeQuestion()
         user, subject, ignore, headers = self.makeUserSubjectBodyHeaders()
         job_1 = QuestionEmailJob.create(
-            question, user, subject, 'one', headers)
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, 'one', headers)
         job_2 = QuestionEmailJob.create(
-            question, user, subject, 'two', headers)
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, 'two', headers)
         job_3 = QuestionEmailJob.create(
-            question, user, subject, 'three', headers)
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, 'three', headers)
         job_1.start()
         job_1.complete()
         job_ids = [job.id for job in QuestionEmailJob.iterReady()]
@@ -100,35 +112,45 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         # The user property matches the user passed to create().
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(user, job.user)
 
     def test_subject(self):
         # The subject property matches the subject passed to create().
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(body, job.body)
 
     def test_body(self):
         # The body property matches the body passed to create().
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(body, job.body)
 
     def test_headers(self):
         # The headers property matches the headers passed to create().
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(headers, job.headers)
 
     def test_from_address(self):
         # The from_address is the question with the user displayname.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         address = format_address(
             user.displayname,
             "question%s@answers.launchpad.net" % question.id)
@@ -138,14 +160,18 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         # The log_name property matches the class name.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(job.__class__.__name__, job.log_name)
 
     def test_getOopsVars(self):
         # The getOopsVars() method adds the question and user to the vars.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         oops_vars = job.getOopsVars()
         self.assertTrue(('question', question.id) in oops_vars)
         self.assertTrue(('user', user.name) in oops_vars)
@@ -154,7 +180,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         # The getErrorRecipients method matches the user.
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(user, job.getErrorRecipients())
 
     def test_recipients(self):
@@ -166,7 +194,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             contact.addLanguage(lang_set['en'])
             question.target.addAnswerContact(contact)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         self.assertEqual(question.getRecipients(), job.recipients)
 
     def test_buildBody_with_separator(self):
@@ -174,7 +204,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         body = 'body\n-- '
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         formatted_body = job.buildBody('rationale')
         self.assertEqual(
             'body\n-- \nrationale', formatted_body)
@@ -184,7 +216,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         body = 'body -- mdash'
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         formatted_body = job.buildBody('rationale')
         self.assertEqual(
             'body -- mdash\n-- \nrationale', formatted_body)
@@ -194,7 +228,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         question = self.factory.makeQuestion()
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         body = 'body\n-- '
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         rationale_1 = (
             'You received this email because you are indirectly subscribed '
             'to this')
@@ -214,7 +250,9 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             contact.addLanguage(lang_set['en'])
             question.target.addAnswerContact(contact)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
-        job = QuestionEmailJob.create(question, user, subject, body, headers)
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.SUBSCRIBER,
+            subject, body, headers)
         logger = BufferLogger()
         with log.use(logger):
             job.run()
