@@ -281,6 +281,7 @@ class ProcessAccepted(LaunchpadScript):
                                 request.oopsid))
                         else:
                             processed_queue_ids.append(queue_item.id)
+                        self.txn.commit()
 
             if not self.options.dryrun:
                 self.txn.commit()
