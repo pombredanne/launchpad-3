@@ -237,6 +237,20 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             question.getRecipients().getRecipientPersons(),
             job.recipients.getRecipientPersons())
 
+    def test_recipients_contact(self):
+        # The recipients property matches the question target answer contacts.
+        question = self.factory.makeQuestion()
+        self.addAnswerContact(question)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.CONTACT,
+            subject, body, headers)
+        recipients = [
+            person for email, person in job.recipients.getRecipientPersons()]
+        self.assertContentEqual(
+            question.target.getAnswerContactRecipients(None),
+            recipients)
+
     def test_buildBody_with_separator(self):
         # A body with a separator is preserved.
         question = self.factory.makeQuestion()
