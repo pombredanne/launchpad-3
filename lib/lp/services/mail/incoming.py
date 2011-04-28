@@ -459,11 +459,8 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
         if handler is not None:
             break
     else:
-        _send_email_oops(trans, log, mail, raw_mail,
-            "No handler registered for '%s' " % (
-                ', '.join(addresses)),
-            file_alias_url)
-        return
+        raise AssertionError(
+            "No handler registered for '%s' " % (', '.join(addresses)))
 
     if principal is None and not handler.allow_unknown_users:
         log.info('Unknown user: %s ' % mail['From'])
@@ -471,9 +468,5 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
 
     handled = handler.process(mail, email_addr, file_alias)
     if not handled:
-        _send_email_oops(
-            trans, log, mail, raw_mail,
-            "Handler found, but message was not handled: %s" % (
-                mail['From'], ),
-            file_alias_url)
-        return
+        raise AssertionError(
+            "Handler found, but message was not handled")
