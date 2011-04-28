@@ -110,6 +110,8 @@ WITH
         product, productseries, distribution, distroseries,
         sourcepackagename, person, tag, status, milestone;
 
+-- XXX: Is there a reason why the distribution, distroseries, product
+-- and productseries indexes are not partial?
 -- Need indices for FK CASCADE DELETE to find any FK easily
 CREATE INDEX bugsummary_distribution on bugsummary using btree(distribution);
 CREATE INDEX bugsummary_distroseries on bugsummary using btree(distroseries);
@@ -133,6 +135,8 @@ CREATE INDEX bugsummary_distribution_count_idx on bugsummary using btree(distrib
 -- Distribution wide tag counts
 CREATE INDEX bugsummary_distribution_tag_count_idx on bugsummary using btree(distribution) where sourcepackagename is null and tag is not null;
 -- Everything (counts)
+-- XXX: What is this index used for? Looks like counts of bugs with a given
+-- status
 CREATE INDEX bugsummary_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is null;
 -- Everything (tags)
 CREATE INDEX bugsummary_tag_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is not null;
@@ -234,49 +238,34 @@ COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
 
 
--- immutable ?
 CREATE OR REPLACE FUNCTION bugsummary_viewers(BUG_ROW bug)
-RETURNS SETOF bugsubscription LANGUAGE plpgsql AS
+RETURNS SETOF bugsubscription LANGUAGE SQL STABLE AS
 $$
-DECLARE
-    r bugsubscription%ROWTYPE;
-BEGIN
-    IF NOT bug.private THEN
-        RETURN;
-    END IF;
-    FOR r IN SELECT * FROM bugsubscription WHERE bugsubscription.bug=bug.id LOOP
-        RETURN NEXT r;
-    END LOOP;
-END;
+    SELECT *
+    FROM BugSubscription
+    WHERE
+        bugsubscription.bug=$1.id
+        AND $1.private IS TRUE;
 $$;
 
 COMMENT ON FUNCTION bugsummary_viewers(bug) IS
 'Return (bug, viewer) for all viewers if private, nothing otherwise';
 
 
--- IMMUTABLE?
 CREATE OR REPLACE FUNCTION bugsummary_tags(BUG_ROW bug)
-RETURNS SETOF bugtag LANGUAGE plpgsql AS
+RETURNS SETOF bugtag LANGUAGE SQL STABLE AS
 $$
-DECLARE
-    r bugtag%ROWTYPE;
-BEGIN
-    -- The NULL aggregate;
-    r.bug = bug.id;
-    r.tag = NULL::text;
-    RETURN NEXT r;
-    FOR r IN SELECT * FROM bugtag WHERE bugtag.bug=bug.id LOOP
-        RETURN NEXT r;
-    END LOOP;
-END;
+    SELECT * FROM BugTag WHERE BugTag.bug = $1.id
+    UNION ALL
+    SELECT NULL AS id, $1.id AS bug, NULL AS tag;
 $$;
 
 COMMENT ON FUNCTION bugsummary_tags(bug) IS
 'Return (bug, tag) for all tags + (bug, NULL::text)';
 
--- IMMUTABLE?
-CREATE OR REPLACE FUNCTION bugsummary_tasks(BUG_ROW bug)
-RETURNS SETOF bugtask LANGUAGE plpgsql AS
+
+CREATE OR REPLACE FUNCTION bugsummary_tasks(bug_id integer)
+RETURNS SETOF bugtask LANGUAGE plpgsql STABLE AS
 $$
 DECLARE
     r bugtask%ROWTYPE;
@@ -284,18 +273,17 @@ BEGIN
     -- One row only for each target permutation - need to ignore other fields
     -- like date last modified to deal with conjoined masters and multiple
     -- sourcepackage tasks in a distro.
-    FOR r IN (SELECT DISTINCT ON (
-        bug, product, productseries, distribution, distroseries, sourcepackagename, status, milestone
-        ) * FROM (SELECT * FROM bugtask WHERE bugtask.bug=bug.id
+    FOR r IN
+        SELECT
+            bug, product, productseries, distribution, distroseries,
+            sourcepackagename, status, milestone
+        FROM BugTask WHERE bug=bug_id
         UNION
-        SELECT DISTINCT ON (
+        SELECT
             bug, product, productseries, distribution, distroseries,
-            sourcepackagename, milestone)
-            bug, product, productseries, distribution, distroseries,
-            NULL::integer as sourcepackagename,
-            status, milestone
-            FROM bugtask where sourcepackagename IS NOT NULL and bugtask.bug=bug.id) as _tmp)
-        LOOP
+            NULL, status, milestone
+        FROM BugTask WHERE bug=bug_id AND sourcepackagename IS NOT NULL
+    LOOP
         RETURN NEXT r;
     END LOOP;
 END;
@@ -303,6 +291,8 @@ $$;
 
 COMMENT ON FUNCTION bugsummary_tasks(bug) IS
 'Return all tasks for the bug + all sourcepackagename tasks again with the sourcepackagename squashed';
+
+
 
 CREATE OR REPLACE FUNCTION bugsummary_locations(BUG_ROW bug)
 RETURNS SETOF bugsummary LANGUAGE plpgsql AS
