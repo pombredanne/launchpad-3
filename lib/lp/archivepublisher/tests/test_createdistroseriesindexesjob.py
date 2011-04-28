@@ -5,14 +5,16 @@
 
 __metaclass__ = type
 
+from logging import (
+    FATAL,
+    getLogger,
+    )
 import os.path
-from storm.locals import Store
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts.tests import run_script
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
@@ -26,19 +28,25 @@ from lp.archivepublisher.model.createdistroseriesindexesjob import (
     )
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.features.testing import FeatureFixture
-from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.job.interfaces.job import (
+    IRunnableJob,
+    JobStatus,
+    )
+from lp.services.job.runner import JobCronScript
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.distributionjob import IDistributionJob
-from lp.testing import (
-    celebrity_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import run_mail_jobs
+
+
+def silence_publisher_logger():
+    """Silence the logger that `run_publisher` creates."""
+    getLogger("publish-distro").setLevel(FATAL)
 
 
 class TestCreateDistroSeriesIndexesJobSource(TestCaseWithFactory):
@@ -54,7 +62,7 @@ class TestCreateDistroSeriesIndexesJobSource(TestCaseWithFactory):
         """Strip `distribution` of its publisher configuration."""
         publisher_config = getUtility(IPublisherConfigSet).getByDistribution(
             distribution)
-        Store.of(publisher_config).remove(publisher_config)
+        IMasterStore(publisher_config).remove(publisher_config)
 
     def test_baseline(self):
         # The utility conforms to the interfaces it claims to implement.
@@ -108,20 +116,40 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         job = removeSecurityProxy(self.getJobSource().makeFor(distroseries))
-        job.logger = DevNullLogger()
         return job
+
+    def getDistsRoot(self, distribution):
+        """Get distsroot directory for `distribution`."""
+        archive = removeSecurityProxy(distribution.main_archive)
+        pub_config = getPubConfig(archive)
+        return pub_config.distsroot
+
+    def makeDistsDirs(self, distroseries):
+        """Create dists directories in `distsroot` for `distroseries`."""
+        distsroot = self.getDistsRoot(distroseries.distribution)
+        base = os.path.join(distsroot, distroseries.name)
+        for suffix in pocketsuffix.itervalues():
+            os.makedirs(base + suffix)
+
+    def makeCredibleJob(self):
+        """Create a job with fixtures required for running it."""
+        silence_publisher_logger()
+        distro = self.factory.makeDistribution(
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        self.makeDistsDirs(distroseries)
+        return self.makeJob(distroseries)
+
+    def becomeArchivePublisher(self):
+        """Become the archive publisher database user (and clean up later)."""
+        self.becomeDbUser(config.archivepublisher.dbuser)
+        self.addCleanup(self.becomeDbUser, 'launchpad')
 
     def getSuites(self, distroseries):
         """Get the list of suites for `distroseries`."""
         return [
             distroseries.name + suffix
             for suffix in pocketsuffix.itervalues()]
-
-    def makeDistsDirs(self, distsroot, distroseries):
-        """Create dists directories in `distsroot` for `distroseries`."""
-        base = os.path.join(distsroot, distroseries.name)
-        for suffix in pocketsuffix.itervalues():
-            os.makedirs(base + suffix)
 
     def test_baseline(self):
         # The job class conforms to the interfaces it claims to implement.
@@ -131,17 +159,16 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
 
     def test_getSuites_identifies_distroseries_suites(self):
         # getSuites lists all suites in the distroseries.
-        distroseries = self.factory.makeDistroSeries()
-        job = self.makeJob(distroseries)
-        self.assertContentEqual(self.getSuites(distroseries), job.getSuites())
+        job = self.makeJob()
+        self.assertContentEqual(
+            self.getSuites(job.distroseries), job.getSuites())
 
     def test_getSuites_ignores_suites_for_other_distroseries(self):
         # getSuites does not list suites in the distributio that do not
         # belong to the right distroseries.
-        distroseries = self.factory.makeDistroSeries()
-        self.factory.makeDistroSeries(distribution=distroseries.distribution)
-        job = self.makeJob(distroseries)
-        self.assertContentEqual(self.getSuites(distroseries), job.getSuites())
+        job = self.makeJob()
+        self.assertContentEqual(
+            self.getSuites(job.distroseries), job.getSuites())
 
     def test_job_runs_publish_distro_for_main(self):
         # The job always runs publish_distro for the distribution's main
@@ -188,8 +215,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
     def test_failure_notifies_recipients(self):
         # Failure notices are sent to the addresses returned by
         # getMailRecipients.
-        distroseries = self.factory.makeDistroSeries()
-        job = self.makeJob(distroseries)
+        job = self.makeJob()
         job.getMailRecipients = FakeMethod(result=["foo@example.com"])
         job.notifyUserError(HorribleFailure("Boom!"))
         run_mail_jobs()
@@ -199,8 +225,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
     def test_success_notifies_recipients(self):
         # Success notices are sent to the addresses returned by
         # getMailRecipients.
-        distroseries = self.factory.makeDistroSeries()
-        job = self.makeJob(distroseries)
+        job = self.makeJob()
         job.getMailRecipients = FakeMethod(result=["bar@example.com"])
         job.notifySuccess()
         run_mail_jobs()
@@ -209,8 +234,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
 
     def test_notifySuccess_sends_email(self):
         # notifySuccess sends out a success notice by email.
-        distroseries = self.factory.makeDistroSeries()
-        job = self.makeJob(distroseries)
+        job = self.makeJob()
         job.notifySuccess()
         run_mail_jobs()
         sender, recipients, body = stub.test_emails.pop()
@@ -220,11 +244,11 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         # The release manager gets notified.  This role is represented
         # by the driver for the distroseries.
         distroseries = self.factory.makeDistroSeries()
-        driver = self.factory.makePerson()
-        distroseries.driver = driver
+        distroseries.driver = self.factory.makePerson()
         job = self.makeJob(distroseries)
         self.assertIn(
-            format_address_for_person(driver), job.getMailRecipients())
+            format_address_for_person(distroseries.driver),
+            job.getMailRecipients())
 
     def test_distribution_owner_gets_notified_if_no_release_manager(self):
         # If no release manager is available, the distribution owners
@@ -232,41 +256,26 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         distroseries.driver = None
         job = self.makeJob(distroseries)
-        owner = distroseries.distribution.owner
         self.assertIn(
-            format_address_for_person(owner), job.getMailRecipients())
+            format_address_for_person(distroseries.distribution.owner),
+            job.getMailRecipients())
 
     def test_run_does_the_job(self):
         # The job runs publish_distro and generates the expected output
         # files.
-        distro = self.factory.makeDistribution(
-            publish_root_dir=unicode(self.makeTemporaryDirectory()))
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        job = self.makeJob(distroseries)
-
-        with celebrity_logged_in('admin'):
-            distsroot = getPubConfig(distro.main_archive).distsroot
-            self.makeDistsDirs(distsroot, distroseries)
-            self.becomeDbUser(config.archivepublisher.dbuser)
-            self.addCleanup(self.becomeDbUser, 'launchpad')
-            job.run()
-
-        output = os.path.join(distsroot, distroseries.name, "Release")
+        job = self.makeCredibleJob()
+        self.becomeArchivePublisher()
+        job.run()
+        distsroot = self.getDistsRoot(job.distribution)
+        output = os.path.join(distsroot, job.distroseries.name, "Release")
         self.assertTrue(file_exists(output))
 
     def test_job_runner_runs_jobs(self):
-        # The job runner script successfully runs the jobs.
-        distro = self.factory.makeDistribution(
-            publish_root_dir=unicode(self.makeTemporaryDirectory()))
-        distroseries = self.factory.makeDistroSeries(distribution=distro)
-        self.makeJob(distroseries)
-        with celebrity_logged_in('admin'):
-            distsroot = getPubConfig(distro.main_archive).distsroot
-            self.makeDistsDirs(distsroot, distroseries)
-        transaction.commit()
-
-        returncode, stdout, stderr = run_script(
-            "cronscripts/create-distroseries-indexes.py", ["-vvvv"])
-
-        output = os.path.join(distsroot, distroseries.name, "Release")
-        self.assertTrue(file_exists(output))
+        # The generic job runner can set itself up to run these jobs.
+        job = self.makeCredibleJob()
+        script = JobCronScript(
+            test_args=["create_distroseries_indexes"],
+            commandline_config=True)
+        script.logger = DevNullLogger()
+        script.main()
+        self.assertEqual(JobStatus.COMPLETED, job.context.job.status)

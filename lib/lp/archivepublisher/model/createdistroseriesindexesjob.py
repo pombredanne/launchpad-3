@@ -56,9 +56,6 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
 
     class_job_type = DistributionJobType.CREATE_DISTROSERIES_INDEXES
 
-    # Injection point for tests: optional publish_distro logger.
-    logger = None
-
     @classmethod
     def create(cls, distroseries):
         job = DistributionJob(
@@ -116,7 +113,7 @@ class CreateDistroSeriesIndexesJob(DistributionJobDerived):
         parser = OptionParser()
         publishdistro.add_options(parser)
         options, args = parser.parse_args(arguments)
-        publishdistro.run_publisher(options, transaction, self.logger)
+        publishdistro.run_publisher(options, transaction)
 
     def getMailRecipients(self):
         """List email addresses to notify of success or failure."""
