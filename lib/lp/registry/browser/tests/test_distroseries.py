@@ -1001,8 +1001,24 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertContentEqual(
             [resolved_diff], filtered_view.cached_differences.batch)
 
-    def test_canPerformSync_non_editor(self):
-        # Non-editors do not see options to sync.
+    def test_canPerformSync_anon(self):
+        # Anonymous users do not see options to sync.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        set_derived_series_ui_feature_flag(self)
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertFalse(view.canPerformSync())
+
+    def test_canPerformSync_non_anon(self):
+        # Logged-in users are presented with options to perform syncs.
+        # Note that a more fine-grained perm check is done on each
+        # synced package.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
@@ -1013,25 +1029,68 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
+            self.assertTrue(view.canPerformSync())
 
-        self.assertFalse(view.canPerformSync())
+    def _setUpDSDAndSync(self, derived_series, src_name, person, sync_differences,
+                         versions=None):
+        # A helper to create a DistroSeriesDifference and return the
+        # sync view.
+        self.factory.makeDistroSeriesDifference(
+            source_package_name_str=src_name,
+            derived_series=derived_series,
+            versions=versions)
 
-    def test_canPerformSync_editor(self):
-        # Editors are presented with options to perform syncs.
+        set_derived_series_ui_feature_flag(self)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs',
+                method='POST', form={
+                    'field.selected_differences': sync_differences,
+                    'field.actions.sync': 'Sync',
+                    })
+            return view
+
+    def test_sync_error_nothing_selected(self):
+        # An error is raised when a sync is requested without any selection.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
-        self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series)
+        view = self._setUpDSDAndSync(
+            derived_series, 'my-src-name', derived_series.owner, [])
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
 
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs')
-            self.assertTrue(view.canPerformSync())
+    def test_sync_error_invalid_selection(self):
+        # An error is raised when an invalid difference is selected.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        view = self._setUpDSDAndSync(
+            derived_series, 'my-src-name', derived_series.owner, ['some-other-name'])
+
+        self.assertEqual(2, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
+        self.assertEqual(
+            'Invalid value', view.errors[1].error_name)
+
+    def test_sync_error_no_perm_dest_archive(self):
+        # A user without upload rights on the destination archive cannot
+        # sync packages.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        view = self._setUpDSDAndSync(
+            derived_series, 'my-src-name', self.factory.makePerson(), ['my-src-name'])
+        self.assertEqual(1, len(view.errors))
+        self.assertTrue(
+            "The signer of this package has no upload rights to this distribution's "
+            "primary archive" in view.errors[0])
 
     def test_sync_notification_on_success(self):
-        # Syncing one or more diffs results in a stub notification.
+        # A user with upload rights on the destination archive can
+        # sync packages.
         versions = {
             'base': '1.0',
             'derived': '1.0derived1',
@@ -1043,9 +1102,12 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             distribution=derived_distro, name='derilucid',
             parent_series=parent_series)
         self._set_source_selection(derived_series)
-        difference = self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series, versions=versions)
+
+        # Setup a user with upload rights.
+        person = self.factory.makePerson()
+        sourcepackagename = self.factory.getOrMakeSourcePackageName('my-src-name')
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
 
         # The inital state is that 1.0-1 is not in the derived series.
         pubs = derived_series.main_archive.getPublishedSources(
@@ -1054,16 +1116,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertIs(None, pubs)
 
         # Now, sync the source from the parent using the form.
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                method='POST', form={
-                    'field.selected_differences': [
-                        difference.source_package_name.name,
-                        ],
-                    'field.actions.sync': 'Sync',
-                    })
+        view = self._setUpDSDAndSync(
+            derived_series, 'my-src-name', person, ['my-src-name'], versions)
 
         # The parent's version should now be in the derived series:
         pub = derived_series.main_archive.getPublishedSources(
@@ -1085,53 +1139,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
-
-    def test_sync_error_nothing_selected(self):
-        # An error is raised when a sync is requested without any selection.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series)
-
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                method='POST', form={
-                    'field.selected_differences': [],
-                    'field.actions.sync': 'Sync',
-                    })
-
-        self.assertEqual(1, len(view.errors))
-        self.assertEqual(
-            'No differences selected.', view.errors[0])
-
-    def test_sync_error_invalid_selection(self):
-        # An error is raised when an invalid difference is selected.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        self._set_source_selection(derived_series)
-        self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series)
-
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                method='POST', form={
-                    'field.selected_differences': ['some-other-name'],
-                    'field.actions.sync': 'Sync',
-                    })
-
-        self.assertEqual(2, len(view.errors))
-        self.assertEqual(
-            'No differences selected.', view.errors[0])
-        self.assertEqual(
-            'Invalid value', view.errors[1].error_name)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

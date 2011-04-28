@@ -400,15 +400,18 @@ class CopyChecker:
         # in the security adapter because it requires more info than is
         # available in the security adapter.
         if person is not None:
-            suitesourcepackage = SuiteSourcePackage(
-                series, pocket, source.sourcepackagerelease.sourcepackagename)
-            reason = self.archive.canUploadSuiteSourcePackage(
-                person, suitesourcepackage)
             # XXX this fails ... only(?) difference is source.component
             # (as opposed to None: destination component(?))
-            # reason2 = self.archive.checkUpload(
-            #   person, series, source.sourcepackagerelease.sourcepackagename,
-            #   source.component, pocket, strict_component=True)
+            # suitesourcepackage = SuiteSourcePackage(
+            #    series, pocket, source.sourcepackagerelease.sourcepackagename)
+            # reason2 = self.archive.canUploadSuiteSourcePackage(
+            #    person, suitesourcepackage)
+
+            # The component used here is the source component and should
+            # -probably- be the destination component.
+            reason = self.archive.checkUpload(
+               person, series, source.sourcepackagerelease.sourcepackagename,
+               source.component, pocket, strict_component=True)
             if reason:
                 raise CannotCopy(reason)
 
