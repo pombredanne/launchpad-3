@@ -62,6 +62,7 @@ class Category:
         self.title = title
         self.regexp = regexp
         self._compiled_regexp = re.compile(regexp, re.I | re.X)
+        self.partition = False
 
     def match(self, request):
         """Return true when the request match this category."""
@@ -457,9 +458,19 @@ class RequestTimes:
 
     def add_request(self, request):
         """Add request to the set of requests we collect stats for."""
+        matched = []
         for category, stats in self.category_times:
             if category.match(request):
                 stats.update(request)
+                if category.partition:
+                    matched.append(category.title)
+
+        if len(matched) > 1:
+            log.warning(
+                "Multiple partition categories matched by %s (%s)",
+                request.url, ", ".join(matched))
+        elif not matched:
+            log.warning("%s isn't part of the partition", request.url)
 
         if self.by_pageids:
             pageid = request.pageid or 'Unknown'
@@ -619,6 +630,17 @@ def main():
 
     if len(categories) == 0:
         parser.error("No data in [categories] section of configuration.")
+
+    # Determine the categories making a partition of the requests
+    for option in script_config.options('partition'):
+        for category in categories:
+            if category.title == option:
+                category.partition = True
+                break
+        else:
+            log.warning(
+                "In partition definition: %s isn't a defined category",
+                option)
 
     times = RequestTimes(categories, options)
 
