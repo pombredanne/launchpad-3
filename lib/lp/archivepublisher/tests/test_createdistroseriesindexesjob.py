@@ -141,9 +141,8 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
         return self.makeJob(distroseries)
 
     def becomeArchivePublisher(self):
-        """Become the archive publisher database user (and clean up later)."""
+        """Become the archive publisher database user."""
         self.becomeDbUser(config.archivepublisher.dbuser)
-        self.addCleanup(self.becomeDbUser, 'launchpad')
 
     def getSuites(self, distroseries):
         """Get the list of suites for `distroseries`."""
@@ -164,7 +163,7 @@ class TestCreateDistroSeriesIndexesJob(TestCaseWithFactory):
             self.getSuites(job.distroseries), job.getSuites())
 
     def test_getSuites_ignores_suites_for_other_distroseries(self):
-        # getSuites does not list suites in the distributio that do not
+        # getSuites does not list suites in the distribution that do not
         # belong to the right distroseries.
         job = self.makeJob()
         self.assertContentEqual(

@@ -367,7 +367,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         job = Store.of(child).find(
             DistributionJob,
             DistributionJob.job_type ==
-                DistributionJobType.CREATEDISTROSERIESINDEXES,
+                DistributionJobType.CREATE_DISTROSERIES_INDEXES,
             DistributionJob.distroseries == child).one()
         self.assertNotEqual(None, job)
 
