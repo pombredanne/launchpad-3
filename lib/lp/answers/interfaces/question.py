@@ -42,7 +42,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionPriority,
     QuestionStatus,
     )

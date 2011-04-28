@@ -68,7 +68,7 @@ from lp.answers.interfaces.questioncollection import (
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,

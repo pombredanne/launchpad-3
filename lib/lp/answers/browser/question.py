@@ -90,7 +90,7 @@ from lp.answers.interfaces.question import (
     IQuestionLinkFAQForm,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionSort,
     QuestionStatus,
@@ -227,6 +227,7 @@ class QuestionSetContextMenu(ContextMenu):
 
 class QuestionSetNavigation(Navigation):
     """Navigation for the IQuestionSet."""
+
     usedfor = IQuestionSet
 
     def traverse(self, name):
@@ -237,7 +238,13 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return redirection(canonical_url(question, self.request), status=301)
+        # We need to check if this is an API request, as we don't want to
+        # send a redirect in that instance (it breaks launchpadlib).
+        if hasattr(self.request, 'version'):
+            return question
+        else:
+            return redirection(
+                canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
@@ -649,7 +656,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             # Remove the description widget.
             widgets = [(True, self.widgets[name])
                        for name in self.search_field_names]
-            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
+            self.widgets = form.Widgets(widgets, len(self.prefix) + 1)
             return self.search_template()
         return self.continue_action.success(data)
 
