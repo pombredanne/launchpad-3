@@ -3,10 +3,8 @@
 
 __metaclass__ = type
 
-import unittest
-
-from canonical.launchpad.security import AuthorizationBase
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.security import AuthorizationBase
 from lp.testing import TestCaseWithFactory
 
 
@@ -45,7 +43,3 @@ class TestSecurityAdapter(AuthorizationBase):
 
     def checkUnauthenticated(self):
         self.checkUnauthenticated_called = True
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
