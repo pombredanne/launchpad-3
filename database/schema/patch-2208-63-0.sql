@@ -238,6 +238,15 @@ COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
 
 
+CREATE OR REPLACE FUNCTION bug_row(bug_id integer)
+RETURNS bug LANGUAGE SQL STABLE AS
+$$
+    SELECT * FROM Bug WHERE id=$1;
+$$;
+COMMENT ON FUNCTION bug_row(integer) IS
+'Helper for manually testing functions requiring a bug row as input. eg. SELECT * FROM bugsummary_tags(bug_row(1))';
+
+
 CREATE OR REPLACE FUNCTION bugsummary_viewers(BUG_ROW bug)
 RETURNS SETOF bugsubscription LANGUAGE SQL STABLE AS
 $$
@@ -257,34 +266,44 @@ RETURNS SETOF bugtag LANGUAGE SQL STABLE AS
 $$
     SELECT * FROM BugTag WHERE BugTag.bug = $1.id
     UNION ALL
-    SELECT NULL AS id, $1.id AS bug, NULL AS tag;
+    SELECT NULL::integer, $1.id, NULL::text;
 $$;
 
 COMMENT ON FUNCTION bugsummary_tags(bug) IS
 'Return (bug, tag) for all tags + (bug, NULL::text)';
 
 
-CREATE OR REPLACE FUNCTION bugsummary_tasks(bug_id integer)
+CREATE OR REPLACE FUNCTION bugsummary_tasks(BUG_ROW bug)
 RETURNS SETOF bugtask LANGUAGE plpgsql STABLE AS
 $$
 DECLARE
-    r bugtask%ROWTYPE;
+    bt bugtask%ROWTYPE;
+    r record;
 BEGIN
+    bt.bug = BUG_ROW.id;
+
     -- One row only for each target permutation - need to ignore other fields
     -- like date last modified to deal with conjoined masters and multiple
     -- sourcepackage tasks in a distro.
     FOR r IN
         SELECT
-            bug, product, productseries, distribution, distroseries,
+            product, productseries, distribution, distroseries,
             sourcepackagename, status, milestone
-        FROM BugTask WHERE bug=bug_id
+        FROM BugTask WHERE bug=BUG_ROW.id
         UNION
         SELECT
-            bug, product, productseries, distribution, distroseries,
+            product, productseries, distribution, distroseries,
             NULL, status, milestone
-        FROM BugTask WHERE bug=bug_id AND sourcepackagename IS NOT NULL
+        FROM BugTask WHERE bug=BUG_ROW.id AND sourcepackagename IS NOT NULL
     LOOP
-        RETURN NEXT r;
+        bt.product = r.product;
+        bt.productseries = r.productseries;
+        bt.distribution = r.distribution;
+        bt.distroseries = r.distroseries;
+        bt.sourcepackagename = r.sourcepackagename;
+        bt.status = r.status;
+        bt.milestone = r.milestone;
+        RETURN NEXT bt;
     END LOOP;
 END;
 $$;
@@ -293,43 +312,26 @@ COMMENT ON FUNCTION bugsummary_tasks(bug) IS
 'Return all tasks for the bug + all sourcepackagename tasks again with the sourcepackagename squashed';
 
 
-
 CREATE OR REPLACE FUNCTION bugsummary_locations(BUG_ROW bug)
 RETURNS SETOF bugsummary LANGUAGE plpgsql AS
 $$
-DECLARE
-    r bugsummary%ROWTYPE;
-    tags bugtag%ROWTYPE;
 BEGIN
-    IF bug.duplicateof THEN
+    IF BUG_ROW.duplicateof IS NOT NULL THEN
         RETURN;
     END IF;
-    -- gets tag coordinates
-    tags = SELECT * FROM bugsummary_tags(bug);
-    viewers = SELECT * FROM bugsummary_viewers(bug);
-    tasks = SELECT * FROM bugsummary_tasks(bug);
-    /* next step - turn this old aggregate into a combo of the above three function results as a setof rows rather than a counted result - because it may be incrementing or decrementing */
-    SELECT
-        count(*), product, productseries, distribution, distroseries,
-        sourcepackagename, person, tag, status, milestone
-    FROM relevant_bug
-    INNER JOIN bug_tags ON relevant_bug.id=bug_tags.id
-    INNER JOIN bug_viewers ON relevant_bug.id=bug_viewers.id
-    INNER JOIN tasks on tasks.bug=relevant_bug.id
-    GROUP BY
-        product, productseries, distribution, distroseries,
-        sourcepackagename, person, tag, status, milestone;
-
-    -- 
-    r.product = 1; -- XXX: Fill in with real data.
-    RETURN NEXT r;
-    r.product = NULL;
-    r.productseries = 1;
-    RETURN NEXT r;
+    RETURN QUERY
+        SELECT
+            CAST(NULL AS integer) AS id,
+            CAST(1 AS integer) AS count,
+            product, productseries, distribution, distroseries,
+            sourcepackagename, person AS viewed_by, tag, status, milestone
+        FROM bugsummary_tasks(BUG_ROW) AS tasks
+        JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
+        LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
 END;
 $$;
 
-COMMENT ON FUNCTION bugsummary_locations(int) IS
+COMMENT ON FUNCTION bugsummary_locations(bug) IS
 'Calculate what BugSummary rows should exist for a given Bug.';
 
 
@@ -345,7 +347,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION summarise_bug(int) IS
+COMMENT ON FUNCTION summarise_bug(bug) IS
 'AFTER summarise a bug row into bugsummary.';
 
 /*
