@@ -91,7 +91,10 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
         adapter.forwardCheckAuthenticated(None, DummyClass())
 
-        self.assertEqual(1, next_adapter.checkAuthenticated.call_count)
+        self.assertEqual(
+            (1, 1),
+            (adapter.checkPermissionIsRegistered.call_count,
+             next_adapter.checkAuthenticated.call_count))
 
     def test_forwardCheckAuthenticated_permission_changes(self):
         # Requesting a check for a different permission on the same object.
@@ -106,4 +109,25 @@ class TestAuthorizationBase(TestCaseWithFactory):
 
         adapter.forwardCheckAuthenticated(None, permission=next_permission)
 
-        self.assertEqual(1, next_adapter.checkAuthenticated.call_count)
+        self.assertEqual(
+            (1, 1),
+            (adapter.checkPermissionIsRegistered.call_count,
+             next_adapter.checkAuthenticated.call_count))
+
+    def test_forwardCheckAuthenticated_both_change(self):
+        # Requesting a check for a different permission and a different object.
+        next_permission = self.factory.getUniqueString()
+        next_adapter = self._registerFakeSecurityAdpater(
+            DummyInterface, next_permission)
+
+        adapter = FakeSecurityAdapter()
+        adapter.permission = self.factory.getUniqueString()
+        adapter.usedfor = None
+        adapter.checkPermissionIsRegistered = FakeMethod(result=True)
+
+        adapter.forwardCheckAuthenticated(None, DummyClass(), next_permission)
+
+        self.assertEqual(
+            (1, 1),
+            (adapter.checkPermissionIsRegistered.call_count,
+             next_adapter.checkAuthenticated.call_count))
