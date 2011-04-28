@@ -139,12 +139,11 @@ class TestDistributionUpstreamBugReportPage(BrowserTestCase):
     layer = LaunchpadFunctionalLayer
 
     def getTagMatchers(self):
-        """Return matchers for the tags saying "launchpad is not used
-        for development" and "(distro)" has no bugs filed."""
+        """Return matchers for the tag saying "launchpad is not used
+        for development" and the tag containing the upstream report."""
         no_lp_usage = Tag(
             'no-lp-usage', 'div', attrs={'id': 'no-lp-usage'})
-        no_bugs_filed = Tag(
-            'no-bugs-filed', 'div', attrs={'id': 'no-bugs-filed'})
+        no_bugs_filed = Tag('lp-used', 'div', attrs={'id': 'lp-used'})
         return no_lp_usage, no_bugs_filed
 
     def test_no_upstream_report_for_unconfigured_distros(self):

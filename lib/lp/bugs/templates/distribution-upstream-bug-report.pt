@@ -30,7 +30,7 @@
         This distribution does not use Launchpad for development.
       </div>
       <div tal:condition="view/has_upstream_report"
-           id="no-bugs-filed">
+           id="lp-used">
         <tal:no-bugs tal:condition="not: view/data">
           <span tal:replace="context/displayname" /> has no bugs filed
           against it.
