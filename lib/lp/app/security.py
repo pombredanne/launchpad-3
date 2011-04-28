@@ -69,9 +69,8 @@ class AuthorizationBase:
             obj = self.obj
         if permission is None:
             permission = self.permission
-        else:
-            # This will raise ValueError if the permission doesn't exist.
-            self.checkPermissionIsRegistered(obj, permission)
+        # This will raise ValueError if the permission doesn't exist.
+        self.checkPermissionIsRegistered(obj, permission)
         next_adapter = getAdapter(obj, IAuthorization, permission)
         return next_adapter.checkAuthenticated(user)
 
