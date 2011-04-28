@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
@@ -6,11 +6,21 @@
 __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
+from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bug import(
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -139,3 +149,62 @@ class TestBugSnapshotting(TestCaseWithFactory):
                 [token for token in sql_tokens
                  if token.startswith('message')],
                 [])
+
+
+class TestBugCreation(TestCaseWithFactory):
+    """Tests for bug creation."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_CreateBugParams_accepts_importance(self):
+        # The importance of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        params = CreateBugParams(
+            owner=owner, title="A bug", comment="Nothing important.",
+            importance=BugTaskImportance.HIGH)
+        params.setBugTarget(product=target)
+        bug = getUtility(IBugSet).createBug(params)
+        self.assertEqual(
+            bug.default_bugtask.importance, params.importance)
+
+    def test_CreateBugParams_accepts_assignee(self):
+        # The assignee of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                assignee=owner)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.assignee, params.assignee)
+
+    def test_CreateBugParams_accepts_milestone(self):
+        # The milestone of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        params = CreateBugParams(
+            owner=owner, title="A bug", comment="Nothing important.",
+            milestone=self.factory.makeMilestone(product=target))
+        params.setBugTarget(product=target)
+        bug = getUtility(IBugSet).createBug(params)
+        self.assertEqual(
+            bug.default_bugtask.milestone, params.milestone)
+
+    def test_CreateBugParams_accepts_status(self):
+        # The status of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        params = CreateBugParams(
+            owner=owner, title="A bug", comment="Nothing important.",
+            status=BugTaskStatus.TRIAGED)
+        params.setBugTarget(product=target)
+        bug = getUtility(IBugSet).createBug(params)
+        self.assertEqual(
+            bug.default_bugtask.status, params.status)
