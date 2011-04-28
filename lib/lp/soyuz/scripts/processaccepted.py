@@ -282,6 +282,9 @@ class ProcessAccepted(LaunchpadScript):
                             self.logger.error('%s (%s)' % (message,
                                 request.oopsid))
                         else:
+                            self.logger.debug(
+                                "Successfully processed queue item %d" %
+                                queue_item.id)
                             processed_queue_ids.append(queue_item.id)
                         # Commit even on error; we may have altered the
                         # on-disk archive, so the partial state must
