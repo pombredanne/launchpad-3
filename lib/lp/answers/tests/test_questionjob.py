@@ -193,6 +193,19 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             subject, body, headers)
         self.assertEqual(user, job.getErrorRecipients())
 
+    def test_recipients_asker(self):
+        # The recipients property contains the question owner.
+        question = self.factory.makeQuestion()
+        self.addAnswerContact(question)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.ASKER,
+            subject, body, headers)
+        recipients = job.recipients.getRecipientPersons()
+        self.assertEqual(1, len(recipients))
+        email, recipient = recipients.pop()
+        self.assertEqual(question.owner, recipient)
+
     def test_recipients_asker_subscriber(self):
         # The recipients property matches the question recipients.
         question = self.factory.makeQuestion()
