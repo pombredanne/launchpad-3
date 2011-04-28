@@ -281,6 +281,9 @@ class ProcessAccepted(LaunchpadScript):
                                 request.oopsid))
                         else:
                             processed_queue_ids.append(queue_item.id)
+                        # Commit even on error; we may have altered the
+                        # on-disk archive, so the partial state must
+                        # make it to the DB.
                         self.txn.commit()
 
             if not self.options.dryrun:
