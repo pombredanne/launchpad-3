@@ -67,6 +67,14 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         headers = {'X-Launchpad-Question': 'question metadata'}
         return user, subject, body, headers
 
+    def addAnswerContact(self, question):
+        contact = self.factory.makePerson()
+        with person_logged_in(contact):
+            lang_set = getUtility(ILanguageSet)
+            contact.addLanguage(lang_set['en'])
+            question.target.addAnswerContact(contact)
+        return contact
+
     def test_create(self):
         # The create class method converts the extra job arguments
         # to metadata.
@@ -188,11 +196,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     def test_recipients(self):
         # The recipients property matches the question recipients.
         question = self.factory.makeQuestion()
-        contact = self.factory.makePerson()
-        with person_logged_in(contact):
-            lang_set = getUtility(ILanguageSet)
-            contact.addLanguage(lang_set['en'])
-            question.target.addAnswerContact(contact)
+        self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
@@ -244,11 +248,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     def test_run(self):
         # The email is sent to all the recipients.
         question = self.factory.makeQuestion()
-        contact = self.factory.makePerson()
-        with person_logged_in(contact):
-            lang_set = getUtility(ILanguageSet)
-            contact.addLanguage(lang_set['en'])
-            question.target.addAnswerContact(contact)
+        self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
