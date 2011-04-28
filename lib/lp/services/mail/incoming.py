@@ -335,11 +335,11 @@ def handleMail(trans=transaction,
                 # message, but don't delete it: retrying might help.
                 log.exception('Upload to Librarian failed')
                 continue
-            mailbox.delete(mail_id)
             try:
                 handle_one_mail(trans, log, raw_mail,
                     file_alias, file_alias_url, signature_timestamp_checker)
                 trans.commit()
+                mailbox.delete(mail_id)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
@@ -354,6 +354,7 @@ def handleMail(trans=transaction,
                 _send_email_oops(trans, log,
                     signed_message_from_string(raw_mail), raw_mail,
                     "Unhandled exception", file_alias_url)
+                mailbox.delete(mail_id)
     finally:
         log.info("Closing the mail box.")
         mailbox.close()
