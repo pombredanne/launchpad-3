@@ -1031,8 +1031,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
                 derived_series, '+localpackagediffs')
             self.assertTrue(view.canPerformSync())
 
-    def _setUpDSDAndSync(self, derived_series, src_name, person, sync_differences,
-                         versions=None):
+    def _setUpDSDAndSync(self, derived_series, src_name, person,
+                         sync_differences, versions=None):
         # A helper to create a DistroSeriesDifference and return the
         # sync view.
         self.factory.makeDistroSeriesDifference(
@@ -1067,7 +1067,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
         view = self._setUpDSDAndSync(
-            derived_series, 'my-src-name', derived_series.owner, ['some-other-name'])
+            derived_series, 'my-src-name', derived_series.owner,
+            ['some-other-name'])
 
         self.assertEqual(2, len(view.errors))
         self.assertEqual(
@@ -1082,11 +1083,12 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
         view = self._setUpDSDAndSync(
-            derived_series, 'my-src-name', self.factory.makePerson(), ['my-src-name'])
+            derived_series, 'my-src-name', self.factory.makePerson(),
+            ['my-src-name'])
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
-            "The signer of this package has no upload rights to this distribution's "
-            "primary archive" in view.errors[0])
+            "The signer of this package has no upload rights to this "
+            "distribution's primary archive" in view.errors[0])
 
     def test_sync_notification_on_success(self):
         # A user with upload rights on the destination archive can
@@ -1105,7 +1107,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
         # Setup a user with upload rights.
         person = self.factory.makePerson()
-        sourcepackagename = self.factory.getOrMakeSourcePackageName('my-src-name')
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            'my-src-name')
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
             person, sourcepackagename)
 

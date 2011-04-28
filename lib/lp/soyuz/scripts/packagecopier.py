@@ -27,7 +27,6 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -402,8 +401,11 @@ class CopyChecker:
         if person is not None:
             # XXX this fails ... only(?) difference is source.component
             # (as opposed to None: destination component(?))
+            # from lp.registry.model.suitesourcepackage import
+            #    SuiteSourcePackage
             # suitesourcepackage = SuiteSourcePackage(
-            #    series, pocket, source.sourcepackagerelease.sourcepackagename)
+            #    series, pocket,
+            #    source.sourcepackagerelease.sourcepackagename)
             # reason2 = self.archive.canUploadSuiteSourcePackage(
             #    person, suitesourcepackage)
 
