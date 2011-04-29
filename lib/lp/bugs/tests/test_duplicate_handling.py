@@ -158,8 +158,8 @@ class TestMoveDuplicates(TestCaseWithFactory):
         # If each bug has two targets, one of them common, the other
         # distinct for each bug, we still get one call for each target.
         # For N duplicates, we have N distinct targets, we have
-        # the targets for old master bug and for the new master bug,
-        # and one common target, i.e., 2*N+3 targets for N duplicates.
+        # the targets for the old master bug and for the new master bug,
+        # and one common target, i.e., N+3 targets for N duplicates.
         self.assertEqual(5, self.moveDuplicates(2, with_random_target=True))
         self.assertEqual(7, self.moveDuplicates(4, with_random_target=True))
 
