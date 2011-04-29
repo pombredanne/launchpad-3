@@ -369,37 +369,19 @@ CREATE OR REPLACE FUNCTION bug_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
-    IF TG_OP = 'UPDATE' THEN
-        IF NEW.duplicateof IS NOT NULL and OLD.duplicateof IS NOT NULL THEN
-            -- Duplicates are not summarised
-            RETURN NULL; -- Ignored - this is an AFTER trigger
-        END IF;
-        IF NEW.duplicateof = OLD.duplicateof AND 
-           NEW.private = OLD.private THEN
-            -- Short circuit on an update that doesn't change inclusion or
-            -- summary logic
-            RETURN NULL; -- Ignored - this is an AFTER trigger
-        END IF;
-        IF OLD.duplicateof IS NOT NULL THEN
-            -- Newly unduplicated: publish fresh
-            PERFORM summarise_bug(NEW);
-        ELSIF NEW.duplicateof IS NOT NULL THEN
-            -- Newly duplicated: unsummarise
-            PERFORM unsummarise_bug(OLD);
-        ELSIF NEW.private = OLD.private THEN
-            -- Not changed in a relevant way, we're done.
-            RETURN NULL; -- Ignored - this is an AFTER trigger
-        ELSE
-            -- Either becoming private or public; none of the summary rows are
-            -- in common - remove and add.
-            PERFORM unsummarise_bug(OLD);
-            PERFORM summarise_bug(NEW);
-        END IF;
-        RETURN NULL; -- Ignored - this is an AFTER trigger
+    -- There is no INSERT logic, as a bug will not have any summary
+    -- information until BugTask rows have been attached.
+    IF (TG_OP = 'UPDATE'
+        AND (
+            OLD.duplicateof IS DISTINCT FROM NEW.duplicateof
+            OR OLD.private IS DISTINCT FROM NEW.private)) THEN
+        PERFORM unsummarise_bug(OLD);
+        PERFORM summarise_bug(NEW);
+
+    ELSIF TG_OP = 'DELETE' THEN
+        PERFORM unsummarise_bug(OLD);
     END IF;
 
-    -- For delete remove the bugs summary rows
-    PERFORM unsummarise_bug(OLD);
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
@@ -412,6 +394,9 @@ CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
+    -- Unlike bug_maintain_bug_summary, this trigger does not have access
+    -- to the old bug when invoked as an AFTER trigger. To work around this
+    -- we install this trigger as both a BEFORE and an AFTER trigger.
     IF TG_OP = 'INSERT' THEN
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(NEW.bug));
