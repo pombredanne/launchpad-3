@@ -385,7 +385,7 @@ class CopyChecker:
         destination suite (series + pocket).
 
         If person is not None, check that this person has upload rights to
-        the destination archive.
+        the destination (archive, component, pocket).
 
         :param source: copy candidate, `ISourcePackagePublishingHistory`.
         :param series: destination `IDistroSeries`.
@@ -396,9 +396,9 @@ class CopyChecker:
             containing the reason of the error.
         """
         # If there is a requestor, check that he has upload permission
-        # into the destination archive. This check is done here rather than
-        # in the security adapter because it requires more info than is
-        # available in the security adapter.
+        # into the destination (archive, component, pocket). This check
+        # is done here rather than in the security adapter because it
+        # requires more info than is available in the security adapter.
         if person is not None:
             sourcepackagename = source.sourcepackagerelease.sourcepackagename
             destination_component = series.getSourcePackage(
