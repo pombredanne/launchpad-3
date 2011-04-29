@@ -13,10 +13,6 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.answers.enums import (
     QuestionAction,
@@ -25,7 +21,6 @@ from lp.answers.enums import (
 from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -67,17 +62,6 @@ class QuestionNotification:
     def user(self):
         """Return the user from the event. """
         return self._user
-
-    def getFromAddress(self):
-        """Return a formatted email address suitable for user in the From
-        header of the question notification.
-
-        Default is Event Person Display Name <question#@answertracker_domain>
-        """
-        return format_address(
-            self.user.displayname,
-            'question%s@%s' % (
-                self.question.id, config.answertracker.email_domain))
 
     def getSubject(self):
         """Return the subject of the notification.
@@ -123,18 +107,6 @@ class QuestionNotification:
 
         return headers
 
-    def getRecipients(self):
-        """Return the recipient of the notification.
-
-        Default to the question's subscribers that speaks the request
-        languages. If the question owner is subscribed, he's always consider
-        to speak the language.
-
-        :return: A `INotificationRecipientSet` containing the recipients and
-                 rationale.
-        """
-        return self.question.getRecipients()
-
     def initialize(self):
         """Initialization hook for subclasses.
 
@@ -153,14 +125,6 @@ class QuestionNotification:
         """
         return True
 
-    def buildBody(self, body, rationale):
-        """Wrap the body and ensure the rationale is is separated."""
-        wrapper = MailWrapper()
-        body_parts = [body, wrapper.format(rationale)]
-        if '\n-- ' not in body:
-            body_parts.insert(1, '-- ')
-        return '\n'.join(body_parts)
-
     def enqueue(self):
         """Create a job to send email about the event."""
         subject = self.getSubject()
@@ -171,25 +135,6 @@ class QuestionNotification:
             self.question, self.user, self.recipient_set,
             subject, body, headers)
         return job
-
-    def send(self):
-        """Sends the notification to all the notification recipients.
-
-        This method takes care of adding the rationale for contacting each
-        recipient and also sets the X-Launchpad-Message-Rationale header on
-        each message.
-        """
-        from_address = self.getFromAddress()
-        subject = self.getSubject()
-        body = self.getBody()
-        headers = self.getHeaders()
-        recipients = self.getRecipients()
-        for email in recipients.getEmails():
-            rationale, header = recipients.getReason(email)
-            headers['X-Launchpad-Message-Rationale'] = header
-            formatted_body = self.buildBody(body, rationale)
-            simple_sendmail(
-                from_address, email, subject, formatted_body, headers)
 
     @property
     def unsupported_language(self):
@@ -370,18 +315,6 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
         return get_email_template(self.body_template) % replacements
 
-    def getRecipients(self):
-        """The default notification goes to all question subscribers that
-        speak the request language, except the owner.
-        """
-        original_recipients = QuestionNotification.getRecipients(self)
-        recipients = NotificationRecipientSet()
-        for person in original_recipients:
-            if person != self.question.owner:
-                rationale, header = original_recipients.getReason(person)
-                recipients.add(person, rationale, header)
-        return recipients
-
     # Header template used when a new message is added to the question.
     action_header_template = {
         QuestionAction.REQUESTINFO:
@@ -450,16 +383,6 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
             self.body_template = self.body_template_by_action.get(
                 self.new_message.action, self.body_template)
 
-    def getRecipients(self):
-        """Return the owner of the question if he's still subscribed."""
-        recipients = NotificationRecipientSet()
-        owner = self.question.owner
-        original_recipients = self.question.direct_recipients
-        if owner in self.question.direct_recipients:
-            rationale, header = original_recipients.getReason(owner)
-            recipients.add(owner, rationale, header)
-        return recipients
-
     def getBody(self):
         """See QuestionNotification."""
         body = QuestionModifiedDefaultNotification.getBody(self)
@@ -482,10 +405,6 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def shouldNotify(self):
         """Return True when the question is in an unsupported language."""
         return self.unsupported_language
-
-    def getRecipients(self):
-        """Notify only the answer contacts."""
-        return self.question.target.getAnswerContactRecipients(None)
 
     def getBody(self):
         """See QuestionNotification."""

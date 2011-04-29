@@ -83,20 +83,6 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
             QuestionRecipientSet.SUBSCRIBER,
             self.notification.recipient_set)
 
-    def test_buildBody_with_separator(self):
-        # A body with a separator is preserved.
-        formatted_body = self.notification.buildBody(
-            "body\n-- ", "rationale")
-        self.assertEqual(
-            "body\n-- \nrationale", formatted_body)
-
-    def test_buildBody_without_separator(self):
-        # A separator will added to body if one is not present.
-        formatted_body = self.notification.buildBody(
-            "body -- mdash", "rationale")
-        self.assertEqual(
-            "body -- mdash\n-- \nrationale", formatted_body)
-
     def test_getSubject(self):
         """getSubject() when there is no message added to the question."""
         self.assertEquals(
