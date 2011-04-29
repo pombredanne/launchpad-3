@@ -10,13 +10,19 @@ __all__ = [
 
 import os
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.answers.enums import QuestionAction
+from lp.answers.enums import (
+    QuestionAction,
+    QuestionRecipientSet,
+    )
+from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -41,6 +47,8 @@ class QuestionNotification:
     QuestionNotification can be registered as event subscribers.
     """
 
+    recipient_set = None
+
     def __init__(self, question, event):
         """Base constructor.
 
@@ -52,7 +60,7 @@ class QuestionNotification:
         self._user = IPerson(self.event.user)
         self.initialize()
         if self.shouldNotify():
-            self.send()
+            self.enqueue()
 
     @property
     def user(self):
@@ -152,6 +160,10 @@ class QuestionNotification:
             body_parts.insert(1, '-- ')
         return '\n'.join(body_parts)
 
+    def enqueue(self):
+        """Create a job to send email about the event."""
+        pass
+
     def send(self):
         """Sends the notification to all the notification recipients.
 
@@ -189,6 +201,8 @@ class QuestionNotification:
 
 class QuestionAddedNotification(QuestionNotification):
     """Notification sent when a question is added."""
+
+    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
 
     @property
     def user(self):

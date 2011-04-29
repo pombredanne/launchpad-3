@@ -9,6 +9,7 @@ from unittest import TestCase
 
 from zope.interface import implements
 
+from lp.answers.enums import QuestionRecipientSet
 from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
@@ -102,8 +103,15 @@ class TestQuestionAddedNotification(QuestionAddedNotification):
         return False
 
 
-class QuestionCreatedTestCase(TestCase):
+class QuestionAddedNotificationTestCase(TestCase):
     """Test cases for mail notifications about created questions."""
+
+    def test_recipient_set(self):
+        question = StubQuestion()
+        notification = TestQuestionAddedNotification(question, FakeEvent())
+        self.assertEqual(
+            QuestionRecipientSet.ASKER_SUBSCRIBER,
+            notification.recipient_set)
 
     def test_user_is_question_owner(self):
         """The notification user is always the question owner."""
