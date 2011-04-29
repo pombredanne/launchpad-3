@@ -64,6 +64,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -886,6 +887,17 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 return True
         return False
 
+    @property
+    def visible_messages(self):
+        messages = self.context.messages
+        strip_invisible = True
+        if self.user is not None:
+            role = PersonRoles(self.user)
+            strip_invisible = not (role.in_admin or role.in_registry_experts)
+        if strip_invisible:
+            messages = [message for message in messages if message.visible]
+        return messages
+
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
@@ -1100,6 +1112,14 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    def getBoardCommentCSSClass(self):
+        css_classes = ["boardComment"]
+        if not self.context.visible:
+            # If a comment that isn't visible is being rendered, it's being
+            # rendered for an admin or registry_expert.
+            css_classes.append("adminHiddenComment")
+        return " ".join(css_classes)
 
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""

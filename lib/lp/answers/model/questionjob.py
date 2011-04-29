@@ -25,12 +25,20 @@ from zope.interface import (
 
 from lazr.delegates import delegates
 
+from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     )
+from canonical.launchpad.mail import (
+    format_address,
+    simple_sendmail,
+    )
 from canonical.launchpad.scripts import log
-from lp.answers.enums import QuestionJobType
+from lp.answers.enums import (
+    QuestionJobType,
+    QuestionRecipientSet,
+    )
 from lp.answers.interfaces.questionjob import (
     IQuestionJob,
     IQuestionEmailJob,
@@ -41,6 +49,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -101,10 +111,11 @@ class QuestionEmailJob(BaseRunnableJob):
     class_job_type = QuestionJobType.EMAIL
 
     @classmethod
-    def create(cls, question, user, subject, body, headers):
+    def create(cls, question, user, recipient_set, subject, body, headers):
         """See `IQuestionJob`."""
         metadata = {
             'user': user.id,
+            'recipient_set': recipient_set.name,
             'subject': subject,
             'body': body,
             'headers': headers,
@@ -161,12 +172,66 @@ class QuestionEmailJob(BaseRunnableJob):
         """See `IRunnableJob`."""
         return self.user
 
+    @property
+    def from_address(self):
+        """See `IQuestionEmailJob`."""
+        address = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
+        return format_address(self.user.displayname, address)
+
+    @property
+    def recipients(self):
+        """See `IQuestionEmailJob`."""
+        term = QuestionRecipientSet.getTermByToken(
+            self.metadata['recipient_set'])
+        question_recipient_set = term.value
+        if question_recipient_set == QuestionRecipientSet.ASKER:
+            recipients = NotificationRecipientSet()
+            owner = self.question.owner
+            original_recipients = self.question.direct_recipients
+            if owner in original_recipients:
+                rationale, header = original_recipients.getReason(owner)
+                recipients.add(owner, rationale, header)
+            return recipients
+        elif question_recipient_set == QuestionRecipientSet.SUBSCRIBER:
+            recipients = self.question.getRecipients()
+            if self.question.owner in recipients:
+                recipients.remove(self.question.owner)
+            return recipients
+        elif question_recipient_set == QuestionRecipientSet.ASKER_SUBSCRIBER:
+            return self.question.getRecipients()
+        elif question_recipient_set == QuestionRecipientSet.CONTACT:
+            return self.question.target.getAnswerContactRecipients(None)
+        else:
+            raise ValueError(
+                'Unsupported QuestionRecipientSet value: %s' %
+                question_recipient_set)
+
+    def buildBody(self, rationale):
+        """See `IQuestionEmailJob`."""
+        wrapper = MailWrapper()
+        body_parts = [self.body, wrapper.format(rationale)]
+        if '\n-- ' not in self.body:
+            body_parts.insert(1, '-- ')
+        return '\n'.join(body_parts)
+
     def run(self):
-        """Send emails."""
+        """See `IRunnableJob`.
+
+        Send emails to all the question recipients.
+        """
         log.debug(
             "%s will send email for question %s.",
             self.log_name, self.question.id)
-        # Extract and adapt QuestionNotification.send().
+        headers = self.headers
+        recipients = self.recipients
+        for email in recipients.getEmails():
+            rationale, header = recipients.getReason(email)
+            headers['X-Launchpad-Message-Rationale'] = header
+            formatted_body = self.buildBody(rationale)
+            simple_sendmail(
+                self.from_address, email, self.subject, formatted_body,
+                headers)
         log.debug(
             "%s has sent email for question %s.",
             self.log_name, self.question.id)

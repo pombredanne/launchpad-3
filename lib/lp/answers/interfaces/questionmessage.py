@@ -15,6 +15,7 @@ from zope.schema import (
     Bool,
     Choice,
     Field,
+    Int,
     )
 
 from canonical.launchpad import _
@@ -48,6 +49,11 @@ class IQuestionMessage(IMessage):
         "related the action operated by this message."), required=True,
         readonly=True, default=QuestionStatus.OPEN,
         vocabulary=QuestionStatus)
+    index = Int(
+        title=_("Message index."),
+        description=_("The messages index in the question's list of "
+        "messages."),
+        readonly=True)
     visible = Bool(
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),
