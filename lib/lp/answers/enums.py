@@ -14,6 +14,7 @@ __all__ = [
     'QuestionJobType',
     'QuestionParticipation',
     'QuestionPriority',
+    'QuestionRecipientSet',
     'QUESTION_STATUS_DEFAULT_SEARCH',
     'QuestionSort',
     'QuestionStatus',
@@ -101,6 +102,35 @@ class QuestionJobType(DBEnumeratedType):
         Question email notification
 
         Notify question subscribers about a question via email.
+        """)
+
+
+class QuestionRecipientSet(EnumeratedType):
+    """The kinds of recipients who will receive notification."""
+
+    ASKER = Item("""
+        Asker
+
+        The person who asked the question.
+        """)
+
+    SUBSCRIBER = Item("""
+        Subscriber
+
+        The question's direct and indirect subscribers, exception for
+        the asker.
+        """)
+
+    ASKER_SUBSCRIBER = Item("""
+        Asker and Subscriber
+
+        The question's direct and indirect subscribers, including the asker.
+        """)
+
+    CONTACT = Item("""
+        Contact
+
+        All the answer contacts for the question's target.
         """)
 
 

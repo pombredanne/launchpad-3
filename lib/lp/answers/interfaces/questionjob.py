@@ -56,22 +56,31 @@ class IQuestionEmailJob(IQuestionJob):
     subject = Attribute('The subject of the email.')
 
     body = Attribute(
-        'The body of the email that is common to all recpients.')
+        'The body of the email that is common to all recipients.')
 
     headers = Attribute(
-        'The headers of the email that are common to all recpients.')
+        'The headers of the email that are common to all recipients.')
+
+    from_address = Attribute(
+        'The formatted email address for the user and question.')
+
+    recipients = Attribute('The recipient of the email.')
+
+    def buildBody(rationale):
+        """Return the formatted email body with the rationale included."""
 
 
 class IQuestionEmailJobSource(IJobSource):
     """An interface for acquiring IQuestionJob."""
 
-    def create(question, user, subject, body, headers):
+    def create(question, user, recipient_set, subject, body, headers):
         """Create a new IQuestionJob.
 
         :param question: An `IQuestion`.
         :param user: An `IPerson`.
-        :param subject: A'The subject of the email.
-        :param body: The text of the email that is common to all recpients.
-        :parma headers: A dict of headers for the email that are common to
-            all recpients.
+        :param recipient_set: A `QuestionRecipientSet`.
+        :param subject: The subject of the email.
+        :param body: The text of the email that is common to all recipients.
+        :param headers: A dict of headers for the email that are common to
+            all recipients.
         """
