@@ -1107,7 +1107,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_no_perm_component(self):
         # A user without upload rights on the destination component
-        # will get an error when he syncs packages from this component.
+        # will get an error when he syncs packages to this component.
         derived_series, parent_series, sourcepackagename = self._setUpDSD(
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
