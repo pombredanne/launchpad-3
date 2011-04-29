@@ -19,24 +19,7 @@ from lp.testing import login_person, person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
-class TestSearchQuestionsViewMixin:
-    """A mixin to provide common helper methods for tests in this file."""
-
-    def linkPackage(self, product, name):
-        # A helper to setup a legitimate Packaging link between a product
-        # and an Ubuntu source package.
-        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
-        sourcepackagename = self.factory.makeSourcePackageName(name)
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        product.development_focus.setPackaging(
-            hoary, sourcepackagename, product.owner)
-
-
-class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory,
-                                                TestSearchQuestionsViewMixin):
+class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -77,8 +60,7 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory,
         self.assertEqual(False, view.can_configure_answers)
 
 
-class TestSearchQuestionsViewTemplate(TestCaseWithFactory,
-                                      TestSearchQuestionsViewMixin):
+class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
     """Test the behavior of SearchQuestionsView.template"""
 
     layer = DatabaseFunctionalLayer
@@ -138,11 +120,22 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory,
         self.assertViewTemplate(question_set, 'question-listing.pt')
 
 
-class TestSearchQuestionsViewUnknown(TestCaseWithFactory,
-                                     TestSearchQuestionsViewMixin):
+class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
     """Test the behavior of SearchQuestionsView unknown support."""
 
     layer = DatabaseFunctionalLayer
+
+    def linkPackage(self, product, name):
+        # A helper to setup a legitimate Packaging link between a product
+        # and an Ubuntu source package.
+        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
+        sourcepackagename = self.factory.makeSourcePackageName(name)
+        self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        product.development_focus.setPackaging(
+            hoary, sourcepackagename, product.owner)
 
     def setUp(self):
         super(TestSearchQuestionsViewUnknown, self).setUp()
