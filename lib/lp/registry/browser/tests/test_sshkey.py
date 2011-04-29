@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -25,7 +23,4 @@ class TestCanonicalUrl(TestCaseWithFactory):
                 canonical_url(person, rootsite='api'), sshkey.id),
             canonical_url(sshkey))
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
 
