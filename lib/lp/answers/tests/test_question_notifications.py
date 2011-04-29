@@ -67,6 +67,11 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         self.notification = TestQuestionModifiedNotification(
             StubQuestion(), FakeEvent())
 
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.SUBSCRIBER,
+            self.notification.recipient_set)
+
     def test_buildBody_with_separator(self):
         # A body with a separator is preserved.
         formatted_body = self.notification.buildBody(
@@ -106,17 +111,19 @@ class TestQuestionAddedNotification(QuestionAddedNotification):
 class QuestionAddedNotificationTestCase(TestCase):
     """Test cases for mail notifications about created questions."""
 
+    def setUp(self):
+        """Create a notification with a fake question."""
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = TestQuestionAddedNotification(
+            self.question, self.event)
+
     def test_recipient_set(self):
-        question = StubQuestion()
-        notification = TestQuestionAddedNotification(question, FakeEvent())
         self.assertEqual(
             QuestionRecipientSet.ASKER_SUBSCRIBER,
-            notification.recipient_set)
+            self.notification.recipient_set)
 
     def test_user_is_question_owner(self):
         """The notification user is always the question owner."""
-        question = StubQuestion()
-        event = FakeEvent()
-        notification = TestQuestionAddedNotification(question, event)
-        self.assertEqual(question.owner, notification.user)
-        self.assertNotEqual(event.user, notification.user)
+        self.assertEqual(self.question.owner, self.notification.user)
+        self.assertNotEqual(self.event.user, self.notification.user)

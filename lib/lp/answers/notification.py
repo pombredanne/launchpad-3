@@ -229,6 +229,7 @@ class QuestionAddedNotification(QuestionNotification):
 class QuestionModifiedDefaultNotification(QuestionNotification):
     """Base implementation of a notification when a question is modified."""
 
+    recipient_set = QuestionRecipientSet.SUBSCRIBER
     # Email template used to render the body.
     body_template = "question-modified-notification.txt"
 
