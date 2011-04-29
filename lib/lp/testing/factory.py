@@ -479,6 +479,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         login_as(person)
         return person
 
+    def makeAdministrator(self, name=None, email='new_admin@example.com',
+                          password='test'):
+        from lp.testing.sampledata import ADMIN_EMAIL
+        login(ADMIN_EMAIL)
+        user = self.makePerson(name=name,
+                               email=email,
+                               password=password)
+        administrators = getUtility(ILaunchpadCelebrities).admin
+        administrators.addMember(user, administrators.teamowner)
+        return user
+
     def makeRegistryExpert(self, name=None, email='expert@example.com',
                            password='test'):
         from lp.testing.sampledata import ADMIN_EMAIL
