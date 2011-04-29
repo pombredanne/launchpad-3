@@ -474,9 +474,9 @@ BEGIN
         WHERE viewed_by = bugsubscription.person)
     LOOP
         IF TG_OP = 'INSERT' THEN
-            PERFORM bug_summary_inc(bugsummary);
+            PERFORM bug_summary_inc(bugsummary_row);
         ELSE
-            PERFORM bug_summary_dec(bugsummary);
+            PERFORM bug_summary_dec(bugsummary_row);
         END IF;
     END LOOP;
 
@@ -487,26 +487,42 @@ $$;
 COMMENT ON FUNCTION bugsubscription_maintain_bug_summary() IS
 'AFTER trigger on bugsubscription maintaining the bugs summaries in bugsummary.';
 
-/*
 
 CREATE OR REPLACE FUNCTION bugtag_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
-    similar to sourcepackages, tags have two cases:
-     - all bugs are recorded against tag is NULL
-     - bugs with tags are additionally recorded against each tag (cross-product multiply with all the other fields)
-     
+    IF TG_OP = 'INSERT' THEN
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(NEW.bug));
+        ELSE
+            PERFORM summarise_bug(bug_row(NEW.bug));
+        END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(OLD.bug));
+        ELSE
+            PERFORM summarise_bug(bug_row(OLD.bug));
+        END IF;
+    ELSE
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            IF OLD.bug <> NEW.bug THEN
+                PERFORM unsummarise_bug(bug_row(NEW.bug));
+            END IF;
+        ELSE
+            PERFORM summarise_bug(bug_row(OLD.bug));
+            IF OLD.bug <> NEW.bug THEN
+                PERFORM summarise_bug(bug_row(NEW.bug));
+            END IF;
+        END IF;
+    END IF;
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
 
 COMMENT ON FUNCTION bugtag_maintain_bug_summary() IS
 'AFTER trigger on bugtag maintaining the bugs summaries in bugsummary.';
-
-
-*/
-
 
 
 -- we need to maintain the summaries when things change. Each variable the
@@ -531,9 +547,7 @@ CREATE TRIGGER bugsubscription_maintain_bug_summary_trigger
 AFTER INSERT OR UPDATE OR DELETE ON bugsubscription
 FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
 
-/*
 -- bugtag: existence
 CREATE TRIGGER bugtag_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtag FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
-*/
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
