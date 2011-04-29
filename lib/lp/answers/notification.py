@@ -59,8 +59,9 @@ class QuestionNotification:
         self.event = event
         self._user = IPerson(self.event.user)
         self.initialize()
+        self.job = None
         if self.shouldNotify():
-            self.enqueue()
+            self.job = self.enqueue()
 
     @property
     def user(self):
@@ -162,7 +163,14 @@ class QuestionNotification:
 
     def enqueue(self):
         """Create a job to send email about the event."""
-        pass
+        subject = self.getSubject()
+        body = self.getBody()
+        headers = self.getHeaders()
+        job_source = getUtility(IQuestionEmailJobSource)
+        job = job_source.create(
+            self.question, self.user, self.recipient_set,
+            subject, body, headers)
+        return job
 
     def send(self):
         """Sends the notification to all the notification recipients.

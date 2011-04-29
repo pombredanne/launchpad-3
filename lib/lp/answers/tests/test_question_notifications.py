@@ -7,16 +7,23 @@ __metaclass__ = type
 
 from unittest import TestCase
 
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionRecipientSet
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
     QuestionModifiedOwnerNotification,
+    QuestionNotification,
     QuestionUnsupportedLanguageNotification,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import TestCaseWithFactory
 
 
 class TestQuestionModifiedNotification(QuestionModifiedDefaultNotification):
@@ -176,3 +183,35 @@ class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
         self.assertEqual(
             QuestionRecipientSet.CONTACT,
             self.notification.recipient_set)
+
+
+class TestQuestionNotification(QuestionNotification):
+    """A subclass to exercise question notifcations."""
+
+    def getBody(self):
+        return 'body'
+
+
+class QuestionNotificationTestCase(TestCaseWithFactory):
+    """Test common question notification behavior."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeQuestion(self):
+        """Create question that does not trigger a notification."""
+        asker = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        naked_question_set = removeSecurityProxy(getUtility(IQuestionSet))
+        question = naked_question_set.new(
+            title='title', description='description', owner=asker,
+            language=getUtility(ILanguageSet)['en'],
+            product=product, distribution=None, sourcepackagename=None)
+        return question
+
+    def test_init_enqueue(self):
+        question = self.makeQuestion()
+        event = FakeEvent()
+        notification = TestQuestionNotification(question, event)
+        self.assertEqual(
+            notification.recipient_set.name,
+            notification.job.metadata['recipient_set'])
