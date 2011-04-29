@@ -548,6 +548,12 @@ AFTER INSERT OR UPDATE OR DELETE ON bugsubscription
 FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
 
 -- bugtag: existence
-CREATE TRIGGER bugtag_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtag FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
+CREATE TRIGGER bugtag_maintain_bug_summary_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON bugtag
+FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
+
+CREATE TRIGGER bugtag_maintain_bug_summary_trigger
+AFTER INSERT OR UPDATE OR DELETE ON bugtag
+FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
