@@ -37,7 +37,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGUploadFailure,
     GPGVerificationError,
     IGPGHandler,
-    ILongRunningGPGHandler,
     IPymeKey,
     IPymeSignature,
     IPymeUserId,
@@ -553,9 +552,14 @@ class GPGHandler:
 
 
 class LongRunningGPGHandler(GPGHandler):
-    """See ILongRunningGPGHandler."""
+    """See `IGPGHandler`.
 
-    implements(ILongRunningGPGHandler)
+    This implementation starts a twisted job to periodically touch all the
+    files in the config directory under /tmp, to prevent them from being
+    cleaned up.
+    """
+
+    implements(IGPGHandler)
 
     def _startup(self):
         """Set up the twisted job to periodically touch the config directory.

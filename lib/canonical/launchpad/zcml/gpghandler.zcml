@@ -14,19 +14,9 @@
     </class>
 
     <securedutility
-        class="canonical.launchpad.utilities.GPGHandler"
+        class="canonical.launchpad.utilities.LongRunningGPGHandler"
         provides="canonical.launchpad.interfaces.gpghandler.IGPGHandler">
         <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
-    </securedutility>
-
-    <class class="canonical.launchpad.utilities.LongRunningGPGHandler">
-        <allow interface="canonical.launchpad.interfaces.gpghandler.ILongRunningGPGHandler" />
-    </class>
-
-    <securedutility
-        class="canonical.launchpad.utilities.LongRunningGPGHandler"
-        provides="canonical.launchpad.interfaces.gpghandler.ILongRunningGPGHandler">
-        <allow interface="canonical.launchpad.interfaces.gpghandler.ILongRunningGPGHandler" />
     </securedutility>
 
     <class class="canonical.launchpad.utilities.PymeSignature">

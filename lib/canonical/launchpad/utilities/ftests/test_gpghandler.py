@@ -20,10 +20,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.gpghandler import (
-    IGPGHandler,
-    ILongRunningGPGHandler,
-    )
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
@@ -188,7 +185,7 @@ class TestImportKeyRing(unittest.TestCase):
 
     def testHomeDirectoryJob(self):
         """Does the job to touch the home work."""
-        gpg_handler = getUtility(ILongRunningGPGHandler)
+        gpg_handler = getUtility(IGPGHandler)
         naked_gpghandler = removeSecurityProxy(gpg_handler)
         self.assertTrue(naked_gpghandler._touch_home_call.running)
 

@@ -16,7 +16,6 @@ __all__ = [
     'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
-    'ILongRunningGPGHandler',
     'IPymeSignature',
     'IPymeKey',
     'IPymeUserId',
@@ -269,23 +268,6 @@ class IGPGHandler(Interface):
         Resets OpenPGP keyrings and trust database.
         """
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
-
-
-class ILongRunningGPGHandler(IGPGHandler):
-    """Long running Handler to perform OpenPGP operations.
-
-    This version can be used by long running applications because it
-    periodically touches all of it's configuration files which reside in /tmp.
-    This prevents any reaper scripts which use the last modified time from
-    cleaning up the files.
-    """
-
-    def stopConfigJob():
-        """Stops the twisted job used to touch the config files.
-
-        This is called from an atexit handler but also needs to be exposed
-        here so that tests can use it to clean up.
-        """
 
 
 class IPymeSignature(Interface):
