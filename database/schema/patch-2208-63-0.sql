@@ -439,20 +439,55 @@ COMMENT ON FUNCTION bugtask_maintain_bug_summary() IS
 'Both BEFORE & AFTER trigger on bugtask maintaining the bugs summaries in bugsummary.';
 
 
-/*
-
-CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE AS
+CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary()
+RETURNS TRIGGER LANGUAGE plpgsql VOLATILE AS
 $$
+DECLARE
+    bug_row bug%ROWTYPE;
+    bugsummary_row bugsummary%ROWTYPE;
+    bugsubscription_row bugsubscription%ROWTYPE;
 BEGIN
-    if the bug is public this is a noop 
-        otherwise take the public summary locations and inc/dec each location with the subscriber person as the viewed_by 
+    -- We guard against changes to an existing BugSubscription that
+    -- would require recalculating the BugSummary information.
+    IF TG_OP = 'UPDATE' THEN
+        IF (OLD.bug IS NOT DISTINCT FROM NEW.bug
+            OR OLD.person IS NOT DISTINCT FROM NEW.person) THEN
+            RAISE EXCEPTION 'Cannot retarget a BugSubscription.';
+        END IF;
+        RETURN NULL; -- Ignored - this is an AFTER trigger.
+    END IF;
+
+    IF TG_OP = 'INSERT' THEN
+        bugsubscription_row = NEW;
+    ELSE
+        bugsubscription_row = OLD;
+    END IF;
+
+    SELECT * FROM Bug INTO bug_row WHERE id = bugsubscription_row.bug;
+
+    IF bug.private IS FALSE THEN
+        RETURN NULL; -- Ignored - this is an AFTER trgger.
+    END IF;
+
+    FOR bugsummary_row IN (
+        SELECT * FROM bugsummary_locations(bug)
+        WHERE viewed_by = bugsubscription.person)
+    LOOP
+        IF TG_OP = 'INSERT' THEN
+            PERFORM bug_summary_inc(bugsummary);
+        ELSE
+            PERFORM bug_summary_dec(bugsummary);
+        END IF;
+    END LOOP;
+
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
 
 COMMENT ON FUNCTION bugsubscription_maintain_bug_summary() IS
 'AFTER trigger on bugsubscription maintaining the bugs summaries in bugsummary.';
+
+/*
 
 CREATE OR REPLACE FUNCTION bugtag_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
@@ -491,12 +526,14 @@ CREATE TRIGGER bugtask_maintain_bug_summary_after_trigger
 AFTER INSERT OR UPDATE OR DELETE ON bugtask
 FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
 
-/*
 -- bugsubscription: existence
-CREATE TRIGGER bugsubscription_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugsubscription FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
+CREATE TRIGGER bugsubscription_maintain_bug_summary_trigger
+AFTER INSERT OR UPDATE OR DELETE ON bugsubscription
+FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
+
+/*
 -- bugtag: existence
 CREATE TRIGGER bugtag_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtag FOR EACH ROW EXECUTE PROCEDURE bugtag_maintain_bug_summary();
-
 */
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 0);
