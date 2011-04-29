@@ -14,6 +14,7 @@ from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
     QuestionModifiedOwnerNotification,
+    QuestionUnsupportedLanguageNotification,
     )
 from lp.registry.interfaces.person import IPerson
 
@@ -152,3 +153,26 @@ class QuestionAddedNotificationTestCase(TestCase):
         """The notification user is always the question owner."""
         self.assertEqual(self.question.owner, self.notification.user)
         self.assertNotEqual(self.event.user, self.notification.user)
+
+
+class TestQuestionUnsupportedLanguageNotification(
+                                     QuestionUnsupportedLanguageNotification):
+    """A subclass that does not send emails."""
+
+    def shouldNotify(self):
+        return False
+
+
+class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
+    """Test notifications about questions with unsupported languages."""
+
+    def setUp(self):
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = TestQuestionUnsupportedLanguageNotification(
+            self.question, self.event)
+
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.CONTACT,
+            self.notification.recipient_set)

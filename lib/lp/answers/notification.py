@@ -463,6 +463,8 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 class QuestionUnsupportedLanguageNotification(QuestionNotification):
     """Notification sent to answer contacts for unsupported languages."""
 
+    recipient_set = QuestionRecipientSet.CONTACT
+
     def getSubject(self):
         """See QuestionNotification."""
         return '[Question #%s]: (%s) %s' % (
