@@ -42,7 +42,7 @@ class TestSSHKeyView(TestCaseWithFactory):
             self.getUniqueString())
         # Add the key for the user here,
         # since we only care about testing removal.
-        added_key = getUtility(ISSHKeySet).new(person, public_key)
+        getUtility(ISSHKeySet).new(person, public_key)
         browser = self.getUserBrowser(
             canonical_url(person) + '/+editsshkeys', user=person)
         browser.getControl('Remove').click()
