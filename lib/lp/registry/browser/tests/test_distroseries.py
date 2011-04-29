@@ -1020,7 +1020,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         return derived_series, parent_series, sourcepackagename
 
     def test_canPerformSync_anon(self):
-        # Anonymous users do not see options to sync.
+        # Anonymous users cannot sync packages.
         derived_series, _, _ = self._setUpDSD()
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
