@@ -384,12 +384,13 @@ class CopyChecker:
         higher than any version of the same source present in the
         destination suite (series + pocket).
 
-        If person is not None, check the this person has the right t
-        upload to the destination archive.
+        If person is not None, check that this person has upload rights to
+        the destination archive.
 
         :param source: copy candidate, `ISourcePackagePublishingHistory`.
         :param series: destination `IDistroSeries`.
         :param pocket: destination `PackagePublishingPocket`.
+        :param person: requestor `IPerson`.
 
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
@@ -399,8 +400,9 @@ class CopyChecker:
         # in the security adapter because it requires more info than is
         # available in the security adapter.
         if person is not None:
-            # XXX this fails ... only(?) difference is source.component
-            # (as opposed to None: destination component(?))
+            # XXX 'reason2' seems to be true even when person has no rights
+            # the component passed to checkUpload inside
+            # canUploadSuiteSourcePackage is None.
             # from lp.registry.model.suitesourcepackage import
             #    SuiteSourcePackage
             # suitesourcepackage = SuiteSourcePackage(
