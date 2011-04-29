@@ -188,6 +188,8 @@ class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
 class TestQuestionNotification(QuestionNotification):
     """A subclass to exercise question notifcations."""
 
+    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
+
     def getBody(self):
         return 'body'
 
@@ -209,9 +211,16 @@ class QuestionNotificationTestCase(TestCaseWithFactory):
         return question
 
     def test_init_enqueue(self):
+        # Creating a question notification creates a queation email job.
         question = self.makeQuestion()
         event = FakeEvent()
+        event.user = self.factory.makePerson()
         notification = TestQuestionNotification(question, event)
         self.assertEqual(
             notification.recipient_set.name,
             notification.job.metadata['recipient_set'])
+        self.assertEqual(notification.question, notification.job.question)
+        self.assertEqual(notification.user, notification.job.user)
+        self.assertEqual(notification.getSubject(), notification.job.subject)
+        self.assertEqual(notification.getBody(), notification.job.body)
+        self.assertEqual(notification.getHeaders(), notification.job.headers)
