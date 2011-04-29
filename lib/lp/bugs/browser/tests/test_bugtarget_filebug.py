@@ -385,8 +385,8 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_filebug_reporting_details(self):
-        login('foo.bar@canonical.com')
         product = self.factory.makeProduct()
+        login_person(product.owner)
         product.bug_reporting_guidelines = "Include bug details"
         view = create_initialized_view(
             product, '+filebug-reporting-guidelines')

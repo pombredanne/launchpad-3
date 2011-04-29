@@ -12,7 +12,6 @@ __all__ = [
     "BugTargetBugTagsView",
     "BugTargetBugsView",
     "FileBugAdvancedView",
-    "FileBugExtraInformation",
     "FileBugGuidedView",
     "FileBugViewBase",
     "IProductBugConfiguration",
@@ -26,7 +25,6 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
-import simplejson
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -73,7 +71,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY, UserAttributeCache
+from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
