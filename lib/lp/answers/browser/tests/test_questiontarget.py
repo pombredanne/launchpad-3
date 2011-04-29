@@ -19,9 +19,8 @@ from lp.testing import login_person, person_logged_in, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
 
-class TestSearchQuestionsView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
+class TestSearchQuestionsViewMixin:
+    """A mixin to provide common helper methods for tests in this file."""
 
     def linkPackage(self, product, name):
         # A helper to setup a legitimate Packaging link between a product
@@ -36,7 +35,10 @@ class TestSearchQuestionsView(TestCaseWithFactory):
             hoary, sourcepackagename, product.owner)
 
 
-class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
+class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory,
+                                                TestSearchQuestionsViewMixin):
+
+    layer = DatabaseFunctionalLayer
 
     def test_cannot_configure_answers_product_no_edit_permission(self):
         product = self.factory.makeProduct()
@@ -75,8 +77,11 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
         self.assertEqual(False, view.can_configure_answers)
 
 
-class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView.template"""
+class TestSearchQuestionsViewTemplate(TestCaseWithFactory,
+                                      TestSearchQuestionsViewMixin):
+    """Test the behavior of SearchQuestionsView.template"""
+
+    layer = DatabaseFunctionalLayer
 
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
@@ -133,8 +138,11 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
         self.assertViewTemplate(question_set, 'question-listing.pt')
 
 
-class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView unknown support."""
+class TestSearchQuestionsViewUnknown(TestCaseWithFactory,
+                                     TestSearchQuestionsViewMixin):
+    """Test the behavior of SearchQuestionsView unknown support."""
+
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestSearchQuestionsViewUnknown, self).setUp()
