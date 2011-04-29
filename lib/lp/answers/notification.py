@@ -42,7 +42,7 @@ class QuestionNotification:
     QuestionNotification can be registered as event subscribers.
     """
 
-    recipient_set = None
+    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
 
     def __init__(self, question, event):
         """Base constructor.
@@ -154,8 +154,6 @@ class QuestionNotification:
 
 class QuestionAddedNotification(QuestionNotification):
     """Notification sent when a question is added."""
-
-    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
 
     @property
     def user(self):
