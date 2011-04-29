@@ -42,9 +42,8 @@
     </form>
   </div>
   
-  <div class="boardCommentFooter"
-    tal:condition="not: context/visible">
-    <a href="#">Mark as spam</a>
+  <div class="boardCommentFooter">
+    <a id="mark-spam" href="#">Mark as spam</a>
   </div>
 </div>
 </tal:root>
