@@ -407,22 +407,54 @@ $$;
 COMMENT ON FUNCTION bug_maintain_bug_summary() IS
 'AFTER trigger on bug maintaining the bugs summaries in bugsummary.';
 
-/*
+
 CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
-    if the target changes needs to dec all the rows for the old target and inc for the new target. 
-    special mention:
-       the counting of /bugs/ once at distribution/distroseris scope even if they have many sourcepackage tasks means that this needs to cooperate with the bug - when decrementing rows if any other task also qualifies for the matching distroseries/distribution aggregate, don't alter it - it was only counted once.
-    milestone changes are easy - just multiple out by subscribers and tags , dev the old milestone value inc the new
-    status changes likewise
-    RETURN NULL; -- Ignored - this is an AFTER trigger
+    IF TG_OP = 'INSERT' THEN
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(NEW.bug));
+        ELSE
+            PERFORM summarise_bug(bug_row(NEW.bug));
+        END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(OLD.bug));
+        ELSE
+            PERFORM summarise_bug(bug_row(OLD.bug));
+        END IF;
+
+    ELSIF TG_OP = 'UPDATE' AND (
+        OLD.product IS DISTINCT FROM NEW.product
+        OR OLD.productseries IS DISTINCT FROM NEW.productseries
+        OR OLD.distribution IS DISTINCT FROM NEW.distribution
+        OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
+        OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
+        OR OLD.status IS DISTINCT FROM NEW.status
+        OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
+        IF TG_WHEN = 'BEFORE' THEN
+            PERFORM unsummarise_bug(bug_row(OLD.bug));
+            IF OLD.bug <> NEW.bug THEN
+                PERFORM unsummarise_bug(bug_row(NEW.bug));
+            END IF;
+        ELSE
+            PERFORM summarise_bug(bug_row(OLD.bug));
+            IF OLD.bug <> NEW.bug THEN
+                PERFORM summarise_bug(bug_row(NEW.bug));
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN NEW;
 END;
 $$;
 
 COMMENT ON FUNCTION bugtask_maintain_bug_summary() IS
-'AFTER trigger on bugtask maintaining the bugs summaries in bugsummary.';
+'Both BEFORE & AFTER trigger on bugtask maintaining the bugs summaries in bugsummary.';
+
+
+/*
 
 CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE AS
@@ -461,11 +493,20 @@ COMMENT ON FUNCTION bugtag_maintain_bug_summary() IS
 -- population script above uses needs to be accounted for.
 
 -- bug: duplicateof, private (not INSERT because a task is needed to be included in summaries.
-CREATE TRIGGER bug_maintain_bug_summary_trigger AFTER UPDATE OR DELETE ON bug FOR EACH ROW EXECUTE PROCEDURE bug_maintain_bug_summary();
+CREATE TRIGGER bug_maintain_bug_summary_trigger
+AFTER UPDATE OR DELETE ON bug
+FOR EACH ROW EXECUTE PROCEDURE bug_maintain_bug_summary();
+
+-- bugtask: target, status, milestone
+CREATE TRIGGER bugtask_maintain_bug_summary_before_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON bugtask
+FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
+
+CREATE TRIGGER bugtask_maintain_bug_summary_after_trigger
+AFTER INSERT OR UPDATE OR DELETE ON bugtask
+FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
 
 /*
--- bugtask: target, status, milestone
-CREATE TRIGGER bugtask_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugtask FOR EACH ROW EXECUTE PROCEDURE bugtask_maintain_bug_summary();
 -- bugsubscription: existence
 CREATE TRIGGER bugsubscription_maintain_bug_summary_trigger AFTER INSERT OR UPDATE OR DELETE ON bugsubscription FOR EACH ROW EXECUTE PROCEDURE bugsubscription_maintain_bug_summary();
 -- bugtag: existence
