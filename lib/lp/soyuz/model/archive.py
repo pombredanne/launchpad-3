@@ -1175,7 +1175,7 @@ class Archive(SQLBase):
             strict_component)
 
     def verifyUpload(self, person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                     distroseries, strict_component=True):
         """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)

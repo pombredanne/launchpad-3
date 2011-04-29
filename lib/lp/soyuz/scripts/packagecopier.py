@@ -400,22 +400,15 @@ class CopyChecker:
         # in the security adapter because it requires more info than is
         # available in the security adapter.
         if person is not None:
-            # XXX 'reason2' seems to be true even when person has no rights
-            # the component passed to checkUpload inside
-            # canUploadSuiteSourcePackage is None.
-            # from lp.registry.model.suitesourcepackage import
-            #    SuiteSourcePackage
-            # suitesourcepackage = SuiteSourcePackage(
-            #    series, pocket,
-            #    source.sourcepackagerelease.sourcepackagename)
-            # reason2 = self.archive.canUploadSuiteSourcePackage(
-            #    person, suitesourcepackage)
-
-            # The component used here is the source component and should
-            # -probably- be the destination component.
+            sourcepackagename = source.sourcepackagerelease.sourcepackagename
+            destination_component = series.getSourcePackage(
+                sourcepackagename).latest_published_component
+            # If destination_component is not None, make sure the person
+            # has upload permission for this component. Otherwise, any upload
+            # permission on this archive will do.
             reason = self.archive.checkUpload(
-               person, series, source.sourcepackagerelease.sourcepackagename,
-               source.component, pocket, strict_component=True)
+                person, series, sourcepackagename, destination_component,
+                pocket, strict_component=(destination_component is not None))
             if reason:
                 raise CannotCopy(reason)
 
