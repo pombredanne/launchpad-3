@@ -13,6 +13,7 @@ from lp.answers.enums import QuestionRecipientSet
 from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
+    QuestionModifiedOwnerNotification,
     )
 from lp.registry.interfaces.person import IPerson
 
@@ -40,6 +41,7 @@ class StubQuestion:
         self.id = id
         self.title = title
         self.owner = FakeUser()
+        self.messages = []
 
 
 class StubQuestionMessage:
@@ -57,6 +59,7 @@ class FakeUser:
 class FakeEvent:
     """A fake event."""
     user = FakeUser()
+    object_before_modification = StubQuestion()
 
 
 class QuestionModifiedDefaultNotificationTestCase(TestCase):
@@ -101,6 +104,29 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         self.assertNotEqual(question.owner, notification.user)
 
 
+class TestQuestionModifiedOwnerNotification(
+                                           QuestionModifiedOwnerNotification):
+    """A subclass that does not send emails."""
+
+    def shouldNotify(self):
+        return False
+
+
+class QuestionModifiedOwnerNotificationTestCase(TestCase):
+    """Test cases for mail notifications about owner modified questions."""
+
+    def setUp(self):
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = TestQuestionModifiedOwnerNotification(
+            self.question, self.event)
+
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.ASKER,
+            self.notification.recipient_set)
+
+
 class TestQuestionAddedNotification(QuestionAddedNotification):
     """A subclass that does not send emails."""
 
@@ -112,7 +138,6 @@ class QuestionAddedNotificationTestCase(TestCase):
     """Test cases for mail notifications about created questions."""
 
     def setUp(self):
-        """Create a notification with a fake question."""
         self.question = StubQuestion()
         self.event = FakeEvent()
         self.notification = TestQuestionAddedNotification(
