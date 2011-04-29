@@ -5,7 +5,7 @@
 
 The most common is flags scoped by some attribute of a web request, such as
 the page ID or the server name.  But other types of scope can also match code
-run from cron scripts, incoming mail and potentially also other places.
+run from cron scripts and potentially also other places.
 """
 
 __all__ = [
