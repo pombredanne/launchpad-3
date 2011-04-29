@@ -42,7 +42,9 @@ from lp.testing import (
 
 
 def get_test_questionjobs():
-    return list(QuestionEmailJob.iterReady())
+    return sorted(
+        QuestionEmailJob.iterReady(),
+        key=lambda job: job.metadata["recipient_set"])
 
 
 def clear_test_questionjobs():
