@@ -5,6 +5,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'get_test_questionjobs',
+    'clear_test_questionjobs',
+    ]
+
 import transaction
 
 from testtools.content import Content
@@ -34,6 +39,16 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+
+
+def get_test_questionjobs():
+    return list(QuestionEmailJob.iterReady())
+
+
+def clear_test_questionjobs():
+    for job in QuestionEmailJob.iterReady():
+        job.start()
+        job.complete()
 
 
 class QuestionJobTestCase(TestCaseWithFactory):
