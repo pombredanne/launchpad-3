@@ -7,8 +7,12 @@ __metaclass__ = type
 
 import transaction
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
@@ -16,14 +20,17 @@ from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
     )
+from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.answers.model.questionjob import (
     QuestionJob,
     QuestionEmailJob,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    run_script,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -312,3 +319,27 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
             logger.getLogBuffer().splitlines())
         transaction.commit()
         self.assertEqual(2, len(stub.test_emails))
+
+    def test_run_cronscript(self):
+        # The cronscript is configured: schema-lazr.conf and security.cfg.
+        question = self.factory.makeQuestion()
+        self.addAnswerContact(question)
+        user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        job = QuestionEmailJob.create(
+            question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
+            subject, body, headers)
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IQuestionEmailJobSource.getName()))
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
+        self.assertEqual(0, exit_code)
+        message = (
+            'QuestionEmailJob has sent email for question %s.' % question.id)
+        self.assertTrue(
+            message in err,
+            'Cound not find "%s" in err log:\n%s.' % (message, err))
+        IStore(job.job).invalidate()
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
