@@ -7,7 +7,6 @@ Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from lp.answers.tests.test_questionjob import pop_test_questionjobs
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('test@canonical.com')
@@ -704,38 +703,6 @@ from bugs just like when a question is normally created.
     3
 
 
-Notifications and Teams
------------------------
-
-When a team is subscribed to a question, there are two cases two
-consider. The first one is if the team has an email address set, a
-notification will only be sent to that address. (That email address is
-assumed to be a mailing list reaching all the team members.) We already
-saw an example of that case with the Ubuntu Team in the examples above.
-
-The other case is when the team doesn't have an email address set. In
-that case, all the team members will be notified individually.
-
-    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> ubuntu_question.subscribe(launchpad_devs)
-    <QuestionSubscription...>
-
-    >>> login('test@canonical.com')
-    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-    >>> notifications = pop_test_questionjobs()
-
-Of course, if the user is also individually subscribed to the question,
-he will receives only one notification:
-
-    >>> ubuntu_question.subscribe(foo_bar)
-    <QuestionSubscription...>
-
-    >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-    >>> notifications = pop_test_questionjobs()
-
-# XXX sinzui 2011-04-29: what is this?
-
-
 Notifications and Localized Questions
 -------------------------------------
 
@@ -803,10 +770,10 @@ sent to the support list about that question:
     # its unicoded encoded value.
     # Effectively replace u'\xe9' by '\\e9'.
 
-    >>> def escape_utf8_payload(notification):
+    >>> def recode_text(notification):
     ...     return notification.body.encode('ASCII', 'backslashreplace')
 
-    >>> notification_body = escape_utf8_payload(notifications[1])
+    >>> notification_body = recode_text(notifications[1])
     >>> print notification_body
     A question was asked in a language (French) spoken by
     none of the registered Ubuntu answer contacts.
@@ -821,7 +788,7 @@ the question is in a language spoken by none of the answer contacts:
     >>> print notifications[0].subject
     [Question #...]: Impossible d'installer Ubuntu
 
-    >>> notification_body = escape_utf8_payload(notifications[0])
+    >>> notification_body = recode_text(notifications[0])
     >>> print notification_body
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
@@ -842,7 +809,7 @@ with a warning appended to it.
     ...     french_question, unmodified_question, ['title']))
     >>> notifications = pop_test_questionjobs()
 
-    >>> notification_body = escape_utf8_payload(notifications[0])
+    >>> notification_body = recode_text(notifications[0])
     >>> print notification_body
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
@@ -852,76 +819,3 @@ with a warning appended to it.
     <BLANKLINE>
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
-
-
-Localized Questions and Teams
-.............................
-
-We will notify the team only if the question language is in one of the
-team's preferred languages. The languages spoken by the team members is
-unimportant.
-
-For example, the rosetta admins team becomes an Answer contact for
-English questions. Carlos speaks Spanish, and he is an answer contact
-for Ubuntu. He is also a member of the rosetta admins team. The team
-wont receive emails because of his membership when they become answer
-contacts too.
-
-    >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
-    >>> [lang.code for lang in rosetta_admins.languages]
-    []
-
-    >>> rosetta_admins.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> carlos.inTeam(rosetta_admins)
-    True
-
-    >>> spanish = getUtility(ILanguageSet)['es']
-    >>> spanish in carlos.languages
-    True
-
-    >>> ubuntu.addAnswerContact(carlos)
-    True
-
-    >>> ubuntu.addAnswerContact(rosetta_admins)
-    True
-
-    >>> spanish_question = ubuntu.newQuestion(
-    ...     sample_person, title="Necesidad ayuda con Firefox",
-    ...     description="No puedo acceso al Internet en Firefox.",
-    ...     language=spanish)
-    >>> notifications = pop_test_questionjobs()
-
-    >>> ubuntu.removeAnswerContact(carlos)
-    True
-
-But if the team languages attribute is set, this set of languages will
-be used. So, if the team only officially speaks French, it will only
-receive notifications about French (and English) questions.
-
-    >>> rosetta_admins.addLanguage(french)
-
-    # Resend the new message notification
-    >>> notify(ObjectCreatedEvent(french_question))
-    >>> notifications = pop_test_questionjobs()
-
-When the team doesn't use an explicit address. All team members will be
-contacted if the question language is supported. For example, the
-Launchpad Developers team doesn't have any preferred email address set.
-Its only member, Foo Bar will receive a notification if the team
-supported languages includes the question language:
-
-    >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> list(launchpad_devs.languages)
-    []
-
-    >>> [member.name for member in launchpad_devs.activemembers]
-    [u'name16']
-
-    >>> launchpad_devs.addLanguage(spanish)
-    >>> ubuntu.addAnswerContact(launchpad_devs)
-    True
-
-    # Resend the new message notification
-    >>> notify(ObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_test_questionjobs()
