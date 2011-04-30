@@ -8,7 +8,8 @@ of changes to the bug status:
     >>> from zope.interface import providedBy
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.answers.tests.test_questionjob import pop_test_questionjobs
+    >>> from lp.answers.tests.test_question_notifications import (
+    ...     pop_questionemailjobs)
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -17,12 +18,12 @@ of changes to the bug status:
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
     >>> bugtask.statusexplanation = 'This bug really happened to me.'
-    >>> ignore = pop_test_questionjobs()
+    >>> ignore = pop_questionemailjobs()
     >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['status', 'statusexplanation'],
     ...     user=no_priv))
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     1
 
@@ -60,5 +61,5 @@ Only a change in status triggers a notification.
     ...     bugtask, original_bugtask, ['assignee', 'dateassigned'],
     ...     user=sample_person))
 
-    >>> len(pop_test_questionjobs())
+    >>> len(pop_questionemailjobs())
     0

@@ -5,10 +5,6 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'pop_test_questionjobs',
-    ]
-
 import transaction
 
 from testtools.content import Content
@@ -38,16 +34,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-
-
-def pop_test_questionjobs():
-    jobs = sorted(
-        QuestionEmailJob.iterReady(),
-        key=lambda job: job.metadata["recipient_set"])
-    for job in QuestionEmailJob.iterReady():
-        job.start()
-        job.complete()
-    return jobs
 
 
 class QuestionJobTestCase(TestCaseWithFactory):

@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'pop_questionemailjobs',
+    ]
+
 from unittest import TestCase
 
 from zope.component import getUtility
@@ -14,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import QuestionRecipientSet
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.model.questionjob import QuestionEmailJob
 from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
@@ -24,6 +29,16 @@ from lp.answers.notification import (
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+
+
+def pop_questionemailjobs():
+    jobs = sorted(
+        QuestionEmailJob.iterReady(),
+        key=lambda job: job.metadata["recipient_set"])
+    for job in jobs:
+        job.start()
+        job.complete()
+    return jobs
 
 
 class TestQuestionModifiedNotification(QuestionModifiedDefaultNotification):

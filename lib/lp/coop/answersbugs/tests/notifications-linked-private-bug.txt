@@ -10,7 +10,8 @@ they are indirect subscribers.
     >>> from zope.interface import providedBy
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.answers.tests.test_questionjob import pop_test_questionjobs
+    >>> from lp.answers.tests.test_question_notifications import (
+    ...     pop_questionemailjobs)
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -21,9 +22,9 @@ they are indirect subscribers.
     True
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, no_priv)
-    >>> ignore = pop_test_questionjobs()
+    >>> ignore = pop_questionemailjobs()
     >>> notify(ObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['status'], user=no_priv))
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     0

@@ -7,7 +7,8 @@ Let's start with creating a question, and see what the resulting
 notification looks like:
 
     >>> from zope.event import notify
-    >>> from lp.answers.tests.test_questionjob import pop_test_questionjobs
+    >>> from lp.answers.tests.test_question_notifications import (
+    ...     pop_questionemailjobs)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
@@ -28,7 +29,7 @@ is sent:
     >>> [sub.person.displayname for sub in ubuntu_question.subscriptions]
     [u'Sample Person']
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     1
 
@@ -105,7 +106,7 @@ will be sent.
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.subject
     Re: [Question #...]: Installer doesn't work on a Mac
@@ -135,7 +136,7 @@ does not include priority.
     >>> ubuntu_question.target = ubuntu
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['target']))
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.body
     Question #... Ubuntu changed:
@@ -151,7 +152,7 @@ Changing the assignee will trigger a notification.
     >>> ubuntu_question.assignee = no_priv
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['assignee']))
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.body
     Question #... Ubuntu changed:
@@ -167,7 +168,7 @@ was made, no notification is sent:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['status']))
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     0
 
@@ -201,7 +202,7 @@ has been linked to it:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     2
 
@@ -228,7 +229,7 @@ A notification is also sent when a bug is unlinked from the question:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     2
 
@@ -260,7 +261,7 @@ workflow action done.
     >>> request_message = ubuntu_question.requestInfo(
     ...     no_priv, "What is your Mac model?")
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> support_notification = notifications[1]
     >>> print support_notification.subject
     Re: [Question #...]: Installer doesn't work on a Mac
@@ -304,7 +305,7 @@ a notification.
     >>> ubuntu_question.unsubscribe(sample_person)
     >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
@@ -340,7 +341,7 @@ Notifications for expireQuestion()
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_question.expireQuestion(
     ...     no_priv, "Expired because of no recent activity.")
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the question is expired:
 
@@ -390,7 +391,7 @@ display.)
     ...         "newbie."),
     ...     owner=sample_person)
     >>> message = ubuntu_question.reopen(email_msg)
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Notice also how the 'Re' handling is handled nicely:
 
@@ -438,7 +439,7 @@ Notifications for giveAnswer()
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
     ...     "for all the details.")
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when an answer is proposed:
 
@@ -490,7 +491,7 @@ Notifications for confirm()
     ...     "I've installed BootX and the installer CD is now booting. "
     ...     "Thanks!", answer=answer_message)
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the owner confirms an answer:
 
@@ -523,7 +524,7 @@ Notifications for addComment()
     ...     no_priv, "Unless you have lots of RAM... and even then, the "
     ...     "system will probably be very slow.")
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when a comment is posted:
 
@@ -554,7 +555,7 @@ Notifications for reject()
     >>> message = ubuntu_question.reject(
     ...     foo_bar, "Yeah! It will be awfully slow.")
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when the question is rejected:
 
@@ -594,7 +595,7 @@ Notifications for setStatus()
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
 
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
 Default notification when somebody changes the status:
 
@@ -630,7 +631,7 @@ information before the message.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_question = firefox.newQuestion(
     ...     no_priv, 'How can I play Flash?', 'I want Flash!')
-    >>> ignore = pop_test_questionjobs()
+    >>> ignore = pop_questionemailjobs()
 
     >>> login('test@canonical.com')
     >>> firefox_faq = firefox.getFAQ(10)
@@ -639,7 +640,7 @@ information before the message.
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, firefox_faq, "Read the FAQ.")
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
     >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
@@ -667,7 +668,7 @@ If the FAQ is unlinked, the notification will look like:
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, None, "Sorry, this wasn't so useful.")
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
     >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
@@ -698,7 +699,7 @@ Answer contacts and the bug owner is notified when questions are created
 from bugs just like when a question is normally created.
 
     >>> bug_question = ubuntu.createQuestionFromBug(bug)
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
     3
 
@@ -732,7 +733,7 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
     >>> print notifications[0].subject.encode('ASCII', 'backslashreplace')
     [Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox
@@ -745,7 +746,7 @@ the notifications.
     ...     "Veja o screenshot: http://tinyurl.com/y8jq8z")
     <QuestionMessage...>
 
-    >>> ignore = pop_test_questionjobs()
+    >>> ignore = pop_questionemailjobs()
 
 The exception to these general rules is that when a question is created
 in language spoken by none of the answer contacts, each one will receive
@@ -761,7 +762,7 @@ sent to the support list about that question:
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
     >>> print notifications[1].subject
     [Question #...]: (French) Impossible d'installer Ubuntu
@@ -807,7 +808,7 @@ with a warning appended to it.
     >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
     >>> notify(ObjectModifiedEvent(
     ...     french_question, unmodified_question, ['title']))
-    >>> notifications = pop_test_questionjobs()
+    >>> notifications = pop_questionemailjobs()
 
     >>> notification_body = recode_text(notifications[0])
     >>> print notification_body
