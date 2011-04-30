@@ -655,14 +655,7 @@ information before the message.
     Sample Person proposed the following answer:
     Read the FAQ.
     <BLANKLINE>
-    --
-    If this answers your question, please go to the following page to let us
-    know that it is solved:
-    http://.../firefox/+question/.../+confirm?answer_id=0
-    <BLANKLINE>
-    If you still need help, you can reply to this email or go to the
-    following page to enter your feedback:
-    http://.../firefox/+question/...
+    --...
 
 If the FAQ is unlinked, the notification will look like:
 
@@ -681,15 +674,7 @@ If the FAQ is unlinked, the notification will look like:
     Sample Person proposed the following answer:
     Sorry, this wasn't so useful.
     <BLANKLINE>
-    --
-    If this answers your question, please go to the following page to let us
-    know that it is solved:
-    http://answers.launchpad.dev/firefox/+question/16/+confirm?answer_id=1
-    <BLANKLINE>
-    If you still need help, you can reply to this email or go to the
-    following page to enter your feedback:
-    http://answers.launchpad.dev/firefox/+question/16
-    <BLANKLINE>
+    --...
 
 
 Notifications for convertToQuestion()
