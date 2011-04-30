@@ -8,10 +8,7 @@ notification looks like:
 
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectCreatedEvent
-    >>> from lp.answers.tests.test_questionjob import (
-    ...     get_test_questionjobs,
-    ...     clear_test_questionjobs,
-    ...     )
+    >>> from lp.answers.tests.test_questionjob import pop_test_questionjobs
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
@@ -32,7 +29,7 @@ is sent:
     >>> [sub.person.displayname for sub in ubuntu_question.subscriptions]
     [u'Sample Person']
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> len(notifications)
     1
 
@@ -63,8 +60,6 @@ contains information about the question.
     >>> print add_notification.headers['X-Launchpad-Question']
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
-
-    >>> clear_test_questionjobs()
 
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
@@ -111,7 +106,7 @@ will be sent.
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.subject
     Re: [Question #...]: Installer doesn't work on a Mac
@@ -131,8 +126,6 @@ Foo Bar, and one to Ubuntu Team:
     <BLANKLINE>
     It boots straight into MacOS 9.
 
-    >>> clear_test_questionjobs()
-
 # XXX flacoste 2006-09-19: Add checks for notification of change to #
 status whiteboard, priority. For example, if a question is # transferred
 to another QuestionTarget and priority is changed, # the notification
@@ -143,15 +136,13 @@ does not include priority.
     >>> ubuntu_question.target = ubuntu
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['target']))
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.body
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Project: libstdc++ in Ubuntu => Ubuntu
-
-    >>> clear_test_questionjobs()
 
 Changing the assignee will trigger a notification.
 
@@ -161,15 +152,13 @@ Changing the assignee will trigger a notification.
     >>> ubuntu_question.assignee = no_priv
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['assignee']))
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> edit_notification = notifications[1]
     >>> print edit_notification.body
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
         Assignee: Foo Bar => No Privileges Person
-
-    >>> clear_test_questionjobs()
 
 If we trigger a modification event when no changes worth notifying about
 was made, no notification is sent:
@@ -179,7 +168,7 @@ was made, no notification is sent:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['status']))
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> len(notifications)
     0
 
@@ -213,7 +202,7 @@ has been linked to it:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> len(notifications)
     2
 
@@ -226,7 +215,6 @@ has been linked to it:
         http://.../bugs/...
         "Installer fails on a Mac PPC"
 
-    >>> clear_test_questionjobs()
 
 Bug Unlinked Notification
 .........................
@@ -241,7 +229,7 @@ A notification is also sent when a bug is unlinked from the question:
     >>> notify(ObjectModifiedEvent(
     ...     ubuntu_question, unmodified_question, ['bugs']))
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> len(notifications)
     2
 
@@ -254,7 +242,6 @@ A notification is also sent when a bug is unlinked from the question:
         http://.../bugs/...
         "Installer fails on a Mac PPC"
 
-    >>> clear_test_questionjobs()
 
 Linked Bug Status Changed Notification
 ......................................
@@ -274,7 +261,7 @@ workflow action done.
     >>> request_message = ubuntu_question.requestInfo(
     ...     no_priv, "What is your Mac model?")
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> support_notification = notifications[1]
     >>> print support_notification.subject
     Re: [Question #...]: Installer doesn't work on a Mac
@@ -311,8 +298,6 @@ extra footer.
     this email or enter your reply at the following page:
     http://.../ubuntu/+question/...
 
-    >>> clear_test_questionjobs()
-
 Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
 
@@ -320,7 +305,7 @@ a notification.
     >>> ubuntu_question.unsubscribe(sample_person)
     >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> print notifications[1].body
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
@@ -349,8 +334,6 @@ giveInfo() transitions, let's see the other ones.
     >>> ubuntu_question.subscribe(sample_person)
     <QuestionSubscription ...>
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for expireQuestion()
 ..................................
@@ -358,7 +341,7 @@ Notifications for expireQuestion()
     >>> login('no-priv@canonical.com')
     >>> message = ubuntu_question.expireQuestion(
     ...     no_priv, "Expired because of no recent activity.")
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when the question is expired:
 
@@ -389,8 +372,6 @@ Notification received by the owner:
     entering more information about your problem:
     http://.../ubuntu/+question/...
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for reopen()
 ..........................
@@ -410,7 +391,7 @@ display.)
     ...         "newbie."),
     ...     owner=sample_person)
     >>> message = ubuntu_question.reopen(email_msg)
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Notice also how the 'Re' handling is handled nicely:
 
@@ -445,8 +426,6 @@ Notification received by the owner:
     <BLANKLINE>
     Please provide some help to a newbie.
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for giveAnswer()
 ..............................
@@ -460,7 +439,7 @@ Notifications for giveAnswer()
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
     ...     "for all the details.")
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when an answer is proposed:
 
@@ -503,8 +482,6 @@ Notification received by the owner:
     following page to enter your feedback:
     http://.../ubuntu/+question/...
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for confirm()
 ...........................
@@ -514,7 +491,7 @@ Notifications for confirm()
     ...     "I've installed BootX and the installer CD is now booting. "
     ...     "Thanks!", answer=answer_message)
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when the owner confirms an answer:
 
@@ -538,8 +515,6 @@ Notification received by the owner:
     You confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for addComment()
 ..............................
@@ -549,7 +524,7 @@ Notifications for addComment()
     ...     no_priv, "Unless you have lots of RAM... and even then, the "
     ...     "system will probably be very slow.")
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when a comment is posted:
 
@@ -571,8 +546,6 @@ Notification received by the owner:
     Unless you have lots of RAM... and even then, the system will probably
     be very slow.
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for reject()
 ..........................
@@ -582,7 +555,7 @@ Notifications for reject()
     >>> message = ubuntu_question.reject(
     ...     foo_bar, "Yeah! It will be awfully slow.")
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when the question is rejected:
 
@@ -613,8 +586,6 @@ Notification received by the owner:
     the following page:
     http://.../ubuntu/+question/...
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for setStatus()
 .............................
@@ -624,7 +595,7 @@ Notifications for setStatus()
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")
 
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Default notification when somebody changes the status:
 
@@ -648,8 +619,6 @@ Notification received by the owner:
     Foo Bar changed the question status:
     The rejection was a mistake.
 
-    >>> clear_test_questionjobs()
-
 
 Notifications for linkFAQ()
 ...........................
@@ -662,8 +631,7 @@ information before the message.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_question = firefox.newQuestion(
     ...     no_priv, 'How can I play Flash?', 'I want Flash!')
-
-    >>> clear_test_questionjobs()
+    >>> ignore = pop_test_questionjobs()
 
     >>> login('test@canonical.com')
     >>> firefox_faq = firefox.getFAQ(10)
@@ -672,7 +640,7 @@ information before the message.
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, firefox_faq, "Read the FAQ.")
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
@@ -696,13 +664,11 @@ information before the message.
     following page to enter your feedback:
     http://.../firefox/+question/...
 
-    >>> clear_test_questionjobs()
-
 If the FAQ is unlinked, the notification will look like:
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, None, "Sorry, this wasn't so useful.")
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> print notifications[0].body
     Your question #... on Mozilla Firefox changed:
@@ -726,9 +692,6 @@ If the FAQ is unlinked, the notification will look like:
     <BLANKLINE>
 
 
-    >>> clear_test_questionjobs()
-
-
 Notifications for convertToQuestion()
 -------------------------------------
 
@@ -736,11 +699,9 @@ Answer contacts and the bug owner is notified when questions are created
 from bugs just like when a question is normally created.
 
     >>> bug_question = ubuntu.createQuestionFromBug(bug)
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
     >>> len(notifications)
     3
-
-    >>> clear_test_questionjobs()
 
 
 Notifications and Teams
@@ -761,7 +722,7 @@ that case, all the team members will be notified individually.
 
     >>> login('test@canonical.com')
     >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 Of course, if the user is also individually subscribed to the question,
 he will receives only one notification:
@@ -770,9 +731,9 @@ he will receives only one notification:
     <QuestionSubscription...>
 
     >>> message = ubuntu_question.addComment(sample_person, 'A comment.')
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
-    >>> clear_test_questionjobs()
+# XXX sinzui 2011-04-29: what is this?
 
 
 Notifications and Localized Questions
@@ -804,7 +765,7 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> print notifications[0].subject.encode('ASCII', 'backslashreplace')
     [Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox
@@ -817,7 +778,7 @@ the notifications.
     ...     "Veja o screenshot: http://tinyurl.com/y8jq8z")
     <QuestionMessage...>
 
-    >>> clear_test_questionjobs()
+    >>> ignore = pop_test_questionjobs()
 
 The exception to these general rules is that when a question is created
 in language spoken by none of the answer contacts, each one will receive
@@ -833,7 +794,7 @@ sent to the support list about that question:
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> print notifications[1].subject
     [Question #...]: (French) Impossible d'installer Ubuntu
@@ -879,7 +840,7 @@ with a warning appended to it.
     >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
     >>> notify(ObjectModifiedEvent(
     ...     french_question, unmodified_question, ['title']))
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body
@@ -891,8 +852,6 @@ with a warning appended to it.
     <BLANKLINE>
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
-
-    >>> clear_test_questionjobs()
 
 
 Localized Questions and Teams
@@ -931,7 +890,7 @@ contacts too.
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
     ...     language=spanish)
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
     >>> ubuntu.removeAnswerContact(carlos)
     True
@@ -943,10 +902,8 @@ receive notifications about French (and English) questions.
     >>> rosetta_admins.addLanguage(french)
 
     # Resend the new message notification
-    >>> clear_test_questionjobs()
-
     >>> notify(ObjectCreatedEvent(french_question))
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()
 
 When the team doesn't use an explicit address. All team members will be
 contacted if the question language is supported. For example, the
@@ -966,7 +923,5 @@ supported languages includes the question language:
     True
 
     # Resend the new message notification
-    >>> clear_test_questionjobs()
-
     >>> notify(ObjectCreatedEvent(spanish_question))
-    >>> notifications = get_test_questionjobs()
+    >>> notifications = pop_test_questionjobs()

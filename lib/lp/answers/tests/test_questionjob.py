@@ -6,8 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_test_questionjobs',
-    'clear_test_questionjobs',
+    'pop_test_questionjobs',
     ]
 
 import transaction
@@ -41,16 +40,14 @@ from lp.testing import (
     )
 
 
-def get_test_questionjobs():
-    return sorted(
+def pop_test_questionjobs():
+    jobs = sorted(
         QuestionEmailJob.iterReady(),
         key=lambda job: job.metadata["recipient_set"])
-
-
-def clear_test_questionjobs():
     for job in QuestionEmailJob.iterReady():
         job.start()
         job.complete()
+    return jobs
 
 
 class QuestionJobTestCase(TestCaseWithFactory):
