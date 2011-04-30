@@ -3890,7 +3890,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
