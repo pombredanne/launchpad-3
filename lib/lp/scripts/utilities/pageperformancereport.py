@@ -680,7 +680,7 @@ def main():
         help="The configured timeout value: used to determine high risk " +
         "page ids. That would be pages which 99% under render time is "
         "greater than timeoout - 2s. Default is %defaults.")
-    parse.add_option(
+    parser.add_option(
         "--histogram-resolution", dest="resolution",
         # Default to 0.5s
         default=0.5, type="float", metavar="SECONDS",
@@ -772,33 +772,41 @@ def main():
     if options.categories:
         report_filename = _report_filename('categories.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), category_times, None, None)
+        html_report(
+            open(report_filename, 'w'), category_times, None, None,
+            histogram_resolution=options.resolution)
 
     # Pageid only report.
     if options.pageids:
         report_filename = _report_filename('pageids.html')
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, pageid_times, None)
+        html_report(
+            open(report_filename, 'w'), None, pageid_times, None,
+            histogram_resolution=options.resolution)
 
     # Top URL only report.
     if options.top_urls:
         report_filename = _report_filename('top%d.html' % options.top_urls)
         log.info("Generating %s", report_filename)
-        html_report(open(report_filename, 'w'), None, None, url_times)
+        html_report(
+            open(report_filename, 'w'), None, None, url_times,
+            histogram_resolution=options.resolution)
 
     # Combined report.
     if options.categories and options.pageids:
         report_filename = _report_filename('combined.html')
         html_report(
             open(report_filename, 'w'),
-            category_times, pageid_times, url_times)
+            category_times, pageid_times, url_times, 
+            histogram_resolution=options.resolution)
 
     # Report of likely timeout candidates
     report_filename = _report_filename('timeout-candidates.html')
     log.info("Generating %s", report_filename)
     html_report(
         open(report_filename, 'w'), None, pageid_times, None,
-        options.timeout - 2)
+        options.timeout - 2, 
+        histogram_resolution=options.resolution)
 
     # Save the times cache for later merging.
     report_filename = _report_filename('stats.pck.bz2')
@@ -971,7 +979,7 @@ def parse_extension_record(request, args):
 
 def html_report(
     outf, category_times, pageid_times, url_times,
-    ninetyninth_percentile_threshold=None):
+    ninetyninth_percentile_threshold=None, histogram_resolution=0.5):
     """Write an html report to outf.
 
     :param outf: A file object to write the report to.
@@ -981,6 +989,7 @@ def html_report(
     :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
         pages in the pageid section; pages where 99 percent of the requests are
         served under this threshold will not be included.
+    :param histrogram_resolution: used as the histogram bar width
     """
 
     print >> outf, dedent('''\
@@ -1148,10 +1157,9 @@ def html_report(
         $(function () {
             var options = {
                 series: {
-                    bars: {show: true}
+                    bars: {show: true, barWidth: %s}
                     },
                 xaxis: {
-                    tickDecimals: 0,
                     tickFormatter: function (val, axis) {
                         return val.toFixed(axis.tickDecimals) + "s";
                         }
@@ -1167,7 +1175,7 @@ def html_report(
                         },
                     tickDecimals: 1,
                     tickFormatter: function (val, axis) {
-                        return (val * 100).toFixed(axis.tickDecimals) + "%";
+                        return (val * 100).toFixed(axis.tickDecimals) + "%%";
                         },
                     ticks: [0.001,0.01,0.10,0.50,1.0]
                     },
@@ -1176,7 +1184,7 @@ def html_report(
                     labelMargin: 15
                     }
                 };
-        """)
+        """ % histogram_resolution)
 
     for i, histogram in enumerate(histograms):
         if histogram.count == 0:
