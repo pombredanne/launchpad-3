@@ -6,4 +6,6 @@ ALTER TABLE DistroSeriesDifference
     ADD COLUMN parent_series INTEGER NOT NULL
         CONSTRAINT distroseriesdifference__parentseries__fk REFERENCES distroseries;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+CREATE INDEX distroseriesdifference__parent_series__idx ON DistroSeriesDifference(parent_series);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 64, 0);
