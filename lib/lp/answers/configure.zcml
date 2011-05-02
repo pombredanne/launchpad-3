@@ -67,6 +67,16 @@
           />
     </class>
 
+    <class class=".model.questionjob.QuestionEmailJob">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJob"/>
+    </class>
+
+    <securedutility
+        component=".model.questionjob.QuestionEmailJob"
+        provides=".interfaces.questionjob.IQuestionEmailJobSource">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJobSource"/>
+    </securedutility>
+
     <!-- QuestionSubscription -->
     <class class=".model.questionsubscription.QuestionSubscription">
         <allow
