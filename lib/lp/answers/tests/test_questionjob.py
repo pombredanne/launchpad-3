@@ -198,7 +198,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
             subject, body, headers)
-        self.assertEqual(user, job.getErrorRecipients())
+        self.assertEqual([user], job.getErrorRecipients())
 
     def test_recipients_asker(self):
         # The recipients property contains the question owner.
@@ -323,8 +323,18 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     def test_run_cronscript(self):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
         question = self.factory.makeQuestion()
+        with person_logged_in(question.target.owner):
+            question.linkBug(self.factory.makeBug(product=question.target))
+            question.linkFAQ(
+                question.target.owner,
+                self.factory.makeFAQ(target=question.target),
+                'test FAQ link')
         self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        with person_logged_in(user):
+            lang_set = getUtility(ILanguageSet)
+            user.addLanguage(lang_set['en'])
+            question.target.addAnswerContact(user)
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)

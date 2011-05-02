@@ -170,7 +170,7 @@ class QuestionEmailJob(BaseRunnableJob):
 
     def getErrorRecipients(self):
         """See `IRunnableJob`."""
-        return self.user
+        return [self.user]
 
     @property
     def from_address(self):
