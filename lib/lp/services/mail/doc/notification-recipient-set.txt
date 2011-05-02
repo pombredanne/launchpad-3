@@ -215,6 +215,9 @@ It is also possible to remove a person from the NotificationRecipientSet():
     >>> recipients.remove([sample_person, cprov])
     >>> [person.displayname for person in recipients.getRecipients()]
     [u'No Privileges Person']
+    >>> recipients.getEmails()
+    ['no-priv@canonical.com']
+
 
 == A person's first impression sticks ==
 
