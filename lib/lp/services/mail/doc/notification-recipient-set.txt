@@ -1,8 +1,9 @@
-= INotificationRecipientSet =
+INotificationRecipientSet
+=========================
 
 It is part of Launchpad policy that all email notifications contain in
-the footer an explanation of why the email was sent. A simpler string
-is also usually added to a X-Launchpad-Message-Rationale header to allow
+the footer an explanation of why the email was sent. A simpler string is
+also usually added to a X-Launchpad-Message-Rationale header to allow
 easy filtering.
 
 The easiest way to implement that policy is for methods returning a list
@@ -11,11 +12,12 @@ providing INotificationRecipientSet. That interface encapsulates the
 recipient lists with the rationale for contacting them.
 
 There is a base implementation of the interface available as
-canonical.launchpad.mailnotification.NotificationRecipientSet.
-You can use it as is or derive from it
-(see bugnotificationrecipients.txt for an example of a derivation).
+canonical.launchpad.mailnotification.NotificationRecipientSet. You can
+use it as is or derive from it (see bugnotificationrecipients.txt for an
+example of a derivation).
 
-    >>> from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     INotificationRecipientSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.mailnotification import (
     ...     NotificationRecipientSet)
@@ -24,10 +26,12 @@ You can use it as is or derive from it
     >>> verifyObject(INotificationRecipientSet, recipients)
     True
 
-== Populating the set ==
 
-You add recipients to the set using the add() method. The method takes the
-IPerson to add along the notification rationale and header code.
+Populating the set
+------------------
+
+You add recipients to the set using the add() method. The method takes
+the IPerson to add along the notification rationale and header code.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
@@ -43,7 +47,8 @@ https://help.launchpad.net/LaunchpadMessageRationale. The 'Why not'
 value is only used as an example. In practice, you should try to reuse
 existing values if they apply to your context.
 
-The getPersons() method returns the list of recipients sorted by display name.
+The getPersons() method returns the list of recipients sorted by display
+name.
 
     >>> [person.displayname for person in recipients.getRecipients()]
     [u'Celso Providelo', u'Sample Person']
@@ -55,19 +60,21 @@ It's also possible to iterate over the recipients:
     Celso Providelo
     Sample Person
 
-The getEmails() methods return the emails of all the recipients, also sorted
-alphabetically:
+The getEmails() methods return the emails of all the recipients, also
+sorted alphabetically:
 
     >>> recipients.getEmails()
     ['celso.providelo@canonical.com', 'test@canonical.com']
 
-You can test if an IPerson or an email is part of the recipients using the
-standard `in` operator:
+You can test if an IPerson or an email is part of the recipients using
+the standard `in` operator:
 
     >>> cprov in recipients
     True
+
     >>> 'celso.providelo@canonical.com' in recipients
     True
+
     >>> u'test@canonical.com' in recipients
     True
 
@@ -85,9 +92,12 @@ An empty recipient set, evaluates to False:
     >>> bool(NotificationRecipientSet())
     False
 
-== Obtaining the rationale ==
 
-You can obtain the rationale, header tuple by using the getReason() method:
+Obtaining the rationale
+-----------------------
+
+You can obtain the rationale, header tuple by using the getReason()
+method:
 
     >>> recipients.getReason(cprov)
     ('You are notified for no reason.', 'Why not')
@@ -117,24 +127,29 @@ Passing something else than an IPerson or a string is forbidden:
       ...
     AssertionError: ...
 
-== Team as recipient ==
 
-Adding a team with a preferred email address works like adding any
-other person:
+Team as recipient
+-----------------
+
+Adding a team with a preferred email address works like adding any other
+person:
 
     >>> ubuntu_team = person_set.getByName('ubuntu-team')
     >>> login_person(ubuntu_team.teamowner)
     >>> print ubuntu_team.preferredemail.email
     support@ubuntu.com
+
     >>> recipients.add(ubuntu_team, 'You are notified for fun.', 'Fun')
 
     >>> ubuntu_team in recipients
     True
+
     >>> 'support@ubuntu.com' in recipients
     True
 
     >>> [person.displayname for person in recipients]
     [u'Celso Providelo', u'Sample Person', u'Ubuntu Team']
+
     >>> recipients.getEmails()
     ['celso.providelo@canonical.com', 'support@ubuntu.com',
      'test@canonical.com']
@@ -146,11 +161,13 @@ addresses are added to the recipients list, and this recursively.
     >>> ubuntu_gnome_team = person_set.getByName('name18')
     >>> print ubuntu_gnome_team.preferredemail
     None
+
     >>> recipients.add(
     ...     ubuntu_gnome_team,
     ...     'Notified because a member of the team', 'Team')
     >>> ubuntu_gnome_team in recipients
     True
+
     >>> recipients.getEmails()
     ['andrew.bennetts@ubuntulinux.com', 'foo.bar@canonical.com',
      'limi@plone.org', 'steve.alexander@ubuntulinux.com',
@@ -162,21 +179,25 @@ But looking at the recipients list, only the team is listed:
     [u'Ubuntu Gnome Team']
 
 So Sample Person is not in the recipients list, even if his email will
-be notified for he's a member of Warty Security Team, itself a member
-of Ubuntu Gnome Team:
+be notified for he's a member of Warty Security Team, itself a member of
+Ubuntu Gnome Team:
 
     >>> warty_security_team = person_set.getByName('name20')
     >>> print warty_security_team.displayname
     Warty Security Team
+
     >>> sample_person.inTeam(warty_security_team)
     True
+
     >>> warty_security_team.inTeam(ubuntu_gnome_team)
     True
+
     >>> sample_person in ubuntu_gnome_team.activemembers
     False
 
     >>> sample_person in recipients
     False
+
     >>> 'test@canonical.com' in recipients
     True
 
@@ -184,10 +205,13 @@ His email will have the same rationale than the team:
 
     >>> recipients.getReason(ubuntu_gnome_team)
     ('Notified because a member of the team', 'Team')
+
     >>> recipients.getReason('test@canonical.com')
     ('Notified because a member of the team', 'Team')
 
-== Adding many persons at the same time ==
+
+Adding many persons at the same time
+------------------------------------
 
 If you pass an iterable sequence to the add() method, all members will
 be added with the same rationale:
@@ -200,30 +224,37 @@ be added with the same rationale:
 
     >>> recipients.getReason(no_priv)
     ('Notified for fun.', 'Fun')
+
     >>> recipients.getReason(sample_person)
     ('Notified for fun.', 'Fun')
 
-== Removing recipients ==
 
-It is also possible to remove a person from the NotificationRecipientSet():
+Removing recipients
+-------------------
+
+It is also possible to remove a person from the
+NotificationRecipientSet():
 
     >>> recipients = NotificationRecipientSet()
     >>> recipients.add(
     ...     [sample_person, no_priv, cprov], 'Notified for fun.', 'Fun')
     >>> [person.displayname for person in recipients.getRecipients()]
     [u'Celso Providelo', u'No Privileges Person', u'Sample Person']
+
     >>> recipients.remove([sample_person, cprov])
     >>> [person.displayname for person in recipients.getRecipients()]
     [u'No Privileges Person']
+
     >>> recipients.getEmails()
     ['no-priv@canonical.com']
 
 
-== A person's first impression sticks ==
+A person's first impression sticks
+----------------------------------
 
-In general, the most specific rationale is used for a given email.
-A rationale given for a person is considered more
-specific than one obtained through team membership.
+In general, the most specific rationale is used for a given email. A
+rationale given for a person is considered more specific than one
+obtained through team membership.
 
 So, if a person is added more than once to the set, the first reason
 will be the one returned.
@@ -268,7 +299,8 @@ Nor adding a team rationale, when there is already one for the person:
     ('Sample Person', 'Person')
 
 
-== Merging recipients set ==
+Merging recipients set
+----------------------
 
 You can merge two recipients set by using the update() method. It will
 add all the recipients in the second set along their rationale. If the
@@ -286,3 +318,5 @@ recipient is already part of the first set, the reason won't be updated.
     Celso Providelo: B (Reason B)
     No Privileges Person: B (Reason B)
     Sample Person: A (Reason A)
+
+
