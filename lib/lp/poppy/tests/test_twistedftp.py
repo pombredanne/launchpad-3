@@ -13,7 +13,6 @@ from testtools.deferredruntest import (
 import transaction
 from twisted.protocols import ftp
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
@@ -46,10 +45,6 @@ class TestPoppyFileWriter(TestCaseWithFactory):
 
         # Load a key.
         gpg_handler = getUtility(IGPGHandler)
-        # We don't care about the config job for this test but we need to
-        # stop it running or else the test harness will complain about
-        # pending jobs when the test completes.
-        removeSecurityProxy(gpg_handler).stopConfigJob()
         key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
         key_data = open(key_path).read()
         key = gpg_handler.importPublicKey(key_data)

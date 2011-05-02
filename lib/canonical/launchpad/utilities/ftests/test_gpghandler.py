@@ -185,12 +185,8 @@ class TestImportKeyRing(unittest.TestCase):
 
     def testHomeDirectoryJob(self):
         """Does the job to touch the home work."""
-        gpg_handler = getUtility(IGPGHandler)
-        naked_gpghandler = removeSecurityProxy(gpg_handler)
-        self.assertTrue(naked_gpghandler._touch_home_call.running)
-
-        # It should be initially scheduled for every 12 hours.
-        self.assertEqual(12*3600, naked_gpghandler._touch_home_call.interval)
+        gpghandler = getUtility(IGPGHandler)
+        naked_gpghandler = removeSecurityProxy(gpghandler)
 
         # Get a list of all the files in the home directory.
         files_to_check = [os.path.join(naked_gpghandler.home, f)
@@ -204,9 +200,8 @@ class TestImportKeyRing(unittest.TestCase):
         for fname in files_to_check:
             os.utime(fname, (lm_time, lm_time))
 
-        # Reschedule the job. It will also be executed now so we can check the
-        # last modified dates immediately.
-        naked_gpghandler._scheduleTouchHomeDirectoryJob(3600)
+        # Touch the files and re-check the last modified times.
+        gpghandler.touchConfigurationDirectory()
         second_last_modified_times = dict(
             (fname, os.path.getmtime(fname)) for fname in files_to_check)
         for fname in files_to_check:

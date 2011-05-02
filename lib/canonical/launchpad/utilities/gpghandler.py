@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'GPGHandler',
-    'LongRunningGPGHandler',
     'PymeKey',
     'PymeSignature',
     'PymeUserId',
@@ -25,8 +24,6 @@ import urllib2
 
 import gpgme
 from gpgme import editutil as gpgme_editutil
-from twisted.internet import task
-from twisted.internet.error import AlreadyCancelled
 from zope.interface import implements
 
 from canonical.config import config
@@ -68,10 +65,10 @@ class GPGHandler:
 
     def __init__(self):
         """Initialize environment variable."""
-        self._startup()
+        self._setNewHome()
         os.environ['GNUPGHOME'] = self.home
 
-    def _startup(self):
+    def _setNewHome(self):
         """Create a new directory containing the required configuration.
 
         This method is called inside the class constructor and genereates
@@ -92,14 +89,14 @@ class GPGHandler:
                    'keyserver-options auto-key-retrieve\n'
                    'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
-        # register an atexit handler to remove the configuration directory
+        # create a local atexit handler to remove the configuration directory
         # on normal termination.
-        atexit.register(self._shutdown)
+        def removeHome(home):
+            """Remove GNUPGHOME directory."""
+            if os.path.exists(home):
+                shutil.rmtree(home)
 
-    def _shutdown(self):
-        """Remove GNUPGHOME directory."""
-        if os.path.exists(self.home):
-            shutil.rmtree(self.home)
+        atexit.register(removeHome, self.home)
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
@@ -120,6 +117,16 @@ class GPGHandler:
             filename = os.path.join(self.home, filename)
             if os.path.exists(filename):
                 os.remove(filename)
+
+    def touchConfigurationDirectory(self):
+        """See IGPGHandler."""
+        os.utime(self.home, None)
+        for file in os.listdir(self.home):
+            try:
+                os.utime(os.path.join(self.home, file), None)
+            except OSError:
+                # The file has been deleted.
+                pass
 
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
@@ -549,65 +556,6 @@ class GPGHandler:
                              stderr=subprocess.STDOUT)
         p.communicate()
         return p.returncode
-
-
-class LongRunningGPGHandler(GPGHandler):
-    """See `IGPGHandler`.
-
-    This implementation starts a twisted job to periodically touch all the
-    files in the config directory under /tmp, to prevent them from being
-    cleaned up.
-    """
-
-    implements(IGPGHandler)
-
-    def _startup(self):
-        """Set up the twisted job to periodically touch the config directory.
-        """
-        super(LongRunningGPGHandler, self)._startup()
-        self._touch_home_call = None
-        self._scheduleTouchHomeDirectoryJob()
-
-    def _shutdown(self):
-        """Stop the twisted job as part of shutting down."""
-        try:
-            self.stopConfigJob()
-        except AlreadyCancelled:
-            # So we're already cancelled, meh.
-            pass
-        super(LongRunningGPGHandler, self)._shutdown()
-
-    def stopConfigJob(self):
-        """Required for tests.
-
-        Tests which extend _DeferredRunTest complain if there are any
-        pending jobs when they complete. So we need a way to allow them to
-        manually stop the config job rather than waiting for the atexit
-        callback to do it.
-        """
-        if self._touch_home_call and self._touch_home_call.running:
-            self._touch_home_call.stop()
-
-    def _touchFilesInHomeDirectory(self):
-        os.utime(self.home, None)
-        for file in os.listdir(self.home):
-            try:
-                os.utime(os.path.join(self.home, file), None)
-            except OSError:
-                # The file has been deleted.
-                pass
-
-    def _scheduleTouchHomeDirectoryJob(self, touch_interval=12*3600):
-        # Create a job to touch the home directory every 12 hours so that it
-        # does not get cleaned up by any reaper scripts which look at
-        # time last modified. This is done outside of _setHome to allow a
-        # test to be written which sets the touch interval to a value short
-        # enough for a viable test.
-
-        self.stopConfigJob()
-        self._touch_home_call = task.LoopingCall(
-            self._touchFilesInHomeDirectory)
-        return self._touch_home_call.start(touch_interval)
 
 
 class PymeSignature(object):

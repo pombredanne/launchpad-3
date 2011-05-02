@@ -7,14 +7,16 @@ __metaclass__ = type
 
 import os
 import tempfile
-import unittest
 
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory
 from lp.testing import TestCase
 
 
 class TestSFTPServer(TestCase):
+
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         self.fs_root = tempfile.mkdtemp()
@@ -60,5 +62,10 @@ class TestSFTPServer(TestCase):
             "File is a directory: '%s'" % dir_name,
             upload_file.writeChunk, 0, "This is a test")
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_gpghandler_job_setup(self):
+        # Does the gpghandler job get setup correctly.
+        self.assertIsNot(None, self.sftp_server._gpghandler_job)
+        self.assertTrue(self.sftp_server._gpghandler_job.running)
+
+        # It should be scheduled for every 12 hours.
+        self.assertEqual(12*3600, self.sftp_server._gpghandler_job.interval)

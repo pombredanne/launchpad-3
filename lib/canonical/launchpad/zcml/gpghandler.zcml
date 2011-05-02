@@ -14,7 +14,7 @@
     </class>
 
     <securedutility
-        class="canonical.launchpad.utilities.LongRunningGPGHandler"
+        class="canonical.launchpad.utilities.GPGHandler"
         provides="canonical.launchpad.interfaces.gpghandler.IGPGHandler">
         <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
     </securedutility>
