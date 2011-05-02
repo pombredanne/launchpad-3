@@ -79,7 +79,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -187,8 +187,7 @@ class TestBranchChanged(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         stacked_on = self.factory.makeAnyBranch()
         login_person(branch.owner)
-        stacked_on_location = '/%s/%s' % (
-            BRANCH_ID_ALIAS_PREFIX, stacked_on.id)
+        stacked_on_location = branch_id_alias(stacked_on)
         branch.branchChanged(stacked_on_location, '', *self.arbitrary_formats)
         self.assertEqual(stacked_on, branch.stacked_on)
 

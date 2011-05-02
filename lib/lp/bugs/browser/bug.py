@@ -275,7 +275,7 @@ class BugContextMenu(ContextMenu):
 
     def editsubscriptions(self):
         """Return the 'Edit subscriptions' Link."""
-        text = 'Edit subscriptions'
+        text = 'Edit bug mail'
         return Link(
             '+subscriptions', text, icon='edit', summary=(
                 'View and change your subscriptions to this bug'))

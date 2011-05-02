@@ -2,9 +2,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-
-<div class="boardComment">
-
+<div
+  tal:define="css_classes view/getBoardCommentCSSClass"
+  tal:attributes="class string:${css_classes}">
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
@@ -18,6 +18,8 @@
       tal:attributes="title context/datecreated/fmt:datetime"
       tal:content="context/datecreated/fmt:displaydate">Thursday
     13:21</span>:
+    <span style="float:right;"
+       tal:content="string: #${context/index}" />
   </div>
 
   <div class="boardCommentBody"

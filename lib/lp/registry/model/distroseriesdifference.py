@@ -82,6 +82,7 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distroseriessourcepackagerelease import (
@@ -562,11 +563,8 @@ class DistroSeriesDifference(StormBase):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
-        # If the DSD has changed, we want to invalidate the diffs. The GC
-        # process for the Librarian will clean up after us.
         if updated is True:
-            self.package_diff = None
-            self.parent_package_diff = None
+            self._setPackageDiffs()
         return updated
 
     def _updateType(self):
@@ -654,6 +652,26 @@ class DistroSeriesDifference(StormBase):
                 return True
         return False
 
+    def _setPackageDiffs(self):
+        """Set package diffs if they exist."""
+        if self.base_version is None or self.base_source_pub is None:
+            self.package_diff = None
+            self.parent_package_diff = None
+            return
+        pds = getUtility(IPackageDiffSet)
+        if self.source_pub is None:
+            self.package_diff = None
+        else:
+            self.package_diff = pds.getDiffBetweenReleases(
+                self.base_source_pub.sourcepackagerelease,
+                self.source_pub.sourcepackagerelease)
+        if self.parent_source_pub is None:
+            self.parent_package_diff = None
+        else:
+            self.parent_package_diff = pds.getDiffBetweenReleases(
+                self.base_source_pub.sourcepackagerelease,
+                self.parent_source_pub.sourcepackagerelease)
+
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
@@ -700,5 +718,6 @@ class DistroSeriesDifference(StormBase):
         if self.source_version != self.base_version:
             self.package_diff = base_spr.requestDiffTo(
                 requestor, to_sourcepackagerelease=derived_spr)
-        self.parent_package_diff = base_spr.requestDiffTo(
-            requestor, to_sourcepackagerelease=parent_spr)
+        if self.parent_source_version != self.base_version:
+            self.parent_package_diff = base_spr.requestDiffTo(
+                requestor, to_sourcepackagerelease=parent_spr)

@@ -15,6 +15,10 @@
       <tal:enabled condition="view/is_derived_series_feature_enabled">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
+        <a href="/+help/init-series-title-help.html"
+           target="help" class="sprite maybe">&nbsp;
+          <span class="invisible-link">Initialization help</span></a>
+
       </div>
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable
@@ -30,6 +34,10 @@
           Y.on('domready', Y.lp.registry.distroseries.initseries.setup);
         });
       </script>
+      <p class="formHelp">
+        Note that initialization is not instantaneous; initializing with
+        many thousands of packages is likely to take hours to complete.
+      </p>
       </tal:enabled>
       <tal:disabled condition="not:view/is_derived_series_feature_enabled">
       <p class="error message">

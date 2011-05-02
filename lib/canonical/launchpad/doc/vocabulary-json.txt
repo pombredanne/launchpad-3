@@ -65,7 +65,7 @@ Multiple entries.
     >>> view = create_vocabulary_view(form)
     >>> result = simplejson.loads(view())
     >>> result['total_size']
-    7
+    6
     >>> len(result['entries'])
     5
 
@@ -84,7 +84,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "value": "commercial-admins"
             }
         ],
-        "total_size": 7
+        "total_size": 6
     }
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='admin',
@@ -101,7 +101,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "value": "name16"
             }
         ],
-        "total_size": 7
+        "total_size": 6
     }
 
 Long descriptions will be truncated.

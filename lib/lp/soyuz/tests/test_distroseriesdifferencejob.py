@@ -564,7 +564,9 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             dsp.parent_series)
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
-        self.assertIs(None, ds_diff[0].package_diff)
+        # Since the diff showing the changes from 1.0-1 to 1.0-1derived1 is
+        # still valid, it isn't reset, but the parent diff is.
+        self.assertIsNot(None, ds_diff[0].package_diff)
         self.assertIs(None, ds_diff[0].parent_package_diff)
 
 

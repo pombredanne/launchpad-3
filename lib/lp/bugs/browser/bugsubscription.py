@@ -172,7 +172,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             "any change is made to this bug, other than a new comment "
             "being added, or"),
         BugNotificationLevel.LIFECYCLE: (
-            "the bug is fixed or re-opened."),
+            "this bug is fixed or re-opened."),
         }
 
     @property
