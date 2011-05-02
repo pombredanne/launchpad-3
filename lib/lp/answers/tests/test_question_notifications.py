@@ -41,7 +41,7 @@ def pop_questionemailjobs():
     return jobs
 
 
-class TestQuestionModifiedNotification(QuestionModifiedDefaultNotification):
+class FakeQuestionModifiedNotification(QuestionModifiedDefaultNotification):
     """Subclass that do not send emails and with simpler initialization.
 
     Since notifications are handlers that accomplish their action on
@@ -90,7 +90,7 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
 
     def setUp(self):
         """Create a notification with a fake question."""
-        self.notification = TestQuestionModifiedNotification(
+        self.notification = FakeQuestionModifiedNotification(
             StubQuestion(), FakeEvent())
 
     def test_recipient_set(self):
@@ -108,12 +108,12 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         """The notification user is always the event user."""
         question = StubQuestion()
         event = FakeEvent()
-        notification = TestQuestionModifiedNotification(question, event)
+        notification = FakeQuestionModifiedNotification(question, event)
         self.assertEqual(event.user, notification.user)
         self.assertNotEqual(question.owner, notification.user)
 
 
-class TestQuestionModifiedOwnerNotification(
+class FakeQuestionModifiedOwnerNotification(
                                            QuestionModifiedOwnerNotification):
     """A subclass that does not send emails."""
 
@@ -127,7 +127,7 @@ class QuestionModifiedOwnerNotificationTestCase(TestCase):
     def setUp(self):
         self.question = StubQuestion()
         self.event = FakeEvent()
-        self.notification = TestQuestionModifiedOwnerNotification(
+        self.notification = FakeQuestionModifiedOwnerNotification(
             self.question, self.event)
 
     def test_recipient_set(self):
@@ -136,7 +136,7 @@ class QuestionModifiedOwnerNotificationTestCase(TestCase):
             self.notification.recipient_set)
 
 
-class TestQuestionAddedNotification(QuestionAddedNotification):
+class FakeQuestionAddedNotification(QuestionAddedNotification):
     """A subclass that does not send emails."""
 
     def shouldNotify(self):
@@ -149,7 +149,7 @@ class QuestionAddedNotificationTestCase(TestCase):
     def setUp(self):
         self.question = StubQuestion()
         self.event = FakeEvent()
-        self.notification = TestQuestionAddedNotification(
+        self.notification = FakeQuestionAddedNotification(
             self.question, self.event)
 
     def test_recipient_set(self):
@@ -163,7 +163,7 @@ class QuestionAddedNotificationTestCase(TestCase):
         self.assertNotEqual(self.event.user, self.notification.user)
 
 
-class TestQuestionUnsupportedLanguageNotification(
+class FakeQuestionUnsupportedLanguageNotification(
                                      QuestionUnsupportedLanguageNotification):
     """A subclass that does not send emails."""
 
@@ -177,7 +177,7 @@ class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
     def setUp(self):
         self.question = StubQuestion()
         self.event = FakeEvent()
-        self.notification = TestQuestionUnsupportedLanguageNotification(
+        self.notification = FakeQuestionUnsupportedLanguageNotification(
             self.question, self.event)
 
     def test_recipient_set(self):
@@ -186,7 +186,7 @@ class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
             self.notification.recipient_set)
 
 
-class TestQuestionNotification(QuestionNotification):
+class FakeQuestionNotification(QuestionNotification):
     """A subclass to exercise question notifcations."""
 
     recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
@@ -216,7 +216,7 @@ class QuestionNotificationTestCase(TestCaseWithFactory):
         question = self.makeQuestion()
         event = FakeEvent()
         event.user = self.factory.makePerson()
-        notification = TestQuestionNotification(question, event)
+        notification = FakeQuestionNotification(question, event)
         self.assertEqual(
             notification.recipient_set.name,
             notification.job.metadata['recipient_set'])
