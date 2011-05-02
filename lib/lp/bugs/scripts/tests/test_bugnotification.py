@@ -1026,7 +1026,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     def test_header_single(self):
         # A single filter with a description makes all emails
         # include that particular filter description in a header.
-        bug_filter = self.addFilter(u"Test filter")
+        self.addFilter(u"Test filter")
 
         self.assertContentEqual([u"Test filter"],
                                 self.getSubscriptionEmailHeaders())
@@ -1034,8 +1034,8 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     def test_header_multiple(self):
         # Multiple filters with a description make all emails
         # include all filter descriptions in the header.
-        bug_filter = self.addFilter(u"First filter")
-        bug_filter = self.addFilter(u"Second filter")
+        self.addFilter(u"First filter")
+        self.addFilter(u"Second filter")
 
         self.assertContentEqual([u"First filter", u"Second filter"],
                                 self.getSubscriptionEmailHeaders())
@@ -1047,10 +1047,10 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         other_person = self.factory.makePerson()
         other_subscription = self.bug.default_bugtask.target.addSubscription(
             other_person, other_person)
-        bug_filter = self.addFilter(u"Someone's filter", other_subscription)
+        self.addFilter(u"Someone's filter", other_subscription)
         self.addNotificationRecipient(self.notification, other_person)
 
-        this_filter = self.addFilter(u"Test filter")
+        self.addFilter(u"Test filter")
 
         the_subscriber = self.subscription.subscriber
         self.assertEquals(
@@ -1067,7 +1067,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     def test_body_single(self):
         # A single filter with a description makes all emails
         # include that particular filter description in the body.
-        bug_filter = self.addFilter(u"Test filter")
+        self.addFilter(u"Test filter")
 
         self.assertContentEqual([u"Matching subscriptions: Test filter"],
                                 self.getSubscriptionEmailBody())
@@ -1075,15 +1075,15 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     def test_body_multiple(self):
         # Multiple filters with description make all emails
         # include them in the email body.
-        bug_filter = self.addFilter(u"First filter")
-        bug_filter = self.addFilter(u"Second filter")
+        self.addFilter(u"First filter")
+        self.addFilter(u"Second filter")
 
         self.assertContentEqual(
             [u"Matching subscriptions: First filter, Second filter"],
             self.getSubscriptionEmailBody())
 
     def test_muted(self):
-        bug_filter = self.addFilter(u"Test filter")
+        self.addFilter(u"Test filter")
         BugSubscriptionFilterMute(
             person=self.subscription.subscriber,
             filter=self.notification.bug_filters.one())
@@ -1094,8 +1094,8 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     def test_header_multiple_one_muted(self):
         # Multiple filters with a description make all emails
         # include all filter descriptions in the header.
-        bug_filter = self.addFilter(u"First filter")
-        bug_filter = self.addFilter(u"Second filter")
+        self.addFilter(u"First filter")
+        self.addFilter(u"Second filter")
         BugSubscriptionFilterMute(
             person=self.subscription.subscriber,
             filter=self.notification.bug_filters[0])
