@@ -88,6 +88,10 @@ class IBugNotificationSet(Interface):
             (BugNotificationRecipients) that represent the subscriptions that
             caused the notifications to be sent.
         :param notifications: the notifications that are being communicated.
+    
+        The dict of recipients may have fewer recipients than were
+        provided if those users muted all of the subscription filters
+        that caused them to be sent.
         """
 
 
