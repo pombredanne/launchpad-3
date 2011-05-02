@@ -25,7 +25,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
