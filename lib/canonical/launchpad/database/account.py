@@ -288,11 +288,17 @@ class AccountSet:
     def getByEmail(self, email):
         """See `IAccountSet`."""
         store = IStore(Account)
+        try:
+            email = email.decode('US-ASCII')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            # Non-ascii email addresses are not legal, so assume there are no
+            # matching addresses in Launchpad.
+            raise LookupError(repr(email))
         account = store.find(
             Account,
             EmailAddress.account == Account.id,
             EmailAddress.email.lower()
-                == ensure_unicode(email).strip().lower()).one()
+                == email.strip().lower()).one()
         if account is None:
             raise LookupError(email)
         return account
