@@ -206,7 +206,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -546,7 +546,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # Otherwise we return the normal view for a person's
             # archive subscriptions.
             return queryMultiAdapter(
-                (self.context, self.request), name ="+archivesubscriptions")
+                (self.context, self.request), name="+archivesubscriptions")
 
     @stepthrough('+recipe')
     def traverse_recipe(self, name):
@@ -3890,7 +3890,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
@@ -4223,6 +4223,8 @@ class PersonEditView(BasePersonEditView):
             removeSecurityProxy(self.context).name = new_name
             del data['name']
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4488,7 +4490,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 team_string = team_names[0]
             elif len(team_names) > 1:
                 verb = 'have been'
-                team_string= (
+                team_string = (
                     ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
             full_message += '%s %s %s' % (team_string, verb, message)
         self.request.response.addInfoNotification(full_message)
@@ -4608,7 +4610,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
                    ),
-            custom_widget = self.custom_widgets['VALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['VALIDATED_SELECTED'])
 
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
@@ -4630,7 +4632,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
-            custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.

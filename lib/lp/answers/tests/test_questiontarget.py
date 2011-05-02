@@ -7,21 +7,17 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
@@ -83,12 +79,39 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
 
 
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
+class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):
+    """Test the createQuestionFromBug from bug behavior."""
 
-    test = LayeredDocFileSuite('questiontarget-sourcepackage.txt',
-                setUp=setUp, tearDown=tearDown,
-                layer=DatabaseFunctionalLayer)
-    suite.addTest(test)
-    return suite
+    layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestQuestionTargetCreateQuestionFromBug, self).setUp()
+        self.bug = self.factory.makeBug(description="first comment")
+        self.target = self.bug.bugtasks[0].target
+        self.contributor = self.target.owner
+        self.reporter = self.bug.owner
+
+    def test_first_and_last_messages_copied_to_question(self):
+        # The question is created with the bug's description and the last
+        # message which presumably is about why the bug was converted.
+        with person_logged_in(self.reporter):
+            self.bug.newMessage(owner=self.reporter, content='second comment')
+        with person_logged_in(self.contributor):
+            last_message = self.bug.newMessage(
+                owner=self.contributor, content='third comment')
+            question = self.target.createQuestionFromBug(self.bug)
+        question_messages = list(question.messages)
+        self.assertEqual(1, len(question_messages))
+        self.assertEqual(last_message.content, question_messages[0].content)
+        self.assertEqual(self.bug.description, question.description)
+
+    def test_bug_subscribers_copied_to_question(self):
+        # Users who subscribe to the bug are also interested in the answer.
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self.bug.subscribe(subscriber, subscriber)
+        with person_logged_in(self.contributor):
+            self.bug.newMessage(owner=self.contributor, content='comment')
+            question = self.target.createQuestionFromBug(self.bug)
+        self.assertTrue(question.isSubscribed(subscriber))
+        self.assertTrue(question.isSubscribed(question.owner))

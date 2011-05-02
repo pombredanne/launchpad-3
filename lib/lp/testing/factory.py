@@ -1999,8 +1999,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
-        return target.newQuestion(
-            owner=target.owner, title=title, description='description')
+        with person_logged_in(target.owner):
+            question = target.newQuestion(
+                owner=target.owner, title=title, description='description')
+        return question
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
@@ -2312,8 +2314,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None,
-        set_base_version=False):
+        changelogs=None, set_base_version=False):
         """Create a new distro series source package difference."""
         if derived_series is None:
             dsp = self.makeDistroSeriesParent()

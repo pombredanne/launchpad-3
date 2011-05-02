@@ -7,18 +7,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'AnonymousAuthorization',
-    'AuthorizationBase',
     ]
 
 from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
@@ -36,16 +31,17 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization,
-    ILaunchpadRoot,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import(
+    AnonymousAuthorization,
+    AuthorizationBase,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -214,45 +210,6 @@ from lp.translations.interfaces.translator import (
     )
 
 
-class AuthorizationBase:
-    implements(IAuthorization)
-    permission = None
-    usedfor = None
-
-    def __init__(self, obj):
-        self.obj = obj
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return False
-
-    def checkAuthenticated(self, user):
-        """Return True if the given person has the given permission.
-
-        This method is implemented by security adapters that have not
-        been updated to work in terms of IAccount.
-
-        :return: True or False.
-        """
-        return False
-
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        :return: True or False.
-        """
-        # For backward compatibility, delegate to one of
-        # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account, None)
-        if person is None:
-            return self.checkUnauthenticated()
-        else:
-            return self.checkAuthenticated(IPersonRoles(person))
-
-
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -265,20 +222,6 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
-
-
-class AnonymousAuthorization(AuthorizationBase):
-    """Allow any authenticated and unauthenticated user access."""
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """Any unauthorized user can see this object."""
-        return True
-
-    def checkAuthenticated(self, user):
-        """Any authorized user can see this object."""
-        return True
-
 
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -561,7 +504,7 @@ class DriverSpecification(AuthorizationBase):
         # extremely difficult to do :-)
         return (
             self.obj.goal and
-            check_permission("launchpad.Driver", self.obj.goal))
+            self.forwardCheckAuthenticated(user, self.obj.goal))
 
 
 class EditSprintSpecification(AuthorizationBase):
@@ -925,7 +868,7 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+class BugSuperviseDistributionSourcePackage(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
     permission = 'launchpad.BugSupervisor'
@@ -935,6 +878,16 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
         return (user.inTeam(self.obj.distribution.bug_supervisor) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
+
+
+class EditDistributionSourcePackage(AuthorizationBase):
+    """DistributionSourcePackage is not editable.
+
+    But EditStructuralSubscription needs launchpad.Edit defined on all
+    targets.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
 
 
 class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
@@ -1038,8 +991,8 @@ class EditDistroSeriesDifference(AuthorizationBase):
     usedfor = IDistroSeriesDifferenceEdit
 
     def checkAuthenticated(self, user):
-        return check_permission(
-            'launchpad.View', self.obj.derived_series.distribution)
+        return self.forwardCheckAuthenticated(
+            user, self.obj.derived_series.distribution, 'launchpad.View')
 
 
 class SeriesDrivers(AuthorizationBase):
@@ -1129,7 +1082,8 @@ class EditStructuralSubscription(AuthorizationBase):
 
         # Removal of a target cascades removals to StructuralSubscriptions,
         # so we need to allow editing to those who can edit the target itself.
-        can_edit_target = check_permission('launchpad.Edit', self.obj.target)
+        can_edit_target = self.forwardCheckAuthenticated(
+            user, self.obj.target)
 
         # Who is actually allowed to edit a subscription is determined by
         # a helper method on the model.
@@ -1708,12 +1662,16 @@ class AppendQuestion(AdminQuestion):
         if AdminQuestion.checkAuthenticated(self, user):
             return True
         question_target = self.obj.target
+        if IDistributionSourcePackage.providedBy(question_target):
+            question_targets = (question_target, question_target.distribution)
+        else:
+            question_targets = (question_target, )
         questions_person = IQuestionsPerson(user.person)
         for target in questions_person.getDirectAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         for target in questions_person.getTeamAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         return False
 
@@ -2060,7 +2018,8 @@ class BranchMergeProposalEdit(AuthorizationBase):
         """
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
-                check_permission('launchpad.Edit', self.obj.target_branch) or
+                self.forwardCheckAuthenticated(
+                    user, self.obj.target_branch) or
                 user.inTeam(self.obj.target_branch.reviewer))
 
 
@@ -2601,7 +2560,7 @@ class EditLibraryFileAliasWithParent(AuthorizationBase):
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
             return False
-        return check_permission(self.permission, parent)
+        return self.forwardCheckAuthenticated(user, parent)
 
 
 class ViewLibraryFileAliasWithParent(AuthorizationBase):
@@ -2621,7 +2580,7 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         parent = getattr(self.obj, '__parent__', None)
         if parent is None:
             return False
-        return check_permission(self.permission, parent)
+        return self.forwardCheckAuthenticated(user, parent)
 
 
 class SetMessageVisibility(AuthorizationBase):

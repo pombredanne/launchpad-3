@@ -225,12 +225,11 @@ def find_derived_series():
     return relations
 
 
-class BaseVersionFixer(TunableLoop):
-    """Fix up `DistroSeriesDifference.base_version` in the database.
+class DSDUpdater(TunableLoop):
+    """Call `DistroSeriesDifference.update()` where appropriate.
 
-    The code that creates `DistroSeriesDifference`s does not set the
-    `base_version`.  In cases where there may actually be a real base
-    version, this needs to be fixed up.
+    The `DistroSeriesDifference` records we create don't have their
+    details filled out, such as base version or their diffs.
 
     Since this is likely to be much, much slower than the rest of the
     work of creating and initializing `DistroSeriesDifference`s, it is
@@ -245,7 +244,7 @@ class BaseVersionFixer(TunableLoop):
         :param commit: A commit function to call after each batch.
         :param ids: Sequence of `DistroSeriesDifference` ids to fix.
         """
-        super(BaseVersionFixer, self).__init__(log)
+        super(DSDUpdater, self).__init__(log)
         self.minimum_chunk_size = 2
         self.maximum_chunk_size = 1000
         self.store = store
@@ -274,7 +273,7 @@ class BaseVersionFixer(TunableLoop):
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         for dsd in self._getBatch(self._cutChunk(int(chunk_size))):
-            dsd._updateBaseVersion()
+            dsd.update()
         self.commit()
 
 
@@ -333,7 +332,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         populate_distroseriesdiff(self.logger, distroseries, parent)
         self.commit()
         self.logger.info("Updating base_versions.")
-        self.fixBaseVersions(distroseries)
+        self.update(distroseries)
         self.commit()
         self.logger.info("Done with %s.", distroseries)
 
@@ -383,18 +382,17 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             for parent in relationships[child]:
                 self.processDistroSeries(child, parent)
 
-    def fixBaseVersions(self, distroseries):
-        """Fix up `DistroSeriesDifference.base_version` where appropriate.
+    def update(self, distroseries):
+        """Call `DistroSeriesDifference.update()` where appropriate.
 
         The `DistroSeriesDifference` records we create don't have their
-        `base_version` fields set yet.  This is a shame because it's the
-        only thing we need to figure out python-side.
+        details filled out, such as base version or their diffs.
 
         Only instances where the source package is published in both the
         parent series and the derived series need to have this done.
         """
         self.logger.info(
-            "Fixing up base_versions for %s.", distroseries.title)
+            "Updating DSDs for %s.", distroseries.title)
         store = IStore(distroseries)
         dsd_ids = store.find(
             DistroSeriesDifference.id,
@@ -404,4 +402,4 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             DistroSeriesDifference.difference_type ==
                 DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             DistroSeriesDifference.base_version == None)
-        BaseVersionFixer(self.logger, store, self.commit, dsd_ids).run()
+        DSDUpdater(self.logger, store, self.commit, dsd_ids).run()

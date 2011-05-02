@@ -29,7 +29,6 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
-    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -208,10 +207,31 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         and record that it was done by the owner.
         """
 
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setPackagingReturnSharingDetailPermissions(productseries, owner):
+        """Like setPackaging(), but returns getSharingDetailPermissions().
+
+        This method is intended for AJAX usage on the +sharing-details
+        page.
+        """
+
     @export_write_operation()
     @operation_for_version('devel')
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
+
+    def getSharingDetailPermissions(self):
+        """Return a dictionary of user permissions for +sharing-details page.
+
+        This shows whether the user can change
+        - The project series
+        - The project series target branch
+        - The project series autoimport mode
+        - The project translation usage setting
+        """
 
     def getSuiteSourcePackage(pocket):
         """Return the `ISuiteSourcePackage` for this package in 'pocket'.

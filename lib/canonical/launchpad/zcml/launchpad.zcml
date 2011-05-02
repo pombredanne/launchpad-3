@@ -166,8 +166,8 @@
       permission="zope.Public"
       />
 
-  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
-  shipit-forbidden.pt, initially. -->
+  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt,
+  initially. -->
   <browser:page
       for="*"
       name="+forbidden-page-macros"
