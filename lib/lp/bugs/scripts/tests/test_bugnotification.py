@@ -21,6 +21,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.ftests import login
 from canonical.launchpad.helpers import get_contact_email_addresses
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
@@ -38,16 +39,20 @@ from lp.bugs.adapters.bugchange import (
     CveUnlinkedFromBug,
     )
 from lp.bugs.interfaces.bug import (
+    CreateBugParams,
     IBug,
     IBugSet,
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
-#    BugNotificationRecipient,
+    BugNotificationRecipient,
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
@@ -1070,3 +1075,49 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         self.assertContentEqual(
             [u"Matching subscriptions: First filter, Second filter"],
             self.getSubscriptionEmailBody())
+
+class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
+    # See bug 720147.
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestEmailNotificationsWithFiltersWhenBugCreated, self).setUp()
+        self.subscriber = self.factory.makePerson()
+        self.submitter = self.factory.makePerson()
+        self.product = self.factory.makeProduct(
+            bug_supervisor=self.submitter)
+        self.subscription = self.product.addSubscription(
+            self.subscriber, self.subscriber)
+        self.filter = self.subscription.bug_filters[0]
+        self.filter.description = u'Needs triage'
+        self.filter.statuses = [BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]
+
+    def test_filters_match_when_bug_is_created(self):
+        message = u"this is an unfiltered comment"
+        params = CreateBugParams(
+            title=u"crashes all the time",
+            comment=message, owner=self.submitter,
+            status=BugTaskStatus.NEW)
+        bug = self.product.createBug(params)
+        notification = IStore(BugNotification).find(
+            BugNotification,
+            BugNotification.id==BugNotificationRecipient.bug_notificationID,
+            BugNotificationRecipient.personID == self.subscriber.id,
+            BugNotification.bug == bug).one()
+        self.assertEqual(notification.message.text_contents, message)
+
+    def test_filters_do_not_match_when_bug_is_created(self):
+        message = u"this is a filtered comment"
+        params = CreateBugParams(
+            title=u"crashes all the time",
+            comment=message, owner=self.submitter,
+            status=BugTaskStatus.TRIAGED,
+            importance=BugTaskImportance.HIGH)
+        bug = self.product.createBug(params)
+        notifications = IStore(BugNotification).find(
+            BugNotification,
+            BugNotification.id==BugNotificationRecipient.bug_notificationID,
+            BugNotificationRecipient.personID == self.subscriber.id,
+            BugNotification.bug == bug)
+        self.assertTrue(notifications.is_empty())
