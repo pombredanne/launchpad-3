@@ -24,6 +24,7 @@ class FakeOptions:
     db_file = None
     pageids = True
     top_urls = 3
+    resolution = 1
 
     def __init__(self, **kwargs):
         """Assign all arguments as attributes."""
@@ -76,7 +77,8 @@ CATEGORY_STATS = [
         median_sqlstatements=56, std_sqlstatements=208.94,
         histogram=[[0, 2], [1, 2], [2, 2], [3, 1], [4, 2], [5, 3]],
         )),
-    (Category('Test', ''), FakeStats()),
+    (Category('Test', ''), FakeStats(
+        histogram=[[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0]])),
     (Category('Bugs', ''), FakeStats(
         total_hits=6, total_time=51.70, mean=8.62, median=4.5, std=6.90,
         total_sqltime=33.40, mean_sqltime=5.57, median_sqltime=3,
@@ -181,7 +183,8 @@ class TestRequestTimes(TestCase):
             self.assertEquals(expected[idx][1].text(), results[idx][1].text(),
                 "Wrong stats for results %d (%s)" % (idx, key))
             self.assertEquals(
-                expected[idx][1].histogram, results[idx][1].histogram,
+                Histogram.from_bins_data(expected[idx][1].histogram),
+                results[idx][1].histogram,
                 "Wrong histogram for results %d (%s)" % (idx, key))
 
     def test_get_category_times(self):
@@ -218,19 +221,20 @@ class TestRequestTimes(TestCase):
         self.assertEquals(1, results.url_times['/bugs'].total_hits)
         self.assertEquals(1, results.url_times['/bugs/1'].total_hits)
 
-
-class TestStats(TestCase):
-    """Tests for the Stats class."""
-
-    def test_relative_histogram(self):
-        # Test that relative histogram gives an histogram using
-        # relative frequency.
-        stats = Stats()
-        stats.total_hits = 100
-        stats.histogram = [[0, 50], [1, 10], [2, 33], [3, 0], [4, 0], [5, 7]]
-        self.assertEquals(
-            [[0, 0.5], [1, .1], [2, .33], [3, 0], [4, 0], [5, .07]],
-            stats.relative_histogram)
+    def test_histogram_init_with_resolution(self):
+        # Test that the resolution parameter increase the number of bins
+        db = RequestTimes(
+            self.categories, FakeOptions(timeout=4, resolution=1))
+        self.assertEquals(5, db.histogram_width)
+        self.assertEquals(1, db.histogram_resolution)
+        db = RequestTimes(
+            self.categories, FakeOptions(timeout=4, resolution=0.5))
+        self.assertEquals(9, db.histogram_width)
+        self.assertEquals(0.5, db.histogram_resolution)
+        db = RequestTimes(
+            self.categories, FakeOptions(timeout=4, resolution=2))
+        self.assertEquals(3, db.histogram_width)
+        self.assertEquals(2, db.histogram_resolution)
 
 
 class TestOnlineStats(TestCase):
@@ -238,9 +242,9 @@ class TestOnlineStats(TestCase):
 
     def test___add__(self):
         # Ensure that adding two OnlineStats merge all their constituencies.
-        stats1 = OnlineStats(4)
+        stats1 = OnlineStats(4, 1)
         stats1.update(FakeRequest('/', 2.0, 5, 1.5))
-        stats2 = OnlineStats(4)
+        stats2 = OnlineStats(4, 1)
         stats2.update(FakeRequest('/', 1.5, 2, 3.0))
         stats2.update(FakeRequest('/', 5.0, 2, 2.0))
         results = stats1 + stats2
@@ -250,7 +254,9 @@ class TestOnlineStats(TestCase):
         self.assertEquals(2, results.median_sqlstatements)
         self.assertEquals(6.5, results.total_sqltime)
         self.assertEquals(2.0, results.median_sqltime)
-        self.assertEquals([[0, 0], [1, 1], [2, 1], [3, 1]], results.histogram)
+        self.assertEquals(
+            Histogram.from_bins_data([[0, 0], [1, 1], [2, 1], [3, 1]]),
+            results.histogram)
 
 
 class TestOnlineStatsCalculator(TestCase):

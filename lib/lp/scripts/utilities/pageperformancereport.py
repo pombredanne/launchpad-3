@@ -291,14 +291,6 @@ class Stats:
         """
         return self.mean_sqlstatements + 3*self.std_sqlstatements
 
-    @property
-    def relative_histogram(self):
-        """Return an histogram where the frequency is relative."""
-        if self.histogram:
-            return [[x, float(f)/self.total_hits] for x, f in self.histogram]
-        else:
-            return None
-
     def text(self):
         """Return a textual version of the stats."""
         return textwrap.dedent("""
@@ -321,15 +313,14 @@ class OnlineStats(Stats):
     with minimum storage space.
     """
 
-    def __init__(self, histogram_width):
+    def __init__(self, histogram_width, histogram_resolution):
         self.time_stats = OnlineStatsCalculator()
         self.time_median_approximate = OnlineApproximateMedian()
         self.sql_time_stats = OnlineStatsCalculator()
         self.sql_time_median_approximate = OnlineApproximateMedian()
         self.sql_statements_stats = OnlineStatsCalculator()
         self.sql_statements_median_approximate = OnlineApproximateMedian()
-        self._histogram = [
-            [x, 0] for x in range(histogram_width)]
+        self.histogram = Histogram(histogram_width, histogram_resolution)
 
     @property
     def total_hits(self):
@@ -383,13 +374,6 @@ class OnlineStats(Stats):
     def std_sqlstatements(self):
         return self.sql_statements_stats.std
 
-    @property
-    def histogram(self):
-        if self.time_stats.count:
-            return self._histogram
-        else:
-            return None
-
     def update(self, request):
         """Update the stats based on request."""
         self.time_stats.update(request.app_seconds)
@@ -398,9 +382,7 @@ class OnlineStats(Stats):
         self.sql_time_median_approximate.update(request.sql_seconds)
         self.sql_statements_stats.update(request.sql_statements)
         self.sql_statements_median_approximate.update(request.sql_statements)
-
-        idx = int(min(len(self.histogram)-1, request.app_seconds))
-        self.histogram[idx][1] += 1
+        self.histogram.update(request.app_seconds)
 
     def __add__(self, other):
         """Merge another OnlineStats with this one."""
@@ -413,8 +395,7 @@ class OnlineStats(Stats):
         results.sql_statements_stats += other.sql_statements_stats
         results.sql_statements_median_approximate += (
             other.sql_statements_median_approximate)
-        for i, (n, f) in enumerate(other._histogram):
-            results._histogram[i][1] += f
+        results.histogram = self.histogram + other.histogram
         return results
 
 
@@ -558,10 +539,14 @@ class RequestTimes:
         # distribution become very different than what it currently is.
         self.top_urls_cache_size = self.top_urls * 50
 
-        # Histogram has a bin per second up to our timeout (and an extra bin).
-        self.histogram_width = int(options.timeout) + 1
+        # Histogram has a bin per resolution up to our timeout
+        #(and an extra bin).
+        self.histogram_resolution = float(options.resolution)
+        self.histogram_width = int(
+            options.timeout / self.histogram_resolution) + 1
         self.category_times = [
-            (category, OnlineStats(self.histogram_width))
+            (category, OnlineStats(
+                self.histogram_width, self.histogram_resolution))
             for category in categories]
         self.url_times = {}
         self.pageid_times = {}
@@ -585,12 +570,14 @@ class RequestTimes:
         if self.by_pageids:
             pageid = request.pageid or 'Unknown'
             stats = self.pageid_times.setdefault(
-                pageid, OnlineStats(self.histogram_width))
+                pageid, OnlineStats(
+                    self.histogram_width, self.histogram_resolution))
             stats.update(request)
 
         if self.top_urls:
             stats = self.url_times.setdefault(
-                request.url, OnlineStats(self.histogram_width))
+                request.url, OnlineStats(
+                    self.histogram_width, self.histogram_resolution))
             stats.update(request)
             #  Whenever we have more URLs than we need to, discard 10%
             # that is less likely to end up in the top.
@@ -693,6 +680,12 @@ def main():
         help="The configured timeout value: used to determine high risk " +
         "page ids. That would be pages which 99% under render time is "
         "greater than timeoout - 2s. Default is %defaults.")
+    parse.add_option(
+        "--histogram-resolution", dest="resolution",
+        # Default to 0.5s
+        default=0.5, type="float", metavar="SECONDS",
+        help="The resolution of the histogram bin width. Detault to "
+        "%defaults.")
     parser.add_option(
         "--merge", dest="merge",
         default=False, action='store_true',
@@ -1076,7 +1069,7 @@ def html_report(
     histograms = []
 
     def handle_times(html_title, stats):
-        histograms.append(stats.relative_histogram)
+        histograms.append(stats.histogram)
         print >> outf, dedent("""\
             <tr>
             <th class="category-title">%s</th>
@@ -1186,7 +1179,7 @@ def html_report(
         """)
 
     for i, histogram in enumerate(histograms):
-        if histogram is None:
+        if histogram.count == 0:
             continue
         print >> outf, dedent("""\
             var d = %s;
@@ -1195,7 +1188,7 @@ def html_report(
                 $("#histogram%d"),
                 [{data: d}], options);
 
-            """ % (json.dumps(histogram), i))
+            """ % (json.dumps(histogram.bins_relative), i))
 
     print >> outf, dedent("""\
             });
