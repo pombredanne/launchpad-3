@@ -151,9 +151,12 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
-        get_also_notified_subscribers(
-            old_bugtask, recipients=old_bugtask_recipients,
-            level=BugNotificationLevel.METADATA)
+        # XXX: BradCrittenden 2011-04-29: Is the following call
+        # necessary?  It does have a side effect of updating the recipients
+        # list.  Looks sketchy.
+        ## get_also_notified_subscribers(
+        ##     old_bugtask, recipients=old_bugtask_recipients,
+        ##     level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
         if isinstance(change, BugDuplicateChange):

@@ -1035,12 +1035,16 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
+        # Call getDirectSubscribers to update the recipients list with direct
+        # subscribers.  The results of the method call are not used.
         self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
+            # Call getIndirectSubscribers to update the recipients list with direct
+            # subscribers.  The results of the method call are not used.
             self.getIndirectSubscribers(recipients, level=level)
             if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
@@ -1888,6 +1892,18 @@ BugMessage""" % sqlvalues(self.id))
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
+
+        def check_person_in_team(person, list_of_people):
+            """Is the person in one of the teams?
+
+            Given a person and a list of people/teams, see if the person
+            belongs to one of the teams.
+            """
+            for subscriber in list_of_people:
+                if subscriber.is_team and person.inTeam(subscriber):
+                    return True
+            return False
+
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
         # actually a composite of bug contacts, structural subscribers
@@ -1898,9 +1914,16 @@ BugMessage""" % sqlvalues(self.id))
             return True
         # Otherwise check to see if the person is a member of any of the
         # subscribed teams.
-        for subscriber in also_notified_subscribers:
-            if subscriber.is_team and person.inTeam(subscriber):
-                return True
+        if check_person_in_team(person, also_notified_subscribers):
+            return True
+
+        direct_subscribers = self.getDirectSubscribers()
+        if check_person_in_team(person, direct_subscribers):
+            return True
+        recipients = []
+        duplicate_subscribers = self.getSubscribersFromDuplicates(recipients=recipients)
+        if check_person_in_team(person, duplicate_subscribers):
+            return True
         return False
 
     def personIsSubscribedToDuplicate(self, person):
