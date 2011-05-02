@@ -23,7 +23,11 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
+    BugSubscriptionFilterMute,
+    MuteNotAllowed,
+    )
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
@@ -680,3 +684,113 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
             [], list(
                 get_structural_subscribers(
                     bug, None, BugNotificationLevel.COMMENTS, None)))
+
+
+class TestBugSubscriptionFilterMute(TestCaseWithFactory):
+    """Tests for the BugSubscriptionFilterMute class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterMute, self).setUp()
+        self.target = self.factory.makeProduct()
+        self.team = self.factory.makeTeam()
+        self.team_member = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(self.team_member, self.team.teamowner)
+            self.team_subscription = self.target.addBugSubscription(
+                self.team, self.team.teamowner)
+            self.filter = self.team_subscription.bug_filters.one()
+
+    def test_isMuteAllowed_returns_true_for_team_subscriptions(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return True for
+        # subscriptions where the owner of the subscription is a team.
+        self.assertTrue(self.filter.isMuteAllowed(self.team_member))
+
+    def test_isMuteAllowed_returns_false_for_non_team_subscriptions(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return False for
+        # subscriptions where the owner of the subscription is not a team.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            non_team_subscription = self.target.addBugSubscription(
+                person, person)
+        filter = non_team_subscription.bug_filters.one()
+        self.assertFalse(filter.isMuteAllowed(person))
+
+    def test_isMuteAllowed_returns_false_for_non_team_members(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return False if the
+        # user passed to it is not a member of the subscribing team.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
+
+    def test_mute_adds_mute(self):
+        # BugSubscriptionFilter.mute() adds a mute for the filter.
+        filter_id = self.filter.id
+        person_id = self.team_member.id
+        store = Store.of(self.filter)
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == filter_id,
+            BugSubscriptionFilterMute.person == person_id)
+        self.assertTrue(mutes.is_empty())
+        self.assertFalse(self.filter.muted(self.team_member))
+        self.filter.mute(self.team_member)
+        self.assertTrue(self.filter.muted(self.team_member))
+        store.flush()
+        self.assertFalse(mutes.is_empty())
+
+    def test_unmute_removes_mute(self):
+        # BugSubscriptionFilter.unmute() removes any mute for a given
+        # person on that filter.
+        filter_id = self.filter.id
+        person_id = self.team_member.id
+        store = Store.of(self.filter)
+        self.filter.mute(self.team_member)
+        store.flush()
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == filter_id,
+            BugSubscriptionFilterMute.person == person_id)
+        self.assertFalse(mutes.is_empty())
+        self.assertTrue(self.filter.muted(self.team_member))
+        self.filter.unmute(self.team_member)
+        self.assertFalse(self.filter.muted(self.team_member))
+        store.flush()
+        self.assertTrue(mutes.is_empty())
+
+    def test_mute_is_idempotent(self):
+        # Muting works even if the user is already muted.
+        store = Store.of(self.filter)
+        mute = self.filter.mute(self.team_member)
+        store.flush()
+        second_mute = self.filter.mute(self.team_member)
+        self.assertEqual(mute, second_mute)
+
+    def test_unmute_is_idempotent(self):
+        # Unmuting works even if the user is not muted
+        store = Store.of(self.filter)
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == self.filter.id,
+            BugSubscriptionFilterMute.person == self.team_member.id)
+        self.assertTrue(mutes.is_empty())
+        self.filter.unmute(self.team_member)
+        self.assertTrue(mutes.is_empty())
+
+    def test_mute_raises_error_for_non_team_subscriptions(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a non-team subscription.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            non_team_subscription = self.target.addBugSubscription(
+                person, person)
+        filter = non_team_subscription.bug_filters.one()
+        self.assertFalse(filter.isMuteAllowed(person))
+        self.assertRaises(MuteNotAllowed, filter.mute, person)
+
+    def test_mute_raises_error_for_non_team_members(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a subscription of which the calling person is not a member.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
+        self.assertRaises(MuteNotAllowed, self.filter.mute, non_team_person)

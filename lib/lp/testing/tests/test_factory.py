@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.component import ComponentSelection
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import (
@@ -398,6 +399,28 @@ class TestFactory(TestCaseWithFactory):
     def test_makeDistroSeries_created_display_name_starts_Distroseries(self):
         distroseries = self.factory.makeDistroSeries()
         self.assertThat(distroseries.displayname, StartsWith("Distroseries"))
+
+    # makeComponentSelection
+    def test_makeComponentSelection_makes_ComponentSelection(self):
+        selection = self.factory.makeComponentSelection()
+        self.assertIsInstance(selection, ComponentSelection)
+
+    def test_makeComponentSelection_uses_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        selection = self.factory.makeComponentSelection(
+            distroseries=distroseries)
+        self.assertEqual(distroseries, selection.distroseries)
+
+    def test_makeComponentSelection_uses_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(component=component)
+        self.assertEqual(component, selection.component)
+
+    def test_makeComponentSelection_finds_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(
+            component=component.name)
+        self.assertEqual(component, selection.component)
 
     # makeLanguage
     def test_makeLanguage(self):
