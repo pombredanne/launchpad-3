@@ -12,10 +12,12 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesInitializeView',
-    'DistroSeriesLocalDifferences',
+    'DistroSeriesLocalDifferencesView',
+    'DistroSeriesMissingPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
+    'DistroSeriesUniquePackagesView',
     'DistroSeriesView',
     ]
 
@@ -772,11 +774,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # setting up on-page notifications.
         series_url = canonical_url(self.context)
         series_title = self.context.displayname
+
+        # If the series is released, sync packages in the "updates" pocket.
+        if self.context.datereleased is None:
+            destination_pocket = PackagePublishingPocket.RELEASE
+        else:
+            destination_pocket = PackagePublishingPocket.UPDATES
+
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
-            self.context, PackagePublishingPocket.RELEASE,
-            include_binaries=False, dest_url=series_url,
-            dest_display_name=series_title, person=self.user):
+            self.context, destination_pocket, include_binaries=False,
+            dest_url=series_url, dest_display_name=series_title,
+            person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
@@ -795,7 +804,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return self.user is not None and self.cached_differences.batch.total() > 0
+        return (self.user is not None and
+                self.cached_differences.batch.total() > 0)
 
     @property
     def specified_name_filter(self):
