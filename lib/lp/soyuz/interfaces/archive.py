@@ -618,7 +618,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
             uploaded to.
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
-            any package will do.
+            any component will do.
         :return: The reason for not being able to upload, None otherwise.
         """
 
@@ -635,7 +635,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param distroseries: The upload's target distro series.
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
-            any package will do.
+            any component will do.
         :return: CannotUploadToArchive if 'person' cannot upload to the
             archive,
             None otherwise.
