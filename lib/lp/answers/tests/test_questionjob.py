@@ -358,7 +358,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
         self.assertEqual(0, exit_code)
         self.assertTrue(
-            'Traceback (most recent call last)' not in err, err)
+            'Traceback (most recent call last)' not in err)
         message = (
             'QuestionEmailJob has sent email for question %s.' % question.id)
         self.assertTrue(
