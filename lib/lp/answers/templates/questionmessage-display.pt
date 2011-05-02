@@ -42,7 +42,9 @@
     </form>
   </div>
   
-  <div class="boardCommentFooter">
+  <div 
+    tal:condition="view/canSeeSpamControls"
+    class="boardCommentFooter">
     <a id="mark-spam" href="#">Mark as spam</a>
   </div>
 </div>

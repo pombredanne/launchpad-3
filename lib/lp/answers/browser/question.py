@@ -1113,6 +1113,9 @@ class QuestionMessageDisplayView(LaunchpadView):
         else:
             return "boardCommentBody"
 
+    def canSeeSpamControls(self):
+        return check_permission('launchpad.Moderate', self.context.question)
+
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]
         if not self.context.visible:
