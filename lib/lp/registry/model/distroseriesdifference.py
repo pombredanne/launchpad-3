@@ -18,13 +18,13 @@ from debian.changelog import (
     )
 from lazr.enum import DBItem
 from sqlobject import StringCol
+from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     compile as storm_compile,
     Desc,
     SQL,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -52,6 +52,7 @@ from lp.registry.enum import (
     )
 from lp.registry.errors import (
     DistroSeriesDifferenceError,
+    MultipleParentsForDerivedSeriesError,
     NotADerivedSeriesError,
     )
 from lp.registry.interfaces.distroseriesdifference import (
@@ -110,7 +111,6 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        DistroSeries.id == DistroSeriesDifference.derived_series_id,
         SourcePackagePublishingHistory.archiveID == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
@@ -120,16 +120,16 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     # Check in the parent archive or the child?
     if in_parent:
-        ParentDistroSeries = ClassAlias(DistroSeries)
         conditions = And(
             conditions,
-            ParentDistroSeries.id == DistroSeriesDifference.parent_series_id,
-            Archive.distributionID == ParentDistroSeries.distributionID,
+            DistroSeries.id == DistroSeriesDifference.parent_series_id,
+            Archive.distributionID == DistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
             )
     else:
         conditions = And(
             conditions,
+            DistroSeries.id == DistroSeriesDifference.derived_series_id,
             Archive.distributionID == DistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
             )
@@ -227,14 +227,18 @@ class DistroSeriesDifference(StormBase):
     @staticmethod
     def new(derived_series, source_package_name, parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
-        dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
-            derived_series)
-        if dsp.is_empty():
-            raise NotADerivedSeriesError()
         if parent_series is None:
-            if dsp.count() > 1:
-                raise NotADerivedSeriesError() # Multiple parents.
-            parent_series = dsp[0].parent_series
+            try:
+                dsps = getUtility(IDistroSeriesParentSet)
+                dsp = dsps.getByDerivedSeries(
+                    derived_series).one()
+            except NotOneError:
+                raise MultipleParentsForDerivedSeriesError()
+            else:
+                if dsp is None:
+                    raise NotADerivedSeriesError()
+                else:
+                    parent_series = dsp.parent_series
 
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()

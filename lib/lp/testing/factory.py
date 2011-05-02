@@ -2323,7 +2323,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
                 derived_series)
             if dsp.count() == 0:
-                new_dsp = self.makeDistroSeriesParent()
+                new_dsp = self.makeDistroSeriesParent(
+                    derived_series=derived_series)
                 parent_series = new_dsp.parent_series
             else:
                 parent_series = dsp[0].parent_series
