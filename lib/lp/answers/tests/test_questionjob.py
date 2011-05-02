@@ -198,7 +198,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
             subject, body, headers)
-        self.assertEqual(user, job.getErrorRecipients())
+        self.assertEqual([user], job.getErrorRecipients())
 
     def test_recipients_asker(self):
         # The recipients property contains the question owner.
