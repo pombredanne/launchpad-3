@@ -1761,8 +1761,18 @@ BugMessage""" % sqlvalues(self.id))
 
         self.updateHeat()
 
-    def markAsDuplicate(self, duplicate_of):
-        """See `IBug`."""
+    def _markAsDuplicate(self, duplicate_of):
+        """Mark this bug as a duplicate of another.
+
+        Marking a bug as a duplicate requires a recalculation
+        of the heat of this bug and of the master bug, and it
+        requires a recalulation of the heat cache of the
+        affected bug targets. None of this is done here in order
+        to avoid unnecessary repetitions in recursive calls
+        for duplicates of this bug, which also become duplicates
+        of the new master bug.
+        """
+        affected_targets = set()
         field = DuplicateBug()
         field.context = self
         current_duplicateof = self.duplicateof
@@ -1776,7 +1786,8 @@ BugMessage""" % sqlvalues(self.id))
                     # event.
                     dupe_before = Snapshot(
                         duplicate, providing=providedBy(duplicate))
-                    duplicate.markAsDuplicate(duplicate_of)
+                    affected_targets.update(
+                        duplicate._markAsDuplicate(duplicate_of))
                     notify(ObjectModifiedEvent(
                             duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
@@ -1787,14 +1798,22 @@ BugMessage""" % sqlvalues(self.id))
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
-            self.setHeat(0)
-            duplicate_of.updateHeat()
+            self.setHeat(0, affected_targets=affected_targets)
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
-            self.updateHeat()
-            current_duplicateof.updateHeat()
+            self.updateHeat(affected_targets)
+            current_duplicateof.updateHeat(affected_targets)
+        return affected_targets
+
+    def markAsDuplicate(self, duplicate_of):
+        """See `IBug`."""
+        affected_targets = self._markAsDuplicate(duplicate_of)
+        if duplicate_of is not None:
+            duplicate_of.updateHeat(affected_targets)
+        for target in affected_targets:
+            target.recalculateBugHeatCache()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1894,8 +1913,14 @@ BugMessage""" % sqlvalues(self.id))
         # and assignees. As such, it's not possible to get them all with
         # one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
-
-        return person in also_notified_subscribers
+        if person in also_notified_subscribers:
+            return True
+        # Otherwise check to see if the person is a member of any of the
+        # subscribed teams.
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
+        return False
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
@@ -1914,7 +1939,8 @@ BugMessage""" % sqlvalues(self.id))
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None):
+    def setHeat(self, heat, timestamp=None, affected_targets=None):
+        """See `IBug`."""
         """See `IBug`."""
         if timestamp is None:
             timestamp = UTC_NOW
@@ -1924,10 +1950,13 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = heat
         self.heat_last_updated = timestamp
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
 
-    def updateHeat(self):
+    def updateHeat(self, affected_targets=None):
         """See `IBug`."""
         if self.duplicateof is not None:
             # If this bug is a duplicate we don't try to calculate its
@@ -1941,8 +1970,11 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
 
     def _attachments_query(self):
