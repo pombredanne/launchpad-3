@@ -262,8 +262,10 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(len(target_info['filters']), 1) # One filter.
         filter_info = target_info['filters'][0]
         self.assertEqual(filter_info['filter'], sub.bug_filters[0])
-        self.failUnless(filter_info['subscriber_is_team'])
-        self.failUnless(filter_info['user_is_team_admin'])
+        self.assertTrue(filter_info['subscriber_is_team'])
+        self.assertTrue(filter_info['user_is_team_admin'])
+        self.assertTrue(filter_info['can_mute'])
+        self.assertFalse(filter_info['is_muted'])
         self.assertEqual(filter_info['subscriber_title'], team.title)
         self.assertEqual(
             filter_info['subscriber_link'],
@@ -284,8 +286,10 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         expose_user_subscriptions_to_js(user, [sub], request)
         info = IJSONRequestCache(request).objects['subscription_info']
         filter_info = info[0]['filters'][0]
-        self.failUnless(filter_info['subscriber_is_team'])
-        self.failIf(filter_info['user_is_team_admin'])
+        self.assertTrue(filter_info['subscriber_is_team'])
+        self.assertFalse(filter_info['user_is_team_admin'])
+        self.assertTrue(filter_info['can_mute'])
+        self.assertFalse(filter_info['is_muted'])
         self.assertEqual(filter_info['subscriber_title'], team.title)
         self.assertEqual(
             filter_info['subscriber_link'],
@@ -293,6 +297,21 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_url'],
             canonical_url(team, rootsite='mainsite'))
+
+    def test_muted_team_member_subscription(self):
+        # Show that a muted team subscription is correctly represented.
+        user = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        request = LaunchpadTestRequest()
+        team = self.factory.makeTeam(members=[user])
+        with person_logged_in(team.teamowner):
+            sub = target.addBugSubscription(team, team.teamowner)
+        sub.bug_filters.one().mute(user)
+        expose_user_subscriptions_to_js(user, [sub], request)
+        info = IJSONRequestCache(request).objects['subscription_info']
+        filter_info = info[0]['filters'][0]
+        self.assertTrue(filter_info['can_mute'])
+        self.assertTrue(filter_info['is_muted'])
 
     def test_self_subscription(self):
         # Make a subscription directly for the user and see what we record.
@@ -304,8 +323,10 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         expose_user_subscriptions_to_js(user, [sub], request)
         info = IJSONRequestCache(request).objects['subscription_info']
         filter_info = info[0]['filters'][0]
-        self.failIf(filter_info['subscriber_is_team'])
+        self.assertFalse(filter_info['subscriber_is_team'])
         self.assertEqual(filter_info['subscriber_title'], user.title)
+        self.assertFalse(filter_info['can_mute'])
+        self.assertFalse(filter_info['is_muted'])
         self.assertEqual(
             filter_info['subscriber_link'],
             absoluteURL(user, IWebServiceClientRequest(request)))

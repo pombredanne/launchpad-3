@@ -54,7 +54,10 @@ from lp.bugs.interfaces.bugnotification import (
     IBugNotificationSet,
     )
 from lp.bugs.model.bugactivity import BugActivity
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
+    BugSubscriptionFilterMute,
+    )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
@@ -191,9 +194,10 @@ class BugNotificationSet:
         if not notifications or not recipient_to_sources:
             # This is a shortcut that will remove some error conditions.
             return {}
-        # This makes one call to the database to get all the information
-        # we need. We get the filter ids and descriptions for each
-        # source, and then we divide up the information per recipient.
+        # This makes two calls to the database to get all the
+        # information we need. The first call gets the filter ids and
+        # descriptions for each recipient, and then we divide up the
+        # information per recipient.
         # First we get some intermediate data structures set up.
         source_person_id_map = {}
         recipient_id_map = {}
@@ -241,22 +245,36 @@ class BugNotificationSet:
             source_person_id_map[source_person_id]['filters'][filter_id] = (
                 filter_description)
             filter_ids.append(filter_id)
+        no_filter_marker = -1 # This is only necessary while production and
+        # sample data have structural subscriptions without filters.
         # Assign the filters to each recipient.
         for recipient_data in recipient_id_map.values():
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
-                    source_person_id_map[source_person_id]['filters'])
+                    source_person_id_map[source_person_id]['filters']
+                    or {no_filter_marker: None})
+        if filter_ids:
+            # Now we get the information about subscriptions that might be
+            # filtered and take that into account.
+            mute_data = store.find(
+                (BugSubscriptionFilterMute.person_id,
+                 BugSubscriptionFilterMute.filter_id),
+                In(BugSubscriptionFilterMute.person_id, recipient_id_map.keys()),
+                In(BugSubscriptionFilterMute.filter_id, filter_ids))
+            for person_id, filter_id in mute_data:
+                del recipient_id_map[person_id]['filters'][filter_id]
         # Now recipient_id_map has all the information we need.  Let's
         # build the final result and return it.
         result = {}
         for recipient_data in recipient_id_map.values():
-            filter_descriptions = [
-                description for description
-                in recipient_data['filters'].values() if description]
-            filter_descriptions.sort() # This is good for tests.
-            result[recipient_data['principal']] = {
-                'sources': recipient_data['sources'],
-                'filter descriptions': filter_descriptions}
+            if recipient_data['filters']:
+                filter_descriptions = [
+                    description for description
+                    in recipient_data['filters'].values() if description]
+                filter_descriptions.sort() # This is good for tests.
+                result[recipient_data['principal']] = {
+                    'sources': recipient_data['sources'],
+                    'filter descriptions': filter_descriptions}
         return result
 
 
