@@ -18,11 +18,12 @@ from zope.interface import implements
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.message import IMessage
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionMessage(SQLBase):
@@ -48,6 +49,11 @@ class QuestionMessage(SQLBase):
         """See IMessage."""
         # Delegates do not proxy __ methods, because of the name mangling.
         return iter(self.chunks)
+
+    @cachedproperty
+    def index(self):
+        # Return the index + 1 so that messages appear 1-indexed in the UI.
+        return list(self.question.messages).index(self) + 1
 
     @property
     def visible(self):

@@ -43,7 +43,7 @@ from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
     IQuestion,
     )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
