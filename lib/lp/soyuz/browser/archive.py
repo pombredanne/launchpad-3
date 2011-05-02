@@ -1219,7 +1219,8 @@ class PackageCopyingMixin:
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
-                dest_url=None, dest_display_name=None, person=None):
+                dest_url=None, dest_display_name=None, person=None,
+                check_permissions=True):
         """Copy packages and add appropriate feedback to the browser page.
 
         :param sources_field_name: The name of the form field to set errors
@@ -1236,8 +1237,9 @@ class PackageCopyingMixin:
         :param dest_display_name: The text to use for the dest_url link.
             Defaults to the target archive's display name and will be
             automatically escaped for inclusion in the output.
-        :param person: The (optional) person requesting the copy (if present,
-            will be used for the permission check).
+        :param person: The person requesting the copy.
+        :param: check_permissions: boolean indicating whether or not the
+            requestor's permissions to copy should be checked.
 
         :return: True if the copying worked, False otherwise.
         """
@@ -1245,7 +1247,7 @@ class PackageCopyingMixin:
             copies = do_copy(
                 source_pubs, dest_archive, dest_series,
                 dest_pocket, include_binaries, allow_delayed_copies=True,
-                person=person)
+                person=person, check_permissions=check_permissions)
         except CannotCopy, error:
             messages = []
             error_lines = str(error).splitlines()

@@ -374,7 +374,8 @@ class CopyChecker:
                         "%s already exists in destination archive with "
                         "different contents." % lf.libraryfile.filename)
 
-    def checkCopy(self, source, series, pocket, person=None):
+    def checkCopy(self, source, series, pocket, person=None,
+                  check_permissions=True):
         """Check if the source can be copied to the given location.
 
         Check possible conflicting publications in the destination archive.
@@ -391,6 +392,8 @@ class CopyChecker:
         :param series: destination `IDistroSeries`.
         :param pocket: destination `PackagePublishingPocket`.
         :param person: requestor `IPerson`.
+        :param check_permissions: boolean indicating whether or not the
+            requestor's permissions to copy should be checked.
 
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
@@ -399,18 +402,24 @@ class CopyChecker:
         # into the destination (archive, component, pocket). This check
         # is done here rather than in the security adapter because it
         # requires more info than is available in the security adapter.
-        if person is not None:
-            sourcepackagename = source.sourcepackagerelease.sourcepackagename
-            destination_component = series.getSourcePackage(
-                sourcepackagename).latest_published_component
-            # If destination_component is not None, make sure the person
-            # has upload permission for this component. Otherwise, any upload
-            # permission on this archive will do.
-            reason = self.archive.checkUpload(
-                person, series, sourcepackagename, destination_component,
-                pocket, strict_component=(destination_component is not None))
-            if reason:
-                raise CannotCopy(reason)
+        if check_permissions:
+            if person is None:
+                raise CannotCopy('Cannot check copy permissions when no '
+                                 'person is passed.')
+            else:
+                sourcepackagerelease = source.sourcepackagerelease
+                sourcepackagename = sourcepackagerelease.sourcepackagename
+                destination_component = series.getSourcePackage(
+                    sourcepackagename).latest_published_component
+                # If destination_component is not None, make sure the person
+                # has upload permission for this component. Otherwise, any
+                # upload permission on this archive will do.
+                strict_component = destination_component is not None
+                reason = self.archive.checkUpload(
+                    person, series, sourcepackagename, destination_component,
+                    pocket, strict_component=strict_component)
+                if reason:
+                    raise CannotCopy(reason)
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
@@ -480,7 +489,7 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, person=None):
+            allow_delayed_copies=True, person=None, check_permissions=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -491,18 +500,20 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
     Wrapper for `do_direct_copy`.
 
-    :param: sources: a list of `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`, if None is given the same
+    :param sources: a list of `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`, if None is given the same
         current source distroseries will be used as destination.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
     :param allow_delayed_copies: boolean indicating whether or not private
         sources can be copied to public archives using delayed_copies.
         Defaults to True, only set as False in the UnembargoPackage context.
-    :param: person: the requestor `IPerson`.
+    :param person: the requestor `IPerson`.
+    :param check_permissions: boolean indicating whether or not the
+        requestor's permissions to copy should be checked.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -522,7 +533,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         else:
             destination_series = series
         try:
-            copy_checker.checkCopy(source, destination_series, pocket, person)
+            copy_checker.checkCopy(
+                source, destination_series, pocket, person, check_permissions)
         except CannotCopy, reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
@@ -558,12 +570,12 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     Also copy published binaries for each source if requested to. Again,
     only copy binaries that were not yet copied before.
 
-    :param: source: an `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`, if None is given the same
+    :param source: an `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`, if None is given the same
         current source distroseries will be used as destination.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
 
@@ -630,11 +642,11 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
 
     Also include published builds for each source if requested to.
 
-    :param: source: an `ISourcePackagePublishingHistory`.
-    :param: archive: the target `IArchive`.
-    :param: series: the target `IDistroSeries`.
-    :param: pocket: the target `PackagePublishingPocket`.
-    :param: include_binaries: optional boolean, controls whether or
+    :param source: an `ISourcePackagePublishingHistory`.
+    :param archive: the target `IArchive`.
+    :param series: the target `IDistroSeries`.
+    :param pocket: the target `PackagePublishingPocket`.
+    :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
 
@@ -800,7 +812,8 @@ class PackageCopier(SoyuzScript):
             copies = do_copy(
                 sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, self.allow_delayed_copies)
+                self.options.include_binaries, self.allow_delayed_copies,
+                check_permissions=False)
         except CannotCopy, error:
             self.logger.error(str(error))
             return []
