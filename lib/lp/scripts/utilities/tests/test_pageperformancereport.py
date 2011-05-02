@@ -9,6 +9,7 @@ import unittest
 
 from lp.scripts.utilities.pageperformancereport import (
     Category,
+    Histogram,
     OnlineApproximateMedian,
     OnlineStats,
     OnlineStatsCalculator,
@@ -363,6 +364,119 @@ class TestOnlineApproximateMedian(TestCase):
         median2.buckets = [[], [3, 6], [3, 7]]
         results = median1 + median2
         self.assertEquals([[1, 3], [6], [3, 7], [4]], results.buckets)
+
+
+class TestHistogram(TestCase):
+    """Test the histogram computation."""
+
+    def test__init__(self):
+        hist = Histogram(4, 1)
+        self.assertEquals(4, hist.bins_count)
+        self.assertEquals(1, hist.bins_size)
+        self.assertEquals([[0, 0], [1, 0], [2, 0], [3, 0]], hist.bins)
+
+    def test__init__bins_size_float(self):
+        hist = Histogram(9, 0.5)
+        self.assertEquals(9, hist.bins_count)
+        self.assertEquals(0.5, hist.bins_size)
+        self.assertEquals(
+            [[0, 0], [0.5, 0], [1.0, 0], [1.5, 0],
+             [2.0, 0], [2.5, 0], [3.0, 0], [3.5, 0], [4.0, 0]], hist.bins)
+
+    def test_update(self):
+        hist = Histogram(4, 1)
+        hist.update(1)
+        self.assertEquals(1, hist.count)
+        self.assertEquals([[0, 0], [1, 1], [2, 0], [3, 0]], hist.bins)
+
+        hist.update(1.3)
+        self.assertEquals(2, hist.count)
+        self.assertEquals([[0, 0], [1, 2], [2, 0], [3, 0]], hist.bins)
+
+    def test_update_float_bin_size(self):
+        hist = Histogram(4, 0.5)
+        hist.update(1.3)
+        self.assertEquals([[0, 0], [0.5, 0], [1.0, 1], [1.5, 0]], hist.bins)
+        hist.update(0.5)
+        self.assertEquals([[0, 0], [0.5, 1], [1.0, 1], [1.5, 0]], hist.bins)
+        hist.update(0.6)
+        self.assertEquals([[0, 0], [0.5, 2], [1.0, 1], [1.5, 0]], hist.bins)
+
+    def test_update_max_goes_in_last_bin(self):
+        hist = Histogram(4, 1)
+        hist.update(9)
+        self.assertEquals([[0, 0], [1, 0], [2, 0], [3, 1]], hist.bins)
+
+    def test_bins_relative(self):
+        hist = Histogram(4, 1)
+        for x in range(4):
+            hist.update(x)
+        self.assertEquals(
+            [[0, 0.25], [1, 0.25], [2, 0.25], [3, 0.25]], hist.bins_relative)
+
+    def test_from_bins_data(self):
+        hist = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        self.assertEquals(4, hist.bins_count)
+        self.assertEquals(1, hist.bins_size)
+        self.assertEquals(6, hist.count)
+        self.assertEquals([[0, 1], [1, 3], [2, 1], [3, 1]], hist.bins)
+
+    def test___repr__(self):
+        hist = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        self.assertEquals(
+            "<Histogram [[0, 1], [1, 3], [2, 1], [3, 1]]>", repr(hist))
+
+    def test___eq__(self):
+        hist1 = Histogram(4, 1)
+        hist2 = Histogram(4, 1)
+        self.assertEquals(hist1, hist2)
+
+    def test__eq___with_data(self):
+        hist1 = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        hist2 = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        self.assertEquals(hist1, hist2)
+
+    def test___add__(self):
+        hist1 = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        hist2 = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        hist3 = Histogram.from_bins_data([[0, 2], [1, 6], [2, 2], [3, 2]])
+        total = hist1 + hist2
+        self.assertEquals(hist3, total)
+        self.assertEquals(12, total.count)
+
+    def test___add___uses_widest(self):
+        # Make sure that the resulting histogram is as wide as the widest one.
+        hist1 = Histogram.from_bins_data([[0, 1], [1, 3], [2, 1], [3, 1]])
+        hist2 = Histogram.from_bins_data(
+            [[0, 1], [1, 3], [2, 1], [3, 1], [4, 2], [5, 3]])
+        hist3 = Histogram.from_bins_data(
+            [[0, 2], [1, 6], [2, 2], [3, 2], [4, 2], [5, 3]])
+        self.assertEquals(hist3, hist1 + hist2)
+
+    def test___add___interpolate_lower_resolution(self):
+        # Make sure that when the other histogram has a bigger bin_size
+        # the frequency is correctly split across the different bins.
+        hist1 = Histogram.from_bins_data(
+            [[0, 1], [0.5, 3], [1.0, 1], [1.5, 1]])
+        hist2 = Histogram.from_bins_data(
+            [[0, 1], [1, 2], [2, 3], [3, 1], [4, 1]])
+
+        hist3 = Histogram.from_bins_data(
+            [[0, 1.5], [0.5, 3.5], [1.0, 2], [1.5, 2],
+            [2.0, 1.5], [2.5, 1.5], [3.0, 0.5], [3.5, 0.5], 
+            [4.0, 0.5], [4.5, 0.5]])
+        self.assertEquals(hist3, hist1 + hist2)
+
+    def test___add___higher_resolution(self):
+        # Make sure that when the other histogram has a smaller bin_size
+        # the frequency is correctly added.
+        hist1 = Histogram.from_bins_data([[0, 1], [1, 2], [2, 3]])
+        hist2 = Histogram.from_bins_data(
+            [[0, 1], [0.5, 3], [1.0, 1], [1.5, 1], [2.0, 3], [2.5, 1],
+             [3, 4], [3.5, 2]])
+
+        hist3 = Histogram.from_bins_data([[0, 5], [1, 4], [2, 7], [3, 6]])
+        self.assertEquals(hist3, hist1 + hist2)
 
 
 def test_suite():

@@ -418,6 +418,116 @@ class OnlineStats(Stats):
         return results
 
 
+class Histogram:
+    """A simple object to compute histogram of a value."""
+
+    @staticmethod
+    def from_bins_data(data):
+        """Create an histogram from existing bins data."""
+        assert data[0][0] == 0, "First bin should start at zero."
+
+        hist = Histogram(len(data), data[1][0])
+        for idx, bin in enumerate(data):
+            hist.count += bin[1]
+            hist.bins[idx][1] = bin[1]
+
+        return hist
+
+    def __init__(self, bins_count, bins_size):
+        """Create a new histogram.
+
+        The histogram will count the frequency of values in bins_count bins
+        of bins_size each.
+        """
+        self.count = 0
+        self.bins_count = bins_count
+        self.bins_size = bins_size
+        self.bins = []
+        for x in range(bins_count):
+            self.bins.append([x*bins_size, 0])
+
+    @property
+    def bins_relative(self):
+        """Return the bins with the frequency expressed as a ratio."""
+        return [[x, float(f)/self.count] for x, f in self.bins]
+
+    def update(self, value):
+        """Update the histogram for this value.
+
+        All values higher than the last bin minimum are counted in that last
+        bin.
+        """
+        self.count += 1
+        idx = int(min(self.bins_count-1, value / self.bins_size))
+        self.bins[idx][1] += 1
+
+    def __repr__(self):
+        """A string representation of this histogram."""
+        return "<Histogram %s>" % self.bins
+
+    def __eq__(self, other):
+        """Two histogram are equals if they have the same bins content."""
+        if not isinstance(other, Histogram):
+            return False
+
+        if self.bins_count != other.bins_count:
+            return False
+
+        if self.bins_size != other.bins_size:
+            return False
+
+        for idx, other_bin in enumerate(other.bins):
+            if self.bins[idx][1] != other_bin[1]:
+                return False
+
+        return True
+
+    def __add__(self, other):
+        """Add the frequency of the other histogram to this one.
+
+        The resulting histogram has the same bins_size than this one.
+        If the other one has a bigger bins_size, we'll assume an even
+        distribution and distribute the frequency across the smaller bins. If
+        it has a lower bin_size, we'll aggregate its bins into the larger
+        ones. We only support different bins_size if the ratio can be
+        expressed as the ratio between 1 and an integer.
+
+        The resulting histogram is as wide as the widest one.
+        """
+        ratio = float(other.bins_size) / self.bins_size
+        bins_count = max(self.bins_count, math.ceil(other.bins_count * ratio))
+        total = Histogram(int(bins_count), self.bins_size)
+        total.count = self.count + other.count
+
+        # Copy our bins into the total
+        for idx, bin in enumerate(self.bins):
+            total.bins[idx][1] = bin[1]
+
+        assert int(ratio) == ratio or int(1/ratio) == 1/ratio, (
+            "We only support different bins size when the ratio is an "
+            "integer to 1: "
+            % ratio)
+
+        if ratio >= 1:
+            # We distribute the frequency across the bins.
+            # For example. if the ratio is 3:1, we'll add a third
+            # of the lower resolution bin to 3 of the higher one.
+            for other_idx, bin in enumerate(other.bins):
+                f = bin[1] / ratio
+                start = int(math.floor(other_idx * ratio))
+                end = int(start + ratio)
+                for idx in range(start, end):
+                    total.bins[idx][1] += f
+        else:
+            # We need to collect the higher resolution bins into the
+            # corresponding lower one.
+            for other_idx, bin in enumerate(other.bins):
+                idx = int(other_idx * ratio)
+                total.bins[idx][1] += bin[1]
+
+        return total
+
+
 class RequestTimes:
     """Collect statistics from requests.
 
