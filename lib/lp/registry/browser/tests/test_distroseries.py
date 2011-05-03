@@ -58,13 +58,13 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
+    IPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
