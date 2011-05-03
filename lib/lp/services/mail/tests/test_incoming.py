@@ -131,7 +131,7 @@ class TestExtractAddresses(TestCaseWithFactory):
         original_to = 'eric@vikings.example.com'
         mail[ORIGINAL_TO_HEADER] = original_to
         self.assertThat(
-            extract_addresses(mail, None, None, None),
+            extract_addresses(mail, None, None),
             Equals([original_to]))
 
     def test_original_to_in_body(self):
@@ -143,7 +143,7 @@ class TestExtractAddresses(TestCaseWithFactory):
         log = BufferLogger()
         mail = self.factory.makeSignedMessage(
             body=body, to_address=header_to)
-        addresses = extract_addresses(mail, mail.as_string(), alias, log)
+        addresses = extract_addresses(mail, alias, log)
         self.assertThat(addresses, Equals([header_to]))
         self.assertThat(
             log.getLogBuffer(),
@@ -154,7 +154,7 @@ class TestExtractAddresses(TestCaseWithFactory):
         alias = 'librarian-somewhere'
         log = BufferLogger()
         mail = self.factory.makeSignedMessage(to_address=header_to)
-        addresses = extract_addresses(mail, mail.as_string(), alias, log)
+        addresses = extract_addresses(mail, alias, log)
         self.assertThat(addresses, Equals([header_to]))
         self.assertThat(
             log.getLogBuffer(),

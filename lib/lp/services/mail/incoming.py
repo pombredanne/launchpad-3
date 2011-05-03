@@ -269,7 +269,7 @@ class MailErrorUtility(ErrorReportingUtility):
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
-def extract_addresses(mail, raw_mail, file_alias_url, log):
+def extract_addresses(mail, file_alias_url, log):
     """Extract the domain the mail was sent to.
 
     Mails sent to Launchpad should have an X-Launchpad-Original-To header.
@@ -278,7 +278,7 @@ def extract_addresses(mail, raw_mail, file_alias_url, log):
     if ORIGINAL_TO_HEADER in mail:
         return [mail[ORIGINAL_TO_HEADER]]
 
-    if ORIGINAL_TO_HEADER in raw_mail:
+    if ORIGINAL_TO_HEADER in mail.as_string():
         # Doesn't have an X-Launchpad-Original-To in the headers, but does
         # have one in the body, because of a forwarding loop or attempted
         # spam.  See <https://bugs.launchpad.net/launchpad/+bug/701976>
@@ -443,7 +443,7 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
         log.info("Inactive account found for %s" % mail['From'])
         return
 
-    addresses = extract_addresses(mail, raw_mail, file_alias_url, log)
+    addresses = extract_addresses(mail, file_alias_url, log)
     log.debug('mail was originally to: %r' % (addresses,))
 
     try:
