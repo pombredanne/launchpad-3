@@ -1239,7 +1239,7 @@ class PackageCopyingMixin:
             automatically escaped for inclusion in the output.
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
-            requestor's permissions to copy should be checked.
+            requester's permissions to copy should be checked.
 
         :return: True if the copying worked, False otherwise.
         """
