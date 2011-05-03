@@ -347,8 +347,8 @@ def handleMail(trans=transaction,
                 continue
             try:
                 trans.begin()
-                handle_one_mail(trans, log, mail,
-                    file_alias, file_alias_url, signature_timestamp_checker)
+                handle_one_mail(log, mail, file_alias, file_alias_url,
+                    signature_timestamp_checker)
                 trans.commit()
                 mailbox.delete(mail_id)
             except (KeyboardInterrupt, SystemExit):
@@ -407,7 +407,7 @@ def save_mail_to_librarian(trans, log, raw_mail):
     return file_alias
 
 
-def handle_one_mail(trans, log, mail, file_alias, file_alias_url,
+def handle_one_mail(log, mail, file_alias, file_alias_url,
     signature_timestamp_checker):
     """Process one message.
 
