@@ -29,7 +29,8 @@ class TestSearchQuestionsView(TestCaseWithFactory):
 
     def test_matching_faqs_url__handles_non_ascii(self):
         product = self.factory.makeProduct()
-        # Avoid non-ascii unicode to no upset pocket-lint.
+        # Avoid non-ascii character in unicode literal to not upset
+        # pocket-lint. Bug #776389.
         non_ascii_string = u'portugu\xeas'
         with person_logged_in(product.owner):
             self.factory.makeFAQ(product, non_ascii_string)
