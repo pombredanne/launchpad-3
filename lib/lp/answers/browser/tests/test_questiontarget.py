@@ -32,14 +32,16 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         non_ascii = u"português"
         with person_logged_in(product.owner):
             self.factory.makeFAQ(product, non_ascii)
-            form = {
-                'field.search_text': non_ascii,
-                'field.status': 'OPEN',
-                'field.actions.search': 'Search',
-                }
-            view = create_initialized_view(
-                product, '+questions', form=form, method='GET')
-        print view.matching_faqs_url
+        form = {
+            'field.search_text': non_ascii,
+            'field.status': 'OPEN',
+            'field.actions.search': 'Search',
+            }
+        view = create_initialized_view(
+            product, '+questions', form=form, method='GET')
+
+        # This must not raise UnicodeEncodeError.
+        url = view.matching_faqs_url
 
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
