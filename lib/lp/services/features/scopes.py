@@ -169,6 +169,27 @@ class ScriptScope(BaseScope):
         return scope_name == self.script_scope
 
 
+class MailHeaderScope(BaseScope):
+    """Matches a regex against the un-wrapped form of arbitrary mail headers.
+
+    For example mail_header:received:bad-example\\.com will match any mail
+    that passed through that host.
+
+    The header name is matched case-insensitively.
+    """
+
+    pattern = r'mail_header:'
+
+    def __init__(self, mail_object):
+        self.mail_object = mail_object
+
+    def lookup(self, scope_name):
+        try:
+            field, regex = scope_name.split(':', 1)
+        except ValueError:
+            return False
+
+
 # These are the handlers for all of the allowable scopes, listed here so that
 # we can for example show all of them in an admin page.  Any new scope will
 # need a scope handler and that scope handler has to be added to this list.
@@ -231,3 +252,20 @@ class ScopesForScript(MultiScopeHandler):
         super(ScopesForScript, self).__init__([
             DefaultScope(),
             ScriptScope(script_name)])
+
+
+class ScopesForMail(MultiScopeHandler):
+    """Identify feature scopes for handling user email."""
+
+    def __init__(self, mail_object):
+        """Construct set of scopes for incoming mail.
+
+        :param mail_object: An ISignedMessage giving the parsed 
+            form of the incoming message.  (Note that it's *not* 
+            necessarily signed, just potentially signed.)
+        """
+        super(ScopesForMail, self).__init__([
+            DefaultScope(),
+            MailHeaderScope(mail_object),
+            ServerScope(),
+            ])

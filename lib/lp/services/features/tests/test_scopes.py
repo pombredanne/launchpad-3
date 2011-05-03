@@ -10,10 +10,35 @@ from lp.testing import TestCaseWithFactory
 from lp.services.features.scopes import (
     BaseScope,
     BaseWebRequestScope,
+    DefaultScope,
+    MailHeaderScope,
     MultiScopeHandler,
+    ScopesForMail,
     ScopesForScript,
     ScriptScope,
+    ServerScope,
     )
+from testtools.matchers import (
+    Matcher,
+    MatchesAll,
+    Mismatch,
+    )
+
+
+class MultiScopeContains(Matcher):
+    """Matches if a MultiScopeHandler checks the given scope."""
+
+    def __init__(self, scope_class):
+        self.scope_class = scope_class
+
+    def match(self, multi_handler):
+        for h in multi_handler.handlers:
+            if isinstance(h, self.scope_class):
+                return
+        else:
+            return Mismatch(
+                "Scope class %r not found in %r"
+                % (scope_class, multi_scope))
 
 
 class FakeScope(BaseWebRequestScope):
@@ -67,3 +92,26 @@ class TestScopes(TestCaseWithFactory):
         script_name = self.factory.getUniqueString()
         scopes = ScopesForScript(script_name)
         self.assertFalse(scopes.lookup("script:other"))
+
+
+class TestMailScopes(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def make_mail_scopes(self):
+        fake_email = None
+        scopes = ScopesForMail(fake_email)
+        return scopes
+
+    def test_ScopesForMail_examines_server(self):
+        mail_scopes = self.make_mail_scopes()
+        self.assertThat(mail_scopes, MatchesAll(
+            MultiScopeContains(ServerScope),
+            MultiScopeContains(DefaultScope),
+            MultiScopeContains(MailHeaderScope),
+            ))
+
+    # TODO: test checking the current interaction user works
+    # TODO: checking the server
+    # TODO: checking the email from address
+    # TODO: checking the dkim signer
