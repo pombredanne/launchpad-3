@@ -883,8 +883,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
 
-        # XXX cprov 20090427: we should write a Release file parsing for
-        # making tests less cryptic.
+        # XXX cprov 2009-04-27 bug=440014: Use a generic parser.
         release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)

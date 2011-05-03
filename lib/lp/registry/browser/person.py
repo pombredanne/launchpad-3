@@ -3890,7 +3890,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
@@ -4223,6 +4223,8 @@ class PersonEditView(BasePersonEditView):
             removeSecurityProxy(self.context).name = new_name
             del data['name']
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):

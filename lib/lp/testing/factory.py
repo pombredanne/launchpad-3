@@ -190,6 +190,9 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.distroseriesparent import (
+    IDistroSeriesParentSet,
+    )
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -256,11 +259,15 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -1992,8 +1999,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
-        return target.newQuestion(
-            owner=target.owner, title=title, description='description')
+        with person_logged_in(target.owner):
+            question = target.newQuestion(
+                owner=target.owner, title=title, description='description')
+        return question
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
@@ -2381,6 +2390,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             distro_series_difference, owner, comment)
 
+    def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
+                               initialized=False):
+        if parent_series is None:
+            parent_series = self.makeDistroSeries()
+        if derived_series is None:
+            derived_series = self.makeDistroSeries()
+        return getUtility(IDistroSeriesParentSet).new(
+            derived_series, parent_series, initialized)
+
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
                              official=True, owner=None,
@@ -2407,6 +2425,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(IComponentSet).ensure(name)
+
+    def makeComponentSelection(self, distroseries=None, component=None):
+        """Make a new `ComponentSelection`.
+
+        :param distroseries: Optional `DistroSeries`.  If none is given,
+            one will be created.
+        :param component: Optional `Component` or a component name.  If
+            none is given, one will be created.
+        """
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+
+        if not IComponent.providedBy(component):
+            component = self.makeComponent(component)
+
+        return ComponentSelection(
+            distroseries=distroseries, component=component)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,

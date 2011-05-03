@@ -49,6 +49,7 @@ from lp.bugs.model.bugnotification import (
     BugNotificationFilter,
 #    BugNotificationRecipient,
     )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.scripts.bugnotification import (
     construct_email_notifications,
@@ -904,7 +905,7 @@ class TestEmailNotificationsAttachments(
 
 
 class TestEmailNotificationsWithFilters(TestCaseWithFactory):
-    """Ensure outgoing mails have corresponding mail headers.
+    """Ensure outgoing mails have corresponding headers, accounting for mutes.
 
     Every filter that could have potentially caused a notification to
     go off has a `BugNotificationFilter` record linking a `BugNotification`
@@ -912,6 +913,11 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
 
     From those records, we include all BugSubscriptionFilter.description
     in X-Subscription-Filter-Description headers in each email.
+
+    Every team filter that caused notifications might be muted for a
+    given recipient.  These can cause headers to be omitted, and if all
+    filters that caused the notifications are omitted then the
+    notification itself will not be sent.
     """
 
     layer = LaunchpadZopelessLayer
@@ -1070,3 +1076,24 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         self.assertContentEqual(
             [u"Matching subscriptions: First filter, Second filter"],
             self.getSubscriptionEmailBody())
+
+    def test_muted(self):
+        bug_filter = self.addFilter(u"Test filter")
+        BugSubscriptionFilterMute(
+            person=self.subscription.subscriber,
+            filter=self.notification.bug_filters.one())
+        filtered, omitted, messages = construct_email_notifications(
+            [self.notification])
+        self.assertEqual(list(messages), [])
+
+    def test_header_multiple_one_muted(self):
+        # Multiple filters with a description make all emails
+        # include all filter descriptions in the header.
+        bug_filter = self.addFilter(u"First filter")
+        bug_filter = self.addFilter(u"Second filter")
+        BugSubscriptionFilterMute(
+            person=self.subscription.subscriber,
+            filter=self.notification.bug_filters[0])
+
+        self.assertContentEqual([u"Second filter"],
+                                self.getSubscriptionEmailHeaders())

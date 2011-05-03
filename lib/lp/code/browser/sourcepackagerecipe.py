@@ -106,7 +106,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -197,6 +196,8 @@ class SourcePackageRecipeContextMenu(ContextMenu):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             show_request_build = has_upload
 
+        show_request_build= (show_request_build and
+            check_permission('launchpad.Edit', recipe))
         return Link(
                 '+request-daily-build', 'Build now',
                 enabled=show_request_build)

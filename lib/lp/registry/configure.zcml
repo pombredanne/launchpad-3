@@ -178,6 +178,22 @@
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
+    <!-- DistroSeriesParent -->
+    <securedutility
+        class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesparent.DistroSeriesParent">
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
@@ -977,7 +993,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
+            interface="lp.app.interfaces.security.IAuthorization"/>
         <require
             permission="launchpad.Edit"
             set_attributes="name code_name dateexpected summary active
