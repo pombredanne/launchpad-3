@@ -196,7 +196,6 @@ class MailHeaderScope(BaseScope):
         match = self.compiled_pattern.match(scope_name)
         if match is None:
             return False  # Shouldn't happen?
-        # import pdb;pdb.set_trace()
         header_name = match.group('header_name')
         regex_str = match.group('value_regex')
         regex = re.compile(regex_str)
@@ -211,7 +210,14 @@ class MailHeaderScope(BaseScope):
 # we can for example show all of them in an admin page.  Any new scope will
 # need a scope handler and that scope handler has to be added to this list.
 # See BaseScope for hints as to what a scope handler should look like.
-HANDLERS = set([DefaultScope, PageScope, TeamScope, ServerScope, ScriptScope])
+HANDLERS = set([
+    DefaultScope, 
+    MailHeaderScope,
+    PageScope,
+    ScriptScope,
+    ServerScope,
+    TeamScope,
+    ])
 
 
 class MultiScopeHandler():
