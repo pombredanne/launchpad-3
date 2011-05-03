@@ -107,7 +107,7 @@ from lp.translations.browser.distroseries import (
     )
 
 # DistroSeries statuses that benefit from mass package upgrade support.
-UPGRADEABLE_SERIESSTATUSES = [
+UPGRADABLE_SERIES_STATUSES = [
     SeriesStatus.FUTURE,
     SeriesStatus.EXPERIMENTAL,
     SeriesStatus.DEVELOPMENT,
@@ -962,7 +962,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def canUpgrade(self, action):
         """Should the form offer a packages upgrade?"""
-        if self.context.status not in UPGRADEABLE_SERIESSTATUSES:
+        if self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
             return False
 # XXX: Check privilege.  We don't know who should be allowed to do this
