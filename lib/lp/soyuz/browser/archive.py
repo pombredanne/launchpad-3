@@ -1239,7 +1239,7 @@ class PackageCopyingMixin:
             automatically escaped for inclusion in the output.
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
-            requestor's permissions to copy should be checked.
+            requester's permissions to copy should be checked.
 
         :return: True if the copying worked, False otherwise.
         """
@@ -1467,7 +1467,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
         # setting up on-page notifications.
         if self.do_copy(
             'selected_sources', selected_sources, destination_archive,
-            destination_series, destination_pocket, include_binaries):
+            destination_series, destination_pocket, include_binaries,
+            person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the result.
             self.setNextURL()

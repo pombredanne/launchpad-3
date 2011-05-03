@@ -269,7 +269,7 @@ binaries across to no-priv's public ppa.
     ...     no_priv.archive, series=ubuntu['warty'],
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     include_binaries=True, allow_delayed_copies=False,
-    ...     check_permissions=False)
+    ...     person=no_priv)
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(dsc_file).restricted = False

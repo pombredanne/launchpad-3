@@ -526,7 +526,7 @@ class CopyCheckerHarness:
         # checkCopy, raise an error (cannot check permissions for a
         # 'None' person).
         self.assertCannotCopySourceOnly(
-            'Cannot check copy permissions when no person is passed.',
+            'Cannot check copy permissions (no requester).',
             person=None, check_permissions=True)
 
     def test_cannot_copy_binaries_from_FTBFS(self):

@@ -391,21 +391,21 @@ class CopyChecker:
         :param source: copy candidate, `ISourcePackagePublishingHistory`.
         :param series: destination `IDistroSeries`.
         :param pocket: destination `PackagePublishingPocket`.
-        :param person: requestor `IPerson`.
+        :param person: requester `IPerson`.
         :param check_permissions: boolean indicating whether or not the
-            requestor's permissions to copy should be checked.
+            requester's permissions to copy should be checked.
 
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        # If there is a requestor, check that he has upload permission
+        # If there is a requester, check that he has upload permission
         # into the destination (archive, component, pocket). This check
         # is done here rather than in the security adapter because it
         # requires more info than is available in the security adapter.
         if check_permissions:
             if person is None:
-                raise CannotCopy('Cannot check copy permissions when no '
-                                 'person is passed.')
+                raise CannotCopy(
+                    'Cannot check copy permissions (no requester).')
             else:
                 sourcepackagerelease = source.sourcepackagerelease
                 sourcepackagename = sourcepackagerelease.sourcepackagename
@@ -418,7 +418,7 @@ class CopyChecker:
                 reason = self.archive.checkUpload(
                     person, series, sourcepackagename, destination_component,
                     pocket, strict_component=strict_component)
-                if reason:
+                if reason is not None:
                     raise CannotCopy(reason)
 
         if series not in self.archive.distribution.series:
@@ -511,9 +511,9 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param allow_delayed_copies: boolean indicating whether or not private
         sources can be copied to public archives using delayed_copies.
         Defaults to True, only set as False in the UnembargoPackage context.
-    :param person: the requestor `IPerson`.
+    :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
-        requestor's permissions to copy should be checked.
+        requester's permissions to copy should be checked.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.

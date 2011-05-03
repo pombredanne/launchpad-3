@@ -805,6 +805,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         well as directly in the template.
         """
         return (self.user is not None and
+                self.context.main_archive.hasAnyPermission(self.user) and
                 self.cached_differences.batch.total() > 0)
 
     @property
