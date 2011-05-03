@@ -127,7 +127,7 @@ class NotADerivedSeriesError(Exception):
 
 
 class MultipleParentsForDerivedSeriesError(Exception):
-    """A distro series difference must be have one parent series set.
+    """A distro series difference must have one parent series set.
 
     This is raised when a DistroSeriesDifference is created, and we can't
     determine the parent series to use, since there is more than one. The
