@@ -58,15 +58,18 @@ from lp.services.features.model import (
     getFeatureStore,
     )
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     PackagePublishingStatus,
     SourcePackageFormat,
     )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     celebrity_logged_in,
     feature_flags,
@@ -1027,12 +1030,28 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
         self.assertFalse(view.canPerformSync())
 
+    def test_canPerformSync_non_anon_no_perm_dest_archive(self):
+        # Logged-in users with no permission on the destination archive
+        # are not presented with options to perform syncs.
+        derived_series, _, _ = self._setUpDSD()
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+
+            self.assertFalse(view.canPerformSync())
+
     def test_canPerformSync_non_anon(self):
-        # Logged-in users are presented with options to perform syncs.
+        # Logged-in users with a permission on the destination archive
+        # are presented with options to perform syncs.
         # Note that a more fine-grained perm check is done on each
         # synced package.
         derived_series, _, _ = self._setUpDSD()
-        with person_logged_in(self.factory.makePerson()):
+        person = self.factory.makePerson()
+        ArchivePermission(
+            archive=derived_series.main_archive, person=person,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.UPLOAD)
+        with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
 

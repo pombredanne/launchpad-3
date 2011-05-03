@@ -795,7 +795,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return self.user is not None and self.cached_differences.batch.total() > 0
+        return (self.user is not None and
+                self.context.main_archive.hasAnyPermission(self.user) and
+                self.cached_differences.batch.total() > 0)
 
     @property
     def specified_name_filter(self):
