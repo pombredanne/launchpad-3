@@ -994,7 +994,7 @@ h1 .yui3-ieditor-errors {
     border-width: 1px 2px 2px 1px;
     color: black;
     margin: 1em auto 1em auto;
-    padding: 0 1em 1em 2em;
+    padding: 0.3em 1em 1.6em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -1020,6 +1020,13 @@ h1 .yui3-ieditor-errors {
 .error.message::after, .warning.message::after,
 .informational.message::after {
     content: '(Click to close)';
+    float: right;
+    display: block;
+    margin-top: -0.1em;
+}
+.error.message::after, .warning.message::after,
+.informational.message::after {
+    clear: both;
 }
 .informational {
     /* Informational messages are blue-to-grey, alerts have an info icon. */
