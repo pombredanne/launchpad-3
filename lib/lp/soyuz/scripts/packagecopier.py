@@ -404,8 +404,8 @@ class CopyChecker:
         # requires more info than is available in the security adapter.
         if check_permissions:
             if person is None:
-                raise CannotCopy('Cannot check copy permissions when no '
-                                 'person is passed.')
+                raise CannotCopy(
+                    'Cannot check copy permissions (no requestor).')
             else:
                 sourcepackagerelease = source.sourcepackagerelease
                 sourcepackagename = sourcepackagerelease.sourcepackagename
