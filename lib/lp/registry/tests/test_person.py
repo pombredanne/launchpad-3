@@ -36,7 +36,6 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
@@ -268,6 +267,18 @@ class TestPersonTeams(TestCaseWithFactory):
         expected_members = sorted([self.user, self.a_team.teamowner])
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
+
+    def test_administrated_teams(self):
+        # The property Person.administrated_teams is a cached copy of
+        # the result of Person.getAdministratedTeams().
+        expected = [self.b_team, self.c_team]
+        self.assertEqual(expected, list(self.user.getAdministratedTeams()))
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(expected, self.user.administrated_teams)
+            self.user.administrated_teams
+        # The second access of administrated_teams did not require an
+        # SQL query, hence the total number of SQL queries is 1.
+        self.assertEqual(1, len(recorder.queries))
 
 
 class TestPerson(TestCaseWithFactory):
