@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Bug Spam Tests</title>
+    <title>Qustion Spam Tests</title>
 
      <!-- YUI 3.0 Setup -->
     <script type="text/javascript"
@@ -21,11 +21,11 @@
 
     <!-- The module under test -->
     <script type="text/javascript"
-      src="../bug_spam.js"></script>
+      src="../question_spam.js"></script>
 
     <!-- The test suite -->
     <script type="text/javascript"
-      src="test_bug_spam.js"></script>
+      src="test_question_spam.js"></script>
 
     <!-- Pretty up the sample html -->
     <style type="text/css">
@@ -34,7 +34,23 @@
   </head>
   <body class="yui3-skin-sam">
     <!-- Example markup required by test suite -->
+    <div class="boardComment"> 
+      <div class="boardCommentDetails"> 
+        <a href="#" class="sprite person">TestyMcTest</a> 
+        said
+        <span title="">2 hours ago</span>:
+        <span style="float:right;"> #1</span> 
+      </div> 
 
+      <div class="boardCommentBody"><p>Foo bar baz.</p></div> 
+
+      <div class="boardCommentFooter"> 
+        <a id="mark-spam" class="js-action sprite edit" href="#"> 
+            Mark as spam
+        </a> 
+      
+      </div> 
+    </div> 
     <!-- The test output -->
     <div id="log"></div>
   </body>
