@@ -1,4 +1,3 @@
-# coding: utf-8
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -7,6 +6,7 @@
 __metaclass__ = type
 
 import os
+from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
@@ -29,19 +29,21 @@ class TestSearchQuestionsView(TestCaseWithFactory):
 
     def test_matching_faqs_url__handles_non_ascii(self):
         product = self.factory.makeProduct()
-        non_ascii = u"português"
+        # Avoid non-ascii unicode to no upset pocket-lint.
+        non_ascii_string = u'portugu\xeas'
         with person_logged_in(product.owner):
-            self.factory.makeFAQ(product, non_ascii)
+            self.factory.makeFAQ(product, non_ascii_string)
         form = {
-            'field.search_text': non_ascii,
+            'field.search_text': non_ascii_string,
             'field.status': 'OPEN',
             'field.actions.search': 'Search',
             }
         view = create_initialized_view(
             product, '+questions', form=form, method='GET')
 
+        encoded_string = quote(non_ascii_string.encode('utf-8'))
         # This must not raise UnicodeEncodeError.
-        url = view.matching_faqs_url
+        self.assertIn(encoded_string, view.matching_faqs_url)
 
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
@@ -101,21 +103,21 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
 
     def test_template_product_answers_usage_launchpad(self):
         product = self.factory.makeProduct()
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(product, 'question-listing.pt')
 
     def test_template_projectgroup_answers_usage_unknown(self):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.project = project_group
         self.assertViewTemplate(project_group, 'unknown-support.pt')
 
     def test_template_projectgroup_answers_usage_launchpad(self):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.project = project_group
             product.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(project_group, 'question-listing.pt')
@@ -126,7 +128,7 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
 
     def test_template_distribution_answers_usage_launchpad(self):
         distribution = self.factory.makeDistribution()
-        with person_logged_in(distribution.owner) as owner:
+        with person_logged_in(distribution.owner):
             distribution.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(distribution, 'question-listing.pt')
 
@@ -136,7 +138,7 @@ class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
 
     def test_template_DSP_answers_usage_launchpad(self):
         dsp = self.factory.makeDistributionSourcePackage()
-        with person_logged_in(dsp.distribution.owner) as owner:
+        with person_logged_in(dsp.distribution.owner):
             dsp.distribution.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(dsp, 'question-listing.pt')
 
