@@ -2,12 +2,20 @@
   <head>
     <title>Launchpad Question Spam Controls</title>
     <!-- YUI 3.0 Setup -->
-    <script type="text/javascript" src="../../../icing/yui/current/build/yui/yui.js"></script>
-    <script type="text/javascript" src="../../../icing/lazr/build/lazr.js"></script>
-    <link rel="stylesheet" href="../../../icing/yui/current/build/cssreset/reset.css"/>
-    <link rel="stylesheet" href="../../../icing/yui/current/build/cssfonts/fonts.css"/>
-    <link rel="stylesheet" href="../../../icing/yui/current/build/cssbase/base.css"/>
-    <link rel="stylesheet" href="../../test.css" />
+    <!-- YUI 3.0 Setup -->
+    <script type="text/javascript" src="../../../../canonical/launchpad/icing/yui/yui/yui.js"></script>
+    <script type="text/javascript"
+      src="../../../../canonical/launchpad/icing/lazr/build/lazr.js"></script>
+    <link rel="stylesheet"
+      href="../../../../canonical/launchpad/icing/yui/cssreset/reset.css"/>
+    <link rel="stylesheet"
+      href="../../../../canonical/launchpad/icing/yui/cssfonts/fonts.css"/>
+    <link rel="stylesheet"
+      href="../../../../canonical/launchpad/icing/yui/cssbase/base.css"/>
+    <link rel="stylesheet"
+      href="../../../../canonical/launchpad/javascript/test.css" />
+    <script type="text/javascript" src="../../../app/javascript/client.js"></script>
+    <script type="text/javascript" src="../../../app/javascript/lp.js"></script>
 
     <!-- The module under test -->
     <script type="text/javascript" src="../question_spam.js"></script>
@@ -18,6 +26,7 @@
   <body class="yui-skin-sam">
 
     <!-- The example markup required by the script to run -->
+    <div id="expected-id">
     <div class="boardComment"> 
       <div class="boardCommentDetails"> 
         <a href="#" class="sprite person">TestyMcTest</a> 
@@ -29,12 +38,13 @@
       <div class="boardCommentBody"><p>Foo bar baz.</p></div> 
 
       <div class="boardCommentFooter"> 
-        <a id="mark-spam-1" class="js-action sprite edit" href="#"> 
+        <a id="mark-spam" class="js-action sprite edit" href="#"> 
             Mark as spam
         </a> 
       
       </div> 
     </div> 
+    </div>
   
     <!-- The test output -->
     <div id="log"></div>
