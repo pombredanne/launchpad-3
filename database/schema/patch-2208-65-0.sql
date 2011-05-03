@@ -3,6 +3,18 @@
 
 SET client_min_messages=ERROR;
 
+-- Before we remove unwanted StructuralSubscription rows, we can tweak
+-- some foreign key constraints to make this removal easier.
+-- StructuralSubscription is referenced by BugSubscriptionFilter
+-- BugSubscriptionFilter is referenced too by BugNotificationFilter, but
+-- that relationship is already ON DELETE CASCADE.
+ALTER TABLE BugSubscriptionFilter
+    DROP CONSTRAINT bugsubscriptionfilter_structuralsubscription_fkey,
+    ADD CONSTRAINT bugsubscriptionfilter__structuralsubscription__fk
+        FOREIGN KEY (structuralsubscription)
+        REFERENCES StructuralSubscription ON DELETE CASCADE;
+
+
 -- WHAT ARE WE DOING? -----------------------------------------------------
 
 -- These three errors have been observed, and are corrected here.
