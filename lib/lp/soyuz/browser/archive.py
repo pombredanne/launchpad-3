@@ -1467,7 +1467,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
         # setting up on-page notifications.
         if self.do_copy(
             'selected_sources', selected_sources, destination_archive,
-            destination_series, destination_pocket, include_binaries):
+            destination_series, destination_pocket, include_binaries,
+            person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the result.
             self.setNextURL()

@@ -1434,15 +1434,17 @@ class Archive(SQLBase):
             reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
-        self._copySources(sources, to_pocket, to_series, include_binaries)
+        self._copySources(
+            sources, to_pocket, to_series, include_binaries,
+            person=person)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
@@ -1451,7 +1453,9 @@ class Archive(SQLBase):
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
 
-        self._copySources([source], to_pocket, to_series, include_binaries)
+        self._copySources(
+            [source], to_pocket, to_series, include_binaries,
+            person=person)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1477,7 +1481,7 @@ class Archive(SQLBase):
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
-                     include_binaries=False):
+                     include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
 
         It takes a list of SourcePackagePublishingHistory but the other args
@@ -1506,7 +1510,8 @@ class Archive(SQLBase):
             series = None
 
         # Perform the copy, may raise CannotCopy.
-        do_copy(sources, self, series, pocket, include_binaries)
+        do_copy(
+            sources, self, series, pocket, include_binaries, person=person)
 
     def getAuthToken(self, person):
         """See `IArchive`."""

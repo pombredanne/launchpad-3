@@ -1215,6 +1215,7 @@ class IArchiveView(IHasBuildRecords):
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
@@ -1230,7 +1231,7 @@ class IArchiveAppend(Interface):
     @export_write_operation()
     # Source_names is a string because exporting a SourcePackageName is
     # rather nonsensical as it only has id and name columns.
-    def syncSources(source_names, from_archive, to_pocket,
+    def syncSources(source_names, from_archive, person, to_pocket,
                     to_series=None, include_binaries=False):
         """Synchronise (copy) named sources into this archive from another.
 
@@ -1244,6 +1245,7 @@ class IArchiveAppend(Interface):
 
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
+        :param person: the `IPerson` who requests the sync.
         :param to_pocket: the target pocket (as a string).
         :param to_series: the target distroseries (as a string).
         :param include_binaries: optional boolean, controls whether or not
@@ -1256,6 +1258,7 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
         version=TextLine(title=_("Version")),
@@ -1273,7 +1276,7 @@ class IArchiveAppend(Interface):
     # SourcePackageRelease is not exported on the API yet.  When it is,
     # we should consider either changing this method or adding a new one
     # that takes that object instead.
-    def syncSource(source_name, version, from_archive, to_pocket,
+    def syncSource(source_name, version, from_archive, person, to_pocket,
                    to_series=None, include_binaries=False):
         """Synchronise (copy) a single named source into this archive.
 
@@ -1283,6 +1286,7 @@ class IArchiveAppend(Interface):
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
         :param from_archive: the source archive from which to copy.
+        :param person: the `IPerson` who requests the sync.
         :param to_pocket: the target pocket (as a string).
         :param to_series: the target distroseries (as a string).
         :param include_binaries: optional boolean, controls whether or not
