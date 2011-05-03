@@ -659,6 +659,10 @@ def main():
         default=None, metavar="TIMESTAMP",
         help="Ignore log entries after TIMESTAMP")
     parser.add_option(
+        "--no-partition", dest="partition",
+        action="store_false", default=True,
+        help="Do not produce partition report")
+    parser.add_option(
         "--no-categories", dest="categories",
         action="store_false", default=True,
         help="Do not produce categories report")
@@ -767,6 +771,19 @@ def main():
 
     def _report_filename(filename):
         return os.path.join(options.directory, filename)
+
+    # Partition report
+    if options.partition:
+        report_filename = _report_filename('partition.html')
+        log.info("Generating %s", report_filename)
+        partition_times = [
+            category_time
+            for category_time in category_times
+            if category_time[0].partition]
+        html_report(
+            open(report_filename, 'w'), partition_times, None, None,
+            histogram_resolution=options.resolution,
+            category_name='Partition')
 
     # Category only report.
     if options.categories:
@@ -979,7 +996,8 @@ def parse_extension_record(request, args):
 
 def html_report(
     outf, category_times, pageid_times, url_times,
-    ninetyninth_percentile_threshold=None, histogram_resolution=0.5):
+    ninetyninth_percentile_threshold=None, histogram_resolution=0.5,
+    category_name='Category'):
     """Write an html report to outf.
 
     :param outf: A file object to write the report to.
@@ -989,7 +1007,9 @@ def html_report(
     :param ninetyninth_percentile_threshold: Lower threshold for inclusion of
         pages in the pageid section; pages where 99 percent of the requests are
         served under this threshold will not be included.
-    :param histrogram_resolution: used as the histogram bar width
+    :param histogram_resolution: used as the histogram bar width
+    :param category_name: The name to use for category report. Defaults to
+        'Category'.
     """
 
     print >> outf, dedent('''\
@@ -1116,7 +1136,8 @@ def html_report(
     # Table of contents
     print >> outf, '<ol>'
     if category_times:
-        print >> outf, '<li><a href="#catrep">Category Report</a></li>'
+        print >> outf, '<li><a href="#catrep">%s Report</a></li>' % (
+            category_name)
     if pageid_times:
         print >> outf, '<li><a href="#pageidrep">Pageid Report</a></li>'
     if url_times:
@@ -1124,7 +1145,8 @@ def html_report(
     print >> outf, '</ol>'
 
     if category_times:
-        print >> outf, '<h2 id="catrep">Category Report</h2>'
+        print >> outf, '<h2 id="catrep">%s Report</h2>' % (
+            category_name)
         print >> outf, table_header
         for category, times in category_times:
             html_title = '%s<br/><span class="regexp">%s</span>' % (
