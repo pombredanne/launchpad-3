@@ -1017,14 +1017,14 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         self.assertEqual(ds_diff, result)
 
-    def test_getSimpleUpdates_finds_simple_update(self):
+    def test_getSimpleUpgrades_finds_simple_update(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         dsd = self.makeVersionDifference(changed_parent=True)
         self.assertEqual(dsd.base_version, dsd.source_version)
         self.assertContentEqual(
-            [dsd], dsd_source.getSimpleUpdates(dsd.derived_series))
+            [dsd], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
-    def test_getSimpleUpdates_ignores_hidden_differences(self):
+    def test_getSimpleUpgrades_ignores_hidden_differences(self):
         invisible_statuses = [
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
@@ -1035,42 +1035,42 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         for status in invisible_statuses:
             self.makeVersionDifference(
                 derived_series=series, changed_parent=True, status=status)
-        self.assertContentEqual([], dsd_source.getSimpleUpdates(series))
+        self.assertContentEqual([], dsd_source.getSimpleUpgrades(series))
 
-    def test_getSimpleUpdates_ignores_other_distroseries(self):
+    def test_getSimpleUpgrades_ignores_other_distroseries(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         self.makeVersionDifference(changed_parent=True)
         self.assertContentEqual(
-            [], dsd_source.getSimpleUpdates(self.factory.makeDistroSeries()))
+            [], dsd_source.getSimpleUpgrades(self.factory.makeDistroSeries()))
 
-    def test_getSimpleUpdates_ignores_packages_changed_in_child(self):
+    def test_getSimpleUpgrades_ignores_packages_changed_in_child(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         dsd = self.makeVersionDifference(
             changed_parent=True, changed_child=True)
         self.assertContentEqual(
-            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+            [], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
-    def test_getSimpleUpdates_ignores_packages_not_updated_in_parent(self):
+    def test_getSimpleUpgrades_ignores_packages_not_updated_in_parent(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         dsd = self.makeVersionDifference(changed_parent=False)
         self.assertContentEqual(
-            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+            [], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
-    def test_getSimpleUpdates_ignores_packages_unique_to_child(self):
+    def test_getSimpleUpgrades_ignores_packages_unique_to_child(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         dsd = self.factory.makeDistroSeriesDifference(
             difference_type=diff_type)
         self.assertContentEqual(
-            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+            [], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
-    def test_getSimpleUpdates_ignores_packages_missing_from_child(self):
+    def test_getSimpleUpgrades_ignores_packages_missing_from_child(self):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         dsd = self.factory.makeDistroSeriesDifference(
             difference_type=diff_type)
         self.assertContentEqual(
-            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+            [], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
 
 class TestMostRecentComments(TestCaseWithFactory):
