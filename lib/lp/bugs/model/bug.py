@@ -2443,20 +2443,19 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner)
+                bug=bug, product=params.product, owner=params.owner,
+                status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
             getUtility(IBugTaskSet).createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
-                owner=params.owner)
+                owner=params.owner, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:
             bug_task.transitionToAssignee(params.assignee)
-        if params.status:
-            bug_task.transitionToStatus(params.status, params.owner)
         if params.importance:
             bug_task.transitionToImportance(params.importance, params.owner)
         if params.milestone:
