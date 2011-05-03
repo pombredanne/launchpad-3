@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for the DistroSeriesDifference class."""
@@ -903,6 +903,36 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         return self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
 
+    def makeVersionDifference(self, derived_series=None, changed_parent=False,
+                              changed_child=False, status=None):
+        """Create a `DistroSeriesDifference` between package versions.
+
+        The differing package will exist in both the parent series and in the
+        child.
+
+        :param derived_series: Optional `DistroSeries` that the difference is
+            for.  If not given, one will be created.
+        :param changed_parent: Whether the difference should show a change in
+            the parent's version of the package.
+        :param changed_child: Whether the difference should show a change in
+            the child's version of the package.
+        :param status: Optional status for the `DistroSeriesDifference`.  If
+            not given, defaults to `NEEDS_ATTENTION`.
+        """
+        if status is None:
+            status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        base_version = "1.%d" % self.factory.getUniqueInteger()
+        versions = dict(
+            (key, base_version)
+            for key in ['base', 'parent', 'derived'])
+        if changed_parent:
+            versions['parent'] += "-%s" % self.factory.getUniqueString()
+        if changed_child:
+            versions['derived'] += "-%s" % self.factory.getUniqueString()
+        return self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, versions=versions, status=status,
+            set_base_version=True)
+
     def test_getForDistroSeries_default(self):
         # By default all differences needing attention for the given
         # series are returned.
@@ -986,6 +1016,61 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             ds_diff.derived_series, 'fooname')
 
         self.assertEqual(ds_diff, result)
+
+    def test_getSimpleUpdates_finds_simple_update(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        dsd = self.makeVersionDifference(changed_parent=True)
+        self.assertEqual(dsd.base_version, dsd.source_version)
+        self.assertContentEqual(
+            [dsd], dsd_source.getSimpleUpdates(dsd.derived_series))
+
+    def test_getSimpleUpdates_ignores_hidden_differences(self):
+        invisible_statuses = [
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
+            DistroSeriesDifferenceStatus.RESOLVED,
+            ]
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        series = self.makeDerivedSeries()
+        for status in invisible_statuses:
+            self.makeVersionDifference(
+                derived_series=series, changed_parent=True, status=status)
+        self.assertContentEqual([], dsd_source.getSimpleUpdates(series))
+
+    def test_getSimpleUpdates_ignores_other_distroseries(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.makeVersionDifference(changed_parent=True)
+        self.assertContentEqual(
+            [], dsd_source.getSimpleUpdates(self.factory.makeDistroSeries()))
+
+    def test_getSimpleUpdates_ignores_packages_changed_in_child(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        dsd = self.makeVersionDifference(
+            changed_parent=True, changed_child=True)
+        self.assertContentEqual(
+            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+
+    def test_getSimpleUpdates_ignores_packages_not_updated_in_parent(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        dsd = self.makeVersionDifference(changed_parent=False)
+        self.assertContentEqual(
+            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+
+    def test_getSimpleUpdates_ignores_packages_unique_to_child(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=diff_type)
+        self.assertContentEqual(
+            [], dsd_source.getSimpleUpdates(dsd.derived_series))
+
+    def test_getSimpleUpdates_ignores_packages_missing_from_child(self):
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=diff_type)
+        self.assertContentEqual(
+            [], dsd_source.getSimpleUpdates(dsd.derived_series))
 
 
 class TestMostRecentComments(TestCaseWithFactory):

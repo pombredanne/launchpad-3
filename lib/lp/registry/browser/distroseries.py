@@ -12,7 +12,6 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesInitializeView',
-    'DistroSeriesLocalDifferences',
     'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
@@ -101,10 +100,19 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
     )
+
+
+# DistroSeries statuses that benefit from mass package upgrade support.
+UPGRADEABLE_SERIESSTATUSES = [
+    SeriesStatus.FUTURE,
+    SeriesStatus.EXPERIMENTAL,
+    SeriesStatus.DEVELOPMENT,
+    ]
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -924,6 +932,47 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             condition='canPerformSync')
     def sync_sources(self, action, data):
         self._sync_sources(action, data)
+
+    def getUpgrades(self):
+        """Find straightforward package upgrades.
+
+        These are updates for packages that this distroseries shares
+        with a parent series, for which there have been updates in the
+        parent, and which do not have any changes in this series that
+        might complicate a sync.
+
+        :return: A result set of `DistroSeriesDifference`s.
+        """
+        return getUtility(IDistroSeriesDifferenceSource).getSimpleUpgrades(
+            self.context)
+
+    @action(_("Upgrade Packages"), name="upgrade",
+            condition='canUpgrade')
+    def upgrade(self, action, data):
+        """Request synchronization of straightforward package upgrades."""
+        self.requestUpgrades()
+
+    def requestUpgrades(self):
+        """Request sync of packages that can be easily upgraded."""
+        job_source = getUtility(IPackageCopyJobSource)
+# XXX: Create jobs.
+        self.request.response.addInfoNotification("""
+            Upgrades of %s packages have been requested.
+            Please give Launchpad some time to complete these.
+            """ % self.context.displayname)
+
+    def canUpgrade(self):
+        """Should the form offer a packages upgrade?"""
+        if self.context.status not in UPGRADEABLE_SERIESSTATUSES:
+            # A feature freeze precludes blanket updates.
+            return False
+# XXX: Check privilege.  We don't know who should be allowed to do this
+# yet.
+        elif self.getUpgrades().is_empty():
+            # There are no simple updates to perform.
+            return False
+        else:
+            return True
 
 
 class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,

@@ -47,6 +47,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -57,6 +58,7 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
+from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     SourcePackageFormat,
@@ -173,11 +175,11 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            html = view()
+            html_text = view()
 
         self.assertEqual(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
-        self.assertThat(html, Not(portlet_header))
+        self.assertThat(html_text, Not(portlet_header))
 
     def test_differences_portlet_all_differences(self):
         # The difference portlet shows the differences with the parent
@@ -209,9 +211,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_text = view()
 
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_text, portlet_display)
 
     def test_differences_portlet_no_differences(self):
         # The difference portlet displays 'No differences' if there is no
@@ -235,9 +237,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_text = view()
 
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_text, portlet_display)
 
     def test_differences_portlet_initialising(self):
         # The difference portlet displays 'The series is initialising.' if
@@ -263,10 +265,10 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_text = view()
 
         self.assertTrue(derived_series.is_initialising)
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_text, portlet_display)
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -401,7 +403,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
 
-    def _test_packagesets(self, html, packageset_text,
+    def _test_packagesets(self, html_text, packageset_text,
                           packageset_class, msg_text):
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -409,7 +411,7 @@ class DistroSeriesDifferenceMixin:
                 attrs={'class': packageset_class},
                 text=packageset_text))
 
-        self.assertThat(html, parent_packagesets)
+        self.assertThat(html_text, parent_packagesets)
 
 
 class TestDistroSeriesLocalDifferences(
@@ -471,11 +473,12 @@ class TestDistroSeriesLocalDifferences(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_text = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_text, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -493,12 +496,13 @@ class TestDistroSeriesLocalDifferences(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_text = view()
 
         packageset_text = re.compile(
             '\s*' + ', '.join(sorted(unsorted_names)))
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_text, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
     def test_queries(self):
         # With no DistroSeriesDifferences the query count should be low and
@@ -616,6 +620,28 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def makePackageUpgrade(self):
+        """Create a `DistroSeriesDifference` for a package upgrade."""
+        base_version = '1.%d' % self.factory.getUniqueInteger()
+        versions = {
+            'base': base_version,
+            'parent': base_version + '-' + self.factory.getUniqueString(),
+            'derived': base_version,
+        }
+        return self.factory.makeDistroSeriesDifference(
+            versions=versions, set_base_version=True)
+
+    def makeDerivedSeries(self):
+        """Create a derived `DistroSeries`."""
+        return self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+    def makeView(self, distroseries=None):
+        """Create a +localpackagediffs view for `distroseries`."""
+        if distroseries is None:
+            distroseries = self.makeDerivedSeries()
+        return create_initialized_view(distroseries, '+localpackagediffs')
+
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
         # view simply redirects to the derived series.
@@ -625,8 +651,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
         self.assertIs(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         response = view.request.response
         self.assertEqual(302, response.getStatus())
@@ -639,8 +664,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertEqual(
             "Source package differences between 'Derilucid' and "
@@ -659,8 +683,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.RESOLVED)
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [current_difference], view.cached_differences.batch)
@@ -677,8 +700,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [different_versions_diff], view.cached_differences.batch)
@@ -690,8 +712,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
                 name='lucid'))
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         soup = BeautifulSoup(view())
         help_links = soup.findAll(
@@ -709,8 +730,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         difference.addComment(difference.owner, "Latest comment")
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         # Find all the rows within the body of the table
         # listing the differences.
@@ -731,8 +751,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.findAll('tr')[0]
@@ -770,8 +789,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             version=new_version)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -814,8 +832,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         flush_database_caches()
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -831,6 +848,89 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # difference.
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())
+
+    def test_getUpgrades_shows_updates_in_parent(self):
+        # The view's getUpgrades methods lists packages that can be
+        # trivially upgraded: changed in the parent, not changed in the
+        # derived series, but present in both.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        self.assertContentEqual([dsd], view.getUpgrades())
+
+    def test_upgrades_are_offered_if_appropriate(self):
+        # canUpgrade is the condition for the form showing an "Upgrade
+        # Packages" button.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        self.assertTrue(view.canUpgrade())
+
+    def test_upgrades_offered_only_if_available(self):
+        # If there are no upgrades, the "Upgrade Packages" button won't
+        # be shown.
+        view = self.makeView()
+        self.assertFalse(view.canUpgrade())
+
+    def test_upgrades_not_offered_after_feature_freeze(self):
+        # There won't be an "Upgrade Packages" button once feature
+        # freeze has occurred.  Mass updates would not make sense after
+        # that point.
+        upgradeable = {}
+        for status in SeriesStatus.items:
+            dsd = self.makePackageUpgrade()
+            dsd.derived_series.status = status
+            view = self.makeView(dsd.derived_series)
+            upgradeable[status] = view.canUpgrade()
+        expected = {
+            SeriesStatus.FUTURE: True,
+            SeriesStatus.EXPERIMENTAL: True,
+            SeriesStatus.DEVELOPMENT: True,
+            SeriesStatus.FROZEN: False,
+            SeriesStatus.CURRENT: False,
+            SeriesStatus.SUPPORTED: False,
+            SeriesStatus.OBSOLETE: False,
+        }
+        self.assertEqual(expected, upgradeable)
+
+    def test_upgrade_creates_sync_jobs(self):
+        # requestUpgrades generates PackageCopyJobs for the upgrades
+        # that need doing.
+        dsd = self.makePackageUpgrade()
+        series = dsd.derived_series
+        view = self.makeView(series)
+        view.requestUpgrades()
+        job_source = getUtility(IPackageCopyJobSource)
+        jobs = list(
+            job_source.getActiveJobs(series.distribution.main_archive))
+        self.assertEquals(1, len(jobs))
+        job = jobs[0]
+        self.assertEquals(series, job.distroseries)
+        spphs = job.source_packages
+        self.assertEquals(1, len(spphs))
+        self.assertEqual(dsd.source_package_name, spphs[0].sourcepackagename)
+
+    def test_upgrade_gives_feedback(self):
+        # requestUpgrades doesn't instantly perform package upgrades,
+        # but it shows the user a notice that the upgrades have been
+        # requested.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        view.requestUpgrades()
+# XXX: Test.
+        self.assertTrue(False)
+
+    def test_upgrade_is_privileged(self):
+# XXX: Privileged to whom?  For Ubuntu this would be the ubuntu-archive
+# team, ideally, but we don't know of any formal role that that team has
+# w.r.t. Ubuntu in Launchpad.
+# XXX: Test.
+        self.assertTrue(False)
+
+    def test_requestUpgrade_is_efficient(self):
+        # A single web request may need to schedule large numbers of
+        # package upgrades.  It must do so without issuing large numbers
+        # of database queries.
+# XXX: Test.
+        self.assertTrue(False)
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
@@ -1228,11 +1328,12 @@ class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
                 self.ds_diff.derived_series,
                 '+missingpackages',
                 principal=self.simple_user)
-            html = view()
+            html_text = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_text, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
 
 class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
@@ -1314,8 +1415,8 @@ class DistroSeriesUniquePackagesPageTestCase(DistroSeriesDifferenceMixin,
                 self.ds_diff.derived_series,
                 '+uniquepackages',
                 principal=self.simple_user)
-            html = view()
+            html_text = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'packagesets', 'Packagesets')
+            html_text, packageset_text, 'packagesets', 'Packagesets')

@@ -303,3 +303,12 @@ class IDistroSeriesDifferenceSource(Interface):
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
         """
+
+    def getSimpleUpgrades(distro_series):
+        """Find pending upgrades that can be performed mindlessly.
+
+        These are `DistroSeriesDifferences` where the parent has been
+        updated and the child still has the old version, unchanged.
+
+        Blacklisted items are excluded.
+        """

@@ -277,29 +277,26 @@ class DistroSeriesDifference(StormBase):
             And(*conditions)).order_by(SourcePackageName.name)
 
         def eager_load(dsds):
+            active_statuses = (
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING,
+                )
             source_pubs = dict(
                 most_recent_publications(
-                    dsds, in_parent=False, statuses=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING)))
+                    dsds, statuses=active_statuses,
+                    in_parent=False, match_version=False))
             parent_source_pubs = dict(
                 most_recent_publications(
-                    dsds, in_parent=True, statuses=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING)))
-
+                    dsds, statuses=active_statuses,
+                    in_parent=True, match_version=False))
             source_pubs_for_release = dict(
                 most_recent_publications(
-                    dsds, in_parent=False, statuses=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING),
-                    match_version=True))
+                    dsds, statuses=active_statuses,
+                    in_parent=False, match_version=True))
             parent_source_pubs_for_release = dict(
                 most_recent_publications(
-                    dsds, in_parent=True, statuses=(
-                        PackagePublishingStatus.PUBLISHED,
-                        PackagePublishingStatus.PENDING),
-                    match_version=True))
+                    dsds, statuses=active_statuses,
+                    in_parent=True, match_version=True))
 
             latest_comment_by_dsd_id = dict(
                 (comment.distro_series_difference_id, comment)
@@ -375,6 +372,23 @@ class DistroSeriesDifference(StormBase):
             DistroSeriesDifference.source_package_name == (
                 SourcePackageName.id),
             SourcePackageName.name == source_package_name).one()
+
+    @staticmethod
+    def getSimpleUpgrades(distro_series):
+        """See `IDistroSeriesDifferenceSource`."""
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            SourcePackageName.id ==
+                DistroSeriesDifference.source_package_name_id,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.difference_type ==
+                DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            DistroSeriesDifference.status ==
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifference.parent_source_version !=
+                DistroSeriesDifference.base_version,
+            DistroSeriesDifference.source_version ==
+                DistroSeriesDifference.base_version)
 
     @cachedproperty
     def source_pub(self):
