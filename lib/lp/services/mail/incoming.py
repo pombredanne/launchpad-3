@@ -55,6 +55,11 @@ from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 
+from lp.services.features.flags import FeatureController
+from lp.services.features.rulesource import StormFeatureRuleSource
+from lp.services.features.scopes import ScopesForMail
+
+
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a '\n', and all '\n' that are not preceded by a '\r'.
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
@@ -313,6 +318,12 @@ def report_oops(file_alias_url=None, error_msg=None):
     return request.oopsid
 
 
+def mail_feature_controller(mail):
+    return FeatureController(
+        ScopesForMail(mail),
+        StormFeatureRuleSource())
+
+
 def handleMail(trans=transaction,
                signature_timestamp_checker=None):
 
@@ -347,10 +358,16 @@ def handleMail(trans=transaction,
                 continue
             try:
                 trans.begin()
-                handle_one_mail(log, mail, file_alias, file_alias_url,
-                    signature_timestamp_checker)
-                trans.commit()
-                mailbox.delete(mail_id)
+                controller = mail_feature_controller(mail)
+                with controller:
+                    handle_one_mail(log, mail, file_alias, file_alias_url,
+                        signature_timestamp_checker)
+                    trans.commit()
+                    mailbox.delete(mail_id)
+                    log.debug(
+                        "usedFlags=%r, usedScopes=%r" % (
+                        controller.usedFlags(),
+                        controller.usedScopes()))
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
