@@ -373,6 +373,23 @@ class DistroSeriesDifference(StormBase):
                 SourcePackageName.id),
             SourcePackageName.name == source_package_name).one()
 
+    @staticmethod
+    def getSimpleUpgrades(distro_series):
+        """See `IDistroSeriesDifferenceSource`."""
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            SourcePackageName.id ==
+                DistroSeriesDifference.source_package_name_id,
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.difference_type ==
+                DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            DistroSeriesDifference.status ==
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifference.parent_source_version !=
+                DistroSeriesDifference.base_version,
+            DistroSeriesDifference.source_version ==
+                DistroSeriesDifference.base_version)
+
     @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
