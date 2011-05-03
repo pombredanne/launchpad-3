@@ -25,8 +25,8 @@ from storm.expr import (
     Desc,
     Or,
     Select,
-    Sum,
     SQL,
+    Sum,
     )
 from storm.locals import (
     Count,
@@ -999,6 +999,19 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
+
+    def hasAnyPermission(self, person):
+        """See `IArchive`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
+
+        any_perm_on_archive = Store.of(self).find(
+            TeamParticipation,
+            ArchivePermission.archive == self.id,
+            TeamParticipation.person == person.id,
+            TeamParticipation.teamID == ArchivePermission.personID,
+            )
+        return not any_perm_on_archive.is_empty()
 
     def getBuildCounters(self, include_needsbuild=True):
         """See `IArchiveSet`."""

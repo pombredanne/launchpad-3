@@ -1176,10 +1176,20 @@ class IArchiveView(IHasBuildRecords):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getComponentsForQueueAdmin(person):
-        """Return `IArchivePermission` for the person's queue admin components
+        """Return `IArchivePermission` for the person's queue admin
+        components.
 
-        :param person: An `IPerson`
+        :param person: An `IPerson`.
         :return: A list of `IArchivePermission` records.
+        """
+
+    def hasAnyPermission(person):
+        """Whether or not this person has any permission at all on this
+        archive.
+
+        :param person: The `IPerson` for whom the check is performed.
+        :return: A boolean indicating if the person has any permission on this
+            archive at all.
         """
 
     def getPackageDownloadCount(bpr, day, country):
