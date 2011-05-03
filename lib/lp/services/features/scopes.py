@@ -187,16 +187,18 @@ class MailHeaderScope(BaseScope):
     "\n\t".
     """
 
-    pattern = r'mail_header:'
+    pattern = r'mail_header:(?P<header_name>[^:]*):(?P<value_regex>.*)'
 
     def __init__(self, email_message):
         self.email_message = email_message
 
     def lookup(self, scope_name):
-        try:
-            scope_name, header_name, regex_str = scope_name.split(':', 2)
-        except ValueError:
-            return False
+        match = self.compiled_pattern.match(scope_name)
+        if match is None:
+            return False  # Shouldn't happen?
+        # import pdb;pdb.set_trace()
+        header_name = match.group('header_name')
+        regex_str = match.group('value_regex')
         regex = re.compile(regex_str)
         for header_value in self.email_message.get_all(header_name, []):
             if regex.search(header_value):
