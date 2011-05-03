@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -8,15 +9,37 @@ __metaclass__ = type
 import os
 
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
-from lp.testing import login_person, person_logged_in, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
+
+
+class TestSearchQuestionsView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_matching_faqs_url__handles_non_ascii(self):
+        product = self.factory.makeProduct()
+        non_ascii = u"português"
+        with person_logged_in(product.owner):
+            self.factory.makeFAQ(product, non_ascii)
+            form = {
+                'field.search_text': non_ascii,
+                'field.status': 'OPEN',
+                'field.actions.search': 'Search',
+                }
+            view = create_initialized_view(
+                product, '+questions', form=form, method='GET')
+        print view.matching_faqs_url
 
 
 class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
