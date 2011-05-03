@@ -15,6 +15,7 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -157,10 +158,6 @@ class GenerateContentsFiles(LaunchpadScript):
         query_distro.runAction(presenter=receiver)
         return receiver.argument
 
-    def getPocketSuffixes(self):
-        """Query the distribution's pocket suffixes."""
-        return self.queryDistro("pocket_suffixes").split()
-
     def getSuites(self):
         """Query the distribution's suites."""
         return self.queryDistro("supported").split()
@@ -168,7 +165,7 @@ class GenerateContentsFiles(LaunchpadScript):
     def getPockets(self):
         """Return suites that are actually supported in this distribution."""
         pockets = []
-        pocket_suffixes = self.getPocketSuffixes()
+        pocket_suffixes = pocketsuffix.values()
         for suite in self.getSuites():
             for pocket_suffix in pocket_suffixes:
                 pocket = suite + pocket_suffix
