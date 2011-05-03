@@ -10,8 +10,6 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import(
@@ -24,9 +22,7 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskAssignee,
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
-    UserCannotEditBugTaskStatus,
     )
-from lp.bugs.model.bug import Bug
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -46,7 +42,7 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         # Bug.isMuted() will return True if the passed to it has a
         # BugSubscription with a BugNotificationLevel of NOTHING.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(
+            self.bug.subscribe(
                 self.person, self.person, level=BugNotificationLevel.NOTHING)
             self.assertEqual(True, self.bug.isMuted(self.person))
 
@@ -54,7 +50,7 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         # Bug.isMuted() will return False if the user has a subscription
         # with BugNotificationLevel that's not NOTHING.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(
+            self.bug.subscribe(
                 self.person, self.person, level=BugNotificationLevel.METADATA)
             self.assertEqual(False, self.bug.isMuted(self.person))
 
@@ -138,7 +134,7 @@ class TestBugSnapshotting(TestCaseWithFactory):
         # optimizations that might trigger the problem again.
         with person_logged_in(self.person):
             with StormStatementRecorder() as recorder:
-                snapshot = Snapshot(self.bug, providing=providedBy(self.bug))
+                Snapshot(self.bug, providing=providedBy(self.bug))
             sql_statements = recorder.statements
         # This uses "self" as a marker to show that the attribute does not
         # exist.  We do not use hasattr because it eats exceptions.

@@ -570,8 +570,6 @@ class FileBugViewBase(LaunchpadFormView):
         self.added_bug = bug = context.createBug(params)
 
         # Apply any extra options given by a bug supervisor.
-        bugtask = self.added_bug.default_bugtask
-
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
             notifications.append(
