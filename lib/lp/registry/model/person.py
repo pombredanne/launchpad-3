@@ -3556,6 +3556,60 @@ class PersonSet:
             WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
+    def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
+        # Update StructuralSubscription entries that will not conflict.
+        # We separate this out from the parent query primarily to help
+        # keep within our line length constraints, though it might make
+        # things more readable otherwise as well.
+        exists_query = '''
+            SELECT StructuralSubscription.id
+            FROM StructuralSubscription
+            WHERE StructuralSubscription.subscriber=%(to_id)d AND (
+                StructuralSubscription.product=SSub.product
+                OR 
+                StructuralSubscription.project=SSub.project
+                OR 
+                StructuralSubscription.distroseries=SSub.distroseries
+                OR 
+                StructuralSubscription.milestone=SSub.milestone
+                OR 
+                StructuralSubscription.productseries=SSub.productseries
+                OR 
+                (StructuralSubscription.distribution=SSub.distribution
+                 AND StructuralSubscription.sourcepackagename IS NULL
+                 AND SSub.sourcepackagename IS NULL)
+                OR
+                (StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename
+                 AND StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename)
+                )
+            '''
+        cur.execute(('''
+            UPDATE StructuralSubscription
+            SET subscriber=%(to_id)d
+            WHERE subscriber=%(from_id)d AND id NOT IN (
+                SELECT SSub.id
+                FROM StructuralSubscription AS SSub
+                WHERE 
+                    SSub.subscriber=%(from_id)d
+                    AND EXISTS (''' + exists_query + ''')
+            )
+            ''') % vars())
+        # Delete the rest.  We have to explicitly delete the bug subscription
+        # filters first because there is not a cascade delete set up in the
+        # db.
+        cur.execute('''
+            DELETE FROM BugSubscriptionFilter
+            WHERE structuralsubscription IN (
+                SELECT id
+                FROM StructuralSubscription
+                WHERE subscriber=%(from_id)d)
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
+            ''' % vars())
+
     def _mergeSpecificationFeedback(self, cur, from_id, to_id):
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -3981,6 +4035,9 @@ class PersonSet:
 
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
+
+        self._mergeStructuralSubscriptions(cur, from_id, to_id)
+        skip.append(('structuralsubscription', 'subscriber'))
 
         self._mergeSpecificationFeedback(cur, from_id, to_id)
         skip.append(('specificationfeedback', 'reviewer'))
