@@ -146,6 +146,9 @@ class FeatureController():
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
 
+    An instance may be used as a context, in which case it will be installed
+    and uninstalled for the thread.
+
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """
 
@@ -165,6 +168,17 @@ class FeatureController():
         if rule_source is None:
             rule_source = StormFeatureRuleSource()
         self.rule_source = rule_source
+
+    def __enter__(self):
+        from lp.services.features import (
+            get_relevant_feature_controller,
+            install_feature_controller)
+        self._previous_controller = get_relevant_feature_controller()
+        install_feature_controller(self)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        from lp.services.features import install_feature_controller
+        install_feature_controller(self._previous_controller)
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
