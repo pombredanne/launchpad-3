@@ -961,7 +961,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             Please give Launchpad some time to complete these.
             """ % self.context.displayname)
 
-    def canUpgrade(self):
+    def canUpgrade(self, action):
         """Should the form offer a packages upgrade?"""
         if self.context.status not in UPGRADEABLE_SERIESSTATUSES:
             # A feature freeze precludes blanket updates.
