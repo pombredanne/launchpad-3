@@ -921,9 +921,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         if status is None:
             status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         base_version = "1.%d" % self.factory.getUniqueInteger()
-        versions = dict(
-            (key, base_version)
-            for key in ['base', 'parent', 'derived'])
+        versions = dict.fromkeys(('base', 'parent', 'derived'), base_version)
         if changed_parent:
             versions['parent'] += "-%s" % self.factory.getUniqueString()
         if changed_child:
