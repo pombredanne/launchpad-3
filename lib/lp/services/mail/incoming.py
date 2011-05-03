@@ -352,7 +352,7 @@ def handleMail(trans=transaction,
                     "An exception was raised inside the handler:\n%s"
                     % (file_alias_url,))
                 _send_email_oops(trans, log,
-                    signed_message_from_string(raw_mail), raw_mail,
+                    signed_message_from_string(raw_mail),
                     "Unhandled exception", file_alias_url)
                 mailbox.delete(mail_id)
     finally:
@@ -360,7 +360,7 @@ def handleMail(trans=transaction,
         mailbox.close()
 
 
-def _send_email_oops(trans, log, mail, raw_mail, error_msg, file_alias_url):
+def _send_email_oops(trans, log, mail, error_msg, file_alias_url):
     """Handle an error that generates an oops.
 
     It does the following:
