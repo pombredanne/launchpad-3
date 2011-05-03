@@ -313,23 +313,20 @@ class LaunchpadScript:
         if self.options.profile:
             profiler = Profile()
 
-        original_feature_controller = get_relevant_feature_controller()
-        install_feature_controller(make_script_feature_controller(self.name))
-        try:
-            if profiler:
-                profiler.runcall(self.main)
+        with make_script_feature_controller(self.name):
+            try:
+                if profiler:
+                    profiler.runcall(self.main)
+                else:
+                    self.main()
+            except LaunchpadScriptFailure, e:
+                self.logger.error(str(e))
+                sys.exit(e.exit_status)
+            except SilentLaunchpadScriptFailure, e:
+                sys.exit(e.exit_status)
             else:
-                self.main()
-        except LaunchpadScriptFailure, e:
-            self.logger.error(str(e))
-            sys.exit(e.exit_status)
-        except SilentLaunchpadScriptFailure, e:
-            sys.exit(e.exit_status)
-        else:
-            date_completed = datetime.datetime.now(UTC)
-            self.record_activity(date_started, date_completed)
-        finally:
-            install_feature_controller(original_feature_controller)
+                date_completed = datetime.datetime.now(UTC)
+                self.record_activity(date_started, date_completed)
         if profiler:
             profiler.dump_stats(self.options.profile)
 
