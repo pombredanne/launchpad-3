@@ -196,7 +196,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             version='1.4')
         new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
-            distroseries=ds_diff.derived_series.parent_series,
+            distroseries=ds_diff.parent_series,
             status=PackagePublishingStatus.PENDING,
             version='1.4')
 
@@ -784,16 +784,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_existing_packagediff_is_linked_when_dsd_created(self):
         # When a relevant packagediff already exists, it is linked to the
         # DSD when it is created.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+        dsp = self.factory.makeDistroSeriesParent()
         spn = self.factory.getOrMakeSourcePackageName(
             name=self.factory.getUniqueString())
         parent_spph = self.createPublication(
-            spn, ['1.2-1', '1.0-1'], derived_series.parent_series)
+            spn, ['1.2-1', '1.0-1'], dsp.parent_series)
         spph = self.createPublication(
-            spn, ['1.1-1', '1.0-1'], derived_series)
+            spn, ['1.1-1', '1.0-1'], dsp.derived_series)
         base_spph = self.createPublication(
-            spn, ['1.0-1'], derived_series,
+            spn, ['1.0-1'], dsp.derived_series,
             status=PackagePublishingStatus.SUPERSEDED)
         pd = self.factory.makePackageDiff(
             from_source=base_spph.sourcepackagerelease,
@@ -801,7 +800,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # factory.makeDistroSeriesDifference() will always create
         # publications to be helpful. We don't need the help in this case.
         dsd = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, spn)
+            dsp.derived_series, spn)
         self.assertEqual(pd, dsd.package_diff)
 
     def _initDiffWithMultiplePendingPublications(self, versions, parent):
