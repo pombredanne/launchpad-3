@@ -511,9 +511,13 @@ class TestDistroSeriesLocalDifferences(
         # fairly static. However, with some DistroSeriesDifferences the query
         # count will be higher, but it should remain the same no matter how
         # many differences there are.
-        login_person(self.simple_user)
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
+        ArchivePermission(
+            archive=derived_series.main_archive, person=self.simple_user,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+        login_person(self.simple_user)
 
         def add_differences(num):
             for index in xrange(num):
@@ -1043,17 +1047,23 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
             self.assertFalse(view.canPerformSync())
 
+    def _setUpPersonWithPerm(self, derived_series):
+        # Helper to create a person with an upload permission on the
+        # series' archive.
+        person = self.factory.makePerson()
+        ArchivePermission(
+            archive=derived_series.main_archive, person=person,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+        return person
+
     def test_canPerformSync_non_anon(self):
         # Logged-in users with a permission on the destination archive
         # are presented with options to perform syncs.
         # Note that a more fine-grained perm check is done on each
         # synced package.
         derived_series, _, _ = self._setUpDSD()
-        person = self.factory.makePerson()
-        ArchivePermission(
-            archive=derived_series.main_archive, person=person,
-            component=getUtility(IComponentSet)["main"],
-            permission=ArchivePermissionType.UPLOAD)
+        person = self._setUpPersonWithPerm(derived_series)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
@@ -1075,7 +1085,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
         derived_series, _, _ = self._setUpDSD()
-        view = self._syncAndGetView(derived_series, derived_series.owner, [])
+        person = self._setUpPersonWithPerm(derived_series)
+        view = self._syncAndGetView(derived_series, person, [])
 
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
@@ -1084,8 +1095,9 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
         derived_series, _, _ = self._setUpDSD('my-src-name')
+        person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
-            derived_series, derived_series.owner, ['some-other-name'])
+            derived_series, person, ['some-other-name'])
 
         self.assertEqual(2, len(view.errors))
         self.assertEqual(
@@ -1097,8 +1109,9 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # A user without upload rights on the destination archive cannot
         # sync packages.
         derived_series, _, _ = self._setUpDSD('my-src-name')
+        person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
-            derived_series, self.factory.makePerson(), ['my-src-name'])
+            derived_series, person, ['my-src-name'])
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
