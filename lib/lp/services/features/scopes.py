@@ -175,18 +175,33 @@ class MailHeaderScope(BaseScope):
     For example mail_header:received:bad-example\\.com will match any mail
     that passed through that host.
 
-    The header name is matched case-insensitively.
+    The header name is matched case-insensitively, and if the header is
+    repeated this scope looks for a match in any occurrence.
+    
+    The value is matched as a Python regex, without
+    anchoring to the start of the string, and with Python's default regexp
+    options.  For a case-insensitive match, you should include (?i) at the
+    start.  
+
+    Headers are not unfolded before matching, so wrapped lines may appear as 
+    "\n\t".
     """
 
     pattern = r'mail_header:'
 
-    def __init__(self, mail_object):
-        self.mail_object = mail_object
+    def __init__(self, email_message):
+        self.email_message = email_message
 
     def lookup(self, scope_name):
         try:
-            field, regex = scope_name.split(':', 1)
+            scope_name, header_name, regex_str = scope_name.split(':', 2)
         except ValueError:
+            return False
+        regex = re.compile(regex_str)
+        for header_value in self.email_message.get_all(header_name, []):
+            if regex.search(header_value):
+                return True
+        else:
             return False
 
 
@@ -206,6 +221,11 @@ class MultiScopeHandler():
 
     def __init__(self, scopes):
         self.handlers = scopes
+
+    def __repr__(self):
+        return "%s(%r)" % (
+            self.__class__.__name__,
+            self.handlers)
 
     def _findMatchingHandlers(self, scope_name):
         """Find any handlers that match `scope_name`."""
