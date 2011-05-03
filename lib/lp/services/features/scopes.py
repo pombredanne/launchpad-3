@@ -288,4 +288,5 @@ class ScopesForMail(MultiScopeHandler):
             DefaultScope(),
             MailHeaderScope(mail_object),
             ServerScope(),
+            TeamScope(),
             ])

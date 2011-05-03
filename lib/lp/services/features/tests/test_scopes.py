@@ -19,6 +19,7 @@ from lp.services.features.scopes import (
     ScopesForScript,
     ScriptScope,
     ServerScope,
+    TeamScope,
     )
 from testtools.matchers import (
     Matcher,
@@ -35,6 +36,9 @@ class MultiScopeContains(Matcher):
     def __init__(self, scope_class):
         self.scope_class = scope_class
 
+    def __str__(self):
+        return "contains %r scope handler" % self.scope_class
+
     def match(self, multi_handler):
         for h in multi_handler.handlers:
             if isinstance(h, self.scope_class):
@@ -42,7 +46,7 @@ class MultiScopeContains(Matcher):
         else:
             return Mismatch(
                 "Scope class %r not found in %r"
-                % (scope_class, multi_scope))
+                % (self.scope_class, multi_handler))
 
 
 class ScopeMatches(Matcher):
@@ -147,6 +151,7 @@ class TestMailScopes(TestCaseWithFactory):
             MultiScopeContains(ServerScope),
             MultiScopeContains(DefaultScope),
             MultiScopeContains(MailHeaderScope),
+            MultiScopeContains(TeamScope),
             ))
 
     def test_mail_header_scope(self):
