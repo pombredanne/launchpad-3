@@ -1017,6 +1017,10 @@ h1 .yui3-ieditor-errors {
 .warning.message::before {
     content: url(/@@/warning-large);
     }
+.error.message::after, .warning.message::after,
+.informational.message::after {
+    content: '(Click to close)';
+}
 .informational {
     /* Informational messages are blue-to-grey, alerts have an info icon. */
 
