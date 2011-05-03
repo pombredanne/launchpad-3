@@ -150,7 +150,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': '1.0',
                 'derived': '0.9',
                 })
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -190,12 +190,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         # Resolve the DSD by making the same package version published
         # in parent and derived.
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
             version='1.4')
-        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING,
@@ -219,7 +219,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'derived': '1.0',
                 },
             status=DistroSeriesDifferenceStatus.RESOLVED)
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -241,7 +241,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': '1.0',
                 'derived': '0.9',
                 })
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -267,7 +267,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 },
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
-        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING,
@@ -291,7 +291,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -316,7 +316,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': '1.0',
                 },
             status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -395,8 +395,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(person):
             self.assertTrue(check_permission('launchpad.Edit', ds_diff))
-            diff_comment = ds_diff.addComment(
-                ds_diff.derived_series.owner, "Boo")
+            ds_diff.addComment(ds_diff.derived_series.owner, "Boo")
 
     def _setupPackageSets(self, ds_diff, distroseries, nb_packagesets):
         # Helper method to create packages sets.
@@ -470,7 +469,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 'parent': '1.0',
                 },
             status=DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS)
-        new_derived_pub = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING,
@@ -529,7 +528,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # The latest common base version is set as the base-version.
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
-        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.getOrMakeSourcePackageName('foo')
         # Create changelogs for both.
         changelog_lfa = self.factory.makeChangelog('foo', ['1.2', '1.1'])
         parent_changelog_lfa = self.factory.makeChangelog('foo', ['1.1'])
@@ -552,7 +551,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # set as the base version.
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
-        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        self.factory.getOrMakeSourcePackageName('foo')
         # Create changelogs for both.
         changelog_lfa = self.factory.makeChangelog(
             'foo', ['1:2.0-1', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
@@ -793,7 +792,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             parent_series=self.factory.makeDistroSeries())
         spn = self.factory.getOrMakeSourcePackageName(
             name=self.factory.getUniqueString())
-        parent_spph = self.createPublication(
+        self.createPublication(
             spn, ['1.2-1', '1.0-1'], derived_series.parent_series)
         spph = self.createPublication(
             spn, ['1.1-1', '1.0-1'], derived_series)
@@ -948,7 +947,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
     def test_getForDistroSeries_filters_by_distroseries(self):
         # Differences for other series are not included.
         derived_series = self.makeDerivedSeries()
-        diffs = self.makeDiffsForDistroSeries(derived_series)
+        self.makeDiffsForDistroSeries(derived_series)
         diff_for_other_series = self.factory.makeDistroSeriesDifference()
 
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
@@ -959,9 +958,9 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
     def test_getForDistroSeries_filters_by_type(self):
         # Only differences for the specified types are returned.
         derived_series = self.makeDerivedSeries()
-        diffs = self.makeDiffsForDistroSeries(derived_series)
+        self.makeDiffsForDistroSeries(derived_series)
 
-        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+        getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series,
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
 
