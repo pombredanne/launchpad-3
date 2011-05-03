@@ -418,7 +418,7 @@ class CopyChecker:
                 reason = self.archive.checkUpload(
                     person, series, sourcepackagename, destination_component,
                     pocket, strict_component=strict_component)
-                if reason:
+                if reason is not None:
                     raise CannotCopy(reason)
 
         if series not in self.archive.distribution.series:
