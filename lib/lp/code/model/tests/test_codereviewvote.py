@@ -121,6 +121,11 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
         review.claimReview(self.claimant)
         self.assertEqual(self.claimant, review.reviewer)
 
+    def test_repeat_claim(self):
+        # Attempting to claim an already-claimed review works.
+        review = self.factory.makeCodeReviewVoteReference()
+        review.claimReview(review.reviewer)
+
 
 class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     """Tests for CodeReviewVoteReference.delete."""
