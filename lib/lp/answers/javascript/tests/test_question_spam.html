@@ -26,7 +26,7 @@
   <body class="yui-skin-sam">
 
     <!-- The example markup required by the script to run -->
-    <div id="expected-id">
+    <div id="not-spam">
     <div class="boardComment"> 
       <div class="boardCommentDetails"> 
         <a href="#" class="sprite person">TestyMcTest</a> 
@@ -46,6 +46,25 @@
     </div> 
     </div>
   
+    <div id="spam">
+    <div class="boardComment adminHiddenComment"> 
+      <div class="boardCommentDetails"> 
+        <a href="#" class="sprite person">TestyMcTest</a> 
+        said
+        <span title="">1 hours ago</span>:
+        <span style="float:right;"> #2</span> 
+      </div> 
+
+      <div class="boardCommentBody"><p>Click here for a diploma!</p></div> 
+
+      <div class="boardCommentFooter"> 
+        <a id="mark-spam" class="js-action sprite edit" href="#"> 
+            Mark as spam
+        </a> 
+      
+      </div> 
+    </div> 
+    </div>
     <!-- The test output -->
     <div id="log"></div>
   </body>
