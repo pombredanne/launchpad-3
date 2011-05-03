@@ -450,7 +450,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             "can't call matching_faqs_url when matching_faqs_count == 0")
         collection = IFAQCollection(self.context)
         return canonical_url(collection) + '/+faqs?' + urlencode({
-            'field.search_text': self.search_text,
+            'field.search_text': self.search_text.encode('utf-8'),
             'field.actions.search': 'Search',
             })
 
