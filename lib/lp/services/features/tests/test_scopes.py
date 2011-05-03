@@ -10,7 +10,6 @@ import email
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.services.features.scopes import (
-    BaseScope,
     BaseWebRequestScope,
     DefaultScope,
     MailHeaderScope,
@@ -24,7 +23,6 @@ from lp.services.features.scopes import (
 from testtools.matchers import (
     Matcher,
     MatchesAll,
-    MatchesAny,
     Mismatch,
     Not,
     )
@@ -126,13 +124,14 @@ To: new@bugs.launchpad.net
 Message-Id: <20110107085110.EB4A1181C2A@whatever>
 Date: Fri,  7 Jan 2011 02:51:10 -0600 (CST)
 Received: by other.example.com (Postfix, from userid 1000)
-	id DEADBEEF; Fri,  7 Jan 2011 02:51:10 -0600 (CST)
+\tid DEADBEEF; Fri,  7 Jan 2011 02:51:10 -0600 (CST)
 Received: by lithe (Postfix, from userid 1000)
-	id JOB_ID; Fri,  7 Jan 2011 02:51:10 -0600 (CST)
+\tid JOB_ID; Fri,  7 Jan 2011 02:51:10 -0600 (CST)
 Subject: email scopes don't work
 
 This is awful.
 """
+
 
 class TestMailScopes(TestCaseWithFactory):
 
@@ -162,7 +161,7 @@ class TestMailScopes(TestCaseWithFactory):
         self.assertThat(mail_scopes, Not(
             ScopeMatches("mail_header:From:rae@Example.com")))
         # But header field names are case-insensitive, like rfc2822.
-        self.assertThat(mail_scopes, 
+        self.assertThat(mail_scopes,
             ScopeMatches("mail_header:from:rae@example.com"))
         # Repeated headers check all values.
         self.assertThat(mail_scopes, MatchesAll(

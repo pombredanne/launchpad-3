@@ -177,13 +177,13 @@ class MailHeaderScope(BaseScope):
 
     The header name is matched case-insensitively, and if the header is
     repeated this scope looks for a match in any occurrence.
-    
+
     The value is matched as a Python regex, without
     anchoring to the start of the string, and with Python's default regexp
     options.  For a case-insensitive match, you should include (?i) at the
-    start.  
+    start.
 
-    Headers are not unfolded before matching, so wrapped lines may appear as 
+    Headers are not unfolded before matching, so wrapped lines may appear as
     "\n\t".
     """
 
@@ -211,7 +211,7 @@ class MailHeaderScope(BaseScope):
 # need a scope handler and that scope handler has to be added to this list.
 # See BaseScope for hints as to what a scope handler should look like.
 HANDLERS = set([
-    DefaultScope, 
+    DefaultScope,
     MailHeaderScope,
     PageScope,
     ScriptScope,
@@ -245,7 +245,7 @@ class MultiScopeHandler():
     def lookup(self, scope_name):
         """Determine if scope_name applies.
 
-        This method iterates over the configured scope hanlders until it
+        This method iterates over the configured scope handlers until it
         either finds one that claims the requested scope name matches,
         or the handlers are exhuasted, in which case the
         scope name is not a match.
@@ -288,8 +288,8 @@ class ScopesForMail(MultiScopeHandler):
     def __init__(self, mail_object):
         """Construct set of scopes for incoming mail.
 
-        :param mail_object: An ISignedMessage giving the parsed 
-            form of the incoming message.  (Note that it's *not* 
+        :param mail_object: An ISignedMessage giving the parsed
+            form of the incoming message.  (Note that it's *not*
             necessarily signed, just potentially signed.)
         """
         super(ScopesForMail, self).__init__([
