@@ -868,6 +868,108 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
 
+    def assertSubscriptionMerges(self, target):
+        # Given a subscription target, we want to make sure that subscriptions
+        # that the duplicate person made are carried over to the merged
+        # account.
+        duplicate = self.factory.makePerson()
+        with person_logged_in(duplicate):
+            target.addSubscription(duplicate, duplicate)
+        person = self.factory.makePerson()
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        # The merged person has the subscription, and the duplicate person
+        # does not.
+        self.assertTrue(target.getSubscription(person) is not None)
+        self.assertTrue(target.getSubscription(duplicate) is None)
+
+    def assertConflictingSubscriptionDeletes(self, target):
+        # Given a subscription target, we want to make sure that subscriptions
+        # that the duplicate person made that conflict with existing
+        # subscriptions in the merged account are deleted.
+        duplicate = self.factory.makePerson()
+        person = self.factory.makePerson()
+        with person_logged_in(duplicate):
+            target.addSubscription(duplicate, duplicate)
+        with person_logged_in(person):
+            # The description lets us show that we still have the right
+            # subscription later.
+            target.addBugSubscriptionFilter(person, person).description = (
+                u'a marker')
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        self.person_set.merge(duplicate, person)
+        # The merged person still has the original subscription, as shown
+        # by the marker name.
+        self.assertEqual(
+            target.getSubscription(person).bug_filters[0].description,
+            u'a marker')
+        # The conflicting subscription on the duplicate has been deleted.
+        self.assertTrue(target.getSubscription(duplicate) is None)
+
+    def test_merge_with_product_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProduct())
+
+    def test_merge_with_conflicting_product_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(self.factory.makeProduct())
+
+    def test_merge_with_project_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProject())
+
+    def test_merge_with_conflicting_project_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(self.factory.makeProject())
+
+    def test_merge_with_distroseries_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeDistroRelease())
+
+    def test_merge_with_conflicting_distroseries_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeDistroRelease())
+
+    def test_merge_with_milestone_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeMilestone())
+
+    def test_merge_with_conflicting_milestone_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeMilestone())
+
+    def test_merge_with_productseries_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProductSeries())
+
+    def test_merge_with_conflicting_productseries_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeProductSeries())
+
+    def test_merge_with_distribution_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeDistribution())
+
+    def test_merge_with_conflicting_distribution_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeDistribution())
+
+    def test_merge_with_sourcepackage_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(
+            self.factory.makeDistributionSourcePackage())
+
+    def test_merge_with_conflicting_sourcepackage_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeDistributionSourcePackage())
+
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
         from_person = self.factory.makePerson()
