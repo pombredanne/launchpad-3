@@ -50,6 +50,8 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -90,7 +92,7 @@ class BuildUrl:
 
     @property
     def path(self):
-        return u"+buildjob/%d" % self.context.url_id
+        return u"+build/%d" % self.context.id
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
@@ -107,11 +109,21 @@ class BuildNavigationMixin:
         except ValueError:
             return None
         try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(ISourcePackageRecipeBuildSource).getById(
+                build_id)
+        except NotFoundError:
+            return None
 
     @stepthrough('+buildjob')
     def traverse_buildjob(self, name):
@@ -121,7 +133,8 @@ class BuildNavigationMixin:
             return None
         try:
             build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-            return build_job.getSpecificJob()
+            return self.redirectSubTree(
+                canonical_url(build_job.getSpecificJob()))
         except NotFoundError:
             return None
 
