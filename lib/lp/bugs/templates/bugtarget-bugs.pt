@@ -26,7 +26,18 @@
       </script>
     </tal:uses_launchpad_bugtracker>
     <style type="text/css">
-      p#more-hot-bugs {float:right; margin-top:7px;}
+      p#more-hot-bugs {
+          float:right;
+          margin-top:7px;
+          }
+      .force-ellipsis:before {
+          width: 20em;
+          content: '\2026';
+          position: absolute;
+          margin-left: 18.7em;
+          width: 1em;
+          height: 1em;
+          }
     </style>
 </metal:block>
   <body>
