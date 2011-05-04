@@ -21,6 +21,7 @@ from optparse import (
     Option,
     OptionValueError,
     )
+from storm.locals import ClassAlias
 import transaction
 from zope.component import getUtility
 
@@ -37,6 +38,7 @@ from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.services.scripts.base import LaunchpadScript
@@ -218,11 +220,16 @@ def populate_distroseriesdiff(logger, derived_series, parent_series):
 def find_derived_series():
     """Find all derived `DistroSeries`.
     """
-    dsps = IStore(DistroSeriesParent).find(DistroSeriesParent)
-    relations = defaultdict(list)
-    for rel in dsps:
-        relations[rel.derived_series].append(rel.parent_series)
-    return relations
+    Child = ClassAlias(DistroSeries, "Child")
+    Parent = ClassAlias(DistroSeries, "Parent")
+    relations = IStore(DistroSeries).find(
+        (Child, Parent),
+        DistroSeriesParent.derived_series_id == Child.id,
+        DistroSeriesParent.parent_series_id == Parent.id)
+    collated = defaultdict(list)
+    for child, parent in relations:
+        collated[child].append(parent)
+    return collated
 
 
 class DSDUpdater(TunableLoop):
@@ -314,14 +321,13 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
                         self.options.distribution, self.options.series))
             dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
                 series)
-            if dsp.is_empty():
+            for rel in dsp:
+                augmented_series[rel.derived_series].append(
+                    rel.parent_series)
+            if len(augmented_series) == 0:
                 raise OptionValueError(
                     "%s series %s is not derived." % (
                         self.options.distribution, self.options.series))
-            else:
-                for rel in dsp:
-                    augmented_series[rel.derived_series].append(
-                        rel.parent_series)
             return augmented_series
 
     def processDistroSeries(self, distroseries, parent):
@@ -346,7 +352,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
     def listDerivedSeries(self):
         """Log all `DistroSeries` that the --all option would cover."""
         relationships = self.getDistroSeries()
-        for child in relationships.keys():
+        for child in relationships:
             for parent in relationships[child]:
                self.logger.info(
                     "%s %s with a parent of %s %s", child.distribution.name,

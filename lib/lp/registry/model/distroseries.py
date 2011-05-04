@@ -786,6 +786,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
+    def is_derived_series(self):
+        """See `IDistroSeries`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return not dsps.is_empty()
+
+    @property
     def is_initialising(self):
         """See `IDistroSeries`."""
         return not getUtility(

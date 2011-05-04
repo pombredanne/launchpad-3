@@ -419,11 +419,11 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_find_underived_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.assertNotIn(distroseries, find_derived_series().keys())
+        self.assertNotIn(distroseries, find_derived_series())
 
     def test_finds_derived_distroseries(self):
         dsp = self.makeDerivedDistroSeries()
-        self.assertIn(dsp.derived_series, find_derived_series().keys())
+        self.assertIn(dsp.derived_series, find_derived_series())
 
 
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
@@ -543,9 +543,10 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
             [spph.distroseries], script.getDistroSeries().keys())
 
     def test_finds_all_distroseries(self):
-        spphs = [
-            self.makeSPPH(self.makeDerivedDistroSeries().derived_series)
-            for counter in xrange(2)]
+        spphs = []
+        for counter in xrange(2):
+            dsp = self.makeDerivedDistroSeries()
+            spphs.append(self.makeSPPH(dsp.derived_series))
         script = self.makeScript(['--all'])
         distroseries = script.getDistroSeries()
         for spph in spphs:
