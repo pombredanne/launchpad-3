@@ -1,0 +1,13 @@
+Working with Launchpad Answers over the API
+===========================================
+
+Users can work with question targets and questions over the api to
+search and update questions.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     LaunchpadWebServiceCaller)
+    >>> anon_webservice = LaunchpadWebServiceCaller('launchpad-library', '')
+    >>> webservice = LaunchpadWebServiceCaller(
+    ...     'launchpad-library', 'salgado-change-anything')
+
+
