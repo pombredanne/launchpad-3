@@ -55,8 +55,14 @@ class IDistroSeriesDifferencePublic(Interface):
     derived_series = exported(Reference(
         IDistroSeries, title=_("Derived series"), required=True,
         readonly=True, description=_(
-            "The distribution series which, together with its parent, "
-            "identifies the two series with the difference.")))
+            "The distribution series which identifies the derived series "
+            "with the difference.")))
+
+    parent_series = exported(Reference(
+        IDistroSeries, title=_("Parent series"), required=True,
+        readonly=True, description=_(
+            "The distribution series which identifies the parent series "
+            "with the difference.")))
 
     source_package_name = Reference(
         ISourcePackageName,
@@ -253,7 +259,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name):
+    def new(derived_series, source_package_name, parent_series=None):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -263,6 +269,10 @@ class IDistroSeriesDifferenceSource(Interface):
         :param source_package_name: A source package name identifying the
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
+        :param parent_series: The distribution series which has the derived
+            series as a child. If there is only one parent, it does not need
+            to be specified.
+        :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.

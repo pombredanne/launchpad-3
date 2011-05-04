@@ -14,7 +14,7 @@
 
     <metal:macro-parent metal:define-macro="base-to-parent">
       <span tal:replace="context/base_version">1.1.1</span> to
-      <span tal:replace="context/derived_series/parent_series/displayname">
+      <span tal:replace="context/parent_series/displayname">
         Lucid</span> version:
       <span tal:replace="context/parent_source_version">1.2.4</span>
     </metal:macro-parent>
