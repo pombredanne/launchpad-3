@@ -1086,7 +1086,7 @@ def html_report(
             <th class="clickable">SQL Statement Standard Deviation</th>
             <th class="clickable">Median SQL Statements</th>
 
-            <th class="clickable">Hits * 99% under statement</th>
+            <th class="clickable">Hits * 99% Under SQL Statement</th>
             </tr>
         </thead>
         <tbody>
