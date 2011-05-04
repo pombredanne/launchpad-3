@@ -392,8 +392,6 @@ class DistroSeriesDifference(StormBase):
         """See `IDistroSeriesDifferenceSource`."""
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
-            SourcePackageName.id ==
-                DistroSeriesDifference.source_package_name_id,
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type ==
                 DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
@@ -403,6 +401,17 @@ class DistroSeriesDifference(StormBase):
                 DistroSeriesDifference.base_version,
             DistroSeriesDifference.source_version ==
                 DistroSeriesDifference.base_version)
+
+    @staticmethod
+    def collateDifferencesByParentArchive(differences):
+        by_archive = dict()
+        for difference in differences:
+            archive = difference.parent_series.main_archive
+            if archive in by_archive:
+                by_archive[archive].append(difference)
+            else:
+                by_archive[archive] = [difference]
+        return by_archive
 
     @cachedproperty
     def source_pub(self):
