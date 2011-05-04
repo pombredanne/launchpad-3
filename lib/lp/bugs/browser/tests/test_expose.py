@@ -32,6 +32,7 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -56,8 +57,10 @@ class FakeTeam:
 class FakeUser:
     """A faux user that has a hard-coded set of administered teams."""
 
+    administrated_teams = [FakeTeam('Team One'), FakeTeam('Team Two')]
+
     def getAdministratedTeams(self):
-        return [FakeTeam('Team One'), FakeTeam('Team Two')]
+        return self.administrated_teams
 
 
 def fake_absoluteURL(ob, request):
@@ -143,6 +146,34 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         # The link is the API link to the team.
         self.assertThat(team_info[0]['link'],
             Equals('http://example.com/BugSupervisorSubTeam'))
+
+    def test_expose_user_administered_teams_to_js__uses_cached_teams(self):
+        # The function expose_user_administered_teams_to_js uses a
+        # cached list of administrated teams.
+        context = self.factory.makeProduct(owner=self.user)
+        self._setup_teams(self.user)
+
+        # The first call requires one query to retrieve the administrated
+        # teams.
+        with StormStatementRecorder() as recorder:
+            expose_user_administered_teams_to_js(
+                self.request, self.user, context,
+                absoluteURL=fake_absoluteURL)
+        statements_for_admininstrated_teams = [
+            statement for statement in recorder.statements
+            if statement.startswith("'SELECT *")]
+        self.assertEqual(1, len(statements_for_admininstrated_teams))
+
+        # Calling the function a second time does not require an
+        # SQL call to retrieve the administrated teams.
+        with StormStatementRecorder() as recorder:
+            expose_user_administered_teams_to_js(
+                self.request, self.user, context,
+                absoluteURL=fake_absoluteURL)
+        statements_for_admininstrated_teams = [
+            statement for statement in recorder.statements
+            if statement.startswith("'SELECT *")]
+        self.assertEqual(0, len(statements_for_admininstrated_teams))
 
     def test_teams_owned_but_not_joined_are_not_included(self):
         context = self.factory.makeProduct(owner=self.user)
@@ -333,3 +364,31 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_url'],
             canonical_url(user, rootsite='mainsite'))
+
+    def test_expose_user_subscriptions_to_js__uses_cached_teams(self):
+        # The function expose_user_subscriptions_to_js() uses a
+        # cached list of administrated teams.
+        user = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        request = LaunchpadTestRequest()
+        with person_logged_in(user):
+            sub = target.addBugSubscription(user, user)
+
+        # The first call requires one query to retrieve the administrated
+        # teams.
+        with StormStatementRecorder() as recorder:
+            expose_user_subscriptions_to_js(user, [sub], request)
+        statements_for_admininstrated_teams = [
+            statement for statement in recorder.statements
+            if statement.startswith("'SELECT *")]
+        self.assertEqual(1, len(statements_for_admininstrated_teams))
+
+        # Calling the function a second time does not require an
+        # SQL call to retrieve the administrated teams.
+        with person_logged_in(user):
+            with StormStatementRecorder() as recorder:
+                expose_user_subscriptions_to_js(user, [sub], request)
+        statements_for_admininstrated_teams = [
+            statement for statement in recorder.statements
+            if statement.startswith("'SELECT *")]
+        self.assertEqual(0, len(statements_for_admininstrated_teams))
