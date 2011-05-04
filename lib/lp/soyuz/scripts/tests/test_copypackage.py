@@ -10,11 +10,17 @@ import sys
 import unittest
 
 import pytz
+from testtools.content import text_content
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.testing.layers import (
@@ -35,15 +41,14 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archive import (
-    CannotCopy,
-    )
+from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
@@ -52,12 +57,11 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
     )
-from lp.soyuz.interfaces.queue import (
-    QueueInconsistentStateError,
-    )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -75,7 +79,11 @@ from lp.soyuz.scripts.packagecopier import (
     update_files_privacy,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -555,6 +563,98 @@ class CopyCheckerHarness:
             pub_source=self.source,
             status=PackagePublishingStatus.PUBLISHED)
         self.assertCanCopyBinaries()
+
+
+class CopyCheckerQueries(TestCaseWithFactory,
+                         CopyCheckerHarness):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(CopyCheckerQueries, self).setUp()
+        self.test_publisher = SoyuzTestPublisher()
+        self.test_publisher.prepareBreezyAutotest()
+        self.source = self.test_publisher.getPubSource()
+        self.archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        self.series = self.source.distroseries
+        self.pocket = PackagePublishingPocket.RELEASE
+        self.person = self.factory.makePerson()
+        ArchivePermission(
+            archive=self.archive, person=self.person,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.UPLOAD)
+
+    def _setupSources(self, nb_of_sources):
+        sources = []
+        for i in xrange(nb_of_sources):
+            source = self.test_publisher.getPubSource(
+                version = u'%d' % self.factory.getUniqueInteger(),
+                sourcename = u'name-%d' % self.factory.getUniqueInteger())
+            sources.append(source)
+        return sources
+
+    def _recordCopyCheck(self, nb_of_sources, person=None,
+                         check_permissions=False):
+        flush_database_caches()
+        sources = self._setupSources(nb_of_sources)
+        with StormStatementRecorder() as recorder:
+            copy_checker = CopyChecker(self.archive, include_binaries=False)
+            for source in sources:
+                self.assertIs(
+                    None,
+                    copy_checker.checkCopy(
+                        source, self.series, self.pocket, person=person,
+                        check_permissions=check_permissions))
+            checked_copies = list(copy_checker.getCheckedCopies())
+            self.assertEquals(nb_of_sources, len(checked_copies))
+        return recorder
+
+    def test_queries_copy_check(self):
+        # checkCopy for one package should issue a limited number of
+        # queries.
+
+        # checkCopy called without any source should not issue any query.
+        recorder0 = self._recordCopyCheck(0, self.person, True)
+        self.addDetail(
+            "statement-count-0-sources",
+            text_content(u"%d" % recorder0.count))
+        self.assertThat(recorder0, HasQueryCount(Equals(0)))
+
+        # Compare the number of queries issued by calling checkCopy with
+        # nb_of_sources sources and nb_of_sources + 1 sources.
+        nb_of_sources = 30
+        recorder1 = self._recordCopyCheck(nb_of_sources, self.person, True)
+        self.addDetail(
+            "statement-count-%d-sources" % nb_of_sources,
+            text_content(u"%d" % recorder1.count))
+        recorder2 = self._recordCopyCheck(
+            nb_of_sources + 1, self.person, True)
+        self.addDetail(
+            "statement-count-%d-sources" % (nb_of_sources + 1),
+            text_content(u"%d" % recorder2.count))
+
+        statement_count_per_source = 13
+        self.assertThat(
+            recorder2, HasQueryCount(
+                LessThan(recorder1.count + statement_count_per_source)))
+
+    def test_queries_copy_check_added_queries_perm_checking(self):
+        # Checking for upload permissions adds only a limited amount of
+        # additional statements per source.
+        nb_of_sources = 30
+        recorder1 = self._recordCopyCheck(nb_of_sources, None, False)
+        recorder2 = self._recordCopyCheck(nb_of_sources, self.person, True)
+
+        added_statement_count_per_source = (
+            (recorder2.count - recorder1.count) / float(nb_of_sources))
+        self.addDetail(
+            "added-statement-count-perm-check",
+            text_content(u"%.3f" % added_statement_count_per_source))
+
+        perm_check_statement_count = 3
+        self.assertThat(
+            added_statement_count_per_source, LessThan(
+                perm_check_statement_count))
 
 
 class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
