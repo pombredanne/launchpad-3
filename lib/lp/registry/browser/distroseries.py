@@ -953,6 +953,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def requestUpgrades(self):
         """Request sync of packages that can be easily upgraded."""
+# XXX: Collate source packages by source archive.
         job_source = getUtility(IPackageCopyJobSource)
 # XXX: Create jobs.
         self.request.response.addInfoNotification("""
