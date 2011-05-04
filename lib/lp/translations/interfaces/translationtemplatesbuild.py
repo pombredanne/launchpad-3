@@ -45,5 +45,5 @@ class ITranslationTemplatesBuildSource(Interface):
         :param store: Optional database store to look in.
         """
 
-    def getByBuildFarmJob(buildfarmjob_id, store=None):
-        """Find `ITranslationTemplatesBuild`s by `BuildFarmJob` id."""
+    def getByBuildFarmJob(buildfarmjob, store=None):
+        """Find `ITranslationTemplatesBuild`s by a `BuildFarmJob`."""

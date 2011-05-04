@@ -121,14 +121,15 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         build = source.create(build_farm_job, branch)
 
-        self.assertEqual(build, source.getByBuildFarmJob(build_farm_job.id))
+        self.assertEqual(build, source.getByBuildFarmJob(build_farm_job))
 
     def test_getByBuildFarmJob_returns_none_if_not_found(self):
         source = getUtility(ITranslationTemplatesBuildSource)
         build_farm_job = self._makeBuildFarmJob()
         branch = self.factory.makeBranch()
-        build = source.create(build_farm_job, branch)
+        source.create(build_farm_job, branch)
 
+        another_job = self._makeBuildFarmJob()
         self.assertIs(
             None,
-            source.getByBuildFarmJob(build_farm_job.id + 999))
+            source.getByBuildFarmJob(another_job))

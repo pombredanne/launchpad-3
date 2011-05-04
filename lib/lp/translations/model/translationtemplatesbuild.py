@@ -95,12 +95,12 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return match.one()
 
     @classmethod
-    def getByBuildFarmJob(cls, buildfarmjob_id, store=None):
+    def getByBuildFarmJob(cls, buildfarmjob, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
             TranslationTemplatesBuild,
-            TranslationTemplatesBuild.build_farm_job == buildfarmjob_id)
+            TranslationTemplatesBuild.build_farm_job_id == buildfarmjob.id)
         return match.one()
 
     @classmethod
