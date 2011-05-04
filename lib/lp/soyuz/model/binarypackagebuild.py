@@ -31,10 +31,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import (
-    ProxyFactory,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -104,24 +101,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
-
-
-def get_binary_build_for_build_farm_job(build_farm_job):
-    """Factory method to returning a binary for a build farm job."""
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-    resulting_tuple = store.find(
-        find_spec,
-        BinaryPackageBuild.package_build == PackageBuild.id,
-        PackageBuild.build_farm_job == BuildFarmJob.id,
-        BuildFarmJob.id == build_farm_job.id).one()
-
-    if resulting_tuple is None:
-        return None
-
-    # We specifically return a proxied BinaryPackageBuild so that we can
-    # be sure it has the correct proxy.
-    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
@@ -847,7 +826,15 @@ class BinaryPackageBuildSet:
 
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
-        return get_binary_build_for_build_farm_job(build_farm_job)
+        find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        resulting_tuple = Store.of(build_farm_job).find(
+            find_spec,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id == build_farm_job.id).one()
+        if resulting_tuple is None:
+            return None
+        return resulting_tuple[0]
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

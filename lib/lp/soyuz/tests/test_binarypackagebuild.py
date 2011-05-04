@@ -137,7 +137,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # they would normally be queries.
         store = Store.of(build_farm_job)
         store.flush()
-        store.reset()
+        store.invalidate()
 
         binary_package_build = build_farm_job.getSpecificJob()
 

@@ -13,7 +13,6 @@ __all__ = [
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
-    'ISpecificBuildFarmJob',
     'ISpecificBuildFarmJobSource',
     ]
 
@@ -275,14 +274,6 @@ class IBuildFarmJob(IBuildFarmJobOld):
                 'Debian-like dependency line that must be satisfied before '
                 'attempting to build this request.')),
         as_of="beta")
-
-
-class ISpecificBuildFarmJob(IBuildFarmJob):
-    """A marker interface with which to define adapters for IBuildFarmJob.
-
-    This enables the registered adapters for ISpecificBuildFarmJob to be
-    iterated when calculating IBuildFarmJob.specific_job.
-    """
 
 
 class ISpecificBuildFarmJobSource(Interface):

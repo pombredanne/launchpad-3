@@ -110,11 +110,3 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == branch)
-
-
-def get_translation_templates_build_for_build_farm_job(build_farm_job):
-    """Return a `TranslationTemplatesBuild` from its `BuildFarmJob`."""
-    build = Store.of(build_farm_job).find(
-        TranslationTemplatesBuild,
-        TranslationTemplatesBuild.build_farm_job == build_farm_job).one()
-    return ProxyFactory(build)
