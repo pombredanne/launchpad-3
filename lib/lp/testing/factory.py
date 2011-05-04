@@ -2317,9 +2317,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         changelogs=None, set_base_version=False):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            parent_series = self.makeDistroSeries()
-            derived_series = self.makeDistroSeries(
-                parent_series=parent_series)
+            dsp = self.makeDistroSeriesParent()
+            derived_series = dsp.derived_series
+            parent_series = dsp.parent_series
+        else:
+            dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                derived_series)
+            if dsp.count() == 0:
+                new_dsp = self.makeDistroSeriesParent(
+                    derived_series=derived_series)
+                parent_series = new_dsp.parent_series
+            else:
+                parent_series = dsp[0].parent_series
 
         if source_package_name_str is None:
             source_package_name_str = self.getUniqueString('src-name')
@@ -2334,7 +2343,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         base_version = versions.get('base')
         if base_version is not None:
-            for series in [derived_series, derived_series.parent_series]:
+            for series in [derived_series, parent_series]:
                 spr = self.makeSourcePackageRelease(
                     sourcepackagename=source_package_name,
                     version=base_version)
@@ -2359,7 +2368,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 version=versions.get('parent'),
                 changelog=changelogs.get('parent'))
             self.makeSourcePackagePublishingHistory(
-                distroseries=derived_series.parent_series,
+                distroseries=parent_series,
                 sourcepackagerelease=spr,
                 status = PackagePublishingStatus.PUBLISHED)
 
