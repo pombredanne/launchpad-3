@@ -1069,8 +1069,6 @@ def html_report(
 
             <th class="clickable">Total Hits</th>
 
-            <th class="clickable">Total Time (secs)</th>
-
             <th class="clickable">99% Under Time (secs)</th>
 
             <th class="clickable">Mean Time (secs)</th>
@@ -1088,6 +1086,7 @@ def html_report(
             <th class="clickable">SQL Statement Standard Deviation</th>
             <th class="clickable">Median SQL Statements</th>
 
+            <th class="clickable">Hits * 99% Under SQL Statement</th>
             </tr>
         </thead>
         <tbody>
@@ -1103,7 +1102,6 @@ def html_report(
             <tr>
             <th class="category-title">%s</th>
             <td class="numeric total-hits">%d</td>
-            <td class="numeric total-time">%.2f</td>
             <td class="numeric 99pc-under-time">%.2f</td>
             <td class="numeric mean-time">%.2f</td>
             <td class="numeric std-time">%.2f</td>
@@ -1120,18 +1118,21 @@ def html_report(
             <td class="numeric mean-sqlstatements">%.2f</td>
             <td class="numeric std-sqlstatements">%.2f</td>
             <td class="numeric median-sqlstatements">%.2f</td>
+
+            <td class="numeric high-db-usage">%.f</td>
             </tr>
             """ % (
                 html_title,
-                stats.total_hits, stats.total_time,
-                stats.ninetyninth_percentile_time,
+                stats.total_hits, stats.ninetyninth_percentile_time,
                 stats.mean, stats.std, stats.median,
                 len(histograms) - 1,
                 stats.ninetyninth_percentile_sqltime, stats.mean_sqltime,
                 stats.std_sqltime, stats.median_sqltime,
                 stats.ninetyninth_percentile_sqlstatements,
                 stats.mean_sqlstatements,
-                stats.std_sqlstatements, stats.median_sqlstatements))
+                stats.std_sqlstatements, stats.median_sqlstatements,
+                stats.ninetyninth_percentile_sqlstatements* stats.total_hits,
+                ))
 
     # Table of contents
     print >> outf, '<ol>'
