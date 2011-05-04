@@ -34,9 +34,8 @@
           width: 20em;
           content: '\2026';
           position: absolute;
-          margin-left: 18.7em;
+          margin-left: 18.5em;
           width: 1em;
-          height: 1em;
           }
     </style>
 </metal:block>
