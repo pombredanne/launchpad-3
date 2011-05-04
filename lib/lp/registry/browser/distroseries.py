@@ -776,7 +776,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             'selected_differences', sources, self.context.main_archive,
             self.context, PackagePublishingPocket.RELEASE,
             include_binaries=False, dest_url=series_url,
-            dest_display_name=series_title):
+            dest_display_name=series_title, person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
@@ -795,7 +795,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return (check_permission('launchpad.Edit', self.context) and
+        return (self.user is not None and
+                self.context.main_archive.hasAnyPermission(self.user) and
                 self.cached_differences.batch.total() > 0)
 
     @property
