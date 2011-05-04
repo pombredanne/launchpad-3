@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -679,6 +680,36 @@ class BranchJobPruner(BulkPruner):
         """
 
 
+class MirrorBugMessageOwner(TunableLoop):
+    """Mirror BugMessage.owner from Message.
+
+    Only needed until they are all set, after that triggers will maintain it.
+    """
+
+    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and thats the
+    # max we want to hold a DB lock open for.
+    minimum_chunk_size = 1000
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(MirrorBugMessageOwner, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugMessage)
+        self.isDone = IMasterStore(BugMessage).find(
+            BugMessage, BugMessage.ownerID==None).is_empty
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        transaction.begin()
+        updated = self.store.execute("""update bugmessage set
+            owner=message.owner from message where
+            bugmessage.message=message.id and bugmessage.id in
+                (select id from bugmessage where owner is NULL limit %s);"""
+            % int(chunk_size)
+            ).rowcount
+        self.log.debug("Updated %s bugmessages." % updated)
+        transaction.commit()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1041,6 +1072,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
+        MirrorBugMessageOwner,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
@@ -1053,7 +1085,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = []
 
-    default_abort_script_time = 60 * 60
+    # 1 hour, minus 5 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled hourly run kicks in.
+    default_abort_script_time = 60 * 55
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1075,4 +1109,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonPruner,
         ]
 
-    default_abort_script_time = 60 * 60 * 24
+    # 1 day, minus 30 minutes for cleanup. This ensures the script is
+    # fully terminated before the next scheduled daily run kicks in.
+    default_abort_script_time = 60 * 60 * 23.5

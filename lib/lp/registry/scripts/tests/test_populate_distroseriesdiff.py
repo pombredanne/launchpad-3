@@ -24,7 +24,7 @@ from lp.registry.enum import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.scripts.populate_distroseriesdiff import (
-    BaseVersionFixer,
+    DSDUpdater,
     compose_sql_difference_type,
     compose_sql_find_latest_source_package_releases,
     compose_sql_find_differences,
@@ -468,14 +468,14 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
 
 
 class FakeDSD:
-    _updateBaseVersion = FakeMethod()
+    update = FakeMethod()
 
 
-class TestBaseVersionFixer(TestCase):
+class TestDSDUpdater(TestCase):
     """Test the poignant parts of `BaseVersionFixer`."""
 
     def makeFixer(self, ids):
-        fixer = BaseVersionFixer(DevNullLogger(), None, FakeMethod(), ids)
+        fixer = DSDUpdater(DevNullLogger(), None, FakeMethod(), ids)
         fixer._getBatch = FakeMethod()
         return fixer
 
@@ -502,7 +502,7 @@ class TestBaseVersionFixer(TestCase):
         fixer = self.makeFixer([fake_dsd])
         fixer._getBatch.result = fixer.ids
         fixer(1)
-        self.assertNotEqual(0, fake_dsd._updateBaseVersion.call_count)
+        self.assertNotEqual(0, fake_dsd.update.call_count)
 
     def test_loop_commits(self):
         fixer = self.makeFixer([FakeDSD()])
@@ -589,17 +589,17 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
             spph.distroseries.distribution.name, spph.distroseries.name)
         self.assertIn(expected_series_name, script.logger.getLogBuffer())
 
-    def test_calls_fixBaseVersions(self):
+    def test_calls_update(self):
         distroseries = self.makeDerivedDistroSeries()
         self.makeSPPH(distroseries=distroseries)
         script = self.makeScript([
             '--distribution', distroseries.distribution.name,
             '--series', distroseries.name,
             ])
-        script.fixBaseVersions = FakeMethod()
+        script.update = FakeMethod()
         script.main()
         self.assertEqual(
-            [((distroseries,), {})], script.fixBaseVersions.calls)
+            [((distroseries,), {})], script.update.calls)
 
     def test_fixes_base_versions(self):
         distroseries = self.makeDerivedDistroSeries()
@@ -622,5 +622,5 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
         script.main()
         dsd = self.getDistroSeriesDiff(distroseries)[0]
         dsd._updateBaseVersion = FakeMethod()
-        script.fixBaseVersions(distroseries)
+        script.update(distroseries)
         self.assertEqual(1, dsd._updateBaseVersion.call_count)

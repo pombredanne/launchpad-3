@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.log.logger import BufferLogger
@@ -102,8 +102,8 @@ class TestBranchRewriter(TestCaseWithFactory):
             self.factory.makePackageBranch(private=False)]
         transaction.commit()
         output = [
-            rewriter.rewriteLine("/%s/%s/.bzr/README" % (
-                    BRANCH_ID_ALIAS_PREFIX, branch.id))
+            rewriter.rewriteLine(
+                "%s/.bzr/README" % branch_id_alias(branch))
             for branch in branches]
         expected = [
             'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
@@ -116,8 +116,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         # 'NULL'.  This is translated by apache to a 404.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch(private=True)
-        path = '/%s/%s' % (
-            BRANCH_ID_ALIAS_PREFIX, removeSecurityProxy(branch).id)
+        path = branch_id_alias(removeSecurityProxy(branch))
         transaction.commit()
         output = [
             rewriter.rewriteLine("%s/changes" % path),
@@ -130,7 +129,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()
         transaction.commit()
-        path = "/%s/%s/.bzr/README" % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = "%s/.bzr/README" % branch_id_alias(branch)
         rewriter.rewriteLine(path)
         rewriter.rewriteLine(path)
         logging_output_lines = self.getLoggerOutput(

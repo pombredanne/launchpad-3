@@ -7,21 +7,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'AnonymousAuthorization',
-    'AuthorizationBase',
     ]
 
 from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import (
-    implements,
-    Interface,
-    )
-from zope.security.permission import (
-    checkPermission as check_permission_is_registered,
-    )
+from zope.interface import Interface
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
@@ -39,15 +31,17 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization,
-    ILaunchpadRoot,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import(
+    AnonymousAuthorization,
+    AuthorizationBase,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -115,6 +109,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceEdit,
     )
@@ -215,69 +210,6 @@ from lp.translations.interfaces.translator import (
     )
 
 
-class AuthorizationBase:
-    implements(IAuthorization)
-    permission = None
-    usedfor = None
-
-    def __init__(self, obj):
-        self.obj = obj
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return False
-
-    def checkAuthenticated(self, user):
-        """Return True if the given person has the given permission.
-
-        This method is implemented by security adapters that have not
-        been updated to work in terms of IAccount.
-
-        :return: True or False.
-        """
-        return False
-
-    def forwardCheckAuthenticated(self, user,
-                                  obj=None, permission=None):
-        """Forward request to another security adapter.
-
-        Find a matching adapter and call checkAuthenticated on it. Intended
-        to be used in checkAuthenticated.
-
-        :param user: The IRolesPerson object that was passed in.
-        :param obj: The object to check the permission for. If None, use
-            the same object as this adapter.
-        :param permission: The permission to check. If None, use the same
-            permission as this adapter.
-        :return: True or False.
-        """
-        if obj is None:
-            obj = self.obj
-        if permission is None:
-            permission = self.permission
-        else:
-            # This will raise ValueError if the permission doesn't exist.
-            check_permission_is_registered(permission, obj)
-        next_adapter = getAdapter(obj, IAuthorization, permission)
-        return next_adapter.checkAuthenticated(user)
-
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        :return: True or False.
-        """
-        # For backward compatibility, delegate to one of
-        # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account, None)
-        if person is None:
-            return self.checkUnauthenticated()
-        else:
-            return self.checkAuthenticated(IPersonRoles(person))
-
-
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -290,20 +222,6 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
-
-
-class AnonymousAuthorization(AuthorizationBase):
-    """Allow any authenticated and unauthenticated user access."""
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """Any unauthorized user can see this object."""
-        return True
-
-    def checkAuthenticated(self, user):
-        """Any authorized user can see this object."""
-        return True
-
 
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -950,7 +868,7 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
-class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
+class BugSuperviseDistributionSourcePackage(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""
     permission = 'launchpad.BugSupervisor'
@@ -960,6 +878,16 @@ class EditDistributionSourcePackageByDistroOwnersOrAdmins(AuthorizationBase):
         return (user.inTeam(self.obj.distribution.bug_supervisor) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
+
+
+class EditDistributionSourcePackage(AuthorizationBase):
+    """DistributionSourcePackage is not editable.
+
+    But EditStructuralSubscription needs launchpad.Edit defined on all
+    targets.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionSourcePackage
 
 
 class EditProductOfficialBugTagsByOwnerOrBugSupervisorOrAdmins(
@@ -1038,6 +966,18 @@ class EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
 class ViewDistroSeries(AnonymousAuthorization):
     """Anyone can view a DistroSeries."""
     usedfor = IDistroSeries
+
+
+class EditDistroSeriesParent(AuthorizationBase):
+    """DistroSeriesParent can be edited by the same people who can edit
+    the derived_distroseries."""
+    permission = "launchpad.Edit"
+    usedfor = IDistroSeriesParent
+
+    def checkAuthenticated(self, user):
+        auth = EditDistroSeriesByReleaseManagerOrDistroOwnersOrAdmins(
+            self.obj.derived_series)
+        return auth.checkAuthenticated(user)
 
 
 class ViewCountry(AnonymousAuthorization):
@@ -1722,12 +1662,16 @@ class AppendQuestion(AdminQuestion):
         if AdminQuestion.checkAuthenticated(self, user):
             return True
         question_target = self.obj.target
+        if IDistributionSourcePackage.providedBy(question_target):
+            question_targets = (question_target, question_target.distribution)
+        else:
+            question_targets = (question_target, )
         questions_person = IQuestionsPerson(user.person)
         for target in questions_person.getDirectAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         for target in questions_person.getTeamAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         return False
 

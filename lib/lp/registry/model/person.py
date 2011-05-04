@@ -91,6 +91,10 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -1558,6 +1562,10 @@ class Person(
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, comment=comment)
 
+    @cachedproperty
+    def administrated_teams(self):
+        return list(self.getAdministratedTeams())
+
     def getAdministratedTeams(self):
         """See `IPerson`."""
         owner_of_teams = Person.select('''
@@ -2805,6 +2813,14 @@ class Person(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
 
+    def canAccess(self, obj, attribute):
+        """See `IPerson.`"""
+        return canAccess(obj, attribute)
+
+    def canWrite(self, obj, attribute):
+        """See `IPerson.`"""
+        return canWrite(obj, attribute)
+
 
 class PersonSet:
     """The set of persons."""
@@ -3544,6 +3560,60 @@ class PersonSet:
             WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
+    def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
+        # Update StructuralSubscription entries that will not conflict.
+        # We separate this out from the parent query primarily to help
+        # keep within our line length constraints, though it might make
+        # things more readable otherwise as well.
+        exists_query = '''
+            SELECT StructuralSubscription.id
+            FROM StructuralSubscription
+            WHERE StructuralSubscription.subscriber=%(to_id)d AND (
+                StructuralSubscription.product=SSub.product
+                OR 
+                StructuralSubscription.project=SSub.project
+                OR 
+                StructuralSubscription.distroseries=SSub.distroseries
+                OR 
+                StructuralSubscription.milestone=SSub.milestone
+                OR 
+                StructuralSubscription.productseries=SSub.productseries
+                OR 
+                (StructuralSubscription.distribution=SSub.distribution
+                 AND StructuralSubscription.sourcepackagename IS NULL
+                 AND SSub.sourcepackagename IS NULL)
+                OR
+                (StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename
+                 AND StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename)
+                )
+            '''
+        cur.execute(('''
+            UPDATE StructuralSubscription
+            SET subscriber=%(to_id)d
+            WHERE subscriber=%(from_id)d AND id NOT IN (
+                SELECT SSub.id
+                FROM StructuralSubscription AS SSub
+                WHERE 
+                    SSub.subscriber=%(from_id)d
+                    AND EXISTS (''' + exists_query + ''')
+            )
+            ''') % vars())
+        # Delete the rest.  We have to explicitly delete the bug subscription
+        # filters first because there is not a cascade delete set up in the
+        # db.
+        cur.execute('''
+            DELETE FROM BugSubscriptionFilter
+            WHERE structuralsubscription IN (
+                SELECT id
+                FROM StructuralSubscription
+                WHERE subscriber=%(from_id)d)
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
+            ''' % vars())
+
     def _mergeSpecificationFeedback(self, cur, from_id, to_id):
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -3964,8 +4034,14 @@ class PersonSet:
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
 
+        # We ignore BugSubscriptionFilterMutes.
+        skip.append(('bugsubscriptionfiltermute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
+
+        self._mergeStructuralSubscriptions(cur, from_id, to_id)
+        skip.append(('structuralsubscription', 'subscriber'))
 
         self._mergeSpecificationFeedback(cur, from_id, to_id)
         skip.append(('specificationfeedback', 'reviewer'))
@@ -4599,20 +4675,25 @@ def _get_recipients_for_team(team):
                          Join(Person,
                               TeamMembership.personID==Person.id),
                          LeftJoin(EmailAddress,
-                                  EmailAddress.person == Person.id))
+                                  And(
+                                      EmailAddress.person == Person.id,
+                                      EmailAddress.status ==
+                                        EmailAddressStatus.PREFERRED)))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
+        # Find Persons that have a preferred email address, or are a
+        # team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
                [TeamMembershipStatus.ADMIN.value,
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
-            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
-               And(Not(Person.teamownerID == None),
-                   EmailAddress.status == None))).config(distinct=True)
+            Or(
+                EmailAddress.personID != None,
+                Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,
              preferred_email_marker) in intermediate_transitive_results:

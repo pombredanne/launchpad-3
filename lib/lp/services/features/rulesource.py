@@ -130,7 +130,6 @@ class StormFeatureRuleSource(FeatureRuleSource):
                 .find(FeatureFlag)
                 .order_by(
                     FeatureFlag.flag,
-                    FeatureFlag.scope,
                     Desc(FeatureFlag.priority)))
         for r in rs:
             yield Rule(str(r.flag), str(r.scope), r.priority, r.value)

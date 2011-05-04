@@ -618,21 +618,19 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         if extra_data.private:
             params.private = extra_data.private
 
-        self.added_bug = bug = context.createBug(params)
-
         # Apply any extra options given by a bug supervisor.
-        bugtask = self.added_bug.default_bugtask
         if IHasBugSupervisor.providedBy(context):
             if self.user.inTeam(context.bug_supervisor):
                 if 'assignee' in data:
-                    bugtask.transitionToAssignee(data['assignee'])
+                    params.assignee = data['assignee']
                 if 'status' in data:
-                    bugtask.transitionToStatus(data['status'], self.user)
+                    params.status = data['status']
                 if 'importance' in data:
-                    bugtask.transitionToImportance(
-                        data['importance'], self.user)
+                    params.importance = data['importance']
                 if 'milestone' in data:
-                    bugtask.milestone = data['milestone']
+                    params.milestone = data['milestone']
+
+        self.added_bug = bug = context.createBug(params)
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
