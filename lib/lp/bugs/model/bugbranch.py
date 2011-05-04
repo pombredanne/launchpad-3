@@ -18,6 +18,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Exists,
     Or,
     Select,
     )
@@ -99,16 +100,17 @@ class BugBranchSet:
             # ones they may be directly or indirectly subscribed to.
             subscribed = And(
                 TeamParticipation.teamID == BugSubscription.person_id,
-                TeamParticipation.personID == user.id)
+                TeamParticipation.personID == user.id,
+                Bug.id == BugSubscription.bug_id)
 
             visible = And(
                 Bug.id == BugBranch.bugID,
                 Or(
                     Bug.private == False,
-                    Bug.id.is_in(Select(
-                        columns=[BugSubscription.bug_id],
+                    Exists(Select(
+                        columns=[True],
                         tables=[BugSubscription, TeamParticipation],
-                        where=subscribed))))
+                        where = subscribed))))
 
         return IStore(BugBranch).find(
             BugBranch.branchID,
