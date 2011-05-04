@@ -1865,7 +1865,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             CannotGetBuild,
             BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
         self.assertIn(
-            "Unable to find package build job with id 42. Skipping.", str(e))
+            "Unable to find PACKAGEBUILD with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
