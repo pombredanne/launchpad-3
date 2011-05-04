@@ -339,6 +339,9 @@ $$
 DECLARE
     d bugsummary%ROWTYPE;
 BEGIN
+    -- Grab a suitable lock before we start calculating bug summary data
+    -- to avoid race conditions. This lock allows SELECT but blocks writes.
+    LOCK TABLE BugSummary IN ROW EXCLUSIVE MODE;
     FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
         PERFORM bug_summary_inc(d);
     END LOOP;
@@ -355,6 +358,9 @@ $$
 DECLARE
     d bugsummary%ROWTYPE;
 BEGIN
+    -- Grab a suitable lock before we start calculating bug summary data
+    -- to avoid race conditions. This lock allows SELECT but blocks writes.
+    LOCK TABLE BugSummary IN ROW EXCLUSIVE MODE;
     FOR d IN SELECT * FROM bugsummary_locations(BUG_ROW) LOOP
         PERFORM bug_summary_dec(d);
     END LOOP;
