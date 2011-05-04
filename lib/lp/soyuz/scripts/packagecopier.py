@@ -407,17 +407,16 @@ class CopyChecker:
                 raise CannotCopy(
                     'Cannot check copy permissions (no requester).')
             else:
-                sourcepackagerelease = source.sourcepackagerelease
-                sourcepackagename = sourcepackagerelease.sourcepackagename
-                destination_component = series.getSourcePackage(
-                    sourcepackagename).latest_published_component
-                # If destination_component is not None, make sure the person
+                sourcepackage = source.sourcepackagerelease.sourcepackage
+                dest_component = sourcepackage.latest_published_component
+                # If dest_component is not None, make sure the person
                 # has upload permission for this component. Otherwise, any
                 # upload permission on this archive will do.
-                strict_component = destination_component is not None
+                strict_component = dest_component is not None
                 reason = self.archive.checkUpload(
-                    person, series, sourcepackagename, destination_component,
-                    pocket, strict_component=strict_component)
+                    person, series, sourcepackage.sourcepackagename,
+                    dest_component, pocket,
+                    strict_component=strict_component)
                 if reason is not None:
                     raise CannotCopy(reason)
 
