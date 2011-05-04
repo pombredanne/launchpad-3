@@ -1,0 +1,48 @@
+Working with Launchpad Answers over the API
+===========================================
+
+Users can work with question targets and questions over the api to
+search and update questions. This demonstration will use a project, it's
+contact, and asker, and three questions.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> lang_set = getUtility(ILanguageSet)
+
+    >>> login(ADMIN_EMAIL)
+    >>> _contact = factory.makePerson(name='contact')
+    >>> _project = factory.makeProduct(name='my-project', owner=_contact)
+    >>> _contact.addLanguage(lang_set['en'])
+    >>> _project.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> success = _project.addAnswerContact(_contact)
+    >>> _team = factory.makeTeam(_contact, 'my-team')
+    >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
+    >>> _asker = factory.makePerson(name='asker')
+    >>> _question_1 = factory.makeQuestion(
+    ...     target=_project, title="Q 1", owner=_asker)
+    >>> _question_2 = factory.makeQuestion(
+    ...     target=_project, title="Q 2", owner=_asker)
+    >>> _question_3 = factory.makeQuestion(
+    ...     target=_team_project, title="Q 3", owner=_asker)
+    >>> logout()
+
+    >>> contact_webservice = webservice_for_person(
+    ...     _contact, permission=OAuthPermission.WRITE_PUBLIC)
+
+Anyone can retrieve the collection of `IQuestionTarget`s that a user is an
+answer contact for.
+
+    >>> contact = anon_webservice.get('/~contact').jsonBody()
+    >>> targets = anon_webservice.named_get(
+    ...     contact['self_link'], 'getDirectAnswerQuestionTargets',
+    ...     api_version='devel').jsonBody()
+    >>> for target in targets:
+    ...     print target.name
+    My project
+
+
+

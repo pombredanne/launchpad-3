@@ -9,12 +9,27 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    operation_for_version,
+    operation_returns_collection_of,
+    operation_parameters,
+    )
+
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.questioncollection import IQuestionCollection
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 class IQuestionsPerson(IQuestionCollection):
 
+    export_as_webservice_entry(as_of='devel')
+
+    @operation_returns_collection_of(IQuestionTarget)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getDirectAnswerQuestionTargets():
         """Return a list of IQuestionTargets that a person is subscribed to.
 
@@ -22,6 +37,9 @@ class IQuestionsPerson(IQuestionCollection):
         answer contact because he subscribed himself.
         """
 
+    @operation_returns_collection_of(IQuestionTarget)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getTeamAnswerQuestionTargets():
         """Return a list of IQuestionTargets that are indirect subscriptions.
 

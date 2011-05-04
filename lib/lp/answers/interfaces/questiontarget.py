@@ -21,6 +21,17 @@ from zope.schema import (
     TextLine,
     )
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    exported,
+    export_read_operation,
+    export_write_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+
 from canonical.launchpad import _
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
@@ -35,6 +46,8 @@ from lp.services.fields import PublicPersonChoice
 
 class IQuestionTarget(ISearchableByQuestionOwner):
     """An object that can have a new question asked about it."""
+
+    export_as_webservice_entry(as_of='devel')
 
     def newQuestion(owner, title, description, language=None,
                     datecreated=None):
