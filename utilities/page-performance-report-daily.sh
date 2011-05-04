@@ -72,6 +72,8 @@ report() {
 
     # Only do the linking if requested.
     if [ "$link" = "link" ]; then
+        ln -sf ${dir}/partition.html \
+            ${OUTPUT_ROOT}/latest-${type}-partition.html
         ln -sf ${dir}/categories.html \
             ${OUTPUT_ROOT}/latest-${type}-categories.html
         ln -sf ${dir}/pageids.html \
