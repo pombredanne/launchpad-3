@@ -838,7 +838,7 @@ class BinaryPackageBuildSet:
 
         return BinaryPackageBuild.select(query, clauseTables=clauseTables)
 
-    def getByBuildID(self, id):
+    def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)

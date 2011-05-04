@@ -289,11 +289,11 @@ class IBinaryPackageBuildSet(Interface):
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
 
-    def getByBuildID(id):
+    def getByID(id):
         """Return the exact build specified.
 
         id is the numeric ID of the build record in the database.
-        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
+        I.E. getUtility(IBuildSet).getByID(foo).id == foo
         """
 
     def getPendingBuildsForArchSet(archseries):
