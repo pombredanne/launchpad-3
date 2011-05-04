@@ -110,7 +110,7 @@ class BugBranchSet:
                     Exists(Select(
                         columns=[True],
                         tables=[BugSubscription, TeamParticipation],
-                        where = subscribed))))
+                        where=subscribed))))
 
         return IStore(BugBranch).find(
             BugBranch.branchID,
