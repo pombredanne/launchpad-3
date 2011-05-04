@@ -533,6 +533,12 @@
         <allow
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildSet"/>
     </securedutility>
+    <securedutility
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildSet"
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+        name="PACKAGEBUILD">
+        <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
+    </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
 

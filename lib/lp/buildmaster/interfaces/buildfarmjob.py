@@ -14,6 +14,7 @@ __all__ = [
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
     'ISpecificBuildFarmJob',
+    'ISpecificBuildFarmJobSource',
     ]
 
 from lazr.enum import (
@@ -282,6 +283,26 @@ class ISpecificBuildFarmJob(IBuildFarmJob):
     This enables the registered adapters for ISpecificBuildFarmJob to be
     iterated when calculating IBuildFarmJob.specific_job.
     """
+
+
+class ISpecificBuildFarmJobSource(Interface):
+    """A utility for retrieving objects of a specific IBuildFarmJob type.
+
+    Implementations are registered with their BuildFarmJobType's name.
+    """
+
+    def getByID(id):
+        """Look up a concrete `IBuildFarmJob` by ID.
+
+        :param id: An ID of the concrete job class to look up.
+        """
+
+    def getByBuildFarmJob(build_farm_job):
+        """"Look up the concrete `IBuildFarmJob` for a BuildFarmJob.
+
+        :param build_farm_job: A BuildFarmJob for which to get the concrete
+            job.
+        """
 
 
 class IBuildFarmJobSource(Interface):

@@ -265,6 +265,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
 
+    def getByBuildFarmJob(self, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        return get_recipe_build_for_build_farm_job(build_farm_job)
+
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob

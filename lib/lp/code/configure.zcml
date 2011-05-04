@@ -933,6 +933,13 @@
     <allow interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildSource"/>
   </securedutility>
 
+  <securedutility
+     component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild"
+     provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
+     name="RECIPEBRANCHBUILD">
+    <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
+  </securedutility>
+
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob">
     <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuildJob"/>

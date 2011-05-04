@@ -348,6 +348,25 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
         self.sources.append(gtg_src_hist)
 
 
+class TestBuildSet(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getByBuildFarmJob_works(self):
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertEqual(
+            bpb,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
+                bpb.build_farm_job))
+
+    def test_getByBuildFarmJob_returns_none_when_missing(self):
+        sprb = self.factory.makeSourcePackageRecipeBuild()
+        self.assertIs(
+            None,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
+                sprb.build_farm_job))
+
+
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
     def setUp(self):

@@ -845,6 +845,10 @@ class BinaryPackageBuildSet:
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
 
+    def getByBuildFarmJob(self, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        return get_binary_build_for_build_farm_job(build_farm_job)
+
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""
         if not archseries:
