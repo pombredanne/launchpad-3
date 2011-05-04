@@ -120,7 +120,7 @@ class BuildNavigationMixin:
         except ValueError:
             return None
         try:
-            return getUtility(ISourcePackageRecipeBuildSource).getById(
+            return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
         except NotFoundError:
             return None

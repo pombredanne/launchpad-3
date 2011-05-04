@@ -104,7 +104,7 @@ class ISourcePackageRecipeBuildSource(Interface):
         :param logger: An optional logger to write debug info to.
         """
 
-    def getById(build_id):
+    def getByID(build_id):
         """Return the `ISourcePackageRecipeBuild` for the given build id.
 
         :param build_id: The id of the build to return.

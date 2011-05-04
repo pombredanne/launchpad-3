@@ -260,7 +260,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         package_build.destroySelf()
 
     @classmethod
-    def getById(cls, build_id):
+    def getByID(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
