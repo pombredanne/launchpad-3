@@ -86,7 +86,7 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return build
 
     @classmethod
-    def get(cls, build_id, store=None):
+    def getByID(cls, build_id, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(

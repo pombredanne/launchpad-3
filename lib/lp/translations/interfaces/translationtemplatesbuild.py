@@ -38,7 +38,7 @@ class ITranslationTemplatesBuildSource(Interface):
     def findByBranch(branch, store=None):
         """Find `ITranslationTemplatesBuild`s for `branch`."""
 
-    def get(build_id, store=None):
+    def getByID(build_id, store=None):
         """Find `ITranslationTemplatesBuild`s by id.
 
         :param build_id: Numerical id to look for.
