@@ -1987,7 +1987,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     makeBlueprint = makeSpecification
 
-    def makeQuestion(self, target=None, title=None):
+    def makeQuestion(self, target=None, title=None, owner=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -1999,9 +1999,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = target.owner
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=target.owner, title=title, description='description')
+                owner=owner, title=title, description='description')
         return question
 
     def makeFAQ(self, target=None, title=None):
