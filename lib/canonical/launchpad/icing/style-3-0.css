@@ -1019,14 +1019,20 @@ h1 .yui3-ieditor-errors {
     }
 .error.message::after, .warning.message::after,
 .informational.message::after {
-    content: '(Click to close)';
+    /* Add an affordance that suggests the ability to hide the message. */
+    /* The NBSP (\00A0) is needed because of the margin trick below. */
+    content: 'Hide\00A0\2715';
     float: right;
     display: block;
-    margin-top: -0.1em;
-}
-.error.message::after, .warning.message::after,
-.informational.message::after {
-    clear: both;
+    margin-left: 999em; /* Assure the message is always "bumped" down. */
+    }
+.error.message:hover::after, .warning.message:hover::after,
+.informational.message:hover::after {
+    text-decoration: underline;
+    }
+.error.message:hover, .warning.message:hover,
+.informational.message:hover {
+    cursor: pointer;
 }
 .informational {
     /* Informational messages are blue-to-grey, alerts have an info icon. */
