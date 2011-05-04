@@ -1562,6 +1562,10 @@ class Person(
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, comment=comment)
 
+    @cachedproperty
+    def administrated_teams(self):
+        return list(self.getAdministratedTeams())
+
     def getAdministratedTeams(self):
         """See `IPerson`."""
         owner_of_teams = Person.select('''

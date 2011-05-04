@@ -222,7 +222,8 @@ def snapshot_bug_params(bug_params):
             "datecreated", "security_related", "private",
             "distribution", "sourcepackagename", "binarypackagename",
             "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
+            "subscribe_owner", "filed_by", "importance",
+            "milestone", "assignee"])
 
 
 class BugTag(SQLBase):
@@ -2451,6 +2452,14 @@ class BugSet:
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
+
+        bug_task = bug.default_bugtask
+        if params.assignee:
+            bug_task.transitionToAssignee(params.assignee)
+        if params.importance:
+            bug_task.transitionToImportance(params.importance, params.owner)
+        if params.milestone:
+            bug_task.transitionToMilestone(params.milestone, params.owner)
 
         # Tell everyone.
         notify(event)

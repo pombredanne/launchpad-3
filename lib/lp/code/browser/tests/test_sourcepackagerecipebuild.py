@@ -45,7 +45,7 @@ class TestCanonicalUrlForRecipeBuild(TestCaseWithFactory):
         self.assertThat(
             canonical_url(build),
             StartsWith(
-                'http://launchpad.dev/~ppa-owner/+archive/ppa/+buildjob/'))
+                'http://launchpad.dev/~ppa-owner/+archive/ppa/+recipebuild/'))
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
