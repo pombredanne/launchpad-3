@@ -1067,7 +1067,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
                 config.malone.ubuntu_bug_filing_url)
 
     @safe_action
-    @action("Next", name="projectgroupsearch", validator="validate_search")
+    @action("Continue", name="projectgroupsearch", validator="validate_search")
     def projectgroup_search_action(self, action, data):
         """Search for similar bug reports."""
         # Don't give focus to any widget, to ensure that the browser
