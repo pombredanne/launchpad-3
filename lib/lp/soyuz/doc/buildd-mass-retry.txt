@@ -54,7 +54,7 @@ and set it to SUPERSEDED.
   >>> from lp.soyuz.interfaces.binarypackagebuild import (
   ...     IBinaryPackageBuildSet)
   >>> from lp.soyuz.enums import PackagePublishingStatus
-  >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(12)
+  >>> build = getUtility(IBinaryPackageBuildSet).getByID(12)
   >>> pub = removeSecurityProxy(build.current_source_publication)
 
 Let's mark the build from the previous run superseded.

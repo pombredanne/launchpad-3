@@ -23,7 +23,7 @@ See more information in build-notification.txt file.
 
 Let's use a sampledata build record in FAILEDTOUPLOAD:
 
-  >>> failedtoupload_candidate = buildset.getByBuildID(22)
+  >>> failedtoupload_candidate = buildset.getByID(22)
 
   >>> print failedtoupload_candidate.title
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE

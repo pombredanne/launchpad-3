@@ -23,8 +23,7 @@
     <div class="top-portlet" metal:fill-slot="main"
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
-                  parent_name context/parent_series/displayname;
-                  can_perform_sync view/canPerformSync;">
+                  parent_name context/parent_series/displayname;">
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <tal:distroseries_localdiff_search_form
@@ -65,7 +64,7 @@
                 tal:attributes="class src_name">
 
               <td>
-                <input tal:condition="can_perform_sync"
+                <input tal:condition="view/canPerformSync"
                   name="field.selected_differences" type="checkbox"
                   tal:attributes="
                     value src_name;

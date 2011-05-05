@@ -109,7 +109,7 @@ class BuildNavigationMixin:
         except ValueError:
             return None
         try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByID(build_id)
         except NotFoundError:
             return None
 
@@ -120,7 +120,7 @@ class BuildNavigationMixin:
         except ValueError:
             return None
         try:
-            return getUtility(ISourcePackageRecipeBuildSource).getById(
+            return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
         except NotFoundError:
             return None
