@@ -40,24 +40,25 @@ class QuestionTargetAnswerContactTestCase(TestCaseWithFactory):
         login_person(self.user)
         other_user = self.factory.makePerson()
         self.assertFalse(
-            self.project.canUserAlterAnswerContact(self.user, other_user))
+            self.project.canUserAlterAnswerContact(other_user, self.user))
 
     def test_canUserAlterAnswerContact_administered_team(self):
         login_person(self.user)
         team = self.factory.makeTeam(owner=self.user)
         self.assertTrue(
-            self.project.canUserAlterAnswerContact(self.user, team))
+            self.project.canUserAlterAnswerContact(team, self.user))
 
     def test_canUserAlterAnswerContact_other_team(self):
         login_person(self.user)
         other_team = self.factory.makeTeam()
         self.assertFalse(
-            self.project.canUserAlterAnswerContact(self.user, other_team))
+            self.project.canUserAlterAnswerContact(other_team, self.user))
 
     def test_canUserAlterAnswerContact_admin(self):
         admin = login_celebrity('admin')
+        other_user = self.factory.makePerson()
         self.assertTrue(
-            self.project.canUserAlterAnswerContact(admin, self.user))
+            self.project.canUserAlterAnswerContact(other_user, admin))
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):

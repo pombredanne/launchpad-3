@@ -25,12 +25,15 @@ from zope.schema import (
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    exported,
     export_read_operation,
     export_write_operation,
     operation_for_version,
     operation_parameters,
     REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
     )
 
 from canonical.launchpad import _
@@ -105,24 +108,24 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def canUserAlterAnswerContact(user, contact):
+    def canUserAlterAnswerContact(contact, subscribed_by):
         """Can the user add or remove the answer contact.
 
         Users can add or remove themselves or one of the teams they
         administered.
 
-        :param user: The `IPerson` making the change.
         :param contact: The `IPerson` that is or will be an answer contact.
+        :param subscribed_by: The `IPerson` making the change.
         """
 
     def addAnswerContact(person):
         """Add a new answer contact.
 
         :param person: An `IPerson`.
-
-        Returns True if the person was added, False if the person already was
-        an answer contact. A person must have at least one preferred
-        language to be an answer contact.
+        :return: True if the person was added, False if the person already is
+            an answer contact.
+        :raises ValueError: When the person or team does no have a preferred
+            language.
         """
 
     def removeAnswerContact(person):

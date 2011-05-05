@@ -1319,14 +1319,14 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
-    def canUserAlterAnswerContact(self, user, contact):
+    def canUserAlterAnswerContact(self, contact, subscribed_by):
         """See `IQuestionTarget`."""
-        if contact is None or user is None:
+        if contact is None or subscribed_by is None:
             return False
         admins = getUtility(ILaunchpadCelebrities).admin
-        if (contact == user
-            or contact in user.administrated_teams
-            or user.inTeam(admins)):
+        if (contact == subscribed_by
+            or contact in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(admins)):
             return True
         return False
 
