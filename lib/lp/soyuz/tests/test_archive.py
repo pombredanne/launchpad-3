@@ -37,7 +37,6 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
-    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
@@ -61,7 +60,6 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -69,7 +67,6 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
-    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
@@ -826,22 +823,6 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertEqual(
             False,
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
-
-    def test_hasAnyPermission(self):
-        # hasAnyPermission returns true if the person is the member of a
-        # team with any kind of permission on the archive.
-        archive = self.factory.makeArchive()
-        person = self.factory.makePerson()
-        team = self.factory.makeTeam()
-        main = getUtility(IComponentSet)["main"]
-        ArchivePermission(
-            archive=archive, person=team, component=main,
-            permission=ArchivePermissionType.UPLOAD)
-
-        self.assertFalse(archive.hasAnyPermission(person))
-        with celebrity_logged_in('admin'):
-            team.addMember(person, team.teamowner)
-        self.assertTrue(archive.hasAnyPermission(person))
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
