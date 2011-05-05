@@ -101,7 +101,10 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
-from lp.code.errors import WrongBranchMergeProposal
+from lp.code.errors import (
+    ClaimReviewFailed,
+    WrongBranchMergeProposal,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -597,7 +600,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
         if request is not None:
-            request.claimReview(self.user)
+            try:
+                request.claimReview(self.user)
+            except ClaimReviewFailed as e:
+                self.request.response.addErrorNotification(unicode(e))
         self.next_url = canonical_url(self.context)
 
     @property
