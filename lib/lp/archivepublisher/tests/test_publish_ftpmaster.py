@@ -8,11 +8,13 @@ __metaclass__ = type
 from apt_pkg import TagFile
 import logging
 import os
+from testtools.matchers import StartsWith
 from textwrap import dedent
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -23,6 +25,7 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -125,6 +128,24 @@ class HelpersMixin:
 
         self.addCleanup(config.pop, "run-parts")
 
+    def makeDistro(self):
+        """Create a `Distribution` for testing.
+
+        The distribution will have a publishing directory set up, which
+        will be cleaned up after the test.
+        """
+        return self.factory.makeDistribution(
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
+
+    def makeScript(self, distro=None, extra_args=[]):
+        """Produce instance of the `PublishFTPMaster` script."""
+        if distro is None:
+            distro = self.makeDistro()
+        script = PublishFTPMaster(test_args=["-d", distro.name] + extra_args)
+        script.txn = self.layer.txn
+        script.logger = DevNullLogger()
+        return script
+
 
 class TestPublishFTPMasterHelpers(TestCase):
 
@@ -211,15 +232,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         pub_config.root_dir = unicode(
             self.makeTemporaryDirectory())
 
-    def makeDistro(self):
-        """Create a `Distribution` for testing.
-
-        The distribution will have a publishing directory set up, which
-        will be cleaned up after the test.
-        """
-        return self.factory.makeDistribution(
-            publish_root_dir=unicode(self.makeTemporaryDirectory()))
-
     def prepareUbuntu(self):
         """Obtain a reference to Ubuntu, set up for testing.
 
@@ -229,15 +241,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.setUpForScriptRun(ubuntu)
         return ubuntu
-
-    def makeScript(self, distro=None, extra_args=[]):
-        """Produce instance of the `PublishFTPMaster` script."""
-        if distro is None:
-            distro = self.makeDistro()
-        script = PublishFTPMaster(test_args=["-d", distro.name] + extra_args)
-        script.txn = self.layer.txn
-        script.logger = DevNullLogger()
-        return script
 
     def readReleaseFile(self, filename):
         """Read a Release file, return as a keyword/value dict."""
@@ -274,7 +277,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.chmod(script_path, 0755)
 
     def test_script_runs_successfully(self):
-        ubuntu = self.prepareUbuntu()
+        self.prepareUbuntu()
         self.layer.txn.commit()
         stdout, stderr, retval = run_script(
             self.SCRIPT_PATH + " -d ubuntu")
@@ -294,7 +297,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         test_publisher = SoyuzTestPublisher()
         distroseries = test_publisher.setUpDefaultDistroSeries()
         distro = distroseries.distribution
-        pub_config = get_pub_config(distro)
         self.factory.makeComponentSelection(
             distroseries=distroseries, component="main")
         self.factory.makeArchive(
@@ -400,15 +402,15 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_getDirtySecuritySuites_ignores_non_security_suites(self):
         distroseries = self.factory.makeDistroSeries()
-        spphs = [
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=distroseries, pocket=pocket)
-            for pocket in [
-                PackagePublishingPocket.RELEASE,
-                PackagePublishingPocket.UPDATES,
-                PackagePublishingPocket.PROPOSED,
-                PackagePublishingPocket.BACKPORTS,
-                ]]
         script = self.makeScript(distroseries.distribution)
         script.setUp()
         self.assertEqual([], script.getDirtySecuritySuites())
@@ -759,3 +761,79 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
+
+
+class TestCreateDistroSeriesIndexes(TestCaseWithFactory):
+    """Test initial creation of archive indexes for a `DistroSeries`."""
+    layer = LaunchpadZopelessLayer
+
+    def test_new_frozen_series_needs_indexes_created(self):
+        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        script = self.makeScript(series.distribution)
+        self.assertTrue(script.needsIndexesCreated(series))
+
+    def test_new_nonfrozen_series_does_not_need_indexes_created(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        self.assertFalse(script.needsIndexesCreated(series))
+
+    def test_distro_without_publisher_config_gets_no_indexes(self):
+        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        distro = series.distribution
+        pub_config = getUtility(IPublisherConfigSet).getByDistribution(distro)
+        IMasterStore(pub_config).remove(pub_config)
+        script = self.makeScript(series.distribution)
+        self.assertFalse(script.needsIndexesCreated(series))
+
+    def test_markIndexCreationComplete_tells_needsIndexesCreated_no(self):
+        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        script = self.makeScript(series.distribution)
+        script.markIndexCreationComplete(series)
+        self.assertFalse(script.needsIndexesCreated(series))
+
+    def test_createIndexes_marks_index_creation_complete(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        script.markIndexCreationComplete = FakeMethod()
+        script.runPublishDistro = FakeMethod()
+        script.createIndexes(series)
+        self.assertEqual(
+            [([series], {})], script.markIndexCreationComplete.calls)
+
+    def test_failed_index_creation_is_not_marked_complete(self):
+        # If index creation fails, it is not marked as having been
+        # completed.  The next run will retry.
+        class Boom(Exception):
+            """Simulated failure."""
+
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        script.markIndexCreationComplete = FakeMethod()
+        script.runPublishDistro = FakeMethod(failure=Boom("Sorry!"))
+        try:
+            script.createIndexes(series)
+        except:
+            pass
+        self.assertEqual([], script.createIndexes.calls)
+
+    def test_script_calls_createIndexes_for_new_series(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        script.createIndexes = FakeMethod()
+        script.main()
+        self.assertEqual([([series], {})], script.createIndexes.calls)
+
+    def test_createIndexes_ignores_other_series(self):
+        series = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(distribution=series.distribution)
+        script = self.makeScript(series.distribution)
+        script.runPublishDistro = FakeMethod()
+        script.createIndexes(series)
+        args, kwargs = script.runPublishDistro.calls[0]
+        suites = kwargs['suites']
+        self.assertEqual(len(pocketsuffix), len(suites))
+        for suite in suites:
+            self.assertThat(suite, StartsWith(series.name))
+
+    def test_script_creates_indexes(self):
+        self.assertTrue(False)
