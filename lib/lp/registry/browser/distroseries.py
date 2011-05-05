@@ -12,7 +12,7 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesInitializeView',
-    'DistroSeriesLocalDifferences',
+    'DistroSeriesLocalDifferencesView',
     'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
@@ -93,6 +93,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
@@ -432,6 +433,15 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
         return self._num_differences(
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
 
+    @cachedproperty
+    def parent_series(self):
+        # XXX StevenK: This will currently throw NotOneError up the
+        # callstack if the child has more than one parent. This is okay
+        # *for now*, so we can get away with no UI changes.
+        dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+            self.context).one()
+        return dsp.parent_series
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
@@ -732,7 +742,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return form.Fields(Choice(
             __name__='package_type',
             vocabulary=make_package_type_vocabulary(
-                self.context.parent_series.displayname,
+                self.parent_series.displayname,
                 self.search_higher_parent_option),
             default=DEFAULT_PACKAGE_TYPE,
             required=True))
@@ -872,6 +882,15 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
             return not differences.is_empty()
 
+    @cachedproperty
+    def parent_series(self):
+        # XXX StevenK: This will currently throw NotOneError up the
+        # callstack if the child has more than one parent. This is okay
+        # *for now*, so we can get away with no UI changes.
+        dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+            self.context).one()
+        return dsp.parent_series
+
 
 class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                                        LaunchpadFormView):
@@ -887,7 +906,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         # Update the label for sync action.
         self.initialize_sync_label(
             "Sync Selected %s Versions into %s" % (
-                self.context.parent_series.displayname,
+                self.parent_series.displayname,
                 self.context.displayname,
                 ))
         super(DistroSeriesLocalDifferencesView, self).initialize()
@@ -903,8 +922,8 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             'target="help">Read more about syncing from the parent series'
             '</a>).',
             self.context.displayname,
-            self.context.parent_series.fullseriesname,
-            self.context.parent_series.displayname)
+            self.parent_series.fullseriesname,
+            self.parent_series.displayname)
 
     @property
     def label(self):
@@ -912,7 +931,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             "Source package differences between '%s' and "
             "parent series '%s'" % (
                 self.context.displayname,
-                self.context.parent_series.displayname,
+                self.parent_series.displayname,
                 ))
 
     @action(_("Update"), name="update")
@@ -951,7 +970,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
             "Packages that are listed here are those that have been added to "
             "the specific packages %s that were used to create %s. They are "
             "listed here so you can consider including them in %s.",
-            self.context.parent_series.displayname,
+            self.parent_series.displayname,
             self.context.displayname,
             self.context.displayname)
 
@@ -959,7 +978,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def label(self):
         return (
             "Packages in parent series '%s' but not in '%s'" % (
-                self.context.parent_series.displayname,
+                self.parent_series.displayname,
                 self.context.displayname,
                 ))
 
@@ -994,14 +1013,14 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
             "Packages that are listed here are those that have been added to "
             "%s but are not yet part of the parent series %s.",
             self.context.displayname,
-            self.context.parent_series.displayname)
+            self.parent_series.displayname)
 
     @property
     def label(self):
         return (
             "Packages in '%s' but not in parent series '%s'" % (
                 self.context.displayname,
-                self.context.parent_series.displayname,
+                self.parent_series.displayname,
                 ))
 
     @action(_("Update"), name="update")
