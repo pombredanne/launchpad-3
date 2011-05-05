@@ -8,8 +8,10 @@ __all__ = [
     'PublishFTPMaster',
     ]
 
+from datetime import datetime
 from optparse import OptionParser
 import os
+from pytz import utc
 from zope.component import getUtility
 
 from canonical.config import config
@@ -263,7 +265,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         This tells `needsIndexesCreated` that no, this series no longer needs
         archive indexes to be set up.
         """
-# XXX: Implement
+        marker_path = self.locateIndexesMarker(distroseries)
+        os.makedirs(os.path.dirname(marker_path))
+        marker_file = file(marker_path, "w")
+        marker_file.write(
+            "Indexes for %s were created on %s.\n"
+            % (distroseries, datetime.now(utc)))
+        marker_file.close()
 
     def createIndexes(self, distroseries):
         """Create archive indexes for `distroseries`."""
@@ -553,7 +561,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         for series in self.distribution.series:
             if self.needsIndexesCreated(series):
                 self.createIndexes(series)
-                # Don't try to do too much in one run.
+                # Don't try to do too much in one run.  Leave the rest
+                # of the work for next time.
                 return
 
         self.processAccepted()

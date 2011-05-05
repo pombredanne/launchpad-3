@@ -855,6 +855,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         series = self.factory.makeDistroSeries()
         self.factory.makeDistroSeries(distribution=series.distribution)
         script = self.makeScript(series.distribution)
+        script.setUp()
         script.runPublishDistro = FakeMethod()
         script.createIndexes(series)
         args, kwargs = script.runPublishDistro.calls[0]
