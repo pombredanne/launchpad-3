@@ -72,6 +72,8 @@ report() {
 
     # Only do the linking if requested.
     if [ "$link" = "link" ]; then
+        ln -sf ${dir}/partition.html \
+            ${OUTPUT_ROOT}/latest-${type}-partition.html
         ln -sf ${dir}/categories.html \
             ${OUTPUT_ROOT}/latest-${type}-categories.html
         ln -sf ${dir}/pageids.html \
@@ -82,9 +84,6 @@ report() {
         ln -sf ${dir}/top200.html ${OUTPUT_ROOT}/latest-${type}-top200.html
         ln -sf ${dir}/timeout-candidates.html   \
             ${OUTPUT_ROOT}/latest-${type}-timeout-candidates.html
-        # This should be removed once the one-time import has taken place.
-        find ${OUTPUT_ROOT} -path '*daily*/metrics.dat' |sort |xargs cat \
-            > ${OUTPUT_ROOT}/history-metrics.dat
     fi
 
     return 0
