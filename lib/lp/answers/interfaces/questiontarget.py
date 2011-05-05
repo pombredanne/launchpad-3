@@ -108,33 +108,55 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def canUserAlterAnswerContact(contact, subscribed_by):
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user or an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def canUserAlterAnswerContact(person, subscribed_by):
         """Can the user add or remove the answer contact.
 
         Users can add or remove themselves or one of the teams they
         administered.
 
-        :param contact: The `IPerson` that is or will be an answer contact.
+        :param person: The `IPerson` that is or will be an answer contact.
         :param subscribed_by: The `IPerson` making the change.
         """
 
-    def addAnswerContact(person):
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user of an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def addAnswerContact(person, subscribed_by=None):
         """Add a new answer contact.
 
         :param person: An `IPerson`.
+        :param subscribed_by: The user making the change.
         :return: True if the person was added, False if the person already is
             an answer contact.
         :raises ValueError: When the person or team does no have a preferred
             language.
         """
 
-    def removeAnswerContact(person):
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user of an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def removeAnswerContact(person, subscribed_by=None):
         """Remove an answer contact.
 
-        :person: An IPerson.
-
-        Returns True if the person was removed, False if the person wasn't an
-        answer contact.
+        :param person: An `IPerson`.
+        :param subscribed_by: The user making the change.
+        :return: True if the person was removed, False if the person wasn't an
+            answer contact.
         """
 
     def getAnswerContactsForLanguage(language):

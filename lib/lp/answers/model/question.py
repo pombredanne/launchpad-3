@@ -1319,25 +1319,28 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
-    def canUserAlterAnswerContact(self, contact, subscribed_by):
+    def canUserAlterAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
-        if contact is None or subscribed_by is None:
+        if person is None or subscribed_by is None:
             return False
         admins = getUtility(ILaunchpadCelebrities).admin
-        if (contact == subscribed_by
-            or contact in subscribed_by.administrated_teams
+        if (person == subscribed_by
+            or person in subscribed_by.administrated_teams
             or subscribed_by.inTeam(admins)):
             return True
         return False
 
-    def addAnswerContact(self, person):
+    def addAnswerContact(self, person, subscribed_by=None):
         """See `IQuestionTarget`."""
+        subscribed_by = subscribed_by or person
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         answer_contact = AnswerContact.selectOneBy(
             person=person, **self.getTargetTypes())
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        if len(person.languages) > 0:
+        if len(person.languages) == 0:
             raise ValueError("An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
@@ -1406,8 +1409,11 @@ class QuestionTargetMixin:
             recipients.add(person, reason, header)
         return recipients
 
-    def removeAnswerContact(self, person):
+    def removeAnswerContact(self, person, subscribed_by=None):
         """See `IQuestionTarget`."""
+        subscribed_by = subscribed_by or person
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
