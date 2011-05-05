@@ -203,15 +203,6 @@ class TestPackageBuild(TestPackageBuildBase):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the package build id and record id.
-        # The uploadprocessor relies on this format.
-        Store.of(self.package_build).flush()
-        cookie = self.package_build.getBuildCookie()
-        expected_cookie = "%d-PACKAGEBUILD-%d" % (
-            self.package_build.id, self.package_build.build_farm_job.id)
-        self.assertEquals(expected_cookie, cookie)
-
     def test_destroySelf_removes_BuildFarmJob(self):
         # Destroying a packagebuild also destroys the BuildFarmJob it
         # references.
@@ -285,8 +276,10 @@ class TestGetUploadMethodsMixin:
         # that is parseable by the upload processor.
         upload_leaf = self.build.getUploadDirLeaf(
             self.build.getBuildCookie())
-        job_id = parse_build_upload_leaf_name(upload_leaf)
-        self.assertEqual(job_id, self.build.build_farm_job.id)
+        (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(
+            (self.build.build_farm_job.job_type.name, self.build.id),
+            (job_type, job_id))
 
 
 class TestHandleStatusMixin:
