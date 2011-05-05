@@ -177,7 +177,7 @@ from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
     InitialiseDistroSeries,
     )
-from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
     )
@@ -2024,6 +2024,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         seriesID = self.id
         distributionID = self.distributionID
+
         def weight_function(bugtask):
             if bugtask.distroseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
