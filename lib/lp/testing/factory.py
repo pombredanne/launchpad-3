@@ -286,7 +286,11 @@ from lp.testing import (
     temp_dir,
     time_counter,
     )
-from lp.translations.enums import RosettaImportStatus
+from lp.translations.enums import (
+    LanguagePackType,
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.languagepack import ILanguagePackSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
@@ -2217,6 +2221,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             language_code, name, pluralforms=pluralforms,
             pluralexpression=plural_expression)
 
+    def makeLanguagePack(self, distroseries=None, languagepack_type=None):
+        """Create a language pack."""
+        if distroseries is None:
+            distroseries = self.makeUbuntuDistroSeries()
+        if languagepack_type is None:
+            languagepack_type = LanguagePackType.FULL
+        return getUtility(ILanguagePackSet).addLanguagePack(
+            distroseries, self.makeLibraryFileAlias(), languagepack_type)
+    
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
                              expires=None):
