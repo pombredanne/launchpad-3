@@ -146,6 +146,12 @@ class HelpersMixin:
         script.logger = DevNullLogger()
         return script
 
+    def setUpForScriptRun(self, distro):
+        """Mock up config to run the script on `distro`."""
+        pub_config = getUtility(IPublisherConfigSet).getByDistribution(distro)
+        pub_config.root_dir = unicode(
+            self.makeTemporaryDirectory())
+
 
 class TestPublishFTPMasterHelpers(TestCase):
 
@@ -225,12 +231,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     # Location of shell script.
     SCRIPT_PATH = "cronscripts/publish-ftpmaster.py"
-
-    def setUpForScriptRun(self, distro):
-        """Mock up config to run the script on `distro`."""
-        pub_config = getUtility(IPublisherConfigSet).getByDistribution(distro)
-        pub_config.root_dir = unicode(
-            self.makeTemporaryDirectory())
 
     def prepareUbuntu(self):
         """Obtain a reference to Ubuntu, set up for testing.
@@ -767,18 +767,29 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     """Test initial creation of archive indexes for a `DistroSeries`."""
     layer = LaunchpadZopelessLayer
 
+    def createIndexesMarkerDir(self, script, distroseries):
+        """Create the directory for `distroseries`'s indexes marker."""
+        marker = script.locateIndexesMarker(distroseries)
+        os.makedirs(os.path.dirname(marker))
+
     def test_new_frozen_series_needs_indexes_created(self):
+        # If a distroseries is Frozen and has not had its indexes
+        # created yet, needsIndexesCreated returns True for it.
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
         script = self.makeScript(series.distribution)
         script.setUp()
         self.assertTrue(script.needsIndexesCreated(series))
 
     def test_new_nonfrozen_series_does_not_need_indexes_created(self):
+        # needsIndexesCreated only returns True for Frozen distroseries.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
         self.assertFalse(script.needsIndexesCreated(series))
 
     def test_distro_without_publisher_config_gets_no_indexes(self):
+        # needsIndexesCreated returns False for distributions that have
+        # no publisher config, such as Debian.  We don't want to publish
+        # these distributions.
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
         pub_config = get_pub_config(series.distribution)
         IMasterStore(pub_config).remove(pub_config)
@@ -786,15 +797,25 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(script.needsIndexesCreated(series))
 
     def test_markIndexCreationComplete_tells_needsIndexesCreated_no(self):
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
-        script = self.makeScript(series.distribution)
+        # The effect of markIndexCreationComplete is to make
+        # needsIndexesCreated for that distroseries return False.
+        distro = self.makeDistro()
+        series = self.factory.makeDistroSeries(
+            status=SeriesStatus.FROZEN, distribution=distro)
+        script = self.makeScript(distro)
         script.setUp()
+        self.createIndexesMarkerDir(script, series)
+
+        self.assertTrue(script.needsIndexesCreated(series))
         script.markIndexCreationComplete(series)
         self.assertFalse(script.needsIndexesCreated(series))
 
     def test_createIndexes_marks_index_creation_complete(self):
-        series = self.factory.makeDistroSeries()
-        script = self.makeScript(series.distribution)
+        # createIndexes calls markIndexCreationComplete for the
+        # distroseries.
+        distro = self.makeDistro()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        script = self.makeScript(distro)
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod()
         script.createIndexes(series)
@@ -818,6 +839,8 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.markIndexCreationComplete.calls)
 
     def test_locateIndexesMarker_places_file_in_archive_root(self):
+        # The marker file for index creation is in the distribution's
+        # archive root.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
         script.setUp()
@@ -827,6 +850,8 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
             StartsWith(os.path.normpath(archive_root)))
 
     def test_locateIndexesMarker_uses_separate_files_per_series(self):
+        # Different release series of the same distribution get separate
+        # marker files for index creation.
         distro = self.makeDistro()
         series1 = self.factory.makeDistroSeries(distribution=distro)
         series2 = self.factory.makeDistroSeries(distribution=distro)
@@ -837,6 +862,8 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
             script.locateIndexesMarker(series2))
 
     def test_locateIndexMarker_uses_hidden_file(self):
+        # The index-creation marker file is a "dot file," so it's not
+        # visible in normal directory listings.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
         script.setUp()
@@ -845,18 +872,26 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
             StartsWith("."))
 
     def test_script_calls_createIndexes_for_new_series(self):
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
-        script = self.makeScript(series.distribution)
+        # If the script's main() finds a distroseries that needs its
+        # indexes created, it calls createIndexes on that distroseries.
+        distro = self.makeDistro()
+        series = self.factory.makeDistroSeries(
+            status=SeriesStatus.FROZEN, distribution=distro)
+        script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.main()
         self.assertEqual([((series, ), {})], script.createIndexes.calls)
 
     def test_createIndexes_ignores_other_series(self):
-        series = self.factory.makeDistroSeries()
-        self.factory.makeDistroSeries(distribution=series.distribution)
-        script = self.makeScript(series.distribution)
+        # createIndexes does not accidentally also touch other
+        # distroseries than the one it's meant to.
+        distro = self.makeDistro()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDistroSeries(distribution=distro)
+        script = self.makeScript(distro)
         script.setUp()
         script.runPublishDistro = FakeMethod()
+        self.createIndexesMarkerDir(script, series)
         script.createIndexes(series)
         args, kwargs = script.runPublishDistro.calls[0]
         suites = kwargs['suites']
@@ -865,4 +900,19 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
             self.assertThat(suite, StartsWith(series.name))
 
     def test_script_creates_indexes(self):
-        self.assertTrue(False)
+        # End-to-end test: the script creates indexes for distroseries
+        # that need them.
+        test_publisher = SoyuzTestPublisher()
+        series = test_publisher.setUpDefaultDistroSeries()
+        series.status = SeriesStatus.FROZEN
+        self.factory.makeComponentSelection(
+            distroseries=series, component="main")
+        self.layer.txn.commit()
+        self.setUpForScriptRun(series.distribution)
+        script = self.makeScript(series.distribution)
+        script.main()
+        self.assertFalse(script.needsIndexesCreated(series))
+        sources = os.path.join(
+            script.configs[ArchivePurpose.PRIMARY].distsroot,
+            series.name, "main", "source", "Sources")
+        self.assertTrue(file_exists(sources))
