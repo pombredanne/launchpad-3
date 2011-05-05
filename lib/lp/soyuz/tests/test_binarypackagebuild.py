@@ -137,7 +137,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # they would normally be queries.
         store = Store.of(build_farm_job)
         store.flush()
-        store.reset()
+        store.invalidate()
 
         binary_package_build = build_farm_job.getSpecificJob()
 
@@ -346,6 +346,25 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.builds += gtg_src_hist.createMissingBuilds()
         self.sources.append(gtg_src_hist)
+
+
+class TestBuildSet(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getByBuildFarmJob_works(self):
+        bpb = self.factory.makeBinaryPackageBuild()
+        self.assertEqual(
+            bpb,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
+                bpb.build_farm_job))
+
+    def test_getByBuildFarmJob_returns_none_when_missing(self):
+        sprb = self.factory.makeSourcePackageRecipeBuild()
+        self.assertIs(
+            None,
+            getUtility(IBinaryPackageBuildSet).getByBuildFarmJob(
+                sprb.build_farm_job))
 
 
 class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
