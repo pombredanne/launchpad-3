@@ -1196,7 +1196,7 @@
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="archive"
-        path_expression="string:+buildjob/${url_id}"
+        path_expression="string:+recipebuild/${id}"
         />
     <adapter
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"

@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -47,6 +48,8 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -988,6 +991,24 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertContentEqual(
             [resolved_diff], filtered_view.cached_differences.batch)
 
+    def _setUpDSD(self, src_name='src-name', versions=None,
+                  difference_type=None):
+        # Helper to create a derived series with fixed names and proper
+        # source package format selection along with a DSD.
+        parent_series = self.factory.makeDistroSeries(name='warty')
+        derived_series = self.factory.makeDistroSeries(
+            distribution=self.factory.makeDistribution(name='deribuntu'),
+            name='derilucid', parent_series=parent_series)
+        self._set_source_selection(derived_series)
+        self.factory.makeDistroSeriesDifference(
+            source_package_name_str=src_name,
+            derived_series=derived_series, versions=versions,
+            difference_type=difference_type)
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            src_name)
+        set_derived_series_ui_feature_flag(self)
+        return derived_series, parent_series, sourcepackagename
+
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.
         derived_series, parent_series = self._create_child_and_parent()
@@ -1012,6 +1033,18 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
             self.assertTrue(view.canPerformSync())
+
+    def _syncAndGetView(self, derived_series, person, sync_differences,
+                        difference_type=None, view_name='+localpackagediffs'):
+        # A helper to get the POST'ed sync view.
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, view_name,
+                method='POST', form={
+                    'field.selected_differences': sync_differences,
+                    'field.actions.sync': 'Sync',
+                    })
+            return view
 
     def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
@@ -1112,6 +1145,34 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'No differences selected.', view.errors[0])
         self.assertEqual(
             'Invalid value', view.errors[1].error_name)
+
+    def test_sync_in_released_series_in_updates(self):
+        # If the destination series is released, the sync packages end
+        # up in the updates pocket.
+        versions = {
+            'parent': '1.0-1',
+        }
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', versions=versions)
+
+        # Update destination series status to current and update
+        # daterelease.
+        with celebrity_logged_in('admin'):
+            derived_series.status = SeriesStatus.CURRENT
+            derived_series.datereleased = UTC_NOW
+
+        self._syncAndGetView(
+            derived_series, derived_series.owner, ['my-src-name'])
+
+        parent_pub = parent_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=parent_series).one()
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+
+        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
+        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
