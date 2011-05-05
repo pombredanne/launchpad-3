@@ -450,9 +450,7 @@ class CopyCheckerHarness:
         copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertIs(
             None,
-            copy_checker.checkCopy(
-                self.source, self.series, self.pocket,
-                check_permissions=False))
+            copy_checker.checkCopy(self.source, self.series, self.pocket))
         checked_copies = list(copy_checker.getCheckedCopies())
         self.assertEquals(1, len(checked_copies))
         [checked_copy] = checked_copies
@@ -478,9 +476,7 @@ class CopyCheckerHarness:
         copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertIs(
             None,
-            copy_checker.checkCopy(
-                self.source, self.series, self.pocket,
-                check_permissions=False))
+            copy_checker.checkCopy(self.source, self.series, self.pocket))
         checked_copies = list(copy_checker.getCheckedCopies())
         self.assertEquals(1, len(checked_copies))
         [checked_copy] = checked_copies
@@ -489,8 +485,7 @@ class CopyCheckerHarness:
             BuildSetStatus.FULLYBUILT_PENDING)
         self.assertEquals(delayed, checked_copy.delayed)
 
-    def assertCannotCopySourceOnly(self, msg, person=None,
-                                   check_permissions=False):
+    def assertCannotCopySourceOnly(self, msg):
         """`CopyChecker.checkCopy()` for source-only copy raises CannotCopy.
 
         No `CheckedCopy` is stored.
@@ -498,8 +493,7 @@ class CopyCheckerHarness:
         copy_checker = CopyChecker(self.archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy, msg,
-            copy_checker.checkCopy, self.source, self.series, self.pocket,
-            person, check_permissions)
+            copy_checker.checkCopy, self.source, self.series, self.pocket)
         checked_copies = list(copy_checker.getCheckedCopies())
         self.assertEquals(0, len(checked_copies))
 
@@ -511,8 +505,7 @@ class CopyCheckerHarness:
         copy_checker = CopyChecker(self.archive, include_binaries=True)
         self.assertRaisesWithContent(
             CannotCopy, msg,
-            copy_checker.checkCopy, self.source, self.series, self.pocket,
-            None, False)
+            copy_checker.checkCopy, self.source, self.series, self.pocket)
         checked_copies = list(copy_checker.getCheckedCopies())
         self.assertEquals(0, len(checked_copies))
 
@@ -520,14 +513,6 @@ class CopyCheckerHarness:
         [build] = self.source.createMissingBuilds()
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
-
-    def test_cannot_copy_check_perm_no_person(self):
-        # If check_permissions=True and person=None is passed to
-        # checkCopy, raise an error (cannot check permissions for a
-        # 'None' person).
-        self.assertCannotCopySourceOnly(
-            'Cannot check copy permissions (no requester).',
-            person=None, check_permissions=True)
 
     def test_cannot_copy_binaries_from_FTBFS(self):
         [build] = self.source.createMissingBuilds()
@@ -714,14 +699,10 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # At this point copy is allowed with or without binaries.
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertIs(
-            None,
-            copy_checker.checkCopy(
-                source, series, pocket, check_permissions=False))
+            None, copy_checker.checkCopy(source, series, pocket))
         copy_checker = CopyChecker(archive, include_binaries=True)
         self.assertIs(
-            None,
-            copy_checker.checkCopy(
-                source, series, pocket, check_permissions=False))
+            None, copy_checker.checkCopy(source, series, pocket))
 
         # Set the expiration date of one of the testing binary files.
         utc = pytz.timezone('UTC')
@@ -732,15 +713,14 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # Now source-only copies are allowed.
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertIs(
-            None, copy_checker.checkCopy(
-                source, series, pocket, check_permissions=False))
+            None, copy_checker.checkCopy(source, series, pocket))
 
         # Copies with binaries are denied.
         copy_checker = CopyChecker(archive, include_binaries=True)
         self.assertRaisesWithContent(
             CannotCopy,
             'source has expired binaries',
-            copy_checker.checkCopy, source, series, pocket, None, False)
+            copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_cannot_copy_expired_sources(self):
         # checkCopy() raises CannotCopy if the copy requested includes
@@ -765,7 +745,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.assertRaisesWithContent(
             CannotCopy,
             'source contains expired files',
-            copy_checker.checkCopy, source, series, pocket, None, False)
+            copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_allows_copies_from_other_distributions(self):
         # It is possible to copy packages between distributions,
@@ -788,8 +768,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # Copy of sources to series in another distribution can be
         # performed.
         copy_checker = CopyChecker(archive, include_binaries=False)
-        copy_checker.checkCopy(
-            source, series, pocket, check_permissions=False)
+        copy_checker.checkCopy(source, series, pocket)
 
     def test_checkCopy_forbids_copies_to_unknown_distroseries(self):
         # We currently deny copies to series that are not for the Archive
@@ -815,7 +794,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.assertRaisesWithContent(
             CannotCopy,
             'No such distro series sid in distribution debian.',
-            copy_checker.checkCopy, source, sid, pocket, None, False)
+            copy_checker.checkCopy, source, sid, pocket)
 
     def test_checkCopy_respects_sourceformatselection(self):
         # A source copy should be denied if the source's dsc_format is
@@ -841,8 +820,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.assertRaisesWithContent(
             CannotCopy,
             "Source format '3.0 (quilt)' not supported by target series "
-            "warty.", copy_checker.checkCopy, source, series, pocket, None,
-            False)
+            "warty.", copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_identifies_conflicting_copy_candidates(self):
         # checkCopy() is able to identify conflicting candidates within
@@ -872,8 +850,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         self.assertIs(
             None,
             copy_checker.checkCopy(
-                source, source.distroseries, source.pocket,
-                check_permissions=False))
+                source, source.distroseries, source.pocket))
 
         # The second source-only copy, for hoary-test, fails, since it
         # conflicts with the just-approved copy.
@@ -882,8 +859,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             'same version already building in the destination archive '
             'for Breezy Badger Autotest',
             copy_checker.checkCopy,
-            copied_source, copied_source.distroseries, copied_source.pocket,
-            None, False)
+            copied_source, copied_source.distroseries, copied_source.pocket)
 
     def test_checkCopy_identifies_delayed_copies_conflicts(self):
         # checkCopy() detects copy conflicts in the upload queue for
@@ -906,16 +882,14 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # Commit so the just-created files are accessible and perform
         # the delayed-copy.
         self.layer.txn.commit()
-        do_copy(
-            [source], archive, series, pocket, include_binaries=False,
-            check_permissions=False)
+        do_copy([source], archive, series, pocket, include_binaries=False)
 
         # Repeating the copy is denied.
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
             'same version already uploaded and waiting in ACCEPTED queue',
-            copy_checker.checkCopy, source, series, pocket, None, False)
+            copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_suppressing_delayed_copies(self):
         # `CopyChecker` by default will request delayed-copies when it's
@@ -943,8 +917,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # this operation, since restricted files are being copied to
         # public archives.
         copy_checker = CopyChecker(archive, include_binaries=False)
-        copy_checker.checkCopy(
-            source, series, pocket, check_permissions=False)
+        copy_checker.checkCopy(source, series, pocket)
         [checked_copy] = list(copy_checker.getCheckedCopies())
         self.assertTrue(checked_copy.delayed)
 
@@ -952,8 +925,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # scheduled.
         copy_checker = CopyChecker(
             archive, include_binaries=False, allow_delayed_copies=False)
-        copy_checker.checkCopy(
-            source, series, pocket, check_permissions=False)
+        copy_checker.checkCopy(source, series, pocket)
         [checked_copy] = list(copy_checker.getCheckedCopies())
         self.assertFalse(checked_copy.delayed)
 
@@ -2711,7 +2683,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertIs(
             None,
             checker.checkCopy(proposed_source, warty,
-            PackagePublishingPocket.UPDATES, check_permissions=False))
+            PackagePublishingPocket.UPDATES))
 
     def testCopySourceWithConflictingFilesInPPAs(self):
         """We can copy source if the source files match, both in name and
@@ -2756,7 +2728,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             "test-source_1.0.orig.tar.gz already exists in destination "
             "archive with different contents.",
             checker.checkCopy, test2_source, warty,
-            PackagePublishingPocket.RELEASE, None, False)
+            PackagePublishingPocket.RELEASE)
 
     def testCopySourceWithSameFilenames(self):
         """We can copy source if the source files match, both in name and
@@ -2799,7 +2771,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertIs(
             None,
             checker.checkCopy(test2_source, warty,
-            PackagePublishingPocket.RELEASE, check_permissions=False))
+            PackagePublishingPocket.RELEASE))
 
     def testCopySourceWithExpiredSourcesInDestination(self):
         """We can also copy sources if the destination archive has expired
@@ -2848,4 +2820,4 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.assertIs(
             None,
             checker.checkCopy(test2_source, warty,
-            PackagePublishingPocket.RELEASE, check_permissions=False))
+            PackagePublishingPocket.RELEASE))
