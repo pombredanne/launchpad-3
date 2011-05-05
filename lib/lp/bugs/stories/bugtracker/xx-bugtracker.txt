@@ -724,7 +724,7 @@ portlet on the bug tracker page:
     You can link a registered project to a
     registered bug tracker in the project's &ldquo;Change
     details&rdquo; page.
-    the Mozilla Project
+    The Mozilla Project
     Jokosher
 
 

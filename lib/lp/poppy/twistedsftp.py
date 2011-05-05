@@ -9,6 +9,7 @@ __all__ = [
     'SFTPServer',
     ]
 
+import atexit
 import errno
 import logging
 import os
@@ -18,12 +19,17 @@ from twisted.conch.interfaces import (
     ISFTPFile,
     ISFTPServer,
     )
+from twisted.internet import task
+from twisted.internet.error import AlreadyCancelled
 from zope.component import (
     adapter,
+    getUtility,
     provideHandler,
     )
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.services.sshserver.events import SFTPClosed
@@ -48,6 +54,34 @@ class SFTPServer:
             self._fs_root, self._log, "ubuntu", perms='g+rws', prefix='-sftp')
         self.hook.new_client_hook(self._current_upload, 0, 0)
         self.hook.auth_verify_hook(self._current_upload, None, None)
+
+        self._gpghandler_job = None
+        # stop the GPGHandler job on normal termination.
+        atexit.register(self._stopGPGHandlerJob)
+        # start the GPGHandler job
+        self._scheduleGPGHandlerJob()
+
+    def _scheduleGPGHandlerJob(self, touch_interval=12 * 3600):
+        # Create a job to touch the GPGHandler home directory every so often
+        # so that it does not get cleaned up by any reaper scripts which look
+        # at time last modified..
+
+        self._stopGPGHandlerJob()
+        try:
+            self._gpghandler_job = task.LoopingCall(
+                getUtility(IGPGHandler).touchConfigurationDirectory)
+            return self._gpghandler_job.start(touch_interval)
+        except ComponentLookupError:
+            # No GPGHandler so no need to start the job.
+            pass
+
+    def _stopGPGHandlerJob(self):
+        try:
+            if self._gpghandler_job and self._gpghandler_job.running:
+                self._gpghandler_job.stop()
+        except AlreadyCancelled:
+            # So we're already cancelled, meh.
+            pass
 
     def gotVersion(self, other_version, ext_data):
         return {}

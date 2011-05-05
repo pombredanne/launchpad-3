@@ -3,8 +3,16 @@
 
 import unittest
 
+from calendar import timegm
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import UTC
 import gpgme
+import os
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -175,12 +183,27 @@ class TestImportKeyRing(unittest.TestCase):
             self.gpg_handler.importKeyringFile(ring)
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
+    def testHomeDirectoryJob(self):
+        """Does the job to touch the home work."""
+        gpghandler = getUtility(IGPGHandler)
+        naked_gpghandler = removeSecurityProxy(gpghandler)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        # Get a list of all the files in the home directory.
+        files_to_check = [os.path.join(naked_gpghandler.home, f)
+            for f in os.listdir(naked_gpghandler.home)]
+        files_to_check.append(naked_gpghandler.home)
+        self.assertTrue(len(files_to_check) > 1)
 
+        # Set the last modified times to 12 hours ago
+        nowless12 = (datetime.now(UTC) - timedelta(hours=12)).utctimetuple()
+        lm_time = timegm(nowless12)
+        for fname in files_to_check:
+            os.utime(fname, (lm_time, lm_time))
 
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
-
-
+        # Touch the files and re-check the last modified times.
+        gpghandler.touchConfigurationDirectory()
+        second_last_modified_times = dict(
+            (fname, os.path.getmtime(fname)) for fname in files_to_check)
+        for fname in files_to_check:
+            self.assertTrue(
+                lm_time + 12 * 3600 <= second_last_modified_times[fname])
