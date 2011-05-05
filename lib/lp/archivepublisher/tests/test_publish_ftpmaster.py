@@ -892,7 +892,9 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         script.runPublishDistro = FakeMethod()
         self.createIndexesMarkerDir(script, series)
+
         script.createIndexes(series)
+
         args, kwargs = script.runPublishDistro.calls[0]
         suites = kwargs['suites']
         self.assertEqual(len(pocketsuffix), len(suites))
