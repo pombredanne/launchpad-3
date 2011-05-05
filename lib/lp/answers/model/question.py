@@ -1337,8 +1337,8 @@ class QuestionTargetMixin:
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert len(person.languages) > 0, (
-            "An Answer Contact must speak a language.")
+        if len(person.languages) > 0:
+            raise ValueError("An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
