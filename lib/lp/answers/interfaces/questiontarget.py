@@ -105,10 +105,20 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
+    def canUserAlterAnswerContact(user, contact):
+        """Can the user add or remove the answer contact.
+
+        Users can add or remove themselves or one of the teams they
+        administered.
+
+        :param user: The `IPerson` making the change.
+        :param contact: The `IPerson` that is or will be an answer contact.
+        """
+
     def addAnswerContact(person):
         """Add a new answer contact.
 
-        :person: An IPerson.
+        :param person: An `IPerson`.
 
         Returns True if the person was added, False if the person already was
         an answer contact. A person must have at least one preferred

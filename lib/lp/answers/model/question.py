@@ -1319,6 +1319,17 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
+    def canUserAlterAnswerContact(self, user, contact):
+        """See `IQuestionTarget`."""
+        if contact is None or user is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if (contact == user
+            or contact in user.administrated_teams
+            or user.inTeam(admins)):
+            return True
+        return False
+
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
         answer_contact = AnswerContact.selectOneBy(

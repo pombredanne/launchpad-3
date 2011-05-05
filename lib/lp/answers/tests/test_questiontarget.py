@@ -15,9 +15,49 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
     )
+
+
+class QuestionTargetAnswerContactTestCase(TestCaseWithFactory):
+    """Tests for changing an answer contact."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(QuestionTargetAnswerContactTestCase, self).setUp()
+        self.project = self.factory.makeProduct()
+        self.user = self.factory.makePerson()
+
+    def test_canUserAlterAnswerContact_self(self):
+        login_person(self.user)
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(self.user, self.user))
+
+    def test_canUserAlterAnswerContact_other_user(self):
+        login_person(self.user)
+        other_user = self.factory.makePerson()
+        self.assertFalse(
+            self.project.canUserAlterAnswerContact(self.user, other_user))
+
+    def test_canUserAlterAnswerContact_administered_team(self):
+        login_person(self.user)
+        team = self.factory.makeTeam(owner=self.user)
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(self.user, team))
+
+    def test_canUserAlterAnswerContact_other_team(self):
+        login_person(self.user)
+        other_team = self.factory.makeTeam()
+        self.assertFalse(
+            self.project.canUserAlterAnswerContact(self.user, other_team))
+
+    def test_canUserAlterAnswerContact_admin(self):
+        admin = login_celebrity('admin')
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(admin, self.user))
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
