@@ -64,9 +64,9 @@ class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        build = super(BuilderSetNavigation, self).traverse_buildjob(name)
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        build = super(BuilderSetNavigation, self).traverse_build(name)
         if build is None:
             return None
         else:
