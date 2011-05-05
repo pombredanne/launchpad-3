@@ -2144,7 +2144,8 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            60, parse_build_upload_leaf_name("20100812-42-PACKAGEBUILD-60"))
+            ('PACKAGEBUILD', 60),
+            parse_build_upload_leaf_name("20100812-PACKAGEBUILD-60"))
 
     def test_invalid_jobid(self):
         self.assertRaises(

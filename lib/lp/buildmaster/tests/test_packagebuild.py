@@ -276,8 +276,10 @@ class TestGetUploadMethodsMixin:
         # that is parseable by the upload processor.
         upload_leaf = self.build.getUploadDirLeaf(
             self.build.getBuildCookie())
-        job_id = parse_build_upload_leaf_name(upload_leaf)
-        self.assertEqual(job_id, self.build.build_farm_job.id)
+        (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
+        self.assertEqual(
+            (self.build.build_farm_job.job_type.name, self.build.id),
+            (job_type, job_id))
 
 
 class TestHandleStatusMixin:
