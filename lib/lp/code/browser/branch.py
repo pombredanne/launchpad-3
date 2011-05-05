@@ -252,13 +252,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        buildfarmjob = getUtility(IBuildFarmJobSet).getByID(
-            buildfarmjob_id)
-        return source.getByBuildFarmJob(buildfarmjob)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):
