@@ -111,7 +111,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'lp', 'lp.app.links', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
@@ -124,6 +124,12 @@
         // Hook up the function that dismisses the help window if we click
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
+
+        // Hook up an event hanlder that will close any message boxes when they
+        // are clicked.
+        Y.delegate('click', function(e) {
+            this.setStyle('display', 'none');
+        }, 'body', '.message');
 
         Y.on('lp:context:web_link:changed', function(e) {
             window.location = e.new_value;

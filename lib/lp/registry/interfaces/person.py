@@ -633,7 +633,7 @@ class IPersonSettings(Interface):
     """
 
     selfgenerated_bugnotifications = Bool(
-        title=_("Send me bug notifications for changes I make."),
+        title=_("Send me bug notifications for changes I make"),
         required=False, default=False)
 
 
@@ -978,6 +978,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     is_merge_pending = exported(Bool(
         title=_("Is this person due to be merged with another?"),
         required=False, default=False))
+
+    administrated_teams = Attribute(
+        u"the teams that this person/team is an administrator of.")
 
     @invariant
     def personCannotHaveIcon(person):

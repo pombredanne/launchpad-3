@@ -97,7 +97,8 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
                  private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_owner=True, filed_by=None):
+                 tags=None, subscribe_owner=True, filed_by=None,
+                 importance=None, milestone=None, assignee=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -115,6 +116,9 @@ class CreateBugParams:
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
+        self.importance = importance
+        self.milestone = milestone
+        self.assignee = assignee
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -922,10 +926,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat, timestamp=None):
+    def setHeat(heat, timestamp=None, affected_targets=None):
         """Set the heat for the bug."""
 
-    def updateHeat():
+    def updateHeat(affected_targets=None):
         """Update the heat for the bug."""
 
     @operation_parameters(

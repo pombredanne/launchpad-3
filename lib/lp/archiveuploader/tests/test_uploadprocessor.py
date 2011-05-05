@@ -1865,7 +1865,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             CannotGetBuild,
             BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
         self.assertIn(
-            "Unable to find package build job with id 42. Skipping.", str(e))
+            "Unable to find PACKAGEBUILD with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
@@ -2144,7 +2144,8 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            60, parse_build_upload_leaf_name("20100812-42-PACKAGEBUILD-60"))
+            ('PACKAGEBUILD', 60),
+            parse_build_upload_leaf_name("20100812-PACKAGEBUILD-60"))
 
     def test_invalid_jobid(self):
         self.assertRaises(

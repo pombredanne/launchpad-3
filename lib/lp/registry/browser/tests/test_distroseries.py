@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -47,6 +48,8 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -190,15 +193,15 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 text='Derived from Sid'),
             soupmatchers.Tag(
                 'Differences link', 'a',
-                text=re.compile('\s*1 package with differences.\s*'),
+                text=re.compile('\s*1 package with differences\s*'),
                 attrs={'href': re.compile('.*/\+localpackagediffs')}),
             soupmatchers.Tag(
                 'Parent diffs link', 'a',
-                text=re.compile('\s*2 packages in Sid.\s*'),
+                text=re.compile('\s*2 packages only in Sid\s*'),
                 attrs={'href': re.compile('.*/\+missingpackages')}),
             soupmatchers.Tag(
                 'Child diffs link', 'a',
-                text=re.compile('\s*3 packages in Deri.\s*'),
+                text=re.compile('\s*3 packages only in Deri\s*'),
                 attrs={'href': re.compile('.*/\+uniquepackages')}))
 
         with person_logged_in(self.simple_user):
@@ -249,7 +252,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Derived series'),
+                text='Series initialisation in progress'),
             soupmatchers.Tag(
                 'Init message', True,
                 text=re.compile('\s*This series is initialising.\s*')),
@@ -1132,6 +1135,37 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'No differences selected.', view.errors[0])
         self.assertEqual(
             'Invalid value', view.errors[1].error_name)
+
+    def test_sync_in_released_series_in_updates(self):
+        # If the destination series is released, the sync packages end
+        # up in the updates pocket.
+        versions = {
+            'parent': '1.0-1',
+        }
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', versions=versions)
+
+        # Update destination series status to current and update
+        # daterelease.
+        with celebrity_logged_in('admin'):
+            derived_series.status = SeriesStatus.CURRENT
+            derived_series.datereleased = UTC_NOW
+
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
+        self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+
+        parent_pub = parent_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=parent_series).one()
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+
+        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
+        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
