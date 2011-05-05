@@ -14,6 +14,10 @@ __all__ = [
     ]
 
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+
+
 class BaseCopyPolicy:
     """Encapsulation of the policies for copying a package in Launchpad."""
 
@@ -36,4 +40,16 @@ class InsecureCopyPolicy(BaseCopyPolicy):
     def autoApproveNew(self, packageupload):
         if packageupload.isPPA():
             return True
+        return False
+
+    def autoApprove(self, packageupload):
+        if packageupload.isPPA():
+            return True
+
+        # This check is orthogonal to the
+        # IDistroSeries.canUploadToPocket check.
+        if (packageupload.pocket == PackagePublishingPocket.RELEASE and
+            packageupload.distroseries.status != SeriesStatus.FROZEN):
+            return True
+
         return False
