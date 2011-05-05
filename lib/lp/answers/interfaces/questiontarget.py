@@ -16,6 +16,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import (
     Choice,
+    Int,
     List,
     Set,
     TextLine,
@@ -82,6 +83,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :bug: An IBug.
         """
 
+    @operation_parameters(
+        question_id=Int(
+            title=_('The question number'), required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
     def getQuestion(question_id):
         """Return the question by its id, if it is applicable to this target.
 

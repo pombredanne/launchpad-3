@@ -33,16 +33,12 @@ contact, and asker, and three questions.
     >>> contact_webservice = webservice_for_person(
     ...     _contact, permission=OAuthPermission.WRITE_PUBLIC)
 
-Anyone can retrieve the collection of `IQuestionTarget`s that a user is an
-answer contact for.
+Anyone can retrieve a question from a `IQuestionTarget`.
 
-    >>> contact = anon_webservice.get('/~contact').jsonBody()
-    >>> targets = anon_webservice.named_get(
-    ...     contact['self_link'], 'getDirectAnswerQuestionTargets',
+    >>> project = anon_webservice.get(
+    ...     '/my-project', api_version='devel').jsonBody()
+    >>> question_1 = anon_webservice.named_get(
+    ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
     ...     api_version='devel').jsonBody()
-    >>> for target in targets:
-    ...     print target.name
-    My project
-
-
-
+    >>> print question_1['title']
+    Q 1
