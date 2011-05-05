@@ -406,7 +406,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
 
-    def _test_packagesets(self, html, packageset_text,
+    def _test_packagesets(self, html_content, packageset_text,
                           packageset_class, msg_text):
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -414,7 +414,7 @@ class DistroSeriesDifferenceMixin:
                 attrs={'class': packageset_class},
                 text=packageset_text))
 
-        self.assertThat(html, parent_packagesets)
+        self.assertThat(html_content, parent_packagesets)
 
 
 class TestDistroSeriesLocalDifferences(
@@ -476,11 +476,12 @@ class TestDistroSeriesLocalDifferences(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_content, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
