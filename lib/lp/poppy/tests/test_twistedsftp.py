@@ -68,4 +68,4 @@ class TestSFTPServer(TestCase):
         self.assertTrue(self.sftp_server._gpghandler_job.running)
 
         # It should be scheduled for every 12 hours.
-        self.assertEqual(12*3600, self.sftp_server._gpghandler_job.interval)
+        self.assertEqual(12 * 3600, self.sftp_server._gpghandler_job.interval)

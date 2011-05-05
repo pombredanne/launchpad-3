@@ -61,7 +61,7 @@ class SFTPServer:
         # start the GPGHandler job
         self._scheduleGPGHandlerJob()
 
-    def _scheduleGPGHandlerJob(self, touch_interval=12*3600):
+    def _scheduleGPGHandlerJob(self, touch_interval=12 * 3600):
         # Create a job to touch the GPGHandler home directory every so often
         # so that it does not get cleaned up by any reaper scripts which look
         # at time last modified..

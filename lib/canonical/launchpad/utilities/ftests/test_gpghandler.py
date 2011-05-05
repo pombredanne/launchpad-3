@@ -206,4 +206,4 @@ class TestImportKeyRing(unittest.TestCase):
             (fname, os.path.getmtime(fname)) for fname in files_to_check)
         for fname in files_to_check:
             self.assertTrue(
-                lm_time+12*3600 <= second_last_modified_times[fname])
+                lm_time + 12 * 3600 <= second_last_modified_times[fname])
