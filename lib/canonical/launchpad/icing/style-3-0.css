@@ -994,7 +994,7 @@ h1 .yui3-ieditor-errors {
     border-width: 1px 2px 2px 1px;
     color: black;
     margin: 1em auto 1em auto;
-    padding: 0 1em 1em 2em;
+    padding: 0.3em 1em 1.6em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -1017,6 +1017,23 @@ h1 .yui3-ieditor-errors {
 .warning.message::before {
     content: url(/@@/warning-large);
     }
+.error.message::after, .warning.message::after,
+.informational.message::after {
+    /* Add an affordance that suggests the ability to hide the message. */
+    /* The NBSP (\00A0) is needed because of the margin trick below. */
+    content: 'Hide\00A0\2715';
+    float: right;
+    display: block;
+    margin-left: 999em; /* Assure the message is always "bumped" down. */
+    }
+.error.message:hover::after, .warning.message:hover::after,
+.informational.message:hover::after {
+    text-decoration: underline;
+    }
+.error.message:hover, .warning.message:hover,
+.informational.message:hover {
+    cursor: pointer;
+}
 .informational {
     /* Informational messages are blue-to-grey, alerts have an info icon. */
 
