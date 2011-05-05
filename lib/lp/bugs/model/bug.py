@@ -959,14 +959,26 @@ BugMessage""" % sqlvalues(self.id))
             level = BugNotificationLevel.NOTHING
         info = self.getSubscriptionInfo(level)
 
+        ##import pdb; pdb.set_trace()
+        duplicate_subscribers = list(
+            info.duplicate_only_subscriptions.subscribers)
         if recipients is not None:
             # Pre-load duplicate bugs.
             list(self.duplicates)
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
+                duplicate_subscribers.append(subscription.person)
+            for duplicate in self.duplicates:
+                duplicate_struct_subs = get_structural_subscriptions_for_bug(
+                    duplicate)
+                for subscription in duplicate_struct_subs:
+                    recipients.addDupeSubscriber(
+                        subscription.subscriber, duplicate)
+                    duplicate_subscribers.append(subscription.subscriber)
 
-        return info.duplicate_only_subscriptions.subscribers.sorted
+        ##return info.duplicate_only_subscriptions.subscribers.sorted
+        return sorted(set(duplicate_subscribers))
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -1939,8 +1951,11 @@ BugMessage""" % sqlvalues(self.id))
         direct_subscribers = self.getDirectSubscribers()
         if check_person_in_team(person, direct_subscribers):
             return True
-        recipients = []
-        duplicate_subscribers = self.getSubscribersFromDuplicates(recipients=recipients)
+        from lp.bugs.mail.bugnotificationrecipients import (
+            BugNotificationRecipients,
+            )
+        duplicate_subscribers = self.getSubscribersFromDuplicates(
+            recipients=BugNotificationRecipients())
         if check_person_in_team(person, duplicate_subscribers):
             return True
         return False

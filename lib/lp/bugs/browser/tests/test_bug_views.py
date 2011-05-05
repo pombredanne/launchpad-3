@@ -164,9 +164,13 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 dupe_target.addBugSubscription(team, team_owner)
             with person_logged_in(person):
                 self.assertFalse(self.bug.isMuted(person))
+                # This is a sanity check for the test.
+                self.assertFalse(self.bug.duplicates.is_empty())
+                ##import pdb; pdb.set_trace()
+                self.assertEqual(self.bug, dupe.duplicateof)
                 self.assertTrue(
                     self.bug.personIsAlsoNotifiedSubscriber(
-                        person), "Person should not be a notified subscriber")
+                        person), "Person should be a notified subscriber")
                 view = create_initialized_view(
                     self.bug, name="+portlet-subscribers")
                 self.assertTrue(view.user_should_see_mute_link,
