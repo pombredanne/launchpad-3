@@ -30,6 +30,7 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
@@ -47,6 +48,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -1009,12 +1011,14 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             [resolved_diff], filtered_view.cached_differences.batch)
 
     def _setUpDSD(self, src_name='src-name', versions=None,
-                  difference_type=None):
+                  difference_type=None, distribution=None):
         # Helper to create a derived series with fixed names and proper
         # source package format selection along with a DSD.
         parent_series = self.factory.makeDistroSeries(name='warty')
+        if distribution == None:
+            distribution = self.factory.makeDistribution('deribuntu')
         derived_series = self.factory.makeDistroSeries(
-            distribution=self.factory.makeDistribution(name='deribuntu'),
+            distribution=distribution,
             name='derilucid', parent_series=parent_series)
         self._set_source_selection(derived_series)
         self.factory.makeDistroSeriesDifference(
@@ -1152,6 +1156,29 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             "Signer is not permitted to upload to the "
             "component" in view.errors[0])
 
+    def assertPackageCopied(self, series, src_name, version, view):
+        # Helper to check that a package has been copied.
+        # The new version should now be in the destination series:
+        pub = series.main_archive.getPublishedSources(
+            name=src_name, version=version,
+            distroseries=series).one()
+        self.assertIsNot(None, pub)
+        self.assertEqual(version, pub.sourcepackagerelease.version)
+
+        # The view should show no errors, and the notification should
+        # confirm the sync worked:
+        self.assertEqual(0, len(view.errors))
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            '<p>Packages copied to '
+            '<a href="http://launchpad.dev/%s/%s"'
+            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
+            'derilucid</li>\n</ul>' % (series.parent.name, series.name),
+            notifications[0].message)
+        # 302 is a redirect back to the same page:
+        self.assertEqual(302, view.request.response.getStatus())
+
     def test_sync_notification_on_success(self):
         # A user with upload rights on the destination archive can
         # sync packages. Notifications about the synced packages are
@@ -1180,26 +1207,10 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
 
-        # The parent's version should now be in the derived series:
-        pub = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
-            distroseries=derived_series).one()
-        self.assertIsNot(None, pub)
-        self.assertEqual(versions['parent'], pub.sourcepackagerelease.version)
-
-        # The view should show no errors, and the notification should
-        # confirm the sync worked.
-        self.assertEqual(0, len(view.errors))
-        notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        self.assertEqual(
-            '<p>Packages copied to '
-            '<a href="http://launchpad.dev/deribuntu/derilucid"'
-            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
-            'derilucid</li>\n</ul>',
-            notifications[0].message)
-        # 302 is a redirect back to the same page.
-        self.assertEqual(302, view.request.response.getStatus())
+        # The parent's version should now be in the derived series and
+        # the notifications displayed:
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
 
     def test_sync_success_not_yet_in_derived_series(self):
         # If the package to sync does not exist yet in the derived series,
@@ -1217,15 +1228,32 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             derived_series, person, ['my-src-name'],
             view_name='+missingpackages')
 
-        self.assertEqual(0, len(view.errors))
-        notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        self.assertEqual(
-            '<p>Packages copied to '
-            '<a href="http://launchpad.dev/deribuntu/derilucid"'
-            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
-            'derilucid</li>\n</ul>',
-            notifications[0].message)
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
+
+    def test_sync_append_main_archive(self):
+        # A user with lp.Append on the main archive (e.g. members of
+        # ubuntu-security on an ubuntu series) can sync packages.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', distribution=ubuntu, versions=versions)
+        ubuntu_security = getUtility(IPersonSet).getByName('ubuntu-security')
+        with person_logged_in(ubuntu_security):
+            self.assertTrue(
+                check_permission(
+                    'launchpad.Append', derived_series.main_archive))
+            view = self._syncAndGetView(
+                derived_series, ubuntu_security, ['my-src-name'])
+
+            self.assertTrue(view.canPerformSync())
+
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
