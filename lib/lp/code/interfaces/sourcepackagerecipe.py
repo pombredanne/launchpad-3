@@ -162,7 +162,13 @@ class ISourcePackageRecipeView(Interface):
 
     @export_write_operation()
     def performDailyBuild():
-        """Perform a build into the daily build archive."""
+        """Perform a build into the daily build archive.
+
+        If `CannotUploadToPPA` is raised, disables daily builds for that
+        recipe and sends an email to the recipe owner.
+
+        :return: The new `SourcePackageRecipeBuild`s.
+        """
 
     @export_read_operation()
     @operation_for_version("devel")

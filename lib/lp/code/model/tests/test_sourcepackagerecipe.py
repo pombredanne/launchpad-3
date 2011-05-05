@@ -76,6 +76,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -417,6 +418,24 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
+
+    def test_performDailyBuild_with_wrong_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            daily_build_archive=self.factory.makeArchive(),
+            build_daily=True)
+        with self.expectedLog(
+            'Owner of .*/.* cannot upload to .*/.*\.  Daily builds disabled.'):
+            builds = recipe.performDailyBuild()
+        self.assertEqual([], builds)
+        self.assertFalse(recipe.build_daily)
+        (notification,) = pop_notifications()
+        self.assertEqual('Daily builds disabled', notification['subject'])
+        body = notification.get_payload(decode=True)
+        import re
+        self.assertTrue(re.match(
+            'Daily builds of your recipe .* have been disabled, because you do'
+            ' not have permission to upload to the archive .*\.',
+        body))
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
