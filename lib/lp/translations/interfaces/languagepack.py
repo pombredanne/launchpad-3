@@ -10,13 +10,8 @@ __metaclass__ = type
 __all__ = [
     'ILanguagePack',
     'ILanguagePackSet',
-    'LanguagePackType',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -30,20 +25,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
-
-class LanguagePackType(DBEnumeratedType):
-    """Type of language packs."""
-
-    FULL = DBItem(1, """
-        Full
-
-        Full translations export.""")
-
-    DELTA = DBItem(2, """
-        Delta
-
-        Delta translation export based on a previous full export.""")
+from lp.translations.enums import LanguagePackType
 
 
 class ILanguagePack(Interface):
