@@ -1032,7 +1032,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_canPerformSync_anon(self):
         # Anonymous users cannot sync packages.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -1041,7 +1041,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_canPerformSync_non_anon_no_perm_dest_archive(self):
         # Logged-in users with no permission on the destination archive
         # are not presented with options to perform syncs.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
@@ -1063,7 +1063,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # are presented with options to perform syncs.
         # Note that a more fine-grained perm check is done on each
         # synced package.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
         with person_logged_in(person):
             view = create_initialized_view(
@@ -1085,7 +1085,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(derived_series, person, [])
 
@@ -1095,7 +1095,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
-        derived_series, _, _ = self._setUpDSD('my-src-name')
+        derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
             derived_series, person, ['some-other-name'])
@@ -1109,7 +1109,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_error_no_perm_dest_archive(self):
         # A user without upload rights on the destination archive cannot
         # sync packages.
-        derived_series, _, _ = self._setUpDSD('my-src-name')
+        derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
@@ -1158,7 +1158,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def assertPackageCopied(self, series, src_name, version, view):
         # Helper to check that a package has been copied.
-        # The new version should now be in the destination series:
+        # The new version should now be in the destination series.
         pub = series.main_archive.getPublishedSources(
             name=src_name, version=version,
             distroseries=series).one()
@@ -1166,7 +1166,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertEqual(version, pub.sourcepackagerelease.version)
 
         # The view should show no errors, and the notification should
-        # confirm the sync worked:
+        # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
@@ -1176,7 +1176,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
             'derilucid</li>\n</ul>' % (series.parent.name, series.name),
             notifications[0].message)
-        # 302 is a redirect back to the same page:
+        # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
     def test_sync_notification_on_success(self):
