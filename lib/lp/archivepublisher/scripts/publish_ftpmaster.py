@@ -14,6 +14,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.scripts.base import (
@@ -236,7 +237,15 @@ class PublishFTPMaster(LaunchpadCronScript):
             # its indexes created, that's because it predates automatic
             # index creation.
             return False
-# XXX: Implement
+        distro = distroseries.distribution
+        publisher_config_set = getUtility(IPublisherConfigSet)
+        if publisher_config_set.getByDistribution(distro) is None:
+            # We won't be able to do a thing without a publisher config,
+            # but that's alright: we have those for all distributions
+            # that we want to publish.
+            return False
+# XXX: Check for marker!
+        return True
 
     def markIndexCreationComplete(self, distroseries):
         """Note that archive indexes for `distroseries` have been created.
@@ -248,6 +257,8 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def createIndexes(self, distroseries):
         """Create archive indexes for `distroseries`."""
+        self.logger.info(
+            "Creating archive indexes for series %s.", distroseries)
         suites = [
             distroseries.getSuite(pocket)
             for pocket in pocketsuffix.iterkeys()]
@@ -528,6 +539,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         """See `LaunchpadScript`."""
         self.setUp()
         self.recoverWorkingDists()
+
+        for series in self.distribution.series:
+            if self.needsIndexesCreated(series):
+                self.createIndexes(series)
+                # Don't try to do too much in one run.
+                return
+
         self.processAccepted()
         self.setUpDirs()
 

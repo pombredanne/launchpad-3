@@ -763,7 +763,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 % archive.purpose.title)
 
 
-class TestCreateDistroSeriesIndexes(TestCaseWithFactory):
+class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     """Test initial creation of archive indexes for a `DistroSeries`."""
     layer = LaunchpadZopelessLayer
 
@@ -779,8 +779,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory):
 
     def test_distro_without_publisher_config_gets_no_indexes(self):
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
-        distro = series.distribution
-        pub_config = getUtility(IPublisherConfigSet).getByDistribution(distro)
+        pub_config = get_pub_config(series.distribution)
         IMasterStore(pub_config).remove(pub_config)
         script = self.makeScript(series.distribution)
         self.assertFalse(script.needsIndexesCreated(series))
@@ -798,7 +797,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory):
         script.runPublishDistro = FakeMethod()
         script.createIndexes(series)
         self.assertEqual(
-            [([series], {})], script.markIndexCreationComplete.calls)
+            [((series, ), {})], script.markIndexCreationComplete.calls)
 
     def test_failed_index_creation_is_not_marked_complete(self):
         # If index creation fails, it is not marked as having been
@@ -814,14 +813,14 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory):
             script.createIndexes(series)
         except:
             pass
-        self.assertEqual([], script.createIndexes.calls)
+        self.assertEqual([], script.markIndexCreationComplete.calls)
 
     def test_script_calls_createIndexes_for_new_series(self):
-        series = self.factory.makeDistroSeries()
+        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
         script = self.makeScript(series.distribution)
         script.createIndexes = FakeMethod()
         script.main()
-        self.assertEqual([([series], {})], script.createIndexes.calls)
+        self.assertEqual([((series, ), {})], script.createIndexes.calls)
 
     def test_createIndexes_ignores_other_series(self):
         series = self.factory.makeDistroSeries()
