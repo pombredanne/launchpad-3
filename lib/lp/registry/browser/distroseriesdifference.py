@@ -45,6 +45,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
