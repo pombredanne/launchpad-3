@@ -16,6 +16,17 @@
     <script type="text/javascript" src="../../../app/javascript/client.js"></script>
     <script type="text/javascript" src="../../../app/javascript/lp.js"></script>
 
+    <!-- Additional module dependency setup -->
+    <script type="text/javascript">
+        var LP = {
+            cache: {
+                context: {
+                    self_link: 'http:example.com'
+                    }
+                }
+            };
+    </script>
+
     <!-- The module under test -->
     <script type="text/javascript" src="../question_spam.js"></script>
 
