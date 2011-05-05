@@ -26,7 +26,7 @@ It is possible to get a batched list of all the project groups.
     Apache
     GNOME
     ...
-    the Mozilla Project
+    The Mozilla Project
 
 It's possible to search the list and get a subset of the project groups.
 
@@ -48,7 +48,7 @@ the project groups.
     Apache
     GNOME
     ...
-    the Mozilla Project
+    The Mozilla Project
 
 
 Project group entry
@@ -69,7 +69,7 @@ host.
     bug_tracker_link: None
     date_created: u'...'
     description: u'The Mozilla Project...'
-    display_name: u'the Mozilla Project'
+    display_name: u'The Mozilla Project'
     driver_link: None
     freshmeat_project: None
     homepage_content: None
