@@ -33,7 +33,7 @@ class TestQuestionCommentVisibility(BrowserTestCase):
         comment_text = "You can't see me."
         question = self.makeQuestionWithHiddenComment(comment_text)
         administrator = self.factory.makeAdministrator()
-        view = self.getViewBrowser( context=question, user=administrator)
+        view = self.getViewBrowser(context=question, user=administrator)
         self.assertTrue(
            comment_text in view.contents,
            "Administrator cannot see the hidden comment.")
@@ -72,8 +72,8 @@ class TestQuestionSpamControls(BrowserTestCase):
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()
         body = self.factory.getUniqueString()
-        with person_logged_in(administrator): 
-            comment = question.addComment(administrator, body)
+        with person_logged_in(administrator):
+            question.addComment(administrator, body)
         return question
 
     def test_admin_sees_spam_control(self):
@@ -101,4 +101,3 @@ class TestQuestionSpamControls(BrowserTestCase):
         view = self.getViewBrowser(context=question)
         spam_link = find_tag_by_id(view.contents, 'mark-spam')
         self.assertIs(None, spam_link)
-

@@ -43,8 +43,8 @@
               value="This Solved My Problem" />
     </form>
   </div>
-  
-  <div 
+
+  <div
     tal:condition="view/canSeeSpamControls"
     class="boardCommentFooter">
     <a tal:attributes="id string:mark-spam-${index};"
