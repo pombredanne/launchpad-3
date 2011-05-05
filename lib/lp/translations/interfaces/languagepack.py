@@ -49,8 +49,8 @@ class ILanguagePack(Interface):
         title=_('Language pack type'), required=True,
         vocabulary=LanguagePackType,
         description=_("""
-            The language pack is either a "Full" export, or a "Delta" of changes
-            from the base language pack of the distribution series.
+            The language pack is either a "Full" export, or a "Delta" of
+            changes from the base language pack of the distribution series.
             """))
 
     updates = Attribute(_('The LanguagePack that this one updates.'))

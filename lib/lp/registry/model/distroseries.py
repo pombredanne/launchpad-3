@@ -2024,6 +2024,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         seriesID = self.id
         distributionID = self.distributionID
+
         def weight_function(bugtask):
             if bugtask.distroseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
