@@ -42,6 +42,16 @@ page, because that page does not include a bug description field.
     ...     print extract_text(find_tags_by_class(
     ...         user_browser.contents, 'informational message')[0])
 
+    >>> def print_visible_guidelines(context_path, guidelines):
+    ...     result = guidelines.findParents(id='filebug-form-container')
+    ...     style_attrs = []
+    ...     if result:
+    ...         filebug_form_container = result[0]
+    ...         style_attrs = [item.strip()
+    ...             for item in filebug_form_container['style'].split(";")]
+    ...     if (result and not 'display: none' in style_attrs):
+    ...         print 'Found %s guidelines: %s' % (context_path, guidelines)
+
     >>> for context_name, context_path, view in contexts:
     ...     filebug_url = (
     ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
@@ -49,7 +59,7 @@ page, because that page does not include a bug description field.
     ...     guidelines = find_tag_by_id(
     ...         user_browser.contents, 'bug-reporting-guidelines')
     ...     if guidelines is not None:
-    ...         print 'Found %s guidelines: %s' % (context_path, guidelines)
+    ...         print_visible_guidelines(context_path, guidelines)
 
 But they are displayed once you've got to the step of entering a bug
 description.
@@ -58,7 +68,8 @@ description.
     ...     filebug_url = (
     ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
     ...     user_browser.open(filebug_url)
-    ...     user_browser.getControl('Summary').value = "It doesn't work"
+    ...     user_browser.getControl('Summary', index=0).value = (
+    ...         "It doesn't work")
     ...     user_browser.getControl('Continue').click()
     ...     user_browser.getControl('Further information').value = (
     ...         'please help!')
@@ -111,7 +122,7 @@ which the guidelines are taken from the respective distribution.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/warty/+filebug')
-    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Summary', index=0).value = "It doesn't work"
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
@@ -149,7 +160,7 @@ shown.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+filebug')
-    >>> user_browser.getControl('Summary').value = "It doesn't work"
+    >>> user_browser.getControl('Summary', index=0).value = "It doesn't work"
     >>> user_browser.getControl('Continue').click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bug-reporting-guidelines'))
