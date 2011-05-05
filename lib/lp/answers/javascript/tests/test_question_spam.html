@@ -2,7 +2,6 @@
   <head>
     <title>Launchpad Question Spam Controls</title>
     <!-- YUI 3.0 Setup -->
-    <!-- YUI 3.0 Setup -->
     <script type="text/javascript" src="../../../../canonical/launchpad/icing/yui/yui/yui.js"></script>
     <script type="text/javascript"
       src="../../../../canonical/launchpad/icing/lazr/build/lazr.js"></script>
@@ -26,7 +25,7 @@
   <body class="yui-skin-sam">
 
     <!-- The example markup required by the script to run -->
-    <div id="not-spam">
+    <div id="expected-id">
     <div class="boardComment"> 
       <div class="boardCommentDetails"> 
         <a href="#" class="sprite person">TestyMcTest</a> 
@@ -38,16 +37,14 @@
       <div class="boardCommentBody"><p>Foo bar baz.</p></div> 
 
       <div class="boardCommentFooter"> 
-        <a id="mark-spam" class="js-action sprite edit" href="#"> 
+        <a id="mark-spam-1" class="js-action sprite edit" href="#"> 
             Mark as spam
         </a> 
       
       </div> 
     </div> 
-    </div>
   
-    <div id="spam">
-    <div class="boardComment adminHiddenComment"> 
+    <div id="hidden-comment" class="boardComment adminHiddenComment"> 
       <div class="boardCommentDetails"> 
         <a href="#" class="sprite person">TestyMcTest</a> 
         said
@@ -58,13 +55,14 @@
       <div class="boardCommentBody"><p>Click here for a diploma!</p></div> 
 
       <div class="boardCommentFooter"> 
-        <a id="mark-spam" class="js-action sprite edit" href="#"> 
-            Mark as spam
+        <a id="mark-spam-2" class="js-action sprite edit" href="#"> 
+            Mark as not spam
         </a> 
       
       </div> 
     </div> 
     </div>
+
     <!-- The test output -->
     <div id="log"></div>
   </body>
