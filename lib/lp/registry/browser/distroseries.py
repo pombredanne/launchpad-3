@@ -973,15 +973,25 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def requestUpgrades(self):
         """Request sync of packages that can be easily upgraded."""
-# XXX: Collate source packages by source archive.
-        job_source = getUtility(IPackageCopyJobSource)
-# XXX: Create jobs.
+        target_distroseries = self.context
+        target_archive = target_distroseries.main_archive
+        differences_by_archive = (
+            getUtility(IDistroSeriesDifferenceSource)
+                .collateDifferencesByParentArchive(self.getUpgrades()))
+        for source_archive, differences in differences_by_archive.iteritems():
+            source_package_info = [
+                (difference.source_package_name.name,
+                 difference.parent_source_version)
+                for difference in differences]
+            getUtility(IPackageCopyJobSource).create(
+                source_package_info, source_archive, target_archive,
+                target_distroseries, PackagePublishingPocket.UPDATES)
         self.request.response.addInfoNotification("""
             Upgrades of %s packages have been requested.
             Please give Launchpad some time to complete these.
             """ % self.context.displayname)
 
-    def canUpgrade(self, action):
+    def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
         if self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
