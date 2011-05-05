@@ -1004,24 +1004,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertContentEqual(
             [resolved_diff], filtered_view.cached_differences.batch)
 
-    def _setUpDSD(self, src_name='src-name', versions=None,
-                  difference_type=None):
-        # Helper to create a derived series with fixed names and proper
-        # source package format selection along with a DSD.
-        parent_series = self.factory.makeDistroSeries(name='warty')
-        derived_series = self.factory.makeDistroSeries(
-            distribution=self.factory.makeDistribution(name='deribuntu'),
-            name='derilucid', parent_series=parent_series)
-        self._set_source_selection(derived_series)
-        self.factory.makeDistroSeriesDifference(
-            source_package_name_str=src_name,
-            derived_series=derived_series, versions=versions,
-            difference_type=difference_type)
-        sourcepackagename = self.factory.getOrMakeSourcePackageName(
-            src_name)
-        set_derived_series_ui_feature_flag(self)
-        return derived_series, parent_series, sourcepackagename
-
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.
         derived_series = self.factory.makeDistroSeries(
@@ -1050,18 +1032,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
             self.assertTrue(view.canPerformSync())
-
-    def _syncAndGetView(self, derived_series, person, sync_differences,
-                        difference_type=None, view_name='+localpackagediffs'):
-        # A helper to get the POST'ed sync view.
-        with person_logged_in(person):
-            view = create_initialized_view(
-                derived_series, view_name,
-                method='POST', form={
-                    'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync',
-                    })
-            return view
 
     def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
@@ -1181,8 +1151,11 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             derived_series.status = SeriesStatus.CURRENT
             derived_series.datereleased = UTC_NOW
 
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
         self._syncAndGetView(
-            derived_series, derived_series.owner, ['my-src-name'])
+            derived_series, person, ['my-src-name'])
 
         parent_pub = parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
