@@ -84,8 +84,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         """
 
     @operation_parameters(
-        question_id=Int(
-            title=_('The question number'), required=True))
+        question_id=Int(title=_('Question Number'), required=True))
     @export_read_operation()
     @operation_for_version('devel')
     def getQuestion(question_id):
