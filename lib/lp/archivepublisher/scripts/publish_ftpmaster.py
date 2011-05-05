@@ -226,6 +226,17 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
+    def locateIndexesMarker(self, distroseries):
+        """Give path for marker file whose presence marks index creation.
+
+        The file will be created once the archive indexes for
+        `distroseries` have been created.  This is how future runs will
+        know that this work is done.
+        """
+        archive_root = self.configs[ArchivePurpose.PRIMARY].archiveroot
+        return os.path.join(
+            archive_root, ".created-indexes-for-%s" % distroseries.name)
+
     def needsIndexesCreated(self, distroseries):
         """Does `distroseries` still need its archive indexes created?
 
@@ -244,8 +255,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             # but that's alright: we have those for all distributions
             # that we want to publish.
             return False
-# XXX: Check for marker!
-        return True
+        return not file_exists(self.locateIndexesMarker(distroseries))
 
     def markIndexCreationComplete(self, distroseries):
         """Note that archive indexes for `distroseries` have been created.

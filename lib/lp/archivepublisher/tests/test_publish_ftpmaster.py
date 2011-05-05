@@ -770,6 +770,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_new_frozen_series_needs_indexes_created(self):
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
         script = self.makeScript(series.distribution)
+        script.setUp()
         self.assertTrue(script.needsIndexesCreated(series))
 
     def test_new_nonfrozen_series_does_not_need_indexes_created(self):
@@ -787,6 +788,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_markIndexCreationComplete_tells_needsIndexesCreated_no(self):
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
         script = self.makeScript(series.distribution)
+        script.setUp()
         script.markIndexCreationComplete(series)
         self.assertFalse(script.needsIndexesCreated(series))
 
@@ -814,6 +816,33 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         except:
             pass
         self.assertEqual([], script.markIndexCreationComplete.calls)
+
+    def test_locateIndexesMarker_places_file_in_archive_root(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        script.setUp()
+        archive_root = script.configs[ArchivePurpose.PRIMARY].archiveroot
+        self.assertThat(
+            script.locateIndexesMarker(series),
+            StartsWith(os.path.normpath(archive_root)))
+
+    def test_locateIndexesMarker_uses_separate_files_per_series(self):
+        distro = self.makeDistro()
+        series1 = self.factory.makeDistroSeries(distribution=distro)
+        series2 = self.factory.makeDistroSeries(distribution=distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        self.assertNotEqual(
+            script.locateIndexesMarker(series1),
+            script.locateIndexesMarker(series2))
+
+    def test_locateIndexMarker_uses_hidden_file(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution)
+        script.setUp()
+        self.assertThat(
+            os.path.basename(script.locateIndexesMarker(series)),
+            StartsWith("."))
 
     def test_script_calls_createIndexes_for_new_series(self):
         series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
