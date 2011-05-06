@@ -80,7 +80,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         # some non public methods to change its language cache.
         answer_contact = removeSecurityProxy(self.answer_contact)
         product = self.factory.makeProduct()
-        product.addAnswerContact(answer_contact)
+        product.addAnswerContact(answer_contact, answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
         answer_contact.deleteLanguagesCache()
@@ -103,7 +103,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.factory.makeSourcePackageName(name='test-pkg')
         source_package = ubuntu.getSourcePackage('test-pkg')
-        source_package.addAnswerContact(answer_contact)
+        source_package.addAnswerContact(answer_contact, answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
         answer_contact.deleteLanguagesCache()

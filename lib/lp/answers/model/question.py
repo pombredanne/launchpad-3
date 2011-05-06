@@ -1330,7 +1330,7 @@ class QuestionTargetMixin:
             return True
         return False
 
-    def addAnswerContact(self, person, subscribed_by=None):
+    def addAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
         subscribed_by = subscribed_by or person
         if not self.canUserAlterAnswerContact(person, subscribed_by):
@@ -1409,7 +1409,7 @@ class QuestionTargetMixin:
             recipients.add(person, reason, header)
         return recipients
 
-    def removeAnswerContact(self, person, subscribed_by=None):
+    def removeAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
         subscribed_by = subscribed_by or person
         if not self.canUserAlterAnswerContact(person, subscribed_by):

@@ -132,7 +132,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
     @operation_for_version('devel')
-    def addAnswerContact(person, subscribed_by=None):
+    def addAnswerContact(person, subscribed_by):
         """Add a new answer contact.
 
         :param person: An `IPerson`.
@@ -150,7 +150,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
     @operation_for_version('devel')
-    def removeAnswerContact(person, subscribed_by=None):
+    def removeAnswerContact(person, subscribed_by):
         """Remove an answer contact.
 
         :param person: An `IPerson`.
