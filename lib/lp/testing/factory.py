@@ -2314,21 +2314,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None, set_base_version=False):
+        changelogs=None, set_base_version=False, parent_series=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            dsp = self.makeDistroSeriesParent()
+            dsp = self.makeDistroSeriesParent(
+                parent_series=parent_series)
             derived_series = dsp.derived_series
             parent_series = dsp.parent_series
         else:
-            dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
-                derived_series)
-            if dsp.count() == 0:
-                new_dsp = self.makeDistroSeriesParent(
-                    derived_series=derived_series)
-                parent_series = new_dsp.parent_series
-            else:
-                parent_series = dsp[0].parent_series
+            if parent_series is None:
+                dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                    derived_series)
+                if dsp.count() == 0:
+                    new_dsp = self.makeDistroSeriesParent(
+                        derived_series=derived_series,
+                        parent_series=parent_series)
+                    parent_series = new_dsp.parent_series
+                else:
+                    parent_series = dsp[0].parent_series
 
         if source_package_name_str is None:
             source_package_name_str = self.getUniqueString('src-name')
@@ -2373,7 +2376,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name)
+            derived_series, source_package_name, parent_series)
 
         removeSecurityProxy(diff).status = status
 

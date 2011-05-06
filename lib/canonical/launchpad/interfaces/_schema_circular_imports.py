@@ -112,6 +112,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -486,6 +490,16 @@ patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'status', DistroSeriesDifferenceStatus)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'difference_type',
+    DistroSeriesDifferenceType)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+
 
 # IDistroSeriesDifference
 patch_reference_property(
