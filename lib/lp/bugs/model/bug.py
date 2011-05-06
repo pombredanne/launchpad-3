@@ -959,26 +959,19 @@ BugMessage""" % sqlvalues(self.id))
             level = BugNotificationLevel.NOTHING
         info = self.getSubscriptionInfo(level)
 
-        ##import pdb; pdb.set_trace()
-        duplicate_subscribers = list(
-            info.duplicate_only_subscriptions.subscribers)
         if recipients is not None:
-            # Pre-load duplicate bugs.
+            # Pre-load duplicates
             list(self.duplicates)
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-                duplicate_subscribers.append(subscription.person)
-            for duplicate in self.duplicates:
-                duplicate_struct_subs = get_structural_subscriptions_for_bug(
-                    duplicate)
-                for subscription in duplicate_struct_subs:
-                    recipients.addDupeSubscriber(
-                        subscription.subscriber, duplicate)
-                    duplicate_subscribers.append(subscription.subscriber)
+            for subscription in info.structural_subscriptions_from_duplicates:
+                recipients.addDupeSubscriber(
+                    subscription.subscriber)
 
-        ##return info.duplicate_only_subscriptions.subscribers.sorted
-        return sorted(set(duplicate_subscribers))
+        return sorted(
+            info.duplicate_only_subscriptions.subscribers.union(
+                info.structural_subscriptions_from_duplicates.subscribers))
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -2315,6 +2308,17 @@ class BugSubscriptionInfo:
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
         return get_structural_subscriptions_for_bug(self.bug)
+
+    @cachedproperty
+    @freeze(StructuralSubscriptionSet)
+    def structural_subscriptions_from_duplicates(self):
+        """Structural subscriptions from the bug's duplicates."""
+        all_duplicate_structural_subscriptions = list()
+        for duplicate in self.bug.duplicates:
+            duplicate_struct_subs = get_structural_subscriptions_for_bug(
+                duplicate)
+            all_duplicate_structural_subscriptions += duplicate_struct_subs
+        return all_duplicate_structural_subscriptions
 
     @cachedproperty
     @freeze(BugSubscriberSet)

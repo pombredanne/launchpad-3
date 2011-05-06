@@ -195,9 +195,9 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.bug.subscribe(team, team_owner)
             with person_logged_in(person):
                 self.assertFalse(self.bug.isMuted(person))
-                self.assertFalse(
+                self.assertTrue(
                     self.bug.personIsAlsoNotifiedSubscriber(person),
-                    "Person should not be a notified subscriber")
+                    "Person should be a notified subscriber")
                 view = create_initialized_view(
                     self.bug, name="+portlet-subscribers")
                 self.assertTrue(view.user_should_see_mute_link,
