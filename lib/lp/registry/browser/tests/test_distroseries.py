@@ -50,6 +50,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
@@ -941,13 +942,6 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             }
         observed = map(vars, view.request.response.notifications)
         self.assertEqual([expected], observed)
-
-    def SKIP_test_upgrade_is_privileged(self):
-# XXX: Privileged to whom?  For Ubuntu this would be the ubuntu-archive
-# team, ideally, but we don't know of any formal role that that team has
-# w.r.t. Ubuntu in Launchpad.
-# XXX: Test.
-        self.assertTrue(False)
 
     def SKIP_test_requestUpgrade_is_efficient(self):
         # A single web request may need to schedule large numbers of
