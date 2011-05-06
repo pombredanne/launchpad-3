@@ -1332,7 +1332,6 @@ class QuestionTargetMixin:
 
     def addAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
-        subscribed_by = subscribed_by or person
         if not self.canUserAlterAnswerContact(person, subscribed_by):
             return False
         answer_contact = AnswerContact.selectOneBy(
@@ -1411,7 +1410,6 @@ class QuestionTargetMixin:
 
     def removeAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
-        subscribed_by = subscribed_by or person
         if not self.canUserAlterAnswerContact(person, subscribed_by):
             return False
         if person not in self.answer_contacts:

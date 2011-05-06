@@ -18,7 +18,7 @@ contact, and asker, and three questions.
     >>> _project = factory.makeProduct(name='my-project', owner=_contact)
     >>> _contact.addLanguage(lang_set['en'])
     >>> _project.answers_usage = ServiceUsage.LAUNCHPAD
-    >>> success = _project.addAnswerContact(_contact)
+    >>> success = _project.addAnswerContact(_contact, _contact)
     >>> _team = factory.makeTeam(_contact, 'my-team')
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
@@ -60,22 +60,6 @@ be added.
     ...     project['self_link'], 'addAnswerContact',
     ...     person=contact['self_link'], api_version='devel').jsonBody()
     True
-
-Anonymous users cannot change answer contacts.
-
-    >>> anon_webservice.named_get(
-    ...     project['self_link'], 'canUserAlterAnswerContact',
-    ...     person=contact['self_link'], api_version='devel').jsonBody()
-    Traceback (most recent call last):
-     ...
-    ValueError: (... 'canUserAlterAnswerContact', 'launchpad.AnyPerson')
-
-    >>> anon_webservice.named_post(
-    ...     project['self_link'], 'addAnswerContact',
-    ...     person=contact['self_link'], api_version='devel').jsonBody()
-    Traceback (most recent call last):
-     ...
-    ValueError: (... 'addAnswerContact', 'launchpad.AnyPerson')
 
 
 Questions
