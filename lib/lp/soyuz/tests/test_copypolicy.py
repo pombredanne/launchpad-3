@@ -45,7 +45,7 @@ class TestCopyPolicy(TestCaseWithFactory):
     def test_insecure_holds_copy_to_release_pocket_in_frozen_series(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         packageupload = self.factory.makePackageUpload(
-            archive=archive,pocket=PackagePublishingPocket.RELEASE)
+            archive=archive, pocket=PackagePublishingPocket.RELEASE)
         packageupload.distroseries.status = SeriesStatus.FROZEN
         cp = InsecureCopyPolicy()
         approve = cp.autoApprove(packageupload)
