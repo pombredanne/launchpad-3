@@ -1270,7 +1270,7 @@ _clauseTables).
     gentoo          Gentoo               The Gentoo Linux (Distribution)
     gnome           GNOME                The GNOME Project (ProjectGroup)
     gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
-    mozilla the     Mozilla Project      The Mozilla Project (ProjectGroup)
+    mozilla The     Mozilla Project      The Mozilla Project (ProjectGroup)
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 
