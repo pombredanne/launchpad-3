@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
@@ -431,7 +432,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         (notification,) = pop_notifications()
         self.assertEqual('Daily builds disabled', notification['subject'])
         body = notification.get_payload(decode=True)
-        import re
         self.assertTrue(re.match(
             'Daily builds of your recipe .* have been disabled, because you'
             ' do not have permission to upload to the archive .*\.',
