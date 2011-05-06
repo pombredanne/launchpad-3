@@ -265,7 +265,7 @@ class DistroSeriesDifference(StormBase):
         parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
-            difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+            difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         if status is None:
             status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -396,9 +396,12 @@ class DistroSeriesDifference(StormBase):
 
     @staticmethod
     def getSimpleUpgrades(distro_series):
-        """See `IDistroSeriesDifferenceSource`."""
-        return IStore(DistroSeriesDifference).find(
-            DistroSeriesDifference,
+        """See `IDistroSeriesDifferenceSource`.
+
+        Eager-load related `ISourcePackageName` records.
+        """
+        differences = IStore(DistroSeriesDifference).find(
+            (DistroSeriesDifference, SourcePackageName),
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type ==
                 DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
@@ -407,7 +410,10 @@ class DistroSeriesDifference(StormBase):
             DistroSeriesDifference.parent_source_version !=
                 DistroSeriesDifference.base_version,
             DistroSeriesDifference.source_version ==
-                DistroSeriesDifference.base_version)
+                DistroSeriesDifference.base_version,
+            SourcePackageName.id ==
+                DistroSeriesDifference.source_package_name_id)
+        return DecoratedResultSet(differences, itemgetter(0))
 
     @staticmethod
     def collateDifferencesByParentArchive(differences):

@@ -20,6 +20,7 @@ from testtools.content import (
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
+    Equals,
     LessThan,
     Not,
     )
@@ -636,7 +637,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makePackageUpgrade(self):
+    def makePackageUpgrade(self, derived_series=None):
         """Create a `DistroSeriesDifference` for a package upgrade."""
         base_version = '1.%d' % self.factory.getUniqueInteger()
         versions = {
@@ -645,7 +646,8 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             'derived': base_version,
         }
         return self.factory.makeDistroSeriesDifference(
-            versions=versions, set_base_version=True)
+            derived_series=derived_series, versions=versions,
+            set_base_version=True)
 
     def makeDerivedSeries(self):
         """Create a derived `DistroSeries`."""
@@ -943,12 +945,24 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         observed = map(vars, view.request.response.notifications)
         self.assertEqual([expected], observed)
 
-    def SKIP_test_requestUpgrade_is_efficient(self):
+    def test_requestUpgrade_is_efficient(self):
         # A single web request may need to schedule large numbers of
         # package upgrades.  It must do so without issuing large numbers
         # of database queries.
-# XXX: Test.
-        self.assertTrue(False)
+        derived_series, parent_series = self._create_child_and_parent()
+        # Take a baseline measure of queries.
+        self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder1:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
+        # The query count does not increase with more differences.
+        for index in xrange(3):
+            self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder2:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
