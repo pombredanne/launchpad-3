@@ -32,6 +32,7 @@ from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -728,8 +729,9 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         derived_series, parent_series = self._create_child_and_parent()
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
-        difference.addComment(difference.owner, "Earlier comment")
-        difference.addComment(difference.owner, "Latest comment")
+        with person_logged_in(derived_series.owner):
+            difference.addComment(difference.owner, "Earlier comment")
+            difference.addComment(difference.owner, "Latest comment")
 
         set_derived_series_ui_feature_flag(self)
         view = self.makeView(derived_series)
@@ -822,8 +824,11 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series)
 
         # Delete the publications.
-        difference.source_pub.status = PackagePublishingStatus.DELETED
-        difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+        with celebrity_logged_in("admin"):
+            difference.source_pub.status = (
+                PackagePublishingStatus.DELETED)
+            difference.parent_source_pub.status = (
+                PackagePublishingStatus.DELETED)
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 
@@ -914,15 +919,22 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             (dsd.source_package_name.name, dsd.parent_source_version),
             source_package_info[0][:2])
 
-    def SKIP_test_upgrade_gives_feedback(self):
+    def test_upgrade_gives_feedback(self):
         # requestUpgrades doesn't instantly perform package upgrades,
         # but it shows the user a notice that the upgrades have been
         # requested.
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         view.requestUpgrades()
-# XXX: Test.
-        self.assertTrue(False)
+        expected = {
+            "level": BrowserNotificationLevel.INFO,
+            "message":
+                ("Upgrades of {0.displayname} packages have been "
+                 "requested. Please give Launchpad some time to "
+                 "complete these.").format(dsd.derived_series),
+            }
+        observed = map(vars, view.request.response.notifications)
+        self.assertEqual([expected], observed)
 
     def SKIP_test_upgrade_is_privileged(self):
 # XXX: Privileged to whom?  For Ubuntu this would be the ubuntu-archive

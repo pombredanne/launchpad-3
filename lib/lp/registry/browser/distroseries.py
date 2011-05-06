@@ -972,8 +972,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         return getUtility(IDistroSeriesDifferenceSource).getSimpleUpgrades(
             self.context)
 
-    @action(_("Upgrade Packages"), name="upgrade",
-            condition='canUpgrade')
+    @action(_("Upgrade Packages"), name="upgrade", condition='canUpgrade')
     def upgrade(self, action, data):
         """Request synchronization of straightforward package upgrades."""
         self.requestUpgrades()
@@ -993,10 +992,10 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             getUtility(IPackageCopyJobSource).create(
                 source_package_info, source_archive, target_archive,
                 target_distroseries, PackagePublishingPocket.UPDATES)
-        self.request.response.addInfoNotification("""
-            Upgrades of %s packages have been requested.
-            Please give Launchpad some time to complete these.
-            """ % self.context.displayname)
+        self.request.response.addInfoNotification(
+            (u"Upgrades of {context.displayname} packages have been "
+             u"requested. Please give Launchpad some time to complete "
+             u"these.").format(context=self.context))
 
     def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
