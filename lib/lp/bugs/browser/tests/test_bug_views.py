@@ -166,7 +166,6 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertFalse(self.bug.isMuted(person))
                 # This is a sanity check for the test.
                 self.assertFalse(self.bug.duplicates.is_empty())
-                ##import pdb; pdb.set_trace()
                 self.assertEqual(self.bug, dupe.duplicateof)
                 self.assertTrue(
                     self.bug.personIsAlsoNotifiedSubscriber(
