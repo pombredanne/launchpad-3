@@ -285,6 +285,7 @@ from lp.testing import (
     run_with_login,
     temp_dir,
     time_counter,
+    with_celebrity_logged_in,
     )
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -486,6 +487,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         login_as(person)
         return person
 
+    @with_celebrity_logged_in('admin')
     def makeAdministrator(self, name=None, email=None, password=None):
         from lp.testing.sampledata import ADMIN_EMAIL
         if name = None:
