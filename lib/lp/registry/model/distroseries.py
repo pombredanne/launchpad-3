@@ -99,6 +99,9 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
     )
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -2031,6 +2034,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def getDifferencesTo(self, parent_series=None, difference_type=None,
+                         source_package_name_filter=None, status=None,
+                         child_version_higher=False):
+        """See `IDistroSeries`."""
+        return getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self,
+                difference_type = difference_type,
+                source_package_name_filter=source_package_name_filter,
+                status=status,
+                child_version_higher=child_version_higher)
 
 
 class DistroSeriesSet:
