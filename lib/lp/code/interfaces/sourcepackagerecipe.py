@@ -167,7 +167,7 @@ class ISourcePackageRecipeView(Interface):
         If `CannotUploadToPPA` is raised, disables daily builds for that
         recipe and sends an email to the recipe owner.
 
-        :return: The new `SourcePackageRecipeBuild`s.
+        :return: A list of each new `SourcePackageRecipeBuild`.
         """
 
     @export_read_operation()
