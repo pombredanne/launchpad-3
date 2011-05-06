@@ -109,7 +109,7 @@ Of course the owner can edit the message.
     Ubuntu let Alexander Limi have access.
 
     >>> check_access(project.owner, project)
-    the Mozilla Project let Sample Person have access.
+    The Mozilla Project let Sample Person have access.
 
     >>> check_access(product.owner, product)
     Mozilla Firefox let Sample Person have access.

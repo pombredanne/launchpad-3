@@ -5,18 +5,43 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'pop_questionemailjobs',
+    ]
+
 from unittest import TestCase
 
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing import DatabaseFunctionalLayer
+from lp.answers.enums import QuestionRecipientSet
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.model.questionjob import QuestionEmailJob
 from lp.answers.notification import (
     QuestionAddedNotification,
     QuestionModifiedDefaultNotification,
+    QuestionModifiedOwnerNotification,
+    QuestionNotification,
+    QuestionUnsupportedLanguageNotification,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import TestCaseWithFactory
 
 
-class TestQuestionModifiedNotification(QuestionModifiedDefaultNotification):
+def pop_questionemailjobs():
+    jobs = sorted(
+        QuestionEmailJob.iterReady(),
+        key=lambda job: job.metadata["recipient_set"])
+    for job in jobs:
+        job.start()
+        job.complete()
+    return jobs
+
+
+class FakeQuestionModifiedNotification(QuestionModifiedDefaultNotification):
     """Subclass that do not send emails and with simpler initialization.
 
     Since notifications are handlers that accomplish their action on
@@ -39,6 +64,7 @@ class StubQuestion:
         self.id = id
         self.title = title
         self.owner = FakeUser()
+        self.messages = []
 
 
 class StubQuestionMessage:
@@ -56,6 +82,7 @@ class FakeUser:
 class FakeEvent:
     """A fake event."""
     user = FakeUser()
+    object_before_modification = StubQuestion()
 
 
 class QuestionModifiedDefaultNotificationTestCase(TestCase):
@@ -63,22 +90,13 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
 
     def setUp(self):
         """Create a notification with a fake question."""
-        self.notification = TestQuestionModifiedNotification(
+        self.notification = FakeQuestionModifiedNotification(
             StubQuestion(), FakeEvent())
 
-    def test_buildBody_with_separator(self):
-        # A body with a separator is preserved.
-        formatted_body = self.notification.buildBody(
-            "body\n-- ", "rationale")
+    def test_recipient_set(self):
         self.assertEqual(
-            "body\n-- \nrationale", formatted_body)
-
-    def test_buildBody_without_separator(self):
-        # A separator will added to body if one is not present.
-        formatted_body = self.notification.buildBody(
-            "body -- mdash", "rationale")
-        self.assertEqual(
-            "body -- mdash\n-- \nrationale", formatted_body)
+            QuestionRecipientSet.SUBSCRIBER,
+            self.notification.recipient_set)
 
     def test_getSubject(self):
         """getSubject() when there is no message added to the question."""
@@ -90,25 +108,120 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
         """The notification user is always the event user."""
         question = StubQuestion()
         event = FakeEvent()
-        notification = TestQuestionModifiedNotification(question, event)
+        notification = FakeQuestionModifiedNotification(question, event)
         self.assertEqual(event.user, notification.user)
         self.assertNotEqual(question.owner, notification.user)
 
 
-class TestQuestionAddedNotification(QuestionAddedNotification):
+class FakeQuestionModifiedOwnerNotification(
+                                           QuestionModifiedOwnerNotification):
     """A subclass that does not send emails."""
 
     def shouldNotify(self):
         return False
 
 
-class QuestionCreatedTestCase(TestCase):
+class QuestionModifiedOwnerNotificationTestCase(TestCase):
+    """Test cases for mail notifications about owner modified questions."""
+
+    def setUp(self):
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = FakeQuestionModifiedOwnerNotification(
+            self.question, self.event)
+
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.ASKER,
+            self.notification.recipient_set)
+
+
+class FakeQuestionAddedNotification(QuestionAddedNotification):
+    """A subclass that does not send emails."""
+
+    def shouldNotify(self):
+        return False
+
+
+class QuestionAddedNotificationTestCase(TestCase):
     """Test cases for mail notifications about created questions."""
+
+    def setUp(self):
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = FakeQuestionAddedNotification(
+            self.question, self.event)
+
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.ASKER_SUBSCRIBER,
+            self.notification.recipient_set)
 
     def test_user_is_question_owner(self):
         """The notification user is always the question owner."""
-        question = StubQuestion()
+        self.assertEqual(self.question.owner, self.notification.user)
+        self.assertNotEqual(self.event.user, self.notification.user)
+
+
+class FakeQuestionUnsupportedLanguageNotification(
+                                     QuestionUnsupportedLanguageNotification):
+    """A subclass that does not send emails."""
+
+    def shouldNotify(self):
+        return False
+
+
+class QuestionUnsupportedLanguageNotificationTestCase(TestCase):
+    """Test notifications about questions with unsupported languages."""
+
+    def setUp(self):
+        self.question = StubQuestion()
+        self.event = FakeEvent()
+        self.notification = FakeQuestionUnsupportedLanguageNotification(
+            self.question, self.event)
+
+    def test_recipient_set(self):
+        self.assertEqual(
+            QuestionRecipientSet.CONTACT,
+            self.notification.recipient_set)
+
+
+class FakeQuestionNotification(QuestionNotification):
+    """A subclass to exercise question notifcations."""
+
+    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
+
+    def getBody(self):
+        return 'body'
+
+
+class QuestionNotificationTestCase(TestCaseWithFactory):
+    """Test common question notification behavior."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeQuestion(self):
+        """Create question that does not trigger a notification."""
+        asker = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        naked_question_set = removeSecurityProxy(getUtility(IQuestionSet))
+        question = naked_question_set.new(
+            title='title', description='description', owner=asker,
+            language=getUtility(ILanguageSet)['en'],
+            product=product, distribution=None, sourcepackagename=None)
+        return question
+
+    def test_init_enqueue(self):
+        # Creating a question notification creates a queation email job.
+        question = self.makeQuestion()
         event = FakeEvent()
-        notification = TestQuestionAddedNotification(question, event)
-        self.assertEqual(question.owner, notification.user)
-        self.assertNotEqual(event.user, notification.user)
+        event.user = self.factory.makePerson()
+        notification = FakeQuestionNotification(question, event)
+        self.assertEqual(
+            notification.recipient_set.name,
+            notification.job.metadata['recipient_set'])
+        self.assertEqual(notification.question, notification.job.question)
+        self.assertEqual(notification.user, notification.job.user)
+        self.assertEqual(notification.getSubject(), notification.job.subject)
+        self.assertEqual(notification.getBody(), notification.job.body)
+        self.assertEqual(notification.getHeaders(), notification.job.headers)
