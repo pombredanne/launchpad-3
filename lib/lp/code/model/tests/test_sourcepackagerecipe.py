@@ -424,7 +424,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             daily_build_archive=self.factory.makeArchive(),
             build_daily=True)
         with self.expectedLog(
-            'Owner of .*/.* cannot upload to .*/.*\.  Daily builds disabled.'):
+            'Owner of .*/.* cannot upload to .*/.*\.  Daily builds disabled'):
             builds = recipe.performDailyBuild()
         self.assertEqual([], builds)
         self.assertFalse(recipe.build_daily)
@@ -433,8 +433,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         body = notification.get_payload(decode=True)
         import re
         self.assertTrue(re.match(
-            'Daily builds of your recipe .* have been disabled, because you do'
-            ' not have permission to upload to the archive .*\.',
+            'Daily builds of your recipe .* have been disabled, because you'
+            ' do not have permission to upload to the archive .*\.',
         body))
 
     def test_sourcepackagerecipe_description(self):
@@ -630,7 +630,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
         build_info = []
         for archive in archives:
-            build = recipe.requestBuild(archive, person, distroseries)
+            recipe.requestBuild(archive, person, distroseries)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
                 "archive": '%s/%s' %
@@ -1083,7 +1083,7 @@ class TestWebservice(TestCaseWithFactory):
         build_info = []
         for archive in archives:
             ws_archive = ws_object(launchpad, archive)
-            build = recipe.requestBuild(
+            recipe.requestBuild(
                 archive=ws_archive, distroseries=ws_distroseries,
                 pocket=PackagePublishingPocket.RELEASE.title)
             build_info.insert(0, {
