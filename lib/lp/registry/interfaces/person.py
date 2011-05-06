@@ -1302,6 +1302,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     def getPathsToTeams():
         """Return the paths to all teams related to this person."""
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -1311,6 +1315,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         already, nothing will happen.
         """
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 

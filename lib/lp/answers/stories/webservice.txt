@@ -20,7 +20,6 @@ contact, and asker, and three questions.
     >>> _project.answers_usage = ServiceUsage.LAUNCHPAD
     >>> success = _project.addAnswerContact(_contact, _contact)
     >>> _team = factory.makeTeam(owner=_contact, name='my-team')
-    >>> _team.addLanguage(lang_set['fr'])
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
     >>> _question_1 = factory.makeQuestion(
@@ -72,6 +71,9 @@ preferred language.
     ...     person=team['self_link'], api_version='devel').jsonBody()
     True
 
+    >>> contact_webservice.named_post(
+    ...     team['self_link'], 'addLanguage',
+    ...     language='/+languages/fr', api_version='devel').jsonBody()
     >>> contact_webservice.named_post(
     ...     project['self_link'], 'addAnswerContact',
     ...     person=team['self_link'], api_version='devel').jsonBody()
