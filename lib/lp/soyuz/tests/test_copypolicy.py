@@ -15,26 +15,32 @@ class TestCopyPolicy(TestCaseWithFactory):
     # makePackageUpload() needs the librarian.
     layer = LaunchpadZopelessLayer
 
-    def test_insecure_holds_new_distro_package(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+    def _getPackageUpload(self, archive_purpose):
+        archive = self.factory.makeArchive(purpose=archive_purpose)
         packageupload = self.factory.makePackageUpload(archive=archive)
+        return packageupload
+
+    def assertApproved(self, archive_purpose, method):
+        packageupload = self._getPackageUpload(archive_purpose)
+        approved = method(packageupload)
+        self.assertTrue(approved)
+
+    def assertUnapproved(self, archive_purpose, method):
+        packageupload = self._getPackageUpload(archive_purpose)
+        approved = method(packageupload)
+        self.assertFalse(approved)
+
+    def test_insecure_holds_new_distro_package(self):
         cp = InsecureCopyPolicy()
-        approve = cp.autoApproveNew(packageupload)
-        self.assertFalse(approve)
+        self.assertUnapproved(ArchivePurpose.PRIMARY, cp.autoApproveNew)
 
     def test_insecure_approves_new_ppa_packages(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        packageupload = self.factory.makePackageUpload(archive=archive)
         cp = InsecureCopyPolicy()
-        approve = cp.autoApproveNew(packageupload)
-        self.assertTrue(approve)
+        self.assertApproved(ArchivePurpose.PPA, cp.autoApproveNew)
 
     def test_insecure_approves_existing_distro_package(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        packageupload = self.factory.makePackageUpload(archive=archive)
         cp = InsecureCopyPolicy()
-        approve = cp.autoApprove(packageupload)
-        self.assertTrue(approve)
+        self.assertApproved(ArchivePurpose.PRIMARY, cp.autoApprove)
 
     def test_insecure_holds_copy_to_release_pocket_in_frozen_series(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -46,8 +52,5 @@ class TestCopyPolicy(TestCaseWithFactory):
         self.assertFalse(approve)
 
     def test_insecure_approves_existing_ppa_package(self):
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        packageupload = self.factory.makePackageUpload(archive=archive)
         cp = InsecureCopyPolicy()
-        approve = cp.autoApprove(packageupload)
-        self.assertTrue(approve)
+        self.assertApproved(ArchivePurpose.PPA, cp.autoApprove)
