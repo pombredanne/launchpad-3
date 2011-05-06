@@ -128,7 +128,7 @@ class HelpersMixin:
 
         self.addCleanup(config.pop, "run-parts")
 
-    def makeDistro(self):
+    def makeDistroWithPublishDirectory(self):
         """Create a `Distribution` for testing.
 
         The distribution will have a publishing directory set up, which
@@ -140,7 +140,7 @@ class HelpersMixin:
     def makeScript(self, distro=None, extra_args=[]):
         """Produce instance of the `PublishFTPMaster` script."""
         if distro is None:
-            distro = self.makeDistro()
+            distro = self.makeDistroWithPublishDirectory()
         script = PublishFTPMaster(test_args=["-d", distro.name] + extra_args)
         script.txn = self.layer.txn
         script.logger = DevNullLogger()
@@ -284,11 +284,11 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(0, retval, "Script failure:\n" + stderr)
 
     def test_script_is_happy_with_no_publications(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         self.makeScript(distro).main()
 
     def test_produces_listings(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         self.makeScript(distro).main()
         self.assertTrue(
             path_exists(get_archive_root(get_pub_config(distro)), 'ls-lR.gz'))
@@ -365,7 +365,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([name_spph_suite(spph)], script.getDirtySuites())
 
     def test_getDirtySuites_returns_suites_with_pending_publications(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.factory.makeDistroSeries(
@@ -386,7 +386,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.getDirtySuites())
 
     def test_getDirtySecuritySuites_returns_security_suites(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.factory.makeDistroSeries(
@@ -416,7 +416,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.getDirtySecuritySuites())
 
     def test_rsync_copies_files(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         dists_root = get_dists_root(get_pub_config(distro))
@@ -430,7 +430,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "New file", read_marker_file([dists_backup, "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         dists_backup = os.path.join(
@@ -443,7 +443,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(path_exists(*old_file))
 
     def test_setUpDirs_creates_directory_structure(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         pub_config = get_pub_config(distro)
         archive_root = get_archive_root(pub_config)
         dists_root = get_dists_root(pub_config)
@@ -459,7 +459,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(get_distscopy_root(pub_config)))
 
     def test_setUpDirs_does_not_mind_if_dist_directories_already_exist(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -467,7 +467,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(get_archive_root(get_pub_config(distro))))
 
     def test_publishDistroArchive_runs_parts(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -479,7 +479,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual("publish-distro.d", parts_dir)
 
     def test_runPublishDistroParts_passes_parameters(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -509,7 +509,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
         # runCommercialCompat as soon as Dapper support ends.
         self.enableCommercialCompat()
-        script = self.makeScript(self.makeDistro())
+        script = self.makeScript(self.makeDistroWithPublishDirectory())
         script.setUp()
         script.executeShell = FakeMethod()
         script.runCommercialCompat()
@@ -525,7 +525,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(0, script.executeShell.call_count)
 
     def test_generateListings_writes_ls_lR_gz(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -533,7 +533,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         pass
 
     def test_clearEmptyDirs_cleans_up_empty_directories(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -544,7 +544,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(file_exists(empty_dir))
 
     def test_clearEmptyDirs_does_not_clean_up_nonempty_directories(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -556,7 +556,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(nonempty_dir))
 
     def test_processOptions_finds_distribution(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distro.name, script.options.distribution)
@@ -594,7 +594,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertIn("%s=%s" % (key, value), command_line)
 
     def test_executeShell_executes_shell_command(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         marker = os.path.join(
             get_pub_config(distro).root_dir, "marker")
@@ -602,7 +602,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(marker))
 
     def test_executeShell_reports_failure_if_requested(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
 
         class ArbitraryFailure(Exception):
@@ -613,7 +613,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             script.executeShell, "/bin/false", failure=ArbitraryFailure())
 
     def test_executeShell_does_not_report_failure_if_not_requested(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         # The test is that this does not fail:
         script.executeShell("/bin/false")
@@ -638,7 +638,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(0, script.installDists.call_count)
 
     def test_publishAllUploads_publishes_all_distro_archives(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         partner_archive = self.factory.makeArchive(
             distribution=distro, purpose=ArchivePurpose.PARTNER)
@@ -668,7 +668,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual('', script.logger.getLogBuffer())
 
     def test_recoverWorkingDists_recovers_working_directory(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         script = self.makeScript(distro)
         script.setUp()
         script.logger = BufferLogger()
@@ -704,7 +704,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual({'security_only': True}, kwargs)
 
     def test_publishAllUploads_processes_all_archives(self):
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         partner_archive = self.factory.makeArchive(
             distribution=distro, purpose=ArchivePurpose.PARTNER)
         script = self.makeScript(distro)
@@ -725,7 +725,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         # list.  It'll probably go wrong if the configured archive root
         # contains spaces and such, but should work with Unix-sensible
         # paths.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         self.factory.makeArchive(
             distribution=distro, purpose=ArchivePurpose.PARTNER)
         script = self.makeScript(distro)
@@ -799,7 +799,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_markIndexCreationComplete_tells_needsIndexesCreated_no(self):
         # The effect of markIndexCreationComplete is to make
         # needsIndexesCreated for that distroseries return False.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         series = self.factory.makeDistroSeries(
             status=SeriesStatus.FROZEN, distribution=distro)
         script = self.makeScript(distro)
@@ -813,7 +813,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_createIndexes_marks_index_creation_complete(self):
         # createIndexes calls markIndexCreationComplete for the
         # distroseries.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         series = self.factory.makeDistroSeries(distribution=distro)
         script = self.makeScript(distro)
         script.markIndexCreationComplete = FakeMethod()
@@ -852,7 +852,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_locateIndexesMarker_uses_separate_files_per_series(self):
         # Different release series of the same distribution get separate
         # marker files for index creation.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         series1 = self.factory.makeDistroSeries(distribution=distro)
         series2 = self.factory.makeDistroSeries(distribution=distro)
         script = self.makeScript(distro)
@@ -874,7 +874,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_script_calls_createIndexes_for_new_series(self):
         # If the script's main() finds a distroseries that needs its
         # indexes created, it calls createIndexes on that distroseries.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         series = self.factory.makeDistroSeries(
             status=SeriesStatus.FROZEN, distribution=distro)
         script = self.makeScript(distro)
@@ -885,7 +885,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_createIndexes_ignores_other_series(self):
         # createIndexes does not accidentally also touch other
         # distroseries than the one it's meant to.
-        distro = self.makeDistro()
+        distro = self.makeDistroWithPublishDirectory()
         series = self.factory.makeDistroSeries(distribution=distro)
         self.factory.makeDistroSeries(distribution=distro)
         script = self.makeScript(distro)

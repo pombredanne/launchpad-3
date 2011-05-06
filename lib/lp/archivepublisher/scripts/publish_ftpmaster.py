@@ -265,11 +265,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         This tells `needsIndexesCreated` that no, this series no longer needs
         archive indexes to be set up.
         """
-        marker = file(self.locateIndexesMarker(distroseries), "w")
-        marker.write(
-            "Indexes for %s were created on %s.\n"
-            % (distroseries, datetime.now(utc)))
-        marker.close()
+        with file(self.locateIndexesMarker(distroseries), "w") as marker:
+            marker.write(
+                "Indexes for %s were created on %s.\n"
+                % (distroseries, datetime.now(utc)))
 
     def createIndexes(self, distroseries):
         """Create archive indexes for `distroseries`."""
