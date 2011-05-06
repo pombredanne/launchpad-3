@@ -29,5 +29,20 @@ class TestLanguagePacksView(TestCaseWithFactory):
 
         view = create_initialized_view(
             distroseries, '+language-packs', rootsite='translations')
+        # This should not trigger a shortlist warning.
         self.assertEqual(
             number_of_language_packs, len(view.unused_language_packs))
+
+    def test_unused_language_packs__handles_orphaned_pack(self):
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.language_pack_base = self.factory.makeLanguagePack(
+                distroseries)
+            distroseries.language_pack_delta = self.factory.makeLanguagePack(
+                distroseries, LanguagePackType.DELTA)
+            distroseries.language_pack_base = self.factory.makeLanguagePack(
+                distroseries)
+
+        view = create_initialized_view(
+            distroseries, '+language-packs', rootsite='translations')
+        self.assertEqual(2, len(view.unused_language_packs))
