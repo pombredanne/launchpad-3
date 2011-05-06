@@ -486,9 +486,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         login_as(person)
         return person
 
-    def makeAdministrator(self, name=None, email='new_admin@example.com',
-                          password='test'):
+    def makeAdministrator(self, name=None, email=None, password=None):
         from lp.testing.sampledata import ADMIN_EMAIL
+        if name = None:
+            name = self.getUniqueString()
+        if email = None:
+            email = '%s@%s.com' % (
+                self.getUniqueString(), self.getUniqueString())
+        if password = None:
+            password = self.getUniqueString()
         login(ADMIN_EMAIL)
         user = self.makePerson(name=name,
                                email=email,
