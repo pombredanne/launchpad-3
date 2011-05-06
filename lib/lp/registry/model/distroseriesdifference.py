@@ -258,11 +258,14 @@ class DistroSeriesDifference(StormBase):
     @staticmethod
     def getForDistroSeries(
         distro_series,
-        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        difference_type=None,
         source_package_name_filter=None,
         status=None,
-        child_version_higher=False):
+        child_version_higher=False,
+        parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
+        if difference_type is None:
+            difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         if status is None:
             status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -276,7 +279,11 @@ class DistroSeriesDifference(StormBase):
             DistroSeriesDifference.status.is_in(status),
             DistroSeriesDifference.source_package_name ==
                 SourcePackageName.id,
-         ]
+        ]
+
+        if parent_series:
+            conditions.extend([
+               DistroSeriesDifference.parent_series == parent_series.id])
 
         if source_package_name_filter:
             conditions.extend([
