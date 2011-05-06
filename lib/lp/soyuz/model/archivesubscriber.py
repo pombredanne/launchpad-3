@@ -135,13 +135,44 @@ class ArchiveSubscriber(Storm):
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
-    def getBySubscriber(self, subscriber, archive=None, current_only=True):
-        """See `IArchiveSubscriberSet`."""
+    def _getBySubscriber(self, subscriber, archive, current_only,
+                         with_active_tokens):
+        """Return all the subscriptions for a person.
 
+        :param subscriber: An `IPerson` for whom to return all
+            `ArchiveSubscriber` records.
+        :param archive: An optional `IArchive` which restricts
+            the results to that particular archive.
+        :param current_only: Whether the result should only include current
+            subscriptions (which is the default).
+        :param with_active_tokens: Indicates whether the tokens for the given
+            subscribers subscriptions should be included in the resultset.
+            By default the tokens are not included in the resultset.
+^       """
         # Grab the extra Storm expressions, for this query,
         # depending on the params:
         extra_exprs = self._getExprsForSubscriptionQueries(
             archive, current_only)
+        origin = [
+            ArchiveSubscriber,
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID == ArchiveSubscriber.subscriber_id)]
+
+        if with_active_tokens:
+            result_row = (ArchiveSubscriber, ArchiveAuthToken)
+            # We need a left join with ArchiveSubscriber as
+            # the origin:
+            origin.append(
+                LeftJoin(
+                    ArchiveAuthToken,
+                    And(
+                        ArchiveAuthToken.archive_id ==
+                            ArchiveSubscriber.archive_id,
+                        ArchiveAuthToken.person_id == subscriber.id,
+                        ArchiveAuthToken.date_deactivated == None)))
+        else:
+            result_row = ArchiveSubscriber
 
         # Set the main expression to find all the subscriptions for
         # which the subscriber is a direct subscriber OR is a member
@@ -151,40 +182,18 @@ class ArchiveSubscriberSet:
         # showing that each person is a member of the "team" that
         # consists of themselves.
         store = Store.of(subscriber)
-        return store.find(
-            ArchiveSubscriber,
+        return store.using(*origin).find(
+            result_row,
             TeamParticipation.personID == subscriber.id,
-            TeamParticipation.teamID == ArchiveSubscriber.subscriber_id,
             *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
+
+    def getBySubscriber(self, subscriber, archive=None, current_only=True):
+        """See `IArchiveSubscriberSet`."""
+        return self._getBySubscriber(subscriber, archive, current_only, False)
 
     def getBySubscriberWithActiveToken(self, subscriber, archive=None):
         """See `IArchiveSubscriberSet`."""
-
-        # We need a left join with ArchiveSubscriber as
-        # the origin:
-        origin = [
-            ArchiveSubscriber,
-            Join(
-                TeamParticipation,
-                TeamParticipation.teamID == ArchiveSubscriber.subscriber_id),
-            LeftJoin(
-                ArchiveAuthToken,
-                And(
-                    ArchiveAuthToken.archive_id ==
-                        ArchiveSubscriber.archive_id,
-                    ArchiveAuthToken.person_id == subscriber.id,
-                    ArchiveAuthToken.date_deactivated == None))]
-
-        # Grab the extra Storm expressions, for this query,
-        # depending on the params:
-        extra_exprs = self._getExprsForSubscriptionQueries(
-            archive)
-
-        store = Store.of(subscriber)
-        return store.using(*origin).find(
-            (ArchiveSubscriber, ArchiveAuthToken),
-            TeamParticipation.personID == subscriber.id,
-            *extra_exprs).order_by(Desc(ArchiveSubscriber.date_created))
+        return self._getBySubscriber(subscriber, archive, True, True)
 
     def getByArchive(self, archive, current_only=True):
         """See `IArchiveSubscriberSet`."""
