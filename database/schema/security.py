@@ -87,6 +87,7 @@ class DbSchema(dict):
             WHERE c.relkind IN ('r','v','S','')
                 AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
                 AND pg_catalog.pg_table_is_visible(c.oid)
+                AND c.relistemp IS NOT TRUE
             ORDER BY 1,2
             ''')
         for schema, name, type_, owner in cur.fetchall():
