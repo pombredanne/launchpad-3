@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from itertools import chain
+import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -24,6 +25,7 @@ from canonical.testing import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.answers.tests.test_question_notifications import pop_questionemailjobs
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IUpstreamBugTask,
@@ -36,7 +38,6 @@ from lp.bugs.model.bugnotification import (
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Contains
 
 
@@ -120,8 +121,9 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         self.subscriber = self.factory.makePerson()
         question.subscribe(self.subscriber)
         question.linkBug(self.bug)
-        # Flush pending notifications for question creation.
-        pop_notifications()
+        # Flush pending jobs for question creation.
+        pop_questionemailjobs()
+        transaction.commit()
         self.layer.switchDbUser(config.malone.expiration_dbuser)
 
     def test_notifications_for_question_subscribers(self):
@@ -134,10 +136,10 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         bug_modified = ObjectModifiedEvent(
             bugtask, bugtask_before_modification, ["status"])
         notify(bug_modified)
+        recipients = [
+            job.metadata['recipient_set'] for job in pop_questionemailjobs()]
         self.assertContentEqual(
-            [self.product.owner.preferredemail.email,
-             self.subscriber.preferredemail.email],
-            [mail['To'] for mail in pop_notifications()])
+            ['ASKER_SUBSCRIBER'], recipients)
 
 
 class TestNotificationsLinkToFilters(TestCaseWithFactory):
@@ -254,7 +256,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.assertEqual(
             {self.subscriber: {'sources': sources,
                                'filter descriptions': []},
-             subscriber2: {'sources': sources2, 
+             subscriber2: {'sources': sources2,
                            'filter descriptions': [u'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
                 {self.subscriber: sources, subscriber2: sources2},
@@ -278,7 +280,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         # Perform the test.
         sources = list(self.notification.recipients)
         sources.extend(self.notification2.recipients)
-        assert(len(sources)==2)
+        assert(len(sources) == 2)
         self.assertEqual(
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Another Filter!', 'Special Filter!']}},
@@ -316,7 +318,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         sources = list(self.notification.recipients)
         sources2 = list(notification2.recipients)
         self.assertEqual(
-            {subscriber2: {'sources': sources2, 
+            {subscriber2: {'sources': sources2,
                            'filter descriptions': [u'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
                 {self.subscriber: sources, subscriber2: sources2},

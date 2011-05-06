@@ -34,7 +34,7 @@ selected facet is the Answers facet.
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/mozilla')
     >>> print anon_browser.title
-    Questions : the Mozilla Project
+    Questions : The Mozilla Project
 
 == Person ==
 
