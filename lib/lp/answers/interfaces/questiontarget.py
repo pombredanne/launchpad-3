@@ -29,12 +29,10 @@ from lazr.restful.declarations import (
     export_write_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
     )
-from lazr.restful.fields import (
-    CollectionField,
-    Reference,
-    )
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from lp.answers.interfaces.questioncollection import (
@@ -45,7 +43,9 @@ from lp.answers.enums import (
     QuestionStatus,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -159,6 +159,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             answer contact.
         """
 
+    @operation_parameters(
+        language=Reference(ILanguage))
+    @operation_returns_collection_of(IPerson)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getAnswerContactsForLanguage(language):
         """Return the list of Persons that provide support for a language.
 
@@ -177,9 +182,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         for the QuestionTarget.
         """
 
+    @operation_returns_collection_of(ILanguage)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getSupportedLanguages():
-        """Return the set of languages spoken by at least one of this object's
-        answer contacts.
+        """Return a list of languages spoken by at the answer contacts.
 
         An answer contact is considered to speak a given language if that
         language is listed as one of his preferred languages.

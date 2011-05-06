@@ -19,7 +19,8 @@ contact, and asker, and three questions.
     >>> _contact.addLanguage(lang_set['en'])
     >>> _project.answers_usage = ServiceUsage.LAUNCHPAD
     >>> success = _project.addAnswerContact(_contact, _contact)
-    >>> _team = factory.makeTeam(_contact, 'my-team')
+    >>> _team = factory.makeTeam(owner=_contact, name='my-team')
+    >>> _team.addLanguage(lang_set['fr'])
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
     >>> _question_1 = factory.makeQuestion(
@@ -37,8 +38,8 @@ contact, and asker, and three questions.
 Answer contacts
 ---------------
 
-A user can add or remove an answer contact if the contact is the user or
-one of the user's administered teams. Scripts should call the
+Users can add or remove themselves as an answer contact for a project. The
+user must have a preferred language. Scripts should call the
 canUserAlterAnswerContact method first to verify that the person can
 be added.
 
@@ -60,6 +61,42 @@ be added.
     ...     project['self_link'], 'addAnswerContact',
     ...     person=contact['self_link'], api_version='devel').jsonBody()
     True
+
+User can also make the teams they administer answer contacts if the team has a
+preferred language.
+
+    >>> team = contact_webservice.get(
+    ...     '/~my-team', api_version='devel').jsonBody()
+    >>> contact_webservice.named_get(
+    ...     project['self_link'], 'canUserAlterAnswerContact',
+    ...     person=team['self_link'], api_version='devel').jsonBody()
+    True
+
+    >>> contact_webservice.named_post(
+    ...     project['self_link'], 'addAnswerContact',
+    ...     person=team['self_link'], api_version='devel').jsonBody()
+    True
+
+
+Anyone can get the collection of languages spoken by at least one
+answer contact.
+
+    >>> languages = anon_webservice.named_get(
+    ...     project['self_link'], 'getSupportedLanguages',
+    ...     api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(languages)
+    http://.../+languages/en
+    http://.../+languages/fr
+
+    >>> english = languages['entries'][0]
+
+Anyone can retrieve the collection of answer contacts for a language.
+
+    >>> contacts = anon_webservice.named_get(
+    ...     project['self_link'], 'getAnswerContactsForLanguage',
+    ...     language=english['self_link'], api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(contacts)
+    http://.../~contact
 
 
 Questions

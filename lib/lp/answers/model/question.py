@@ -1383,8 +1383,8 @@ class QuestionTargetMixin:
         else:
             constraints.append("""
                 Language.id = %s""" % sqlvalues(language))
-        return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage', 'Language']))
+        return list((self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage', 'Language'])))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1431,4 +1431,4 @@ class QuestionTargetMixin:
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
-        return languages
+        return list(languages)
