@@ -70,6 +70,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.testing import (
+    anonymous_logged_in,
     celebrity_logged_in,
     feature_flags,
     login_person,
@@ -77,6 +78,7 @@ from lp.testing import (
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
+    with_celebrity_logged_in,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
@@ -622,7 +624,7 @@ class TestDistroSeriesLocalDifferences(
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
     """Test the distroseries +localpackagediffs view."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def makePackageUpgrade(self):
         """Create a `DistroSeriesDifference` for a package upgrade."""
@@ -850,18 +852,26 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         self.assertContentEqual([dsd], view.getUpgrades())
 
     def test_upgrades_are_offered_if_appropriate(self):
-        # canUpgrade is the condition for the form showing an "Upgrade
-        # Packages" button.
+        # The"Upgrade Packages" button will only be shown to privileged users.
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
-        self.assertTrue(view.canUpgrade())
+        with celebrity_logged_in("admin"):
+            self.assertTrue(view.canUpgrade())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(view.canUpgrade())
+        with anonymous_logged_in():
+            self.assertFalse(view.canUpgrade())
 
+    @with_celebrity_logged_in("admin")
     def test_upgrades_offered_only_if_available(self):
         # If there are no upgrades, the "Upgrade Packages" button won't
         # be shown.
         view = self.makeView()
         self.assertFalse(view.canUpgrade())
+        self.makePackageUpgrade()
+        self.assertTrue(view.canUpgrade())
 
+    @with_celebrity_logged_in("admin")
     def test_upgrades_not_offered_after_feature_freeze(self):
         # There won't be an "Upgrade Packages" button once feature
         # freeze has occurred.  Mass updates would not make sense after

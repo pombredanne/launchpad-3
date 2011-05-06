@@ -104,6 +104,7 @@ from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
     )
@@ -996,13 +997,12 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         if self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
             return False
-# XXX: Check privilege.  We don't know who should be allowed to do this
-# yet.
         elif self.getUpgrades().is_empty():
             # There are no simple updates to perform.
             return False
         else:
-            return True
+            queue = PackageUploadQueue(self.context, None)
+            return check_permission("launchpad.Edit", queue)
 
 
 class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
