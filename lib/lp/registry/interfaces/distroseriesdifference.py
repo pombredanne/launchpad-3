@@ -195,7 +195,7 @@ class IDistroSeriesDifferencePublic(Interface):
         """
 
     latest_comment = Reference(
-        Interface, # IDistroSeriesDifferenceComment
+        Interface,  # IDistroSeriesDifferenceComment
         title=_("The latest comment"),
         readonly=True)
 

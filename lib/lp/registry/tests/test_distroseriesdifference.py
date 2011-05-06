@@ -170,7 +170,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
             'parent': '1.3',
@@ -530,7 +530,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Create changelogs for both.
         changelog_lfa = self.factory.makeChangelog('foo', ['1.2', '1.1'])
         parent_changelog_lfa = self.factory.makeChangelog('foo', ['1.1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=dsp.derived_series, source_package_name_str='foo',
@@ -554,7 +554,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'foo', ['1:2.0-1', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
         parent_changelog_lfa = self.factory.makeChangelog(
             'foo', ['1:2.0-2', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=dsp.derived_series, source_package_name_str='foo',
@@ -582,7 +582,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
 
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
@@ -605,7 +605,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
 
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
@@ -625,7 +625,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
 
         ds_diff = self.factory.makeDistroSeriesDifference(
             versions={
@@ -655,12 +655,12 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # {derived,parent}_versions must be ordered (e.g. ['1.1',
         # '1.2', '1.3']).
         if status is None:
-            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+            status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         derived_changelog = self.factory.makeChangelog(
             versions=derived_versions)
         parent_changelog = self.factory.makeChangelog(
             versions=parent_versions)
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=status,
             versions={
@@ -772,7 +772,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def createPublication(self, spn, versions, distroseries,
                           status=PackagePublishingStatus.PUBLISHED):
         changelog_lfa = self.factory.makeChangelog(spn.name, versions)
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         spr = self.factory.makeSourcePackageRelease(
             sourcepackagename=spn, version=versions[0],
             changelog=changelog_lfa)

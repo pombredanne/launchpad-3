@@ -844,30 +844,28 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
         if self.specified_package_type == NON_BLACKLISTED:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
             child_version_higher = False
         elif self.specified_package_type == BLACKLISTED:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = False
         elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = True
         elif self.specified_package_type == RESOLVED:
-            status=DistroSeriesDifferenceStatus.RESOLVED
+            status = DistroSeriesDifferenceStatus.RESOLVED
             child_version_higher = False
         else:
             raise AssertionError('specified_package_type unknown')
 
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                difference_type = self.differences_type,
+                self.context, difference_type=self.differences_type,
                 source_package_name_filter=self.specified_name_filter,
-                status=status,
-                child_version_higher=child_version_higher)
+                status=status, child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -885,7 +883,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             differences = getUtility(
                 IDistroSeriesDifferenceSource).getForDistroSeries(
                     self.context,
-                    difference_type = self.differences_type,
+                    difference_type=self.differences_type,
                     status=(
                         DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
