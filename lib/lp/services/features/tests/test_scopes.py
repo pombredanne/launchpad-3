@@ -9,13 +9,14 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.services.features.scopes import (
     BaseScope,
+    BaseWebRequestScope,
     MultiScopeHandler,
     ScopesForScript,
     ScriptScope,
     )
 
 
-class FakeScope(BaseScope):
+class FakeScope(BaseWebRequestScope):
     pattern = r'fake:'
 
     def lookup(self, scope_name):
@@ -38,17 +39,18 @@ class TestScopes(TestCaseWithFactory):
 
     def test_MultiScopeHandler_lookup_ignores_unmatched_scope(self):
         scope_name = self.factory.getUniqueString()
-        handler = MultiScopeHandler(None, [FakeScope(scope_name)])
+        fake_scope = FakeScope(scope_name)
+        handler = MultiScopeHandler([fake_scope])
         self.assertFalse(handler.lookup("other:other"))
 
     def test_MultiScopeHandler_lookup_ignores_inapplicable_scope(self):
         scope_name = self.factory.getUniqueString()
-        handler = MultiScopeHandler(None, [FakeScope(scope_name)])
+        handler = MultiScopeHandler([FakeScope(scope_name)])
         self.assertFalse(handler.lookup("fake:other"))
 
     def test_MultiScopeHandler_lookup_finds_matching_scope(self):
         scope_name = self.factory.getUniqueString()
-        handler = MultiScopeHandler(None, [FakeScope(scope_name)])
+        handler = MultiScopeHandler([FakeScope(scope_name)])
         self.assertTrue(handler.lookup("fake:" + scope_name))
 
     def test_ScopesForScript_includes_default_scope(self):
