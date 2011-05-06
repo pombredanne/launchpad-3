@@ -998,7 +998,9 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         parent_series = self.factory.makeDistroSeries(name='warty')
         derived_series = self.factory.makeDistroSeries(
             distribution=self.factory.makeDistribution(name='deribuntu'),
-            name='derilucid', parent_series=parent_series)
+            name='derilucid')
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
         self.factory.makeDistroSeriesDifference(
             source_package_name_str=src_name,
