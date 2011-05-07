@@ -84,7 +84,7 @@ from lp.testing.views import create_initialized_view
 
 def set_derived_series_ui_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
-        u'soyuz.derived-series-ui.enabled': 'on',
+        u'soyuz.derived-series-ui.enabled': u'on',
         }))
 
 
