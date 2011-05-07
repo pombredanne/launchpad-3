@@ -336,7 +336,18 @@ def handleMail(trans=transaction,
                 log.exception('Upload to Librarian failed')
                 continue
             try:
-                handle_one_mail(trans, log, raw_mail,
+                mail = signed_message_from_string(raw_mail)
+            except email.Errors.MessageError, error:
+                # If we can't parse the message, we can't send a reply back to
+                # the user, but logging an exception will let us investigate.
+                log.exception(
+                    "Couldn't convert email to email.Message: %s" % (
+                    file_alias_url, ))
+                mailbox.delete(mail_id)
+                continue
+            try:
+                trans.begin()
+                handle_one_mail(trans, log, mail,
                     file_alias, file_alias_url, signature_timestamp_checker)
                 trans.commit()
                 mailbox.delete(mail_id)
@@ -351,8 +362,7 @@ def handleMail(trans=transaction,
                 log.exception(
                     "An exception was raised inside the handler:\n%s"
                     % (file_alias_url,))
-                _send_email_oops(trans, log,
-                    signed_message_from_string(raw_mail),
+                _send_email_oops(trans, log, mail,
                     "Unhandled exception", file_alias_url)
                 mailbox.delete(mail_id)
     finally:
@@ -397,7 +407,7 @@ def save_mail_to_librarian(trans, log, raw_mail):
     return file_alias
 
 
-def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
+def handle_one_mail(trans, log, mail, file_alias, file_alias_url,
     signature_timestamp_checker):
     """Process one message.
 
@@ -406,15 +416,6 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
     sent if appropriate.
     """
 
-    trans.begin()
-
-    try:
-        mail = signed_message_from_string(raw_mail)
-    except email.Errors.MessageError, error:
-        log.warn("Couldn't convert email to email.Message: %s" % (
-                file_alias_url, ),
-            exc_info=True)
-        return
     log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
 
