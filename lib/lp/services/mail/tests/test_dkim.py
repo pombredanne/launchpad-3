@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test DKIM-signed messages"""
@@ -14,6 +14,7 @@ import dns.resolver
 
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.mail import signed_message_from_string
+from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -129,6 +130,14 @@ class TestDKIM(TestCaseWithFactory):
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
         self.assertDkimLogContains('invalid format in _domainkey txt record')
+
+    def test_dkim_disabled(self):
+        """With disabling flag set, mail isn't trusted."""
+        self.useFixture(FeatureFixture({
+            'mail.dkim_authentication.disabled': 'true'}))
+        # A test that would normally pass will now fail
+        self.assertRaises(AssertionError,
+            self.test_dkim_valid_strict)
 
     def test_dkim_valid_strict(self):
         signed_message = self.fake_signing(plain_content,
