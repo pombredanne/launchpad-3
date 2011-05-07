@@ -337,7 +337,7 @@ def handleMail(trans=transaction,
                 continue
             try:
                 mail = signed_message_from_string(raw_mail)
-            except email.Errors.MessageError, error:
+            except email.Errors.MessageError:
                 # If we can't parse the message, we can't send a reply back to
                 # the user, but logging an exception will let us investigate.
                 log.exception(
