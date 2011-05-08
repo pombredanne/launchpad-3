@@ -136,7 +136,7 @@ class TestDKIM(TestCaseWithFactory):
         self.useFixture(FeatureFixture({
             'mail.dkim_authentication.disabled': 'true'}))
         # A test that would normally pass will now fail
-        self.assertRaises(AssertionError,
+        self.assertRaises(self.failureException,
             self.test_dkim_valid_strict)
 
     def test_dkim_valid_strict(self):
