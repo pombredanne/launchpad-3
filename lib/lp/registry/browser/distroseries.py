@@ -804,7 +804,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        if not getFeatureFlag('soyuz.derived-series-sync.enabled'):
+        if not getFeatureFlag('soyuz.derived_series_sync.enabled'):
             return False
 
         archive = self.context.main_archive

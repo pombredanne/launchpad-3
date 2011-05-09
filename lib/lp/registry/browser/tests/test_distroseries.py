@@ -90,7 +90,7 @@ def set_derived_series_ui_feature_flag(test_case):
 
 def set_derived_series_sync_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
-        u'soyuz.derived-series-sync.enabled': u'on',
+        u'soyuz.derived_series_sync.enabled': u'on',
         u'soyuz.derived-series-ui.enabled': u'on',
         }))
 
@@ -1073,7 +1073,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # are not presented with options to perform syncs when the
         # feature flag is not enabled.
         self.assertIs(
-            None, getFeatureFlag('soyuz.derived-series-sync.enabled'))
+            None, getFeatureFlag('soyuz.derived_series_sync.enabled'))
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
         with person_logged_in(person):
