@@ -103,7 +103,7 @@ class IPackageCopyJobSource(IJobSource):
         :param include_binaries: See `do_copy`.
         """
 
-    def getActiveJobs(archive):
+    def getActiveJobs(target_archive):
         """Retrieve all active sync jobs for an archive."""
 
 
