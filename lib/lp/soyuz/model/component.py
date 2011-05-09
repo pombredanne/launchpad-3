@@ -34,6 +34,10 @@ class Component(SQLBase):
 
     name = StringCol(notNull=True, alternateID=True)
 
+    def __repr__(self):
+        return "<%s '%s'>" % (self.__class__.__name__, self.name)
+
+
 
 class ComponentSelection(SQLBase):
     """See IComponentSelection."""
