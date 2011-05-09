@@ -50,14 +50,13 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
     )
-from lp.services.features.testing import (
-    FeatureFixture,
-    )
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
