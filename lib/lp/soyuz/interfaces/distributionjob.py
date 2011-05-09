@@ -28,7 +28,6 @@ from zope.schema import (
     Int,
     List,
     Object,
-    TextLine,
     Tuple,
     )
 
@@ -87,13 +86,6 @@ class DistributionJobType(DBEnumeratedType):
 
         Updates the status of a potential difference between a derived
         distribution release series and its parent series.
-        """)
-
-    CREATE_DISTROSERIES_INDEXES = DBItem(4, """
-        Set up a series' archive indexes.
-
-        Performans an initial run of the publish-distro script to
-        create indexes for the distroseries.
         """)
 
 
