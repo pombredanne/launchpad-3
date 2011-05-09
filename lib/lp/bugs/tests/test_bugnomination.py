@@ -112,16 +112,12 @@ class TestCanApprove(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_normal_user_cannot_approve(self):
-        product = self.factory.makeProduct(
-            bug_supervisor=self.factory.makePerson())
         nomination = self.factory.makeBugNomination(
-            target=self.factory.makeProductSeries(product=product))
+            target=self.factory.makeProductSeries())
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
 
     def test_driver_can_approve(self):
-        product = self.factory.makeProduct(
-            driver=self.factory.makePerson(),
-            bug_supervisor=self.factory.makePerson())
+        product = self.factory.makeProduct(driver=self.factory.makePerson())
         nomination = self.factory.makeBugNomination(
             target=self.factory.makeProductSeries(product=product))
         self.assertTrue(nomination.canApprove(product.driver))
@@ -137,14 +133,12 @@ class TestCanApprove(TestCaseWithFactory):
     def test_component_uploader_can_approve(self):
         # A component uploader can approve a nomination for a package in
         # that component, but not those in other components
-        distribution = self.factory.makeDistribution(
-            bug_supervisor=self.factory.makePerson())
-        series = self.factory.makeDistroSeries(distribution=distribution)
+        series = self.factory.makeDistroSeries()
         package_name = self.factory.makeSourcePackageName()
         with celebrity_logged_in('admin'):
-            perm = distribution.main_archive.newComponentUploader(
+            perm = series.main_archive.newComponentUploader(
                 self.factory.makePerson(), self.factory.makeComponent())
-            other_perm = distribution.main_archive.newComponentUploader(
+            other_perm = series.main_archive.newComponentUploader(
                 self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
@@ -158,11 +152,9 @@ class TestCanApprove(TestCaseWithFactory):
     def test_any_component_uploader_can_approve_for_no_package(self):
         # An uploader for any component can approve a nomination without
         # a package.
-        distribution = self.factory.makeDistribution(
-            bug_supervisor=self.factory.makePerson())
-        series = self.factory.makeDistroSeries(distribution=distribution)
+        series = self.factory.makeDistroSeries()
         with celebrity_logged_in('admin'):
-            perm = distribution.main_archive.newComponentUploader(
+            perm = series.main_archive.newComponentUploader(
                 self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(target=series)
 
@@ -172,14 +164,12 @@ class TestCanApprove(TestCaseWithFactory):
     def test_package_uploader_can_approve(self):
         # A package uploader can approve a nomination for that package,
         # but not others.
-        distribution = self.factory.makeDistribution(
-            bug_supervisor=self.factory.makePerson())
-        series = self.factory.makeDistroSeries(distribution=distribution)
+        series = self.factory.makeDistroSeries()
         package_name = self.factory.makeSourcePackageName()
         with celebrity_logged_in('admin'):
-            perm = distribution.main_archive.newPackageUploader(
+            perm = series.main_archive.newPackageUploader(
                 self.factory.makePerson(), package_name)
-            other_perm = distribution.main_archive.newPackageUploader(
+            other_perm = series.main_archive.newPackageUploader(
                 self.factory.makePerson(),
                 self.factory.makeSourcePackageName())
         nomination = self.factory.makeBugNomination(
@@ -191,14 +181,12 @@ class TestCanApprove(TestCaseWithFactory):
     def test_packageset_uploader_can_approve(self):
         # A packageset uploader can approve a nomination for anything in
         # that packageset.
-        distribution = self.factory.makeDistribution(
-            bug_supervisor=self.factory.makePerson())
-        series = self.factory.makeDistroSeries(distribution=distribution)
+        series = self.factory.makeDistroSeries()
         package_name = self.factory.makeSourcePackageName()
         ps = self.factory.makePackageset(
             distroseries=series, packages=[package_name])
         with celebrity_logged_in('admin'):
-            perm = distribution.main_archive.newPackagesetUploader(
+            perm = series.main_archive.newPackagesetUploader(
                 self.factory.makePerson(), ps)
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
@@ -210,21 +198,19 @@ class TestCanApprove(TestCaseWithFactory):
         # If there are multiple tasks for a distribution, an uploader to
         # any of the involved packages or components can approve the
         # nomination.
-        distribution = self.factory.makeDistribution(
-            bug_supervisor=self.factory.makePerson())
-        series = self.factory.makeDistroSeries(distribution=distribution)
+        series = self.factory.makeDistroSeries()
         package_name = self.factory.makeSourcePackageName()
         comp_package_name = self.factory.makeSourcePackageName()
         with celebrity_logged_in('admin'):
-            package_perm = distribution.main_archive.newPackageUploader(
+            package_perm = series.main_archive.newPackageUploader(
                 self.factory.makePerson(), package_name)
-            comp_perm = distribution.main_archive.newComponentUploader(
+            comp_perm = series.main_archive.newComponentUploader(
                 self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
         self.factory.makeBugTask(
             bug=nomination.bug,
-            target=distribution.getSourcePackage(comp_package_name))
+            target=series.distribution.getSourcePackage(comp_package_name))
 
         self.publishSource(series, package_name, comp_perm.component)
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
