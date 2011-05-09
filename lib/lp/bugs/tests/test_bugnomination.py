@@ -189,6 +189,24 @@ class TestCanApprove(TestCaseWithFactory):
         self.assertFalse(nomination.canApprove(other_perm.person))
         self.assertTrue(nomination.canApprove(perm.person))
 
+    def test_packageset_uploader_can_approve(self):
+        # A packageset uploader can approve a nomination for anything in
+        # that packageset.
+        distribution = self.factory.makeDistribution(
+            bug_supervisor=self.factory.makePerson())
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        package_name = self.factory.makeSourcePackageName()
+        ps = self.factory.makePackageset(
+            distroseries=series, packages=[package_name])
+        with celebrity_logged_in('admin'):
+            perm = distribution.main_archive.newPackagesetUploader(
+                self.factory.makePerson(), ps)
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
+
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(perm.person))
+
     def test_any_uploader_can_approve(self):
         # If there are multiple tasks for a distribution, an uploader to
         # any of the involved packages or components can approve the
