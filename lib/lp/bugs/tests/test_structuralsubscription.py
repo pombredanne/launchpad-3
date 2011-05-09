@@ -794,3 +794,16 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
         non_team_person = self.factory.makePerson()
         self.assertFalse(self.filter.isMuteAllowed(non_team_person))
         self.assertRaises(MuteNotAllowed, self.filter.mute, non_team_person)
+
+    def test_muting_works_for_teams_with_contact_addresses(self):
+        # This is a regression test for bug 778847.
+        team = self.factory.makeTeam(email="none@example.com")
+        team_member = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(team_member, team.teamowner)
+            team_subscription = self.target.addBugSubscription(
+                team, team.teamowner)
+        with person_logged_in(team_member):
+            filter = team_subscription.bug_filters.one()
+            filter.mute(team_member)
+        bug = self.factory.makeBug(product=self.target)
