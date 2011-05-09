@@ -1718,14 +1718,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if ISourcePackage.providedBy(target):
             non_series = target.distribution_sourcepackage
             series = target.distroseries
-            bug_supervisor = series.distribution.bug_supervisor
         else:
             non_series = target.parent
             series = target
-            bug_supervisor = non_series.bug_supervisor
-        with person_logged_in(bug_supervisor):
+        with celebrity_logged_in('admin'):
             bug = self.makeBugTask(bug=bug, target=non_series).bug
-            nomination = bug.addNomination(bug_supervisor, series)
+            nomination = bug.addNomination(
+                getUtility(ILaunchpadCelebrities).admin, series)
         return nomination
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
