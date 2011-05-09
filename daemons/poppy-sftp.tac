@@ -5,20 +5,26 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
+import atexit
 import logging
 
 from twisted.application import service
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
+from twisted.internet import task
+from twisted.internet.error import AlreadyCancelled
 from twisted.protocols.policies import TimeoutFactory
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
 
+from zope.component import getUtility
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from lp.poppy import get_poppy_root
@@ -69,6 +75,38 @@ def poppy_sftp_adapter(avatar):
     return SFTPServer(avatar, get_poppy_root())
 
 
+class GPGHandlerJob:
+    """Manages the twisted job to touch the files in the gpgconfig directory."""
+    def __init__(self):
+        self._gpghandler_job = None
+        # stop the GPGHandler job on normal termination.
+        atexit.register(self._stopGPGHandlerJob)
+        # start the GPGHandler job
+        self._scheduleGPGHandlerJob()
+
+    def _scheduleGPGHandlerJob(self, touch_interval=12 * 3600):
+        # Create a job to touch the GPGHandler home directory every so often
+        # so that it does not get cleaned up by any reaper scripts which look
+        # at time last modified.
+
+        self._stopGPGHandlerJob()
+        try:
+            self._gpghandler_job = task.LoopingCall(
+                getUtility(IGPGHandler).touchConfigurationDirectory)
+            return self._gpghandler_job.start(touch_interval)
+        except ComponentLookupError:
+            # No GPGHandler so no need to start the job.
+            pass
+
+    def _stopGPGHandlerJob(self):
+        try:
+            if self._gpghandler_job and self._gpghandler_job.running:
+                self._gpghandler_job.stop()
+        except AlreadyCancelled:
+            # So we're already cancelled, meh.
+            pass
+
+
 # Connect Python logging to Twisted's logging.
 from lp.services.twistedsupport.loggingsupport import set_up_tacfile_logging
 set_up_tacfile_logging("poppy-sftp", logging.INFO)
@@ -108,6 +146,9 @@ svc.setServiceParent(application)
 
 # We need Zope for looking up the GPG utilities.
 execute_zcml_for_scripts()
+
+# Set up the GPGHandler job
+gpgHandlerJob = GPGHandlerJob()
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)
