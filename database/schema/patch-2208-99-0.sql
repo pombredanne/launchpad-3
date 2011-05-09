@@ -24,4 +24,4 @@ ALTER TABLE PackageUpload
   ADD COLUMN package_copy_job integer
     CONSTRAINT packageupload__package_copy_job__fk REFERENCES PackageCopyJob;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 99);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
