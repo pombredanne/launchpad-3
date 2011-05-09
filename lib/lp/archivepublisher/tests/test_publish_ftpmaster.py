@@ -790,7 +790,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         return self.factory.makeDistroSeries(
             status=SeriesStatus.FROZEN, distribution=distribution)
 
-    def test_new_frozen_series_has_suites_without_indexes(self):
+    def test_listSuitesNeedingIndexes_is_nonempty_for_new_frozen_series(self):
         # If a distroseries is Frozen and has not had its indexes
         # created yet, listSuitesNeedingIndexes returns a nonempty list
         # for it.
@@ -809,14 +809,14 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
             [series.getSuite(pocket) for pocket in pocketsuffix.iterkeys()],
             script.listSuitesNeedingIndexes(series))
 
-    def test_new_nonfrozen_series_does_not_need_indexes_created(self):
+    def test_listSuitesNeedingIndexes_is_empty_for_nonfrozen_series(self):
         # listSuitesNeedingIndexes only returns suites for Frozen
         # distroseries.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
         self.assertEqual([], script.listSuitesNeedingIndexes(series))
 
-    def test_distro_without_publisher_config_gets_no_indexes(self):
+    def test_listSuitesNeedingIndexes_is_empty_for_configless_distro(self):
         # listSuitesNeedingIndexes returns no suites for distributions
         # that have no publisher config, such as Debian.  We don't want
         # to publish such distributions.
