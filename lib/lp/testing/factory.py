@@ -910,7 +910,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None):
+        translations_usage=None, bug_supervisor=None,
+        driver=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -937,14 +938,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        naked_product = removeSecurityProxy(product)
         if official_malone is not None:
-            removeSecurityProxy(product).official_malone = official_malone
+            naked_product.official_malone = official_malone
         if translations_usage is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.translations_usage = translations_usage
         if bug_supervisor is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.bug_supervisor = bug_supervisor
+        if driver is not None:
+            naked_product.driver = driver
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
