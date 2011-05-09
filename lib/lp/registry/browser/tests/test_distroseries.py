@@ -87,6 +87,12 @@ def set_derived_series_ui_feature_flag(test_case):
         u'soyuz.derived-series-ui.enabled': u'on',
         }))
 
+def set_derived_series_sync_feature_flag(test_case):
+    test_case.useFixture(FeatureFixture({
+        u'soyuz.derived-series-sync.enabled': u'on',
+        u'soyuz.derived-series-ui.enabled': u'on',
+        }))
+
 
 class TestDistroSeriesView(TestCaseWithFactory):
     """Test the distroseries +index view."""
@@ -1054,11 +1060,25 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # synced package.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
 
             self.assertTrue(view.canPerformSync())
+
+    def test_canPerformSync_non_anon_feature_disabled(self):
+        # Logged-in users with a permission on the destination archive
+        # are not presented with options to perform syncs when the
+        # feature flag is not enabled.
+        self.assertIs(None, getFeatureFlag('soyuz.derived-series-sync.enabled'))
+        derived_series = self._setUpDSD()[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs')
+
+            self.assertFalse(view.canPerformSync())
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs'):
@@ -1076,6 +1096,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # An error is raised when a sync is requested without any selection.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(derived_series, person, [])
 
         self.assertEqual(1, len(view.errors))
@@ -1086,6 +1107,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # An error is raised when an invalid difference is selected.
         derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, ['some-other-name'])
 
@@ -1100,6 +1122,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # sync packages.
         derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
 
@@ -1137,6 +1160,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
 
@@ -1193,6 +1217,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertIs(None, pubs)
 
         # Now, sync the source from the parent using the form.
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
 
@@ -1213,6 +1238,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
+        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'],
             view_name='+missingpackages')
@@ -1234,6 +1260,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         derived_series, parent_series, sourcepackagename = self._setUpDSD(
             'my-src-name', distribution=ubuntu, versions=versions)
         ubuntu_security = getUtility(IPersonSet).getByName('ubuntu-security')
+        set_derived_series_sync_feature_flag(self)
         with person_logged_in(ubuntu_security):
             self.assertTrue(
                 check_permission(
