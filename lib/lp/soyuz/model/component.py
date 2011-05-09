@@ -38,7 +38,6 @@ class Component(SQLBase):
         return "<%s '%s'>" % (self.__class__.__name__, self.name)
 
 
-
 class ComponentSelection(SQLBase):
     """See IComponentSelection."""
 
@@ -79,8 +78,6 @@ class ComponentSet:
             return component
         return self.new(name)
 
-
     def new(self, name):
         """See IComponentSet."""
         return Component(name=name)
-

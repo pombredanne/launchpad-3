@@ -13,7 +13,6 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
-    person_logged_in,
     TestCaseWithFactory,
     )
 
