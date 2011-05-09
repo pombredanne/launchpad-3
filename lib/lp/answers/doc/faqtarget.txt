@@ -59,7 +59,7 @@ or one of its answer contacts is authorized to create a new FAQ.
 
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> target.addAnswerContact(no_priv)
+    >>> target.addAnswerContact(no_priv, no_priv)
     True
 
     >>> clear_cache() # Clear authorization cache for check_permission.
