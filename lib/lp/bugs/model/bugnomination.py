@@ -148,6 +148,7 @@ class BugNomination(SQLBase):
                     return True
         return False
 
+
 class BugNominationSet:
     """See IBugNominationSet."""
     implements(IBugNominationSet)
