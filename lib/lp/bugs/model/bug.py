@@ -969,9 +969,10 @@ BugMessage""" % sqlvalues(self.id))
                 recipients.addDupeSubscriber(
                     subscription.subscriber)
 
-        return sorted(
+        unified_subscribers =(
             info.duplicate_only_subscriptions.subscribers.union(
                 info.structural_subscriptions_from_duplicates.subscribers))
+        return unified_subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
