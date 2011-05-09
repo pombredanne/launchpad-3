@@ -142,20 +142,6 @@ class TestCanApprove(TestCaseWithFactory):
             component=component,
             status=PackagePublishingStatus.PUBLISHED)
 
-    def makeNomination(self, target):
-        if ISourcePackage.providedBy(target):
-            non_series = target.distribution_sourcepackage
-            series = target.distroseries
-            bug_supervisor = series.distribution.bug_supervisor
-        else:
-            non_series = target.parent
-            series = target
-            bug_supervisor = non_series.bug_supervisor
-        with person_logged_in(bug_supervisor):
-            bug = self.factory.makeBugTask(target=non_series).bug
-            nomination = bug.addNomination(bug_supervisor, series)
-        return nomination
-
     def test_component_uploader_can_approve(self):
         # A component uploader can approve a nomination for a package in
         # that component, but not those in other components
@@ -169,8 +155,8 @@ class TestCanApprove(TestCaseWithFactory):
         other_perm = getUtility(IArchivePermissionSet).newComponentUploader(
             distribution.main_archive, self.factory.makePerson(),
             self.factory.makeComponent())
-        nomination = self.makeNomination(
-            series.getSourcePackage(package_name))
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
 
         # Publish the package in one of the uploaders' components. The
         # uploader for the other component cannot approve the nomination.
@@ -187,7 +173,7 @@ class TestCanApprove(TestCaseWithFactory):
         perm = getUtility(IArchivePermissionSet).newComponentUploader(
             distribution.main_archive, self.factory.makePerson(),
             self.factory.makeComponent())
-        nomination = self.makeNomination(series)
+        nomination = self.factory.makeBugNomination(target=series)
 
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
         self.assertTrue(nomination.canApprove(perm.person))
@@ -205,8 +191,8 @@ class TestCanApprove(TestCaseWithFactory):
         other_perm = getUtility(IArchivePermissionSet).newPackageUploader(
             distribution.main_archive, self.factory.makePerson(),
             self.factory.makeSourcePackageName())
-        nomination = self.makeNomination(
-            series.getSourcePackage(package_name))
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
 
         self.assertFalse(nomination.canApprove(other_perm.person))
         self.assertTrue(nomination.canApprove(perm.person))
@@ -226,8 +212,8 @@ class TestCanApprove(TestCaseWithFactory):
         comp_perm = getUtility(IArchivePermissionSet).newComponentUploader(
             distribution.main_archive, self.factory.makePerson(),
             self.factory.makeComponent())
-        nomination = self.makeNomination(
-            series.getSourcePackage(package_name))
+        nomination = self.factory.makeBugNomination(
+            target=series.getSourcePackage(package_name))
         self.factory.makeBugTask(
             bug=nomination.bug,
             target=distribution.getSourcePackage(comp_package_name))

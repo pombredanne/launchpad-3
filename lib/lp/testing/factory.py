@@ -1705,6 +1705,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
+    def makeBugNomination(self, bug=None, target=None):
+        """Create and return a BugNomination.
+
+        Will create a non-series task if it does not already exist.
+
+        :param bug: The `IBug` the nomination should be for. If None,
+            one will be created.
+        :param target: The `IProductSeries`, `IDistroSeries` or
+            `ISourcePackage` to nominate for.
+        """
+        if ISourcePackage.providedBy(target):
+            non_series = target.distribution_sourcepackage
+            series = target.distroseries
+            bug_supervisor = series.distribution.bug_supervisor
+        else:
+            non_series = target.parent
+            series = target
+            bug_supervisor = non_series.bug_supervisor
+        with person_logged_in(bug_supervisor):
+            bug = self.makeBugTask(bug=bug, target=non_series).bug
+            nomination = bug.addNomination(bug_supervisor, series)
+        return nomination
+
     def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
                        name=None):
         """Make a new bug tracker."""
