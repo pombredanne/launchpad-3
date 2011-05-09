@@ -1239,6 +1239,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if with_series_branches and naked_product is not None:
             series_branch_info = []
             # Add some product series
+
             def makeSeriesBranch(name, is_private=False):
                 branch = self.makeBranch(
                     name=name,
@@ -1332,7 +1333,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             related_package_branch_info = sorted_version_numbers(
                     related_package_branch_info, key=lambda branch_info: (
                         getattr(branch_info[1], 'name')))
-
 
         return (
             reference_branch,
@@ -1994,6 +1994,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             not specified, an arbitrary product is created.
         :param title: The question title. If one is not provided, an
             arbitrary title is created.
+        :param owner: The owner of the question. If one is not provided, the
+            question target owner will be used.
         """
         if target is None:
             target = self.makeProduct()
@@ -2352,7 +2354,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 changelog=changelogs.get('derived'))
             self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series, sourcepackagerelease=spr,
-                status = PackagePublishingStatus.PUBLISHED)
+                status=PackagePublishingStatus.PUBLISHED)
 
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
@@ -2363,7 +2365,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 sourcepackagerelease=spr,
-                status = PackagePublishingStatus.PUBLISHED)
+                status=PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name)
@@ -2633,7 +2635,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bq = BuildQueue(
             job=recipe_build_job.job, lastscore=score,
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
-            estimated_duration = timedelta(seconds=estimated_duration),
+            estimated_duration=timedelta(seconds=estimated_duration),
             virtualized=virtualized)
         store.add(bq)
         return bq
@@ -2663,7 +2665,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         records_inside_epoch = []
         all_records = []
-        for x in range(num_recent_records+num_records_outside_epoch):
+        for x in range(num_recent_records + num_records_outside_epoch):
 
             # We want some different source package names occasionally
             if not x % 3:
@@ -2717,7 +2719,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     if x < num_recent_records:
                         naked_build.date_finished = (
                             now - timedelta(
-                                days=epoch_days-1,
+                                days=epoch_days - 1,
                                 hours=-x))
                     # And others is descending order
                     else:
