@@ -330,10 +330,6 @@ class Archive(SQLBase):
         return self.displayname
 
     @property
-    def unique_name(self):
-        return '%s/%s' % (self.owner.name, self.name)
-
-    @property
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
