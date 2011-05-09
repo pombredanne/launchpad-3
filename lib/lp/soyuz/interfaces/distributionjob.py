@@ -28,7 +28,6 @@ from zope.schema import (
     Int,
     List,
     Object,
-    TextLine,
     Tuple,
     )
 

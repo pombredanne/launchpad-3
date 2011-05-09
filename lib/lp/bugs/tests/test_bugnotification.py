@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from itertools import chain
+import transaction
 import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -24,6 +25,7 @@ from canonical.testing import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.answers.tests.test_question_notifications import pop_questionemailjobs
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IUpstreamBugTask,
@@ -33,9 +35,9 @@ from lp.bugs.model.bugnotification import (
     BugNotificationFilter,
     BugNotificationSet,
     )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Contains
 
 
@@ -119,8 +121,9 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         self.subscriber = self.factory.makePerson()
         question.subscribe(self.subscriber)
         question.linkBug(self.bug)
-        # Flush pending notifications for question creation.
-        pop_notifications()
+        # Flush pending jobs for question creation.
+        pop_questionemailjobs()
+        transaction.commit()
         self.layer.switchDbUser(config.malone.expiration_dbuser)
 
     def test_notifications_for_question_subscribers(self):
@@ -133,10 +136,10 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         bug_modified = ObjectModifiedEvent(
             bugtask, bugtask_before_modification, ["status"])
         notify(bug_modified)
+        recipients = [
+            job.metadata['recipient_set'] for job in pop_questionemailjobs()]
         self.assertContentEqual(
-            [self.product.owner.preferredemail.email,
-             self.subscriber.preferredemail.email],
-            [mail['To'] for mail in pop_notifications()])
+            ['ASKER_SUBSCRIBER'], recipients)
 
 
 class TestNotificationsLinkToFilters(TestCaseWithFactory):
@@ -175,6 +178,32 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.addNotificationRecipient(notification, person)
         return notification
 
+    def includeFilterInNotification(self, description=None, subscription=None,
+                                    notification=None,
+                                    create_new_filter=False):
+        if subscription is None:
+            subscription = self.subscription
+        if notification is None:
+            notification = self.notification
+        if create_new_filter:
+            bug_filter = subscription.newBugFilter()
+        else:
+            bug_filter = subscription.bug_filters.one()
+        if description is not None:
+            bug_filter.description = description
+        BugNotificationFilter(
+            bug_notification=notification,
+            bug_subscription_filter=bug_filter)
+
+    def prepareTwoNotificationsWithFilters(self):
+        # Set up first notification and filter.
+        self.includeFilterInNotification(description=u'Special Filter!')
+        # Set up second notification and filter.
+        self.notification2 = self.addNotification(self.subscriber)
+        self.includeFilterInNotification(description=u'Another Filter!',
+                                         create_new_filter=True,
+                                         notification=self.notification2)
+
     def test_bug_filters_empty(self):
         # When there are no linked bug filters, it returns a ResultSet
         # with no entries.
@@ -182,11 +211,8 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
 
     def test_bug_filters_single(self):
         # With a linked BugSubscriptionFilter, it is returned.
-        bug_filter = self.subscription.bug_filters.one()
-        BugNotificationFilter(
-            bug_notification=self.notification,
-            bug_subscription_filter=bug_filter)
-        self.assertContentEqual([bug_filter],
+        self.includeFilterInNotification()
+        self.assertContentEqual([self.subscription.bug_filters.one()],
                                 self.notification.bug_filters)
 
     def test_bug_filters_multiple(self):
@@ -217,32 +243,29 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def test_getRecipientFilterData_other_persons(self):
         # When there is no named bug filter for the recipient,
         # it returns the recipient but with no filter descriptions.
-        BugNotificationFilter(
-            bug_notification=self.notification,
-            bug_subscription_filter=self.subscription.bug_filters.one())
+        self.includeFilterInNotification()
         subscriber2 = self.factory.makePerson()
         subscription2 = self.bug.default_bugtask.target.addSubscription(
             subscriber2, subscriber2)
-        bug_filter = subscription2.bug_filters.one()
-        bug_filter.description = u'Special Filter!'
-        BugNotificationFilter(
-            bug_notification=self.notification,
-            bug_subscription_filter=bug_filter)
+        notification2 = self.addNotification(subscriber2)
+        self.includeFilterInNotification(subscription=subscription2,
+                                         description=u'Special Filter!',
+                                         notification=notification2)
         sources = list(self.notification.recipients)
+        sources2 = list(notification2.recipients)
         self.assertEqual(
             {self.subscriber: {'sources': sources,
-                               'filter descriptions': []}},
+                               'filter descriptions': []},
+             subscriber2: {'sources': sources2,
+                           'filter descriptions': [u'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources}, [self.notification]))
+                {self.subscriber: sources, subscriber2: sources2},
+                [self.notification, notification2]))
 
     def test_getRecipientFilterData_match(self):
         # When there are bug filters for the recipient,
         # only those filters are returned.
-        bug_filter = self.subscription.bug_filters.one()
-        bug_filter.description = u'Special Filter!'
-        BugNotificationFilter(
-            bug_notification=self.notification,
-            bug_subscription_filter=bug_filter)
+        self.includeFilterInNotification(description=u'Special Filter!')
         sources = list(self.notification.recipients)
         self.assertEqual(
             {self.subscriber: {'sources': sources,
@@ -253,31 +276,88 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def test_getRecipientFilterData_multiple_notifications_match(self):
         # When there are bug filters for the recipient for multiple
         # notifications, return filters for all the notifications.
-        # Set up first notification and filter.
-        bug_filter = self.subscription.bug_filters.one()
-        bug_filter.description = u'Special Filter!'
-        BugNotificationFilter(
-            bug_notification=self.notification,
-            bug_subscription_filter=bug_filter)
-        # Set up second notification and filter.
-        notification2 = self.addNotification(self.subscriber)
-        bug_filter2 = self.subscription.newBugFilter()
-        bug_filter2.description = u'Another Filter!'
-        BugNotificationFilter(
-            bug_notification=notification2,
-            bug_subscription_filter=bug_filter2)
-        sources = list(self.notification.recipients)
-        sources.extend(notification2.recipients)
-        # This first check is really just for the internal consistency of the
-        # test.
-        self.assertEqual(len(sources), 2)
+        self.prepareTwoNotificationsWithFilters()
         # Perform the test.
+        sources = list(self.notification.recipients)
+        sources.extend(self.notification2.recipients)
+        assert(len(sources) == 2)
         self.assertEqual(
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Another Filter!', 'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
                 {self.subscriber: sources},
+                [self.notification, self.notification2]))
+
+    def test_getRecipientFilterData_mute(self):
+        # When there are bug filters for the recipient,
+        # only those filters are returned.
+        self.includeFilterInNotification(description=u'Special Filter!')
+        # Mute the first filter.
+        BugSubscriptionFilterMute(
+            person=self.subscriber,
+            filter=self.notification.bug_filters.one())
+        sources = list(self.notification.recipients)
+        self.assertEqual(
+            {},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources}, [self.notification]))
+
+    def test_getRecipientFilterData_mute_one_person_of_two(self):
+        self.includeFilterInNotification()
+        # Mute the first filter.
+        BugSubscriptionFilterMute(
+            person=self.subscriber,
+            filter=self.notification.bug_filters.one())
+        subscriber2 = self.factory.makePerson()
+        subscription2 = self.bug.default_bugtask.target.addSubscription(
+            subscriber2, subscriber2)
+        notification2 = self.addNotification(subscriber2)
+        self.includeFilterInNotification(subscription=subscription2,
+                                         description=u'Special Filter!',
+                                         notification=notification2)
+        sources = list(self.notification.recipients)
+        sources2 = list(notification2.recipients)
+        self.assertEqual(
+            {subscriber2: {'sources': sources2,
+                           'filter descriptions': [u'Special Filter!']}},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources, subscriber2: sources2},
                 [self.notification, notification2]))
+
+    def test_getRecipientFilterData_mute_one_filter_of_two(self):
+        self.prepareTwoNotificationsWithFilters()
+        # Mute the first filter.
+        BugSubscriptionFilterMute(
+            person=self.subscriber,
+            filter=self.notification.bug_filters.one())
+        sources = list(self.notification.recipients)
+        sources.extend(self.notification2.recipients)
+        # Perform the test.
+        self.assertEqual(
+            {self.subscriber: {'sources': sources,
+             'filter descriptions': ['Another Filter!']}},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources},
+                [self.notification, self.notification2]))
+
+    def test_getRecipientFilterData_mute_both_filters_mutes(self):
+        self.prepareTwoNotificationsWithFilters()
+        # Mute the first filter.
+        BugSubscriptionFilterMute(
+            person=self.subscriber,
+            filter=self.notification.bug_filters.one())
+        # Mute the second filter.
+        BugSubscriptionFilterMute(
+            person=self.subscriber,
+            filter=self.notification2.bug_filters.one())
+        sources = list(self.notification.recipients)
+        sources.extend(self.notification2.recipients)
+        # Perform the test.
+        self.assertEqual(
+            {},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources},
+                [self.notification, self.notification2]))
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):

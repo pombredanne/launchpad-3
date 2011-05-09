@@ -114,6 +114,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -251,11 +252,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByBuildFarmJob(buildfarmjob_id)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):
@@ -408,12 +409,11 @@ class BranchMirrorMixin:
         if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
-        # XXX: Tim Penhey, 2008-05-30
+        # XXX: Tim Penhey, 2008-05-30, bug 235916
         # Instead of a configuration hack we should support the users
         # specifying whether or not they want the mirror location
         # hidden or not.  Given that this is a database patch,
         # it isn't going to happen today.
-        # See bug 235916
         hosts = config.codehosting.private_mirror_hosts.split(',')
         private_mirror_hosts = [name.strip() for name in hosts]
 
@@ -1112,7 +1112,12 @@ class BranchReviewerEditView(BranchEditFormView):
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
-    schema = IBranch
+    class schema(Interface):
+        use_template(
+            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
+        branch_type = copy_field(
+            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+
     for_input = True
     field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 

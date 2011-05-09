@@ -91,9 +91,8 @@
       </div>
 
 
-      <tal:message repeat="message context/messages">
-      <div tal:condition="message/visible"
-           tal:replace="structure message/@@+display" />
+      <tal:message repeat="message view/visible_messages">
+      <div tal:replace="structure message/@@+display" />
       </tal:message>
 
       <div id="question"

@@ -93,9 +93,9 @@ information will be added to the bug automatically.
 After the user fills in the summary and click on the button, we'll still
 be on the same URL, with the token present.
 
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     ''
-    >>> user_browser.getControl('Summary').value = 'A new bug'
+    >>> user_browser.getControl('Summary', index=0).value = 'A new bug'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url == filebug_url
     True
@@ -167,14 +167,14 @@ that will be used to automatically fill in a suggested title.
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
 
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     'Initial bug summary'
 
 The user can of course change the summary if he wants to.
 
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('Summary').value
+    >>> user_browser.getControl('Summary', index=0).value
     'Another summary'
 
 === Tags ===
@@ -194,7 +194,7 @@ initialized with that value.
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+filebug/%s' % blob_token)
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl('Tags').value
@@ -203,7 +203,7 @@ initialized with that value.
 The user can of course change the tags if he wants.
 
     >>> user_browser.getControl('Tags').value = 'bar baz'
-    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Further information').value = (
     ...     'Bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
@@ -220,7 +220,7 @@ that will get their tags set as well.
     >>> user_browser.open(
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
-    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl('Further information').value = (
@@ -264,7 +264,7 @@ Once we submit the bug report...
     ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
     ...     '%s' % blob_token)
     >>> user_browser.open(filebug_url)
-    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Further information').value = (
     ...     'A bug description.')

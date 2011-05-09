@@ -54,12 +54,9 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
-    install_feature_controller,
     )
-from lp.services.features.flags import FeatureController
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
+from lp.services.features.testing import (
+    FeatureFixture,
     )
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -88,18 +85,9 @@ from lp.testing.views import create_initialized_view
 
 
 def set_derived_series_ui_feature_flag(test_case):
-    # Helper to set the feature flag enabling the derived series ui.
-    getFeatureStore().add(FeatureFlag(
-        scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
-        value=u'on', priority=1))
-
-    # XXX Michael Nelson 2010-09-21 bug=631884
-    # Currently LaunchpadTestRequest doesn't set per-thread
-    # features.
-    def in_scope(value):
-        return True
-    install_feature_controller(FeatureController(in_scope))
-    test_case.addCleanup(install_feature_controller, None)
+    test_case.useFixture(FeatureFixture({
+        u'soyuz.derived-series-ui.enabled': u'on',
+        }))
 
 
 class TestDistroSeriesView(TestCaseWithFactory):
@@ -197,15 +185,15 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 text='Derived from Sid'),
             soupmatchers.Tag(
                 'Differences link', 'a',
-                text=re.compile('\s*1 package with differences.\s*'),
+                text=re.compile('\s*1 package with differences\s*'),
                 attrs={'href': re.compile('.*/\+localpackagediffs')}),
             soupmatchers.Tag(
                 'Parent diffs link', 'a',
-                text=re.compile('\s*2 packages in Sid.\s*'),
+                text=re.compile('\s*2 packages only in Sid\s*'),
                 attrs={'href': re.compile('.*/\+missingpackages')}),
             soupmatchers.Tag(
                 'Child diffs link', 'a',
-                text=re.compile('\s*3 packages in Deri.\s*'),
+                text=re.compile('\s*3 packages only in Deri\s*'),
                 attrs={'href': re.compile('.*/\+uniquepackages')}))
 
         with person_logged_in(self.simple_user):
@@ -256,7 +244,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Derived series'),
+                text='Series initialisation in progress'),
             soupmatchers.Tag(
                 'Init message', True,
                 text=re.compile('\s*This series is initialising.\s*')),
@@ -408,7 +396,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
 
-    def _test_packagesets(self, html, packageset_text,
+    def _test_packagesets(self, html_content, packageset_text,
                           packageset_class, msg_text):
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -416,7 +404,7 @@ class DistroSeriesDifferenceMixin:
                 attrs={'class': packageset_class},
                 text=packageset_text))
 
-        self.assertThat(html, parent_packagesets)
+        self.assertThat(html_content, parent_packagesets)
 
 
 class TestDistroSeriesLocalDifferences(
@@ -478,11 +466,12 @@ class TestDistroSeriesLocalDifferences(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_content, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -1034,7 +1023,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_canPerformSync_anon(self):
         # Anonymous users cannot sync packages.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         view = create_initialized_view(
             derived_series, '+localpackagediffs')
 
@@ -1043,7 +1032,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_canPerformSync_non_anon_no_perm_dest_archive(self):
         # Logged-in users with no permission on the destination archive
         # are not presented with options to perform syncs.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
@@ -1065,7 +1054,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # are presented with options to perform syncs.
         # Note that a more fine-grained perm check is done on each
         # synced package.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
         with person_logged_in(person):
             view = create_initialized_view(
@@ -1087,7 +1076,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
-        derived_series, _, _ = self._setUpDSD()
+        derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(derived_series, person, [])
 
@@ -1097,7 +1086,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
-        derived_series, _, _ = self._setUpDSD('my-src-name')
+        derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
             derived_series, person, ['some-other-name'])
@@ -1111,7 +1100,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_error_no_perm_dest_archive(self):
         # A user without upload rights on the destination archive cannot
         # sync packages.
-        derived_series, _, _ = self._setUpDSD('my-src-name')
+        derived_series = self._setUpDSD('my-src-name')[0]
         person = self._setUpPersonWithPerm(derived_series)
         view = self._syncAndGetView(
             derived_series, person, ['my-src-name'])
@@ -1236,6 +1225,8 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_append_main_archive(self):
         # A user with lp.Append on the main archive (e.g. members of
         # ubuntu-security on an ubuntu series) can sync packages.
+        # XXX: rvb 2011-05-05 bug=777911: This check should be refactored
+        # and moved to lib/lp/soyuz/scripts/tests/test_copypackage.py.
         versions = {
             'base': '1.0',
             'derived': '1.0derived1',

@@ -805,10 +805,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         well as directly in the template.
         """
         archive = self.context.main_archive
-        has_perm = (archive.hasAnyPermission(self.user) or
-                    check_permission('launchpad.Append', archive))
-        return (self.user is not None and
-                has_perm and
+        has_perm = (self.user is not None and (
+                        archive.hasAnyPermission(self.user) or
+                        check_permission('launchpad.Append', archive)))
+        return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
     @property

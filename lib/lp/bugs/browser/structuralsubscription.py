@@ -427,7 +427,7 @@ def expose_user_administered_teams_to_js(request, user, context,
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
     if user is not None:
-        administrated_teams = list(user.getAdministratedTeams())
+        administrated_teams = user.administrated_teams
         if administrated_teams:
             # Get this only if we need to.
             membership = list(user.teams_participated_in)
@@ -460,7 +460,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
     if user is None:
         administered_teams = []
     else:
-        administered_teams = user.getAdministratedTeams()
+        administered_teams = user.administrated_teams
 
     if target is not None:
         try:
@@ -495,7 +495,9 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
                     subscriber, rootsite='mainsite'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
-                user_is_team_admin=user_is_team_admin,))
+                user_is_team_admin=user_is_team_admin,
+                can_mute=filter.isMuteAllowed(user),
+                is_muted=filter.muted(user) is not None))
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info

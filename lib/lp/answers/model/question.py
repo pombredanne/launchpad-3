@@ -553,7 +553,9 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.direct_recipients
+        # return a mutable instance of the cached recipients.
+        subscribers = NotificationRecipientSet()
+        subscribers.update(self.direct_recipients)
         subscribers.update(self.indirect_recipients)
         return subscribers
 

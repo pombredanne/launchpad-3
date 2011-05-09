@@ -146,7 +146,6 @@ class CodeImport(SQLBase):
             if job.state == CodeImportJobState.PENDING:
                 CodeImportJobWorkflow().deletePendingJob(self)
             else:
-                # XXX thumper 2008-03-19
                 # When we have job killing, we might want to kill a running
                 # job.
                 pass

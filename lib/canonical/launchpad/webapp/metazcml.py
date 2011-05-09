@@ -55,13 +55,13 @@ from canonical.config import config
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
-    IAuthorization,
     ICanonicalUrlData,
     IContextMenu,
     IFacetMenu,
     INavigationMenu,
     )
 from canonical.launchpad.webapp.publisher import RenamedView
+from lp.app.interfaces.security import IAuthorization
 
 
 class IAuthorizationsDirective(Interface):
