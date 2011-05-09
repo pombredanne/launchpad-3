@@ -127,9 +127,10 @@ class BugNomination(SQLBase):
                 return True
 
         if self.distroseries is not None:
-            # For distributions anyone that can upload to the
-            # distribution may approve nominations.
             distribution = self.distroseries.distribution
+            # An uploader to any of the packages can approve the
+            # nomination. Compile a list of possibilities, and check
+            # them all.
             package_names = []
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
@@ -137,7 +138,8 @@ class BugNomination(SQLBase):
                     package_names.append(bugtask.sourcepackagename)
             if len(package_names) == 0:
                 # If the bug isn't targeted to a source package, allow
-                # any uploader to approve the nomination.
+                # any component uploader to approve the nomination, like
+                # a new package.
                 return distribution.main_archive.verifyUpload(
                     person, None, None, None, strict_component=False) is None
             for name in package_names:
