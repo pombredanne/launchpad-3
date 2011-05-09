@@ -8,7 +8,7 @@ package subscribers, if there are any.
     ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug")
 
-    >>> browser.getControl(name="field.title").value = "a public bug"
+    >>> browser.getControl(name="field.title", index=0).value = "a public bug"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = (
@@ -56,7 +56,7 @@ Cc'd, because the Ubuntu distribution does not have a security contact.
     >>> browser.open(
     ...     "http://localhost:9000/ubuntu/+source/mozilla-firefox/"
     ...     "+filebug")
-    >>> browser.getControl(name="field.title").value = "a PRIVATE bug"
+    >>> browser.getControl(name="field.title", index=0).value = "a PRIVATE bug"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "top sekrit"

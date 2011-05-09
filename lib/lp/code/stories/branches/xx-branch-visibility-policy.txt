@@ -106,7 +106,7 @@ visibility policy, then that policy is used.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'inherited'))
-    Using inherited policy from the Mozilla Project.
+    Using inherited policy from The Mozilla Project.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'default-policy'))
@@ -130,7 +130,7 @@ Projects never have inherited policies, so they look a little different.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'default-policy'))
     Default branch visibility for all branches
-    in the Mozilla Project is Public.
+    in The Mozilla Project is Public.
 
     >>> actions = find_tag_by_id(admin_browser.contents, 'policy-actions')
     >>> for anchor in actions.fetch('a'):
@@ -270,4 +270,4 @@ the commercial admin do the removal to ensure he has the permission.
     >>> commercial_browser.getControl('Remove Selected Policy Items').click()
 
     >>> print_tag_with_id(commercial_browser.contents, 'inherited')
-    Using inherited policy from the Mozilla Project.
+    Using inherited policy from The Mozilla Project.

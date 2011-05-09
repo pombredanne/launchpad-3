@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
@@ -76,6 +77,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
@@ -418,6 +420,23 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
+    def test_performDailyBuild_with_wrong_archive(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            daily_build_archive=self.factory.makeArchive(),
+            build_daily=True)
+        with self.expectedLog(
+            'Owner of .*/.* cannot upload to .*/.*\.  Daily builds disabled'):
+            builds = recipe.performDailyBuild()
+        self.assertEqual([], builds)
+        self.assertFalse(recipe.build_daily)
+        (notification,) = pop_notifications()
+        self.assertEqual('Daily builds disabled', notification['subject'])
+        body = notification.get_payload(decode=True)
+        self.assertTrue(re.match(
+            'Daily builds of your recipe .* have been disabled, because you'
+            ' do not have permission to upload to the archive .*\.',
+        body))
+
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
         description = u'The whoozits and whatzits.'
@@ -611,7 +630,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
         build_info = []
         for archive in archives:
-            build = recipe.requestBuild(archive, person, distroseries)
+            recipe.requestBuild(archive, person, distroseries)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
                 "archive": '%s/%s' %
@@ -1064,7 +1083,7 @@ class TestWebservice(TestCaseWithFactory):
         build_info = []
         for archive in archives:
             ws_archive = ws_object(launchpad, archive)
-            build = recipe.requestBuild(
+            recipe.requestBuild(
                 archive=ws_archive, distroseries=ws_distroseries,
                 pocket=PackagePublishingPocket.RELEASE.title)
             build_info.insert(0, {

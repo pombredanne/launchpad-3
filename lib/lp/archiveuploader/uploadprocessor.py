@@ -73,7 +73,7 @@ from lp.archiveuploader.uploadpolicy import (
 from lp.buildmaster.enums import (
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
@@ -108,9 +108,9 @@ def parse_build_upload_leaf_name(name):
     :param name: Directory name.
     :return: Tuple with build farm job id.
     """
-    (job_id_str,) = name.split("-")[-1:]
+    (job_type, job_id_str) = name.split("-")[-2:]
     try:
-        return int(job_id_str)
+        return (job_type, int(job_id_str))
     except TypeError:
         raise ValueError
 
@@ -620,19 +620,18 @@ class BuildUploadHandler(UploadHandler):
 
     def _getBuild(self):
         try:
-            job_id = parse_build_upload_leaf_name(self.upload)
+            job_type, job_id = parse_build_upload_leaf_name(self.upload)
         except ValueError:
             raise CannotGetBuild(
                 "Unable to extract build id from leaf name %s, skipping." %
                 self.upload)
         try:
-            buildfarm_job = getUtility(IBuildFarmJobSet).getByID(job_id)
+            return getUtility(ISpecificBuildFarmJobSource, job_type).getByID(
+                job_id)
         except NotFoundError:
             raise CannotGetBuild(
-                "Unable to find package build job with id %d. Skipping." %
-                job_id)
-            return
-        return buildfarm_job.getSpecificJob()
+                "Unable to find %s with id %d. Skipping." %
+                (job_type, job_id))
 
     def process(self):
         """Process an upload that is the result of a build.

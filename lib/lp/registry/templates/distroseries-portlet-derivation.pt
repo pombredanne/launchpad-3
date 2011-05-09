@@ -6,7 +6,7 @@
   tal:define="overview_menu context/menu:overview">
   <tal:is_derived condition="context/is_derived_series">
     <tal:is_initialised condition="not: context/is_initialising">
-    <h2>Derived from <tal:name replace="context/parent_series/displayname"/></h2>
+    <h2>Derived from <tal:name replace="view/parent_series/displayname"/></h2>
 
       <tal:diffs define="nb_diffs view/num_differences;
                          nb_diffs_in_parent view/num_differences_in_parent;
@@ -28,7 +28,7 @@
               <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
                 content="string:s"
                 condition="python:nb_diffs_in_parent!=1"/> only in <tal:replace
-                  replace="context/parent_series/displayname">Sid</tal:replace>
+                  replace="view/parent_series/displayname">Sid</tal:replace>
             </a>
           </li>
           <li tal:condition="nb_diffs_in_child">

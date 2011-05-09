@@ -51,6 +51,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from cStringIO import StringIO
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -528,6 +529,19 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         expected_vector, observed_vector = zip(*args)
         return self.assertEqual(expected_vector, observed_vector)
+
+    @contextmanager
+    def expectedLog(self, regex):
+        """Expect a log to be written that matches the regex."""
+        output = StringIO()
+        handler = logging.StreamHandler(output)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+        try:
+            yield
+        finally:
+            logger.removeHandler(handler)
+        self.assertTrue(re.compile(regex).search(output.getvalue()))
 
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.

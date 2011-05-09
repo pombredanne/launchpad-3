@@ -2007,9 +2007,8 @@ class BugTaskSet:
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             bug_commenter_new_clause = """
-            EXISTS (SELECT True FROM BugMessage WHERE
-            Bug.id = BugMessage.bug AND BugMessage.index > 0
-            AND BugMessage.owner = %(bug_commenter)s)
+            Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
+            BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             if bugmessage_owner:
                 bug_commenter_clause = bug_commenter_new_clause
