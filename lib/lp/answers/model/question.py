@@ -1343,7 +1343,8 @@ class QuestionTargetMixin:
             return False
         # Person must speak a language to be an answer contact.
         if len(person.languages) == 0:
-            raise AddAnswerContactError()
+            raise AddAnswerContactError(
+                "An answer contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
