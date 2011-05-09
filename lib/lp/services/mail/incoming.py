@@ -275,7 +275,7 @@ class MailErrorUtility(ErrorReportingUtility):
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
-def extract_addresses(mail, raw_mail, file_alias_url, log):
+def extract_addresses(mail, file_alias_url, log):
     """Extract the domain the mail was sent to.
 
     Mails sent to Launchpad should have an X-Launchpad-Original-To header.
@@ -284,7 +284,7 @@ def extract_addresses(mail, raw_mail, file_alias_url, log):
     if ORIGINAL_TO_HEADER in mail:
         return [mail[ORIGINAL_TO_HEADER]]
 
-    if ORIGINAL_TO_HEADER in raw_mail:
+    if ORIGINAL_TO_HEADER in mail.as_string():
         # Doesn't have an X-Launchpad-Original-To in the headers, but does
         # have one in the body, because of a forwarding loop or attempted
         # spam.  See <https://bugs.launchpad.net/launchpad/+bug/701976>
@@ -342,8 +342,19 @@ def handleMail(trans=transaction,
                 log.exception('Upload to Librarian failed')
                 continue
             try:
-                handle_one_mail(trans, log, raw_mail,
-                    file_alias, file_alias_url, signature_timestamp_checker)
+                mail = signed_message_from_string(raw_mail)
+            except email.Errors.MessageError:
+                # If we can't parse the message, we can't send a reply back to
+                # the user, but logging an exception will let us investigate.
+                log.exception(
+                    "Couldn't convert email to email.Message: %s" % (
+                    file_alias_url, ))
+                mailbox.delete(mail_id)
+                continue
+            try:
+                trans.begin()
+                handle_one_mail(log, mail, file_alias, file_alias_url,
+                    signature_timestamp_checker)
                 trans.commit()
                 mailbox.delete(mail_id)
             except (KeyboardInterrupt, SystemExit):
@@ -357,8 +368,7 @@ def handleMail(trans=transaction,
                 log.exception(
                     "An exception was raised inside the handler:\n%s"
                     % (file_alias_url,))
-                _send_email_oops(trans, log,
-                    signed_message_from_string(raw_mail), raw_mail,
+                _send_email_oops(trans, log, mail,
                     "Unhandled exception", file_alias_url)
                 mailbox.delete(mail_id)
     finally:
@@ -366,7 +376,7 @@ def handleMail(trans=transaction,
         mailbox.close()
 
 
-def _send_email_oops(trans, log, mail, raw_mail, error_msg, file_alias_url):
+def _send_email_oops(trans, log, mail, error_msg, file_alias_url):
     """Handle an error that generates an oops.
 
     It does the following:
@@ -403,7 +413,7 @@ def save_mail_to_librarian(trans, log, raw_mail):
     return file_alias
 
 
-def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
+def handle_one_mail(log, mail, file_alias, file_alias_url,
     signature_timestamp_checker):
     """Process one message.
 
@@ -412,15 +422,6 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
     sent if appropriate.
     """
 
-    trans.begin()
-
-    try:
-        mail = signed_message_from_string(raw_mail)
-    except email.Errors.MessageError, error:
-        log.warn("Couldn't convert email to email.Message: %s" % (
-                file_alias_url, ),
-            exc_info=True)
-        return
     log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
 
@@ -449,7 +450,7 @@ def handle_one_mail(trans, log, raw_mail, file_alias, file_alias_url,
         log.info("Inactive account found for %s" % mail['From'])
         return
 
-    addresses = extract_addresses(mail, raw_mail, file_alias_url, log)
+    addresses = extract_addresses(mail, file_alias_url, log)
     log.debug('mail was originally to: %r' % (addresses,))
 
     try:
