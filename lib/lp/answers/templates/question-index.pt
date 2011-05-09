@@ -28,7 +28,7 @@
   </head>
   <body>
     <metal:registering fill-slot="registering">
-        asked by
+        Asked by
         <a tal:replace="structure context/owner/fmt:link" />
         on <span
           tal:attributes="title context/datecreated/fmt:datetime"
