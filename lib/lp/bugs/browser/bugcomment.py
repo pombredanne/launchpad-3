@@ -51,7 +51,8 @@ from lp.bugs.interfaces.bugmessage import IBugComment
 COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
-def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
+def build_comments_from_chunks(
+        bugtask, truncate=False, slice_info=None, show_spam_controls=False): 
     """Build BugComments from MessageChunks.
 
     :param truncate: Perform truncation of large messages.
@@ -64,7 +65,7 @@ def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
         bug_comment = comments.get(message.id)
         if bug_comment is None:
             bug_comment = BugComment(bugmessage.index, message, bugtask,
-                visible=message.visible)
+                visible=message.visible, show_spam_controls=show_spam_controls)
             comments[message.id] = bug_comment
             # This code path is currently only used from a BugTask view which
             # has already loaded all the bug watches. If we start lazy loading
@@ -172,7 +173,10 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, activity=None, visible=True):
+    def __init__(
+            self, index, message, bugtask, activity=None,
+            visible=True, show_spam_controls=False):
+
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -194,6 +198,7 @@ class BugComment:
 
         self.synchronized = False
         self.visible = visible
+        self.show_spam_controls = show_spam_controls
 
     @property
     def show_for_admin(self):
@@ -263,10 +268,10 @@ class BugComment:
     @property
     def show_footer(self):
         """Return True if the footer should be shown for this comment."""
-        if len(self.activity) > 0 or self.bugwatch:
-            return True
-        else:
-            return False
+        return (
+            len(self.activity) > 0 or
+            self.bugwatch or
+            self.show_spam_controls)
 
     @property
     def rendered_cache_time(self):
