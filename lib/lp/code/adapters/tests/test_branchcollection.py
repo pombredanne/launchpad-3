@@ -17,6 +17,11 @@ class TestPersonProduct(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_person_product(self):
+        """A PersonProduct can be adapted to a collection.
+
+        The collection will only find branches matching both the person and
+        the product.
+        """
         product = self.factory.makeProduct()
         person = self.factory.makePerson()
         person_product = PersonProduct(person, product)
