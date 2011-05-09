@@ -5,12 +5,19 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.launchpad.ftests import (
     login,
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class CanBeNominatedForTestMixin:
@@ -101,3 +108,131 @@ class TestBugCanBeNominatedForDistroSeries(
         sp_bug.addTask(
             self.eric, self.series.distribution.getSourcePackage(spn))
         self.assertTrue(sp_bug.canBeNominatedFor(self.series))
+
+
+class TestCanApprove(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_normal_user_cannot_approve(self):
+        product = self.factory.makeProduct(
+            bug_supervisor=self.factory.makePerson())
+        with person_logged_in(product.bug_supervisor):
+            nomination = self.factory.makeBug(product=product).addNomination(
+                product.bug_supervisor,
+                self.factory.makeProductSeries(product=product))
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+
+    def test_driver_can_approve(self):
+        product = self.factory.makeProduct(
+            driver=self.factory.makePerson(),
+            bug_supervisor=self.factory.makePerson())
+        with person_logged_in(product.bug_supervisor):
+            nomination = self.factory.makeBug(product=product).addNomination(
+                product.bug_supervisor,
+                self.factory.makeProductSeries(product=product))
+        self.assertTrue(nomination.canApprove(product.driver))
+
+    def publishSource(self, series, sourcepackagename, component):
+        return self.factory.makeSourcePackagePublishingHistory(
+            archive=series.main_archive,
+            distroseries=series,
+            sourcepackagename=sourcepackagename,
+            component=component,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_component_uploader_can_approve(self):
+        # A component uploader can approve a nomination for a package in
+        # that component, but not those in other components
+        distribution = self.factory.makeDistribution(
+            bug_supervisor=self.factory.makePerson())
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        package_name = self.factory.makeSourcePackageName()
+        perm = getUtility(IArchivePermissionSet).newComponentUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            self.factory.makeComponent())
+        other_perm = getUtility(IArchivePermissionSet).newComponentUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            self.factory.makeComponent())
+        with person_logged_in(distribution.bug_supervisor):
+            bug = self.factory.makeBug(
+                distribution=distribution,
+                sourcepackagename=package_name)
+            nomination = bug.addNomination(
+                distribution.bug_supervisor, series)
+
+        # Publish the package in one of the uploaders' components. The
+        # uploader for the other component cannot approve the nomination.
+        self.publishSource(series, package_name, perm.component)
+        self.assertFalse(nomination.canApprove(other_perm.person))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_any_component_uploader_can_approve_for_no_package(self):
+        # An uploader for any component can approve a nomination without
+        # a package.
+        distribution = self.factory.makeDistribution(
+            bug_supervisor=self.factory.makePerson())
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        perm = getUtility(IArchivePermissionSet).newComponentUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            self.factory.makeComponent())
+        with person_logged_in(distribution.bug_supervisor):
+            bug = self.factory.makeBug(distribution=distribution)
+            nomination = bug.addNomination(
+                distribution.bug_supervisor, series)
+
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_package_uploader_can_approve(self):
+        # A package uploader can approve a nomination for that package,
+        # but not others.
+        distribution = self.factory.makeDistribution(
+            bug_supervisor=self.factory.makePerson())
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        package_name = self.factory.makeSourcePackageName()
+        perm = getUtility(IArchivePermissionSet).newPackageUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            package_name)
+        other_perm = getUtility(IArchivePermissionSet).newPackageUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            self.factory.makeSourcePackageName())
+        with person_logged_in(distribution.bug_supervisor):
+            bug = self.factory.makeBug(
+                distribution=distribution,
+                sourcepackagename=package_name)
+            nomination = bug.addNomination(
+                distribution.bug_supervisor, series)
+
+        self.assertFalse(nomination.canApprove(other_perm.person))
+        self.assertTrue(nomination.canApprove(perm.person))
+
+    def test_any_uploader_can_approve(self):
+        # If there are multiple tasks for a distribution, an uploader to
+        # any of the involved packages or components can approve the
+        # nomination.
+        distribution = self.factory.makeDistribution(
+            bug_supervisor=self.factory.makePerson())
+        series = self.factory.makeDistroSeries(distribution=distribution)
+        package_name = self.factory.makeSourcePackageName()
+        comp_package_name = self.factory.makeSourcePackageName()
+        package_perm = getUtility(IArchivePermissionSet).newPackageUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            package_name)
+        comp_perm = getUtility(IArchivePermissionSet).newComponentUploader(
+            distribution.main_archive, self.factory.makePerson(),
+            self.factory.makeComponent())
+        with person_logged_in(distribution.bug_supervisor):
+            bug = self.factory.makeBug(
+                distribution=distribution,
+                sourcepackagename=package_name)
+            self.factory.makeBugTask(
+                bug=bug,
+                target=distribution.getSourcePackage(comp_package_name))
+            nomination = bug.addNomination(
+                distribution.bug_supervisor, series)
+
+        self.publishSource(series, package_name, comp_perm.component)
+        self.assertFalse(nomination.canApprove(self.factory.makePerson()))
+        self.assertTrue(nomination.canApprove(package_perm.person))
+        self.assertTrue(nomination.canApprove(comp_perm.person))
