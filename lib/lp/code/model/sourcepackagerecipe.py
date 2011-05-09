@@ -15,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+import logging
 
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
@@ -73,7 +74,11 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormexpr import Greatest
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.services.mail.basemailer import BaseMailer, RecipientReason
+from lp.soyuz.interfaces.archive import (
+    CannotUploadToPPA,
+    IArchiveSet,
+    )
 from lp.soyuz.model.archive import Archive
 
 # "Slam" a 400 response code onto RecipeParseError so that it will behave
@@ -119,6 +124,33 @@ class _SourcePackageRecipeDistroSeries(Storm):
         sourcepackagerecipe_id, 'SourcePackageRecipe.id')
     distroseries_id = Int(name='distroseries', allow_none=False)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
+
+
+class WrongArchiveMailer(BaseMailer):
+    """Mailer to inform recipe owner that daily build is disabled."""
+
+    def __init__(self, recipe):
+        """Constructor.
+
+        :param recipe: The recipe that is disabled.
+        """
+        header = RecipientReason.makeRationale('Owner', recipe.owner)
+        reason = '%(entity_is)s the owner of the recipe.'
+        r_reason = RecipientReason(recipe.owner, recipe.owner, header, reason)
+        super(WrongArchiveMailer, self).__init__(
+            'Daily builds disabled', 'wrong-ppa.txt',
+            {recipe.owner: r_reason}, 'noreply')
+        self.recipe = recipe
+
+    def _getTemplateParams(self, email, recipient):
+        """See `BaseMailer`"""
+        params = super(WrongArchiveMailer, self)._getTemplateParams(
+            email, recipient)
+        params.update({
+            'recipe_name': str(self.recipe),
+            'archive_name': self.recipe.daily_build_archive.unique_name,
+        })
+        return params
 
 
 class SourcePackageRecipe(Storm):
@@ -303,15 +335,23 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe`."""
         builds = []
         self.is_stale = False
-        for distroseries in self.distroseries:
-            try:
-                build = self.requestBuild(
-                    self.daily_build_archive, self.owner,
-                    distroseries, PackagePublishingPocket.RELEASE)
-                builds.append(build)
-            except BuildAlreadyPending:
-                continue
-        return builds
+        try:
+            for distroseries in self.distroseries:
+                try:
+                    build = self.requestBuild(
+                        self.daily_build_archive, self.owner,
+                        distroseries, PackagePublishingPocket.RELEASE)
+                    builds.append(build)
+                except BuildAlreadyPending:
+                    continue
+            return builds
+        except CannotUploadToPPA:
+            self.build_daily = False
+            logging.getLogger().error(
+                'Owner of %s cannot upload to PPA %s.  Daily builds disabled.'
+                % (str(self), self.daily_build_archive.unique_name))
+            WrongArchiveMailer(self).sendAll()
+            return []
 
     @property
     def builds(self):
@@ -363,8 +403,7 @@ class SourcePackageRecipe(Storm):
         for build in builds:
             result.append(
                 {"distroseries": build.distroseries.displayname,
-                 "archive": '%s/%s' %
-                           (build.archive.owner.name, build.archive.name)})
+                 "archive": build.archive.unique_name})
         return result
 
     @property

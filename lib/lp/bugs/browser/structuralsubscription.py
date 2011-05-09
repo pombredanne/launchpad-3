@@ -59,6 +59,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -380,10 +381,8 @@ class StructuralSubscriptionMenuMixin:
         bug subscriptions.
         """
         sst = self._getSST()
-        target = sst
-        if sst.parent_subscription_target is not None:
-            target = sst.parent_subscription_target
-        return (target.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+        pillar = IStructuralSubscriptionTargetHelper(sst).pillar
+        return (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
                 sst.userCanAlterBugSubscription(self.user, self.user))
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -428,20 +427,20 @@ def expose_user_administered_teams_to_js(request, user, context,
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
     if user is not None:
-        administrated_teams = list(user.getAdministratedTeams())
+        administrated_teams = user.administrated_teams
         if administrated_teams:
             # Get this only if we need to.
             membership = list(user.teams_participated_in)
             for team in administrated_teams:
-                # If the user is not a member of the team itself, then skip it,
-                # because structural subscriptions and their filters can only be
-                # edited by the subscriber.
+                # If the user is not a member of the team itself, then
+                # skip it, because structural subscriptions and their
+                # filters can only be edited by the subscriber.
                 # This can happen if the user is an owner but not a member.
                 if not team in membership:
                     continue
-                # If the context is a distro AND a bug supervisor is set AND
-                # the admininistered team is not a member of the bug supervisor
-                # team THEN skip it.
+                # If the context is a distro AND a bug supervisor is set
+                # AND the admininistered team is not a member of the bug
+                # supervisor team THEN skip it.
                 if (is_distro and context.bug_supervisor is not None and
                     not team.inTeam(context.bug_supervisor)):
                     continue
@@ -461,7 +460,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
     if user is None:
         administered_teams = []
     else:
-        administered_teams = user.getAdministratedTeams()
+        administered_teams = user.administrated_teams
 
     if target is not None:
         try:
@@ -496,7 +495,9 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
                     subscriber, rootsite='mainsite'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
-                user_is_team_admin=user_is_team_admin,))
+                user_is_team_admin=user_is_team_admin,
+                can_mute=filter.isMuteAllowed(user),
+                is_muted=filter.muted(user) is not None))
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info

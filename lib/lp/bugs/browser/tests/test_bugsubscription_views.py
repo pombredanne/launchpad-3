@@ -36,7 +36,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         super(BugSubscriptionAdvancedFeaturesTestCase, self).setUp()
         self.bug = self.factory.makeBug()
         self.person = self.factory.makePerson()
-        self.team = self.factory.makeTeam()
 
     def test_subscribe_uses_bug_notification_level(self):
         # When a user subscribes to a bug using the advanced features on

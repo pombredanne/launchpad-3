@@ -11,7 +11,6 @@ __all__ = [
     'IQuestionCollection',
     'IQuestionSet',
     'ISearchableByQuestionOwner',
-    'QUESTION_STATUS_DEFAULT_SEARCH',
     ]
 
 from zope.interface import (
@@ -30,12 +29,7 @@ from lazr.restful.declarations import (
     )
 
 from canonical.launchpad import _
-from lp.answers.interfaces.questionenums import QuestionStatus
-
-
-QUESTION_STATUS_DEFAULT_SEARCH = (
-    QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
-    QuestionStatus.SOLVED)
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 
 
 class IQuestionCollection(Interface):
@@ -85,7 +79,7 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         :needs_attention_from: Selects questions that nee attention from an
         IPerson. These are the questions in the NEEDSINFO or ANSWERED state
         owned by the person. The questions not owned by the person but on
-        which the person requested for more information or gave an answer
+        which the person requested more information or gave an answer
         and that are back in the OPEN state are also included.
         """
 

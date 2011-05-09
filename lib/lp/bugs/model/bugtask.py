@@ -1995,7 +1995,9 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bug_commenter_clause = """
+            bugmessage_owner = bool(features.getFeatureFlag(
+                'malone.bugmessage_owner'))
+            bug_commenter_old_clause = """
             BugTask.id IN (
                 SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
                 WHERE Message.owner = %(bug_commenter)s
@@ -2004,6 +2006,14 @@ class BugTaskSet:
                     AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
+            bug_commenter_new_clause = """
+            Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
+            BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
+            """ % sqlvalues(bug_commenter=params.bug_commenter)
+            if bugmessage_owner:
+                bug_commenter_clause = bug_commenter_new_clause
+            else:
+                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:

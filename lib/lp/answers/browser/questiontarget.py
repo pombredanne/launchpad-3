@@ -68,7 +68,7 @@ from lp.answers.interfaces.questioncollection import (
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
@@ -450,7 +450,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             "can't call matching_faqs_url when matching_faqs_count == 0")
         collection = IFAQCollection(self.context)
         return canonical_url(collection) + '/+faqs?' + urlencode({
-            'field.search_text': self.search_text,
+            'field.search_text': self.search_text.encode('utf-8'),
             'field.actions.search': 'Search',
             })
 
@@ -464,9 +464,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
-        if self.search_params.get('search_text', None) is not None:
-            self.search_params['search_text'] = (
-                self.search_params['search_text'].strip())
+        search_text = self.search_params.get('search_text', None)
+        if search_text is not None:
+            self.search_params['search_text'] = search_text.strip()
 
     def searchResults(self):
         """Return the questions corresponding to the search."""

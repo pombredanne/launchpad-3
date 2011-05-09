@@ -1,6 +1,8 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
 from storm.store import Store
 
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -13,9 +15,17 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.bugs.subscribers.bug import add_bug_change_notifications
+from lp.bugs.subscribers.bug import (
+    add_bug_change_notifications,
+    send_bug_details_to_new_bug_subscribers,
+    )
 from lp.registry.model.person import Person
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+
+from testtools.matchers import Is
 
 
 class BugSubscriberTestCase(TestCaseWithFactory):
@@ -130,3 +140,20 @@ class BugSubscriberTestCase(TestCaseWithFactory):
         # Only METADATA subscribers get notified.
         self.assertContentEqual(
             [self.metadata_subscriber], self.getNotifiedPersons())
+
+
+class FauxPerson:
+    selfgenerated_bugnotifications = False
+
+
+class NewSubscribers(TestCase):
+
+    def test_self_notification_preference_respected(self):
+        # If the person modifying the bug does not want to be notified about
+        # their own changes, they will not be.
+        actor = FauxPerson()
+        any_sent = send_bug_details_to_new_bug_subscribers(
+            None, [], [actor], event_creator=actor)
+        # Since the creator of the event was the only person to be notified
+        # and they don't want self-notifications, no messages were sent.
+        self.assertThat(any_sent, Is(False))

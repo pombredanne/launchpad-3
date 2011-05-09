@@ -11,8 +11,11 @@
 
 __all__ = [
     'QuestionAction',
+    'QuestionJobType',
     'QuestionParticipation',
     'QuestionPriority',
+    'QuestionRecipientSet',
+    'QUESTION_STATUS_DEFAULT_SEARCH',
     'QuestionSort',
     'QuestionStatus',
     ]
@@ -89,6 +92,45 @@ class QuestionAction(DBEnumeratedType):
 
         Message from an administrator that explain why the question status
         was changed.
+        """)
+
+
+class QuestionJobType(DBEnumeratedType):
+    """Values that IQuestionJob.job_type can take."""
+
+    EMAIL = DBItem(0, """
+        Question email notification
+
+        Notify question subscribers about a question via email.
+        """)
+
+
+class QuestionRecipientSet(EnumeratedType):
+    """The kinds of recipients who will receive notification."""
+
+    ASKER = Item("""
+        Asker
+
+        The person who asked the question.
+        """)
+
+    SUBSCRIBER = Item("""
+        Subscriber
+
+        The question's direct and indirect subscribers, exception for
+        the asker.
+        """)
+
+    ASKER_SUBSCRIBER = Item("""
+        Asker and Subscriber
+
+        The question's direct and indirect subscribers, including the asker.
+        """)
+
+    CONTACT = Item("""
+        Contact
+
+        All the answer contacts for the question's target.
         """)
 
 
@@ -205,7 +247,7 @@ class QuestionSort(EnumeratedType):
     RECENT_OWNER_ACTIVITY = Item("""
     recently updated first
 
-    Sort questions that recently received new information from the owner first.
+    Sort questions that received new information from the owner first.
     """)
 
 
@@ -262,3 +304,8 @@ class QuestionStatus(DBEnumeratedType):
         question, spam or anything that should not appear in the
         Answer Tracker.
         """)
+
+
+QUESTION_STATUS_DEFAULT_SEARCH = (
+    QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
+    QuestionStatus.SOLVED)
