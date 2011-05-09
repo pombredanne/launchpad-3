@@ -129,29 +129,23 @@ class BugNomination(SQLBase):
         if self.distroseries is not None:
             # For distributions anyone that can upload to the
             # distribution may approve nominations.
-            bug_packagenames_and_components = set()
             distribution = self.distroseries.distribution
+            package_names = []
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
                     and bugtask.sourcepackagename is not None):
-                    source_package = self.distroseries.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    bug_packagenames_and_components.add(
-                        bugtask.sourcepackagename)
-                    if source_package.latest_published_component is not None:
-                        bug_packagenames_and_components.add(
-                            source_package.latest_published_component)
-            if len(bug_packagenames_and_components) == 0:
+                    package_names.append(bugtask.sourcepackagename)
+            if len(package_names) == 0:
                 # If the bug isn't targeted to a source package, allow
                 # any uploader to approve the nomination.
-                bug_packagenames_and_components = set(
-                    upload_component.component
-                    for upload_component in distribution.uploaders)
-            for packagename_or_component in bug_packagenames_and_components:
-                if distribution.main_archive.checkArchivePermission(
-                    person, packagename_or_component):
+                return distribution.main_archive.verifyUpload(
+                    person, None, None, None, strict_component=False) is None
+            for name in package_names:
+                component = self.distroseries.getSourcePackage(
+                    name).latest_published_component
+                if distribution.main_archive.verifyUpload(
+                    person, name, component, self.distroseries) is None:
                     return True
-
         return False
 
 class BugNominationSet:
