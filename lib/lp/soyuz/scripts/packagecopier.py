@@ -24,6 +24,7 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -418,7 +419,12 @@ class CopyChecker:
                     dest_component, pocket,
                     strict_component=strict_component)
                 if reason is not None:
-                    raise CannotCopy(reason)
+                    # launchpad.Append on the main archive is sufficient
+                    # to copy arbitrary packages. This happens when the
+                    # uploader is a member of ubuntu-security for instance.
+                    if not check_permission(
+                        'launchpad.Append', series.main_archive):
+                        raise CannotCopy(reason)
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
