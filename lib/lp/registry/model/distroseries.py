@@ -754,7 +754,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory']).count()
 
-
         # next update the binary count
         clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
@@ -791,12 +790,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def is_derived_series(self):
         """See `IDistroSeries`."""
-        # Circular imports.
-        from lp.registry.interfaces.distroseriesparent import (
-            IDistroSeriesParentSet,
-            )
-        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
-        return not dsps.is_empty()
+        return not self.getParentSeries() == []
 
     @property
     def is_initialising(self):
@@ -2005,6 +1999,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
             self, child, architectures, packagesets, rebuild)
+
+    def getParentSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return [dsp.parent_series for dsp in dsps]
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""

@@ -897,6 +897,11 @@ class IDistroSeriesPublic(
     def getDerivedSeries():
         """Get all `DistroSeries` derived from this one."""
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getParentSeries():
+        """Get all parent `DistroSeries`."""
+
     @operation_parameters(
         parent_series=Reference(
             schema=Interface, # IDistroSeries
