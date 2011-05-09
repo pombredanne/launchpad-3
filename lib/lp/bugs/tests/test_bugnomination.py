@@ -115,20 +115,16 @@ class TestCanApprove(TestCaseWithFactory):
     def test_normal_user_cannot_approve(self):
         product = self.factory.makeProduct(
             bug_supervisor=self.factory.makePerson())
-        with person_logged_in(product.bug_supervisor):
-            nomination = self.factory.makeBug(product=product).addNomination(
-                product.bug_supervisor,
-                self.factory.makeProductSeries(product=product))
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries(product=product))
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
 
     def test_driver_can_approve(self):
         product = self.factory.makeProduct(
             driver=self.factory.makePerson(),
             bug_supervisor=self.factory.makePerson())
-        with person_logged_in(product.bug_supervisor):
-            nomination = self.factory.makeBug(product=product).addNomination(
-                product.bug_supervisor,
-                self.factory.makeProductSeries(product=product))
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries(product=product))
         self.assertTrue(nomination.canApprove(product.driver))
 
     def publishSource(self, series, sourcepackagename, component):
