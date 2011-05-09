@@ -5,17 +5,14 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from canonical.launchpad.ftests import (
     login,
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -149,12 +146,11 @@ class TestCanApprove(TestCaseWithFactory):
             bug_supervisor=self.factory.makePerson())
         series = self.factory.makeDistroSeries(distribution=distribution)
         package_name = self.factory.makeSourcePackageName()
-        perm = getUtility(IArchivePermissionSet).newComponentUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            self.factory.makeComponent())
-        other_perm = getUtility(IArchivePermissionSet).newComponentUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            self.factory.makeComponent())
+        with celebrity_logged_in('admin'):
+            perm = distribution.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
+            other_perm = distribution.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
 
@@ -170,9 +166,9 @@ class TestCanApprove(TestCaseWithFactory):
         distribution = self.factory.makeDistribution(
             bug_supervisor=self.factory.makePerson())
         series = self.factory.makeDistroSeries(distribution=distribution)
-        perm = getUtility(IArchivePermissionSet).newComponentUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            self.factory.makeComponent())
+        with celebrity_logged_in('admin'):
+            perm = distribution.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(target=series)
 
         self.assertFalse(nomination.canApprove(self.factory.makePerson()))
@@ -185,12 +181,12 @@ class TestCanApprove(TestCaseWithFactory):
             bug_supervisor=self.factory.makePerson())
         series = self.factory.makeDistroSeries(distribution=distribution)
         package_name = self.factory.makeSourcePackageName()
-        perm = getUtility(IArchivePermissionSet).newPackageUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            package_name)
-        other_perm = getUtility(IArchivePermissionSet).newPackageUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            self.factory.makeSourcePackageName())
+        with celebrity_logged_in('admin'):
+            perm = distribution.main_archive.newPackageUploader(
+                self.factory.makePerson(), package_name)
+            other_perm = distribution.main_archive.newPackageUploader(
+                self.factory.makePerson(),
+                self.factory.makeSourcePackageName())
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
 
@@ -206,12 +202,11 @@ class TestCanApprove(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distribution=distribution)
         package_name = self.factory.makeSourcePackageName()
         comp_package_name = self.factory.makeSourcePackageName()
-        package_perm = getUtility(IArchivePermissionSet).newPackageUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            package_name)
-        comp_perm = getUtility(IArchivePermissionSet).newComponentUploader(
-            distribution.main_archive, self.factory.makePerson(),
-            self.factory.makeComponent())
+        with celebrity_logged_in('admin'):
+            package_perm = distribution.main_archive.newPackageUploader(
+                self.factory.makePerson(), package_name)
+            comp_perm = distribution.main_archive.newComponentUploader(
+                self.factory.makePerson(), self.factory.makeComponent())
         nomination = self.factory.makeBugNomination(
             target=series.getSourcePackage(package_name))
         self.factory.makeBugTask(
