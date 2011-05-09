@@ -785,11 +785,16 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         marker = script.locateIndexesMarker(get_a_suite(distroseries))
         os.makedirs(os.path.dirname(marker))
 
+    def makeDistroSeriesNeedingIndexes(self, distribution=None):
+        """Create `DistroSeries` that needs indexes created."""
+        return self.factory.makeDistroSeries(
+            status=SeriesStatus.FROZEN, distribution=distribution)
+
     def test_new_frozen_series_has_suites_without_indexes(self):
         # If a distroseries is Frozen and has not had its indexes
         # created yet, listSuitesNeedingIndexes returns a nonempty list
         # for it.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        series = self.makeDistroSeriesNeedingIndexes()
         script = self.makeScript(series.distribution)
         script.setUp()
         self.assertNotEqual([], list(script.listSuitesNeedingIndexes(series)))
@@ -797,7 +802,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_listSuitesNeedingIndexes_initially_includes_entire_series(self):
         # If a series has not had any of its indexes created yet,
         # listSuitesNeedingIndexes returns all of its suites.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        series = self.makeDistroSeriesNeedingIndexes()
         script = self.makeScript(series.distribution)
         script.setUp()
         self.assertContentEqual(
@@ -815,7 +820,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         # listSuitesNeedingIndexes returns no suites for distributions
         # that have no publisher config, such as Debian.  We don't want
         # to publish such distributions.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        series = self.makeDistroSeriesNeedingIndexes()
         pub_config = get_pub_config(series.distribution)
         IMasterStore(pub_config).remove(pub_config)
         script = self.makeScript(series.distribution)
@@ -826,8 +831,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         # in question from the results of listSuitesNeedingIndexes for
         # that distroseries.
         distro = self.makeDistroWithPublishDirectory()
-        series = self.factory.makeDistroSeries(
-            status=SeriesStatus.FROZEN, distribution=distro)
+        series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.setUp()
         self.createIndexesMarkerDir(script, series)
@@ -842,7 +846,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     def test_listSuitesNeedingIndexes_ignores_other_series(self):
         # listSuitesNeedingIndexes only returns suites for series that
         # need indexes created.  It ignores other distroseries.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        series = self.makeDistroSeriesNeedingIndexes()
         self.factory.makeDistroSeries(distribution=series.distribution)
         script = self.makeScript(series.distribution)
         script.setUp()
@@ -927,8 +931,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         # If the script's main() finds a distroseries that needs its
         # indexes created, it calls createIndexes on that distroseries.
         distro = self.makeDistroWithPublishDirectory()
-        series = self.factory.makeDistroSeries(
-            status=SeriesStatus.FROZEN, distribution=distro)
+        series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.main()
