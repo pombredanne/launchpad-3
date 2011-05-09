@@ -15,7 +15,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
-    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
+    'IPersonPublic',  # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
@@ -731,7 +731,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     sshkeys = exported(
              CollectionField(
-                title= _('List of SSH keys'),
+                title=_('List of SSH keys'),
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
 
@@ -965,7 +965,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     hardware_submissions = exported(CollectionField(
             title=_("Hardware submissions"),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface))) # HWSubmission
+            value_type=Reference(schema=Interface)))  # HWSubmission
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. It is a summary of the team's visibility.
@@ -1030,7 +1030,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
     @operation_parameters(name=TextLine(required=True))
-    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @operation_returns_entry(Interface)  # Really ISourcePackageRecipe.
     @export_read_operation()
     @operation_for_version("beta")
     def getRecipe(name):
@@ -1052,7 +1052,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
-        archive=Reference(schema=Interface)) # Really IArchive
+        archive=Reference(schema=Interface))  # Really IArchive
     @export_write_operation()
     @operation_for_version("beta")
     def getArchiveSubscriptionURL(requester, archive):
@@ -1384,7 +1384,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface) # Really IArchive.
+    @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
     @operation_for_version("beta")
     def getPPAByName(name):
@@ -1400,7 +1400,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False))
-    @export_factory_operation(Interface, []) # Really IArchive.
+    @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None):
         """Create a PPA.
@@ -1572,7 +1572,7 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
-    @operation_returns_collection_of(Interface) # Really IPerson
+    @operation_returns_collection_of(Interface)  # Really IPerson
     @export_read_operation()
     @operation_for_version("beta")
     def getMembersByStatus(status, orderby=None):
