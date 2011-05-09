@@ -1917,6 +1917,10 @@ BugMessage""" % sqlvalues(self.id))
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
+        # This is here to avoid circular imports.
+        from lp.bugs.mail.bugnotificationrecipients import (
+            BugNotificationRecipients,
+            )
 
         def check_person_in_team(person, list_of_people):
             """Is the person in one of the teams?
@@ -1945,9 +1949,6 @@ BugMessage""" % sqlvalues(self.id))
         direct_subscribers = self.getDirectSubscribers()
         if check_person_in_team(person, direct_subscribers):
             return True
-        from lp.bugs.mail.bugnotificationrecipients import (
-            BugNotificationRecipients,
-            )
         duplicate_subscribers = self.getSubscribersFromDuplicates(
             recipients=BugNotificationRecipients())
         if check_person_in_team(person, duplicate_subscribers):
