@@ -37,8 +37,11 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertEqual(
             simplejson.dumps(self.vocabulary.step_title),
             picker_widget.step_title_text)
+        # The widget name is encoded to get the widget's ID.  The content of
+        # the ID is unimportant, the fact that it is unique on the page and a
+        # valid HTML element ID are what's important.
         self.assertEqual(
-            'show-widget-field-teamowner', picker_widget.show_widget_id)
+            'show-widget-ZmllbGQudGVhbW93bmVy', picker_widget.show_widget_id)
         self.assertEqual(
             'field.teamowner', picker_widget.input_id)
         self.assertEqual(

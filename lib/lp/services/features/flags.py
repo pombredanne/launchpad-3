@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -40,6 +40,10 @@ flag_info = sorted([
     ('hard_timeout',
      'float',
      'Sets the hard request timeout in milliseconds.',
+     ''),
+    ('mail.dkim_authentication.disabled',
+     'boolean',
+     'Disable DKIM authentication checks on incoming mail.',
      ''),
     ('malone.advanced-subscriptions.enabled',
      'boolean',

@@ -55,12 +55,9 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
-    install_feature_controller,
     )
-from lp.services.features.flags import FeatureController
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
+from lp.services.features.testing import (
+    FeatureFixture,
     )
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -92,18 +89,9 @@ from lp.testing.views import create_initialized_view
 
 
 def set_derived_series_ui_feature_flag(test_case):
-    # Helper to set the feature flag enabling the derived series ui.
-    getFeatureStore().add(FeatureFlag(
-        scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
-        value=u'on', priority=1))
-
-    # XXX Michael Nelson 2010-09-21 bug=631884
-    # Currently LaunchpadTestRequest doesn't set per-thread
-    # features.
-    def in_scope(value):
-        return True
-    install_feature_controller(FeatureController(in_scope))
-    test_case.addCleanup(install_feature_controller, None)
+    test_case.useFixture(FeatureFixture({
+        u'soyuz.derived-series-ui.enabled': u'on',
+        }))
 
 
 class TestDistroSeriesView(TestCaseWithFactory):
