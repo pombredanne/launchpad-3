@@ -9,7 +9,7 @@ We export DOAP RDF metadata for projects from a link in the
     <lp:Project>
       <lp:specifiedAt rdf:resource="/mozilla/+rdf"...
       <lp:name>mozilla</lp:name>
-      <lp:displayName>the Mozilla Project</lp:displayName>
+      <lp:displayName>The Mozilla Project</lp:displayName>
       <lp:title>The Mozilla Project</lp:title>
     ...
       <lp:owner>

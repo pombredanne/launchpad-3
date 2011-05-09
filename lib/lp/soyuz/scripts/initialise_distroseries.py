@@ -17,9 +17,6 @@ from zope.component import getUtility
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from lp.archivepublisher.interfaces.createdistroseriesindexesjob import (
-    ICreateDistroSeriesIndexesJobSource,
-    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -55,9 +52,6 @@ class InitialiseDistroSeries:
       this distroseries and its distroarchseriess. All component and section
       selections will be duplicated, as will any permission-related
       structures.
-
-      A `CreateDistroSeriesIndexesJob` is created if appropriate, so that
-      the series' archive indexes will be initialized.
 
     Note:
       This method will raise a InitialisationError when the pre-conditions
@@ -143,7 +137,6 @@ class InitialiseDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
-        self._request_index_creation()
         transaction.commit()
 
     def _set_parent(self):
@@ -336,8 +329,3 @@ class InitialiseDistroSeries:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))
-
-    def _request_index_creation(self):
-        """Schedule a `CreateDistroSeriesIndexesJob` if appropriate."""
-        getUtility(ICreateDistroSeriesIndexesJobSource).makeFor(
-            self.distroseries)

@@ -28,8 +28,8 @@ from storm.expr import (
     Desc,
     Or,
     Select,
-    Sum,
     SQL,
+    Sum,
     )
 from storm.locals import (
     Count,
@@ -328,6 +328,10 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         return self.displayname
+
+    @property
+    def unique_name(self):
+        return '%s/%s' % (self.owner.name, self.name)
 
     @property
     def is_ppa(self):
@@ -1001,6 +1005,19 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
+    def hasAnyPermission(self, person):
+        """See `IArchive`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
+
+        any_perm_on_archive = Store.of(self).find(
+            TeamParticipation,
+            ArchivePermission.archive == self.id,
+            TeamParticipation.person == person.id,
+            TeamParticipation.teamID == ArchivePermission.personID,
+            )
+        return not any_perm_on_archive.is_empty()
+
     def getBuildCounters(self, include_needsbuild=True):
         """See `IArchiveSet`."""
 
@@ -1176,7 +1193,7 @@ class Archive(SQLBase):
             strict_component)
 
     def verifyUpload(self, person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                     distroseries, strict_component=True):
         """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
@@ -1435,15 +1452,17 @@ class Archive(SQLBase):
             reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
-        self._copySources(sources, to_pocket, to_series, include_binaries)
+        self._copySources(
+            sources, to_pocket, to_series, include_binaries,
+            person=person)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
@@ -1452,7 +1471,9 @@ class Archive(SQLBase):
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
 
-        self._copySources([source], to_pocket, to_series, include_binaries)
+        self._copySources(
+            [source], to_pocket, to_series, include_binaries,
+            person=person)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1478,7 +1499,7 @@ class Archive(SQLBase):
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
-                     include_binaries=False):
+                     include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
 
         It takes a list of SourcePackagePublishingHistory but the other args
@@ -1507,7 +1528,8 @@ class Archive(SQLBase):
             series = None
 
         # Perform the copy, may raise CannotCopy.
-        do_copy(sources, self, series, pocket, include_binaries)
+        do_copy(
+            sources, self, series, pocket, include_binaries, person=person)
 
     def getAuthToken(self, person):
         """See `IArchive`."""
