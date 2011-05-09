@@ -12,7 +12,7 @@ searches efficiently and these tests can be expanded at that point.
 
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
 
-    >>> user_browser.getControl("Summary").value = (
+    >>> user_browser.getControl("Summary", index=0).value = (
     ...     "Firefox does not support complex SVG images")
     >>> user_browser.getControl("Continue").click()
 
@@ -27,7 +27,7 @@ be reversed.
 
     >>> user_browser.open("http://launchpad.dev/products/firefox/+filebug")
 
-    >>> user_browser.getControl("Summary").value = (
+    >>> user_browser.getControl("Summary", index=0).value = (
     ...     "Reflow problems with SVG")
     >>> user_browser.getControl("Continue").click()
 
