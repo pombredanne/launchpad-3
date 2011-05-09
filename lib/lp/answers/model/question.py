@@ -81,6 +81,9 @@ from lp.answers.enums import (
     QuestionStatus,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
@@ -1340,7 +1343,7 @@ class QuestionTargetMixin:
             return False
         # Person must speak a language to be an answer contact.
         if len(person.languages) == 0:
-            raise ValueError("An Answer Contact must speak a language.")
+            raise AddAnswerContactError()
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
