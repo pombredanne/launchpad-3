@@ -2314,12 +2314,19 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions_from_duplicates(self):
         """Structural subscriptions from the bug's duplicates."""
+        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        higher_precedence = (
+            self.direct_subscriptions.subscribers.union(
+                self.also_notified_subscribers))
         all_duplicate_structural_subscriptions = list()
         for duplicate in self.bug.duplicates:
             duplicate_struct_subs = get_structural_subscriptions_for_bug(
                 duplicate)
             all_duplicate_structural_subscriptions += duplicate_struct_subs
-        return all_duplicate_structural_subscriptions
+        return (
+            subscription for subscription in
+                all_duplicate_structural_subscriptions
+                if subscription.subscriber not in higher_precedence)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
