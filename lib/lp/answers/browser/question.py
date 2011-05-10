@@ -437,7 +437,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([english])
+            supported_languages = [english]
 
         terms = []
         for lang in languages:
