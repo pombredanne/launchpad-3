@@ -296,7 +296,7 @@ class BugSubscriptionFilter(StormBase):
 
 
 class BugSubscriptionFilterMute(StormBase):
-    """A filter to specialize a *structural* subscription."""
+    """Bug subscription filters a person has decided to block emails from."""
 
     implements(IBugSubscriptionFilterMute)
 
