@@ -1149,7 +1149,7 @@ class TestTrac(Trac):
         """See `Trac`."""
         return self.supports_single_exports
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
         if self.trace_calls:
@@ -1489,7 +1489,7 @@ class TestRoundup(Roundup):
     batch_size = None
     trace_calls = False
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url)
 

@@ -32,7 +32,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
@@ -67,6 +66,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
+from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -213,6 +213,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                     logger.debug(
                         ' - build already pending for %s', series_name)
                     continue
+                except CannotUploadToArchive, e:
+                    # This will catch all PPA related issues -
+                    # disabled, security, wrong pocket etc
+                    logger.debug(
+                        ' - daily build failed for %s: %s',
+                        series_name, str(e))
                 except ProgrammingError:
                     raise
                 except:
@@ -253,10 +259,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         package_build.destroySelf()
 
     @classmethod
-    def getById(cls, build_id):
+    def getByID(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
+
+    @classmethod
+    def getByBuildFarmJob(cls, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        return Store.of(build_farm_job).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == build_farm_job.id).one()
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
@@ -397,12 +410,3 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score
-
-
-def get_recipe_build_for_build_farm_job(build_farm_job):
-    """Return the SourcePackageRecipeBuild associated with a BuildFarmJob."""
-    store = Store.of(build_farm_job)
-    result = store.find(SourcePackageRecipeBuild,
-        SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-        PackageBuild.build_farm_job_id == build_farm_job.id)
-    return ProxyFactory(result.one())

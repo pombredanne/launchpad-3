@@ -19,11 +19,9 @@
 
     <div metal:fill-slot="main">
       There are currently
-      <strong class="registry-stat"
-              tal:content="view/number_of_people">7</strong>
+      <strong tal:content="view/number_of_people">7</strong>
       people and
-      <strong class="registry-stat"
-              tal:content="view/number_of_teams">7</strong>
+      <strong tal:content="view/number_of_teams">7</strong>
       teams registered in Launchpad.
       <tal:search define="batch view/searchPeopleBatchNavigator">
         <div>

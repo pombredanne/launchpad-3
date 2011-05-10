@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
@@ -90,8 +89,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getAlsoNotifiedSubscribers())
 
     def test_get_indirect_subscribers_with_private_team(self):
@@ -100,8 +99,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getIndirectSubscribers())
 
     def test_get_direct_subscribers_with_private_team(self):
@@ -136,6 +135,20 @@ class TestBug(TestCaseWithFactory):
             with person_logged_in(subscriber):
                 subscription = bug.subscribe(
                     subscriber, subscriber, level=level)
+            self.assertEqual(level, subscription.bug_notification_level)
+
+    def test_resubscribe_with_level(self):
+        # If you pass a new level to subscribe with an existing subscription,
+        # the level is set on the existing subscription.
+        bug = self.factory.makeBug()
+        subscriber = self.factory.makePerson()
+        levels = list(BugNotificationLevel.items)
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=levels[-1])
+        for level in levels:
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber, level=level)
             self.assertEqual(level, subscription.bug_notification_level)
 
     def test_get_direct_subscribers_with_level(self):

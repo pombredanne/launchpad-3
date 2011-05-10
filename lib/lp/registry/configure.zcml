@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -87,19 +87,27 @@
 
     <!-- IPersonTransferJob -->
     <securedutility
-        component="lp.registry.model.persontransferjob.MembershipNotificationJob"
-        provides="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource"/>
+        component=".model.persontransferjob.MembershipNotificationJob"
+        provides=".interfaces.persontransferjob.IMembershipNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJobSource"/>
     </securedutility>
 
-    <class class="lp.registry.model.persontransferjob.PersonTransferJob">
-        <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
+    <securedutility
+        component=".model.persontransferjob.PersonMergeJob"
+        provides=".interfaces.persontransferjob.IPersonMergeJobSource">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJobSource"/>
+    </securedutility>
+
+    <class class=".model.persontransferjob.PersonTransferJob">
+        <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
 
-    <class class="lp.registry.model.persontransferjob.MembershipNotificationJob">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
+    <class class=".model.persontransferjob.MembershipNotificationJob">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.PersonMergeJob">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
     </class>
 
     <!-- INameBlacklist -->
@@ -170,6 +178,22 @@
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
+    <!-- DistroSeriesParent -->
+    <securedutility
+        class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesparent.DistroSeriesParent">
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
@@ -187,6 +211,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
+            permission="launchpad.Admin"
+            set_attributes="parent_series"/>
+        <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>
         <require
@@ -199,7 +226,8 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver"/>
+            set_attributes="displayname title summary description driver
+                            backports_not_automatic"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -207,7 +235,7 @@
 
         <require
             permission="launchpad.Moderate"
-            set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
+            set_attributes="version name status nominatedarchindep changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -501,6 +529,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
         <require
@@ -885,9 +914,6 @@
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
             <require
-                permission="launchpad.Moderate"
-                interface="lp.registry.interfaces.person.IPersonModerate" />
-            <require
                 permission="launchpad.Commercial"
                 set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
@@ -968,7 +994,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
+            interface="lp.app.interfaces.security.IAuthorization"/>
         <require
             permission="launchpad.Edit"
             set_attributes="name code_name dateexpected summary active
@@ -1059,10 +1085,10 @@
 
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMailingList         lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"/>
+        handler="lp.registry.mail.notification.notify_mailinglist_activated"/>
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMessageApproval                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_message_held"/>
+        handler="lp.registry.mail.notification.notify_message_held"/>
     <class
         class="lp.registry.model.person.WikiName">
         <allow
@@ -1244,6 +1270,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
 
@@ -1316,6 +1343,7 @@
                 people
                 all_active
                 get
+                get_all_active
                 getByName
                 getProductsWithBranches
                 createProduct
@@ -1368,10 +1396,10 @@
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
-        handler="canonical.launchpad.mailnotification.notify_team_join"/>
+        handler="lp.registry.mail.notification.notify_team_join"/>
     <subscriber
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
-        handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
+        handler="lp.registry.mail.notification.notify_invitation_to_join_team"/>
 
     <!-- This is class ProductSeries -->
 
@@ -1524,8 +1552,10 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
+
 
         <!-- IFAQTarget -->
 
@@ -1570,6 +1600,12 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        factory="lp.registry.adapters.distribution_to_publisherconfig"
+        permission="zope.Public"/>
+
 
     <!-- DistributionSet -->
 
@@ -1614,6 +1650,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
     </class>

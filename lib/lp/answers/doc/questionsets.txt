@@ -48,13 +48,13 @@ The search_text parameter will return questions matching the query using the
 regular full text algorithm.
 
     # Because not everyone uses a real editor <wink>
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
     >>> for question in question_set.searchQuestions(search_text='firefox'):
     ...     print ascii_smash(question.title), question.target.displayname
     Problemas de Impressao no Firefox                Mozilla Firefox
     Firefox loses focus and gets stuck               Mozilla Firefox
     Firefox cannot render Bank Site                  Mozilla Firefox
-    mailto: problem in webpage                       mozilla-firefox in ubuntu
+    mailto: problem in webpage                       mozilla-firefox in Ubuntu
     Newly installed plug-in doesn't seem to be used  Mozilla Firefox
     Problem showing the SVG demo on W3C site         Mozilla Firefox
     AINKAFSEEN ALEFLAMTEHGHAINYEHYEHREHALEFTEH ...   Ubuntu
@@ -67,12 +67,12 @@ By default, expired and invalid questions are not searched for.  The status
 parameter can be used to select the questions in the status you are interested
 in.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> for question in question_set.searchQuestions(
     ...         status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title, (
     ...         question.target.displayname)
-    Firefox is slow and consumes too ...   Invalid mozilla-firefox in ubuntu
+    Firefox is slow and consumes too ...   Invalid mozilla-firefox in Ubuntu
 
 The status parameter can also take a list of statuses.
 
@@ -80,8 +80,8 @@ The status parameter can also take a list of statuses.
     ...         status=[QuestionStatus.SOLVED, QuestionStatus.INVALID]):
     ...     print question.title, question.status.title, (
     ...          question.target.displayname)
-    mailto: problem in webpage             Solved mozilla-firefox in ubuntu
-    Firefox is slow and consumes too ...   Invalid mozilla-firefox in ubuntu
+    mailto: problem in webpage             Solved mozilla-firefox in Ubuntu
+    Firefox is slow and consumes too ...   Invalid mozilla-firefox in Ubuntu
 
 
 Language
@@ -109,7 +109,7 @@ each criteria.
     ...     print ascii_smash(question.title), question.status.title, (
     ...           question.target.displayname)
     Problemas de Impressao no Firefox Open           Mozilla Firefox
-    Firefox is slow and consumes too much ...        mozilla-firefox in ubuntu
+    Firefox is slow and consumes too much ...        mozilla-firefox in Ubuntu
     Firefox loses focus and gets stuck Open          Mozilla Firefox
     Firefox cannot render Bank Site Open             Mozilla Firefox
     Problem showing the SVG demo on W3C site Open    Mozilla Firefox
@@ -123,7 +123,7 @@ When using the search_text criteria, the default is to sort the results by
 relevancy.  One can use the sort parameter to change the order.  It takes one
 of the constant defined in the QuestionSort enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionSort
+    >>> from lp.answers.enums import QuestionSort
     >>> for question in question_set.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, ascii_smash(question.title), (
@@ -133,7 +133,7 @@ of the constant defined in the QuestionSort enumeration.
     2 Problem showing the SVG demo on W3C site          Mozilla Firefox
     4 Firefox loses focus and gets stuck                Mozilla Firefox
     6 Newly installed plug-in doesn't seem to be used   Mozilla Firefox
-    9 mailto: problem in webpage                    mozilla-firefox in ubuntu
+    9 mailto: problem in webpage                    mozilla-firefox in Ubuntu
     13 Problemas de Impressao no Firefox                Mozilla Firefox
 
 When no text search is done, the default sort order is by newest first.
@@ -179,7 +179,7 @@ we'll set those up.
     >>> login('admin@canonical.com')
     >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
     >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
-    >>> transaction.commit()    
+    >>> transaction.commit()
 
 This method can be used to retrieve the projects that are the most actively
 using the Answer Tracker in the last 60 days.  By active, we mean that the

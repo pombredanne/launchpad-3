@@ -20,7 +20,7 @@
         </tr>
       </thead>
       <tbody>
-        <tal:recipes repeat="recipe context/getRecipes">
+        <tal:recipes repeat="recipe context/recipes">
           <tr>
             <td colspan="2">
               <a tal:attributes="href recipe/fmt:url"

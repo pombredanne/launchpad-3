@@ -149,12 +149,12 @@ bug's target for Meta data changes, but not for lifecycle changes.
     >>> subscription = example_bug.bugtasks[0].target.addBugSubscription(
     ...     lifecycle_subscriber, lifecycle_subscriber)
     >>> with person_logged_in(lifecycle_subscriber):
-    ...     filter = subscription.newBugFilter()
+    ...     filter = subscription.bug_filters.one()
     ...     filter.bug_notification_level = BugNotificationLevel.LIFECYCLE
     >>> subscription = example_bug.bugtasks[0].target.addBugSubscription(
     ...     metadata_subscriber, metadata_subscriber)
     >>> with person_logged_in(metadata_subscriber):
-    ...     filter = subscription.newBugFilter()
+    ...     filter = subscription.bug_filters.one()
     ...     filter.bug_notification_level = BugNotificationLevel.METADATA
     >>> example_bug.addChange(
     ...     TestBugChange(when=nowish, person=example_person))

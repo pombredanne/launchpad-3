@@ -1,15 +1,18 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
+    'disable_oops_handler',
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'LOCK_PATH',
     'SilentLaunchpadScriptFailure',
     ]
 
 from ConfigParser import SafeConfigParser
+from contextlib import contextmanager
 from cProfile import Profile
 import datetime
 import logging
@@ -39,6 +42,11 @@ from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail,
     )
 from canonical.lp import initZopeless
+from lp.services.features import (
+    get_relevant_feature_controller,
+    install_feature_controller,
+    make_script_feature_controller,
+    )
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
@@ -222,7 +230,7 @@ class LaunchpadScript:
     # Convenience or death
     #
     @log_unhandled_exception_and_exit
-    def login(self, user):
+    def login(self, user=ANONYMOUS):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
 
@@ -292,18 +300,21 @@ class LaunchpadScript:
         self.lock.release(skip_delete=skip_delete)
 
     @log_unhandled_exception_and_exit
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
+    def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
-        self._init_db(implicit_begin=implicit_begin, isolation=isolation)
+        self._init_db(isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
         if self.options.profile:
             profiler = Profile()
+
+        original_feature_controller = get_relevant_feature_controller()
+        install_feature_controller(make_script_feature_controller(self.name))
         try:
             if profiler:
                 profiler.runcall(self.main)
@@ -317,6 +328,8 @@ class LaunchpadScript:
         else:
             date_completed = datetime.datetime.now(UTC)
             self.record_activity(date_started, date_completed)
+        finally:
+            install_feature_controller(original_feature_controller)
         if profiler:
             profiler.dump_stats(self.options.profile)
 
@@ -324,14 +337,12 @@ class LaunchpadScript:
         """Initialize the ZCA, this can be overriden for testing purpose."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         """Initialize the database transaction.
 
         Can be overriden for testing purpose.
         """
-        self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin,
-            isolation=isolation)
+        self.txn = initZopeless(dbuser=self.dbuser, isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
@@ -341,7 +352,7 @@ class LaunchpadScript:
     #
     @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
-                     use_web_security=False, implicit_begin=True,
+                     use_web_security=False,
                      isolation=ISOLATION_LEVEL_DEFAULT):
         """Call lock_or_die(), and then run() the script.
 
@@ -349,8 +360,8 @@ class LaunchpadScript:
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run(use_web_security=use_web_security,
-                     implicit_begin=implicit_begin, isolation=isolation)
+            self.run(
+                use_web_security=use_web_security, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
@@ -392,6 +403,18 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+
+@contextmanager
+def disable_oops_handler(logger):
+    oops_handlers = []
+    for handler in logger.handlers:
+        if isinstance(handler, OopsHandler):
+            oops_handlers.append(handler)
+            logger.removeHandler(handler)
+    yield
+    for handler in oops_handlers:
+        logger.addHandler(handler)
 
 
 def cronscript_enabled(control_url, name, log):

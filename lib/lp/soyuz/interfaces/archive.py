@@ -45,9 +45,7 @@ __all__ = [
     'default_name_by_purpose',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -84,8 +82,8 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -618,6 +616,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param component: The `Component` being uploaded to.
         :param pocket: The `PackagePublishingPocket` of 'distroseries' being
             uploaded to.
+        :param strict_component: True if access to the specific component for
+            the package is needed to upload to it. If False, then access to
+            any component will do.
         :return: The reason for not being able to upload, None otherwise.
         """
 
@@ -634,7 +635,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param distroseries: The upload's target distro series.
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
-            any package will do.
+            any component will do.
         :return: CannotUploadToArchive if 'person' cannot upload to the
             archive,
             None otherwise.
@@ -989,11 +990,13 @@ class IArchiveView(IHasBuildRecords):
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
+    @call_with(eager_load=True)
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -1173,10 +1176,20 @@ class IArchiveView(IHasBuildRecords):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getComponentsForQueueAdmin(person):
-        """Return `IArchivePermission` for the person's queue admin components
+        """Return `IArchivePermission` for the person's queue admin
+        components.
 
-        :param person: An `IPerson`
+        :param person: An `IPerson`.
         :return: A list of `IArchivePermission` records.
+        """
+
+    def hasAnyPermission(person):
+        """Whether or not this person has any permission at all on this
+        archive.
+
+        :param person: The `IPerson` for whom the check is performed.
+        :return: A boolean indicating if the person has any permission on this
+            archive at all.
         """
 
     def getPackageDownloadCount(bpr, day, country):
@@ -1212,6 +1225,7 @@ class IArchiveView(IHasBuildRecords):
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
@@ -1227,8 +1241,8 @@ class IArchiveAppend(Interface):
     @export_write_operation()
     # Source_names is a string because exporting a SourcePackageName is
     # rather nonsensical as it only has id and name columns.
-    def syncSources(source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+    def syncSources(source_names, from_archive, to_pocket, to_series=None,
+                    include_binaries=False, person=None):
         """Synchronise (copy) named sources into this archive from another.
 
         It will copy the most recent PUBLISHED versions of the named
@@ -1246,6 +1260,7 @@ class IArchiveAppend(Interface):
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
+        :param person: the `IPerson` who requests the sync.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
@@ -1253,6 +1268,7 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
         version=TextLine(title=_("Version")),
@@ -1271,7 +1287,7 @@ class IArchiveAppend(Interface):
     # we should consider either changing this method or adding a new one
     # that takes that object instead.
     def syncSource(source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """Synchronise (copy) a single named source into this archive.
 
         Copy a specific version of a named source to the destination
@@ -1285,6 +1301,7 @@ class IArchiveAppend(Interface):
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
+        :param person: the `IPerson` who requests the sync.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

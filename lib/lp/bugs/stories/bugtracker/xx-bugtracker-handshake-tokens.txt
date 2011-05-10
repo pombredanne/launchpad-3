@@ -5,7 +5,7 @@ authenticate it with remote bug trackers. Generating these tokens is
 done using the internal XML-RPC service.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> bugtracker_api = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',
     ...     transport=XMLRPCTestTransport())

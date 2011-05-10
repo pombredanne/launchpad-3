@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAlias,
     ILibraryFileAliasSet,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.services.fields import KEEP_SAME_IMAGE
 

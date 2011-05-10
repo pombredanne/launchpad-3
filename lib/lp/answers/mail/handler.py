@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.mail import IMailHandler
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 
 
 class AnswerTrackerHandler:

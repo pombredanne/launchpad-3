@@ -13,6 +13,17 @@
       tal:content="structure context_menu/subscription/render" />
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
+    <div tal:condition="request/features/malone.advanced-structural-subscriptions.enabled"
+        tal:content="structure context_menu/editsubscriptions/render" />
+    <tal:show-mute condition="view/user_should_see_mute_link">
+      <div tal:attributes="class view/current_user_mute_class">
+        <span tal:replace="structure context_menu/mute_subscription/render"/>
+        <a target="help" class="sprite maybe mute-help"
+            href="/+help/subscription-mute.html"
+          >&nbsp;<span class="invisible-link">Mute help</span></a>
+        <div style="float: left" id="mute-unmute-spinner">Unmuting...</div>
+      </div>
+    </tal:show-mute>
   </div>
   <a id="subscribers-ids-link"
      tal:define="bug context/bug|context"
@@ -31,9 +42,8 @@
         var subscription_link = Y.one('.menu-link-subscription');
         var subscription_link_handler;
         if (subscription_link) {
-            subscription_link_handler = subscription_link.on('click', function(e) {
-                e.preventDefault();
-            });
+            subscription_link_handler = subscription_link.on(
+                'click', function(e) { e.preventDefault(); });
         }
 
         Y.on('domready', function() {

@@ -26,7 +26,6 @@ from twisted.web.http import HTTPClient
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
@@ -816,7 +815,6 @@ class DistroMirrorProber:
             raise ValueError(
                 "Unrecognized content_type: %s" % (content_type,))
 
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         self.txn.begin()
 
         # To me this seems better than passing the no_remote_hosts value

@@ -21,7 +21,6 @@ from lazr.restful.publisher import (
     WebServiceRequestTraversal,
     )
 from lazr.uri import URI
-import pytz
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
@@ -109,6 +108,7 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces.feed import IFeed
 from lp.app.errors import UnexpectedFormData
+from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
 from lp.services.propertycache import cachedproperty
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -868,9 +868,11 @@ class LaunchpadTestRequest(TestRequest, ErrorReportRequest,
         self.needs_datepicker_iframe = False
         self.needs_datetimepicker_iframe = False
         self.needs_json = False
-        # stub out the FeatureController that would normally be provided by
-        # the publication mechanism
-        self.features = NullFeatureController()
+        # Use an existing feature controller if one exists, otherwise use the
+        # null controller.
+        self.features = get_relevant_feature_controller()
+        if self.features is None:
+            self.features = NullFeatureController()
 
     @property
     def uuid(self):

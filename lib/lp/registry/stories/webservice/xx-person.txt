@@ -25,6 +25,7 @@ for teams (as they're defined in the ITeam interface).
     homepage_content: None
     invited_members_collection_link: u'http://.../~salgado/invited_members'
     irc_nicknames_collection_link: u'http://.../~salgado/irc_nicknames'
+    is_merge_pending: False
     is_probationary: True
     is_team: False
     is_ubuntu_coc_signer: False
@@ -50,6 +51,7 @@ for teams (as they're defined in the ITeam interface).
         u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
     private: False
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
+    recipes_collection_link: u'http://.../~salgado/recipes'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
     sshkeys_collection_link: u'http://.../~salgado/sshkeys'
@@ -83,6 +85,7 @@ for teams (as they're defined in the ITeam interface).
     invited_members_collection_link:
         u'http://.../~ubuntu-team/invited_members'
     irc_nicknames_collection_link: u'http://.../~ubuntu-team/irc_nicknames'
+    is_merge_pending: False
     is_probationary: False
     is_team: True
     is_ubuntu_coc_signer: False
@@ -110,6 +113,7 @@ for teams (as they're defined in the ITeam interface).
     private: False
     proposed_members_collection_link:
         u'http://.../~ubuntu-team/proposed_members'
+    recipes_collection_link: u'http://.../~ubuntu-team/recipes'
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
     self_link: u'http://.../~ubuntu-team'

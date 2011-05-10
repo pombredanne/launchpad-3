@@ -12,7 +12,7 @@ __all__ = [
 from operator import methodcaller
 
 from storm.locals import (
-    Select,
+    ClassAlias,
     Store,
     )
 from zope.component import getUtility
@@ -357,29 +357,17 @@ class TranslationMerger:
     def findMergeablePackagings():
         """Find packagings where both product and package have templates."""
         store = IStore(Packaging)
-        upstream_translated = Select(
-            Packaging.id,
-            Packaging.productseries == POTemplate.productseriesID,
-            )
+        PackageTemplate = ClassAlias(POTemplate, 'PackageTemplate')
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         result = store.find(
-            Packaging, Packaging.id.is_in(upstream_translated),
-            Packaging.distroseries == POTemplate.distroseriesID,
+            Packaging,
+            Packaging.productseries == POTemplate.productseriesID,
+            Packaging.distroseries == PackageTemplate.distroseriesID,
             Packaging.distroseries == DistroSeries.id,
             DistroSeries.distribution == ubuntu.id,
-            Packaging.sourcepackagename == POTemplate.sourcepackagenameID,
+            Packaging.sourcepackagename ==
+                PackageTemplate.sourcepackagenameID,
             )
-        # XXX: AaronBentley 2011-02-14 bug=718864: this should be possible
-        # without using a subselect, but a Storm ClassAlias bug prevents us
-        # from doing it this way:
-        # PackageTemplate = ClassAlias(POTemplate)
-        # result = store.find(
-        #     Packaging,
-        #     Packaging.productseries == POTemplate.productseries,
-        #     Packaging.distroseries == PackageTemplate.distroseries,
-        #     Packaging.sourcepackagename ==
-        #         PackageTemplate.sourcepackagename,
-        #     )
         result.config(distinct=True)
         return result
 

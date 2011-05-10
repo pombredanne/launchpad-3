@@ -11,7 +11,7 @@ The example here are a little short - in reality we have a comprehensive
 database to find candidates from, our sample data has no real near-fits,
 see bug 612384 for the overall effort to provide a sensible search facility.
 
-    >>> user_browser.getControl("Summary").value = (
+    >>> user_browser.getControl("Summary", index=0).value = (
     ...     "Thunderbird crashes opening")
     >>> user_browser.getControl("Continue").click()
 
@@ -41,7 +41,7 @@ back...
     # We should use goBack() here but can't because of bug #98372:
     # zope.testbrowser truncates document content after goBack().
     >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
-    >>> user_browser.getControl("Summary").value = (
+    >>> user_browser.getControl("Summary", index=0).value = (
     ...     "Thunderbird crashes when opening large e-mails")
     >>> user_browser.getControl("Continue").click()
 
@@ -49,7 +49,7 @@ back...
 
     >>> user_browser.getControl(name="packagename_option").value = ["choose"]
     >>> user_browser.getControl("In what package").value = "mozilla-firefox"
-    >>> user_browser.getControl("Summary").value = "a new ubuntu bug"
+    >>> user_browser.getControl("Summary", index=0).value = "a new ubuntu bug"
     >>> user_browser.getControl("Further information").value = "test"
 
 The comment field ("Further information") is not optional when
@@ -83,7 +83,7 @@ different in the user agent.
 
 Submitting a distinctive bug title...
 
-    >>> user_browser.getControl("Summary").value = (
+    >>> user_browser.getControl("Summary", index=0).value = (
     ...     "Frobnobulator emits weird noises.")
     >>> user_browser.getControl("Continue").click()
 

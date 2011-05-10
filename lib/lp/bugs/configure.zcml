@@ -58,9 +58,6 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -171,6 +168,10 @@
     <facet
         facet="bugs">
 
+      <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
+        <allow attributes="rank id task"/>
+      </class>
+
         <!-- IBugTask -->
 
         <class
@@ -193,7 +194,12 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    distributionID
+                    distroseriesID
+                    milestoneID
+                    productID
                     productseriesID
+                    sourcepackagenameID
                     task_age
                     bug_subscribers
                     is_complete
@@ -235,7 +241,8 @@
                     conjoined_slave
                     subscribe
                     getConjoinedMaster
-                    findSimilarBugs"/>
+                    findSimilarBugs
+                    getContributorInfo"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -304,24 +311,17 @@
             factory="lp.bugs.browser.bugcomment.BugCommentBreadcrumb"
             permission="zope.Public"/>
 
-        <!-- NullBugTask -->
-
-        <class
-            class="lp.bugs.model.bugtask.NullBugTask">
-            <require
-                permission="launchpad.View"
-                interface="lp.bugs.interfaces.bugtask.IBugTask"/>
-            <require
-                permission="launchpad.Edit"
-                set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
-        </class>
-
         <!-- BugTaskSearchParams -->
         <class
             class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
             <allow
                 attributes="
                     setTarget
+                    "/>
+            <require
+                permission="zope.Public"
+                set_attributes="
+                    resolved_upstream
                     "/>
         </class>
 
@@ -637,11 +637,24 @@
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsPublic"/>
       <require
           permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+
+    <!-- BugSubscriptionFilterMute -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute" />
+    </class>
+
 
     <!-- BugSubscriptionInfo -->
 
@@ -666,6 +679,38 @@
               indirect_subscribers
               structural_subscriptions
               " />
+    </class>
+
+    <!-- PersonSubscriptionInfo -->
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptions">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptions"/>
     </class>
 
     <facet
@@ -693,7 +738,6 @@
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
-                    getNullBugTask
                     is_complete
                     official_tags
                     who_made_private
@@ -773,7 +817,9 @@
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -794,6 +840,7 @@
                     linkMessage
                     markAsDuplicate
                     markUserAffected
+                    mute
                     newMessage
                     removeWatch
                     setPrivate
@@ -803,6 +850,7 @@
                     unlinkBranch
                     unlinkCVE
                     unlinkHWSubmission
+                    unmute
                     unsubscribe
                     unsubscribeFromDupes
                     updateHeat"
@@ -867,7 +915,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible index"/>
+            set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
     <!-- BugMessageSet -->
@@ -901,6 +949,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status
@@ -924,9 +973,6 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
@@ -1060,6 +1106,10 @@
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+        <!-- BugNotificationRecipients provides the following
+             attributes/methods in addition. -->
+        <allow
+            attributes="subscription_filters addFilter"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
@@ -1096,14 +1146,6 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
-
-  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
-    <allow attributes="
-        bug
-        getReason
-        mail_header
-        recipient"/>
-  </class>
 
     <!-- StructuralSubscription -->
 

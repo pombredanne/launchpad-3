@@ -20,16 +20,15 @@ import subprocess
 import tarfile
 import warnings
 
-import gettextpo
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
-import canonical
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
+from lp.services.utils import compress_hash
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -201,43 +200,20 @@ def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     return output
 
 
-def emailPeople(person):
-    """Return a set of people to who receive email for this Person.
-
-    If <person> has a preferred email, the set will contain only that
-    person.  If <person> doesn't have a preferred email but is a team,
-    the set will contain the preferred email address of each member of
-    <person>, including indirect members.
-
-    Finally, if <person> doesn't have a preferred email and is not a team,
-    the set will be empty.
-    """
-    pending_people = [person]
-    people = set()
-    seen = set()
-    while len(pending_people) > 0:
-        person = pending_people.pop()
-        if person in seen:
-            continue
-        seen.add(person)
-        if person.preferredemail is not None:
-            people.add(person)
-        elif person.isTeam():
-            pending_people.extend(person.activemembers)
-    return people
-
-
 def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
-    In general, it is better to use emailPeople instead.
+    In general, it is better to use lp.registry.model.person.get_recipients
+    instead.
     """
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
+    # Circular imports force this import.
+    from lp.registry.model.person import get_recipients
     return set(
         str(removeSecurityProxy(mail_person.preferredemail).email)
-        for mail_person in emailPeople(person))
+        for mail_person in get_recipients(person))
 
 
 replacements = {0: {'.': ' |dot| ',
@@ -442,9 +418,7 @@ def get_filename_from_message_id(message_id):
 
     It generates a file name that's not easily guessable.
     """
-    return '%s.msg' % (
-            canonical.base.base(
-                long(hashlib.sha1(message_id).hexdigest(), 16), 62))
+    return '%s.msg' % compress_hash(hashlib.sha1(message_id))
 
 
 def intOrZero(value):
@@ -499,33 +473,13 @@ def get_email_template(filename, app=None):
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
     if app is None:
-        base = os.path.dirname(canonical.launchpad.__file__)
+        base = os.path.dirname(__file__)
         fullpath = os.path.join(base, 'emailtemplates', filename)
     else:
         import lp
         base = os.path.dirname(lp.__file__)
         fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
-
-
-def is_ascii_only(string):
-    """Ensure that the string contains only ASCII characters.
-
-        >>> is_ascii_only(u'ascii only')
-        True
-        >>> is_ascii_only('ascii only')
-        True
-        >>> is_ascii_only('\xf4')
-        False
-        >>> is_ascii_only(u'\xf4')
-        False
-    """
-    try:
-        string.encode('ascii')
-    except UnicodeError:
-        return False
-    else:
-        return True
 
 
 def truncate_text(text, max_length):

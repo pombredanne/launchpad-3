@@ -1,4 +1,5 @@
-== Upload processing queue with translations ==
+Upload processing queue with translations
+=========================================
 
 This test covers the use case when a package includes translations and is
 uploaded into the system.
@@ -157,16 +158,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Abort the transaction so we can check the same upload in a different
   # pocket.
@@ -207,16 +208,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -240,16 +241,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.
@@ -277,7 +278,8 @@ This time, we don't get any entry in the import queue.
   >>> transaction.abort()
 
 
-== Translations from PPA build ==
+Translations from PPA build
+---------------------------
 
 For now we simply ignore translations for archives other than the
 Distribution archives (i.e. PPAs).
@@ -305,7 +307,8 @@ Distribution archives (i.e. PPAs).
   >>> transaction.abort()
 
 
-== Translations from a rebuild ==
+Translations from a rebuild
+---------------------------
 
 Translations coming from rebuilt packages are also ignored.
 
@@ -331,7 +334,8 @@ Translations coming from rebuilt packages are also ignored.
   0
 
 
-== Translations importer: publish_ROSETTA_TRANSLATIONS ==
+Translations importer: publishRosettaTranslations
+-------------------------------------------------
 
 We create mock objects for SourcePackageRelease, PackageUpload and
 PackageUploadCustom: these will emulate everything we need to document
@@ -404,7 +408,7 @@ For translations from auto-synced packages we consider the importer to be
   True
   >>> translations_upload = MockPackageUploadCustom()
   >>> translations_upload.packageupload = sync_package_upload
-  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  >>> translations_upload.publishRosettaTranslations()
   Imported by: katie
 
 Non-auto-sync uploads by 'katie' still indicate 'katie' as the uploader.
@@ -414,7 +418,7 @@ Non-auto-sync uploads by 'katie' still indicate 'katie' as the uploader.
   >>> non_sync_package_upload.isAutoSyncUpload()
   False
   >>> translations_upload.packageupload = non_sync_package_upload
-  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  >>> translations_upload.publishRosettaTranslations()
   Imported by: katie
 
 Uploads by anyone else are treated as if importer is the packager.
@@ -427,11 +431,12 @@ Uploads by anyone else are treated as if importer is the packager.
   >>> carlos_package_upload.isAutoSyncUpload()
   False
   >>> translations_upload.packageupload = carlos_package_upload
-  >>> translations_upload.publish_ROSETTA_TRANSLATIONS()
+  >>> translations_upload.publishRosettaTranslations()
   Imported by: carlos
 
 
-=== Translations tarball ===
+Translations tarball
+~~~~~~~~~~~~~~~~~~~~
 
 The LibraryFileAlias returned by getLatestTranslationsUploads on the
 source package points to a tarball with translations files for the

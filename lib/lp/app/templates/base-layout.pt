@@ -4,8 +4,6 @@
   define-macro="master"
   tal:define="
     revno modules/lp.app.versioninfo/revno | string:unknown;
-    release modules/lp.app.versioninfo/release;
-    version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -129,13 +127,15 @@
 
             <tal:maintenance
               replace="structure context/@@+maintenancemessage" />
-            <tal:notifications
-              define="notifications request/notifications"
-              condition="notifications">
-              <metal:notifications
-                use-macro="context/@@+base-layout-macros/notifications"/>
-            </tal:notifications>
-              <metal:main define-slot="main" />
+            <div id="request-notifications">
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications">
+                <metal:notifications
+                  use-macro="context/@@+base-layout-macros/notifications"/>
+              </tal:notifications>
+            </div>
+            <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
@@ -182,8 +182,8 @@
 
     At least ${log}
 
-    Features: ${request/features/usedFlags} 
-    in scopes ${request/features/usedScopes} 
+    Features: ${request/features/usedFlags}
+    in scopes ${request/features/usedScopes}
 
     r${revno}
   --&gt;" />
@@ -193,7 +193,8 @@
     tal:condition="request/features/visible_render_time"
     define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
-  var render_time = "${render_time} &amp;bull;";
+  start_ajax_logging();
+  var render_time = "${render_time}";
   LPS.use("node", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");

@@ -128,6 +128,16 @@ that aborted transactions are still in the status "Active".
     Transaction completed, status: Active
     >>> clear_request_started()
 
+While you're not meant to call clear_request_started() without having
+a request in progress, some exception handlers do. We raise a warning and let
+it pass.
+
+    >>> import warnings
+    >>> with warnings.catch_warnings(record=True) as no_request_warning:
+    ...     clear_request_started()
+    >>> print no_request_warning[0].message
+    clear_request_started() called outside of a request
+
 
 Statement Timeout
 =================

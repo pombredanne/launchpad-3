@@ -225,10 +225,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.breezy = self.ubuntu.newSeries(
             name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
-            '5.10', bat, bat.owner)
+            '5.10', None, bat.owner)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(self.breezy)
+        ids = InitialiseDistroSeries(bat, self.breezy)
         ids.initialise()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
@@ -351,7 +351,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         bar = archive.getPublishedSources(
             name='bar', version="1.0-1", exact_match=True)
         changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
-            bar[0].sourcepackagerelease)
+            bar.first().sourcepackagerelease)
         changes_file = changes_lfa.read()
         self.assertTrue(
             "Format: " in changes_file, "Does not look like a changes file")
@@ -778,11 +778,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
         breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.layer.txn.commit()
 
-        # Copy 'bar-1.0-1' source from breezy to breezy-autotest.
+        # Copy 'bar-1.0-1' source from breezy to breezy-autotest and
+        # create a build there (this would never happen in reality, it
+        # just suits the purposes of this test).
         bar_copied_source = bar_source_pub.copyTo(
             breezy_autotest, PackagePublishingPocket.RELEASE,
             self.ubuntu.main_archive)
-        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+        bar_copied_build = bar_copied_source.sourcepackagerelease.createBuild(
+            breezy_autotest_i386, PackagePublishingPocket.RELEASE,
+            self.ubuntu.main_archive)
 
         # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
         # in breezy-autotest context.
@@ -823,8 +827,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
-        [bar_source_pub] = self.ubuntu.main_archive.getPublishedSources(
-            name='bar', version='1.0-2', exact_match=True)
+        bar_source_pub = self.ubuntu.main_archive.getPublishedSources(
+            name='bar', version='1.0-2', exact_match=True).one()
         [bar_original_build] = bar_source_pub.getBuilds()
 
         self.options.context = 'buildd'
@@ -1096,8 +1100,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Single source uploads also get their corrsponding builds created
         # at upload-time. 'foocomm' only builds in 'i386', thus only one
         # build gets created.
-        [foocomm_source] = partner_archive.getPublishedSources(
-            name='foocomm', version='1.0-2')
+        foocomm_source = partner_archive.getPublishedSources(
+            name='foocomm', version='1.0-2').one()
         [build] = foocomm_source.sourcepackagerelease.builds
         self.assertEqual(
             build.title,
@@ -1168,7 +1172,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             expect_msg in raw_msg,
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
-
 
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
@@ -1689,6 +1692,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig-comp2.tar.bz2',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp3.tar.xz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig.tar.gz',
               SourcePackageFileType.ORIG_TARBALL)])
 
@@ -1864,7 +1869,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             CannotGetBuild,
             BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
         self.assertIn(
-            "Unable to find package build job with id 42. Skipping.", str(e))
+            "Unable to find PACKAGEBUILD with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
@@ -2143,7 +2148,8 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            60, parse_build_upload_leaf_name("20100812-42-PACKAGEBUILD-60"))
+            ('PACKAGEBUILD', 60),
+            parse_build_upload_leaf_name("20100812-PACKAGEBUILD-60"))
 
     def test_invalid_jobid(self):
         self.assertRaises(

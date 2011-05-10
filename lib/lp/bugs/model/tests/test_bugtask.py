@@ -8,11 +8,7 @@ from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
-from storm.store import ResultSet
-from testtools.matchers import (
-    Equals,
-    StartsWith,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.interface import providedBy
 
@@ -28,7 +24,6 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -41,7 +36,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
@@ -64,14 +58,12 @@ from lp.testing import (
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import (
-    is_security_proxied_or_harmless,
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import HasQueryCount
 
 
@@ -1019,6 +1011,27 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual([task2], list(result))
 
 
+class BugTaskSetSearchTest(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_explicit_blueprint_specified(self):
+        # If the linked_blueprints is an integer id, then only bugtasks for
+        # bugs that are linked to that blueprint are returned.
+        bug1 = self.factory.makeBug()
+        blueprint1 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint1.owner):
+            blueprint1.linkBug(bug1)
+        bug2 = self.factory.makeBug()
+        blueprint2 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint2.owner):
+            blueprint2.linkBug(bug2)
+        self.factory.makeBug()
+        params = BugTaskSearchParams(user=None, linked_blueprints=blueprint1.id)
+        tasks = set(getUtility(IBugTaskSet).search(params))
+        self.assertThat(set(bug1.bugtasks), Equals(tasks))
+
+
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
     """Tests for searching bugs filtering on related bug tasks.
 
@@ -1342,102 +1355,32 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
-class TestGetStructuralSubscribers(TestCaseWithFactory):
+class TestBugTaskContributor(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_with_bug(self):
+    def test_non_contributor(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        # Create a person who has not contributed
+        person = self.factory.makePerson()
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertFalse(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+    def test_contributor(self):
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        return product, bug
-
-    def getStructuralSubscribers(self, bugtasks, *args, **kwargs):
-        # Call IBugTaskSet.getStructuralSubscribers() and check that the
-        # result is security proxied.
-        result = getUtility(IBugTaskSet).getStructuralSubscribers(
-            bugtasks, *args, **kwargs)
-        self.assertTrue(is_security_proxied_or_harmless(result))
-        return result
-
-    def test_getStructuralSubscribers_no_subscribers(self):
-        # If there are no subscribers for any of the bug's targets then no
-        # subscribers will be returned by getStructuralSubscribers().
-        product, bug = self.make_product_with_bug()
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual([], list(subscribers))
-
-    def test_getStructuralSubscribers_single_target(self):
-        # Subscribers for any of the bug's targets are returned.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
+        bug = self.factory.makeBug(product=product, owner=owner)
+        bug1 = self.factory.makeBug(product=product, owner=owner)
+        # Create a person who has contributed
+        person = self.factory.makePerson()
+        login('foo.bar@canonical.com')
+        bug1.default_bugtask.transitionToAssignee(person)
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertTrue(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
         self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(bug.bugtasks)))
-
-    def test_getStructuralSubscribers_multiple_targets(self):
-        # Subscribers for any of the bug's targets are returned.
-        actor = self.factory.makePerson()
-        login_person(actor)
-
-        subscriber1 = self.factory.makePerson()
-        subscriber2 = self.factory.makePerson()
-
-        product1 = self.factory.makeProduct(owner=actor)
-        product1.addBugSubscription(subscriber1, subscriber1)
-        product2 = self.factory.makeProduct(owner=actor)
-        product2.addBugSubscription(subscriber2, subscriber2)
-
-        bug = self.factory.makeBug(product=product1)
-        bug.addTask(actor, product2)
-
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
-
-    def test_getStructuralSubscribers_recipients(self):
-        # If provided, getStructuralSubscribers() calls the appropriate
-        # methods on a BugNotificationRecipients object.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
-        recipients = BugNotificationRecipients()
-        subscribers = self.getStructuralSubscribers(
-            bug.bugtasks, recipients=recipients)
-        # The return value is a list only when populating recipients.
-        self.assertIsInstance(subscribers, list)
-        self.assertEqual([subscriber], recipients.getRecipients())
-        reason, header = recipients.getReason(subscriber)
-        self.assertThat(
-            reason, StartsWith(
-                u"You received this bug notification because "
-                u"you are subscribed to "))
-        self.assertThat(header, StartsWith(u"Subscriber "))
-
-    def test_getStructuralSubscribers_level(self):
-        # getStructuralSubscribers() respects the given level.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        subscription = product.addBugSubscription(subscriber, subscriber)
-        filter = subscription.newBugFilter()
-        filter.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.METADATA)))
-        filter.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])

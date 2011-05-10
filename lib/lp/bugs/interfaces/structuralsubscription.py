@@ -14,10 +14,6 @@ __all__ = [
     'IStructuralSubscriptionTargetHelper',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -26,6 +22,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -41,7 +38,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Choice,
     Datetime,
     Int,
     )
@@ -90,7 +86,7 @@ class IStructuralSubscriptionPublic(Interface):
     bug_filters = exported(CollectionField(
         title=_('List of bug filters that narrow this subscription.'),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface)))
+        value_type=Reference(schema=Interface))) # IBugSubscriptionFilter
 
 
 class IStructuralSubscriptionRestricted(Interface):
@@ -120,6 +116,7 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscriptions():
         """Return all the subscriptions with the specified levels.
 
@@ -141,16 +138,17 @@ class IStructuralSubscriptionTargetRead(Interface):
     @operation_parameters(person=Reference(schema=IPerson))
     @operation_returns_entry(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
     target_type_display = Attribute("The type of the target, for display.")
 
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('beta')
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
-
-    def getSubscriptionsForBugTask(bug, level):
-        """Return subscriptions for a given `IBugTask` at `level`."""
 
 
 class IStructuralSubscriptionTargetWrite(Interface):
@@ -163,7 +161,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
         """Add a subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
-        for the target, without filters.
+        for the target.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
@@ -180,12 +178,13 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
+    @operation_for_version('beta')
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
-        This method is used to create a new `IStructuralSubscription`
-        for the target.  This initially is without filters, which will
-        mean that all notifications will be sent.
+        This method is used to create a new `IStructuralSubscription` for the
+        target.  This initially has a single filter which will allow all
+        notifications will be sent.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
@@ -197,11 +196,34 @@ class IStructuralSubscriptionTargetWrite(Interface):
         subscriber=Reference(
             schema=IPerson,
             title=_(
+                'Person to subscribe. If omitted, the requesting user will be'
+                ' subscribed.'),
+            required=False))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_factory_operation(Interface, []) # Really IBugSubscriptionFilter
+    @operation_for_version('beta')
+    def addBugSubscriptionFilter(subscriber, subscribed_by):
+        """Add a bug subscription filter for this structure.
+
+        This method is used to create a new `IBugSubscriptionFilter` for the
+        target.  It will initially allow all notifications to be sent.
+
+        :subscriber: The IPerson who will be subscribed. If omitted,
+            subscribed_by will be used.
+        :subscribed_by: The IPerson creating the subscription.
+        :return: The new bug subscription filter.
+        """
+
+    @operation_parameters(
+        subscriber=Reference(
+            schema=IPerson,
+            title=_(
                 'Person to unsubscribe. If omitted, the requesting user will '
                 'be unsubscribed.'),
             required=False))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 

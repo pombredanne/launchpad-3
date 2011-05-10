@@ -41,6 +41,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
@@ -268,7 +269,7 @@ class BuildSetStatus(EnumeratedType):
                     description="There are some builds currently building.")
 
 
-class IBinaryPackageBuildSet(Interface):
+class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
     def new(distro_arch_series, source_package_release, processor,
@@ -288,13 +289,6 @@ class IBinaryPackageBuildSet(Interface):
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
-
-    def getByBuildID(id):
-        """Return the exact build specified.
-
-        id is the numeric ID of the build record in the database.
-        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
-        """
 
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSeries
@@ -352,6 +346,8 @@ class IBinaryPackageBuildSet(Interface):
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):
         """Return all builds related with the given list of source releases.
+
+        Eager loads the PackageBuild and BuildFarmJob records for the builds.
 
         :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
         :param buildstate: option build state filter.

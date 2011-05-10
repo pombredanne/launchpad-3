@@ -12,8 +12,8 @@ from testtools.matchers import Equals
 from zope.component import queryAdapter
 from zope.security.checker import getChecker
 
-from canonical.launchpad.webapp.interfaces import IAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.security import IAuthorization
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import (
     BugSubscriberSet,
@@ -468,11 +468,11 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         # queries. However, there are typically few tasks so the trade for
         # simplicity of implementation is acceptable. Only the simplest case
         # is tested here.
-        with self.exactly_x_queries(2):
+        with self.exactly_x_queries(1):
             self.info.all_pillar_owners_without_bug_supervisors
 
     def test_also_notified_subscribers(self):
-        with self.exactly_x_queries(6):
+        with self.exactly_x_queries(5):
             self.info.also_notified_subscribers
 
     def test_also_notified_subscribers_later(self):
@@ -486,7 +486,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             self.info.also_notified_subscribers
 
     def test_indirect_subscribers(self):
-        with self.exactly_x_queries(7):
+        with self.exactly_x_queries(6):
             self.info.indirect_subscribers
 
     def test_indirect_subscribers_later(self):

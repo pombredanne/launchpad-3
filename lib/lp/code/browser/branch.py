@@ -83,6 +83,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -106,12 +107,14 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import NotFoundError
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -249,11 +252,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByBuildFarmJob(buildfarmjob_id)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):
@@ -339,10 +342,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
-        if self.context.linked_bugs:
-            text = 'Link to another bug report'
-        else:
-            text = 'Link to a bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
@@ -361,7 +361,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'View the branch content'
+        text = 'Browse the code'
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
@@ -409,12 +409,11 @@ class BranchMirrorMixin:
         if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
-        # XXX: Tim Penhey, 2008-05-30
+        # XXX: Tim Penhey, 2008-05-30, bug 235916
         # Instead of a configuration hack we should support the users
         # specifying whether or not they want the mirror location
         # hidden or not.  Given that this is a database patch,
         # it isn't going to happen today.
-        # See bug 235916
         hosts = config.codehosting.private_mirror_hosts.split(',')
         private_mirror_hosts = [name.strip() for name in hosts]
 
@@ -548,7 +547,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:
@@ -602,20 +601,20 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return a list of DecoratedBugs linked to the branch."""
-        bugs = self.context.linked_bugs
+    def linked_bugtasks(self):
+        """Return a list of bugtasks linked to the branch."""
         if self.context.is_series_branch:
-            bugs = [
-                bug for bug in bugs
-                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
-        return bugs
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
+        else:
+            status_filter = None
+        return list(self.context.getLinkedBugTasks(
+            self.user, status_filter))
 
     @cachedproperty
     def revision_info(self):
         collection = getUtility(IAllBranches).visibleByUser(self.user)
         return collection.getExtendedRevisionDetails(
-            self.context.latest_revisions)
+            self.user, self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
@@ -670,17 +669,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return list(self.context.getProductSeriesPushingTranslations())
 
     @property
-    def status_config(self):
+    def status_widget(self):
         """The config to configure the ChoiceSource JS widget."""
-        return simplejson.dumps({
-            'status_widget_items': vocabulary_to_choice_edit_items(
-                BranchLifecycleStatus,
-                css_class_prefix='branchstatus'),
-            'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission(
-                'launchpad.Edit', self.context),
-            'branch_path': '/' + self.context.unique_name,
-            })
+        return EnumChoiceWidget(
+            self.context.branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
 
 
 class BranchInProductView(BranchView):
@@ -1119,7 +1112,12 @@ class BranchReviewerEditView(BranchEditFormView):
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
-    schema = IBranch
+    class schema(Interface):
+        use_template(
+            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
+        branch_type = copy_field(
+            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+
     for_input = True
     field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 

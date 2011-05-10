@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -35,7 +35,10 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
+    ISlaveStore,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
@@ -178,7 +181,7 @@ class TranslationGroup(SQLBase):
             Language.id == Translator.languageID,
             Person.id == Translator.translatorID)
         translator_data = translator_data.order_by(Language.englishname)
-        mapper = lambda row:row[slice(0,3)]
+        mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
     def fetchProjectsForDisplay(self):
@@ -281,10 +284,17 @@ class TranslationGroupSet:
 
     def __getitem__(self, name):
         """See ITranslationGroupSet."""
+        return self.getByName(name)
+
+    def getByName(self, name):
+        """See ITranslationGroupSet."""
         try:
             return TranslationGroup.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
+
+    def _get(self):
+        return IStore(TranslationGroup).find(TranslationGroup)
 
     def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""

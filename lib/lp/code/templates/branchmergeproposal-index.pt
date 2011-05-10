@@ -203,7 +203,7 @@
           'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
 
     Y.on('load', function() {
-        var logged_in = LP.client.links['me'] !== undefined;
+        var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();

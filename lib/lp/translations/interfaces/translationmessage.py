@@ -123,7 +123,7 @@ class ITranslationMessage(Interface):
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
-        readonly=True, required=True, schema=IPOTMsgSet)
+        readonly=False, required=True, schema=IPOTMsgSet)
 
     date_created = Datetime(
         title=_("The date we saw this translation first"),
@@ -258,6 +258,13 @@ class ITranslationMessage(Interface):
         """Remove this object.
 
         It must not be referenced by any other object.
+        """
+
+    def clone(potmsgset):
+        """Create a copy of this message associated with a different MsgSet.
+
+        potemplate of the clone is always None.  Aside from this, all values
+        should be the same.
         """
 
     def approve(pofile, reviewer, share_with_other_side=False,

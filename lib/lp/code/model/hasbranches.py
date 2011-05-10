@@ -26,7 +26,7 @@ class HasBranchesMixin:
     """A mixin implementation for `IHasBranches`."""
 
     def getBranches(self, status=None, visible_by_user=None,
-                    modified_since=None):
+                    modified_since=None, eager_load=False):
         """See `IHasBranches`."""
         if status is None:
             status = DEFAULT_BRANCH_STATUS_IN_LISTING
@@ -35,7 +35,7 @@ class HasBranchesMixin:
         collection = collection.withLifecycleStatus(*status)
         if modified_since is not None:
             collection = collection.modifiedSince(modified_since)
-        return collection.getBranches()
+        return collection.getBranches(eager_load=eager_load)
 
 
 class HasMergeProposalsMixin:

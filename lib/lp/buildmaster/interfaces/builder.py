@@ -28,7 +28,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_entry,
     )
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -43,8 +42,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.url import builder_url_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     Description,

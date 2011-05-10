@@ -43,10 +43,10 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.model.faq import (
     FAQ,
@@ -343,13 +343,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IHasBugs`."""
         if not self.products:
             return []
         product_ids = [product.id for product in self.products]
         return get_bug_tags_open_count(
-            BugTask.productID.is_in(product_ids), user)
+            BugTask.productID.is_in(product_ids), user,
+            wanted_tags=wanted_tags)
 
     def _getBugTaskContextClause(self):
         """See `HasBugsBase`."""

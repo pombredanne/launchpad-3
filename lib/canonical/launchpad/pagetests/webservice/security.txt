@@ -21,9 +21,8 @@ site.
 But the 'no-priv' user can't see bug number 14, which is private.
 
   >>> print user_webservice.get("/bugs/14")
-  HTTP/1.1 401 Unauthorized
+  HTTP/1.1 404 Not Found
   ...
-  Bug 14 is private
 
   >>> nopriv_output = user_webservice.get(
   ...     "/bugs?ws.size=100").jsonBody()
@@ -37,9 +36,8 @@ private data, but is using an OAuth key that restricts the client to
 operating on public data.
 
   >>> print public_webservice.get("/bugs/14")
-  HTTP/1.1 401 Unauthorized
+  HTTP/1.1 404 Not Found
   ...
-  Bug 14 is private
 
   >>> public_output = public_webservice.get(
   ...     "/bugs?ws.size=50").jsonBody()

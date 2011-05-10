@@ -163,7 +163,7 @@ class BranchListingFeed(BranchFeedBase):
         from lp.code.model.branch import Branch
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        branches = collection.getBranches()
+        branches = collection.getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified),
             Asc(Branch.target_suffix),

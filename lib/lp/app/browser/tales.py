@@ -75,8 +75,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 SEPARATOR = ' : '
 
 
-def format_link(obj, view_name=None):
+def format_link(obj, view_name=None, empty_value='None'):
     """Return the equivalent of obj/fmt:link as a string."""
+    if obj is None:
+        return empty_value
     adapter = queryAdapter(obj, IPathAdapter, 'fmt')
     link = getattr(adapter, 'link', None)
     if link is None:
@@ -473,6 +475,7 @@ class NoneFormatter:
         'text-to-html',
         'time',
         'url',
+        'link',
         ])
 
     def __init__(self, context):
@@ -480,15 +483,28 @@ class NoneFormatter:
 
     def traverse(self, name, furtherPath):
         if name == 'shorten':
-            if len(furtherPath) == 0:
+            if not len(furtherPath):
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
             # Remove the maxlength from the path as it is a parameter
             # and not another traversal command.
             furtherPath.pop()
             return ''
-        elif name in self.allowed_names:
-            return ''
+        # We need to check to see if the name has been augmented with optional
+        # evaluation parameters, delimited by ":". These parameters are:
+        #  param1 = rootsite (used with link and url)
+        #  param2 = default value (in case of context being None)
+        # We are interested in the default value (param2).
+        result = ''
+        for nm in self.allowed_names:
+            if name.startswith(nm+":"):
+                name_parts = name.split(":")
+                name = name_parts[0]
+                if len(name_parts) > 2:
+                    result = name_parts[2]
+                break
+        if name in self.allowed_names:
+            return result
         else:
             raise TraversalError(name)
 
@@ -548,25 +564,40 @@ class ObjectFormatterAPI:
         return url
 
     def traverse(self, name, furtherPath):
+        """Traverse the specified path, processing any optional parameters.
+
+        Up to 2 parameters are currently supported, and the path name will be
+        of the form:
+            name:param1:param2
+        where
+            param1 = rootsite (only used for link and url paths).
+            param2 = default (used when self.context is None). The context
+                     is not None here so this parameter is ignored.
+        """
         if name.startswith('link:') or name.startswith('url:'):
-            rootsite = name.split(':')[1]
-            extra_path = None
-            if len(furtherPath) > 0:
-                extra_path = '/'.join(reversed(furtherPath))
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            if name.startswith('link:'):
-                if rootsite is None:
-                    return self.link(extra_path)
+            name_parts = name.split(':')
+            name = name_parts[0]
+            rootsite = name_parts[1]
+            if rootsite != '':
+                extra_path = None
+                if len(furtherPath) > 0:
+                    extra_path = '/'.join(reversed(furtherPath))
+                # Remove remaining entries in furtherPath so that traversal
+                # stops here.
+                del furtherPath[:]
+                if name == 'link':
+                    if rootsite is None:
+                        return self.link(extra_path)
+                    else:
+                        return self.link(extra_path, rootsite=rootsite)
                 else:
-                    return self.link(extra_path, rootsite=rootsite)
-            else:
-                if rootsite is None:
-                    self.url(extra_path)
-                else:
-                    return self.url(extra_path, rootsite=rootsite)
-        elif name in self.traversable_names:
+                    if rootsite is None:
+                        self.url(extra_path)
+                    else:
+                        return self.url(extra_path, rootsite=rootsite)
+        if '::' in name:
+            name = name.split(':')[0]
+        if name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
@@ -1281,6 +1312,31 @@ class CustomizableFormatter(ObjectFormatterAPI):
                 values[key] = cgi.escape(value)
         return self._link_summary_template % values
 
+    def _title_values(self):
+        """Return a dict of values to use for template substitution.
+
+        These values should not be escaped, as this will be performed later.
+        For this reason, only string values should be supplied.
+        """
+        return {}
+
+    def _make_title(self):
+        """Create a title from _title_template and _title_values().
+
+        This title is for use in fmt:link, which is meant to be used in
+        contexts like lists of items.
+        """
+        title_template = getattr(self, '_title_template', None)
+        if title_template is None:
+            return None
+        values = {}
+        for key, value in self._title_values().iteritems():
+            if value is None:
+                values[key] = ''
+            else:
+                values[key] = cgi.escape(value)
+        return title_template % values
+
     def sprite_css(self):
         """Retrieve the icon for the _context, if any.
 
@@ -1303,12 +1359,18 @@ class CustomizableFormatter(ObjectFormatterAPI):
             css = ' class="' + sprite + '"'
 
         summary = self._make_link_summary()
+        title = self._make_title()
+        if title is None:
+            title = ''
+        else:
+            title = ' title="%s"' % title
+
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
-            return '<a href="%s"%s>%s</a>' % (url, css, summary)
+            return '<a href="%s"%s%s>%s</a>' % (url, css, title, summary)
         else:
             return summary
 
@@ -1531,6 +1593,12 @@ class BugFormatterAPI(CustomizableFormatter):
 
 class BugTaskFormatterAPI(CustomizableFormatter):
     """Adapter for IBugTask objects to a formatted string."""
+
+    _title_template = '%(importance)s - %(status)s'
+
+    def _title_values(self):
+        return {'importance': self._context.importance.title,
+                'status': self._context.status.title}
 
     def _make_link_summary(self):
         return BugFormatterAPI(self._context.bug)._make_link_summary()
@@ -2556,3 +2624,34 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
             return '<a href="%s">%s</a> (%s)' % (
                 cgi.escape(diff.diff_content.http_url),
                 cgi.escape(diff.title), file_size)
+
+
+class CSSFormatter:
+    """A tales path adapter used for CSS rules.
+
+    Using an expression like this:
+        value/css:select/visible/unseen
+    You will get "visible" if value evaluates to true, and "unseen" if the
+    value evaluates to false.
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def select(self, furtherPath):
+        if len(furtherPath) < 2:
+            raise TraversalError('select needs two subsequent path elements.')
+        true_value = furtherPath.pop()
+        false_value = furtherPath.pop()
+        if self.context:
+            return true_value
+        else:
+            return false_value
+
+    def traverse(self, name, furtherPath):
+        try:
+            return getattr(self, name)(furtherPath)
+        except AttributeError:
+            raise TraversalError(name)

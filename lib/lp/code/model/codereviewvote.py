@@ -81,6 +81,8 @@ class CodeReviewVoteReference(SQLBase):
 
     def claimReview(self, claimant):
         """See `ICodeReviewVote`"""
+        if self.reviewer == claimant:
+            return
         self.validateClaimReview(claimant)
         self.reviewer = claimant
 

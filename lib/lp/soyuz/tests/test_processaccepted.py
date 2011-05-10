@@ -6,6 +6,7 @@
 from cStringIO import StringIO
 
 from debian.deb822 import Changes
+from testtools.matchers import LessThan
 
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
@@ -15,6 +16,7 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
+    PackageUploadStatus,
     )
 from lp.soyuz.scripts.processaccepted import (
     get_bugs_from_changes_file,
@@ -125,11 +127,47 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 0)
 
         # Check the copy archive source was accepted.
-        [published_copy] = copy_archive.getPublishedSources(
-            name=self.test_package_name)
+        published_copy = copy_archive.getPublishedSources(
+            name=self.test_package_name).one()
         self.assertEqual(
             published_copy.status, PackagePublishingStatus.PENDING)
         self.assertEqual(copy_source, published_copy.sourcepackagerelease)
+
+    def test_commits_after_each_item(self):
+        # Test that the script commits after each item, not just at the end.
+        uploads = [
+            self.createWaitingAcceptancePackage(
+                distroseries=
+                    self.factory.makeDistroSeries(distribution=self.distro),
+                sourcename='source%d' % i)
+            for i in range(3)]
+
+        class UploadCheckingSynchronizer:
+
+            commit_count = 0
+
+            def beforeCompletion(inner_self, txn):
+                pass
+
+            def afterCompletion(inner_self, txn):
+                if txn.status != 'Committed':
+                    return
+                inner_self.commit_count += 1
+                done_count = len([
+                    upload for upload in uploads
+                    if upload.package_upload.status ==
+                        PackageUploadStatus.DONE])
+                self.assertEqual(
+                    min(len(uploads), inner_self.commit_count),
+                    done_count)
+
+        script = self.getScript([])
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
+        synch = UploadCheckingSynchronizer()
+        script.txn.registerSynch(synch)
+        script.main()
+        self.assertThat(len(uploads), LessThan(synch.commit_count))
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):

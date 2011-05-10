@@ -535,15 +535,6 @@ link to try the search again
     >>> print search_view.url
     http://launchpad.dev/+search?field.text=gnomebaker
 
-An oops was reported by the view so that the GoogleResponseError can be
-tracked.
-
-    >>> oops = search_view.request.oops
-    >>> oops.type
-    'GoogleResponseError'
-    >>> oops.value
-    'The response was incomplete, no xml.'
-
 
 SearchFormView and SearchFormPrimaryView
 ----------------------------------------
@@ -615,8 +606,7 @@ matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
     >>> from lp.app.browser.root import WindowedList
-    >>> from canonical.launchpad.utilities.searchservice import (
-    ...     GoogleSearchService)
+    >>> from lp.services.googlesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()
     >>> page_matches = google_search.search(terms='bug', start=20)

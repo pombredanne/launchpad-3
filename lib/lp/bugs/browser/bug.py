@@ -199,9 +199,10 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = [
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
-        'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-        'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+        'adddistro', 'subscription', 'addsubscriber', 'editsubscriptions',
+        'addcomment', 'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'createquestion', 'mute_subscription', 'removequestion',
+        'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -248,8 +249,12 @@ class BugContextMenu(ContextMenu):
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
             if self._use_advanced_features:
-                text = 'Edit subscription'
-                icon = 'edit'
+                if self.context.bug.isMuted(user):
+                    text = 'Subscribe'
+                    icon = 'add'
+                else:
+                    text = 'Edit subscription'
+                    icon = 'edit'
             else:
                 text = 'Unsubscribe'
                 icon = 'remove'
@@ -267,6 +272,28 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def editsubscriptions(self):
+        """Return the 'Edit subscriptions' Link."""
+        text = 'Edit bug mail'
+        return Link(
+            '+subscriptions', text, icon='edit', summary=(
+                'View and change your subscriptions to this bug'))
+
+    def mute_subscription(self):
+        """Return the 'Mute subscription' Link."""
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+            link = "+subscribe"
+        else:
+            text = "Mute bug mail"
+            link = "+mute"
+
+        return Link(
+            link, text, icon='remove', summary=(
+                "Mute this bug so that you will never receive emails "
+                "about it."))
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""
@@ -371,6 +398,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
@@ -483,10 +513,35 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_mute_class(self):
+        bug = self.context
+        subscription_class = self.current_user_subscription_class
+        if bug.isMuted(self.user):
+            return 'muted-true %s' % subscription_class
+        else:
+            return 'muted-false %s' % subscription_class
+
+    @cachedproperty
+    def user_should_see_mute_link(self):
+        """Return True if the user should see the Mute link."""
+        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
+            user_is_subscribed = (
+                # Note that we don't have to check for isMuted(), since
+                # if isMuted() is True isSubscribed() will also be
+                # True.
+                self.context.isSubscribed(self.user) or
+                self.context.isSubscribedToDupes(self.user) or
+                self.context.personIsAlsoNotifiedSubscriber(self.user))
+            return user_is_subscribed
+        else:
+            return False
 
     @cachedproperty
     def _bug_attachments(self):

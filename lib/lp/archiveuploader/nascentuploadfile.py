@@ -30,7 +30,6 @@ import time
 
 from zope.component import getUtility
 
-from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
@@ -47,10 +46,10 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     )
 from lp.buildmaster.enums import BuildStatus
+from lp.services.encoding import guess as guess_encoding
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
-    PackagePublishingStatus,
     PackageUploadCustomFormat,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -797,13 +796,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
         spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
-
-        if spphs.count() == 0:
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
+        try:
+            return spphs[0].sourcepackagerelease
+        except IndexError:
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
 
-        return spphs[0].sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""

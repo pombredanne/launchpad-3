@@ -193,6 +193,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return [None] * TranslationConstants.MAX_PLURAL_FORMS
 
+    def clone(self, potmsgset):
+        raise NotImplementedError()
+
     def destroySelf(self):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
@@ -484,6 +487,21 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             forms_match))
 
         return twins.order_by(TranslationMessage.id).first()
+
+    def clone(self, potmsgset):
+        clone = TranslationMessage(
+            potmsgset=potmsgset, submitter=self.submitter, origin=self.origin,
+            language=self.language, date_created=self.date_created,
+            reviewer=self.reviewer, date_reviewed=self.date_reviewed,
+            msgstr0=self.msgstr0, msgstr1=self.msgstr1,
+            msgstr2=self.msgstr2, msgstr3=self.msgstr3,
+            msgstr4=self.msgstr4, msgstr5=self.msgstr5,
+            comment=self.comment, validation_status=self.validation_status,
+            is_current_ubuntu=self.is_current_ubuntu,
+            is_current_upstream=self.is_current_upstream,
+            was_obsolete_in_last_import=self.was_obsolete_in_last_import,
+            )
+        return clone
 
 
 class TranslationMessageSet:

@@ -6,10 +6,14 @@
 __metaclass__ = type
 __all__ = [
     'CodeWindmillLayer',
+    'CodeYUITestLayer',
     ]
 
 
-from canonical.testing.layers import BaseWindmillLayer
+from canonical.testing.layers import (
+    BaseWindmillLayer,
+    BaseYUITestLayer,
+    )
 
 
 class CodeWindmillLayer(BaseWindmillLayer):
@@ -17,6 +21,16 @@ class CodeWindmillLayer(BaseWindmillLayer):
 
     @classmethod
     def setUp(cls):
-        cls.base_url = cls.appserver_root_url('code')
+        cls.facet = 'code'
+        cls.base_url = cls.appserver_root_url(cls.facet)
         super(CodeWindmillLayer, cls).setUp()
 
+
+class CodeYUITestLayer(BaseYUITestLayer):
+    """Layer for Code YUI tests."""
+
+    @classmethod
+    def setUp(cls):
+        cls.facet = 'code'
+        cls.base_url = cls.appserver_root_url(cls.facet)
+        super(CodeYUITestLayer, cls).setUp()

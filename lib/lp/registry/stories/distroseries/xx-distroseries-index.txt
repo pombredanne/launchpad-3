@@ -16,11 +16,17 @@ Registering information
 The distroseries pages presents the 'registering' information besides
 its main 'heading'.
 
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> derivation_enabled = FeatureFixture(
+    ...     {'soyuz.derived-series-ui.enabled': 'on'})
+    >>> with derivation_enabled:
+    ...     anon_browser.open('http://launchpad.dev/ubuntu/warty')
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'registration'))
-    registered by Ubuntu Team on 2006-10-16
+    Registered by
+    Ubuntu Team on
+    2006-10-16
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Warty
@@ -45,13 +51,15 @@ on the series' details.
     Release manager: None
     Status: Current Stable Release
     Derives from: Warty (4.10) is not derived from another series.
+    Derived series: Hoary Mock (9.9.9), Breezy Badger Autotest (6.6.6)
     Source packages: 3
     Binary packages: 4
 
 On series that have no source or binary packages, the portlet will
 change its text slightly to annouce this:
 
-    >>> anon_browser.open('http://launchpad.dev/debian/sarge')
+    >>> with derivation_enabled:
+    ...     anon_browser.open('http://launchpad.dev/debian/sarge')
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Series information'))
     Series information
@@ -61,6 +69,7 @@ change its text slightly to annouce this:
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
     Derives from: Woody (3.0)
+    Derived series: No derived series.
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 

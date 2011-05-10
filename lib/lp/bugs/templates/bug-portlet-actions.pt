@@ -42,7 +42,7 @@
       >bug #42</a>
         <span
           tal:condition="not:duplicateof/required:launchpad.View"
-          tal:replace="string:bug #${duplicateof/id}" />
+          tal:replace="string:a private bug" />
     </span>
     </tal:block>
   </div>

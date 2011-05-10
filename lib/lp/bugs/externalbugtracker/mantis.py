@@ -8,6 +8,7 @@ __all__ = ['Mantis', 'MantisLoginHandler']
 
 import cgi
 import csv
+import logging
 import urllib
 import urllib2
 from urlparse import urlunparse
@@ -29,12 +30,12 @@ from lp.bugs.externalbugtracker import (
     UnknownRemoteStatusError,
     UnparsableBugData,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
 
 
@@ -98,6 +99,70 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
             self, request, fp, code, msg, hdrs, self.rewrite_url(new_url))
 
 
+class MantisBugBatchParser:
+    """A class that parses the batch of bug data.
+
+    Using the CSV reader is pretty much essential since the data that comes
+    back can include title text which can in turn contain field separators.
+    You don't want to handle the unquoting yourself.
+    """
+
+    def __init__(self, csv_data, logger):
+        # Clean out stray, unquoted newlines inside csv_data to avoid the CSV
+        # module blowing up.  IDEA: perhaps if the size of csv_data is large
+        # in the future, this could be moved into a generator.
+        csv_data = [s.replace("\r", "") for s in csv_data]
+        csv_data = [s.replace("\n", "") for s in csv_data]
+        self.reader = csv.reader(csv_data)
+        self.logger = logger
+
+    def processCSVBugLine(self, bug_line, headers):
+        """Processes a single line of the CSV."""
+        bug = {}
+        for index, header in enumerate(headers):
+            try:
+                data = bug_line[index]
+            except IndexError:
+                self.logger.warning("Line %r incomplete." % bug_line)
+                return None
+            bug[header] = data
+        try:
+            bug['id'] = int(bug['id'])
+        except ValueError:
+            self.logger.warning("Encountered invalid bug ID: %r." % bug['id'])
+            return None
+        return bug
+
+    def parseHeaderLine(self, reader):
+        # The first line of the CSV file is the header. We need to read
+        # it because different Mantis instances have different header
+        # ordering and even different columns in the export.
+        try:
+            headers = [h.lower() for h in reader.next()]
+        except StopIteration:
+            raise UnparsableBugData("Missing header line")
+        missing_headers = [
+            name for name in ('id', 'status', 'resolution')
+            if name not in headers]
+        if missing_headers:
+            raise UnparsableBugData(
+                "CSV header %r missing fields: %r" % (
+                    headers, missing_headers))
+        return headers
+
+    def getBugs(self):
+        headers = self.parseHeaderLine(self.reader)
+        bugs = {}
+        try:
+            for bug_line in self.reader:
+                bug = self.processCSVBugLine(bug_line, headers)
+                if bug is not None:
+                    bugs[bug['id']] = bug
+            return bugs
+        except csv.Error, error:
+            raise UnparsableBugData("Exception parsing CSV file: %s." % error)
+
+
 class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
 
@@ -114,6 +179,7 @@ class Mantis(ExternalBugTracker):
         self._cookie_handler = urllib2.HTTPCookieProcessor()
         self._opener = urllib2.build_opener(
             self._cookie_handler, MantisLoginHandler())
+        self._logger = logging.getLogger()
 
     @ensure_no_transaction
     def urlopen(self, request, data=None):
@@ -178,7 +244,10 @@ class Mantis(ExternalBugTracker):
            'search': '',
            'filter': 'Apply Filter',
         }
-        self.page = self._postPage("view_all_set.php?f=3", data)
+        try:
+            self._postPage("view_all_set.php?f=3", data)
+        except BugTrackerConnectError:
+            return None
 
         # Finally grab the full CSV export, which uses the
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
@@ -275,65 +344,8 @@ class Mantis(ExternalBugTracker):
         if not csv_data:
             raise UnparsableBugData("Empty CSV for %s" % self.baseurl)
 
-        # Clean out stray, unquoted newlines inside csv_data to avoid
-        # the CSV module blowing up.
-        csv_data = [s.replace("\r", "") for s in csv_data]
-        csv_data = [s.replace("\n", "") for s in csv_data]
-
-        # The first line of the CSV file is the header. We need to read
-        # it because different Mantis instances have different header
-        # ordering and even different columns in the export.
-        self.headers = [h.lower() for h in csv_data.pop(0).split(",")]
-        if len(self.headers) < 2:
-            raise UnparsableBugData("CSV header mangled: %r" % self.headers)
-
-        if not csv_data:
-            # A file with a header and no bugs is also useless.
-            raise UnparsableBugData("CSV for %s contained no bugs!"
-                                     % self.baseurl)
-
-        try:
-            bugs = {}
-            # Using the CSV reader is pretty much essential since the
-            # data that comes back can include title text which can in
-            # turn contain field separators -- you don't want to handle
-            # the unquoting yourself.
-            for bug_line in csv.reader(csv_data):
-                bug = self._processCSVBugLine(bug_line)
-                bugs[int(bug['id'])] = bug
-
-            return bugs
-
-        except csv.Error, error:
-            raise UnparsableBugData("Exception parsing CSV file: %s." % error)
-
-    def _processCSVBugLine(self, bug_line):
-        """Processes a single line of the CSV.
-
-        Adds the bug it represents to self.bugs.
-        """
-        required_fields = ['id', 'status', 'resolution']
-        bug = {}
-        for header in self.headers:
-            try:
-                data = bug_line.pop(0)
-            except IndexError:
-                self.warning("Line '%r' incomplete." % bug_line)
-                return
-            bug[header] = data
-        for field in required_fields:
-            if field not in bug:
-                self.warning("Bug %s lacked field '%r'." % (bug['id'], field))
-                return
-            try:
-                # See __init__ for an explanation of why we use integer
-                # IDs in the internal data structure.
-                bug_id = int(bug['id'])
-            except ValueError:
-                self.warning("Encountered invalid bug ID: %r." % bug['id'])
-                return
-
-        return bug
+        parser = MantisBugBatchParser(csv_data, self._logger)
+        return parser.getBugs()
 
     def _checkForApplicationError(self, page_soup):
         """If Mantis does not find the bug it still returns a 200 OK
@@ -466,14 +478,6 @@ class Mantis(ExternalBugTracker):
         # there is a chance that statuses contain spaces, and because
         # it makes display of the data nicer.
         return "%(status)s: %(resolution)s" % bug
-
-    def _getStatusFromCSV(self, bug_id):
-        try:
-            bug = self.bugs[int(bug_id)]
-        except KeyError:
-            raise BugNotFound(bug_id)
-        else:
-            return bug['status'], bug['resolution']
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.

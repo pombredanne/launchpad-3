@@ -11,7 +11,7 @@ import os
 from canonical.testing import layers
 from lp.services.features import (
     getFeatureFlag,
-    per_thread,
+    install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import StormFeatureRuleSource
@@ -115,19 +115,20 @@ class TestFeatureFlags(TestCase):
     def test_threadGetFlag(self):
         self.populateStore()
         # the start-of-request handler will do something like this:
-        per_thread.features, call_log = self.makeControllerInScopes(
+        controller, call_log = self.makeControllerInScopes(
             ['default', 'beta_user'])
+        install_feature_controller(controller)
         try:
             # then application code can simply ask without needing a context
             # object
             self.assertEqual(u'4.0', getFeatureFlag('ui.icing'))
         finally:
-            per_thread.features = None
+            install_feature_controller(None)
 
     def test_threadGetFlagNoContext(self):
         # If there is no context, please don't crash. workaround for the root
         # cause in bug 631884.
-        per_thread.features = None
+        install_feature_controller(None)
         self.assertEqual(None, getFeatureFlag('ui.icing'))
 
     def testLazyScopeLookup(self):
@@ -164,6 +165,7 @@ class TestFeatureFlags(TestCase):
 
 test_rules_list = [
     (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'normal_user', 500, u'5.0'),
     ('ui.icing', 'beta_user', 300, u'4.0'),
     ('ui.icing', 'default', 100, u'3.0'),
     ]
@@ -186,6 +188,7 @@ class TestStormFeatureRuleSource(TestCase):
         self.assertEquals(
             """\
 %s\tbeta_user\t100\t%s
+ui.icing\tnormal_user\t500\t5.0
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
 """ % (notification_name, notification_value),

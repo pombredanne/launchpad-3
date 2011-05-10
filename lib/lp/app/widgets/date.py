@@ -20,19 +20,27 @@ __all__ = [
     ]
 
 from datetime import datetime
+
 import pytz
-
-from zope.datetime import parse, DateTimeError
-from zope.app.form.browser.textwidgets import escape, TextWidget
-from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.interfaces import InputErrors, WidgetInputError
-from zope.app.form.interfaces import ConversionError
-from zope.component import getUtility
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.textwidgets import (
+    escape,
+    TextWidget,
+    )
+from zope.app.form.browser.widget import DisplayWidget
+from zope.app.form.interfaces import (
+    ConversionError,
+    InputErrors,
+    WidgetInputError,
+    )
+from zope.component import getUtility
+from zope.datetime import (
+    DateTimeError,
+    parse,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 
 
 class DateTimeWidget(TextWidget):
@@ -109,6 +117,8 @@ class DateTimeWidget(TextWidget):
     """
 
     timeformat = '%Y-%m-%d %H:%M:%S'
+    
+
     required_time_zone = None
     display_zone = True
     from_date = None
@@ -121,7 +131,28 @@ class DateTimeWidget(TextWidget):
     def __init__(self, context, request):
         request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
-        self.system_time_zone = getUtility(ILaunchBag).time_zone
+        launchbag = getUtility(ILaunchBag)
+        self.system_time_zone = launchbag.time_zone
+
+    @property
+    def supported_input_formats(self):
+        date_formats = [
+            '%Y-%m-%d', '%m-%d-%Y', '%m-%d-%y',
+            '%m/%d/%Y', '%m/%d/%y',
+            '%d %b, %Y', '%d %b %Y', '%b %d, %Y', '%b %d %Y',
+            '%d %B, %Y', '%d %B %Y', '%B %d, %Y', 'B% %d %Y',
+            ]
+
+        time_formats = [
+            '%H:%M:%S',
+            '%H:%M',
+            '',
+            ]
+        outputs = []
+        for fmt in time_formats:
+           outputs.extend(['%s %s' % (d, fmt) for d in date_formats])
+
+        return [o.strip() for o in outputs]
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
@@ -306,6 +337,21 @@ class DateTimeWidget(TextWidget):
             raise self._error
         return value
 
+    def _checkSupportedFormat(self, input):
+        """Checks that the input is in a usable format."""
+        for fmt in self.supported_input_formats:
+            try:
+                datetime.strptime(input.strip(), fmt)
+            except (ValueError), e:
+                if 'unconverted data remains' in e.message:
+                    return
+                else:
+                    failure = e
+            else:
+                return
+        if failure:
+            raise ConversionError('Invalid date value', failure)
+
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
         return self._parseInput(input)
@@ -346,6 +392,7 @@ class DateTimeWidget(TextWidget):
         """
         if input == self._missing:
             return self.context.missing_value
+        self._checkSupportedFormat(input)
         try:
             year, month, day, hour, minute, second, dummy_tz = parse(input)
             second, micro = divmod(second, 1.0)
@@ -560,6 +607,7 @@ class DateWidget(DateTimeWidget):
 
 class DatetimeDisplayWidget(DisplayWidget):
     """Display timestamps in the users preferred time zone"""
+
     def __call__(self):
         time_zone = getUtility(ILaunchBag).time_zone
         if self._renderedValueSet():

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialise a distroseries from its parent distroseries."""
@@ -10,6 +10,8 @@ __all__ = [
     'InitialiseDistroSeries',
     ]
 
+from operator import methodcaller
+import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
@@ -40,7 +42,8 @@ class InitialiseDistroSeries:
     Preconditions:
       The distroseries must exist, and be completly unused, with no source
       or binary packages existing, as well as no distroarchseries set up.
-      Section and component selections must be empty.
+      Section and component selections must be empty. It must not have a
+      parent series.
 
     Outcome:
       The distroarchseries set up in the parent series will be copied.
@@ -60,11 +63,11 @@ class InitialiseDistroSeries:
     """
 
     def __init__(
-        self, distroseries, arches=(), packagesets=(), rebuild=False):
+        self, parent, distroseries, arches=(), packagesets=(), rebuild=False):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
+        self.parent = parent
         self.distroseries = distroseries
-        self.parent = self.distroseries.parent_series
         self.arches = arches
         self.packagesets = [
             ensure_unicode(packageset) for packageset in packagesets]
@@ -72,9 +75,14 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.parent is None:
-            raise InitialisationError("Parent series required.")
-        self._checkBuilds()
+        if self.distroseries.parent_series is not None:
+            raise InitialisationError(
+                ("DistroSeries {child.name} has been initialized; it already "
+                 "derives from {child.parent_series.distribution.name}/"
+                 "{child.parent_series.name}.").format(
+                    child=self.distroseries))
+        if self.distroseries.distribution.id == self.parent.distribution.id:
+            self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
 
@@ -110,26 +118,33 @@ class InitialiseDistroSeries:
                     "Parent series queues are not empty.")
 
     def _checkSeries(self):
-        sources = self.distroseries.getAllPublishedSources()
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if bool(sources):
-            raise InitialisationError(error)
+        sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
-        if bool(binaries):
+        if not all(
+            map(methodcaller('is_empty'), (
+                sources, binaries, self.distroseries.architectures,
+                self.distroseries.sections))):
             raise InitialisationError(error)
-        if bool(self.distroseries.architectures):
-            raise InitialisationError(error)
-        if bool(self.distroseries.components):
-            raise InitialisationError(error)
-        if bool(self.distroseries.sections):
+        if self.distroseries.components:
             raise InitialisationError(error)
 
     def initialise(self):
+        self._set_parent()
+        self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        transaction.commit()
+
+    def _set_parent(self):
+        self.distroseries.parent_series = self.parent
+
+    def _copy_configuration(self):
+        self.distroseries.backports_not_automatic = \
+            self.parent.backports_not_automatic
 
     def _copy_architectures(self):
         include = ''
@@ -143,7 +158,7 @@ class InitialiseDistroSeries:
             AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
             self.parent) + (include,)))
-
+        self._store.flush()
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
 
@@ -176,7 +191,7 @@ class InitialiseDistroSeries:
 
         spns = []
         # The overhead from looking up each packageset is mitigated by
-        # this usually running from a job
+        # this usually running from a job.
         if self.packagesets:
             for pkgsetname in self.packagesets:
                 pkgset = getUtility(IPackagesetSet).getByName(
@@ -285,11 +300,17 @@ class InitialiseDistroSeries:
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
+            # Cross-distro initialisations get packagesets owned by the
+            # distro owner, otherwise the old owner is preserved.
             if self.packagesets and parent_ps.name not in self.packagesets:
                 continue
+            if self.distroseries.distribution == self.parent.distribution:
+                new_owner = parent_ps.owner
+            else:
+                new_owner = self.distroseries.owner
             child_ps = getUtility(IPackagesetSet).new(
                 parent_ps.name, parent_ps.description,
-                self.distroseries.owner, distroseries=self.distroseries,
+                new_owner, distroseries=self.distroseries,
                 related_set=parent_ps)
             self._store.execute("""
                 INSERT INTO Archivepermission

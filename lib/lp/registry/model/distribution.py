@@ -10,6 +10,7 @@ __all__ = [
     'DistributionSet',
     ]
 
+from operator import attrgetter
 
 from sqlobject import (
     BoolCol,
@@ -18,6 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
@@ -33,6 +35,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -64,15 +67,9 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.validators.name import (
-    sanitize_name,
-    valid_name,
-    )
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.faq import (
     FAQ,
@@ -87,6 +84,10 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
+    )
+from lp.app.validators.name import (
+    sanitize_name,
+    valid_name,
     )
 from lp.archivepublisher.debversion import Version
 from lp.blueprints.enums import (
@@ -105,6 +106,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -151,13 +153,13 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
-from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
@@ -170,7 +172,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
@@ -194,6 +195,7 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeriesSet,
     )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackageFilePublishing,
@@ -205,9 +207,6 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    )
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -241,6 +240,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_person,
@@ -267,7 +269,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
-    active = True # Required by IPillar interface.
+    active = True
     max_bug_heat = Int()
 
     def __repr__(self):
@@ -280,7 +282,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         SQLBase._init(self, *args, **kw)
         # Add a marker interface to set permissions for this kind
         # of distribution.
-        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+        if self.name == 'ubuntu':
             alsoProvides(self, IBaseDistribution)
         else:
             alsoProvides(self, IDerivativeDistribution)
@@ -465,7 +467,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if by_country and mirrors:
             # Since country data is needed, fetch countries into the cache.
-            countries = list(Store.of(self).find(
+            list(Store.of(self).find(
                 Country,
                 Country.id.is_in(mirror.countryID for mirror in mirrors)))
 
@@ -476,8 +478,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             arch_mirrors = list(Store.of(self).find(
                 (MirrorDistroArchSeries.distribution_mirrorID,
                  Max(MirrorDistroArchSeries.freshness)),
-                MirrorDistroArchSeries.distribution_mirrorID.is_in(mirror_ids)
-            ).group_by(MirrorDistroArchSeries.distribution_mirrorID))
+                MirrorDistroArchSeries.distribution_mirrorID.is_in(
+                    mirror_ids)).group_by(
+                        MirrorDistroArchSeries.distribution_mirrorID))
             arch_mirror_freshness = {}
             arch_mirror_freshness.update(
                 [(mirror_id, MirrorFreshness.items[mirror_freshness]) for
@@ -593,6 +596,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
+    @cachedproperty
+    def derivatives(self):
+        """See `IDistribution`."""
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        # XXX rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.id' is only required
+        # because the parent_series attribute has been (mis-)used
+        # to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
+        ret = Store.of(self).find(
+            DistroSeries,
+            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID == self.id,
+            DistroSeries.distributionID != self.id)
+        return ret.config(
+            distinct=True).order_by(Desc(DistroSeries.date_created))
+
     @property
     def architectures(self):
         """See `IDistribution`."""
@@ -626,9 +647,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.distribution == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distribution == self, user, wanted_tags=wanted_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -775,34 +797,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistribution`."""
-        source_package_ids = [
-            package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
-                FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn,
-                     DistroSeries ds
-                WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
-                    spph.sourcepackagerelease = spr.id AND
-                    spph.archive IN %s AND
-                    spph.status IN %s AND
-                    spph.distroseries = ds.id AND
-                    ds.distribution = %s)
-            """ % sqlvalues(
-                source_package_ids, self.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
-        return dict(
-            (self.getSourcePackage(release.sourcepackagename),
-             DistributionSourcePackageRelease(self, release))
-            for release in releases)
+        return getUtility(IDistributionSet).getCurrentSourceReleases(
+            {self: source_package_names})
 
     @property
     def has_any_specifications(self):
@@ -1547,7 +1543,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauses.append(
                 "Archive.private = FALSE AND Archive.enabled = TRUE")
 
-
         query = ' AND '.join(clauses)
         return Archive.select(
             query, orderBy=orderBy, clauseTables=clauseTables)
@@ -1800,7 +1795,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return user.inTeam(self.owner) or user.inTeam(admins)
 
     def newSeries(self, name, displayname, title, summary,
-                  description, version, parent_series, owner):
+                  description, version, parent_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
@@ -1812,10 +1807,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             version=version,
             status=SeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
-            owner=owner)
-        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            registrant=registrant)
+        if (registrant.inTeam(self.driver)
+            and not registrant.inTeam(self.owner)):
             # This driver is a release manager.
-            series.driver = owner
+            series.driver = registrant
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
@@ -1848,8 +1844,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        if not has_upstream_template(
-                sourcepackage.distroseries, sourcepackage.sourcepackagename):
+        if not sourcepackage.has_sharing_translation_templates:
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
@@ -1864,8 +1859,26 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # translations for upstream.
             return purportedly_upstream
 
-        upstream_product = sourcepackage.productseries.product
-        return upstream_product.invitesTranslationEdits(person, language)
+        productseries = sourcepackage.productseries
+        return productseries.product.invitesTranslationEdits(person, language)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distribution.
+
+        Given that there must be a distribution task for a series of that
+        distribution to have a task, we give no more weighting to a
+        distroseries task than any other.
+        """
+        distributionID = self.id
+
+        def weight_function(bugtask):
+            if bugtask.distributionID == distributionID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+
+        return weight_function
 
 
 class DistributionSet:
@@ -1907,7 +1920,7 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1919,9 +1932,63 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            registrant=registrant,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
+
+    def getCurrentSourceReleases(self, distro_source_packagenames):
+        """See `IDistributionSet`."""
+        # Builds one query for all the distro_source_packagenames.
+        # This may need tuning: its possible that grouping by the common
+        # archives may yield better efficiency: the current code is
+        # just a direct push-down of the previous in-python lookup to SQL.
+        series_clauses = []
+        distro_lookup = {}
+        for distro, package_names in distro_source_packagenames.items():
+            source_package_ids = map(attrgetter('id'), package_names)
+            # all_distro_archive_ids is just a list of ints, but it gets
+            # wrapped anyway - and sqlvalues goes boom.
+            archives = removeSecurityProxy(
+                distro.all_distro_archive_ids)
+            clause = """(spr.sourcepackagename IN %s AND
+                spph.archive IN %s AND
+                ds.distribution = %s)
+                """ % sqlvalues(source_package_ids, archives, distro.id)
+            series_clauses.append(clause)
+            distro_lookup[distro.id] = distro
+        if not len(series_clauses):
+            return {}
+        combined_clause = "(" + " OR ".join(series_clauses) + ")"
+
+        releases = IStore(SourcePackageRelease).find(
+            (SourcePackageRelease, Distribution.id), SQL("""
+                (SourcePackageRelease.id, Distribution.id) IN (
+                    SELECT DISTINCT ON (
+                        spr.sourcepackagename, ds.distribution)
+                        spr.id, ds.distribution
+                    FROM
+                        SourcePackageRelease AS spr,
+                        SourcePackagePublishingHistory AS spph,
+                        DistroSeries AS ds
+                    WHERE
+                        spph.sourcepackagerelease = spr.id
+                        AND spph.distroseries = ds.id
+                        AND spph.status IN %s
+                        AND %s
+                    ORDER BY
+                        spr.sourcepackagename, ds.distribution, spph.id DESC
+                    )
+                """
+                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+        result = {}
+        for sp_release, distro_id in releases:
+            distro = distro_lookup[distro_id]
+            sourcepackage = distro.getSourcePackage(
+                sp_release.sourcepackagename)
+            result[sourcepackage] = DistributionSourcePackageRelease(
+                distro, sp_release)
+        return result

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from doctest import DocTestSuite
 
-from canonical.ftests.pgsql import PgTestSetup
+from lp.testing.pgsql import PgTestSetup
 
 def setUp(test):
 

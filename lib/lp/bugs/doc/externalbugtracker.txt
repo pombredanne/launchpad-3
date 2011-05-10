@@ -643,44 +643,6 @@ IDs to be updated.
     []
 
 
-=== Converting statuses ===
-
-Once it has retrieved the bugs from the remote server, RemoteBugUpdater
-attempts to convert their statuses into Launchpad BugTaskStatuses by
-calling the convertRemoteStatus() method on the ExternalBugTracker via
-its own _convertRemoteStatus() method.
-
-ExternalBugTracker.convertRemoteStatus() will either return a
-BugTaskStatus or will raise an UnknownRemoteStatusError.
-
-    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
-    >>> from lp.bugs.externalbugtracker import (
-    ...     UnknownRemoteStatusError)
-    >>> class StatusConvertingExternalBugTracker(TestExternalBugTracker):
-    ...
-    ...     def convertRemoteStatus(self, remote_status):
-    ...         if remote_status == 'new':
-    ...             return BugTaskStatus.NEW
-    ...         else:
-    ...             raise UnknownRemoteStatusError(remote_status)
-
-RemoteBugUpdater._convertRemoteStatus() will handle these errors and will
-return BugTaskStatus.UNKNOWN when they occur. It will also log a
-warning.
-
-    >>> remote_bug_updater = bug_watch_updater.remote_bug_updater_factory(
-    ...     bug_watch_updater, StatusConvertingExternalBugTracker(),
-    ...     '1', [1], [], utc_now)
-    >>> status = remote_bug_updater._convertRemoteStatus('new')
-    >>> print status.title
-    New
-
-    >>> status = remote_bug_updater._convertRemoteStatus('spam')
-    WARNING...Unknown remote status 'spam'. (OOPS-...)
-    >>> print status.title
-    Unknown
-
-
 == Configuration Options ==
 
 All ExternalBugTrackers have a batch_query_threshold attribute which is
@@ -776,8 +738,7 @@ updated.
     >>> error_utility = CheckWatchesErrorUtility()
 
     >>> external_bugtracker.initialize_remote_bugdb_error = None
-    >>> for error in [BugNotFound, InvalidBugId, UnparsableBugData,
-    ...               Exception]:
+    >>> for error in [UnparsableBugData, Exception]:
     ...     example_bugwatch.lastchecked = None
     ...     external_bugtracker.get_remote_status_error = error
     ...     bug_watch_updater.updateBugWatches(
@@ -787,8 +748,6 @@ updated.
     ...         example_bugwatch.last_error_type.title,
     ...         example_bugwatch.lastchecked is not None,
     ...         oops.id, oops.url)
-    Bug Not Found: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
-    Invalid Bug ID: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
     Unparsable Bug: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
     Unknown: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
 
@@ -808,6 +767,7 @@ rules.
 
 First, we need a tree to document.
 
+  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
   >>> tree = LookupTree(
   ...     ('ASSIGNED', 'STARTED', BugTaskStatus.INPROGRESS),
   ...     ('NEEDINFO', 'WAITING', 'SUSPENDED', BugTaskStatus.INCOMPLETE),

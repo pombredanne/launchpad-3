@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -70,6 +70,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
 
+    def test_description(self):
+        """Test the description property."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.description = u"foo"
+        self.assertEqual(u"foo", bug_subscription_filter.description)
+
     def test_defaults(self):
         """Test the default values of `BugSubscriptionFilter` objects."""
         # Create.
@@ -85,12 +91,26 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(None, bug_subscription_filter.other_parameters)
         self.assertIs(None, bug_subscription_filter.description)
 
+    def test_has_other_filters_one(self):
+        # With only the initial, default filter, it returns False.
+        initial_filter = self.subscription.bug_filters.one()
+        naked_filter = removeSecurityProxy(initial_filter)
+        self.assertFalse(naked_filter._has_other_filters())
+
+    def test_has_other_filters_more_than_one(self):
+        # With more than one filter, it returns True.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        naked_filter = removeSecurityProxy(bug_subscription_filter)
+        self.assertTrue(naked_filter._has_other_filters())
+
     def test_delete(self):
         """`BugSubscriptionFilter` objects can be deleted.
 
         Child objects - like `BugSubscriptionFilterTags` - will also be
         deleted.
         """
+        # This is a second filter for the subscription.
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.structural_subscription = self.subscription
         bug_subscription_filter.importances = [BugTaskImportance.LOW]
@@ -101,7 +121,39 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         # Delete.
         bug_subscription_filter.delete()
         IStore(bug_subscription_filter).flush()
+        # It doesn't exist in the database anymore.
         self.assertIs(None, Store.of(bug_subscription_filter))
+
+    def test_delete_final(self):
+        # If you delete the final remaining `BugSubscriptionFilter`, the
+        # parent structural subscription will also be deleted.
+        bug_subscription_filter = self.subscription.bug_filters.one()
+        bug_subscription_filter.bug_notification_level = (
+            BugNotificationLevel.LIFECYCLE)
+        bug_subscription_filter.find_all_tags = True
+        bug_subscription_filter.exclude_any_tags = True
+        bug_subscription_filter.include_any_tags = True
+        bug_subscription_filter.description = u"Description"
+        bug_subscription_filter.importances = [BugTaskImportance.LOW]
+        bug_subscription_filter.statuses = [BugTaskStatus.NEW]
+        bug_subscription_filter.tags = [u"foo"]
+        IStore(bug_subscription_filter).flush()
+        self.assertIsNot(None, Store.of(bug_subscription_filter))
+
+        # Delete.
+        bug_subscription_filter.delete()
+        IStore(bug_subscription_filter).flush()
+
+        # It is deleted from the database.  Note that the object itself has
+        # not been updated because Storm called the SQL deletion directly,
+        # so we have to be a bit more verbose to show that it is gone.
+        self.assertIs(
+            None,
+            IStore(bug_subscription_filter).find(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.id==bug_subscription_filter.id).one())
+        # The structural subscription is gone too.
+        self.assertIs(None, Store.of(self.subscription))
 
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are
@@ -122,6 +174,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(
             frozenset((BugTaskStatus.NEW,)),
             bug_subscription_filter.statuses)
+
+    def test_statuses_set_all(self):
+        # Setting all importances is normalized into setting no importances.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.statuses = list(BugTaskStatus.items)
+        self.assertEqual(frozenset(), bug_subscription_filter.statuses)
 
     def test_statuses_set_empty(self):
         # Assigning an empty iterable to statuses updates the database.
@@ -149,6 +207,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(
             frozenset((BugTaskImportance.HIGH,)),
             bug_subscription_filter.importances)
+
+    def test_importances_set_all(self):
+        # Setting all importances is normalized into setting no importances.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.importances = list(BugTaskImportance.items)
+        self.assertEqual(frozenset(), bug_subscription_filter.importances)
 
     def test_importances_set_empty(self):
         # Assigning an empty iterable to importances updates the database.

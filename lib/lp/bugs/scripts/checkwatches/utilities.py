@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import socket
+from xmlrpclib import ProtocolError
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
@@ -42,6 +43,13 @@ _exception_to_bugwatcherrortype = [
 
 def get_bugwatcherrortype_for_error(error):
     """Return the correct `BugWatchActivityStatus` for a given error."""
+    # ProtocolError is rather generic, but always indicates a server
+    # failure. 502 Bad Gateway, 503 Service Unavailable and 504 Gateway
+    # Timeout are connection errors, while the rest are unknown.
+    if isinstance(error, ProtocolError):
+        if error.errcode in (502, 503, 504):
+            return BugWatchActivityStatus.CONNECTION_ERROR
+
     for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
         if isinstance(error, exc_type):
             return bugwatcherrortype

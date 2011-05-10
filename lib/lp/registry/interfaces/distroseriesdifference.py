@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface classes for a difference between two distribution series."""
@@ -39,12 +39,15 @@ from lp.registry.enum import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
 
-class IDistroSeriesDifferencePublic(IHasOwner, Interface):
+class IDistroSeriesDifferencePublic(Interface):
     """The public interface for distro series differences."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -86,6 +89,22 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
             "The url for the diff between the base version and the "
             "parent version.")))
 
+    package_diff_status = exported(Choice(
+        title=_("Package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
+            "derived version.")))
+
+    parent_package_diff_status = exported(Choice(
+        title=_("Parent package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
+            "parent version.")))
+
     status = Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
@@ -98,9 +117,23 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         vocabulary=DistroSeriesDifferenceType,
         required=True, readonly=True)
 
+    source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Derived source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "source_version."))
+
+    parent_source_package_release = Reference(
+        IDistroSeriesSourcePackageRelease,
+        title=_("Parent source pub"), readonly=True,
+        description=_(
+            "The published version in the derived series with version "
+            "parent_source_version."))
+
     source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Derived source pub"), readonly=True,
+        title=_("Latest derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
 
@@ -112,7 +145,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Parent source pub"), readonly=True,
+        title=_("Latest parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
@@ -132,7 +165,8 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         ISourcePackagePublishingHistory,
         title=_("Base source pub"), readonly=True,
         description=_(
-            "The common base version published in the derived series."))
+            "The common base version published in the parent or the "
+            "derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
@@ -154,8 +188,23 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         :return: True if the record was updated, False otherwise.
         """
 
+    latest_comment = Reference(
+        Interface, # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
+
     def getComments():
         """Return a result set of the comments for this difference."""
+
+    def getPackageSets():
+        """Return a result set of the derived series packagesets for the
+        sourcepackagename of this difference.
+        """
+
+    def getParentPackageSets():
+        """Return a result set of the parent packagesets for the
+        sourcepackagename of this difference.
+        """
 
 
 class IDistroSeriesDifferenceEdit(Interface):
@@ -222,8 +271,11 @@ class IDistroSeriesDifferenceSource(Interface):
     def getForDistroSeries(
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-        status=None):
-        """Return differences for the derived distro series.
+        source_package_name_filter=None,
+        status=None,
+        child_version_higher=False):
+        """Return differences for the derived distro series sorted by
+        package name.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
@@ -231,9 +283,14 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
+        :param source_package_name_filter: Package source name filter.
+        :type source_package_name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
+        :param child_version_higher: Only differences for which the child's
+            version is higher than the parent's version will be included.
+        :type child_version_higher: bool.
         :return: A result set of differences.
         """
 

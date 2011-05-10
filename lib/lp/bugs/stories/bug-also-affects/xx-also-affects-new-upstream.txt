@@ -5,7 +5,7 @@ The test browser does not support javascript
     ...     'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
     >>> find_link = user_browser.getLink('Find')
     >>> find_link.url
-    'http://launchpad.dev/people/'
+    'http://launchpad.dev/firefox/+bug...'
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')

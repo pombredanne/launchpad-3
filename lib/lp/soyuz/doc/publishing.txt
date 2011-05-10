@@ -112,7 +112,7 @@ The pmount source has no packageupload in the sampledata:
 
 The iceweasel source has good data:
 
-    >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
+    >>> pub = spph.archive.getPublishedSources(name="iceweasel").first()
     >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
@@ -362,7 +362,7 @@ Files published are accessible via the files property:
     >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
     ...   pub_file.archive_url) for pub_file in spph.files]
     [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
-      u'http://ftpmaster.internal/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+      u'http://archive.launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
 Deletion and obsolescence
@@ -768,17 +768,8 @@ Perform the source-only copy.
     >>> ppa_copied_source = SourcePackagePublishingHistory.get(
     ...     ppa_copied_source.id)
 
-Since it's a rebuild we can immediately create the corresponding
-builds.
-
-    >>> builds = ppa_copied_source.createMissingBuilds()
-
-    >>> for build in builds:
-    ...     print build.title
-    i386 build of jkl 666 in ubuntutest hoary-test RELEASE
-
-If createMissingBuilds get called again on either sources no builds
-will get created.
+createMissingBuilds will not create any builds because this is an
+intra-archive copy: 
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -923,7 +914,6 @@ Generating respective "Packages" stanzas:
 
     >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
     Package: mozilla-firefox
-    Source: mozilla-firefox
     Priority: important
     Section: editors
     Maintainer: Mark Shuttleworth <mark@canonical.com>
@@ -952,8 +942,11 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
     [u'mozilla-firefox_0.9_i386.deb']
 
+    >>> debian = bpph.distroarchseries.distroseries.distribution
+    >>> discard = factory.makePublisherConfig(
+    ...     distribution=debian, base_url=u"http://archive.launchpad.dev")
     >>> [pub_file.archive_url for pub_file in bpph.files]
-    [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+    [u'http://archive.launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
 Binary publishing records also have a download count, which contains
 the number of downloads of this binary package release in this archive.
@@ -1123,7 +1116,7 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    8
+    7
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
@@ -1177,7 +1170,7 @@ there were 8 sources and builds.
     >>> cprov_builds_new = publishing_set.getBuildsForSources(
     ...     cprov_sources_new)
     >>> cprov_builds_new.count()
-    9
+    8
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
@@ -1432,9 +1425,9 @@ The returned ResultSet element is tuple containing:
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
-    >>> cprov_sources = sorted(list(
+    >>> cprov_sources = sorted(
     ...     cprov.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.PUBLISHED)),
+    ...     status=PackagePublishingStatus.PUBLISHED),
     ...     key=operator.attrgetter('id'))
     >>> print len(cprov_sources)
     6
@@ -1587,11 +1580,9 @@ And the order is not the same than the original source set.
     Mismatch: ...
 
 We will check a little bit of the `ArchiveSourcePublications`
-internals. There are three essential methods to fetch distinct
+internals. There is one essential method to fetch distinct
 information to be cached in the decorated objects:
 
-  * getBuildsBySource;
-  * getUnpublishedBuildsBySource;
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1600,24 +1591,6 @@ a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
 can be quickly looked up when building `ArchiveSourcePublications`.
 
     >>> real_pub = cprov_published_sources[1]
-
-Builds by source.
-
-    >>> builds_by_source = decorated_set.getBuildsBySource()
-
-    >>> compare_ids(
-    ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
-    Matches
-
-Unpublished builds by source.
-
-    >>> unpublished_builds_by_source = (
-    ...     decorated_set.getUnpublishedBuildsBySource())
-
-    >>> compare_ids(
-    ...     real_pub.getUnpublishedBuilds(),
-    ...     unpublished_builds_by_source.get(real_pub, []))
-    Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
 source package publication to its corresponding .changes file (as a

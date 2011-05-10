@@ -106,9 +106,16 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
-    >>> from lp.bugs.subscribers.bug import get_bugtask_indirect_subscribers
-    >>> get_bugtask_indirect_subscribers(linux_source_bug.bugtasks[0])
+    >>> from lp.bugs.model.bug import get_also_notified_subscribers
+    >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
+    >>> res
     [<Person at ...>]
+
+These are security proxied.
+
+    >>> from zope.security. proxy import Proxy
+    >>> isinstance(res, Proxy)
+    True
 
 The list of all bug subscribers can also be accessed via
 IBugTask.bug_subscribers. Our event handling machinery compares a
@@ -250,14 +257,14 @@ BugNotificationLevel for structural subscriptions.  Only subscribers who
 have a bug notification level greater than or equal to the value passed
 in the `level` parameter are returned.
 
-Structural subscriptions control their bug notification levels via zero
-or more filters.  If there are no filters, the subscription is
-interpreted to mean that the subscriber wants all notifications.  In the
-case of bug notification levels, that is equivalent to
+Structural subscriptions control their bug notification levels via one
+or more filters.  If there are no explicit filters, the default subscription
+filter is interpreted to mean that the subscriber wants all notifications.
+In the case of bug notification levels, that is equivalent to
 BugNotificationLevel.COMMENTS.
 
     >>> print subscription_no_priv.bug_filters.count()
-    0
+    1
 
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
@@ -297,7 +304,7 @@ level set to LIFECYCLE, he will not be included, if the parameter
 
     >>> from lp.testing import person_logged_in
     >>> with person_logged_in(mr_no_privs):
-    ...     filter_no_priv = subscription_no_priv.newBugFilter()
+    ...     filter_no_priv = subscription_no_priv.bug_filters.one()
     ...     filter_no_priv.bug_notification_level = (
     ...         BugNotificationLevel.LIFECYCLE)
 
@@ -501,7 +508,7 @@ the COMMENTS level...
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in ubuntu)'),
+     ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Subscriber')]

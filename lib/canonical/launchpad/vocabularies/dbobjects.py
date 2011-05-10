@@ -103,7 +103,7 @@ from lp.soyuz.model.processor import (
     ProcessorFamily,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.enums import LanguagePackType
 from lp.translations.model.languagepack import LanguagePack
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationgroup import TranslationGroup
@@ -486,9 +486,6 @@ class DistributionUsingMaloneVocabulary:
     def __contains__(self, obj):
         return (IDistribution.providedBy(obj)
                 and obj.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
-
-    def getQuery(self):
-        return None
 
     def getTerm(self, obj):
         if obj not in self:

@@ -8,27 +8,28 @@ __all__ = [
     "DistributionJobDerived",
 ]
 
+from lazr.delegates import delegates
 import simplejson
-
-from storm.locals import And, Int, Reference, Unicode
-
+from storm.locals import (
+    And,
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
-
-from lazr.delegates import delegates
-
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistributionJob,
     )
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class DistributionJob(StormBase):
@@ -55,12 +56,16 @@ class DistributionJob(StormBase):
 
     def __init__(self, distribution, distroseries, job_type, metadata):
         super(DistributionJob, self).__init__()
-        json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.distribution = distribution
         self.distroseries = distroseries
         self.job_type = job_type
-        self._json_data = json_data.decode('utf-8')
+        self._json_data = self.serializeMetadata(metadata)
+
+    @classmethod
+    def serializeMetadata(cls, metadata_dict):
+        """Serialize a dict of metadata into a unicode string."""
+        return simplejson.dumps(metadata_dict).decode('utf-8')
 
     @property
     def metadata(self):
@@ -102,7 +107,7 @@ class DistributionJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars = BaseRunnableJob.getOopsVars(self)
+        vars = super(DistributionJobDerived, self).getOopsVars()
         vars.extend([
             ('distribution_id', self.context.distribution.id),
             ('distroseries_id', self.context.distroseries.id),

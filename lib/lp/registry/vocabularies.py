@@ -31,6 +31,7 @@ __all__ = [
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
     'DistributionVocabulary',
+    'DistroSeriesDerivationVocabularyFactory',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -38,23 +39,23 @@ __all__ = [
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
+    'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
+    'project_products_vocabulary_factory',
     'ProjectGroupVocabulary',
     'SourcePackageNameVocabulary',
-    'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
+    'UserTeamsParticipationVocabulary',
     'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     'ValidTeamVocabulary',
-    'person_team_participations_vocabulary_factory',
-    'project_products_vocabulary_factory',
     ]
 
 
@@ -73,11 +74,16 @@ from storm.expr import (
     LeftJoin,
     Not,
     Or,
+    Select,
     SQL,
     )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import IVocabularyTokenized
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -1291,6 +1297,9 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
 
+    def __len__(self):
+        return len(self.visible_milestones)
+
     def __contains__(self, obj):
         if IProjectGroupMilestone.providedBy(obj):
             # ProjectGroup milestones are pseudo content objects
@@ -1429,7 +1438,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
-    def toTerm(self, obj):
+    @staticmethod
+    def toTerm(obj):
         """See `IVocabulary`."""
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
@@ -1469,6 +1479,114 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                         CONTAINSSTRING(DistroSeries.q.name, query))),
                     orderBy=self._orderBy)
         return objs
+
+
+class DistroSeriesDerivationVocabularyFactory:
+    """A vocabulary source for series to derive from.
+
+    Once a distribution has a series that has derived from a series in another
+    distribution, all other derived series must also derive from a series in
+    the same distribution.
+
+    A distribution can have non-derived series. Any of these can be changed to
+    derived at a later date, but as soon as this happens, the above rule
+    applies.
+
+    It is permissible for a distribution to have both derived and non-derived
+    series at the same time.
+    """
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    def __init__(self, context):
+        """See `IVocabularyFactory.__call__`."""
+        assert IDistroSeries.providedBy(context)
+        self.distribution = context.distribution
+
+    def find_terms(self, *where):
+        """Return a `tuple` of terms matching the given criteria.
+
+        The terms are returned in order. The `Distribution`s related to those
+        terms are preloaded at the same time.
+        """
+        query = IStore(DistroSeries).find(
+            (DistroSeries, Distribution),
+            DistroSeries.distribution == Distribution.id,
+            *where)
+        query = query.order_by(
+            Distribution.displayname,
+            Desc(DistroSeries.date_created))
+        return tuple(
+            DistroSeriesVocabulary.toTerm(series)
+            for (series, distribution) in query)
+
+    @cachedproperty
+    def terms(self):
+        """Terms for the series the context can derive from, in order.
+
+        The order is the same as for `DistroSeriesVocabulary`.
+        """
+        parent = ClassAlias(DistroSeries, "parent")
+        child = ClassAlias(DistroSeries, "child")
+        parent_distributions = Select(
+            parent.distributionID, And(
+                parent.distributionID != self.distribution.id,
+                child.distributionID == self.distribution.id,
+                child.parent_seriesID == parent.id))
+        terms = self.find_terms(
+            DistroSeries.distributionID.is_in(parent_distributions))
+        if len(terms) == 0:
+            terms = self.find_terms(
+                DistroSeries.distribution != self.distribution)
+        return terms
+
+    @cachedproperty
+    def terms_by_value(self):
+        """Mapping of terms by value."""
+        return dict((term.value, term) for term in self.terms)
+
+    @cachedproperty
+    def terms_by_token(self):
+        """Mapping of terms by token."""
+        return dict((term.token, term) for term in self.terms)
+
+    def __iter__(self):
+        """Returns an iterator over the terms in the vocabulary.
+
+        See `IIterableVocabulary`.
+        """
+        return iter(self.terms)
+
+    def __len__(self):
+        """The number of terms.
+
+        See `IIterableVocabulary`.
+        """
+        return len(self.terms)
+
+    def getTerm(self, value):
+        """Return the `ITerm` object for the term 'value'.
+
+        See `IBaseVocabulary`.
+        """
+        try:
+            return self.terms_by_value[value]
+        except KeyError:
+            raise LookupError(value)
+
+    def __contains__(self, value):
+        """Return whether the value is available in this source.
+
+        See `ISource`.
+        """
+        return (value in self.terms_by_value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            return self.terms_by_token[token]
+        except KeyError:
+            raise LookupError(token)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):

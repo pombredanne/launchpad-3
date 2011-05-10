@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -26,6 +26,9 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
@@ -204,6 +207,45 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertIs(None,
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
+
+    def test_getDerivedSeries(self):
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        self.assertContentEqual(
+            [distroseries], distroseries.parent_series.getDerivedSeries())
+
+    def test_registrant_owner_differ(self):
+        # The registrant is the creator whereas the owner is the
+        # distribution's owner.
+        registrant = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease(registrant=registrant)
+        self.assertEquals(distroseries.distribution.owner, distroseries.owner)
+        self.assertEquals(registrant, distroseries.registrant)
+        self.assertNotEqual(distroseries.registrant, distroseries.owner)
+
+    def test_is_derived(self):
+        # The series is a derived series if it has a parent_series set.
+        derived_distroseries = self.factory.makeDistroRelease(
+            parent_series=self.factory.makeDistroRelease())
+        distroseries = self.factory.makeDistroRelease()
+        self.assertFalse(distroseries.is_derived_series)
+        self.assertTrue(derived_distroseries.is_derived_series)
+
+    def test_is_initialising(self):
+        # The series is_initialising only if there is an initialisation
+        # job with a pending status attached to this series.
+        distroseries = self.factory.makeDistroRelease()
+        self.assertEquals(False, distroseries.is_initialising)
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job = job_source.create(distroseries.parent, distroseries)
+        self.assertEquals(True, distroseries.is_initialising)
+        job.start()
+        self.assertEquals(True, distroseries.is_initialising)
+        job.queue()
+        self.assertEquals(True, distroseries.is_initialising)
+        job.start()
+        job.complete()
+        self.assertEquals(False, distroseries.is_initialising)
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

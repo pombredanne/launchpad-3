@@ -3,17 +3,17 @@
 
 __metaclass__ = type
 
-import os
-import subprocess
-import sys
-
 from storm.exceptions import IntegrityError
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.database.sqlbase import flush_database_caches
+from canonical.launchpad.scripts.tests import run_script
+from canonical.testing import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
@@ -30,18 +30,23 @@ from lp.testing import TestCaseWithFactory
 class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     """Test case for InitialiseDistroSeriesJob."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitialiseDistroSeriesJobSource)
 
     def test_getOopsVars(self):
+        parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
+        job = self.job_source.create(parent, distroseries)
         vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
             ('distribution_id', distroseries.distribution.id), vars)
         self.assertIn(('distroseries_id', distroseries.id), vars)
         self.assertIn(('distribution_job_id', naked_job.context.id), vars)
+        self.assertIn(('parent_distroseries_id', parent.id), vars)
 
     def _getJobs(self):
         """Return the pending InitialiseDistroSeriesJobs as a list."""
@@ -53,52 +58,74 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         return len(self._getJobs())
 
     def test_create_only_creates_one(self):
+        parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         # If there's already a InitialiseDistroSeriesJob for a
         # DistroSeries, InitialiseDistroSeriesJob.create() won't create
         # a new one.
-        getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
-        transaction.commit()
+        self.job_source.create(parent, distroseries)
+        self.job_source.create(parent, distroseries)
+        self.assertRaises(IntegrityError, flush_database_caches)
 
-        # There will now be one job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
-        getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
-
-        # This is less than ideal
-        self.assertRaises(IntegrityError, self._getJobCount)
-
-    def test_run(self):
-        """Test that InitialiseDistroSeriesJob.run() actually
-        initialises builds and copies from the parent."""
-        distroseries = self.factory.makeDistroSeries()
-
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
-
-        # Since our new distroseries doesn't have a parent set, and the first
-        # thing that run() will execute is checking the distroseries, if it
-        # returns an InitialisationError, then it's good.
+    def test_run_with_parent_series_already_set(self):
+        # InitialisationError is raised if the parent series is already set on
+        # the child.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(parent_series=parent)
+        job = self.job_source.create(parent, distroseries)
+        expected_message = (
+            "DistroSeries {child.name} has been initialized; it already "
+            "derives from {parent.distribution.name}/{parent.name}.").format(
+            parent=parent, child=distroseries)
         self.assertRaisesWithContent(
-            InitialisationError, "Parent series required.", job.run)
+            InitialisationError, expected_message, job.run)
 
     def test_arguments(self):
         """Test that InitialiseDistroSeriesJob specified with arguments can
         be gotten out again."""
+        parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
         packagesets = (u'foo', u'bar', u'baz')
 
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries, arches, packagesets)
+        job = self.job_source.create(
+            parent, distroseries, arches, packagesets)
 
         naked_job = removeSecurityProxy(job)
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
+        self.assertEqual(naked_job.metadata["parent"], parent.id)
+
+    def test_parent(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(parent, distroseries)
+        naked_job = removeSecurityProxy(job)
+        self.assertEqual(parent, naked_job.parent)
+
+    def test_getPendingJobsForDistroseries(self):
+        # Pending initialisation jobs can be retrieved per distroseries.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        another_distroseries = self.factory.makeDistroSeries()
+        self.job_source.create(parent, distroseries)
+        self.job_source.create(parent, another_distroseries)
+        initialise_utility = getUtility(IInitialiseDistroSeriesJobSource)
+        [job] = list(initialise_utility.getPendingJobsForDistroseries(
+            distroseries))
+        self.assertEqual(job.distroseries, distroseries)
+
+
+class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
+    """Test case for InitialiseDistroSeriesJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitialiseDistroSeriesJobSource)
 
     def _create_child(self):
         pf = self.factory.makeProcessorFamily()
@@ -125,16 +152,14 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
             distroseries=parent)
         test1.addSources('udev')
         parent.updatePackageCount()
-        child = self.factory.makeDistroSeries(parent_series=parent)
-
-        # Make sure everything hits the database, switching db users
-        # aborts.
+        child = self.factory.makeDistroSeries()
+        # Make sure everything hits the database, switching db users aborts.
         transaction.commit()
         return parent, child
 
     def test_job(self):
         parent, child = self._create_child()
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        job = self.job_source.create(parent, child)
         self.layer.switchDbUser('initialisedistroseries')
 
         job.run()
@@ -145,8 +170,9 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     def test_job_with_arguments(self):
         parent, child = self._create_child()
         arch = parent.nominatedarchindep.architecturetag
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, packagesets=('test1',), arches=(arch,), rebuild=True)
+        job = self.job_source.create(
+            parent, child, packagesets=('test1',), arches=(arch,),
+            rebuild=True)
         self.layer.switchDbUser('initialisedistroseries')
 
         job.run()
@@ -159,10 +185,5 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(builds.count(), 1)
 
     def test_cronscript(self):
-        script = os.path.join(
-            config.root, 'cronscripts', 'initialise_distro_series.py')
-        args = [sys.executable, script, '-v']
-        process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        self.assertEqual(process.returncode, 0)
+        run_script(
+            'cronscripts/run_jobs.py', ['-v', 'initialisedistroseries'])

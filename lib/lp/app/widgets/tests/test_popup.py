@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import simplejson
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -25,19 +26,23 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.vocabulary = vocabulary_registry.get(context, 'ValidTeamOwner')
         self.request = LaunchpadTestRequest()
 
-    def test_js_template_args(self):
+    def test_widget_template_properties(self):
         picker_widget = VocabularyPickerWidget(
             self.bound_field, self.vocabulary, self.request)
-        js_template_args = picker_widget.js_template_args()
         self.assertEqual(
-            'ValidTeamOwner', js_template_args['vocabulary'])
+            'ValidTeamOwner', picker_widget.vocabulary_name)
         self.assertEqual(
-            self.vocabulary.displayname, js_template_args['header'])
+            simplejson.dumps(self.vocabulary.displayname),
+            picker_widget.header_text)
         self.assertEqual(
-            self.vocabulary.step_title, js_template_args['step_title'])
+            simplejson.dumps(self.vocabulary.step_title),
+            picker_widget.step_title_text)
+        # The widget name is encoded to get the widget's ID.  The content of
+        # the ID is unimportant, the fact that it is unique on the page and a
+        # valid HTML element ID are what's important.
         self.assertEqual(
-            'show-widget-field-teamowner', js_template_args['show_widget_id'])
+            'show-widget-ZmllbGQudGVhbW93bmVy', picker_widget.show_widget_id)
         self.assertEqual(
-            'field.teamowner', js_template_args['input_id'])
+            'field.teamowner', picker_widget.input_id)
         self.assertEqual(
-            None, js_template_args['extra_no_results_message'])
+            simplejson.dumps(None), picker_widget.extra_no_results_message)

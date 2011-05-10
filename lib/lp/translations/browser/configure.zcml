@@ -605,6 +605,13 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        name="+sharing-details"
+        class="lp.translations.browser.sourcepackage.SourcePackageTranslationSharingDetailsView"
+        permission="zope.Public"
+        template="../templates/sourcepackage-sharing-details.pt"
+        layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
@@ -1051,7 +1058,7 @@
         name="+index"/>
     <browser:url
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
-        path_expression="string:+translation-templates-build/${build_farm_job/id}"
+        path_expression="string:+translation-templates-build/${id}"
         attribute_to_parent="branch"/>
     <browser:page
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"

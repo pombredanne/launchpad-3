@@ -99,9 +99,9 @@ class CommandSpawner:
         :param stderr_handler: Callback to handle error output received from
             the sub-process.  Must take the output as its sole argument.  May
             be called any number of times as output comes in.
-        :param failure_handler: Callback to be invoked, exactly once, when the
-            sub-process exits.  Must take `command`'s numeric return code as
-            its sole argument.
+        :param completion_handler: Callback to be invoked, exactly once, when
+            the sub-process exits.  Must take `command`'s numeric return code
+            as its sole argument.
         """
         process = self._spawn(command)
         handlers = {
@@ -172,9 +172,9 @@ class CommandSpawner:
         try:
             output = pipe_file.read()
         except IOError, e:
+            # "Resource temporarily unavailable"--not an error really,
+            # just means there's nothing to read.
             if e.errno != errno.EAGAIN:
-                # "Resource temporarily unavailable"--not an error
-                # really, just means there's nothing to read.
                 raise
         else:
             if len(output) > 0:
@@ -224,11 +224,10 @@ class OutputLineHandler:
         Any trailing text not (yet) terminated with a newline is buffered.
         """
         lines = (self.incomplete_buffer + output).split("\n")
-        if not output.endswith("\n") and len(lines) > 0:
+        if len(lines) > 0:
             self.incomplete_buffer = lines[-1]
-            lines = lines[:-1]
-        for line in lines:
-            self.process_line(line)
+            for line in lines[:-1]:
+                self.process_line(line)
 
     def finalize(self):
         """Process the remaining incomplete line, if any."""

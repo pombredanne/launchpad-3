@@ -3,18 +3,26 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
 from lazr.restful.testing.webservice import FakeRequest
+import pytz
+from testtools.matchers import Equals
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -114,6 +122,24 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
+class TestSpecificationView(TestCaseWithFactory):
+    """Test the SpecificationView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_offsite_url(self):
+        """The specification URL is rendered when present."""
+        spec = self.factory.makeSpecification()
+        login_person(spec.owner)
+        spec.specurl = 'http://eg.dom/parrot'
+        view = create_initialized_view(
+            spec, name='+index', principal=spec.owner,
+            rootsite='blueprints')
+        li = find_tag_by_id(view.render(), 'spec-url')
+        self.assertEqual('nofollow', li.a['rel'])
+        self.assertEqual(spec.specurl, li.a['href'])
+
+
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""
 
@@ -207,6 +233,51 @@ class TestSecificationHelpers(unittest.TestCase):
             baz="zab")
         dot_attrs = specification.dict_to_DOT_attrs(dict_attrs, indent='  ')
         self.assertEqual(dot_attrs, expected_attrs)
+
+
+class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_starter_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_starter_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.STARTED, user)
+        removeSecurityProxy(blueprint).date_started = when
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))
+
+    def test_completer_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_completer_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.IMPLEMENTED, user)
+        removeSecurityProxy(blueprint).date_completed = when
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))
+
+
 
 
 def test_suite():

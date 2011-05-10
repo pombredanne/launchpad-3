@@ -130,6 +130,7 @@ time goes on.
     owner_link: u'.../~eric'
     private: False
     project_link: u'.../fooix'
+    recipes_collection_link: u'http://.../~eric/fooix/trunk/recipes'
     registrant_link: u'.../~eric'
     repository_format: None
     resource_type_link: u'.../#branch'
@@ -282,7 +283,7 @@ delete them.
     >>> print deletable
     False
 
-    Deleting only works on branches that do not have anything else 
+    Deleting only works on branches that do not have anything else
     depending on them.
 
     >>> response = webservice.delete('/~eric/fooix/feature-branch')

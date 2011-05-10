@@ -37,9 +37,6 @@ from zope.schema import (
 from zope.traversing.interfaces import IContainmentRoot
 
 from canonical.launchpad import _
-# Import only added to allow change to land.  Needs to be removed when shipit
-# is updated.
-from lp.app.errors import UnexpectedFormData
 
 
 class IAPIDocRoot(IContainmentRoot):
@@ -69,22 +66,6 @@ class ILaunchpadApplication(Interface):
 
 class ILaunchpadProtocolError(Interface):
     """Marker interface for a Launchpad protocol error exception."""
-
-
-class IAuthorization(Interface):
-    """Authorization policy for a particular object and permission."""
-
-    def checkUnauthenticated():
-        """Returns True if an unauthenticated user has that permission
-        on the adapted object.  Otherwise returns False.
-        """
-
-    def checkAccountAuthenticated(account):
-        """Returns True if the account has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument `account` is the account who is authenticated.
-        """
 
 
 class OffsiteFormPostError(Exception):
@@ -186,6 +167,12 @@ class ILinkData(Interface):
     # action menu is not used anymore and we move to use inline navigation.
     sort_key = Attribute(
         "The sort key to use when rendering it with a group of links.")
+
+    hidden = Attribute(
+        "Boolean to say whether this link is hidden.  This is separate from "
+        "being enabled and is used to support links which need to be be "
+        "enabled but not viewable in the rendered HTML.  The link may be "
+        "changed to visible by JavaScript or some other means.")
 
 
 class ILink(ILinkData):

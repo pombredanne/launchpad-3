@@ -20,7 +20,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.command_spawner import (
@@ -102,6 +101,10 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 """
 
 
+class AptFTPArchiveFailure(Exception):
+    """Failure while running apt-ftparchive."""
+
+
 class FTPArchiveHandler:
     """Produces Sources and Packages files via apt-ftparchive.
 
@@ -135,34 +138,52 @@ class FTPArchiveHandler:
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
 
+    def _getArchitectureTags(self):
+        """List tags of all architectures enabled in this distro."""
+        archs = set()
+        for series in self.distro.series:
+            archs.update(set([
+                distroarchseries.architecturetag
+                for distroarchseries in series.enabled_architectures]))
+        return archs
+
     def runApt(self, apt_config_filename):
-        """Run apt in a subprocess and verify its return value. """
+        """Run apt-ftparchive in subprocesses.
+
+        :raise: AptFTPArchiveFailure if any of the apt-ftparchive
+            commands failed.
+        """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        # XXX JeroenVermeulen 2011-02-01 bug=181368: Run parallel
-        # apt-ftparchive processes for the various architectures (plus
-        # source).
+
         stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
         stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
-        completion_handler = ReturnCodeReceiver()
-        command = [
+        base_command = [
             "apt-ftparchive",
             "--no-contents",
             "generate",
             apt_config_filename,
             ]
         spawner = CommandSpawner()
+
+        returncodes = {}
+        completion_handler = ReturnCodeReceiver()
+        returncodes['all'] = completion_handler
         spawner.start(
-            command, stdout_handler=stdout_handler,
+            base_command, stdout_handler=stdout_handler,
             stderr_handler=stderr_handler,
             completion_handler=completion_handler)
+
         spawner.complete()
         stdout_handler.finalize()
         stderr_handler.finalize()
-        if completion_handler.returncode != 0:
-            raise AssertionError(
-                "Failure from apt-ftparchive. Return code %s"
-                % completion_handler.returncode)
-        return completion_handler.returncode
+        failures = sorted([
+            (tag, receiver.returncode)
+            for tag, receiver in returncodes.iteritems()
+                if receiver.returncode != 0])
+        if len(failures) > 0:
+            by_arch = ["%s (returned %d)" % failure for failure in failures]
+            raise AptFTPArchiveFailure(
+                "Failure(s) from apt-ftparchive: %s" % ", ".join(by_arch))
 
     #
     # Empty Pocket Requests
@@ -414,17 +435,13 @@ class FTPArchiveHandler:
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source overrides")
 
-        def update_source_override(pub_details):
-            updateOverride(*pub_details)
-        process_in_batches(
-            source_publications, update_source_override, self.log)
+        for pub in source_publications:
+            updateOverride(*pub)
 
         self.log.debug("Calculating binary overrides")
 
-        def update_binary_override(pub_details):
-            updateOverride(*pub_details)
-        process_in_batches(
-            binary_publications, update_binary_override, self.log)
+        for pub in binary_publications:
+            updateOverride(*pub)
 
         # Now generate the files on disk...
         for distroseries in overrides:
@@ -651,17 +668,13 @@ class FTPArchiveHandler:
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source filelist.")
 
-        def update_source_filelist(file_details):
+        for file_details in sourcefiles:
             updateFileList(*file_details)
-        process_in_batches(
-            sourcefiles, update_source_filelist, self.log)
 
         self.log.debug("Calculating binary filelist.")
 
-        def update_binary_filelist(file_details):
+        for file_details in binaryfiles:
             updateFileList(*file_details)
-        process_in_batches(
-            binaryfiles, update_binary_filelist, self.log)
 
         for suite, components in filelist.iteritems():
             self.log.debug("Writing file lists for %s" % suite)

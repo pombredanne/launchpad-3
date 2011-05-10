@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
@@ -35,7 +34,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
@@ -80,6 +79,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -112,6 +112,7 @@ from lp.codehosting.bzrutils import UnsafeUrlSeen
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
+from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -147,6 +148,7 @@ class TestCodeImport(TestCase):
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
+        clear_property_cache(branch)
         self.assertEqual(None, branch.code_import)
 
 
@@ -177,6 +179,16 @@ class TestBranchChanged(TestCaseWithFactory):
         login_person(branch.owner)
         branch.branchChanged(
             stacked_on.unique_name, '', *self.arbitrary_formats)
+        self.assertEqual(stacked_on, branch.stacked_on)
+
+    def test_branchChanged_sets_stacked_on_branch_id_alias(self):
+        # branchChanged sets the stacked_on attribute based on the id of the
+        # branch if it is valid.
+        branch = self.factory.makeAnyBranch()
+        stacked_on = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        stacked_on_location = branch_id_alias(stacked_on)
+        branch.branchChanged(stacked_on_location, '', *self.arbitrary_formats)
         self.assertEqual(stacked_on, branch.stacked_on)
 
     def test_branchChanged_unsets_stacked_on(self):
@@ -1100,7 +1112,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         spec = getUtility(ISpecificationSet).new(
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
+            definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
@@ -2640,7 +2652,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new], branch_revisions)
 
     def test_end_date(self):
@@ -2654,7 +2666,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         add_revision_to_branch(
             self.factory, branch, end_date + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch, end_date)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([in_range], branch_revisions)
 
     def test_newest_first(self):
@@ -2666,7 +2678,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=False)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
     def test_oldest_first(self):
@@ -2678,7 +2690,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=True)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([old, new], branch_revisions)
 
     def test_only_mainline_revisions(self):
@@ -2693,7 +2705,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=3))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
 
@@ -2787,7 +2799,7 @@ class TestWebservice(TestCaseWithFactory):
             db_queue = self.factory.makeBranchMergeQueue()
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2804,7 +2816,7 @@ class TestWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2814,20 +2826,3 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
-
-    def test_getMergeProposals_with_merged_revnos(self):
-        """Specifying merged revnos selects the correct merge proposal."""
-        mp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for('test', mp.registrant,
-            service_root="http://api.launchpad.dev:8085")
-        with person_logged_in(mp.registrant):
-            mp.markAsMerged(merged_revno=123)
-            transaction.commit()
-            target = ws_object(launchpad, mp.target_branch)
-            mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

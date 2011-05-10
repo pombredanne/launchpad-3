@@ -6,8 +6,15 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import ForeignKey
+from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import (
     DEFAULT,
@@ -16,6 +23,8 @@ from canonical.database.constants import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -54,6 +63,34 @@ class Packaging(SQLBase):
         from lp.registry.model.sourcepackage import SourcePackage
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+
+    def __init__(self, **kwargs):
+        super(Packaging, self).__init__(**kwargs)
+        notify(ObjectCreatedEvent(self))
+
+    def userCanDelete(self):
+        """See `IPackaging`."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        currentrelease = self.sourcepackage.currentrelease
+        package_maintainer = (
+            currentrelease.maintainer if currentrelease is not None
+            else None)
+        admin = getUtility(ILaunchpadCelebrities).admin
+        registry_experts = (
+            getUtility(ILaunchpadCelebrities).registry_experts)
+        return (
+            user.inTeam(self.owner) or user.inTeam(package_maintainer) or
+            user.inTeam(registry_experts) or user.inTeam(admin))
+
+    def destroySelf(self):
+        if not self.userCanDelete():
+            raise Unauthorized(
+                'Only the person who created the packaging and package '
+                'maintainers can delete it.')
+        notify(ObjectDeletedEvent(self))
+        super(Packaging, self).destroySelf()
 
 
 class PackagingUtil:

@@ -13,6 +13,8 @@ __all__ = [
 
 from email.Utils import parseaddr
 import re
+from httplib import BadStatusLine
+from urllib2 import URLError
 from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
@@ -21,7 +23,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import (
@@ -40,7 +41,6 @@ from lp.bugs.externalbugtracker.base import (
     UnparsableBugData,
     UnparsableBugTrackerVersion,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -52,6 +52,8 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services import encoding
+from lp.services.database.isolation import ensure_no_transaction
 
 
 class Bugzilla(ExternalBugTracker):
@@ -156,12 +158,17 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
-        if self._remoteSystemHasPluginAPI():
-            return BugzillaLPPlugin(self.baseurl)
-        elif self._remoteSystemHasBugzillaAPI():
-            return BugzillaAPI(self.baseurl)
-        else:
-            return self
+        # checkwatches isn't set up to handle errors here, so we supress
+        # known connection issues. They'll be handled and logged later on when
+        # further requests are attempted.
+        try:
+            if self._remoteSystemHasPluginAPI():
+                return BugzillaLPPlugin(self.baseurl)
+            elif self._remoteSystemHasBugzillaAPI():
+                return BugzillaAPI(self.baseurl)
+        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
+            pass
+        return self
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -228,14 +235,22 @@ class Bugzilla(ExternalBugTracker):
         'critical': BugTaskImportance.CRITICAL,
         'immediate': BugTaskImportance.CRITICAL,
         'urgent': BugTaskImportance.CRITICAL,
+        'p5': BugTaskImportance.CRITICAL,
+        'crash': BugTaskImportance.HIGH,
+        'grave': BugTaskImportance.HIGH,
         'major': BugTaskImportance.HIGH,
         'high': BugTaskImportance.HIGH,
+        'p4': BugTaskImportance.HIGH,
         'normal': BugTaskImportance.MEDIUM,
         'medium': BugTaskImportance.MEDIUM,
+        'p3': BugTaskImportance.MEDIUM,
         'minor': BugTaskImportance.LOW,
         'low': BugTaskImportance.LOW,
         'trivial': BugTaskImportance.LOW,
+        'p2': BugTaskImportance.LOW,
+        'p1': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
+        'wishlist': BugTaskImportance.WISHLIST,
         }
 
     def convertRemoteImportance(self, remote_importance):
@@ -254,7 +269,7 @@ class Bugzilla(ExternalBugTracker):
     _status_lookup = LookupTree(
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),
-        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'NEEDSINFO', 'WAITING', 'SUSPENDED',
          'PLEASETEST',
          BugTaskStatus.INCOMPLETE),
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
@@ -271,9 +286,8 @@ class Bugzilla(ExternalBugTracker):
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
                  BugTaskStatus.EXPIRED),
                 ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
-                 'UNREPRODUCIBLE',
-                 BugTaskStatus.INVALID),
-                (BugTaskStatus.UNKNOWN,))),
+                 'UNREPRODUCIBLE', 'DUPLICATE',
+                 BugTaskStatus.INVALID))),
         ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
          BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
