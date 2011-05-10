@@ -19,6 +19,7 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from canonical.launchpad.components.apihelpers import patch_entry_return_type
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
 IQuestionSet.queryTaggedValue(
