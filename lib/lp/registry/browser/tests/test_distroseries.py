@@ -863,8 +863,19 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             FeatureFixture(
                 {u'soyuz.derived-series-sync.enabled': u'on'}))
 
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_offered_only_with_feature_flag(self):
+        # The "Upgrade Packages" button will only be shown when a specific
+        # feature flag is enabled.
+        view = self.makeView()
+        self.makePackageUpgrade(view.context)
+        self.assertFalse(view.canUpgrade())
+        self.enableDerivedSeriesSyncFeature()
+        self.assertTrue(view.canUpgrade())
+
     def test_upgrades_are_offered_if_appropriate(self):
-        # The"Upgrade Packages" button will only be shown to privileged users.
+        # The "Upgrade Packages" button will only be shown to privileged
+        # users.
         self.enableDerivedSeriesSyncFeature()
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
