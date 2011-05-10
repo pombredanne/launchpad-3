@@ -450,7 +450,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             "can't call matching_faqs_url when matching_faqs_count == 0")
         collection = IFAQCollection(self.context)
         return canonical_url(collection) + '/+faqs?' + urlencode({
-            'field.search_text': self.search_text,
+            'field.search_text': self.search_text.encode('utf-8'),
             'field.actions.search': 'Search',
             })
 
@@ -464,9 +464,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
-        if self.search_params.get('search_text', None) is not None:
-            self.search_params['search_text'] = (
-                self.search_params['search_text'].strip())
+        search_text = self.search_params.get('search_text', None)
+        if search_text is not None:
+            self.search_params['search_text'] = search_text.strip()
 
     def searchResults(self):
         """Return the questions corresponding to the search."""
@@ -738,12 +738,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
             self._updatePreferredLanguages(self.user)
-            if self.context.addAnswerContact(self.user):
+            if self.context.addAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
-            if self.context.removeAnswerContact(self.user):
+            if self.context.removeAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
@@ -752,12 +752,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)
-                if self.context.addAnswerContact(team):
+                if self.context.addAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
-                if self.context.removeAnswerContact(team):
+                if self.context.removeAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))

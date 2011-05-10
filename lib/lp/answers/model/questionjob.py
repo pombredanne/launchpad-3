@@ -51,6 +51,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.propertycache import cachedproperty
 
 
@@ -170,7 +171,7 @@ class QuestionEmailJob(BaseRunnableJob):
 
     def getErrorRecipients(self):
         """See `IRunnableJob`."""
-        return self.user
+        return [format_address_for_person(self.user)]
 
     @property
     def from_address(self):

@@ -11,6 +11,7 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import format_address
@@ -20,6 +21,7 @@ from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
     )
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.answers.model.questionjob import (
     QuestionJob,
@@ -28,6 +30,7 @@ from lp.answers.model.questionjob import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     run_script,
@@ -79,7 +82,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         with person_logged_in(contact):
             lang_set = getUtility(ILanguageSet)
             contact.addLanguage(lang_set['en'])
-            question.target.addAnswerContact(contact)
+            question.target.addAnswerContact(contact, contact)
         return contact
 
     def test_create(self):
@@ -107,7 +110,14 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
 
     def test_iterReady(self):
         # Jobs in the ready state are returned by the iterator.
-        question = self.factory.makeQuestion()
+        # Creating a question implicitly created an question email job.
+        asker = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        naked_question_set = removeSecurityProxy(getUtility(IQuestionSet))
+        question = naked_question_set.new(
+            title='title', description='description', owner=asker,
+            language=getUtility(ILanguageSet)['en'],
+            product=product, distribution=None, sourcepackagename=None)
         user, subject, ignore, headers = self.makeUserSubjectBodyHeaders()
         job_1 = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
@@ -198,7 +208,8 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.SUBSCRIBER,
             subject, body, headers)
-        self.assertEqual(user, job.getErrorRecipients())
+        self.assertEqual(
+            [format_address_for_person(job.user)], job.getErrorRecipients())
 
     def test_recipients_asker(self):
         # The recipients property contains the question owner.
@@ -323,8 +334,18 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
     def test_run_cronscript(self):
         # The cronscript is configured: schema-lazr.conf and security.cfg.
         question = self.factory.makeQuestion()
+        with person_logged_in(question.target.owner):
+            question.linkBug(self.factory.makeBug(product=question.target))
+            question.linkFAQ(
+                question.target.owner,
+                self.factory.makeFAQ(target=question.target),
+                'test FAQ link')
         self.addAnswerContact(question)
         user, subject, body, headers = self.makeUserSubjectBodyHeaders()
+        with person_logged_in(user):
+            lang_set = getUtility(ILanguageSet)
+            user.addLanguage(lang_set['en'])
+            question.target.addAnswerContact(user, user)
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)
@@ -336,6 +357,8 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
         self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
         self.assertEqual(0, exit_code)
+        self.assertTrue(
+            'Traceback (most recent call last)' not in err)
         message = (
             'QuestionEmailJob has sent email for question %s.' % question.id)
         self.assertTrue(

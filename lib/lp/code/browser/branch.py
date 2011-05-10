@@ -114,6 +114,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -251,11 +252,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByBuildFarmJob(buildfarmjob_id)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):

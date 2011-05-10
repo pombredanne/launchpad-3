@@ -1,0 +1,51 @@
+<tal:root
+        xmlns:tal="http://xml.zope.org/namespaces/tal"
+        xmlns:metal="http://xml.zope.org/namespaces/metal"
+        xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+        >
+
+  <tr id="extra-filebug-details"><td colspan="2" width="100%"><table><tbody>
+  <tr>
+    <metal:bug_reporting_guidelines
+            use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
+  </tr>
+
+  <tr tal:define="security_context view/getMainContext">
+    <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/security_related|nothing"
+        tal:condition="widget">
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <input type="checkbox" tal:replace="structure widget" />
+            </td>
+            <td>
+              <label tal:attributes="for widget/name">
+                This bug is a security vulnerability
+              </label>
+              <div tal:define="security_contact security_context/security_contact|nothing">
+                <tal:security-contact tal:condition="security_contact">
+                  The security contact for
+                  <tal:security-context content="security_context/displayname" />,
+                  <a tal:replace="structure security_contact/fmt:link" />,
+                  will be notified.
+                </tal:security-contact>
+                <tal:maintainer condition="not:security_contact"
+                                define="maintainer security_context/owner">
+                  The maintainer of
+                  <tal:security-context content="security_context/displayname">
+                    Mozilla Firefox</tal:security-context>,
+                  <a tal:replace="structure maintainer/fmt:link">
+                    Sample Person</a>,
+                  will be notified.
+                </tal:maintainer>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+  </tbody></table></td></tr>
+</tal:root>

@@ -30,6 +30,7 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
@@ -47,26 +48,27 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
-    install_feature_controller,
     )
-from lp.services.features.flags import FeatureController
-from lp.services.features.model import (
-    FeatureFlag,
-    getFeatureStore,
+from lp.services.features.testing import (
+    FeatureFixture,
     )
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     PackagePublishingStatus,
     SourcePackageFormat,
     )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     celebrity_logged_in,
     feature_flags,
@@ -81,18 +83,16 @@ from lp.testing.views import create_initialized_view
 
 
 def set_derived_series_ui_feature_flag(test_case):
-    # Helper to set the feature flag enabling the derived series ui.
-    getFeatureStore().add(FeatureFlag(
-        scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
-        value=u'on', priority=1))
+    test_case.useFixture(FeatureFixture({
+        u'soyuz.derived-series-ui.enabled': u'on',
+        }))
 
-    # XXX Michael Nelson 2010-09-21 bug=631884
-    # Currently LaunchpadTestRequest doesn't set per-thread
-    # features.
-    def in_scope(value):
-        return True
-    install_feature_controller(FeatureController(in_scope))
-    test_case.addCleanup(install_feature_controller, None)
+
+def set_derived_series_sync_feature_flag(test_case):
+    test_case.useFixture(FeatureFixture({
+        u'soyuz.derived_series_sync.enabled': u'on',
+        u'soyuz.derived-series-ui.enabled': u'on',
+        }))
 
 
 class TestDistroSeriesView(TestCaseWithFactory):
@@ -110,7 +110,7 @@ class TestDistroSeriesView(TestCaseWithFactory):
         # Helper function to create a valid DSD.
         distroseries = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
-        ds_diff = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=distroseries, difference_type=difference_type)
         return create_initialized_view(distroseries, '+index')
 
@@ -173,11 +173,11 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
                 derived_series,
                 '+index',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         self.assertEqual(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
-        self.assertThat(html, Not(portlet_header))
+        self.assertThat(html_content, Not(portlet_header))
 
     def test_differences_portlet_all_differences(self):
         # The difference portlet shows the differences with the parent
@@ -209,9 +209,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_content = view()
 
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_content, portlet_display)
 
     def test_differences_portlet_no_differences(self):
         # The difference portlet displays 'No differences' if there is no
@@ -235,9 +235,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_content = view()
 
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_content, portlet_display)
 
     def test_differences_portlet_initialising(self):
         # The difference portlet displays 'The series is initialising.' if
@@ -245,7 +245,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         set_derived_series_ui_feature_flag(self)
         derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
         job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job = job_source.create(derived_series.parent, derived_series)
+        job_source.create(derived_series.parent, derived_series)
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
@@ -263,10 +263,10 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
             # self.features to NullFeatureController.
             view.request.features = get_relevant_feature_controller()
-            html = view()
+            html_content = view()
 
         self.assertTrue(derived_series.is_initialising)
-        self.assertThat(html, portlet_display)
+        self.assertThat(html_content, portlet_display)
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -401,7 +401,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
 
-    def _test_packagesets(self, html, packageset_text,
+    def _test_packagesets(self, html_content, packageset_text,
                           packageset_class, msg_text):
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
@@ -409,7 +409,7 @@ class DistroSeriesDifferenceMixin:
                 attrs={'class': packageset_class},
                 text=packageset_text))
 
-        self.assertThat(html, parent_packagesets)
+        self.assertThat(html_content, parent_packagesets)
 
 
 class TestDistroSeriesLocalDifferences(
@@ -471,11 +471,12 @@ class TestDistroSeriesLocalDifferences(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_content, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -505,9 +506,13 @@ class TestDistroSeriesLocalDifferences(
         # fairly static. However, with some DistroSeriesDifferences the query
         # count will be higher, but it should remain the same no matter how
         # many differences there are.
-        login_person(self.simple_user)
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
+        ArchivePermission(
+            archive=derived_series.main_archive, person=self.simple_user,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+        login_person(self.simple_user)
 
         def add_differences(num):
             for index in xrange(num):
@@ -1001,76 +1006,179 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertContentEqual(
             [resolved_diff], filtered_view.cached_differences.batch)
 
-    def test_canPerformSync_non_editor(self):
-        # Non-editors do not see options to sync.
+    def _setUpDSD(self, src_name='src-name', versions=None,
+                  difference_type=None, distribution=None):
+        # Helper to create a derived series with fixed names and proper
+        # source package format selection along with a DSD.
+        parent_series = self.factory.makeDistroSeries(name='warty')
+        if distribution == None:
+            distribution = self.factory.makeDistribution('deribuntu')
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+            distribution=distribution,
+            name='derilucid', parent_series=parent_series)
+        self._set_source_selection(derived_series)
         self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series)
-
+            source_package_name_str=src_name,
+            derived_series=derived_series, versions=versions,
+            difference_type=difference_type)
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            src_name)
         set_derived_series_ui_feature_flag(self)
+        return derived_series, parent_series, sourcepackagename
+
+    def test_canPerformSync_anon(self):
+        # Anonymous users cannot sync packages.
+        derived_series = self._setUpDSD()[0]
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertFalse(view.canPerformSync())
+
+    def test_canPerformSync_non_anon_no_perm_dest_archive(self):
+        # Logged-in users with no permission on the destination archive
+        # are not presented with options to perform syncs.
+        derived_series = self._setUpDSD()[0]
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
 
-        self.assertFalse(view.canPerformSync())
+            self.assertFalse(view.canPerformSync())
 
-    def test_canPerformSync_editor(self):
-        # Editors are presented with options to perform syncs.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series)
+    def _setUpPersonWithPerm(self, derived_series):
+        # Helper to create a person with an upload permission on the
+        # series' archive.
+        person = self.factory.makePerson()
+        ArchivePermission(
+            archive=derived_series.main_archive, person=person,
+            component=getUtility(IComponentSet)["main"],
+            permission=ArchivePermissionType.QUEUE_ADMIN)
+        return person
 
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
+    def test_canPerformSync_non_anon(self):
+        # Logged-in users with a permission on the destination archive
+        # are presented with options to perform syncs.
+        # Note that a more fine-grained perm check is done on each
+        # synced package.
+        derived_series = self._setUpDSD()[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
+        with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
+
             self.assertTrue(view.canPerformSync())
 
-    def test_sync_notification_on_success(self):
-        # Syncing one or more diffs results in a stub notification.
-        versions = {
-            'base': '1.0',
-            'derived': '1.0derived1',
-            'parent': '1.0-1',
-        }
-        parent_series = self.factory.makeDistroSeries(name='warty')
-        derived_distro = self.factory.makeDistribution(name='deribuntu')
-        derived_series = self.factory.makeDistroSeries(
-            distribution=derived_distro, name='derilucid',
-            parent_series=parent_series)
-        self._set_source_selection(derived_series)
-        difference = self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series, versions=versions)
-
-        # The inital state is that 1.0-1 is not in the derived series.
-        pubs = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
-            distroseries=derived_series).any()
-        self.assertIs(None, pubs)
-
-        # Now, sync the source from the parent using the form.
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
+    def test_canPerformSync_non_anon_feature_disabled(self):
+        # Logged-in users with a permission on the destination archive
+        # are not presented with options to perform syncs when the
+        # feature flag is not enabled.
+        self.assertIs(
+            None, getFeatureFlag('soyuz.derived_series_sync.enabled'))
+        derived_series = self._setUpDSD()[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        with person_logged_in(person):
             view = create_initialized_view(
-                derived_series, '+localpackagediffs',
+                derived_series, '+localpackagediffs')
+
+            self.assertFalse(view.canPerformSync())
+
+    def _syncAndGetView(self, derived_series, person, sync_differences,
+                        difference_type=None, view_name='+localpackagediffs'):
+        # A helper to get the POST'ed sync view.
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, view_name,
                 method='POST', form={
-                    'field.selected_differences': [
-                        difference.source_package_name.name,
-                        ],
+                    'field.selected_differences': sync_differences,
                     'field.actions.sync': 'Sync',
                     })
+            return view
 
-        # The parent's version should now be in the derived series:
-        pub = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
-            distroseries=derived_series).one()
+    def test_sync_error_nothing_selected(self):
+        # An error is raised when a sync is requested without any selection.
+        derived_series = self._setUpDSD()[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(derived_series, person, [])
+
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
+
+    def test_sync_error_invalid_selection(self):
+        # An error is raised when an invalid difference is selected.
+        derived_series = self._setUpDSD('my-src-name')[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, ['some-other-name'])
+
+        self.assertEqual(2, len(view.errors))
+        self.assertEqual(
+            'No differences selected.', view.errors[0])
+        self.assertEqual(
+            'Invalid value', view.errors[1].error_name)
+
+    def test_sync_error_no_perm_dest_archive(self):
+        # A user without upload rights on the destination archive cannot
+        # sync packages.
+        derived_series = self._setUpDSD('my-src-name')[0]
+        person = self._setUpPersonWithPerm(derived_series)
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+
+        self.assertEqual(1, len(view.errors))
+        self.assertTrue(
+            "The signer of this package has no upload rights to this "
+            "distribution's primary archive" in view.errors[0])
+
+    def makePersonWithComponentPermission(self, archive, component=None):
+        person = self.factory.makePerson()
+        if component is None:
+            component = self.factory.makeComponent()
+        removeSecurityProxy(archive).newComponentUploader(
+            person, component)
+        return person, component
+
+    def test_sync_success_perm_component(self):
+        # A user with upload rights on the destination component
+        # can sync packages.
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name')
+        person, _ = self.makePersonWithComponentPermission(
+            derived_series.main_archive,
+            derived_series.getSourcePackage(
+                sourcepackagename).latest_published_component)
+        view = self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+
+        self.assertEqual(0, len(view.errors))
+
+    def test_sync_error_no_perm_component(self):
+        # A user without upload rights on the destination component
+        # will get an error when he syncs packages to this component.
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name')
+        person, another_component = self.makePersonWithComponentPermission(
+            derived_series.main_archive)
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+
+        self.assertEqual(1, len(view.errors))
+        self.assertTrue(
+            "Signer is not permitted to upload to the "
+            "component" in view.errors[0])
+
+    def assertPackageCopied(self, series, src_name, version, view):
+        # Helper to check that a package has been copied.
+        # The new version should now be in the destination series.
+        pub = series.main_archive.getPublishedSources(
+            name=src_name, version=version,
+            distroseries=series).one()
         self.assertIsNot(None, pub)
-        self.assertEqual(versions['parent'], pub.sourcepackagerelease.version)
+        self.assertEqual(version, pub.sourcepackagerelease.version)
 
         # The view should show no errors, and the notification should
         # confirm the sync worked.
@@ -1079,59 +1187,93 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         self.assertEqual(
             '<p>Packages copied to '
-            '<a href="http://launchpad.dev/deribuntu/derilucid"'
+            '<a href="http://launchpad.dev/%s/%s"'
             '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
-            'derilucid</li>\n</ul>',
+            'derilucid</li>\n</ul>' % (series.parent.name, series.name),
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
-    def test_sync_error_nothing_selected(self):
-        # An error is raised when a sync is requested without any selection.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series)
+    def test_sync_notification_on_success(self):
+        # A user with upload rights on the destination archive can
+        # sync packages. Notifications about the synced packages are
+        # displayed and the packages are copied inside the destination
+        # series.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', versions=versions)
 
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                method='POST', form={
-                    'field.selected_differences': [],
-                    'field.actions.sync': 'Sync',
-                    })
+        # Setup a user with upload rights.
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
 
-        self.assertEqual(1, len(view.errors))
-        self.assertEqual(
-            'No differences selected.', view.errors[0])
+        # The inital state is that 1.0-1 is not in the derived series.
+        pubs = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).any()
+        self.assertIs(None, pubs)
 
-    def test_sync_error_invalid_selection(self):
-        # An error is raised when an invalid difference is selected.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        self._set_source_selection(derived_series)
-        self.factory.makeDistroSeriesDifference(
-            source_package_name_str='my-src-name',
-            derived_series=derived_series)
+        # Now, sync the source from the parent using the form.
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
 
-        set_derived_series_ui_feature_flag(self)
-        with person_logged_in(derived_series.owner):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs',
-                method='POST', form={
-                    'field.selected_differences': ['some-other-name'],
-                    'field.actions.sync': 'Sync',
-                    })
+        # The parent's version should now be in the derived series and
+        # the notifications displayed:
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
 
-        self.assertEqual(2, len(view.errors))
-        self.assertEqual(
-            'No differences selected.', view.errors[0])
-        self.assertEqual(
-            'Invalid value', view.errors[1].error_name)
+    def test_sync_success_not_yet_in_derived_series(self):
+        # If the package to sync does not exist yet in the derived series,
+        # upload right to any component inside the destination series will be
+        # enough to sync the package.
+        versions = {
+            'parent': '1.0-1',
+        }
+        missing = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', difference_type=missing, versions=versions)
+        person, another_component = self.makePersonWithComponentPermission(
+            derived_series.main_archive)
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, ['my-src-name'],
+            view_name='+missingpackages')
+
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
+
+    def test_sync_append_main_archive(self):
+        # A user with lp.Append on the main archive (e.g. members of
+        # ubuntu-security on an ubuntu series) can sync packages.
+        # XXX: rvb 2011-05-05 bug=777911: This check should be refactored
+        # and moved to lib/lp/soyuz/scripts/tests/test_copypackage.py.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', distribution=ubuntu, versions=versions)
+        ubuntu_security = getUtility(IPersonSet).getByName('ubuntu-security')
+        set_derived_series_sync_feature_flag(self)
+        with person_logged_in(ubuntu_security):
+            self.assertTrue(
+                check_permission(
+                    'launchpad.Append', derived_series.main_archive))
+            view = self._syncAndGetView(
+                derived_series, ubuntu_security, ['my-src-name'])
+
+            self.assertTrue(view.canPerformSync())
+
+        self.assertPackageCopied(
+            derived_series, 'my-src-name', versions['parent'], view)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
