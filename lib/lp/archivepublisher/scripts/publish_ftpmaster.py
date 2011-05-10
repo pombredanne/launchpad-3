@@ -8,17 +8,22 @@ __all__ = [
     'PublishFTPMaster',
     ]
 
+from datetime import datetime
 from optparse import OptionParser
 import os
+from pytz import utc
 from zope.component import getUtility
 
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts import publishdistro
@@ -93,6 +98,7 @@ def get_working_dists(archive_config):
     for publish-distro.  This method composes the temporary path.
     """
     return get_dists(archive_config) + ".in-progress"
+
 
 def extend_PATH():
     """Produce env dict for extending $PATH.
@@ -222,6 +228,60 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
+    def locateIndexesMarker(self, suite):
+        """Give path for marker file whose presence marks index creation.
+
+        The file will be created once the archive indexes for `suite`
+        have been created.  This is how future runs will know that this
+        work is done.
+        """
+        archive_root = self.configs[ArchivePurpose.PRIMARY].archiveroot
+        return os.path.join(archive_root, ".created-indexes-for-%s" % suite)
+
+    def listSuitesNeedingIndexes(self, distroseries):
+        """Find suites in `distroseries` that need indexes created.
+
+        Checks for the marker left by `markIndexCreationComplete`.
+        """
+        if distroseries.status != SeriesStatus.FROZEN:
+            # DistroSeries are created in Frozen state.  If the series
+            # is in any other state yet has not been marked as having
+            # its indexes created, that's because it predates automatic
+            # index creation.
+            return []
+        distro = distroseries.distribution
+        publisher_config_set = getUtility(IPublisherConfigSet)
+        if publisher_config_set.getByDistribution(distro) is None:
+            # We won't be able to do a thing without a publisher config,
+            # but that's alright: we have those for all distributions
+            # that we want to publish.
+            return []
+
+        # May need indexes for this series.
+        suites = [
+            distroseries.getSuite(pocket)
+            for pocket in pocketsuffix.iterkeys()]
+        return [
+            suite for suite in suites
+                if not file_exists(self.locateIndexesMarker(suite))]
+
+    def markIndexCreationComplete(self, suite):
+        """Note that archive indexes for `suite` have been created.
+
+        This tells `listSuitesNeedingIndexes` that no, this suite no
+        longer needs archive indexes to be set up.
+        """
+        with file(self.locateIndexesMarker(suite), "w") as marker:
+            marker.write(
+                "Indexes for %s were created on %s.\n"
+                % (suite, datetime.now(utc)))
+
+    def createIndexes(self, suite):
+        """Create archive indexes for `distroseries`."""
+        self.logger.info("Creating archive indexes for %s.", suite)
+        self.runPublishDistro(args=['-A'], suites=[suite])
+        self.markIndexCreationComplete(suite)
+
     def processAccepted(self):
         """Run the process-accepted script."""
         self.logger.debug(
@@ -294,6 +354,20 @@ class PublishFTPMaster(LaunchpadCronScript):
                     "Creating backup dists directory %s", distscopy)
                 os.makedirs(distscopy)
 
+    def runPublishDistro(self, args=[], suites=None):
+        """Execute `publish-distro`."""
+        if suites is None:
+            suites = []
+        arguments = (
+            ['-d', self.distribution.name] +
+            args +
+            sum([['-s', suite] for suite in suites], []))
+
+        parser = OptionParser()
+        publishdistro.add_options(parser)
+        options, args = parser.parse_args(arguments)
+        publishdistro.run_publisher(options, self.txn, log=self.logger)
+
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.
 
@@ -311,26 +385,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         # for the duration.
         temporary_dists = get_working_dists(archive_config)
 
-        arguments = [
-            '-v', '-v',
-            '-d', self.distribution.name,
-            '-R', temporary_dists,
-            ]
-
+        arguments = ['-R', temporary_dists]
         if archive.purpose == ArchivePurpose.PARTNER:
             arguments.append('--partner')
 
-        if security_suites is not None:
-            arguments += sum([['-s', suite] for suite in security_suites], [])
-
-        parser = OptionParser()
-        publishdistro.add_options(parser)
-
         os.rename(get_backup_dists(archive_config), temporary_dists)
         try:
-            options, args = parser.parse_args(arguments)
-            publishdistro.run_publisher(
-                options, txn=self.txn, log=self.logger)
+            self.runPublishDistro(args=arguments, suites=security_suites)
         finally:
             os.rename(temporary_dists, get_backup_dists(archive_config))
 
@@ -495,6 +556,16 @@ class PublishFTPMaster(LaunchpadCronScript):
         """See `LaunchpadScript`."""
         self.setUp()
         self.recoverWorkingDists()
+
+        for series in self.distribution.series:
+            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
+            if len(suites_needing_indexes) > 0:
+                for suite in suites_needing_indexes:
+                    self.createIndexes(suite)
+                # Don't try to do too much in one run.  Leave the rest
+                # of the work for next time.
+                return
+
         self.processAccepted()
         self.setUpDirs()
 

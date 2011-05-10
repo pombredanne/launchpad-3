@@ -285,6 +285,7 @@ from lp.testing import (
     run_with_login,
     temp_dir,
     time_counter,
+    with_celebrity_logged_in,
     )
 from lp.translations.enums import (
     LanguagePackType,
@@ -489,6 +490,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         person = self.makePerson()
         login_as(person)
         return person
+
+    @with_celebrity_logged_in('admin')
+    def makeAdministrator(self, name=None, email=None, password=None):
+        user = self.makePerson(name=name,
+                               email=email,
+                               password=password)
+        administrators = getUtility(ILaunchpadCelebrities).admin
+        administrators.addMember(user, administrators.teamowner)
+        return user
 
     def makeRegistryExpert(self, name=None, email='expert@example.com',
                            password='test'):
@@ -914,7 +924,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None):
+        translations_usage=None, bug_supervisor=None,
+        driver=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -941,14 +952,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        naked_product = removeSecurityProxy(product)
         if official_malone is not None:
-            removeSecurityProxy(product).official_malone = official_malone
+            naked_product.official_malone = official_malone
         if translations_usage is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.translations_usage = translations_usage
         if bug_supervisor is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.bug_supervisor = bug_supervisor
+        if driver is not None:
+            naked_product.driver = driver
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1243,6 +1255,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if with_series_branches and naked_product is not None:
             series_branch_info = []
             # Add some product series
+
             def makeSeriesBranch(name, is_private=False):
                 branch = self.makeBranch(
                     name=name,
@@ -1336,7 +1349,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             related_package_branch_info = sorted_version_numbers(
                     related_package_branch_info, key=lambda branch_info: (
                         getattr(branch_info[1], 'name')))
-
 
         return (
             reference_branch,
@@ -1707,6 +1719,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
+    def makeBugNomination(self, bug=None, target=None):
+        """Create and return a BugNomination.
+
+        Will create a non-series task if it does not already exist.
+
+        :param bug: The `IBug` the nomination should be for. If None,
+            one will be created.
+        :param target: The `IProductSeries`, `IDistroSeries` or
+            `ISourcePackage` to nominate for.
+        """
+        if ISourcePackage.providedBy(target):
+            non_series = target.distribution_sourcepackage
+            series = target.distroseries
+        else:
+            non_series = target.parent
+            series = target
+        with celebrity_logged_in('admin'):
+            bug = self.makeBugTask(bug=bug, target=non_series).bug
+            nomination = bug.addNomination(
+                getUtility(ILaunchpadCelebrities).admin, series)
+        return nomination
+
     def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
                        name=None):
         """Make a new bug tracker."""
@@ -1991,21 +2025,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     makeBlueprint = makeSpecification
 
-    def makeQuestion(self, target=None, title=None):
+    def makeQuestion(self, target=None, title=None, owner=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
             not specified, an arbitrary product is created.
         :param title: The question title. If one is not provided, an
             arbitrary title is created.
+        :param owner: The owner of the question. If one is not provided, the
+            question target owner will be used.
         """
         if target is None:
             target = self.makeProduct()
         if title is None:
             title = self.getUniqueString('title')
+        if owner is None:
+            owner = target.owner
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=target.owner, title=title, description='description')
+                owner=owner, title=title, description='description')
         return question
 
     def makeFAQ(self, target=None, title=None):
@@ -2363,7 +2401,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 changelog=changelogs.get('derived'))
             self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series, sourcepackagerelease=spr,
-                status = PackagePublishingStatus.PUBLISHED)
+                status=PackagePublishingStatus.PUBLISHED)
 
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
@@ -2374,7 +2412,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
                 sourcepackagerelease=spr,
-                status = PackagePublishingStatus.PUBLISHED)
+                status=PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
             derived_series, source_package_name)
@@ -2644,7 +2682,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bq = BuildQueue(
             job=recipe_build_job.job, lastscore=score,
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
-            estimated_duration = timedelta(seconds=estimated_duration),
+            estimated_duration=timedelta(seconds=estimated_duration),
             virtualized=virtualized)
         store.add(bq)
         return bq
@@ -2674,7 +2712,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         records_inside_epoch = []
         all_records = []
-        for x in range(num_recent_records+num_records_outside_epoch):
+        for x in range(num_recent_records + num_records_outside_epoch):
 
             # We want some different source package names occasionally
             if not x % 3:
@@ -2728,7 +2766,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     if x < num_recent_records:
                         naked_build.date_finished = (
                             now - timedelta(
-                                days=epoch_days-1,
+                                days=epoch_days - 1,
                                 hours=-x))
                     # And others is descending order
                     else:

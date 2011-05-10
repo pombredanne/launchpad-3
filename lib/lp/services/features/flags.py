@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -41,6 +41,10 @@ flag_info = sorted([
      'float',
      'Sets the hard request timeout in milliseconds.',
      ''),
+    ('mail.dkim_authentication.disabled',
+     'boolean',
+     'Disable DKIM authentication checks on incoming mail.',
+     ''),
     ('malone.advanced-subscriptions.enabled',
      'boolean',
      'Enables advanced bug subscription features.',
@@ -64,6 +68,10 @@ flag_info = sorted([
     ('soyuz.derived-series-ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
+     ''),
+    ('soyuz.derived-series-sync.enabled',
+     'boolean',
+     'Enables syncing of packages on derivative distributions pages.',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',

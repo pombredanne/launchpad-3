@@ -97,7 +97,7 @@ same library file, so both can be verified.
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
 
-    >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(26)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByID(26)
     >>> build.upload_log = build.log
     >>> ws_uncache(build)
 

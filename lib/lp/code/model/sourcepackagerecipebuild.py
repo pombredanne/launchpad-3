@@ -32,7 +32,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
@@ -260,10 +259,17 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         package_build.destroySelf()
 
     @classmethod
-    def getById(cls, build_id):
+    def getByID(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         return store.find(cls, cls.id == build_id).one()
+
+    @classmethod
+    def getByBuildFarmJob(cls, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        return Store.of(build_farm_job).find(cls,
+            cls.package_build_id == PackageBuild.id,
+            PackageBuild.build_farm_job_id == build_farm_job.id).one()
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
@@ -404,12 +410,3 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score
-
-
-def get_recipe_build_for_build_farm_job(build_farm_job):
-    """Return the SourcePackageRecipeBuild associated with a BuildFarmJob."""
-    store = Store.of(build_farm_job)
-    result = store.find(SourcePackageRecipeBuild,
-        SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-        PackageBuild.build_farm_job_id == build_farm_job.id)
-    return ProxyFactory(result.one())
