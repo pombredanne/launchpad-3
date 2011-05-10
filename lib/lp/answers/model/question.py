@@ -81,6 +81,9 @@ from lp.answers.enums import (
     QuestionStatus,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
@@ -1319,15 +1322,29 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
-    def addAnswerContact(self, person):
+    def canUserAlterAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if person is None or subscribed_by is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if (person == subscribed_by
+            or person in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(admins)):
+            return True
+        return False
+
+    def addAnswerContact(self, person, subscribed_by):
+        """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         answer_contact = AnswerContact.selectOneBy(
             person=person, **self.getTargetTypes())
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert len(person.languages) > 0, (
-            "An Answer Contact must speak a language.")
+        if len(person.languages) == 0:
+            raise AddAnswerContactError(
+                "An answer contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
@@ -1370,8 +1387,8 @@ class QuestionTargetMixin:
         else:
             constraints.append("""
                 Language.id = %s""" % sqlvalues(language))
-        return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage', 'Language']))
+        return list((self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage', 'Language'])))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1395,8 +1412,10 @@ class QuestionTargetMixin:
             recipients.add(person, reason, header)
         return recipients
 
-    def removeAnswerContact(self, person):
+    def removeAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
@@ -1416,4 +1435,4 @@ class QuestionTargetMixin:
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
-        return languages
+        return list(languages)

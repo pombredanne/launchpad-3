@@ -1,1 +1,0 @@
-Daily builds of your recipe %(recipe_name)s have been disabled, because you do not have permission to upload to the archive %(archive_name)s.

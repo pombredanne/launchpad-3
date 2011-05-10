@@ -242,7 +242,7 @@ part of the indirect subscribers list.
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> english = getUtility(ILanguageSet)['en']
     >>> no_priv.addLanguage(english)
-    >>> firefox.addAnswerContact(no_priv)
+    >>> firefox.addAnswerContact(no_priv, no_priv)
     True
 
     >>> from lp.services.propertycache import get_property_cache
@@ -267,9 +267,9 @@ are part of the indirect subscribers list.
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(english)
-    >>> ubuntu.addAnswerContact(ubuntu_team)
+    >>> ubuntu.addAnswerContact(ubuntu_team, ubuntu_team.teamowner)
     True
-    >>> evolution_in_ubuntu.addAnswerContact(no_priv)
+    >>> evolution_in_ubuntu.addAnswerContact(no_priv, no_priv)
     True
     >>> package_question = evolution_in_ubuntu.newQuestion(
     ...     sample_person, 'Upgrading to Evolution 1.4 breaks plug-ins',
