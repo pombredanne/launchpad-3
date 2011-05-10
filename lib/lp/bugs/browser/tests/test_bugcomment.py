@@ -15,6 +15,7 @@ from pytz import utc
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
 from lp.testing import (
@@ -237,7 +238,7 @@ class TestBugCommentVisibility(BrowserTestCase):
 
     def test_random_cannot_see_comments(self):
         comment_text = "You can't see me."
-        bug = self._makeBugWithHiddenComment(comment_text)
+        bug = self.makeBugWithHiddenComment(comment_text)
         view = self.getViewBrowser(context=bug.default_bugtask)
         self.assertFalse(
            comment_text in view.contents,
@@ -246,7 +247,7 @@ class TestBugCommentVisibility(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def _makeBugWithHiddenComment(self, bugbody=None):
+    def makeBugWithHiddenComment(self, bugbody=None):
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
         with person_logged_in(administrator):
@@ -254,29 +255,21 @@ class TestBugCommentVisibility(BrowserTestCase):
             comment.visible = False
         return bug
 
-    def _getUserForTest(self, team=None):
-        person = self.factory.makePerson()
-        if team is not None:
-            with person_logged_in(team.teamowner):
-                team.addMember(person, team.teamowner)
-        return person
-
     def test_admin_can_see_comments(self):
         comment_text = "You can't see me."
-        bug = self._makeBugWithHiddenComment(comment_text)
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        administrator = self._getUserForTest(admin_team)
+        bug = self.makeBugWithHiddenComment(comment_text)
+        admin = self.factory.makeAdministrator()
         view = self.getViewBrowser(
-            context=bug.default_bugtask, user=administrator)
+            context=bug.default_bugtask, user=admin)
         self.assertTrue(
            comment_text in view.contents,
            "Administrator cannot see the hidden comment.")
 
     def test_registry_can_see_comments(self):
         comment_text = "You can't see me."
-        bug = self._makeBugWithHiddenComment(comment_text)
+        bug = self.makeBugWithHiddenComment(comment_text)
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        registry_expert = self._getUserForTest(registry_team)
+        registry_expert = self.factory.makeRegistryExpert()
         view = self.getViewBrowser(
             context=bug.default_bugtask, user=registry_expert)
         self.assertTrue(
@@ -285,7 +278,7 @@ class TestBugCommentVisibility(BrowserTestCase):
 
     def test_anon_cannot_see_comments(self):
         comment_text = "You can't see me."
-        bug = self._makeBugWithHiddenComment(comment_text)
+        bug = self.makeBugWithHiddenComment(comment_text)
         view = self.getViewBrowser(context=bug.default_bugtask, no_login=True)
         self.assertFalse(
            comment_text in view.contents,
@@ -293,8 +286,46 @@ class TestBugCommentVisibility(BrowserTestCase):
 
     def test_random_cannot_see_comments(self):
         comment_text = "You can't see me."
-        bug = self._makeBugWithHiddenComment(comment_text)
+        bug = self.makeBugWithHiddenComment(comment_text)
         view = self.getViewBrowser(context=bug.default_bugtask)
         self.assertFalse(
            comment_text in view.contents,
            "Random user can see the hidden comment.")
+        
+
+class TestBugSpamControls(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBugWithComment(self, bugbody=None):
+        administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
+        bug = self.factory.makeBug()
+        with person_logged_in(administrator):
+            comment = self.factory.makeBugComment(bug=bug, body=bugbody)
+        return bug
+
+    def test_admin_sees_spam_control(self):
+        bug = self.makeBugWithComment()
+        administrator = self.factory.makeAdministrator()
+        view = self.getViewBrowser(context=bug, user=administrator)
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIsNot(None, spam_link)
+
+    def test_registry_sees_spam_control(self):
+        bug = self.makeBugWithComment()
+        registry_expert = self.factory.makeRegistryExpert()
+        view = self.getViewBrowser(context=bug, user=registry_expert)
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIsNot(None, spam_link)
+
+    def test_anon_doesnt_see_spam_control(self):
+        bug = self.makeBugWithComment()
+        view = self.getViewBrowser(context=bug, no_login=True)
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIs(None, spam_link)
+
+    def test_random_doesnt_see_spam_control(self):
+        bug = self.makeBugWithComment()
+        view = self.getViewBrowser(context=bug)
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIs(None, spam_link)

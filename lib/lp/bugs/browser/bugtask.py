@@ -734,7 +734,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
-        show_spam_controls = check_permission('launchpad.Admin', self.context)
+        show_spam_controls = check_permission('launchpad.Admin', self.context.bug)
         return get_comments_for_bugtask(self.context, truncate=True,
             for_display=True, show_spam_controls=show_spam_controls)
 
