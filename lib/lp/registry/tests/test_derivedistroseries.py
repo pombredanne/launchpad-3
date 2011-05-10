@@ -21,7 +21,6 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestDeriveDistroSeries(TestCaseWithFactory):
@@ -36,8 +35,6 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         login_person(self.parent.driver)
 
     def test_no_permission_to_call(self):
-        login(ADMIN_EMAIL)
-        person = self.factory.makePerson()
         login(ANONYMOUS)
         self.assertRaises(
             Unauthorized, getattr, self.parent, "deriveDistroSeries")
