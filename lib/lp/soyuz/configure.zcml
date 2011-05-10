@@ -910,9 +910,9 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
-        component=".model.packagecopyjob.PackageCopyJob"
-        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+        component=".model.packagecopyjob.PlainPackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
     </securedutility>
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
       <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />

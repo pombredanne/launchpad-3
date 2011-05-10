@@ -5,8 +5,8 @@ __metaclass__ = type
 
 __all__ = [
     "IPackageCopyJob",
-    "IPackageCopyJobSource",
     "IPlainPackageCopyJob",
+    "IPlainPackageCopyJobSource",
     "PackageCopyJobType",
     ]
 
@@ -82,7 +82,7 @@ class PackageCopyJobType(DBEnumeratedType):
         """)
 
 
-class IPackageCopyJobSource(IJobSource):
+class IPlainPackageCopyJobSource(IJobSource):
     """An interface for acquiring IIPackageCopyJobs."""
 
     def create(cls, source_archive, source_packages,

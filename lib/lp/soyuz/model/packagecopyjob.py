@@ -22,6 +22,9 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -35,7 +38,8 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
-    IPackageCopyJobSource,
+    IPlainPackageCopyJob,
+    IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
 from lp.soyuz.model.archive import Archive
@@ -60,7 +64,7 @@ class PackageCopyJob(StormBase):
     target_archive_id = Int(name='target_archive')
     target_archive = Reference(target_archive_id, Archive.id)
 
-    target_distroseries_id = Int(name='target_archive')
+    target_distroseries_id = Int(name='target_distroseries')
     target_distroseries = Reference(target_distroseries_id, DistroSeries.id)
 
     job_type = EnumCol(enum=PackageCopyJobType, notNull=True)
@@ -137,34 +141,38 @@ class PackageCopyJobDerived(BaseRunnableJob):
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies packages between archives."""
 
-    implements(IPackageCopyJob)
+    implements(IPlainPackageCopyJob)
 
     class_job_type = PackageCopyJobType.PLAIN
-    classProvides(IPackageCopyJobSource)
+    classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
     def create(cls, source_packages, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False):
-        """See `IPackageCopyJobSource`."""
+        """See `IPlainPackageCopyJobSource`."""
         metadata = {
             'source_packages': source_packages,
             'target_pocket': target_pocket.value,
             'include_binaries': bool(include_binaries),
             }
         job = PackageCopyJob(
-            target_distroseries.distribution, target_distroseries,
-            cls.class_job_type, metadata)
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=target_distroseries,
+            job_type=cls.class_job_type,
+            metadata=metadata)
         IMasterStore(PackageCopyJob).add(job)
         return cls(job)
 
     @classmethod
     def getActiveJobs(cls, target_archive):
-        """See `IPackageCopyJobSource`."""
-        return IStore(PackageCopyJob).find(
+        """See `IPlainPackageCopyJobSource`."""
+        jobs = IStore(PackageCopyJob).find(
             PackageCopyJob,
             PackageCopyJob.job_type == cls.class_job_type,
             PackageCopyJob.target_archive == target_archive)
+        return DecoratedResultSet(jobs, cls)
 
     @property
     def source_packages(self):
@@ -200,3 +208,26 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             sources=source_packages, archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=False)
+
+    def __repr__(self):
+        parts = ["%s to copy" % self.__class__.__name__]
+        source_packages = self.metadata["source_packages"]
+        if len(source_packages) == 0:
+            parts.append(" no packages (!)")
+        else:
+            parts.append(" %d package(s)" % len(source_packages))
+        parts.append(
+            " from %s/%s" % (
+                self.source_archive.distribution.name,
+                self.source_archive.name))
+        parts.append(
+            " to %s/%s" % (
+                self.target_archive.distribution.name,
+                self.target_archive.name))
+        parts.append(
+            ", %s pocket," % self.target_pocket.name)
+        if self.target_distroseries is not None:
+            parts.append(" in %s" % self.target_distroseries)
+        if self.include_binaries:
+            parts.append(", including binaries")
+        return "<%s>" % "".join(parts)
