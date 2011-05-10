@@ -85,23 +85,11 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
+from lp.testing.storm import (
+    reload_dsp,
+    reload_object,
+    )
 from lp.testing.views import create_initialized_view
-
-
-def reload_object(obj):
-    """Return a new instance of a storm objet from the store."""
-    store = IStore(Person)
-    return store.get(removeSecurityProxy(obj).__class__, obj.id)
-
-
-def reload_dsp(dsp):
-    """Return a new instance of a DistributionSourcePackage from the store."""
-    store = IStore(Person)
-    distribution_class = removeSecurityProxy(dsp.distribution.__class__)
-    distribution = store.get(distribution_class, dsp.distribution.id)
-    spn_class = removeSecurityProxy(dsp.sourcepackagename.__class__)
-    spn = store.get(spn_class, dsp.sourcepackagename.id)
-    return distribution.getSourcePackage(name=spn.name)
 
 
 class TestPersonTeams(TestCaseWithFactory):
