@@ -312,7 +312,7 @@ class BugSubscriptionFilterMute(StormBase):
     person = Reference(person_id, "Person.id")
 
     filter_id = Int("filter", allow_none=False)
-    filter = Reference(filter_id, "StructuralSubscription.id")
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
 
     __storm_primary__ = 'person_id', 'filter_id'
 
