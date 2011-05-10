@@ -1174,7 +1174,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def assertPackageCopied(self, series, src_name, version, view):
         # Helper to check that a package has been copied.
-        # The new version should now be in the destination series:
+        # The new version should now be in the destination series.
         pub = series.main_archive.getPublishedSources(
             name=src_name, version=version,
             distroseries=series).one()
@@ -1182,7 +1182,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertEqual(version, pub.sourcepackagerelease.version)
 
         # The view should show no errors, and the notification should
-        # confirm the sync worked:
+        # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
@@ -1192,7 +1192,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
             'derilucid</li>\n</ul>' % (series.parent.name, series.name),
             notifications[0].message)
-        # 302 is a redirect back to the same page:
+        # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
     def test_sync_notification_on_success(self):
