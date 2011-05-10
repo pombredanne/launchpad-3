@@ -261,4 +261,3 @@ class TestBugCreation(TestCaseWithFactory):
             self.assertRaises(
                 UserCannotEditBugTaskMilestone,
                 getUtility(IBugSet).createBug, params)
-
