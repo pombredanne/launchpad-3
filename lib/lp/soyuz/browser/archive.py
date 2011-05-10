@@ -144,6 +144,7 @@ from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -1214,14 +1215,129 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def preload_binary_package_names(copies):
+    """Preload `BinaryPackageName`s to speed up display-name construction."""
+    bpn_ids = [
+        copy.binarypackagerelease.binarypackagenameID for copy in copies
+        if isinstance(copy, BinaryPackagePublishingHistory)]
+    load(BinaryPackageName, bpn_ids)
+
+
+def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                       include_binaries, dest_url=None,
+                       dest_display_name=None, person=None,
+                       check_permissions=True):
+    """Copy packages right now."""
+    copies = do_copy(
+        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
+        allow_delayed_copies=True, person=person,
+        check_permissions=check_permissions)
+
+    preload_binary_package_names(copies)
+
+    # Construct a page notification describing the action.
+    if dest_url is None:
+        dest_url = escape(
+            canonical_url(dest_archive) + '/+packages', quote=True)
+    if dest_display_name is None:
+        dest_display_name = escape(dest_archive.displayname)
+
+    if len(copies) == 0:
+        return structured(
+            '<p>All packages already copied to <a href="%s">%s</a>.</p>'
+            % (dest_url, dest_display_name))
+    else:
+        messages = []
+        messages.append(
+            '<p>Packages copied to <a href="%s">%s</a>:</p>'
+            % (dest_url, dest_display_name))
+        messages.append('<ul>')
+        messages.append("\n".join([
+            '<li>%s</li>' % escape(copy.displayname) for copy in copies]))
+        messages.append('</ul>')
+        return structured("\n".join(messages))
+
+
+def partition_pubs_by_archive(source_pubs):
+    """Group `source_pubs` by archive.
+
+    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
+    :return: A dict mapping `Archive`s to the list of entries from
+        `source_pubs` that are in that archive.
+    """
+    by_source_archive = {}
+    for spph in source_pubs:
+        by_source_archive.setdefault(spph.archive, []).append(spph)
+    return by_source_archive
+
+
+def annotate_pubs_with_versions(source_pubs):
+    """Annotate each entry from `source_pubs` with its version.
+
+    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
+    :return: A list of tuples (name, version), one for each respective
+        entry in `source_pubs`.
+    """
+    sprs = [spph.sourcepackagerelease for spph in source_pubs]
+    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
+
+
+def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                        include_binaries, dest_url=None,
+                        dest_display_name=None, person=None,
+                        check_permissions=True):
+    """Schedule jobs to copy packages later."""
+    job_source = getUtility(IPackageCopyJobSource)
+    archive_pubs = partition_pubs_by_archive(source_pubs)
+    for source_archive, spphs in archive_pubs.iteritems():
+        job_source.create(
+            annotate_pubs_with_versions(spphs), source_archive, dest_archive,
+            dest_series, dest_pocket, include_binaries=include_binaries)
+    return structured("""
+        <p>Requested sync of %s packages.</p>
+        <p>Please allow some time for these to be processed.</p>
+        """, len(source_pubs))
+
+
+def render_cannotcopy_as_html(cannotcopy_exception):
+    """Render `CannotCopy` exception as HTML for display in the page."""
+    error_lines = str(cannotcopy_exception).splitlines()
+
+    if len(error_lines) == 1:
+        intro = "The following source cannot be copied:"
+    else:
+        intro = "The following sources cannot be copied:"
+
+    # Produce structured HTML.  Include <li>%s</li> placeholders for
+    # each error line, but have "structured" interpolate the actual
+    # package names.  It will escape them as needed.
+    html_text = """
+        <p>%s</p>
+        <ul>
+        %s
+        </ul>
+        """ % (intro, "<li>%s</li>" * len(error_lines))
+    return structured(html_text, *error_lines)
+
+
 class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
+
+    def canCopySynchronously(self, source_pubs):
+        """Can we afford to copy `source_pubs` synchronously?"""
+        # Fixed estimate: up to 100 packages can be copied in acceptable
+        # time.  Anything more than that and we go async.
+        return len(source_pubs) <= 100
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
                 check_permissions=True):
         """Copy packages and add appropriate feedback to the browser page.
+
+        This may either copy synchronously, if there are few enough
+        requests to process right now; or asynchronously in which case
+        it will schedule jobs that will be processed by a script.
 
         :param sources_field_name: The name of the form field to set errors
             on when the copy fails
@@ -1243,62 +1359,25 @@ class PackageCopyingMixin:
 
         :return: True if the copying worked, False otherwise.
         """
-        try:
-            copies = do_copy(
-                source_pubs, dest_archive, dest_series,
-                dest_pocket, include_binaries, allow_delayed_copies=True,
-                person=person, check_permissions=check_permissions)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
-            else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % escape(line)
-                    for line in error_lines))
-            messages.append('</ul>')
-
-            self.setFieldError(
-                sources_field_name, structured('\n'.join(messages)))
-            return False
-
-        # Preload BPNs to save queries when calculating display names.
-        load(BinaryPackageName, (
-            copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory)))
-
-        # Present a page notification describing the action.
-        messages = []
-        if dest_url is None:
-            dest_url = escape(
-                canonical_url(dest_archive) + '/+packages',
-                quote=True)
-        if dest_display_name is None:
-            dest_display_name = escape(dest_archive.displayname)
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    dest_url,
-                    dest_display_name))
+        if self.canCopySynchronously(source_pubs):
+            try:
+                notification = copy_synchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
+            except CannotCopy, error:
+                self.setFieldError(
+                    sources_field_name, render_cannotcopy_as_html(error))
+                return False
         else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    dest_url,
-                    dest_display_name))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % escape(copy.displayname)
-                           for copy in copies]))
-            messages.append('</ul>')
+            notification = copy_asynchronously(
+                source_pubs, dest_archive, dest_series, dest_pocket,
+                include_binaries, dest_url=dest_url,
+                dest_display_name=dest_display_name, person=person,
+                check_permissions=check_permissions)
 
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
         return True
 
 
