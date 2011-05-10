@@ -186,6 +186,12 @@ class ProjectGroupMilestone(TestCaseWithFactory):
 
     def test_for_bug_778689(self):
         with person_logged_in(self.factory.makePerson()):
+            # Project groups have "virtual" milestones that aren't stored in
+            # the database directly (they're inherited from the contained
+            # products).  Viewing one of those group milestones would generate
+            # an OOPS because adapting the milestone to
+            # IStructuralSubscriptionTargetHelper would attempt to look them
+            # up in the database, raising an exception.
             project = self.factory.makeProject()
             product = self.factory.makeProduct(project=project)
             mixin = StructuralSubscriptionMenuMixin()
