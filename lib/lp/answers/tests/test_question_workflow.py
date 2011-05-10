@@ -866,7 +866,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Reject user must be an answer contact, (or admin, or product owner).
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.ubuntu.addAnswerContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
         login_person(self.answerer)
         self._testInvalidTransition(
             valid_statuses, self.question.reject,
@@ -880,7 +880,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         login_person(self.answerer)
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.ubuntu.addAnswerContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
         valid_statuses = [status for status in QuestionStatus.items
                           if status.name != 'INVALID']
 
@@ -919,7 +919,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
 
         # Answer contacts must speak a language
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.question.target.addAnswerContact(self.answerer)
+        self.question.target.addAnswerContact(self.answerer, self.answerer)
         # clear authorization cache for check_permission
         clear_cache()
         self.assertTrue(
@@ -938,7 +938,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.question.target = dsp
         login_person(self.answerer)
         self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
-        self.ubuntu.addAnswerContact(self.answerer)
+        self.ubuntu.addAnswerContact(self.answerer, self.answerer)
         self.assertTrue(
             getattr(self.question, 'reject'),
             "Answer contact cannot reject question.")

@@ -33,7 +33,7 @@ class TestFAQPermissions(TestCaseWithFactory):
         """Add the test person to the faq target's answer contacts."""
         language_set = getUtility(ILanguageSet)
         answer_contact.addLanguage(language_set['en'])
-        self.faq.target.addAnswerContact(answer_contact)
+        self.faq.target.addAnswerContact(answer_contact, answer_contact)
 
     def assertCanEdit(self, user, faq):
         """Assert that the user can edit an FAQ."""
