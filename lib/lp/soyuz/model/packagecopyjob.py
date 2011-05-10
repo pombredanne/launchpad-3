@@ -210,6 +210,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             include_binaries=self.include_binaries, check_permissions=False)
 
     def __repr__(self):
+        """Returns an informative representation of the job."""
         parts = ["%s to copy" % self.__class__.__name__]
         source_packages = self.metadata["source_packages"]
         if len(source_packages) == 0:

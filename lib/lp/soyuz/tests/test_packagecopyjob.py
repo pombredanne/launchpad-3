@@ -179,3 +179,24 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         copied_source_package = archive2.getPublishedSources(
             name="libc", version="2.8-1", exact_match=True).first()
         self.assertIsNot(copied_source_package, None)
+
+    def test___repr__(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
+            source_archive=archive1, target_archive=archive2,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=True)
+        self.assertEqual(
+            ("<PlainPackageCopyJob to copy 2 package(s) from "
+             "{distroseries.distribution.name}/{archive1.name} to "
+             "{distroseries.distribution.name}/{archive2.name}, "
+             "RELEASE pocket, in {distroseries.distribution.name} "
+             "{distroseries.name}, including binaries>").format(
+                distroseries=distroseries, archive1=archive1,
+                archive2=archive2),
+            repr(job))
