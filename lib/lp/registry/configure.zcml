@@ -529,6 +529,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
         <require
@@ -1269,6 +1270,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
 
@@ -1550,6 +1552,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
 
@@ -1647,6 +1650,7 @@
             attributes="
                 newQuestion
                 createQuestionFromBug
+                canUserAlterAnswerContact
                 addAnswerContact
                 removeAnswerContact"/>
     </class>

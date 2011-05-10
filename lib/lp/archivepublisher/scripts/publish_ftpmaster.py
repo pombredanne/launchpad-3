@@ -228,19 +228,18 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
-    def locateIndexesMarker(self, distroseries):
+    def locateIndexesMarker(self, suite):
         """Give path for marker file whose presence marks index creation.
 
-        The file will be created once the archive indexes for
-        `distroseries` have been created.  This is how future runs will
-        know that this work is done.
+        The file will be created once the archive indexes for `suite`
+        have been created.  This is how future runs will know that this
+        work is done.
         """
         archive_root = self.configs[ArchivePurpose.PRIMARY].archiveroot
-        return os.path.join(
-            archive_root, ".created-indexes-for-%s" % distroseries.name)
+        return os.path.join(archive_root, ".created-indexes-for-%s" % suite)
 
-    def needsIndexesCreated(self, distroseries):
-        """Does `distroseries` still need its archive indexes created?
+    def listSuitesNeedingIndexes(self, distroseries):
+        """Find suites in `distroseries` that need indexes created.
 
         Checks for the marker left by `markIndexCreationComplete`.
         """
@@ -249,36 +248,39 @@ class PublishFTPMaster(LaunchpadCronScript):
             # is in any other state yet has not been marked as having
             # its indexes created, that's because it predates automatic
             # index creation.
-            return False
+            return []
         distro = distroseries.distribution
         publisher_config_set = getUtility(IPublisherConfigSet)
         if publisher_config_set.getByDistribution(distro) is None:
             # We won't be able to do a thing without a publisher config,
             # but that's alright: we have those for all distributions
             # that we want to publish.
-            return False
-        return not file_exists(self.locateIndexesMarker(distroseries))
+            return []
 
-    def markIndexCreationComplete(self, distroseries):
-        """Note that archive indexes for `distroseries` have been created.
-
-        This tells `needsIndexesCreated` that no, this series no longer needs
-        archive indexes to be set up.
-        """
-        with file(self.locateIndexesMarker(distroseries), "w") as marker:
-            marker.write(
-                "Indexes for %s were created on %s.\n"
-                % (distroseries, datetime.now(utc)))
-
-    def createIndexes(self, distroseries):
-        """Create archive indexes for `distroseries`."""
-        self.logger.info(
-            "Creating archive indexes for series %s.", distroseries)
+        # May need indexes for this series.
         suites = [
             distroseries.getSuite(pocket)
             for pocket in pocketsuffix.iterkeys()]
-        self.runPublishDistro(args=['-A'], suites=suites)
-        self.markIndexCreationComplete(distroseries)
+        return [
+            suite for suite in suites
+                if not file_exists(self.locateIndexesMarker(suite))]
+
+    def markIndexCreationComplete(self, suite):
+        """Note that archive indexes for `suite` have been created.
+
+        This tells `listSuitesNeedingIndexes` that no, this suite no
+        longer needs archive indexes to be set up.
+        """
+        with file(self.locateIndexesMarker(suite), "w") as marker:
+            marker.write(
+                "Indexes for %s were created on %s.\n"
+                % (suite, datetime.now(utc)))
+
+    def createIndexes(self, suite):
+        """Create archive indexes for `distroseries`."""
+        self.logger.info("Creating archive indexes for %s.", suite)
+        self.runPublishDistro(args=['-A'], suites=[suite])
+        self.markIndexCreationComplete(suite)
 
     def processAccepted(self):
         """Run the process-accepted script."""
@@ -556,8 +558,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.recoverWorkingDists()
 
         for series in self.distribution.series:
-            if self.needsIndexesCreated(series):
-                self.createIndexes(series)
+            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
+            if len(suites_needing_indexes) > 0:
+                for suite in suites_needing_indexes:
+                    self.createIndexes(suite)
                 # Don't try to do too much in one run.  Leave the rest
                 # of the work for next time.
                 return

@@ -15,9 +15,50 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
     )
+
+
+class QuestionTargetAnswerContactTestCase(TestCaseWithFactory):
+    """Tests for changing an answer contact."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(QuestionTargetAnswerContactTestCase, self).setUp()
+        self.project = self.factory.makeProduct()
+        self.user = self.factory.makePerson()
+
+    def test_canUserAlterAnswerContact_self(self):
+        login_person(self.user)
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(self.user, self.user))
+
+    def test_canUserAlterAnswerContact_other_user(self):
+        login_person(self.user)
+        other_user = self.factory.makePerson()
+        self.assertFalse(
+            self.project.canUserAlterAnswerContact(other_user, self.user))
+
+    def test_canUserAlterAnswerContact_administered_team(self):
+        login_person(self.user)
+        team = self.factory.makeTeam(owner=self.user)
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(team, self.user))
+
+    def test_canUserAlterAnswerContact_other_team(self):
+        login_person(self.user)
+        other_team = self.factory.makeTeam()
+        self.assertFalse(
+            self.project.canUserAlterAnswerContact(other_team, self.user))
+
+    def test_canUserAlterAnswerContact_admin(self):
+        admin = login_celebrity('admin')
+        other_user = self.factory.makePerson()
+        self.assertTrue(
+            self.project.canUserAlterAnswerContact(other_user, admin))
 
 
 class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
@@ -39,7 +80,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         # some non public methods to change its language cache.
         answer_contact = removeSecurityProxy(self.answer_contact)
         product = self.factory.makeProduct()
-        product.addAnswerContact(answer_contact)
+        product.addAnswerContact(answer_contact, answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
         answer_contact.deleteLanguagesCache()
@@ -62,7 +103,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.factory.makeSourcePackageName(name='test-pkg')
         source_package = ubuntu.getSourcePackage('test-pkg')
-        source_package.addAnswerContact(answer_contact)
+        source_package.addAnswerContact(answer_contact, answer_contact)
 
         # Must delete the cache because it's been filled in addAnswerContact.
         answer_contact.deleteLanguagesCache()

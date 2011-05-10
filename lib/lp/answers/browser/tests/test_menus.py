@@ -46,7 +46,7 @@ class TestQuestionMenus(TestCaseWithFactory):
         # A question with a linked FAQ has an 'edit' icon.
         self.person.addLanguage(getUtility(ILanguageSet)['en'])
         target = self.question.target
-        target.addAnswerContact(self.person)
+        target.addAnswerContact(self.person, self.person)
         faq = self.factory.makeFAQ(target=target)
         self.question.linkFAQ(self.person, faq, 'message')
         link = menu.linkfaq()
