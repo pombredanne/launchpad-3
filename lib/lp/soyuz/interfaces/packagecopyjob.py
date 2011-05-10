@@ -69,9 +69,6 @@ class IPackageCopyJob(Interface):
 
     metadata = Attribute('A dict of data about the job.')
 
-    def destroySelf():
-        """Destroy this object."""
-
 
 class PackageCopyJobType(DBEnumeratedType):
 
