@@ -107,7 +107,7 @@ class TestTeamContactAddress(TestCaseWithFactory):
     def test_setContactAddress_with_purged_mailing_list_to_none(self):
         # Purging a mailing list will delete the list address, but this was
         # not always the case. The address will be deleted if it still exists.
-        list_address = self.createMailingListAndGetAddress()
+        self.createMailingListAndGetAddress()
         naked_mailing_list = removeSecurityProxy(self.team.mailing_list)
         naked_mailing_list.status = MailingListStatus.PURGED
         self.team.setContactAddress(None)
@@ -119,7 +119,7 @@ class TestTeamContactAddress(TestCaseWithFactory):
         # then the contact address is set/unset sometime afterwards.
         # The old mailing list address belongs the the team, but not the list.
         # 1. Create then purge a mailing list.
-        list_address = self.createMailingListAndGetAddress()
+        self.createMailingListAndGetAddress()
         mailing_list = self.team.mailing_list
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
@@ -449,7 +449,7 @@ class TestVisibilityConsistencyWarning(TestCaseWithFactory):
         # An entry in the PersonTransferJob table does not cause a warning.
         member = self.factory.makePerson()
         metadata = ('some', 'arbitrary', 'metadata')
-        person_transfer_job = PersonTransferJob(
+        PersonTransferJob(
             member, self.team,
             PersonTransferJobType.MEMBERSHIP_NOTIFICATION, metadata)
         self.assertEqual(
