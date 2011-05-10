@@ -155,8 +155,8 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
 
     def test_getSubscribersFromDuplicates_returns_empty_when_private(self):
         # If a private bug has duplicates its
-        # getSubscribersFromDuplicates()
-        # method should return an empty set.
+        # getSubscribersFromDuplicates() method should return an empty
+        # set.
         # This is a regression test for bug 780248.
         bug = self.factory.makeBug()
         duplicate = self.factory.makeBug()
@@ -167,5 +167,5 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.setPrivate(True, bug.owner)
             duplicate.markAsDuplicate(bug)
-        indirect_subscribers = bug.getIndirectSubscribers()
-        self.assertEqual(0, len(indirect_subscribers))
+            duplicate_subscribers = bug.getSubscribersFromDuplicates()
+            self.assertEqual(0, len(duplicate_subscribers))
