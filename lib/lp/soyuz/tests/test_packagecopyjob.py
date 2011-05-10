@@ -147,6 +147,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             ('target_distroseries_id', distroseries.id), oops_vars)
         self.assertIn(
             ('package_copy_job_id', naked_job.context.id), oops_vars)
+        self.assertIn(
+            ('package_copy_job_type', naked_job.context.job_type.title),
+            oops_vars)
 
     def test_smoke(self):
         publisher = SoyuzTestPublisher()
