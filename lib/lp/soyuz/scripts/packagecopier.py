@@ -419,14 +419,7 @@ class CopyChecker:
                     dest_component, pocket,
                     strict_component=strict_component)
                 if reason is not None:
-                    # launchpad.Append on the main archive is sufficient
-                    # to copy arbitrary packages. This allows for
-                    # ubuntu's security team to sync sources into the
-                    # primary archive (bypassing the queue and
-                    # annoncements).
-                    if not check_permission(
-                        'launchpad.Append', series.main_archive):
-                        raise CannotCopy(reason)
+                    raise CannotCopy(reason)
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(

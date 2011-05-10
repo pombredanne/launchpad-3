@@ -36,7 +36,7 @@ class BaseScope():
     documentation, so write them accordingly.
     """
 
-    # The regex pattern used to decide if a handler can evalute a particular
+    # The regex pattern used to decide if a handler can evaluate a particular
     # scope.  Also used on +feature-info.
     pattern = None
 
