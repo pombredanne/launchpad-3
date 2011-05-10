@@ -108,6 +108,19 @@ def read_marker_file(path):
     return file(os.path.join(*path)).read()
 
 
+def get_a_suite(distroseries):
+    """Return some suite name for `distroseries`."""
+    # Don't pick Release; it's too easy.
+    return distroseries.getSuite(PackagePublishingPocket.SECURITY)
+
+
+def get_marker_files(script, distroseries):
+        suites = [
+            distroseries.getSuite(pocket)
+            for pocket in pocketsuffix.iterkeys()]
+        return [script.locateIndexesMarker(suite) for suite in suites]
+
+
 class HelpersMixin:
     """Helpers for the PublishFTPMaster tests."""
 
@@ -769,58 +782,90 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
 
     def createIndexesMarkerDir(self, script, distroseries):
         """Create the directory for `distroseries`'s indexes marker."""
-        marker = script.locateIndexesMarker(distroseries)
+        marker = script.locateIndexesMarker(get_a_suite(distroseries))
         os.makedirs(os.path.dirname(marker))
 
-    def test_new_frozen_series_needs_indexes_created(self):
+    def makeDistroSeriesNeedingIndexes(self, distribution=None):
+        """Create `DistroSeries` that needs indexes created."""
+        return self.factory.makeDistroSeries(
+            status=SeriesStatus.FROZEN, distribution=distribution)
+
+    def test_listSuitesNeedingIndexes_is_nonempty_for_new_frozen_series(self):
         # If a distroseries is Frozen and has not had its indexes
-        # created yet, needsIndexesCreated returns True for it.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+        # created yet, listSuitesNeedingIndexes returns a nonempty list
+        # for it.
+        series = self.makeDistroSeriesNeedingIndexes()
         script = self.makeScript(series.distribution)
         script.setUp()
-        self.assertTrue(script.needsIndexesCreated(series))
+        self.assertNotEqual([], list(script.listSuitesNeedingIndexes(series)))
 
-    def test_new_nonfrozen_series_does_not_need_indexes_created(self):
-        # needsIndexesCreated only returns True for Frozen distroseries.
+    def test_listSuitesNeedingIndexes_initially_includes_entire_series(self):
+        # If a series has not had any of its indexes created yet,
+        # listSuitesNeedingIndexes returns all of its suites.
+        series = self.makeDistroSeriesNeedingIndexes()
+        script = self.makeScript(series.distribution)
+        script.setUp()
+        self.assertContentEqual(
+            [series.getSuite(pocket) for pocket in pocketsuffix.iterkeys()],
+            script.listSuitesNeedingIndexes(series))
+
+    def test_listSuitesNeedingIndexes_is_empty_for_nonfrozen_series(self):
+        # listSuitesNeedingIndexes only returns suites for Frozen
+        # distroseries.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
-        self.assertFalse(script.needsIndexesCreated(series))
+        self.assertEqual([], script.listSuitesNeedingIndexes(series))
 
-    def test_distro_without_publisher_config_gets_no_indexes(self):
-        # needsIndexesCreated returns False for distributions that have
-        # no publisher config, such as Debian.  We don't want to publish
-        # these distributions.
-        series = self.factory.makeDistroSeries(status=SeriesStatus.FROZEN)
+    def test_listSuitesNeedingIndexes_is_empty_for_configless_distro(self):
+        # listSuitesNeedingIndexes returns no suites for distributions
+        # that have no publisher config, such as Debian.  We don't want
+        # to publish such distributions.
+        series = self.makeDistroSeriesNeedingIndexes()
         pub_config = get_pub_config(series.distribution)
         IMasterStore(pub_config).remove(pub_config)
         script = self.makeScript(series.distribution)
-        self.assertFalse(script.needsIndexesCreated(series))
+        self.assertEqual([], script.listSuitesNeedingIndexes(series))
 
-    def test_markIndexCreationComplete_tells_needsIndexesCreated_no(self):
-        # The effect of markIndexCreationComplete is to make
-        # needsIndexesCreated for that distroseries return False.
+    def test_markIndexCreationComplete_repels_listSuitesNeedingIndexes(self):
+        # The effect of markIndexCreationComplete is to remove the suite
+        # in question from the results of listSuitesNeedingIndexes for
+        # that distroseries.
         distro = self.makeDistroWithPublishDirectory()
-        series = self.factory.makeDistroSeries(
-            status=SeriesStatus.FROZEN, distribution=distro)
+        series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.setUp()
         self.createIndexesMarkerDir(script, series)
 
-        self.assertTrue(script.needsIndexesCreated(series))
-        script.markIndexCreationComplete(series)
-        self.assertFalse(script.needsIndexesCreated(series))
+        needful_suites = script.listSuitesNeedingIndexes(series)
+        suite = get_a_suite(series)
+        script.markIndexCreationComplete(suite)
+        needful_suites.remove(suite)
+        self.assertContentEqual(
+            needful_suites, script.listSuitesNeedingIndexes(series))
+
+    def test_listSuitesNeedingIndexes_ignores_other_series(self):
+        # listSuitesNeedingIndexes only returns suites for series that
+        # need indexes created.  It ignores other distroseries.
+        series = self.makeDistroSeriesNeedingIndexes()
+        self.factory.makeDistroSeries(distribution=series.distribution)
+        script = self.makeScript(series.distribution)
+        script.setUp()
+        suites = list(script.listSuitesNeedingIndexes(series))
+        self.assertNotEqual([], suites)
+        for suite in suites:
+            self.assertThat(suite, StartsWith(series.name))
 
     def test_createIndexes_marks_index_creation_complete(self):
-        # createIndexes calls markIndexCreationComplete for the
-        # distroseries.
+        # createIndexes calls markIndexCreationComplete for the suite.
         distro = self.makeDistroWithPublishDirectory()
         series = self.factory.makeDistroSeries(distribution=distro)
         script = self.makeScript(distro)
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod()
-        script.createIndexes(series)
+        suite = get_a_suite(series)
+        script.createIndexes(suite)
         self.assertEqual(
-            [((series, ), {})], script.markIndexCreationComplete.calls)
+            [((suite, ), {})], script.markIndexCreationComplete.calls)
 
     def test_failed_index_creation_is_not_marked_complete(self):
         # If index creation fails, it is not marked as having been
@@ -833,7 +878,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod(failure=Boom("Sorry!"))
         try:
-            script.createIndexes(series)
+            script.createIndexes(get_a_suite(series))
         except:
             pass
         self.assertEqual([], script.markIndexCreationComplete.calls)
@@ -846,20 +891,30 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         archive_root = script.configs[ArchivePurpose.PRIMARY].archiveroot
         self.assertThat(
-            script.locateIndexesMarker(series),
+            script.locateIndexesMarker(get_a_suite(series)),
             StartsWith(os.path.normpath(archive_root)))
 
-    def test_locateIndexesMarker_uses_separate_files_per_series(self):
-        # Different release series of the same distribution get separate
-        # marker files for index creation.
+    def test_locateIndexesMarker_uses_separate_files_per_suite(self):
+        # Each suite in a distroseries gets its own marker file for
+        # index creation.
+        distro = self.makeDistroWithPublishDirectory()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        markers = get_marker_files(script, series)
+        self.assertEqual(sorted(markers), sorted(list(set(markers))))
+
+    def test_locateIndexesMarker_separates_distroseries(self):
+        # Each distroseries gets its own marker files for index
+        # creation.
         distro = self.makeDistroWithPublishDirectory()
         series1 = self.factory.makeDistroSeries(distribution=distro)
         series2 = self.factory.makeDistroSeries(distribution=distro)
         script = self.makeScript(distro)
         script.setUp()
-        self.assertNotEqual(
-            script.locateIndexesMarker(series1),
-            script.locateIndexesMarker(series2))
+        markers1 = set(get_marker_files(script, series1))
+        markers2 = set(get_marker_files(script, series2))
+        self.assertEqual(set(), markers1.intersection(markers2))
 
     def test_locateIndexMarker_uses_hidden_file(self):
         # The index-creation marker file is a "dot file," so it's not
@@ -867,20 +922,23 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution)
         script.setUp()
+        suite = get_a_suite(series)
         self.assertThat(
-            os.path.basename(script.locateIndexesMarker(series)),
+            os.path.basename(script.locateIndexesMarker(suite)),
             StartsWith("."))
 
     def test_script_calls_createIndexes_for_new_series(self):
         # If the script's main() finds a distroseries that needs its
         # indexes created, it calls createIndexes on that distroseries.
         distro = self.makeDistroWithPublishDirectory()
-        series = self.factory.makeDistroSeries(
-            status=SeriesStatus.FROZEN, distribution=distro)
+        series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.main()
-        self.assertEqual([((series, ), {})], script.createIndexes.calls)
+        expected_calls = [
+            ((series.getSuite(pocket), ), {})
+            for pocket in pocketsuffix.iterkeys()]
+        self.assertContentEqual(expected_calls, script.createIndexes.calls)
 
     def test_createIndexes_ignores_other_series(self):
         # createIndexes does not accidentally also touch other
@@ -892,14 +950,13 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         script.runPublishDistro = FakeMethod()
         self.createIndexesMarkerDir(script, series)
+        suite = get_a_suite(series)
 
-        script.createIndexes(series)
+        script.createIndexes(suite)
 
         args, kwargs = script.runPublishDistro.calls[0]
-        suites = kwargs['suites']
-        self.assertEqual(len(pocketsuffix), len(suites))
-        for suite in suites:
-            self.assertThat(suite, StartsWith(series.name))
+        self.assertEqual([suite], kwargs['suites'])
+        self.assertThat(kwargs['suites'][0], StartsWith(series.name))
 
     def test_script_creates_indexes(self):
         # End-to-end test: the script creates indexes for distroseries
@@ -913,7 +970,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.setUpForScriptRun(series.distribution)
         script = self.makeScript(series.distribution)
         script.main()
-        self.assertFalse(script.needsIndexesCreated(series))
+        self.assertEqual([], script.listSuitesNeedingIndexes(series))
         sources = os.path.join(
             script.configs[ArchivePurpose.PRIMARY].distsroot,
             series.name, "main", "source", "Sources")

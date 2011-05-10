@@ -82,7 +82,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         with person_logged_in(contact):
             lang_set = getUtility(ILanguageSet)
             contact.addLanguage(lang_set['en'])
-            question.target.addAnswerContact(contact)
+            question.target.addAnswerContact(contact, contact)
         return contact
 
     def test_create(self):
@@ -345,7 +345,7 @@ class QuestionEmailJobTestCase(TestCaseWithFactory):
         with person_logged_in(user):
             lang_set = getUtility(ILanguageSet)
             user.addLanguage(lang_set['en'])
-            question.target.addAnswerContact(user)
+            question.target.addAnswerContact(user, user)
         job = QuestionEmailJob.create(
             question, user, QuestionRecipientSet.ASKER_SUBSCRIBER,
             subject, body, headers)
