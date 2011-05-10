@@ -26,7 +26,7 @@ import replication.helpers
 
 
 # Ignore connections by these users.
-SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios'])
+SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
 
 # How lagged the cluster can be before failing the preflight check.
 MAX_LAG = timedelta(seconds=45)
@@ -61,7 +61,8 @@ class DatabasePreflight:
             """)
         lpmain_node_ids = set(row[0] for row in cur.fetchall())
         self.lpmain_nodes = set(
-            node for node in self.nodes if node.id in subscribed_node_ids)
+            node for node in self.nodes
+            if node.node_id in lpmain_node_ids)
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
