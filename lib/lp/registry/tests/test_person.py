@@ -88,13 +88,15 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
-def reload_object(obj, store):
+def reload_object(obj):
     """Return a new instance of a storm objet from the store."""
+    store = IStore(Person)
     return store.get(removeSecurityProxy(obj).__class__, obj.id)
 
 
-def reload_dsp(dsp, store):
+def reload_dsp(dsp):
     """Return a new instance of a DistributionSourcePackage from the store."""
+    store = IStore(Person)
     distribution_class = removeSecurityProxy(dsp.distribution.__class__)
     distribution = store.get(distribution_class, dsp.distribution.id)
     spn_class = removeSecurityProxy(dsp.sourcepackagename.__class__)
@@ -690,18 +692,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # Perform the merge as the db user that will be used by the jobs.
         transaction.commit()
         reconnect_stores('IPersonMergeJobSource')
-        from_person, to_person, reviewer = self._re_get_users(
-            from_person, to_person, reviewer=reviewer)
+        from_person = reload_object(from_person)
+        to_person = reload_object(to_person)
+        if reviewer is not None:
+            reviewer = reload_object(reviewer)
         self.person_set.merge(from_person, to_person, reviewer=reviewer)
         return from_person, to_person
-
-    def _re_get_users(self, from_person, to_person, reviewer=None):
-        # Reget the users for this store.
-        from_person = self.person_set.get(from_person.id)
-        to_person = self.person_set.get(to_person.id)
-        if reviewer is not None:
-            reviewer = self.person_set.get(reviewer.id)
-        return from_person, to_person, reviewer
 
     def _get_testable_account(self, person, date_created, openid_identifier):
         # Return a naked account with predictable attributes.
@@ -932,7 +928,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         duplicate, person = self._do_merge(duplicate, person)
         # The merged person has the subscription, and the duplicate person
         # does not.
-        target = reloader(target, IStore(person))
+        target = reloader(target)
         self.assertTrue(target.getSubscription(person) is not None)
         self.assertTrue(target.getSubscription(duplicate) is None)
 
@@ -953,7 +949,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(duplicate, person)
         login_person(person)
         duplicate, person = self._do_merge(duplicate, person)
-        target = reloader(target, IStore(person))
+        target = reloader(target)
         # The merged person still has the original subscription, as shown
         # by the marker name.
         self.assertEqual(
