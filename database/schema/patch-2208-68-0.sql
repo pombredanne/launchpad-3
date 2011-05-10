@@ -27,4 +27,4 @@ CREATE INDEX packageupload__package_copy_job__idx
   ON PackageUpload(package_copy_job)
     WHERE package_copy_job IS NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 68, 0);
