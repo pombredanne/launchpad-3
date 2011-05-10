@@ -1381,33 +1381,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
 
-    def test_sync_append_main_archive(self):
-        # A user with lp.Append on the main archive (e.g. members of
-        # ubuntu-security on an ubuntu series) can sync packages.
-        # XXX: rvb 2011-05-05 bug=777911: This check should be refactored
-        # and moved to lib/lp/soyuz/scripts/tests/test_copypackage.py.
-        versions = {
-            'base': '1.0',
-            'derived': '1.0derived1',
-            'parent': '1.0-1',
-        }
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
-            'my-src-name', distribution=ubuntu, versions=versions)
-        ubuntu_security = getUtility(IPersonSet).getByName('ubuntu-security')
-        set_derived_series_sync_feature_flag(self)
-        with person_logged_in(ubuntu_security):
-            self.assertTrue(
-                check_permission(
-                    'launchpad.Append', derived_series.main_archive))
-            view = self._syncAndGetView(
-                derived_series, ubuntu_security, ['my-src-name'])
-
-            self.assertTrue(view.canPerformSync())
-
-        self.assertPackageCopied(
-            derived_series, 'my-src-name', versions['parent'], view)
-
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
     """Test the distroseries +needs-packaging view."""
