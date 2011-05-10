@@ -734,7 +734,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
-        show_spam_controls = check_permission('launchpad.Admin', self.context.bug)
+        show_spam_controls = check_permission(
+            'launchpad.Admin', self.context.bug)
         return get_comments_for_bugtask(self.context, truncate=True,
             for_display=True, show_spam_controls=show_spam_controls)
 
@@ -782,7 +783,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             # to adjust.
             oldest_count = 1 + self.visible_initial_comments
             new_count = 1 + self.total_comments-self.visible_recent_comments
-            show_spam_controls = check_permission('launchpad.Admin', self.context)
+            show_spam_controls = check_permission(
+                'launchpad.Admin', self.context.bug)
             comments = get_comments_for_bugtask(
                 self.context, truncate=True, for_display=True,
                 slice_info=[
@@ -3153,7 +3155,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             self.milestones = list(
                 bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
         else:
-            self.milestones = []    
+            self.milestones = []
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:

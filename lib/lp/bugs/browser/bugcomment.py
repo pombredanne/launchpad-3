@@ -52,7 +52,7 @@ COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
 def build_comments_from_chunks(
-        bugtask, truncate=False, slice_info=None, show_spam_controls=False): 
+        bugtask, truncate=False, slice_info=None, show_spam_controls=False):
     """Build BugComments from MessageChunks.
 
     :param truncate: Perform truncation of large messages.
@@ -64,8 +64,9 @@ def build_comments_from_chunks(
     for bugmessage, message, chunk in chunks:
         bug_comment = comments.get(message.id)
         if bug_comment is None:
-            bug_comment = BugComment(bugmessage.index, message, bugtask,
-                visible=message.visible, show_spam_controls=show_spam_controls)
+            bug_comment = BugComment(
+                bugmessage.index, message, bugtask, visible=message.visible,
+                show_spam_controls=show_spam_controls)
             comments[message.id] = bug_comment
             # This code path is currently only used from a BugTask view which
             # has already loaded all the bug watches. If we start lazy loading
