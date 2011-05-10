@@ -4,45 +4,83 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-  <tr>
-    <td style="white-space: nowrap"
-        tal:content="structure context/fmt:link" />
-    <tal:XXX condition="nothing">
-     # XXX: Edwin Grubbs 2008-06-17 bug=240759
-     # The @@/yes and @@/no img tags could be handled by a tales formatter.
-    </tal:XXX>
-    <td style="text-align: center">
-      <img src="/@@/yes" tal:condition="context/active"/>
-      <img src="/@@/no" tal:condition="not: context/active"/>
+  <tr tal:attributes="id string:project-${context/name}">
+    <td>
+      <p>
+        <a tal:replace="structure context/fmt:link" />
+        (<span tal:replace="context/name" />)
+        registered
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
+        <a class="sprite edit"
+          tal:attributes="href string:${context/fmt:url}/+review-license"
+          >Review</a>
+      </p>
+
+      <dl class="horizontal">
+        <dt>Maintained by</dt>
+        <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+        <dt>Registered by</dt>
+        <dd><a tal:replace="structure context/registrant/fmt:link" /></dd>
+      </dl>
+
+      <p tal:content="context/summary" />
+
+      <div
+        tal:content="structure context/description/fmt:text-to-html"
+        tal:condition="context/description" />
     </td>
-    <td style="text-align: center">
-      <img src="/@@/yes" tal:condition="context/license_reviewed"/>
-      <img src="/@@/no" tal:condition="not: context/license_reviewed"/>
+    <td>
+      <dl class="horizontal">
+        <dt>Active</dt>
+        <dd>
+          <img tal:replace="structure context/active/image:boolean"/>
+        </dd>
+        <dt>Reviewed</dt>
+        <dd>
+          <img tal:replace="structure context/license_reviewed/image:boolean"/>
+        </dd>
+        <dt>Approved</dt>
+        <dd>
+          <img tal:replace="structure context/license_approved/image:boolean"/>
+        </dd>
+      </dl>
+
+      <dl class="horizontal"
+        tal:attributes="id string:project-licenses-${context/name}">
+        <dt>Licenses</dt>
+        <dd>
+          <ul class="horizontal">
+            <li tal:condition="not: context/licenses">None</li>
+            <li tal:repeat="license context/licenses">
+              <tal:title tal:replace="license/title"/>
+            </li>
+          </ul>
+        </dd>
+      </dl>
+
+      <dl class="horizontal"
+        tal:attributes="id string:project-commercial-${context/name}"
+        tal:condition="not: context/qualifies_for_free_hosting">
+        <dt>Commercial subscription expiration</dt>
+        <dd
+          tal:condition="context/commercial_subscription"
+          tal:content="context/commercial_subscription/date_expires/fmt:date" />
+        <dd
+          tal:condition="not: context/commercial_subscription">None</dd>
+      </dl>
+
+      <dl class="horizontal"
+        tal:attributes="id string:project-license-info-${context/name}"
+        tal:condition="view/show_license_info">
+        <dt>Licenses info</dt>
+        <dd tal:content="structure context/license_info/fmt:text-to-html" />
+      </dl>
+
+      <div
+        tal:attributes="id string:project-whiteboard-${context/name}"
+        tal:content="context/reviewer_whiteboard/fmt:text-to-html" />
     </td>
-    <td style="text-align: center">
-      <img src="/@@/yes" tal:condition="context/license_approved"/>
-      <img src="/@@/no" tal:condition="not: context/license_approved"/>
-    </td>
-    <td style="white-space: nowrap">
-      <a tal:replace="structure context/owner/fmt:link">Foo Bar</a>
-      <span
-        tal:attributes="title context/datecreated/fmt:datetime"
-        tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
-    </td>
-    <td style="white-space: nowrap">
-      <span tal:condition="not: context/licenses">None<br/></span>
-      <tal:loop repeat="license context/licenses">
-        <tal:title tal:replace="license/title"/><br/>
-      </tal:loop>
-      (<a tal:attributes="href string:${context/fmt:url}/+review-license"
-        >Review</a>)
-    </td>
-    <td tal:content="structure context/license_info/fmt:shorten/80/fmt:text-to-html">
-        License info goes here
-    </td>
-    <td tal:condition="context/commercial_subscription"
-        tal:content="context/commercial_subscription/date_expires/fmt:date" />
-    <td tal:condition="not: context/commercial_subscription" />
-    <td tal:content="context/reviewer_whiteboard/fmt:shorten/80" />
   </tr>
 </tal:root>
