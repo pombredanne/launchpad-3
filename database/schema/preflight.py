@@ -37,14 +37,31 @@ class DatabasePreflight:
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
         if self.is_replicated:
-            self.nodes = replication.helpers.get_all_cluster_nodes(master_con)
+            self.nodes = set(
+                replication.helpers.get_all_cluster_nodes(master_con))
             for node in self.nodes:
                 node.con = psycopg2.connect(node.connection_string)
                 node.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         else:
             node = replication.helpers.Node(None, None, None, True)
             node.con = master_con
-            self.nodes = [node]
+            self.nodes = set([node])
+
+        # Create a list of nodes subscribed to the replicated sets we
+        # are modifying.
+        cur = master_con.cursor()
+        cur.execute("""
+            WITH subscriptions AS (
+                SELECT *
+                FROM _sl.sl_subscribe
+                WHERE sub_set = 1 AND sub_active IS TRUE)
+            SELECT sub_provider FROM subscriptions
+            UNION
+            SELECT sub_receiver FROM subscriptions
+            """)
+        lpmain_node_ids = set(row[0] for row in cur.fetchall())
+        self.lpmain_nodes = set(
+            node for node in self.nodes if node.id in subscribed_node_ids)
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -65,12 +82,16 @@ class DatabasePreflight:
         return success
 
     def check_open_connections(self):
-        """Return False if any nodes have connections from non-system users.
+        """False if any lpmain nodes have connections from non-system users.
+
+        We only check on subscribed nodes, as there will be active systems
+        connected to other nodes in the replication cluster (such as the
+        SSO servers).
 
         System users are defined by SYSTEM_USERS.
         """
         success = True
-        for node in self.nodes:
+        for node in self.lpmain_nodes:
             cur = node.con.cursor()
             cur.execute("""
                 SELECT datname, usename, COUNT(*) AS num_connections
