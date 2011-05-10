@@ -141,9 +141,11 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
         # Sourcepackages are supported by their distribtions too.
-        persons = self.distribution.getAnswerContactsForLanguage(language)
-        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
-            self, language))
+        persons = set(
+            self.distribution.getAnswerContactsForLanguage(language))
+        persons.update(
+            set(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language)))
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
 
