@@ -89,8 +89,18 @@ from lp.testing.views import create_initialized_view
 
 
 def reload_object(obj, store):
+    """Return a new instance of a storm objet from the store."""
     naked_obj = removeSecurityProxy(obj)
     return store.get(naked_obj.__class__, naked_obj.id)
+
+
+def reload_dsp(target, store):
+    """Return a new instance of a DistributionSourcePackage from the store."""
+    distribution_class = removeSecurityProxy(target.distribution.__class__)
+    distribution = store.get(distribution_class, target.distribution.id)
+    spn_class = removeSecurityProxy(target.sourcepackagename.__class__)
+    spn = store.get(spn_class, target.sourcepackagename.id)
+    return distribution.getSourcePackage(name=spn.name)
 
 
 class TestPersonTeams(TestCaseWithFactory):
@@ -1007,28 +1017,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_merge_with_sourcepackage_subscription(self):
         # See comments in assertSubscriptionMerges.
-        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
-        distribution_id = dsp.distribution.id
-        distribution_class = removeSecurityProxy(dsp.distribution.__class__)
-        spn_name = dsp.sourcepackagename.name
-
-        def reload_dsp(target, store):
-            distro = store.get(distribution_class, distribution_id)
-            return distro.getSourcePackage(name=spn_name)
-
+        dsp = self.factory.makeDistributionSourcePackage()
         self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
 
     def test_merge_with_conflicting_sourcepackage_subscription(self):
         # See comments in assertConflictingSubscriptionDeletes.
-        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
-        distribution_id = dsp.distribution.id
-        distribution_class = removeSecurityProxy(dsp.distribution.__class__)
-        spn_name = dsp.sourcepackagename.name
-
-        def reload_dsp(target, store):
-            distro = store.get(distribution_class, distribution_id)
-            return distro.getSourcePackage(name=spn_name)
-
+        dsp = self.factory.makeDistributionSourcePackage()
         self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
 
     def test_mergeAsync(self):
