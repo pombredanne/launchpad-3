@@ -16,7 +16,7 @@ contacts as well as the distribution answer contacts.
     >>> # Answer contacts must speak a language
     >>> user = getUtility(ILaunchBag).user
     >>> user.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> ubuntu.addAnswerContact(user)
+    >>> ubuntu.addAnswerContact(user, user)
     True
     >>> flush_database_updates()
     >>> logout()

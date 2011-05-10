@@ -437,7 +437,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([english])
+            supported_languages = [english]
 
         terms = []
         for lang in languages:
@@ -1112,6 +1112,10 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    @cachedproperty
+    def canSeeSpamControls(self):
+        return check_permission('launchpad.Moderate', self.context.question)
 
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]
