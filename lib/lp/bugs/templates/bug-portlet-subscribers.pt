@@ -17,7 +17,8 @@
         tal:content="structure context_menu/editsubscriptions/render" />
     <tal:show-mute condition="
         request/features/malone.advanced-subscriptions.enabled">
-      <div tal:attributes="class view/current_user_mute_class">
+      <div tal:attributes="class view/current_user_mute_class"
+           id="mute-link-container">
         <span tal:replace="structure context_menu/mute_subscription/render"/>
         <a target="help" class="sprite maybe mute-help"
             href="/+help/subscription-mute.html"
