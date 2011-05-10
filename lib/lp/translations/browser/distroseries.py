@@ -117,11 +117,11 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     def unused_language_packs(self):
         unused_language_packs = helpers.shortlist(self.context.language_packs)
 
-        if self.context.language_pack_base is not None:
+        if self.context.language_pack_base in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_base)
-        if self.context.language_pack_delta is not None:
+        if self.context.language_pack_delta in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_delta)
-        if self.context.language_pack_proposed is not None:
+        if self.context.language_pack_proposed in unused_language_packs:
             unused_language_packs.remove(self.context.language_pack_proposed)
 
         return unused_language_packs
