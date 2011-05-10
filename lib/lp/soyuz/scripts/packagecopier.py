@@ -24,7 +24,6 @@ from lazr.delegates import delegates
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -84,6 +83,7 @@ def re_upload_file(libraryfile, restricted=False):
     os.remove(filepath)
 
     return new_lfa
+
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -408,16 +408,17 @@ class CopyChecker:
                 raise CannotCopy(
                     'Cannot check copy permissions (no requester).')
             else:
-                sourcepackage = source.sourcepackagerelease.sourcepackage
-                dest_component = sourcepackage.latest_published_component
-                # If dest_component is not None, make sure the person
+                sourcepackagerelease = source.sourcepackagerelease
+                sourcepackagename = sourcepackagerelease.sourcepackagename
+                destination_component = series.getSourcePackage(
+                    sourcepackagename).latest_published_component
+                # If destination_component is not None, make sure the person
                 # has upload permission for this component. Otherwise, any
                 # upload permission on this archive will do.
-                strict_component = dest_component is not None
+                strict_component = destination_component is not None
                 reason = self.archive.checkUpload(
-                    person, series, sourcepackage.sourcepackagename,
-                    dest_component, pocket,
-                    strict_component=strict_component)
+                    person, series, sourcepackagename, destination_component,
+                    pocket, strict_component=strict_component)
                 if reason is not None:
                     raise CannotCopy(reason)
 
