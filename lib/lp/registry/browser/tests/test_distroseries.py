@@ -1264,6 +1264,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             derived_series.status = SeriesStatus.CURRENT
             derived_series.datereleased = UTC_NOW
 
+        set_derived_series_sync_feature_flag(self)
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
             person, sourcepackagename)
