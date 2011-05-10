@@ -644,15 +644,11 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series, versions=versions,
             set_base_version=True)
 
-    def makeDerivedSeries(self):
-        """Create a derived `DistroSeries`."""
-        return self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
-
     def makeView(self, distroseries=None):
         """Create a +localpackagediffs view for `distroseries`."""
         if distroseries is None:
-            distroseries = self.makeDerivedSeries()
+            distroseries = (
+                self.factory.makeDistroSeriesParent().derived_series)
         return create_initialized_view(distroseries, '+localpackagediffs')
 
     def _create_child_and_parent(self):
@@ -862,8 +858,14 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         view = self.makeView(dsd.derived_series)
         self.assertContentEqual([dsd], view.getUpgrades())
 
+    def enableDerivedSeriesSyncFeature(self):
+        self.useFixture(
+            FeatureFixture(
+                {u'soyuz.derived-series-sync.enabled': u'on'}))
+
     def test_upgrades_are_offered_if_appropriate(self):
         # The"Upgrade Packages" button will only be shown to privileged users.
+        self.enableDerivedSeriesSyncFeature()
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         with celebrity_logged_in("admin"):
@@ -877,9 +879,10 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
     def test_upgrades_offered_only_if_available(self):
         # If there are no upgrades, the "Upgrade Packages" button won't
         # be shown.
+        self.enableDerivedSeriesSyncFeature()
         view = self.makeView()
         self.assertFalse(view.canUpgrade())
-        self.makePackageUpgrade()
+        self.makePackageUpgrade(view.context)
         self.assertTrue(view.canUpgrade())
 
     @with_celebrity_logged_in("admin")
@@ -887,6 +890,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # There won't be an "Upgrade Packages" button once feature
         # freeze has occurred.  Mass updates would not make sense after
         # that point.
+        self.enableDerivedSeriesSyncFeature()
         upgradeable = {}
         for status in SeriesStatus.items:
             dsd = self.makePackageUpgrade()
