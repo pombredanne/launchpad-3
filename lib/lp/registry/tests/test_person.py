@@ -90,7 +90,7 @@ from lp.testing.views import create_initialized_view
 
 def reload_object(obj, store):
     naked_obj = removeSecurityProxy(obj)
-    return store.find(naked_obj.__class__, id=naked_obj.id).one()
+    return store.get(naked_obj.__class__, naked_obj.id)
 
 
 class TestPersonTeams(TestCaseWithFactory):
@@ -1013,7 +1013,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         spn_name = dsp.sourcepackagename.name
 
         def reload_dsp(target, store):
-            distro = store.find(distribution_class, id=distribution_id).one()
+            distro = store.get(distribution_class, distribution_id)
             return distro.getSourcePackage(name=spn_name)
 
         self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
@@ -1026,7 +1026,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         spn_name = dsp.sourcepackagename.name
 
         def reload_dsp(target, store):
-            distro = store.find(distribution_class, id=distribution_id).one()
+            distro = store.get(distribution_class, distribution_id)
             return distro.getSourcePackage(name=spn_name)
 
         self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
