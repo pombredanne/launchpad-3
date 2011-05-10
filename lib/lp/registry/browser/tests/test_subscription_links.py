@@ -15,7 +15,11 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.milestone import ProjectMilestone
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
@@ -173,6 +177,27 @@ class ProjectGroupView(_TestStructSubs):
         self.target = self.factory.makeProject()
         self.factory.makeProduct(
             project=self.target, official_malone=True)
+
+
+class ProjectGroupMilestone(TestCaseWithFactory):
+    """Make sure that projects' "virtual" milestones don't break things."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_for_bug_778689(self):
+        with person_logged_in(self.factory.makePerson()):
+            # Project groups have "virtual" milestones that aren't stored in
+            # the database directly (they're inherited from the contained
+            # products).  Viewing one of those group milestones would generate
+            # an OOPS because adapting the milestone to
+            # IStructuralSubscriptionTargetHelper would attempt to look them
+            # up in the database, raising an exception.
+            project = self.factory.makeProject()
+            product = self.factory.makeProduct(project=project)
+            mixin = StructuralSubscriptionMenuMixin()
+            mixin.context = ProjectMilestone(project, '11.04', None, True)
+            # Before bug 778689 was fixed, this would raise an exception.
+            mixin._enabled
 
 
 class ProjectGroupBugs(ProjectGroupView):
