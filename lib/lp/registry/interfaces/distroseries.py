@@ -172,16 +172,6 @@ class DistroSeriesVersionField(UniqueField):
                 "'%s': %s" % (version, error))
 
 
-class IDistroSeriesEditRestricted(Interface):
-    """IDistroSeries properties which require launchpad.Edit."""
-
-    @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(
-        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
-    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
-        """Create a new milestone for this DistroSeries."""
-
-
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
@@ -832,16 +822,35 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
+
+
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
+        """Create a new milestone for this DistroSeries."""
+
     @operation_parameters(
-        name=copy_field(name, required=True),
-        displayname=copy_field(displayname, required=False),
-        title=copy_field(title, required=False),
+        name=copy_field(IDistroSeriesPublic['name'], required=True),
+        displayname=copy_field(
+            IDistroSeriesPublic['displayname'], required=False),
+        title=copy_field(IDistroSeriesPublic['title'], required=False),
         summary=TextLine(
             title=_("The summary of the distroseries to derive."),
             required=False),
-        description=copy_field(description, required=False),
-        version=copy_field(version, required=False),
-        distribution=copy_field(distribution, required=False),
+        description=copy_field(
+            IDistroSeriesPublic['description'], required=False),
+        version=copy_field(
+            IDistroSeriesPublic['version'], required=False),
+        distribution=copy_field(
+            IDistroSeriesPublic['distribution'], required=False),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),
@@ -891,10 +900,6 @@ class IDistroSeriesPublic(
             will be.
         """
 
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getDerivedSeries():
-        """Get all `DistroSeries` derived from this one."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,

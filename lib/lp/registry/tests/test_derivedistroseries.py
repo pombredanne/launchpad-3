@@ -16,8 +16,9 @@ from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
 from lp.testing import (
+    ANONYMOUS,
     login,
-    logout,
+    login_person,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -29,17 +30,17 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDeriveDistroSeries, self).setUp()
-        self.soyuz = self.factory.makeTeam(name='soyuz-team')
         self.parent = self.factory.makeDistroSeries()
+        removeSecurityProxy(self.parent).driver = self.factory.makePerson()
         self.child = self.factory.makeDistroSeries()
+        login_person(self.parent.driver)
 
     def test_no_permission_to_call(self):
         login(ADMIN_EMAIL)
         person = self.factory.makePerson()
-        logout()
+        login(ANONYMOUS)
         self.assertRaises(
-            Unauthorized, self.parent.deriveDistroSeries, person,
-            self.child.name)
+            Unauthorized, getattr, self.parent, "deriveDistroSeries")
 
     def test_no_distroseries_and_no_arguments(self):
         """Test that calling deriveDistroSeries() when the distroseries
@@ -48,7 +49,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.assertRaisesWithContent(
             DerivationError,
             'Display Name needs to be set when creating a distroseries.',
-            self.parent.deriveDistroSeries, self.soyuz.teamowner,
+            self.parent.deriveDistroSeries, self.parent.driver,
             'newdistro')
 
     def test_parent_is_not_set(self):
@@ -59,19 +60,19 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
             DerivationError,
             ("DistroSeries {self.child.name} parent series is "
              "{self.parent.name}, but it must not be set").format(self=self),
-            self.parent.deriveDistroSeries, self.soyuz.teamowner,
+            self.parent.deriveDistroSeries, self.parent.driver,
             self.child.name, self.child.distribution)
 
     def test_create_new_distroseries(self):
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, self.child.name, self.child.distribution)
+            self.parent.driver, self.child.name, self.child.distribution)
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
         self.assertEqual(job.distroseries, self.child)
 
     def test_create_fully_new_distroseries(self):
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, 'deribuntu', displayname='Deribuntu',
+            self.parent.driver, 'deribuntu', displayname='Deribuntu',
             title='The Deribuntu', summary='Deribuntu',
             description='Deribuntu is great', version='11.11')
         [job] = list(
@@ -84,7 +85,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroSeries(name='bar')
         bar = self.factory.makeDistroSeries(name='bar')
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, 'bar', distribution=bar.parent,
+            self.parent.driver, 'bar', distribution=bar.parent,
             displayname='Bar', title='The Bar', summary='Bar',
             description='Bar is good', version='1.0')
         [job] = list(
