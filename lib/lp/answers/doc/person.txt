@@ -283,7 +283,7 @@ answer contact.
 
     # Answer contacts must speak a language
     >>> no_priv_raw.addLanguage(english)
-    >>> firefox.addAnswerContact(no_priv_raw)
+    >>> firefox.addAnswerContact(no_priv_raw, no_priv_raw)
     True
 
     >>> for target in no_priv.getDirectAnswerQuestionTargets():
@@ -306,7 +306,7 @@ contact through his team membership.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> landscape_team.addLanguage(english)
-    >>> ubuntu.addAnswerContact(landscape_team)
+    >>> ubuntu.addAnswerContact(landscape_team, landscape_team.teamowner)
     True
 
     >>> print ', '.join(
@@ -334,7 +334,8 @@ IQuestionTargets.
     True
     >>> evolution_package = ubuntu.getSourcePackage('evolution')
     >>> translator_team.addLanguage(english)
-    >>> evolution_package.addAnswerContact(translator_team)
+    >>> evolution_package.addAnswerContact(
+    ...     translator_team, translator_team.teamowner)
     True
     >>> print ', '.join(
     ...     sorted(target.name
