@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
-    person_logged_in, 
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -37,7 +37,7 @@ class TestLanguagePacksView(TestCaseWithFactory):
         distroseries = self.factory.makeUbuntuDistroSeries()
         pack = self.factory.makeLanguagePack(distroseries)
         with person_logged_in(distroseries.distribution.owner):
-            distroseries.language_pack_base = pack 
+            distroseries.language_pack_base = pack
             distroseries.language_pack_proposed = pack
 
         view = create_initialized_view(

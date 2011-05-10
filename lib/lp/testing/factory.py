@@ -1254,8 +1254,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # Only branches related to products have related series branches.
         if with_series_branches and naked_product is not None:
             series_branch_info = []
-            # Add some product series
 
+            # Add some product series
             def makeSeriesBranch(name, is_private=False):
                 branch = self.makeBranch(
                     name=name,
@@ -2267,7 +2267,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             languagepack_type = LanguagePackType.FULL
         return getUtility(ILanguagePackSet).addLanguagePack(
             distroseries, self.makeLibraryFileAlias(), languagepack_type)
-    
+
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
                              expires=None):
