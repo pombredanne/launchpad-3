@@ -111,7 +111,7 @@ svc.setServiceParent(application)
 execute_zcml_for_scripts()
 
 # Set up the GPGHandler job
-gpgHandlerJob = GPGHandlerConfigResetJob()
+GPGHandlerConfigResetJob().setServiceParent(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)

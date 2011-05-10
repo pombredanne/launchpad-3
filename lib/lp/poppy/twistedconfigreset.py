@@ -8,8 +8,7 @@ __all__ = [
     'GPGHandlerConfigResetJob',
     ]
 
-import atexit
-
+from twisted.application.service import Service
 from twisted.internet import task
 from twisted.internet.error import AlreadyCancelled
 
@@ -19,14 +18,18 @@ from zope.component.interfaces import ComponentLookupError
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 
 
-class GPGHandlerConfigResetJob:
+class GPGHandlerConfigResetJob(Service):
     """Manages twisted job to touch the files in the gpgconfig directory."""
-    def __init__(self):
+
+    def startService(self):
         self._gpghandler_job = None
-        # stop the GPGHandler job on normal termination.
-        atexit.register(self._stopGPGHandlerJob)
         # start the GPGHandler job
         self._scheduleGPGHandlerJob()
+        Service.startService(self)
+
+    def stopService(self):
+        self._stopGPGHandlerJob()
+        Service.stopService(self)
 
     def _scheduleGPGHandlerJob(self, touch_interval=12 * 3600):
         # Create a job to touch the GPGHandler home directory every so often
