@@ -104,6 +104,16 @@ class TestTeamContactAddress(TestCaseWithFactory):
         self.assertEqual(None, self.team.preferredemail)
         self.assertEqual([list_address], self.getAllEmailAddresses())
 
+    def test_setContactAddress_with_purged_mailing_list_to_none(self):
+        # Purging a mailing list will delete the list address, but this was
+        # not always the case. The address will be deleted if it still exists.
+        list_address = self.createMailingListAndGetAddress()
+        naked_mailing_list = removeSecurityProxy(self.team.mailing_list)
+        naked_mailing_list.status = MailingListStatus.PURGED
+        self.team.setContactAddress(None)
+        self.assertEqual(None, self.team.preferredemail)
+        self.assertEqual([], self.getAllEmailAddresses())
+
     def test_setContactAddress_after_purged_mailing_list_and_rename(self):
         # This is the rare case where a list is purged for a team rename,
         # then the contact address is set/unset sometime afterwards.

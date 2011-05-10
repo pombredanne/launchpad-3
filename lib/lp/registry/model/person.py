@@ -2427,7 +2427,8 @@ class Person(
             self._setPreferredEmail(email)
         # A team can have up to two addresses, the preferred one and one used
         # by the team mailing list.
-        if self.mailing_list is not None:
+        if (self.mailing_list is not None
+            and self.mailing_list.status != MailingListStatus.PURGED):
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
             if mailing_list_email is not None:
