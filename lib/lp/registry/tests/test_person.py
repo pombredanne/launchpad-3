@@ -88,6 +88,11 @@ from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
+def reload_object(obj, store):
+    naked_obj = removeSecurityProxy(obj)
+    return store.find(naked_obj.__class__, id=naked_obj.id).one()
+
+
 class TestPersonTeams(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -145,7 +150,7 @@ class TestPersonTeams(TestCaseWithFactory):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         e_team = self.factory.makeTeam(name='e')
         f_team = self.factory.makeTeam(name='f', owner=e_team)
-        unrelated_team = self.factory.makeTeam(name='unrelated')
+        self.factory.makeTeam(name='unrelated')
         login_person(self.a_team.teamowner)
         d_team.addMember(self.user, d_team.teamowner)
         login_person(e_team.teamowner)
@@ -672,6 +677,23 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         transaction.commit()
         logout()
 
+    def _do_merge(self, from_person, to_person, reviewer=None):
+        # Perform the merge as the db user that will be used by the jobs.
+        transaction.commit()
+        reconnect_stores('IPersonMergeJobSource')
+        from_person, to_person, reviewer = self._re_get_users(
+            from_person, to_person, reviewer=reviewer)
+        self.person_set.merge(from_person, to_person, reviewer=reviewer)
+        return from_person, to_person
+
+    def _re_get_users(self, from_person, to_person, reviewer=None):
+        # Reget the users for this store.
+        from_person = self.person_set.get(from_person.id)
+        to_person = self.person_set.get(to_person.id)
+        if reviewer is not None:
+            reviewer = self.person_set.get(reviewer.id)
+        return from_person, to_person, reviewer
+
     def _get_testable_account(self, person, date_created, openid_identifier):
         # Return a naked account with predictable attributes.
         account = removeSecurityProxy(person.account)
@@ -689,7 +711,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             person.account).openid_identifiers.any().identifier
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual(
             0,
             removeSecurityProxy(duplicate.account).openid_identifiers.count())
@@ -715,7 +737,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.factory.makePerson()
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual([], duplicate.karma_category_caches)
         self.assertEqual(0, duplicate.karma)
         self.assertEqual(15, person.karma)
@@ -738,7 +760,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.person_set.get(person.id)
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual([], duplicate.karma_category_caches)
         self.assertEqual(0, duplicate.karma)
         self.assertEqual(28, person.karma)
@@ -752,14 +774,14 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         removeSecurityProxy(duplicate).datecreated = oldest_date
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
     def test_team_with_active_mailing_list_raises_error(self):
         # A team with an active mailing list cannot be merged.
         target_team = self.factory.makeTeam()
         test_team = self.factory.makeTeam()
-        mailing_list = self.factory.makeMailingList(
+        self.factory.makeMailingList(
             test_team, test_team.teamowner)
         self.assertRaises(
             AssertionError, self.person_set.merge, test_team, target_team)
@@ -772,9 +794,11 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             test_team, test_team.teamowner)
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
         self.assertEqual(target_team, test_team.merged)
-        self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
+        self.assertEqual(
+            MailingListStatus.PURGED, test_team.mailing_list.status)
         emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
         self.assertEqual(0, emails)
 
@@ -787,7 +811,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
         mailing_list.purge()
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
         self.assertEqual(target_team, test_team.merged)
 
     def test_team_with_members(self):
@@ -797,7 +822,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         former_member = self.factory.makePerson()
         with person_logged_in(test_team.teamowner):
             test_team.addMember(former_member, test_team.teamowner)
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
         self.assertEqual(target_team, test_team.merged)
         self.assertEqual([], list(former_member.super_teams))
 
@@ -807,7 +833,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
         login_person(test_team.teamowner)
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self._do_merge(test_team, target_team, test_team.teamowner)
 
     def test_team_with_super_teams(self):
         # A team with superteams can be merged, but the memberships
@@ -817,7 +843,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         target_team = self.factory.makeTeam()
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
         self.assertEqual(target_team, test_team.merged)
         self.assertEqual([], list(target_team.super_teams))
 
@@ -826,9 +853,10 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # are moved.
         person = self.factory.makePerson()
         branch = self.factory.makeBranch()
+        duplicate = branch.owner
         self._do_premerge(branch.owner, person)
         login_person(person)
-        self.person_set.merge(branch.owner, person)
+        duplicate, person = self._do_merge(duplicate, person)
         branches = person.getBranches()
         self.assertEqual(1, branches.count())
 
@@ -839,9 +867,10 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         from_branch = self.factory.makeBranch(name='foo', product=product)
         to_branch = self.factory.makeBranch(name='foo', product=product)
         mergee = to_branch.owner
-        self._do_premerge(from_branch.owner, mergee)
+        duplicate = from_branch.owner
+        self._do_premerge(duplicate, mergee)
         login_person(mergee)
-        self.person_set.merge(from_branch.owner, mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
         branches = [b.name for b in mergee.getBranches()]
         self.assertEqual(2, len(branches))
         self.assertEqual([u'foo', u'foo-1'], branches)
@@ -851,12 +880,13 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # moved.
         person = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
+        duplicate = recipe.owner
         # Delete the PPA, which is required for the merge to work.
-        with person_logged_in(recipe.owner):
+        with person_logged_in(duplicate):
             recipe.owner.archive.status = ArchiveStatus.DELETED
-        self._do_premerge(recipe.owner, person)
+        self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(recipe.owner, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual(1, person.recipes.count())
 
     def test_merge_with_duplicated_recipes(self):
@@ -866,20 +896,21 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             name=u'foo', description=u'FROM')
         merge_to = self.factory.makeSourcePackageRecipe(
             name=u'foo', description=u'TO')
+        duplicate = merge_from.owner
         mergee = merge_to.owner
         # Delete merge_from's PPA, which is required for the merge to work.
         with person_logged_in(merge_from.owner):
             merge_from.owner.archive.status = ArchiveStatus.DELETED
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
-        self.person_set.merge(merge_from.owner, merge_to.owner)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
         recipes = mergee.recipes
         self.assertEqual(2, recipes.count())
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
 
-    def assertSubscriptionMerges(self, target):
+    def assertSubscriptionMerges(self, target, reloader=reload_object):
         # Given a subscription target, we want to make sure that subscriptions
         # that the duplicate person made are carried over to the merged
         # account.
@@ -889,13 +920,15 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.factory.makePerson()
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         # The merged person has the subscription, and the duplicate person
         # does not.
+        target = reloader(target, IStore(person))
         self.assertTrue(target.getSubscription(person) is not None)
         self.assertTrue(target.getSubscription(duplicate) is None)
 
-    def assertConflictingSubscriptionDeletes(self, target):
+    def assertConflictingSubscriptionDeletes(self, target,
+                                                      reloader=reload_object):
         # Given a subscription target, we want to make sure that subscriptions
         # that the duplicate person made that conflict with existing
         # subscriptions in the merged account are deleted.
@@ -910,7 +943,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
                 u'a marker')
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
+        target = reloader(target, IStore(person))
         # The merged person still has the original subscription, as shown
         # by the marker name.
         self.assertEqual(
@@ -973,13 +1007,29 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_merge_with_sourcepackage_subscription(self):
         # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(
-            self.factory.makeDistributionSourcePackage())
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        distribution_id = dsp.distribution.id
+        distribution_class = removeSecurityProxy(dsp.distribution.__class__)
+        spn_name = dsp.sourcepackagename.name
+
+        def reload_dsp(target, store):
+            distro = store.find(distribution_class, id=distribution_id).one()
+            return distro.getSourcePackage(name=spn_name)
+
+        self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
 
     def test_merge_with_conflicting_sourcepackage_subscription(self):
         # See comments in assertConflictingSubscriptionDeletes.
-        self.assertConflictingSubscriptionDeletes(
-            self.factory.makeDistributionSourcePackage())
+        dsp = self.factory.makeDistributionSourcePackage(with_db=True)
+        distribution_id = dsp.distribution.id
+        distribution_class = removeSecurityProxy(dsp.distribution.__class__)
+        spn_name = dsp.sourcepackagename.name
+
+        def reload_dsp(target, store):
+            distro = store.find(distribution_class, id=distribution_id).one()
+            return distro.getSourcePackage(name=spn_name)
+
+        self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
