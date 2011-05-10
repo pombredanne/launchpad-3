@@ -956,6 +956,12 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
+        if self.private:
+            # We short-circuit for private bugs, since actually
+            # returning something non-empty here causes things to break
+            # in fun and interesting ways (see bug 780248).
+            return []
+
         if level is None:
             level = BugNotificationLevel.NOTHING
         info = self.getSubscriptionInfo(level)

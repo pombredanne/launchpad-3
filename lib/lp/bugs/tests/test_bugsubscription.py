@@ -146,3 +146,26 @@ class TestBugSubscription(TestCaseWithFactory):
                 self.bug.id, team_2.name, self.subscriber)
         self.assertThat(
             collector, HasQueryCount(LessThan(25)))
+
+
+class TestBugSubscriptionMethods(TestCaseWithFactory):
+    """A TestCase for the subscription-related methods of `Bug`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getSubscribersFromDuplicates_returns_empty_when_private(self):
+        # If a private bug has duplicates its
+        # getSubscribersFromDuplicates()
+        # method should return an empty set.
+        # This is a regression test for bug 780248.
+        bug = self.factory.makeBug()
+        duplicate = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            duplicate.default_bugtask.product.addSubscription(
+                team, team.teamowner)
+        with person_logged_in(bug.owner):
+            bug.setPrivate(True, bug.owner)
+            duplicate.markAsDuplicate(bug)
+        indirect_subscribers = bug.getIndirectSubscribers()
+        self.assertEqual(0, len(indirect_subscribers))
