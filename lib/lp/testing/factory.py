@@ -920,7 +920,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None):
+        translations_usage=None, bug_supervisor=None,
+        driver=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -947,14 +948,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        naked_product = removeSecurityProxy(product)
         if official_malone is not None:
-            removeSecurityProxy(product).official_malone = official_malone
+            naked_product.official_malone = official_malone
         if translations_usage is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.translations_usage = translations_usage
         if bug_supervisor is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.bug_supervisor = bug_supervisor
+        if driver is not None:
+            naked_product.driver = driver
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1712,6 +1714,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.makeBugTask(bug, prerequisite_target, publish=publish)
 
         return removeSecurityProxy(bug).addTask(owner, target)
+
+    def makeBugNomination(self, bug=None, target=None):
+        """Create and return a BugNomination.
+
+        Will create a non-series task if it does not already exist.
+
+        :param bug: The `IBug` the nomination should be for. If None,
+            one will be created.
+        :param target: The `IProductSeries`, `IDistroSeries` or
+            `ISourcePackage` to nominate for.
+        """
+        if ISourcePackage.providedBy(target):
+            non_series = target.distribution_sourcepackage
+            series = target.distroseries
+        else:
+            non_series = target.parent
+            series = target
+        with celebrity_logged_in('admin'):
+            bug = self.makeBugTask(bug=bug, target=non_series).bug
+            nomination = bug.addNomination(
+                getUtility(ILaunchpadCelebrities).admin, series)
+        return nomination
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
                        name=None):
