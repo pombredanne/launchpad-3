@@ -75,6 +75,7 @@ from lp.code.model.branchjob import (
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.osutils import override_environ
@@ -307,7 +308,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
 
         job = BranchUpgradeJob.create(db_branch)
         self.becomeDbUser(config.upgrade_branches.dbuser)
-        job.run()
+        with TransactionFreeOperation.require():
+            job.run()
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
