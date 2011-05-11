@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import cachedproperty
@@ -190,7 +190,7 @@ class TestPackageCopyingMixinLight(TestCase):
 class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
     """Integration tests for `PackageCopyingMixin`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadFunctionalLayer
 
     @cachedproperty
     def person(self):
