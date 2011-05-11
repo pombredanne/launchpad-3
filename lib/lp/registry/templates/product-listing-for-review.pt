@@ -30,7 +30,15 @@
       <div
         tal:content="structure context/description/fmt:text-to-html"
         tal:condition="context/description" />
+
+      <dl class="horizontal">
+        <dt>Has packages</dt>
+        <dd tal:content="structure context/ubuntu_packages/image:boolean" />
+        <dt>Has releases</dt>
+        <dd tal:content="structure view/latest_release_with_download_files/image:boolean" />
+      </dl>
     </td>
+
     <td>
       <dl class="horizontal">
         <dt>Active</dt>
