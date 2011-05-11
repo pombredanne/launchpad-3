@@ -1160,6 +1160,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @property
     def license_approved_widget(self):
+        licenses = list(self.context.licenses)
+        if License.OTHER_PROPRIETARY in licenses:
+            return 'Commercial subscription required'
+        elif [License.DONT_KNOW] == licenses or [] == licenses:
+            return 'License required'
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
             content_box_id='%s-edit-license-approved' % self.context.name,

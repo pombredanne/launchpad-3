@@ -253,3 +253,21 @@ class TestProductView(TestCaseWithFactory):
         self.assertEqual(
             canonical_url(self.product, view_name='+review-license'),
             widget.edit_url)
+
+    def test_license_approved_widget_prorietary_license(self):
+        # Proprietary projects cannot be approved.
+        with person_logged_in(self.product.owner):
+            self.product.licenses = [License.OTHER_PROPRIETARY]
+        login_celebrity('registry_experts')
+        view = create_initialized_view(self.product, '+index')
+        text = view.license_approved_widget
+        self.assertEqual('Commercial subscription required', text)
+
+    def test_license_approved_widget_no_license(self):
+        # Projects without a license cannot be approved.
+        with person_logged_in(self.product.owner):
+            self.product.licenses = [License.DONT_KNOW]
+        login_celebrity('registry_experts')
+        view = create_initialized_view(self.product, '+index')
+        text = view.license_approved_widget
+        self.assertEqual('License required', text)
