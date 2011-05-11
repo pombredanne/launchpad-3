@@ -16,11 +16,13 @@ Set Up
     >>> login(ADMIN_EMAIL)
 
     >>> soyuz_team = factory.makeTeam(name='soyuz-team')
-    >>> parent_series = factory.makeDistroSeries()
+    >>> parent_series = factory.makeDistroSeries(name="parentseries")
+    >>> parent_series.driver = soyuz_team
     >>> child_series = factory.makeDistroSeries(name='child1')
     >>> child_series_with_parent = factory.makeDistroSeries(
     ...     name='child-with-parent', parent_series=parent_series)
-    >>> other_series = factory.makeDistroSeries()
+    >>> other_series = factory.makeDistroSeries(name="otherseries")
+    >>> other_series.driver = soyuz_team
 
     >>> distribution = factory.makeDistribution(
     ...     name='deribuntu', owner=soyuz_team)
