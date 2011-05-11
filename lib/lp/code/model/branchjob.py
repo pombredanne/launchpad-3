@@ -380,7 +380,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # No transactions are open so the DB connection won't be killed.
-            with TransactionFreeOperation:
+            with TransactionFreeOperation():
                 # Perform the upgrade.
                 upgrade(upgrade_branch.base)
 
