@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'LanguagePackType',
     'RosettaImportStatus',
     'TranslationPermission',
     ]
@@ -13,6 +14,20 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+
+
+class LanguagePackType(DBEnumeratedType):
+    """Type of language packs."""
+
+    FULL = DBItem(1, """
+        Full
+
+        Full translations export.""")
+
+    DELTA = DBItem(2, """
+        Delta
+
+        Delta translation export based on a previous full export.""")
 
 
 class RosettaImportStatus(DBEnumeratedType):

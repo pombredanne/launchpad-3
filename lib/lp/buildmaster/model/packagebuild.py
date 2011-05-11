@@ -161,12 +161,6 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
-    def getBuildCookie(self):
-        """See `IPackageBuild`."""
-        return '%s-%s-%s' % (
-            self.id, self.build_farm_job.job_type.name,
-            self.build_farm_job.id)
-
     @staticmethod
     def getLogFromSlave(package_build):
         """See `IPackageBuild`."""
@@ -250,6 +244,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def getBuildCookie(self):
+        """See `IPackageBuild`."""
+        raise NotImplementedError
+
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         raise NotImplementedError
@@ -262,6 +260,10 @@ class PackageBuildDerived:
     build status.
     """
     delegates(IPackageBuild, context="package_build")
+
+    def getBuildCookie(self):
+        """See `IPackageBuild`."""
+        return '%s-%s' % (self.job_type.name, self.id)
 
     def queueBuild(self, suspended=False):
         """See `IPackageBuild`."""

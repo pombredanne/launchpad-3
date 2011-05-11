@@ -84,6 +84,7 @@ def re_upload_file(libraryfile, restricted=False):
 
     return new_lfa
 
+
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):

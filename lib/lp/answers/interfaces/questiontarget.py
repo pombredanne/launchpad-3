@@ -16,10 +16,23 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import (
     Choice,
+    Int,
     List,
     Set,
     TextLine,
     )
+
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from lp.answers.interfaces.questioncollection import (
@@ -30,11 +43,15 @@ from lp.answers.enums import (
     QuestionStatus,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
     """An object that can have a new question asked about it."""
+
+    export_as_webservice_entry(as_of='devel')
 
     def newQuestion(owner, title, description, language=None,
                     datecreated=None):
@@ -69,6 +86,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :bug: An IBug.
         """
 
+    @operation_parameters(
+        question_id=Int(title=_('Question Number'), required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
     def getQuestion(question_id):
         """Return the question by its id, if it is applicable to this target.
 
@@ -87,25 +108,62 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def addAnswerContact(person):
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user or an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def canUserAlterAnswerContact(person, subscribed_by):
+        """Can the user add or remove the answer contact.
+
+        Users can add or remove themselves or one of the teams they
+        administered.
+
+        :param person: The `IPerson` that is or will be an answer contact.
+        :param subscribed_by: The `IPerson` making the change.
+        """
+
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user of an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def addAnswerContact(person, subscribed_by):
         """Add a new answer contact.
 
-        :person: An IPerson.
-
-        Returns True if the person was added, False if the person already was
-        an answer contact. A person must have at least one preferred
-        language to be an answer contact.
+        :param person: An `IPerson`.
+        :param subscribed_by: The user making the change.
+        :return: True if the person was added, False if the person already is
+            an answer contact.
+        :raises ValueError: When the person or team does no have a preferred
+            language.
         """
 
-    def removeAnswerContact(person):
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user of an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def removeAnswerContact(person, subscribed_by):
         """Remove an answer contact.
 
-        :person: An IPerson.
-
-        Returns True if the person was removed, False if the person wasn't an
-        answer contact.
+        :param person: An `IPerson`.
+        :param subscribed_by: The user making the change.
+        :return: True if the person was removed, False if the person wasn't an
+            answer contact.
         """
 
+    @operation_parameters(
+        language=Reference(ILanguage))
+    @operation_returns_collection_of(IPerson)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getAnswerContactsForLanguage(language):
         """Return the list of Persons that provide support for a language.
 
@@ -124,9 +182,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         for the QuestionTarget.
         """
 
+    @operation_returns_collection_of(ILanguage)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getSupportedLanguages():
-        """Return the set of languages spoken by at least one of this object's
-        answer contacts.
+        """Return a list of languages spoken by at the answer contacts.
 
         An answer contact is considered to speak a given language if that
         language is listed as one of his preferred languages.

@@ -776,10 +776,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         series_title = self.context.displayname
 
         # If the series is released, sync packages in the "updates" pocket.
-        if self.context.datereleased is None:
-            destination_pocket = PackagePublishingPocket.RELEASE
-        else:
+        if self.context.supported:
             destination_pocket = PackagePublishingPocket.UPDATES
+        else:
+            destination_pocket = PackagePublishingPocket.RELEASE
 
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
@@ -804,8 +804,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return (self.user is not None and
-                self.context.main_archive.hasAnyPermission(self.user) and
+        if not getFeatureFlag('soyuz.derived_series_sync.enabled'):
+            return False
+
+        archive = self.context.main_archive
+        has_perm = (self.user is not None and (
+                        archive.hasAnyPermission(self.user) or
+                        check_permission('launchpad.Append', archive)))
+        return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
     @property

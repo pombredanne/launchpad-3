@@ -31,10 +31,8 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.translations.interfaces.languagepack import (
-    ILanguagePackSet,
-    LanguagePackType,
-    )
+from lp.translations.enums import LanguagePackType
+from lp.translations.interfaces.languagepack import ILanguagePackSet
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )

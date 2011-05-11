@@ -177,7 +177,7 @@ from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
     InitialiseDistroSeries,
     )
-from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
     )
@@ -1952,11 +1952,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                            description=None, version=None,
                            architectures=(), packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
-        # XXX StevenK bug=643369 This should be in the security adapter
-        # This should be allowed if the user is a driver for self.parent
-        # or the child.parent's drivers.
-        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
-            raise Unauthorized
         if distribution is None:
             distribution = self.distribution
         child = IStore(self).find(
@@ -2024,6 +2019,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         seriesID = self.id
         distributionID = self.distributionID
+
         def weight_function(bugtask):
             if bugtask.distroseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)

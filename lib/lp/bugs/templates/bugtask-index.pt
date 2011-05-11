@@ -61,6 +61,14 @@
         .bug-branch-summary dd { font-size: 85% }
         a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
+      <style type="text/css">
+        .yui3-overlay .value label  {
+          /* It normally makes sense for form labels to be bold, but since
+          this form consists only of radio buttons, there's nothing but labels
+          so we just get wall-to-wall bold. */
+          font-weight: normal !important;
+        }
+      </style>
     </metal:block>
 
     <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
