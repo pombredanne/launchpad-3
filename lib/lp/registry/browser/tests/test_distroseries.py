@@ -32,6 +32,7 @@ from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
@@ -54,9 +55,7 @@ from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
     )
-from lp.services.features.testing import (
-    FeatureFixture,
-    )
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -647,7 +646,13 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         if distroseries is None:
             distroseries = (
                 self.factory.makeDistroSeriesParent().derived_series)
-        return create_initialized_view(distroseries, '+localpackagediffs')
+        # current_request=True causes the current interaction to end so we
+        # must explicitly ask that the current principal be used for the
+        # request.
+        return create_initialized_view(
+            distroseries, '+localpackagediffs',
+            principal=get_current_principal(),
+            current_request=True)
 
     def _create_child_and_parent(self):
         parent_series = self.factory.makeDistroSeries(name='lucid')
@@ -756,8 +761,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.findAll('tr')[0]
 
-        href = canonical_url(difference).replace('http://launchpad.dev', '')
-        links = row.findAll('a', href=href)
+        links = row.findAll('a', href=canonical_url(difference))
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
 
