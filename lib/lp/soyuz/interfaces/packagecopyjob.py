@@ -37,7 +37,7 @@ from lp.soyuz.interfaces.archive import IArchive
 
 
 class IPackageCopyJob(Interface):
-    """A Job that initialises acts on a distribution."""
+    """A job that copies packages between `IArchive`s."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -80,7 +80,7 @@ class PackageCopyJobType(DBEnumeratedType):
 
 
 class IPlainPackageCopyJobSource(IJobSource):
-    """An interface for acquiring IIPackageCopyJobs."""
+    """An interface for acquiring `IPackageCopyJobs`."""
 
     def create(cls, source_archive, source_packages,
                target_archive, target_distroseries, target_pocket,
@@ -89,7 +89,7 @@ class IPlainPackageCopyJobSource(IJobSource):
 
         :param source_archive: The `IArchive` in which `source_packages` are
             found.
-        :param source_packages: This is an iterable of `(source_package_name,
+        :param source_packages: An iterable of `(source_package_name,
             version)` tuples, where both `source_package_name` and `version`
             are strings.
         :param target_archive: The `IArchive` to which to copy the packages.
@@ -105,20 +105,17 @@ class IPlainPackageCopyJobSource(IJobSource):
 
 
 class IPlainPackageCopyJob(IRunnableJob):
-    """A Job that synchronizes packages."""
+    """A no-frills job to copy packages between `IArchive`s."""
 
     source_packages = List(
         title=_("Source Packages"),
         value_type=Tuple(min_length=3, max_length=3),
-        required=True, readonly=True,
-        )
+        required=True, readonly=True)
 
     target_pocket = Int(
-        title=_('Target package publishing pocket'), required=True,
-        readonly=True,
-        )
+        title=_("Target package publishing pocket"), required=True,
+        readonly=True)
 
     include_binaries = Bool(
         title=_("Copy binaries"),
-        required=False, readonly=True,
-        )
+        required=False, readonly=True)
