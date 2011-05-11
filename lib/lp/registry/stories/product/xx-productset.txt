@@ -88,11 +88,6 @@ is provided for each product pointint to its +review-license page.
     >>> text_in_elements = pagination[0].findAll(text=True)
     >>> print ' '.join(text.strip() for text in text_in_elements)
     1 ... 14 of 14 results
-    >>> table = find_tag_by_id(registry_browser.contents, 'product-listing')
-    >>> for tr in table.findAll('tr'):
-    ...     td_list = tr.findAll('td')
-    ...     print td_list[5].a
-    <a href="/tomcat/+review-license">Review</a> ...
 
 Now, we can click on the Review link, which will take us to the
 $project/+review-license page. Then clicking on the Change button
