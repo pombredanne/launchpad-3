@@ -79,16 +79,11 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     # fork 1 - close fds and start new process group
     pid = os.fork()
     if pid:
-        # parent process - we wait for the first child to exit
+        # parent process - we collect the first child to avoid ghosts.
         os.waitpid(pid, 0)
         return
     # start a new process group and detach ttys
     # print '## Starting', name, '##'
-    fnullr = os.open(os.devnull, os.O_RDONLY)
-    os.dup2(fnullr, 0)
-    fnullw = os.open(os.devnull, os.O_WRONLY)
-    os.dup2(fnullw, 1)
-    os.dup2(fnullw, 2)
     os.setsid()
 
     # fork 2 - now detach once more free and clear
@@ -96,16 +91,27 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     if pid:
         # this is the first fork - its job is done
         os._exit(0)
+    # make attempts to read from stdin fail.
+    fnullr = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(fnullr, 0)
+    if fnullr:
+        os.close(fnullr)
     # open up the logfile and start up the process
     f = os.open(logfilename,
                 os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
     os.dup2(f, 1)
     os.dup2(f, 2)
-    os.close(f)
+    if f > 2:
+        os.close(f)
+    # With output setup to log we can start running code again.
     if 'command' in kwargs:
         args = (kwargs['command'],) + args
     else:
         args = ('/usr/bin/env', 'python', '-u',) + args
+    if 'homedir' in kwargs:
+        os.environ['HOME'] = kwargs['homedir']
+    print os.environ['HOME']
+    print os.stat(os.environ['HOME'])
     # this should get logged
     print '## Starting %s as %s' % (name, args)
     # write the pidfile file
@@ -209,14 +215,27 @@ class ExportRabbitServer(Fixture):
             "RABBITMQ_NODE_PORT", str(self.config.port)))
         self.useFixture(EnvironmentVariableFixture(
             "RABBITMQ_NODENAME", self.config.nodename))
+        self._errors = []
+        self.addDetail('rabbit-errors',
+            Content(UTF8_TEXT, self._get_errors))
+
+    def _get_errors(self):
+        for error in self._errors:
+            if type(error) is unicode:
+                yield error.encode('utf8')
+            else:
+                yield error
+            yield '\n'
 
     def rabbitctl(self, command, strip=False):
         """ executes a rabbitctl command and returns status """
         ctlbin = RABBITBIN + "/rabbitmqctl"
         nodename = self.config.fq_nodename()
+        env = dict(os.environ)
+        env['HOME'] = self.config.rabbitdir
         ctl = subprocess.Popen((ctlbin, "-n", nodename, command),
                                stdout = subprocess.PIPE,
-                               stderr = subprocess.PIPE)
+                               stderr = subprocess.PIPE, env=env)
         outstr, errstr = ctl.communicate()
         if strip:
             return outstr.strip(), errstr.strip()
@@ -226,6 +245,8 @@ class ExportRabbitServer(Fixture):
         """ checks that the rabbitmq process is up and running """
         nodename = self.config.fq_nodename()
         outdata, errdata = self.rabbitctl("status")
+        if errdata:
+            self._errors.append(errdata)
         if not outdata:
             return False
         # try to parse the output to find if this nodename is running
@@ -245,6 +266,7 @@ class ExportRabbitServer(Fixture):
         """, re.VERBOSE)
         match = regex.search(outdata)
         if not match:
+            self._errors.append(outdata)
             return False
         found_node = match.groupdict()['nodename']
         return found_node == nodename
@@ -278,19 +300,23 @@ class RunRabbitServer(Fixture):
     def setUp(self):
         super(RunRabbitServer, self).setUp()
         self.rabbit = self.useFixture(ExportRabbitServer(self.config))
-        self.addDetail('log',
+        # Workaround fixtures not adding details from used fixtures.
+        self.addDetail('rabbitctl errors',
+            Content(UTF8_TEXT, self.rabbit._get_errors))
+        self.addDetail('rabbit log file',
             Content(UTF8_TEXT, lambda:[file(self.config.logfile, 'rb').read()]))
         cmd = RABBITBIN + '/rabbitmq-server'
         name = "RabbitMQ server node:%s on port:%d" % (
             self.config.nodename, self.config.port)
-        daemon(name, self.config.logfile, self.config.pidfile, command=cmd)
+        daemon(name, self.config.logfile, self.config.pidfile, command=cmd,
+            homedir=self.config.rabbitdir)
         # now wait about 5 secs for it to start
         timeout = time.time() + 5
         while True:
             if self.rabbit.check_running():
                 break
             elif time.time() > timeout:
-                raise Exception('Rabbit server did not start.')
+                raise Exception('Timeout waiting for rabbit OTP server to start.')
         # The erlang OTP is up, but rabbit may not be usable. We need to
         # cleanup up the process from here on in even if the full service fails
         # to get together.
@@ -307,7 +333,7 @@ class RunRabbitServer(Fixture):
                 break
             time.sleep(0.1)
             if time.time() > timeout:
-                raise Exception('Rabbit server did not start.')
+                raise Exception('Timeout waiting for rabbit to start listening.')
         # all should be well here
         with open(self.config.pidfile, "r") as f:
             self.pid = int(f.read().strip())
@@ -353,7 +379,8 @@ class RabbitServer(Fixture):
     def setUp(self):
         super(RabbitServer, self).setUp()
         self.config = self.useFixture(AllocateRabbitServer())
-        self.server = self.useFixture(RunRabbitServer(self.config))
+        self.server = RunRabbitServer(self.config)
+        self.useFixture(self.server)
 
     def getDetails(self):
         return self.server.getDetails()
