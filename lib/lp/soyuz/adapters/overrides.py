@@ -1,11 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Generic Override Policy classes
-
-FromExistingOverridePolicy: 
-UbuntuOverridePolicy:
-UnknownFileOverridePolicy:
+"""Generic Override Policy classes.
 """
 
 __metaclass__ = type
@@ -13,7 +9,7 @@ __metaclass__ = type
 __all__ = [
     'FromExistingOverridePolicy',
     'UbuntuOverridePolicy',
-    'UnknownFileOverridePolicy',
+    'UnknownOverridePolicy',
     ]
 
 
@@ -49,21 +45,28 @@ class BaseOverridePolicy:
 
 
 class FromExistingOverridePolicy(BaseOverridePolicy):
+    """Override policy that returns the SPN, component and section for
+    the latest published source publication, or the BPN, DAS, component,
+    section and priority for the latest published binary publication.
+    """
 
     def findSourceOverrides(self, archive, distroseries, pocket, spns):
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
-                (SQL("DISTINCT ON (SourcePackageRelease.sourcepackagename) 0 AS ignore"),
+                (SQL("""DISTINCT ON (
+                    SourcePackageRelease.sourcepackagename) 0 AS ignore"""),
                     SourcePackageRelease.sourcepackagenameID,
                     SourcePackagePublishingHistory.componentID,
                     SourcePackagePublishingHistory.sectionID),
                 SourcePackagePublishingHistory.pocket == pocket,
                 SourcePackagePublishingHistory.archiveID == archive.id,
-                SourcePackagePublishingHistory.distroseriesID == distroseries.id,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
                     active_publishing_status),
-                SourcePackageRelease.id == SourcePackagePublishingHistory.sourcepackagereleaseID,
+                SourcePackageRelease.id ==
+                    SourcePackagePublishingHistory.sourcepackagereleaseID,
                 SourcePackageRelease.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
                         SourcePackageRelease.sourcepackagenameID,
@@ -80,7 +83,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for bpn, das in expanded)
         already_published = DecoratedResultSet(
             store.find(
-                (SQL("DISTINCT ON (BinaryPackagePublishingHistory.distroarchseries, BinaryPackageRelease.binarypackagename) 0 AS ignore"),
+                (SQL("""DISTINCT ON (
+                    BinaryPackagePublishingHistory.distroarchseries,
+                    BinaryPackageRelease.binarypackagename) 0
+                    AS ignore"""),
                     BinaryPackageRelease.binarypackagenameID,
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.componentID,
@@ -109,19 +115,58 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 archive, distroseries, pocket, binaries)
 
 
-class UnknownFileOverridePolicy(BaseOverridePolicy):
+class UnknownOverridePolicy(BaseOverridePolicy):
+    """Override policy that assumes everything passed in doesn't exist, so
+    returns the defaults.
+    """
+    
+    def __init__(self):
+        self.default_component = 'universe'
 
     def policySpecificChecks(self, archive, distroseries, pocket,
                              sources=None, binaries=None):
-        pass
+        if sources is not None and binaries is not None:
+            raise AssertionError(
+                "Can not check for both source and binary overrides "
+                "together.")
+        if sources:
+            store = IStore(SourcePackageName)
+            store.find(SourcePackageName.id.is_in(spn.id for spn in sources))
+            if archive.default_component:
+                self.default_component = archive.default_component
+            overrides = []
+            for source in sources:
+                overrides.append((
+                    store.get(SourcePackageName, source.id),
+                    self.default_component, None))
+            return overrides
+        if binaries:
+            store = IStore(BinaryPackageName)
+            store.find(
+                BinaryPackageName.id.is_in(bpn.id for bpn, ign in binaries))
+            if archive.default_component:
+                self.default_component = archive.default_component
+            overrides = []
+            for binary, archtag in binaries:
+                overrides.append((
+                    store.get(BinaryPackageName, binary.id), None,
+                    self.default_component, None, None))
+            return overrides
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
-                           UnknownFileOverridePolicy):
+                           UnknownOverridePolicy):
 
-    def policySpecificChecks(self):
-        FromExistingOverridePolicy.policySpecificChecks()
-        UnknownFileOverridePolicy.policySpecificChecks()
+    def policySpecificChecks(self, archive, distroseries, pocket,
+                             sources=None, binaries=None):
+        overrides = FromExistingOverridePolicy.policySpecificChecks(
+            archive, distroseries, pocket, sources=sources,
+            binaries=binaries)
+        if overrides is []:
+            overrides = UnknownOverridePolicy.policySpecificChecks(
+                archive, distroseries, pocket, sources=sources,
+                binaries=binaries)
+        return overrides
 
 
 def calculate_target_das(distroseries, binaries):
@@ -135,6 +180,7 @@ def calculate_target_das(distroseries, binaries):
         else:
             with_das.append((bpn, distroseries.nominatedarchindep))
     return with_das
+
 
 def make_package_condition(archive, das, bpn):
     return And(
