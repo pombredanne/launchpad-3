@@ -12,7 +12,6 @@ from lp.testing import TestCase
 from lp.scripts.helpers import TransactionFreeOperation
 
 
-
 class TestTransactionFreeOperation(TestCase):
 
     def setUp(self):

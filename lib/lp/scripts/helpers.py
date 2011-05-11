@@ -4,7 +4,7 @@
 """Helpers for command line tools."""
 
 __metaclass__ = type
-__all__ = ["LPOptionParser", "TransactionFreeOperation",]
+__all__ = ["LPOptionParser", "TransactionFreeOperation", ]
 
 import contextlib
 from copy import copy
@@ -58,6 +58,7 @@ class LPOptionParser(OptionParser):
     Automatically adds our standard --verbose, --quiet options that
     tie into our logging system.
     """
+
     def __init__(self, *args, **kw):
         kw.setdefault('option_class', LPOption)
         OptionParser.__init__(self, *args, **kw)
@@ -85,7 +86,7 @@ class TransactionFreeOperation:
             raise AssertionError('Transaction open before operation!')
 
     @classmethod
-    def __exit__(cls,  exc_type, exc_value, traceback):
+    def __exit__(cls, exc_type, exc_value, traceback):
         if cls.any_active_transactions():
             raise AssertionError('Operation opened transaction!')
         cls.count += 1
