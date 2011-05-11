@@ -171,6 +171,7 @@ class BranchJobType(DBEnumeratedType):
         This job scans a branch for new revisions.
         """)
 
+
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
 

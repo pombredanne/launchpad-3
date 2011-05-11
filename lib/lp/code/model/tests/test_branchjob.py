@@ -194,7 +194,6 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        first_revision = 'rev-1'
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')
@@ -634,9 +633,9 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             tree.merge_from_branch(tree3.branch, force=True)
             if include_ghost:
                 tree.add_parent_tree_id('rev2c-id')
-            tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
-                committer='J. Random Hacker <jrandom@example.org>',
-                authors=authors)
+            tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000,
+                timezone=0, authors=authors,
+                committer='J. Random Hacker <jrandom@example.org>')
         return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
 
     def test_getMergedRevisionIDs(self):
@@ -721,7 +720,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
 
     def test_getRevisionMessage_with_merge_authors(self):
         """Merge authors are included after the main bzr log."""
-        person = self.factory.makePerson(name='baz',
+        self.factory.makePerson(name='baz',
             displayname='Basil Blaine',
             email='baz@blaine.com',
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -913,15 +912,6 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.assertEqual(
             job.getRevisionMessage(first_revision, 1), expected)
 
-        expected_diff = (
-            "=== modified file 'hello.txt'" '\n'
-            "--- hello.txt" '\t' "2001-09-09 01:46:40 +0000" '\n'
-            "+++ hello.txt" '\t' "2001-09-10 05:33:20 +0000" '\n'
-            "@@ -1,1 +1,3 @@" '\n'
-            " Hello World" '\n'
-            "+" '\n'
-            "+Foo Bar" '\n'
-            '\n')
         expected_message = (
             u"-"*60 + '\n'
             "revno: 2" '\n'
@@ -1041,7 +1031,6 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             in which case an arbitrary unique string is used.
         :returns: The revision of this commit.
         """
-        seen_dirs = set()
         for file_pair in files:
             file_name = file_pair[0]
             try:
@@ -1184,7 +1173,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # The content of the uploaded file is stored in the librarian.
         # The uploader of a POT is the series owner.
         POT_CONTENT = "pot content\n"
-        entries = self._runJobWithFile(
+        self._runJobWithFile(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
             'foo.pot', POT_CONTENT)
         # Commit so that the file is stored in the librarian.
@@ -1309,7 +1298,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
-        job = self._makeRosettaUploadJob()
+        self._makeRosettaUploadJob()
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([], ready_jobs)
 
