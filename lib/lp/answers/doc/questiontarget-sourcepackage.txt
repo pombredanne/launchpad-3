@@ -60,7 +60,7 @@ from its containing distribution.
     >>> list(evolution.answer_contacts)
     []
 
-    >>> ubuntu.addAnswerContact(sample_person)
+    >>> ubuntu.addAnswerContact(sample_person, sample_person)
     True
 
     >>> [person.name for person in evolution.answer_contacts]
@@ -76,7 +76,7 @@ direct_answer_contacts attributes.
 A user can still subscribe as support contact for specific sourcepackage
 even if he's already a support contact for the distribution.
 
-    >>> evolution.addAnswerContact(sample_person)
+    >>> evolution.addAnswerContact(sample_person, sample_person)
     True
 
     >>> [person.name for person in evolution.direct_answer_contacts]
@@ -91,7 +91,7 @@ The removeAnswerContact() method can only be used to remove the user
 from the sourcepackage support contact list, not from the ubuntu
 distribution list:
 
-    >>> evolution.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person, sample_person)
     True
 
     >>> [person.name for person in evolution.direct_answer_contacts]
@@ -100,7 +100,7 @@ distribution list:
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
-    >>> evolution.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person, sample_person)
     False
 
     >>> [person.name for person in evolution.answer_contacts]
@@ -114,7 +114,7 @@ The same principle applies to DistributionSourcePackage:
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
-    >>> evolution.addAnswerContact(sample_person)
+    >>> evolution.addAnswerContact(sample_person, sample_person)
     True
 
     >>> [person.name for person in evolution.direct_answer_contacts]
@@ -123,13 +123,13 @@ The same principle applies to DistributionSourcePackage:
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
-    >>> evolution.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person, sample_person)
     True
 
     >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
-    >>> evolution.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person, sample_person)
     False
 
     >>> [person.name for person in evolution.direct_answer_contacts]

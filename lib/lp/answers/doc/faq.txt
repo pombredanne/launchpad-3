@@ -199,7 +199,7 @@ Answer contacts can also edit FAQs:
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> no_priv = getUtility(ILaunchBag).user
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> firefox.addAnswerContact(no_priv)
+    >>> firefox.addAnswerContact(no_priv, no_priv)
     True
 
     >>> from canonical.launchpad.webapp.authorization import clear_cache
