@@ -88,7 +88,7 @@
   </div>
   <div class="boardCommentFooter" tal:condition="comment/show_footer">
     <a tal:attributes="id string:mark-spam-${context/index};"
-       tal:condition="context/show_spam_controls"
+       tal:condition="view/show_spam_controls"
        class="js-action sprite edit mark-spam" href="#">
          <tal:not-spam condition="not: context/visible">
          Mark as not spam

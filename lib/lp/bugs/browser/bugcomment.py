@@ -269,7 +269,7 @@ class BugComment:
     @property
     def show_footer(self):
         """Return True if the footer should be shown for this comment."""
-        return (
+        return bool(
             len(self.activity) > 0 or
             self.bugwatch or
             self.show_spam_controls)
@@ -325,6 +325,10 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
 
+    @property
+    def show_spam_controls(self):
+        return self.comment.show_spam_controls
+    
     def page_title(self):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
@@ -332,6 +336,8 @@ class BugCommentView(LaunchpadView):
 
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""
+
+    show_spam_controls = False
 
     def proxiedUrlOfLibraryFileAlias(self, attachment):
         """Return the proxied URL for the Librarian file of the attachment."""
