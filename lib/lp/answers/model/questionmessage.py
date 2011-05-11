@@ -23,7 +23,6 @@ from lp.answers.enums import (
     QuestionStatus,
     )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
-from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 
 
@@ -45,18 +44,6 @@ class QuestionMessage(SQLBase):
 
     new_status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
-
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-
-    def __init__(self, **kwargs):
-        if 'owner' not in kwargs:
-            # Although a trigger will set the owner after the SQL
-            # INSERT has been executed, we must specify the parameter
-            # explicitly to fulfill the DB constraint OWNER NOT NULL,
-            # otherweise we'll get an error from the DB server.
-            kwargs['owner'] = kwargs['message'].owner
-        super(QuestionMessage, self).__init__(**kwargs)
 
     def __iter__(self):
         """See IMessage."""

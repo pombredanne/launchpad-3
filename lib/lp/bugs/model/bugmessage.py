@@ -49,16 +49,7 @@ class BugMessage(SQLBase):
     index = IntCol(notNull=True)
     # -- The owner, cached from the message table using triggers.
     owner = ForeignKey(dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
-
-    def __init__(self, **kwargs):
-        if 'owner' not in kwargs:
-            # Although a trigger will set the owner after the SQL
-            # INSERT has been executed, we must specify the parameter
-            # explicitly to fulfill the DB constraint OWNER NOT NULL,
-            # otherweise we'll get an error from the DB server.
-            kwargs['owner'] = kwargs['message'].owner
-        super(BugMessage, self).__init__(**kwargs)
+        storm_validator=validate_public_person, notNull=False)
 
     def __repr__(self):
         return "<BugMessage at 0x%x message=%s index=%s>" % (
