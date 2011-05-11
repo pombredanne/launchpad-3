@@ -1311,10 +1311,11 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         not permitted.
     """
     if check_permissions:
-        for spph in source_pubs:
-            spn = spph.sourcepackagerelease.sourcepackagename
-            check_copy_permissions(
-                person, dest_archive, dest_series, dest_pocket, spn)
+        spns = [
+            spph.sourcepackagerelease.sourcepackagename
+            for spph in source_pubs]
+        check_copy_permissions(
+            person, dest_archive, dest_series, dest_pocket, [spns])
 
     job_source = getUtility(IPackageCopyJobSource)
     archive_pubs = partition_pubs_by_archive(source_pubs)

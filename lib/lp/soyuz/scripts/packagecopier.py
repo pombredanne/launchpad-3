@@ -197,15 +197,15 @@ class CheckedCopy:
 
 
 def check_copy_permissions(person, archive, series, pocket,
-                           sourcepackagename):
+                           sourcepackagenames):
     """Check that `person` has permission to copy a package.
 
     :param person: User attempting the upload.
     :param archive: Destination `Archive`.
     :param series: Destination `DistroSeries`.
     :param pocket: Destination `Pocket`.
-    :param sourcepackagename: `SourcePackageName` of the package to be
-        copied.
+    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+        packages to be copied.
     :raises CannotCopy: If the copy is not allowed.
     """
     if person is None:
@@ -215,19 +215,20 @@ def check_copy_permissions(person, archive, series, pocket,
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
-    package = series.getSourcePackage(sourcepackagename)
-    destination_component = package.latest_published_component
+    for spn in set(sourcepackagenames):
+        package = series.getSourcePackage(spn)
+        destination_component = package.latest_published_component
 
-    # If destination_component is not None, make sure the person
-    # has upload permission for this component.  Otherwise, any
-    # upload permission on this archive will do.
-    strict_component = destination_component is not None
-    reason = archive.checkUpload(
-        person, series, sourcepackagename, destination_component, pocket,
-        strict_component=strict_component)
+        # If destination_component is not None, make sure the person
+        # has upload permission for this component.  Otherwise, any
+        # upload permission on this archive will do.
+        strict_component = destination_component is not None
+        reason = archive.checkUpload(
+            person, series, spn, destination_component, pocket,
+            strict_component=strict_component)
 
-    if reason is not None:
-        raise CannotCopy(reason)
+        if reason is not None:
+            raise CannotCopy(reason)
 
 
 class CopyChecker:
