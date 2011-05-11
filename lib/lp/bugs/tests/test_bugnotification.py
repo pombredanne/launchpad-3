@@ -384,7 +384,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
 
         # Perform the test.
         self.assertEqual(
-            { person: { 'filter description': [],
+            { person: { 'filter descriptions': [],
                         'sources': sources } },
             BugNotificationSet().getRecipientFilterData(
                 self.bug, {self.subscriber: sources,

@@ -1763,7 +1763,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertRecipients(
             [self.product_metadata_subscriber, team.teamowner])
 
-    def test_description_changed_no_muted_email_indirect(self):
+    def test_description_changed_no_muted_email(self):
         # Users who have muted a bug do not get any bug email for a bug,
         # even if they are subscribed through a team membership.
         team = self.factory.makeTeam()
