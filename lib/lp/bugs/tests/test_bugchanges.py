@@ -1763,6 +1763,21 @@ class TestBugChanges(TestCaseWithFactory):
         self.assertRecipients(
             [self.product_metadata_subscriber, team.teamowner])
 
+    def test_description_changed_no_muted_email_indirect(self):
+        # Users who have muted a bug do not get any bug email for a bug,
+        # even if they are subscribed through a team membership.
+        team = self.factory.makeTeam()
+        team.addMember(self.user, team.teamowner)
+        self.bug.subscribe(team, self.user)
+        self.bug.mute(self.user, self.user)
+
+        old_description = self.changeAttribute(
+            self.bug, 'description', 'New description')
+
+        # self.user is not included among the recipients.
+        self.assertRecipients(
+            [self.product_metadata_subscriber, team.teamowner])
+
     def test_no_lifecycle_email_despite_structural_subscription(self):
         # If a person has a structural METADATA subscription,
         # and a direct LIFECYCLE subscription, they should

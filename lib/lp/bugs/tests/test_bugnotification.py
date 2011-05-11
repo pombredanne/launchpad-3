@@ -233,11 +233,11 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def test_getRecipientFilterData_empty(self):
         # When there is empty input, there is empty output.
         self.assertEqual(
-            BugNotificationSet().getRecipientFilterData({}, []),
+            BugNotificationSet().getRecipientFilterData(self.bug, {}, []),
             {})
         self.assertEqual(
             BugNotificationSet().getRecipientFilterData(
-                {}, [self.notification]),
+                self.bug, {}, [self.notification]),
             {})
 
     def test_getRecipientFilterData_other_persons(self):
@@ -259,7 +259,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
              subscriber2: {'sources': sources2,
                            'filter descriptions': [u'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources, subscriber2: sources2},
+                self.bug, {self.subscriber: sources, subscriber2: sources2},
                 [self.notification, notification2]))
 
     def test_getRecipientFilterData_match(self):
@@ -271,7 +271,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources}, [self.notification]))
+                self.bug, {self.subscriber: sources}, [self.notification]))
 
     def test_getRecipientFilterData_multiple_notifications_match(self):
         # When there are bug filters for the recipient for multiple
@@ -285,7 +285,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Another Filter!', 'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources},
+                self.bug, {self.subscriber: sources},
                 [self.notification, self.notification2]))
 
     def test_getRecipientFilterData_mute(self):
@@ -300,7 +300,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.assertEqual(
             {},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources}, [self.notification]))
+                self.bug, {self.subscriber: sources}, [self.notification]))
 
     def test_getRecipientFilterData_mute_one_person_of_two(self):
         self.includeFilterInNotification()
@@ -321,7 +321,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             {subscriber2: {'sources': sources2,
                            'filter descriptions': [u'Special Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources, subscriber2: sources2},
+                self.bug, {self.subscriber: sources, subscriber2: sources2},
                 [self.notification, notification2]))
 
     def test_getRecipientFilterData_mute_one_filter_of_two(self):
@@ -337,7 +337,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Another Filter!']}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources},
+                self.bug, {self.subscriber: sources},
                 [self.notification, self.notification2]))
 
     def test_getRecipientFilterData_mute_both_filters_mutes(self):
@@ -356,8 +356,50 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.assertEqual(
             {},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources},
+                self.bug, {self.subscriber: sources},
                 [self.notification, self.notification2]))
+
+    def test_getRecipientFilterData_mute_bug_mutes(self):
+        # Mute the bug for the subscriber.
+        self.team = self.factory.makeTeam()
+        self.subscriber.join(self.team)
+
+        self.bug.mute(self.subscriber, self.subscriber)
+        sources = list(self.notification.recipients)
+        # Perform the test.
+        self.assertEqual(
+            {},
+            BugNotificationSet().getRecipientFilterData(
+                self.bug, {self.subscriber: sources}, [self.notification]))
+
+    def test_getRecipientFilterData_mute_bug_mutes_only_themselves(self):
+        # Mute the bug for the subscriber.
+        self.bug.mute(self.subscriber, self.subscriber)
+
+        # Notification for the other person still goes through.
+        person = self.factory.makePerson(name='other')
+        self.addNotificationRecipient(self.notification, person)
+
+        sources = list(self.notification.recipients)
+
+        # Perform the test.
+        self.assertEqual(
+            { person: { 'filter description': [],
+                        'sources': sources } },
+            BugNotificationSet().getRecipientFilterData(
+                self.bug, {self.subscriber: sources,
+                           person: sources},
+                [self.notification]))
+
+    def test_getRecipientFilterData_mute_bug_mutes_filter(self):
+        # Mute the bug for the subscriber.
+        self.bug.mute(self.subscriber, self.subscriber)
+        self.includeFilterInNotification(description=u'Special Filter!')
+        sources = list(self.notification.recipients)
+        self.assertEqual(
+            {},
+            BugNotificationSet().getRecipientFilterData(
+                self.bug, {self.subscriber: sources}, [self.notification]))
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):

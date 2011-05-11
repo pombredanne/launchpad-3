@@ -189,11 +189,17 @@ class BugNotificationSet:
 
         return bug_notification
 
-    def getRecipientFilterData(self, recipient_to_sources, notifications):
+    def getRecipientFilterData(self, bug, recipient_to_sources, notifications):
         """See `IBugNotificationSet`."""
         if not notifications or not recipient_to_sources:
             # This is a shortcut that will remove some error conditions.
             return {}
+        # Collect bug mute information.
+        from lp.bugs.model.bug import BugMute
+        store = IStore(BugMute)
+        muted_person_ids = set(list(
+            store.find(BugMute.person_id,
+                       BugMute.bug == bug)))
         # This makes two calls to the database to get all the
         # information we need. The first call gets the filter ids and
         # descriptions for each recipient, and then we divide up the
@@ -202,6 +208,8 @@ class BugNotificationSet:
         source_person_id_map = {}
         recipient_id_map = {}
         for recipient, sources in recipient_to_sources.items():
+            if recipient.id in muted_person_ids:
+                continue
             source_person_ids = set()
             recipient_id_map[recipient.id] = {
                 'principal': recipient,
@@ -231,14 +239,17 @@ class BugNotificationSet:
             Join(StructuralSubscription,
                  BugSubscriptionFilter.structural_subscription_id ==
                     StructuralSubscription.id))
-        filter_data = source.find(
-            (StructuralSubscription.subscriberID,
-             BugSubscriptionFilter.id,
-             BugSubscriptionFilter.description),
-            In(BugNotificationFilter.bug_notification_id,
-               [notification.id for notification in notifications]),
-            In(StructuralSubscription.subscriberID,
-               source_person_id_map.keys()))
+        if len(source_person_id_map) == 0:
+            filter_data = []
+        else:
+            filter_data = source.find(
+                (StructuralSubscription.subscriberID,
+                 BugSubscriptionFilter.id,
+                 BugSubscriptionFilter.description),
+                In(BugNotificationFilter.bug_notification_id,
+                   [notification.id for notification in notifications]),
+                In(StructuralSubscription.subscriberID,
+                   source_person_id_map.keys()))
         filter_ids = []
         # Record the filters for each source.
         for source_person_id, filter_id, filter_description in filter_data:
