@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -49,13 +50,13 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
     getFeatureFlag,
     )
-from lp.services.features.testing import (
-    FeatureFixture,
-    )
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -1237,32 +1238,35 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
 
-    def test_sync_append_main_archive(self):
-        # A user with lp.Append on the main archive (e.g. members of
-        # ubuntu-security on an ubuntu series) can sync packages.
-        # XXX: rvb 2011-05-05 bug=777911: This check should be refactored
-        # and moved to lib/lp/soyuz/scripts/tests/test_copypackage.py.
+
+    def test_sync_in_released_series_in_updates(self):
+        # If the destination series is released, the sync packages end
+        # up in the updates pocket.
         versions = {
-            'base': '1.0',
-            'derived': '1.0derived1',
             'parent': '1.0-1',
-        }
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            }
         derived_series, parent_series, sourcepackagename = self._setUpDSD(
-            'my-src-name', distribution=ubuntu, versions=versions)
-        ubuntu_security = getUtility(IPersonSet).getByName('ubuntu-security')
+            'my-src-name', versions=versions)
+        # Update destination series status to current and update
+        # daterelease.
+        with celebrity_logged_in('admin'):
+            derived_series.status = SeriesStatus.CURRENT
+            derived_series.datereleased = UTC_NOW
+
         set_derived_series_sync_feature_flag(self)
-        with person_logged_in(ubuntu_security):
-            self.assertTrue(
-                check_permission(
-                    'launchpad.Append', derived_series.main_archive))
-            view = self._syncAndGetView(
-                derived_series, ubuntu_security, ['my-src-name'])
-
-            self.assertTrue(view.canPerformSync())
-
-        self.assertPackageCopied(
-            derived_series, 'my-src-name', versions['parent'], view)
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
+        self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+        parent_pub = parent_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=parent_series).one()
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
+        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

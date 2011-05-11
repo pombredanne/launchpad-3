@@ -1131,6 +1131,16 @@ COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or updat
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
 
+-- PackageCopyJob
+
+COMMENT ON TABLE PackageCopyJob IS 'Contains references to jobs for copying packages between archives.';
+COMMENT ON COLUMN PackageCopyJob.source_archive IS 'The archive from which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_archive IS 'The archive to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_distroseries IS 'The distroseries to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.job_type IS 'The type of job';
+COMMENT ON COLUMN PackageCopyJob.json_data IS 'A JSON struct containing data for the job.';
+
+
 -- PackageDiff
 
 COMMENT ON TABLE PackageDiff IS 'This table stores diffs bettwen two scpecific SourcePackageRelease versions.';

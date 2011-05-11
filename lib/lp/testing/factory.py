@@ -287,7 +287,11 @@ from lp.testing import (
     time_counter,
     with_celebrity_logged_in,
     )
-from lp.translations.enums import RosettaImportStatus
+from lp.translations.enums import (
+    LanguagePackType,
+    RosettaImportStatus,
+    )
+from lp.translations.interfaces.languagepack import ILanguagePackSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
@@ -920,7 +924,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
-        translations_usage=None, bug_supervisor=None):
+        translations_usage=None, bug_supervisor=None,
+        driver=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -947,14 +952,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             licenses=licenses,
             project=project,
             registrant=registrant)
+        naked_product = removeSecurityProxy(product)
         if official_malone is not None:
-            removeSecurityProxy(product).official_malone = official_malone
+            naked_product.official_malone = official_malone
         if translations_usage is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.translations_usage = translations_usage
         if bug_supervisor is not None:
-            naked_product = removeSecurityProxy(product)
             naked_product.bug_supervisor = bug_supervisor
+        if driver is not None:
+            naked_product.driver = driver
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1248,8 +1254,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # Only branches related to products have related series branches.
         if with_series_branches and naked_product is not None:
             series_branch_info = []
-            # Add some product series
 
+            # Add some product series
             def makeSeriesBranch(name, is_private=False):
                 branch = self.makeBranch(
                     name=name,
@@ -1712,6 +1718,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 self.makeBugTask(bug, prerequisite_target, publish=publish)
 
         return removeSecurityProxy(bug).addTask(owner, target)
+
+    def makeBugNomination(self, bug=None, target=None):
+        """Create and return a BugNomination.
+
+        Will create a non-series task if it does not already exist.
+
+        :param bug: The `IBug` the nomination should be for. If None,
+            one will be created.
+        :param target: The `IProductSeries`, `IDistroSeries` or
+            `ISourcePackage` to nominate for.
+        """
+        if ISourcePackage.providedBy(target):
+            non_series = target.distribution_sourcepackage
+            series = target.distroseries
+        else:
+            non_series = target.parent
+            series = target
+        with celebrity_logged_in('admin'):
+            bug = self.makeBugTask(bug=bug, target=non_series).bug
+            nomination = bug.addNomination(
+                getUtility(ILaunchpadCelebrities).admin, series)
+        return nomination
 
     def makeBugTracker(self, base_url=None, bugtrackertype=None, title=None,
                        name=None):
@@ -2230,6 +2258,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return language_set.createLanguage(
             language_code, name, pluralforms=pluralforms,
             pluralexpression=plural_expression)
+
+    def makeLanguagePack(self, distroseries=None, languagepack_type=None):
+        """Create a language pack."""
+        if distroseries is None:
+            distroseries = self.makeUbuntuDistroSeries()
+        if languagepack_type is None:
+            languagepack_type = LanguagePackType.FULL
+        return getUtility(ILanguagePackSet).addLanguagePack(
+            distroseries, self.makeLibraryFileAlias(), languagepack_type)
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
