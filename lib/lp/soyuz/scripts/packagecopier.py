@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PackageCopier utilities."""
@@ -9,6 +9,7 @@ __all__ = [
     'PackageCopier',
     'UnembargoSecurityPackage',
     'CopyChecker',
+    'check_copy_permissions',
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
@@ -52,6 +53,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
     )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
 
+
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
 # I just don't see a clear benefit in doing that right now.
 def re_upload_file(libraryfile, restricted=False):
@@ -84,6 +86,7 @@ def re_upload_file(libraryfile, restricted=False):
     os.remove(filepath)
 
     return new_lfa
+
 
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
@@ -192,6 +195,46 @@ class CheckedCopy:
             return self.context.getStatusSummaryForBuilds()
         else:
             return {'status': BuildSetStatus.NEEDSBUILD}
+
+
+def check_copy_permissions(person, archive, series, pocket,
+                           sourcepackagename):
+    """Check that `person` has permission to copy a package.
+
+    :param person: User attempting the upload.
+    :param archive: Destination `Archive`.
+    :param series: Destination `DistroSeries`.
+    :param pocket: Destination `Pocket`.
+    :param sourcepackagename: `SourcePackageName` of the package to be
+        copied.
+    :raises CannotCopy: If the copy is not allowed.
+    """
+    if person is None:
+        raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    # If there is a requester, check that he has upload permission into
+    # the destination (archive, component, pocket). This check is done
+    # here rather than in the security adapter because it requires more
+    # info than is available in the security adapter.
+    package = series.getSourcePackage(sourcepackagename)
+    destination_component = package.latest_published_component
+
+    # If destination_component is not None, make sure the person
+    # has upload permission for this component.  Otherwise, any
+    # upload permission on this archive will do.
+    strict_component = destination_component is not None
+    reason = archive.checkUpload(
+        person, series, sourcepackagename, destination_component, pocket,
+        strict_component=strict_component)
+
+    if reason is not None:
+        # launchpad.Append on the main archive is sufficient
+        # to copy arbitrary packages. This allows for
+        # ubuntu's security team to sync sources into the
+        # primary archive (bypassing the queue and
+        # annoncements).
+        if not check_permission('launchpad.Append', series.main_archive):
+            raise CannotCopy(reason)
 
 
 class CopyChecker:
@@ -399,35 +442,10 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        # If there is a requester, check that he has upload permission
-        # into the destination (archive, component, pocket). This check
-        # is done here rather than in the security adapter because it
-        # requires more info than is available in the security adapter.
         if check_permissions:
-            if person is None:
-                raise CannotCopy(
-                    'Cannot check copy permissions (no requester).')
-            else:
-                sourcepackagerelease = source.sourcepackagerelease
-                sourcepackagename = sourcepackagerelease.sourcepackagename
-                destination_component = series.getSourcePackage(
-                    sourcepackagename).latest_published_component
-                # If destination_component is not None, make sure the person
-                # has upload permission for this component. Otherwise, any
-                # upload permission on this archive will do.
-                strict_component = destination_component is not None
-                reason = self.archive.checkUpload(
-                    person, series, sourcepackagename, destination_component,
-                    pocket, strict_component=strict_component)
-                if reason is not None:
-                    # launchpad.Append on the main archive is sufficient
-                    # to copy arbitrary packages. This allows for
-                    # ubuntu's security team to sync sources into the
-                    # primary archive (bypassing the queue and
-                    # annoncements).
-                    if not check_permission(
-                        'launchpad.Append', series.main_archive):
-                        raise CannotCopy(reason)
+            check_copy_permissions(
+                person, self.archive, series, pocket,
+                source.sourcepackagerelease.sourcepackagename)
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(

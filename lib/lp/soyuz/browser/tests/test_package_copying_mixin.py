@@ -200,7 +200,8 @@ class TestPackageCopyingMixin(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         notice = copy_asynchronously(
             spphs, dest_series.distribution.main_archive, dest_series,
-            pocket, include_binaries=False).escapedtext
+            pocket, include_binaries=False,
+            check_permissions=False).escapedtext
         self.assertIn("Requested sync of %d packages" % len(spphs),  notice)
 
     def test_do_copy_goes_async_if_canCopySynchronously_says_so(self):
@@ -216,28 +217,22 @@ class TestPackageCopyingMixin(TestCaseWithFactory):
         jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
         self.assertNotEqual([], jobs)
 
-    def test_do_copy_synchronously_checks_permissions(self):
+    def test_copy_synchronously_checks_permissions(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
-        view = self.makeView()
-        view.canCopySynchronously = FakeMethod(result=True)
-        dest_series = view.context
+        dest_series = self.makeDestinationSeries()
         archive = dest_series.distribution.main_archive
         pocket = self.factory.getAnyPocket()
-        view.do_copy(
-            'selected_differences', [spph], archive, dest_series, pocket,
-            False, check_permissions=True)
-# XXX: Implement
-        self.assertTrue(False)
+        self.assertRaises(
+            CannotCopy,
+            copy_synchronously,
+            [spph], archive, dest_series, pocket, False)
 
-    def test_do_copy_asynchronously_checks_permissions(self):
+    def test_copy_asynchronously_checks_permissions(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
-        view = self.makeView()
-        view.canCopySynchronously = FakeMethod(result=False)
-        dest_series = view.context
+        dest_series = self.makeDestinationSeries()
         archive = dest_series.distribution.main_archive
         pocket = self.factory.getAnyPocket()
-        view.do_copy(
-            'selected_differences', [spph], archive, dest_series, pocket,
-            False, check_permissions=True)
-# XXX: Implement
-        self.assertTrue(False)
+        self.assertRaises(
+            CannotCopy,
+            copy_asynchronously,
+            [spph], archive, dest_series, pocket, False)

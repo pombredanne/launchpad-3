@@ -159,7 +159,10 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.packagecopier import do_copy
+from lp.soyuz.scripts.packagecopier import (
+    check_copy_permissions,
+    do_copy,
+    )
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -1287,6 +1290,12 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         dest_display_name=None, person=None,
                         check_permissions=True):
     """Schedule jobs to copy packages later."""
+    if check_permissions:
+        for spph in source_pubs:
+            spn = spph.sourcepackagerelease.sourcepackagename
+            check_copy_permissions(
+                person, dest_archive, dest_series, dest_pocket, spn)
+
     job_source = getUtility(IPackageCopyJobSource)
     archive_pubs = partition_pubs_by_archive(source_pubs)
     for source_archive, spphs in archive_pubs.iteritems():
@@ -1359,23 +1368,23 @@ class PackageCopyingMixin:
 
         :return: True if the copying worked, False otherwise.
         """
-        if self.canCopySynchronously(source_pubs):
-            try:
+        try:
+            if self.canCopySynchronously(source_pubs):
                 notification = copy_synchronously(
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,
                     dest_display_name=dest_display_name, person=person,
                     check_permissions=check_permissions)
-            except CannotCopy, error:
-                self.setFieldError(
-                    sources_field_name, render_cannotcopy_as_html(error))
-                return False
-        else:
-            notification = copy_asynchronously(
-                source_pubs, dest_archive, dest_series, dest_pocket,
-                include_binaries, dest_url=dest_url,
-                dest_display_name=dest_display_name, person=person,
-                check_permissions=check_permissions)
+            else:
+                notification = copy_asynchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
+        except CannotCopy, error:
+            self.setFieldError(
+                sources_field_name, render_cannotcopy_as_html(error))
+            return False
 
         self.request.response.addNotification(notification)
         return True
