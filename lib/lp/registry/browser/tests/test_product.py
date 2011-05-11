@@ -362,3 +362,20 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         content = find_tag_by_id(view.render(), 'project-fnord')
         self.assertTrue(content.find(
             id='fnord-commercial-subscription') is not None)
+
+    def test_project_widgets(self):
+        # The active, license_reviewed, and license_approved lazrjs widgets
+        # are used.
+        self.factory.makeProduct(name='fnord')
+        view = create_initialized_view(
+            self.product_set, '+review-licenses', principal=self.user)
+        content = find_tag_by_id(view.render(), 'fnord-statuses')
+        self.assertTrue(
+            'Y.lp.app.choice.addBinaryChoice' in str(
+                content.find(id='fnord-edit-active').parent))
+        self.assertTrue(
+            'Y.lp.app.choice.addBinaryChoice' in str(
+                content.find(id='fnord-edit-license-reviewed').parent))
+        self.assertTrue(
+            'Y.lp.app.choice.addBinaryChoice' in str(
+                content.find(id='fnord-edit-license-approved').parent))

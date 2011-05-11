@@ -56,7 +56,7 @@
     </td>
 
     <td>
-      <dl>
+      <dl tal:attributes="id string:${context/name}-statuses">
         <dt>Project enabled</dt>
         <dd tal:content="structure view/active_widget" />
         <dt>Project reviewed</dt>
