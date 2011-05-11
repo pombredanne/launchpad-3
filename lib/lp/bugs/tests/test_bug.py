@@ -8,6 +8,7 @@ __metaclass__ = type
 from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -61,14 +62,11 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
     def test_mute_mutes_user(self):
         # Bug.mute() adds a BugMute record for the person passed to it.
         with person_logged_in(self.person):
-            muted_subscription = self.bug.mute(
-                self.person, self.person)
-            self.assertEqual(
-                self.bug,
-                muted_subscription.bug)
-            self.assertEqual(
-                self.person,
-                muted_subscription.person)
+            self.bug.mute(self.person, self.person)
+            naked_bug = removeSecurityProxy(self.bug)
+            bug_mute = naked_bug._getMutes(self.person).one()
+            self.assertEqual(self.bug, bug_mute.bug)
+            self.assertEqual(self.person, bug_mute.person)
 
     def test_mute_mutes_muter(self):
         # When exposed in the web API, the mute method regards the
@@ -85,8 +83,8 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             subscription = self.bug.subscribe(
                 self.person, self.person,
                 level=BugNotificationLevel.METADATA)
-            mute = self.bug.mute(self.person, self.person)
-            self.assertNotEqual(subscription, mute)
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
             self.assertEqual(
                 BugNotificationLevel.METADATA,
                 subscription.bug_notification_level)

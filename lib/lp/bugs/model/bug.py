@@ -875,9 +875,10 @@ BugMessage""" % sqlvalues(self.id))
         mutes = self._getMutes(person)
         if mutes.is_empty():
             # XXX: Execute addChange() to add muting to the activity log.
-            return BugMute(person, self)
+            BugMute(person, self)
         else:
-            return mutes.one()
+            # It's already muted, pass.
+            pass
 
     def unmute(self, person, unmuted_by):
         """See `IBug`."""
