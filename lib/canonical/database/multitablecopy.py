@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [ 'MultiTableCopy' ]
 
 import logging
+import re
 import time
 
 from zope.interface import implements
@@ -253,8 +254,14 @@ class MultiTableCopy:
         """Name for a holding table, but without quotes.  Use with care."""
         if suffix:
             suffix = '_%s' % suffix
-        return "temp_%s_holding_%s%s" % (
+
+        assert re.search(r'[^a-z_]', tablename + suffix) is None, (
+            'Unsupported characters in table name per Bug #179821')
+
+        raw_name = "temp_%s_holding_%s%s" % (
             str(tablename), self.name, str(suffix))
+
+        return raw_name
 
     def getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
