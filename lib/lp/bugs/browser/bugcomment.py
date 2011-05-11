@@ -337,7 +337,15 @@ class BugCommentView(LaunchpadView):
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""
 
-    show_spam_controls = False
+    @property
+    def show_spam_controls(self):
+        if hasattr(self.context, 'show_spam_controls'):
+           return self.context.show_spam_controls
+        elif (hasattr(self, 'comment') and
+           hasattr(self.comment, 'show_spam_controls')):
+           return self.comment.show_spam_controls
+        else:
+           return False
 
     def proxiedUrlOfLibraryFileAlias(self, attachment):
         """Return the proxied URL for the Librarian file of the attachment."""
