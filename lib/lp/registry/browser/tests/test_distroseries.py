@@ -28,6 +28,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -50,6 +51,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
     get_relevant_feature_controller,
@@ -1382,6 +1384,36 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
+
+
+    def test_sync_in_released_series_in_updates(self):
+        # If the destination series is released, the sync packages end
+        # up in the updates pocket.
+        versions = {
+            'parent': '1.0-1',
+            }
+        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+            'my-src-name', versions=versions)
+        # Update destination series status to current and update
+        # daterelease.
+        with celebrity_logged_in('admin'):
+            derived_series.status = SeriesStatus.CURRENT
+            derived_series.datereleased = UTC_NOW
+
+        set_derived_series_sync_feature_flag(self)
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sourcepackagename)
+        self._syncAndGetView(
+            derived_series, person, ['my-src-name'])
+        parent_pub = parent_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=parent_series).one()
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
+        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

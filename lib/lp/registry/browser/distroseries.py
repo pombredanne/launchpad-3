@@ -795,10 +795,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         series_title = self.context.displayname
 
         # If the series is released, sync packages in the "updates" pocket.
-        if self.context.datereleased is None:
-            destination_pocket = PackagePublishingPocket.RELEASE
-        else:
+        if self.context.supported:
             destination_pocket = PackagePublishingPocket.UPDATES
+        else:
+            destination_pocket = PackagePublishingPocket.RELEASE
 
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
