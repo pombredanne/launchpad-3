@@ -295,9 +295,10 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     def setUp(self):
         super(ProductSetReviewLicensesViewTestCase, self).setUp()
         self.product_set = getUtility(IProductSet)
+        login_celebrity('registry_experts')
 
     def test_initial_values(self):
-        login_celebrity('registry_experts')
+        # The initial values show active, unreviewed, unapproved projects.
         view = create_initialized_view(self.product_set, '+review-licenses')
         self.assertContentEqual(
             {'active': True,
@@ -315,3 +316,9 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
              'subscription_modified_before': None,
              }.items(),
             view.initial_values.items())
+
+    def test_forReviewBatched(self):
+        # The projects are batched.
+        view = create_initialized_view(self.product_set, '+review-licenses')
+        batch = view.forReviewBatched()
+        self.assertEqual(50, batch.default_size)
