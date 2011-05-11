@@ -18,9 +18,11 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
+from lp.coop.answersbugs.visibility import TestMessageVisibilityMixin
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
+    celebrity_logged_in,
     TestCase,
     )
 
@@ -188,53 +190,24 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([activity3], comment2.activity)
 
 
-class TestBugCommentVisibility(BrowserTestCase):
+class TestBugCommentVisibility(BrowserTestCase, TestMessageVisibilityMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBugWithHiddenComment(self, bugbody=None):
-        administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
-        bug = self.factory.makeBug()
-        with person_logged_in(administrator):
-            comment = self.factory.makeBugComment(bug=bug, body=bugbody)
+    def makeHiddenMessage(self):
+        with celebrity_logged_in('admin') as administrator:
+            bug = self.factory.makeBug()
+            comment = self.factory.makeBugComment(
+                    bug=bug, body=self.comment_text)
             comment.visible = False
         return bug
 
-    def test_admin_can_see_comments(self):
-        comment_text = "You can't see me."
-        bug = self.makeBugWithHiddenComment(comment_text)
-        admin = self.factory.makeAdministrator()
+    def getView(self, context, user=None, no_login=False):
         view = self.getViewBrowser(
-            context=bug.default_bugtask, user=admin)
-        self.assertTrue(
-           comment_text in view.contents,
-           "Administrator cannot see the hidden comment.")
-
-    def test_registry_can_see_comments(self):
-        comment_text = "You can't see me."
-        bug = self.makeBugWithHiddenComment(comment_text)
-        registry_expert = self.factory.makeRegistryExpert()
-        view = self.getViewBrowser(
-            context=bug.default_bugtask, user=registry_expert)
-        self.assertTrue(
-           comment_text in view.contents,
-           "Registy member cannot see the hidden comment.")
-
-    def test_anon_cannot_see_comments(self):
-        comment_text = "You can't see me."
-        bug = self.makeBugWithHiddenComment(comment_text)
-        view = self.getViewBrowser(context=bug.default_bugtask, no_login=True)
-        self.assertFalse(
-           comment_text in view.contents,
-           "Anonymous person can see the hidden comment.")
-
-    def test_random_cannot_see_comments(self):
-        comment_text = "You can't see me."
-        bug = self.makeBugWithHiddenComment(comment_text)
-        view = self.getViewBrowser(context=bug.default_bugtask)
-        self.assertFalse(
-           comment_text in view.contents,
-           "Random user can see the hidden comment.")
+            context=context.default_bugtask,
+            user=user,
+            no_login=no_login)
+        return view
 
 
 class TestBugSpamControls(BrowserTestCase):
