@@ -1136,6 +1136,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             License.OTHER_OPEN_SOURCE in self.context.licenses
             or License.OTHER_PROPRIETARY in self.context.licenses)
 
+    @cachedproperty
+    def is_proprietary(self):
+        """Is the project proprietary."""
+        return License.OTHER_PROPRIETARY in self.context.licenses
+
     @property
     def active_widget(self):
         return BooleanChoiceWidget(

@@ -225,6 +225,20 @@ class TestProductView(TestCaseWithFactory):
             self.product.licenses = [License.OTHER_PROPRIETARY]
         self.assertTrue(view.show_license_info)
 
+    def test_is_proprietary_with_proprietary_license(self):
+        # is_proprietary is true when the project has a proprietary license.
+        with person_logged_in(self.product.owner):
+            self.product.licenses = [License.OTHER_PROPRIETARY]
+        view = create_initialized_view(self.product, '+index')
+        self.assertTrue(view.is_proprietary)
+
+    def test_is_proprietary_without_proprietary_license(self):
+        # is_proprietary is false when the project has a proprietary license.
+        with person_logged_in(self.product.owner):
+            self.product.licenses = [License.GNU_GPL_V2]
+        view = create_initialized_view(self.product, '+index')
+        self.assertFalse(view.is_proprietary)
+
     def test_active_widget(self):
         # The active widget is is unique to the product.
         view = create_initialized_view(self.product, '+index')

@@ -46,7 +46,7 @@
     </td>
 
     <td>
-      <dl class="horizontal">
+      <dl>
         <dt>Project enabled</dt>
         <dd tal:content="structure view/active_widget" />
         <dt>Project reviewed</dt>
@@ -70,7 +70,7 @@
 
       <dl class="horizontal"
         tal:attributes="id string:project-commercial-${context/name}"
-        tal:condition="not: context/qualifies_for_free_hosting">
+        tal:condition="view/is_proprietary">
         <dt>Commercial subscription expiration</dt>
         <dd
           tal:condition="context/commercial_subscription"
