@@ -843,6 +843,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3736,6 +3739,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfiltermute ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugsubscriptionfilterstatus DISABLE TRIGGER ALL;
 
 
@@ -4167,6 +4177,13 @@ INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name,
 
 
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesparent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesparent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -9994,14 +10011,14 @@ ALTER TABLE questionjob ENABLE TRIGGER ALL;
 
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (2, 7, 13, 10, 15);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (3, 11, 18, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (4, 9, 19, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (5, 8, 20, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (6, 10, 21, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (7, 9, 22, 40, 20);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (8, 11, 23, 80, 10);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (1, 6, 12, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (2, 7, 13, 10, 15, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (3, 11, 18, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (4, 9, 19, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (5, 8, 20, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (6, 10, 21, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (7, 9, 22, 40, 20, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (8, 11, 23, 80, 10, 12);
 
 
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;

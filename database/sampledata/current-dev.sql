@@ -843,6 +843,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3800,6 +3803,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfiltermute ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugsubscriptionfilterstatus DISABLE TRIGGER ALL;
 
 
@@ -4179,9 +4189,9 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
-INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 1, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 1, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, parent_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1', 1);
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1', 1);
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1', 1);
 
 
 ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
@@ -4234,6 +4244,13 @@ INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name,
 
 
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesparent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesparent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -10062,14 +10079,14 @@ ALTER TABLE questionjob ENABLE TRIGGER ALL;
 
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (2, 7, 13, 10, 15);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (3, 11, 18, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (4, 9, 19, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (5, 8, 20, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (6, 10, 21, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (7, 9, 22, 40, 20);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (8, 11, 23, 80, 10);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (1, 6, 12, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (2, 7, 13, 10, 15, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (3, 11, 18, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (4, 9, 19, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (5, 8, 20, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (6, 10, 21, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (7, 9, 22, 40, 20, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (8, 11, 23, 80, 10, 12);
 
 
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;

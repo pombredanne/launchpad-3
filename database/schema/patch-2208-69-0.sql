@@ -11,6 +11,10 @@ CREATE INDEX questionmessage__owner__idx ON QuestionMessage(owner);
 UPDATE QuestionMessage SET owner = (
     SELECT owner FROM Message WHERE Message.id=QuestionMessage.message);
 
+ALTER TABLE QuestionMessage ALTER COLUMN owner SET NOT NULL;
+-- A NOT NULL constraint was missing for BugMessage.owner.
+ALTER TABLE BugMessage ALTER COLUMN owner SET NOT NULL;
+
 -- Triggers to maintain in both directions.
 CREATE TRIGGER questionmessage__owner__mirror
     AFTER UPDATE OR INSERT ON questionmessage
@@ -18,4 +22,4 @@ CREATE TRIGGER questionmessage__owner__mirror
 CREATE TRIGGER message__owner__mirror__questionmessage AFTER UPDATE ON message
     FOR EACH ROW EXECUTE PROCEDURE message_copy_owner_to_questionmessage();
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 69, 0);
