@@ -1151,7 +1151,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def license_reviewed_widget(self):
         return BooleanChoiceWidget(
             self.context, IProduct['license_reviewed'],
-            content_box_id='%s-edit-licence_reviewed' % self.context.name,
+            content_box_id='%s-edit-license-reviewed' % self.context.name,
             edit_view='+review-license',
             tag='span',
             false_text='Unreviewed',
@@ -1162,7 +1162,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def license_approved_widget(self):
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
-            content_box_id='%s-edit-license_approved' % self.context.name,
+            content_box_id='%s-edit-license-approved' % self.context.name,
             edit_view='+review-license',
             tag='span',
             false_text='Unapproved',

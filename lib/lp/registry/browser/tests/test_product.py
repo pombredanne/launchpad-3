@@ -16,6 +16,7 @@ from canonical.config import config
 from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import (
@@ -26,6 +27,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.testing import (
+    login_celebrity,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
@@ -183,7 +185,7 @@ class TestProductView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestProductView, self).setUp()
-        self.product = self.factory.makeProduct()
+        self.product = self.factory.makeProduct(name='fnord')
 
     def test_show_programming_languages_without_languages(self):
         # show_programming_languages is false when there are no programming
@@ -222,3 +224,32 @@ class TestProductView(TestCaseWithFactory):
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.OTHER_PROPRIETARY]
         self.assertTrue(view.show_license_info)
+
+    def test_active_widget(self):
+        # The active widget is is unique to the product.
+        view = create_initialized_view(self.product, '+index')
+        widget = view.active_widget
+        self.assertEqual('fnord-edit-active', widget.content_box_id)
+        self.assertEqual(
+            canonical_url(self.product, view_name='+review-license'),
+            widget.edit_url)
+
+    def test_license_reviewed_widget(self):
+        # The license reviewed widget is is unique to the product.
+        login_celebrity('registry_experts')
+        view = create_initialized_view(self.product, '+index')
+        widget = view.license_reviewed_widget
+        self.assertEqual('fnord-edit-license-reviewed', widget.content_box_id)
+        self.assertEqual(
+            canonical_url(self.product, view_name='+review-license'),
+            widget.edit_url)
+
+    def test_license_approved_widget_any_license(self):
+        # The license approved widget is is unique to the product.
+        login_celebrity('registry_experts')
+        view = create_initialized_view(self.product, '+index')
+        widget = view.license_approved_widget
+        self.assertEqual('fnord-edit-license-approved', widget.content_box_id)
+        self.assertEqual(
+            canonical_url(self.product, view_name='+review-license'),
+            widget.edit_url)
