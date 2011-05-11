@@ -108,6 +108,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.database.bulk import load
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -163,6 +164,12 @@ from lp.soyuz.scripts.packagecopier import (
     check_copy_permissions,
     do_copy,
     )
+
+# Feature flag: up to how many package sync requests (inclusive) are to be
+# processed synchronously within the web request?
+# Set to -1 to disable synchronous syncs.
+FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS = (
+    'soyuz.derived_series.max_synchronous_syncs')
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -1357,7 +1364,13 @@ class PackageCopyingMixin:
         """Can we afford to copy `source_pubs` synchronously?"""
         # Fixed estimate: up to 100 packages can be copied in acceptable
         # time.  Anything more than that and we go async.
-        return len(source_pubs) <= 100
+        limit = getFeatureFlag(FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS)
+        try:
+            limit = int(limit)
+        except:
+            limit = 100
+
+        return len(source_pubs) <= limit
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,

@@ -9,11 +9,13 @@ from zope.component import getUtility
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.archive import (
     compose_synchronous_copy_feedback,
     copy_asynchronously,
     copy_synchronously,
+    FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
     name_pubs_with_versions,
     PackageCopyingMixin,
     partition_pubs_by_archive,
@@ -206,26 +208,16 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         return self.factory.makeDistribution(
             owner=self.person, registrant=self.person)
 
-    def makeDistroSeries(self, distribution=None, parent_series=None):
+    def makeDistroSeries(self, parent_series=None):
         """Create a `DistroSeries`, but quickly by reusing a single Person."""
-        if distribution is None:
-            distribution = self.makeDistribution()
         return self.factory.makeDistroSeries(
-            distribution=distribution, parent_series=parent_series,
+            distribution=self.makeDistribution(), parent_series=parent_series,
             registrant=self.person)
 
-    def makeArchive(self, distribution=None, displayname=None):
-        """Create an `Archive`, but quickly by reusing a single Person."""
-        if distribution is None:
-            distribution = self.makeDistribution()
-        return self.factory.makeArchive(
-            owner=self.person, distribution=distribution,
-            displayname=displayname)
-
-    def makeSPPH(self, archive=None):
+    def makeSPPH(self):
         """Create a `SourcePackagePublishingHistory` quickly."""
-        if archive is None:
-            archive = self.makeArchive()
+        archive = self.factory.makeArchive(
+            owner=self.person, distribution=self.makeDistribution())
         return self.factory.makeSourcePackagePublishingHistory(
             maintainer=self.person, creator=self.person, archive=archive)
 
@@ -240,6 +232,13 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         """Create a `PackageCopyingMixin`-based view."""
         return create_initialized_view(
             self.makeDerivedSeries(), "+localpackagediffs")
+
+    def test_canCopySynchronously_obeys_feature_flag(self):
+        packages = [self.getUniqueString() for counter in range(3)]
+        mixin = PackageCopyingMixin()
+        with FeatureFixture({FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS: 2}):
+            can_copy_synchronously = mixin.canCopySynchronously(packages)
+        self.assertFalse(can_copy_synchronously)
 
     def test_copy_synchronously_copies_packages(self):
         # copy_synchronously copies packages into the destination
