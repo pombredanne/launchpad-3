@@ -21,4 +21,16 @@ CREATE TABLE BugMute (
 CREATE INDEX bugmute__bug__idx
     ON BugMute(bug);
 
+-- Migrate existing BugSubscription's with
+-- bug_notification_level == NOTHING
+-- to BugMute table.
+INSERT INTO BugMute (person, bug, date_created)
+    SELECT person, bug, date_created
+        FROM BugSubscription
+        WHERE bug_notification_level=10;
+-- Remove 'muting' BugSubscriptions.
+DELETE
+    FROM BugSubscription
+    WHERE bug_notification_level=10;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 97, 0);
