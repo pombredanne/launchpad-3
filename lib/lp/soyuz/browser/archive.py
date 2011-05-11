@@ -1226,22 +1226,13 @@ def preload_binary_package_names(copies):
     load(BinaryPackageName, bpn_ids)
 
 
-def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
-                       include_binaries, dest_url=None,
-                       dest_display_name=None, person=None,
-                       check_permissions=True):
-    """Copy packages right now."""
-    copies = do_copy(
-        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
-        allow_delayed_copies=True, person=person,
-        check_permissions=check_permissions)
-
-    preload_binary_package_names(copies)
-
-    # Construct a page notification describing the action.
+def compose_synchronous_copy_feedback(copies, dest_archive, dest_url=None,
+                                      dest_display_name=None):
+    """Compose human-readable feedback after a synchronous copy."""
     if dest_url is None:
         dest_url = escape(
             canonical_url(dest_archive) + '/+packages', quote=True)
+
     if dest_display_name is None:
         dest_display_name = escape(dest_archive.displayname)
 
@@ -1256,9 +1247,32 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             % (dest_url, dest_display_name))
         messages.append('<ul>')
         messages.append("\n".join([
-            '<li>%s</li>' % escape(copy.displayname) for copy in copies]))
+            '<li>%s</li>' % escape(copy) for copy in copies]))
         messages.append('</ul>')
         return structured("\n".join(messages))
+
+
+def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                       include_binaries, dest_url=None,
+                       dest_display_name=None, person=None,
+                       check_permissions=True):
+    """Copy packages right now.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
+    copies = do_copy(
+        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
+        allow_delayed_copies=True, person=person,
+        check_permissions=check_permissions)
+
+    preload_binary_package_names(copies)
+
+    return compose_synchronous_copy_feedback(
+        [copy.displayname for copy in copies], dest_archive, dest_url,
+        dest_display_name)
 
 
 def partition_pubs_by_archive(source_pubs):
@@ -1274,7 +1288,7 @@ def partition_pubs_by_archive(source_pubs):
     return by_source_archive
 
 
-def annotate_pubs_with_versions(source_pubs):
+def name_pubs_with_versions(source_pubs):
     """Annotate each entry from `source_pubs` with its version.
 
     :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
@@ -1289,7 +1303,13 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
                         check_permissions=True):
-    """Schedule jobs to copy packages later."""
+    """Schedule jobs to copy packages later.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
     if check_permissions:
         for spph in source_pubs:
             spn = spph.sourcepackagerelease.sourcepackagename
@@ -1300,7 +1320,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
     archive_pubs = partition_pubs_by_archive(source_pubs)
     for source_archive, spphs in archive_pubs.iteritems():
         job_source.create(
-            annotate_pubs_with_versions(spphs), source_archive, dest_archive,
+            name_pubs_with_versions(spphs), source_archive, dest_archive,
             dest_series, dest_pocket, include_binaries=include_binaries)
     return structured("""
         <p>Requested sync of %s packages.</p>
