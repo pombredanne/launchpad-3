@@ -265,7 +265,7 @@ class DistroSeriesDifference(StormBase):
         parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
-            difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+            difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         if status is None:
             status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -393,6 +393,38 @@ class DistroSeriesDifference(StormBase):
             DistroSeriesDifference.source_package_name == (
                 SourcePackageName.id),
             SourcePackageName.name == source_package_name).one()
+
+    @staticmethod
+    def getSimpleUpgrades(distro_series):
+        """See `IDistroSeriesDifferenceSource`.
+
+        Eager-load related `ISourcePackageName` records.
+        """
+        differences = IStore(DistroSeriesDifference).find(
+            (DistroSeriesDifference, SourcePackageName),
+            DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.difference_type ==
+                DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            DistroSeriesDifference.status ==
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifference.parent_source_version !=
+                DistroSeriesDifference.base_version,
+            DistroSeriesDifference.source_version ==
+                DistroSeriesDifference.base_version,
+            SourcePackageName.id ==
+                DistroSeriesDifference.source_package_name_id)
+        return DecoratedResultSet(differences, itemgetter(0))
+
+    @staticmethod
+    def collateDifferencesByParentArchive(differences):
+        by_archive = dict()
+        for difference in differences:
+            archive = difference.parent_series.main_archive
+            if archive in by_archive:
+                by_archive[archive].append(difference)
+            else:
+                by_archive[archive] = [difference]
+        return by_archive
 
     @cachedproperty
     def source_pub(self):

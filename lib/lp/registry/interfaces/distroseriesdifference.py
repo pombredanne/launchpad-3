@@ -195,7 +195,7 @@ class IDistroSeriesDifferencePublic(Interface):
         """
 
     latest_comment = Reference(
-        Interface, # IDistroSeriesDifferenceComment
+        Interface,  # IDistroSeriesDifferenceComment
         title=_("The latest comment"),
         readonly=True)
 
@@ -316,4 +316,25 @@ class IDistroSeriesDifferenceSource(Interface):
         :type distro_series: `IDistroSeries`.
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
+        """
+
+    def getSimpleUpgrades(distro_series):
+        """Find pending upgrades that can be performed mindlessly.
+
+        These are `DistroSeriesDifferences` where the parent has been
+        updated and the child still has the old version, unchanged.
+
+        Blacklisted items are excluded.
+        """
+
+    def collateDifferencesByParentArchive(differences):
+        """Collate the given differences by parent archive.
+
+        The given `IDistroSeriesDifference`s are returned in a `dict`, with
+        the parent `Archive` as keys.
+
+        :param differences: An iterable sequence of `IDistroSeriesDifference`.
+
+        :return: A `dict` of iterable sequences of `IDistroSeriesDifference`
+            keyed by their parent `IArchive`.
         """

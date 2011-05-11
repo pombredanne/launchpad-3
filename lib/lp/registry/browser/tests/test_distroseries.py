@@ -20,6 +20,7 @@ from testtools.content import (
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
+    Equals,
     LessThan,
     Not,
     )
@@ -31,8 +32,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -49,7 +51,6 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -65,12 +66,14 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
+    IPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
+    anonymous_logged_in,
     celebrity_logged_in,
     feature_flags,
     login_person,
@@ -78,6 +81,7 @@ from lp.testing import (
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
+    with_celebrity_logged_in,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
@@ -625,7 +629,32 @@ class TestDistroSeriesLocalDifferences(
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
     """Test the distroseries +localpackagediffs view."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
+
+    def makePackageUpgrade(self, derived_series=None):
+        """Create a `DistroSeriesDifference` for a package upgrade."""
+        base_version = '1.%d' % self.factory.getUniqueInteger()
+        versions = {
+            'base': base_version,
+            'parent': base_version + '-' + self.factory.getUniqueString(),
+            'derived': base_version,
+        }
+        return self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, versions=versions,
+            set_base_version=True)
+
+    def makeView(self, distroseries=None):
+        """Create a +localpackagediffs view for `distroseries`."""
+        if distroseries is None:
+            distroseries = (
+                self.factory.makeDistroSeriesParent().derived_series)
+        # current_request=True causes the current interaction to end so we
+        # must explicitly ask that the current principal be used for the
+        # request.
+        return create_initialized_view(
+            distroseries, '+localpackagediffs',
+            principal=get_current_principal(),
+            current_request=True)
 
     def _create_child_and_parent(self):
         parent_series = self.factory.makeDistroSeries(name='lucid')
@@ -641,8 +670,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
         self.assertIs(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         response = view.request.response
         self.assertEqual(302, response.getStatus())
@@ -653,8 +681,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # The view label includes the names of both series.
         derived_series, parent_series = self._create_child_and_parent()
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertEqual(
             "Source package differences between 'Derilucid' and "
@@ -671,8 +698,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.RESOLVED)
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [current_difference], view.cached_differences.batch)
@@ -687,8 +713,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [different_versions_diff], view.cached_differences.batch)
@@ -697,8 +722,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # The help link for popup help is included.
         derived_series, parent_series = self._create_child_and_parent()
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         soup = BeautifulSoup(view())
         help_links = soup.findAll(
@@ -710,12 +734,12 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         derived_series, parent_series = self._create_child_and_parent()
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
-        difference.addComment(difference.owner, "Earlier comment")
-        difference.addComment(difference.owner, "Latest comment")
+        with person_logged_in(derived_series.owner):
+            difference.addComment(difference.owner, "Earlier comment")
+            difference.addComment(difference.owner, "Latest comment")
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         # Find all the rows within the body of the table
         # listing the differences.
@@ -734,14 +758,12 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.findAll('tr')[0]
 
-        href = canonical_url(difference).replace('http://launchpad.dev', '')
-        links = row.findAll('a', href=href)
+        links = row.findAll('a', href=canonical_url(difference))
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
 
@@ -771,8 +793,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             version=new_version)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -807,14 +828,16 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series)
 
         # Delete the publications.
-        difference.source_pub.status = PackagePublishingStatus.DELETED
-        difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+        with celebrity_logged_in("admin"):
+            difference.source_pub.status = (
+                PackagePublishingStatus.DELETED)
+            difference.parent_source_pub.status = (
+                PackagePublishingStatus.DELETED)
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -830,6 +853,130 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # difference.
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())
+
+    def test_getUpgrades_shows_updates_in_parent(self):
+        # The view's getUpgrades methods lists packages that can be
+        # trivially upgraded: changed in the parent, not changed in the
+        # derived series, but present in both.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        self.assertContentEqual([dsd], view.getUpgrades())
+
+    def enableDerivedSeriesSyncFeature(self):
+        self.useFixture(
+            FeatureFixture(
+                {u'soyuz.derived-series-sync.enabled': u'on'}))
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_offered_only_with_feature_flag(self):
+        # The "Upgrade Packages" button will only be shown when a specific
+        # feature flag is enabled.
+        view = self.makeView()
+        self.makePackageUpgrade(view.context)
+        self.assertFalse(view.canUpgrade())
+        self.enableDerivedSeriesSyncFeature()
+        self.assertTrue(view.canUpgrade())
+
+    def test_upgrades_are_offered_if_appropriate(self):
+        # The "Upgrade Packages" button will only be shown to privileged
+        # users.
+        self.enableDerivedSeriesSyncFeature()
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        with celebrity_logged_in("admin"):
+            self.assertTrue(view.canUpgrade())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(view.canUpgrade())
+        with anonymous_logged_in():
+            self.assertFalse(view.canUpgrade())
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_offered_only_if_available(self):
+        # If there are no upgrades, the "Upgrade Packages" button won't
+        # be shown.
+        self.enableDerivedSeriesSyncFeature()
+        view = self.makeView()
+        self.assertFalse(view.canUpgrade())
+        self.makePackageUpgrade(view.context)
+        self.assertTrue(view.canUpgrade())
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_not_offered_after_feature_freeze(self):
+        # There won't be an "Upgrade Packages" button once feature
+        # freeze has occurred.  Mass updates would not make sense after
+        # that point.
+        self.enableDerivedSeriesSyncFeature()
+        upgradeable = {}
+        for status in SeriesStatus.items:
+            dsd = self.makePackageUpgrade()
+            dsd.derived_series.status = status
+            view = self.makeView(dsd.derived_series)
+            upgradeable[status] = view.canUpgrade()
+        expected = {
+            SeriesStatus.FUTURE: True,
+            SeriesStatus.EXPERIMENTAL: True,
+            SeriesStatus.DEVELOPMENT: True,
+            SeriesStatus.FROZEN: False,
+            SeriesStatus.CURRENT: False,
+            SeriesStatus.SUPPORTED: False,
+            SeriesStatus.OBSOLETE: False,
+        }
+        self.assertEqual(expected, upgradeable)
+
+    def test_upgrade_creates_sync_jobs(self):
+        # requestUpgrades generates PackageCopyJobs for the upgrades
+        # that need doing.
+        dsd = self.makePackageUpgrade()
+        series = dsd.derived_series
+        view = self.makeView(series)
+        view.requestUpgrades()
+        job_source = getUtility(IPackageCopyJobSource)
+        jobs = list(
+            job_source.getActiveJobs(series.distribution.main_archive))
+        self.assertEquals(1, len(jobs))
+        job = jobs[0]
+        self.assertEquals(series, job.distroseries)
+        source_package_info = list(job.source_packages)
+        self.assertEquals(1, len(source_package_info))
+        self.assertEqual(
+            (dsd.source_package_name.name, dsd.parent_source_version),
+            source_package_info[0][:2])
+
+    def test_upgrade_gives_feedback(self):
+        # requestUpgrades doesn't instantly perform package upgrades,
+        # but it shows the user a notice that the upgrades have been
+        # requested.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        view.requestUpgrades()
+        expected = {
+            "level": BrowserNotificationLevel.INFO,
+            "message":
+                ("Upgrades of {0.displayname} packages have been "
+                 "requested. Please give Launchpad some time to "
+                 "complete these.").format(dsd.derived_series),
+            }
+        observed = map(vars, view.request.response.notifications)
+        self.assertEqual([expected], observed)
+
+    def test_requestUpgrade_is_efficient(self):
+        # A single web request may need to schedule large numbers of
+        # package upgrades.  It must do so without issuing large numbers
+        # of database queries.
+        derived_series, parent_series = self._create_child_and_parent()
+        # Take a baseline measure of queries.
+        self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder1:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
+        # The query count does not increase with more differences.
+        for index in xrange(3):
+            self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder2:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
@@ -1237,7 +1384,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
-
 
     def test_sync_in_released_series_in_updates(self):
         # If the destination series is released, the sync packages end
