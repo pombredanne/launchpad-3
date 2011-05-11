@@ -51,17 +51,11 @@
     <td>
       <dl class="horizontal">
         <dt>Active</dt>
-        <dd>
-          <img tal:replace="structure context/active/image:boolean"/>
-        </dd>
+        <dd tal:content="structure view/active_widget" />
         <dt>Reviewed</dt>
-        <dd>
-          <img tal:replace="structure context/license_reviewed/image:boolean"/>
-        </dd>
+        <dd tal:content="structure view/license_reviewed_widget" />
         <dt>Approved</dt>
-        <dd>
-          <img tal:replace="structure context/license_approved/image:boolean"/>
-        </dd>
+        <dd tal:content="structure view/license_approved_widget" />
       </dl>
 
       <dl class="horizontal"

@@ -129,7 +129,10 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
-from lp.app.browser.lazrjs import TextLineEditorWidget
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    TextLineEditorWidget,
+    )
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
@@ -1132,6 +1135,39 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (
             License.OTHER_OPEN_SOURCE in self.context.licenses
             or License.OTHER_PROPRIETARY in self.context.licenses)
+
+    @property
+    def active_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['active'],
+            content_box_id='%s-edit-active' % self.context.name,
+            edit_view='+review-license',
+            tag='span',
+            false_text='Deactivted',
+            true_text='Active',
+            header='Is this project active and usable by the community?')
+
+    @property
+    def license_reviewed_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['license_reviewed'],
+            content_box_id='%s-edit-licence_reviewed' % self.context.name,
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unreviewed',
+            true_text='Reviewed',
+            header='Have you reviewed the project?')
+
+    @property
+    def license_approved_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['license_approved'],
+            content_box_id='%s-edit-license_approved' % self.context.name,
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unapproved',
+            true_text='Approved',
+            header='Does the license qualifiy the project for free hosting?')
 
 
 class ProductPackagesView(LaunchpadView):
