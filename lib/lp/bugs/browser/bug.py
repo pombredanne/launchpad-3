@@ -438,7 +438,7 @@ class MaloneView(LaunchpadFormView):
             #      If fixed_bugtasks isn't sliced, it will take a long time
             #      to iterate over it, even over just 10, because
             #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4*limit]:
+            for bugtask in fixed_bugtasks[:4 * limit]:
                 if bugtask.bug not in fixed_bugs:
                     fixed_bugs.append(bugtask.bug)
                     if len(fixed_bugs) >= limit:
