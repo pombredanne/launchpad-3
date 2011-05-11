@@ -17,25 +17,35 @@
 
       <dl class="horizontal">
         <dt>Maintained by</dt>
-        <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+        <dd tal:attributes="id string:${context/name}-maintainer">
+          <a tal:replace="structure context/owner/fmt:link" />
+        </dd>
         <dt>Registered by</dt>
-        <dd><a tal:replace="structure context/registrant/fmt:link" /></dd>
+        <dd tal:attributes="id string:${context/name}-registrant">
+          <a tal:replace="structure context/registrant/fmt:link" />
+        </dd>
       </dl>
 
       <p tal:content="context/summary" />
 
       <div
-        tal:content="structure context/description/fmt:text-to-html"
-        tal:condition="context/description" />
+        tal:condition="context/description"
+        tal:attributes="id string:${context/name}-desciption"
+        tal:content="structure context/description/fmt:text-to-html" />
 
       <dl class="horizontal">
         <dt>Has packages</dt>
-        <dd tal:content="structure context/ubuntu_packages/image:boolean" />
+        <dd
+          tal:attributes="id string:${context/name}-packages"
+          tal:content="structure context/ubuntu_packages/image:boolean" />
         <dt>Has releases</dt>
-        <dd tal:content="structure view/latest_release_with_download_files/image:boolean" />
+        <dd
+          tal:attributes="id string:${context/name}-releases"
+          tal:content="structure view/latest_release_with_download_files/image:boolean" />
       </dl>
 
-      <dl class="horizontal">
+      <dl class="horizontal"
+        tal:attributes="id string:${context/name}-usage">
         <dt>Code usage</dt>
         <dd tal:content="context/codehosting_usage/title" />
         <dt>Bug usage</dt>
@@ -56,7 +66,7 @@
       </dl>
 
       <dl class="horizontal"
-        tal:attributes="id string:project-licenses-${context/name}">
+        tal:attributes="id string:${context/name}-licenses">
         <dt>Licenses</dt>
         <dd>
           <ul class="horizontal">
@@ -69,8 +79,8 @@
       </dl>
 
       <dl class="horizontal"
-        tal:attributes="id string:project-commercial-${context/name}"
-        tal:condition="view/is_proprietary">
+        tal:condition="view/is_proprietary"
+        tal:attributes="id string:${context/name}-commercial-subscription">
         <dt>Commercial subscription expiration</dt>
         <dd
           tal:condition="context/commercial_subscription"
@@ -80,14 +90,14 @@
       </dl>
 
       <dl class="horizontal"
-        tal:attributes="id string:project-license-info-${context/name}"
-        tal:condition="view/show_license_info">
+        tal:condition="view/show_license_info"
+        tal:attributes="id string:${context/name}-license-info">
         <dt>Licenses info</dt>
         <dd tal:content="structure context/license_info/fmt:text-to-html" />
       </dl>
 
       <div
-        tal:attributes="id string:project-whiteboard-${context/name}"
+        tal:attributes="id string:${context/name}-whiteboard"
         tal:content="context/reviewer_whiteboard/fmt:text-to-html" />
     </td>
   </tr>

@@ -295,7 +295,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     def setUp(self):
         super(ProductSetReviewLicensesViewTestCase, self).setUp()
         self.product_set = getUtility(IProductSet)
-        login_celebrity('registry_experts')
+        self.user = login_celebrity('registry_experts')
 
     def test_initial_values(self):
         # The initial values show active, unreviewed, unapproved projects.
@@ -322,3 +322,43 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         view = create_initialized_view(self.product_set, '+review-licenses')
         batch = view.forReviewBatched()
         self.assertEqual(50, batch.default_size)
+
+    def test_project_common_data(self):
+        # The each project contains information to complete a review.
+        self.factory.makeProduct(name='fnord')
+        view = create_initialized_view(
+            self.product_set, '+review-licenses', principal=self.user)
+        content = find_tag_by_id(view.render(), 'project-fnord')
+        self.assertTrue(content.find(id='fnord-maintainer') is not None)
+        self.assertTrue(content.find(id='fnord-registrant') is not None)
+        self.assertTrue(content.find(id='fnord-desciption') is not None)
+        self.assertTrue(content.find(id='fnord-packages') is not None)
+        self.assertTrue(content.find(id='fnord-releases') is not None)
+        self.assertTrue(content.find(id='fnord-usage') is not None)
+        self.assertTrue(content.find(id='fnord-licenses') is not None)
+        self.assertTrue(content.find(id='fnord-whiteboard') is not None)
+        self.assertFalse(content.find(
+            id='fnord-commercial-subscription') is not None)
+        self.assertFalse(content.find(id='fnord-license-info') is not None)
+
+    def test_project_license_info_data(self):
+        # The projects with the OTHER_* licenese will show license_info data.
+        product = self.factory.makeProduct(name='fnord')
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_OPEN_SOURCE]
+        view = create_initialized_view(
+            self.product_set, '+review-licenses', principal=self.user)
+        content = find_tag_by_id(view.render(), 'project-fnord')
+        self.assertTrue(content.find(id='fnord-license-info') is not None)
+
+    def test_project_commercial_subscription_data(self):
+        # The projects with the OTHER_Proprietary license show commercial
+        # subscription information.
+        product = self.factory.makeProduct(name='fnord')
+        with person_logged_in(product.owner):
+            product.licenses = [License.OTHER_PROPRIETARY]
+        view = create_initialized_view(
+            self.product_set, '+review-licenses', principal=self.user)
+        content = find_tag_by_id(view.render(), 'project-fnord')
+        self.assertTrue(content.find(
+            id='fnord-commercial-subscription') is not None)
