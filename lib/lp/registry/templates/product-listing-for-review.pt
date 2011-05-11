@@ -13,9 +13,6 @@
         <span
           tal:attributes="title context/datecreated/fmt:datetime"
           tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
-        <a class="sprite edit"
-          tal:attributes="href string:${context/fmt:url}/+review-license"
-          >Review</a>
       </p>
 
       <dl class="horizontal">
@@ -50,11 +47,11 @@
 
     <td>
       <dl class="horizontal">
-        <dt>Active</dt>
+        <dt>Project enabled</dt>
         <dd tal:content="structure view/active_widget" />
-        <dt>Reviewed</dt>
+        <dt>Project reviewed</dt>
         <dd tal:content="structure view/license_reviewed_widget" />
-        <dt>Approved</dt>
+        <dt>License approved</dt>
         <dd tal:content="structure view/license_approved_widget" />
       </dl>
 
