@@ -953,9 +953,9 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
     def test_getForDistroSeries_filters_by_type(self):
         # Only differences for the specified types are returned.
         derived_series = self.makeDerivedSeries()
-        self.makeDiffsForDistroSeries(derived_series)
+        diffs = self.makeDiffsForDistroSeries(derived_series)
 
-        getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
+        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series,
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
 

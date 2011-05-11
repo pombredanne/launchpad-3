@@ -1385,7 +1385,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
 
-
     def test_sync_in_released_series_in_updates(self):
         # If the destination series is released, the sync packages end
         # up in the updates pocket.
