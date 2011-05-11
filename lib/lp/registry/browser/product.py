@@ -1872,7 +1872,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=100)
+                              self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

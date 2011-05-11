@@ -37,6 +37,15 @@
         <dt>Has releases</dt>
         <dd tal:content="structure view/latest_release_with_download_files/image:boolean" />
       </dl>
+
+      <dl class="horizontal">
+        <dt>Code usage</dt>
+        <dd tal:content="context/codehosting_usage/title" />
+        <dt>Bug usage</dt>
+        <dd tal:content="context/bug_tracking_usage/title" />
+        <dt>Translations usage</dt>
+        <dd tal:content="context/translations_usage/title" />
+      </dl>
     </td>
 
     <td>
