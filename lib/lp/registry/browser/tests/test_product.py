@@ -285,3 +285,33 @@ class TestProductView(TestCaseWithFactory):
         view = create_initialized_view(self.product, '+index')
         text = view.license_approved_widget
         self.assertEqual('License required', text)
+
+
+class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
+    """Tests the ProductSetReviewLicensesView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProductSetReviewLicensesViewTestCase, self).setUp()
+        self.product_set = getUtility(IProductSet)
+
+    def test_initial_values(self):
+        login_celebrity('registry_experts')
+        view = create_initialized_view(self.product_set, '+review-licenses')
+        self.assertContentEqual(
+            {'active': True,
+             'license_reviewed': False,
+             'license_approved': False,
+             'search_text': None,
+             'licenses': set(),
+             'has_zero_licenses': None,
+             'license_info_is_empty': None,
+             'created_after': None,
+             'created_before': None,
+             'subscription_expires_after': None,
+             'subscription_expires_before': None,
+             'subscription_modified_after': None,
+             'subscription_modified_before': None,
+             }.items(),
+            view.initial_values.items())

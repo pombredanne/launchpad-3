@@ -1904,17 +1904,21 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         """Return all widgets that span all columns."""
         return (self.widgets[name] for name in self.full_row_field_names)
 
+    @property
+    def initial_values(self):
+        """See `ILaunchpadFormView`."""
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        return search_params
+
     def forReviewBatched(self):
         """Return a `BatchNavigator` to review the matching projects."""
         # Calling _validate populates the data dictionary as a side-effect
         # of validation.
         data = {}
         self._validate(None, data)
-        # Get default values from the schema since the form defaults
-        # aren't available until the search button is pressed.
-        search_params = {}
-        for name in self.schema:
-            search_params[name] = self.schema[name].default
+        search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
