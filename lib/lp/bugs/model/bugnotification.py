@@ -144,12 +144,12 @@ class BugNotificationSet:
         # Now we do some calls that are purely for cacheing.
         # Converting these into lists forces the queries to execute.
         if pending_notifications:
-            cached_people = list(
+            list(
                 getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                     list(people_ids),
                     need_validity=True,
                     need_preferred_email=True))
-            cached_bugs = list(
+            list(
                 IStore(Bug).find(Bug, In(Bug.id, list(bug_ids))))
         pending_notifications.reverse()
         return pending_notifications
@@ -189,7 +189,8 @@ class BugNotificationSet:
 
         return bug_notification
 
-    def getRecipientFilterData(self, bug, recipient_to_sources, notifications):
+    def getRecipientFilterData(self, bug, recipient_to_sources,
+                               notifications):
         """See `IBugNotificationSet`."""
         if not notifications or not recipient_to_sources:
             # This is a shortcut that will remove some error conditions.
@@ -270,7 +271,8 @@ class BugNotificationSet:
             mute_data = store.find(
                 (BugSubscriptionFilterMute.person_id,
                  BugSubscriptionFilterMute.filter_id),
-                In(BugSubscriptionFilterMute.person_id, recipient_id_map.keys()),
+                In(BugSubscriptionFilterMute.person_id,
+                   recipient_id_map.keys()),
                 In(BugSubscriptionFilterMute.filter_id, filter_ids))
             for person_id, filter_id in mute_data:
                 del recipient_id_map[person_id]['filters'][filter_id]

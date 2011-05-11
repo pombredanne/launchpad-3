@@ -208,7 +208,7 @@ class TestBugChanges(TestCaseWithFactory):
         # Unsubscribing someone from a bug adds an item to the activity
         # log, but doesn't send an e-mail notification.
         subscriber = self.factory.makePerson(displayname='Mom')
-        bug_subscription = self.bug.subscribe(self.user, subscriber)
+        self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
         # Only the user can unsubscribe him or her self.
         self.bug.unsubscribe(self.user, self.user)
@@ -602,7 +602,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_tags_added(self):
         # Adding tags to a bug will add BugActivity and BugNotification
         # entries.
-        old_tags = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'tags', ['first-new-tag', 'second-new-tag'])
 
         tag_change_activity = {
@@ -626,7 +626,7 @@ class TestBugChanges(TestCaseWithFactory):
         # entries.
         self.bug.tags = ['first-new-tag', 'second-new-tag']
         self.saveOldChanges()
-        old_tags = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'tags', ['first-new-tag'])
 
         tag_change_activity = {
@@ -1017,7 +1017,7 @@ class TestBugChanges(TestCaseWithFactory):
         target = self.factory.makeDistributionSourcePackage()
         metadata_subscriber = self.newSubscriber(
             target, "dsp-metadata", BugNotificationLevel.METADATA)
-        lifecycle_subscriber = self.newSubscriber(
+        self.newSubscriber(
             target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
@@ -1739,7 +1739,7 @@ class TestBugChanges(TestCaseWithFactory):
         # do not get any bug email that they generated themselves.
         self.user.selfgenerated_bugnotifications = False
 
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.user is not included among the recipients.
@@ -1756,7 +1756,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.user.selfgenerated_bugnotifications = False
 
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.user is not included among the recipients.
@@ -1771,7 +1771,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.subscribe(team, self.user)
         self.bug.mute(self.user, self.user)
 
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.user is not included among the recipients.
@@ -1785,7 +1785,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.subscribe(self.product_metadata_subscriber,
                            self.product_metadata_subscriber,
                            level=BugNotificationLevel.LIFECYCLE)
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.product_metadata_subscriber is not included among the
