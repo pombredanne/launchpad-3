@@ -7,7 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'TestMessageVisibilityMixin',
+    'TestHideMessageControlMixin'
     ]
+
+
+from canonical.launchpad.testing.pages import find_tag_by_id
 
 
 class TestMessageVisibilityMixin:
@@ -41,3 +45,40 @@ class TestMessageVisibilityMixin:
         context = self.makeHiddenMessage()
         view = self.getView(context=context)
         self.assertNotIn(self.comment_text, view.contents)
+
+
+class TestHideMessageControlMixin:
+
+    def getContext(self):
+        pass
+
+    def getView(self, context, user=None, no_login=False):
+        pass
+
+    def test_admin_sees_hide_control(self):
+        context = self.getContext()
+        administrator = self.factory.makeAdministrator()
+        view = self.getView(context=context, user=administrator)
+        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIsNot(None, hide_link)
+
+    def test_registry_sees_hide_control(self):
+        context = self.getContext()
+        registry_expert = self.factory.makeRegistryExpert()
+        view = self.getView(context=context, user=registry_expert)
+        contents = view.contents
+        file('/home/jc/output.html','w').write(contents)
+        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIsNot(None, hide_link)
+
+    def test_anon_doesnt_see_hide_control(self):
+        context = self.getContext()
+        view = self.getView(context=context, no_login=True)
+        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIs(None, hide_link)
+
+    def test_random_doesnt_see_hide_control(self):
+        context = self.getContext()
+        view = self.getView(context=context)
+        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        self.assertIs(None, hide_link)

@@ -18,7 +18,10 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
-from lp.coop.answersbugs.visibility import TestMessageVisibilityMixin
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,     
+    TestMessageVisibilityMixin,
+    )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -190,7 +193,8 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([activity3], comment2.activity)
 
 
-class TestBugCommentVisibility(BrowserTestCase, TestMessageVisibilityMixin):
+class TestBugCommentVisibility(
+        BrowserTestCase, TestMessageVisibilityMixin):
 
     layer = DatabaseFunctionalLayer
 
@@ -210,39 +214,21 @@ class TestBugCommentVisibility(BrowserTestCase, TestMessageVisibilityMixin):
         return view
 
 
-class TestBugSpamControls(BrowserTestCase):
+class TestBugHideCommentControls(
+        BrowserTestCase, TestHideMessageControlMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBugWithComment(self, bugbody=None):
+    def getContext(self):
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
         with person_logged_in(administrator):
-            self.factory.makeBugComment(bug=bug, body=bugbody)
+            self.factory.makeBugComment(bug=bug)
         return bug
 
-    def test_admin_sees_spam_control(self):
-        bug = self.makeBugWithComment()
-        administrator = self.factory.makeAdministrator()
-        view = self.getViewBrowser(context=bug, user=administrator)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_registry_sees_spam_control(self):
-        bug = self.makeBugWithComment()
-        registry_expert = self.factory.makeRegistryExpert()
-        view = self.getViewBrowser(context=bug, user=registry_expert)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_anon_doesnt_see_spam_control(self):
-        bug = self.makeBugWithComment()
-        view = self.getViewBrowser(context=bug, no_login=True)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
-
-    def test_random_doesnt_see_spam_control(self):
-        bug = self.makeBugWithComment()
-        view = self.getViewBrowser(context=bug)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
+    def getView(self, context, user=None, no_login=False):
+        view = self.getViewBrowser(
+            context=context.default_bugtask,
+            user=user,
+            no_login=no_login)
+        return view

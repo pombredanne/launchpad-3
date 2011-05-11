@@ -9,9 +9,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.coop.answersbugs.visibility import TestMessageVisibilityMixin
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,     
+    TestMessageVisibilityMixin,
+    )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -39,11 +41,12 @@ class TestQuestionMessageVisibility(
         return view
 
 
-class TestQuestionSpamControls(BrowserTestCase):
+class TestHideQuestionMessageControls(
+        BrowserTestCase, TestHideMessageControlMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def makeQuestionWithMessage(self):
+    def getContext(self):
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()
         body = self.factory.getUniqueString()
@@ -51,28 +54,9 @@ class TestQuestionSpamControls(BrowserTestCase):
             question.addComment(administrator, body)
         return question
 
-    def test_admin_sees_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        administrator = self.factory.makeAdministrator()
-        view = self.getViewBrowser(context=question, user=administrator)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_registry_sees_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        registry_expert = self.factory.makeRegistryExpert()
-        view = self.getViewBrowser(context=question, user=registry_expert)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_anon_doesnt_see_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        view = self.getViewBrowser(context=question, no_login=True)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
-
-    def test_random_doesnt_see_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        view = self.getViewBrowser(context=question)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
+    def getView(self, context, user=None, no_login=False):
+        view = self.getViewBrowser(
+            context=context,
+            user=user,
+            no_login=no_login)
+        return view
