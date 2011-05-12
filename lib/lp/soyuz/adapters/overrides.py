@@ -40,8 +40,9 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 class BaseOverridePolicy:
 
-    def calculateOverrides(self, **args):
-        raise AssertionError("Must be implemented by sub-class.")
+    def calculateOverrides(self, archive, distroseries, pocket, sources=None,
+                           binaries=None):
+        raise NotImplementedError("Must be implemented by sub-class.")
 
 
 class FromExistingOverridePolicy(BaseOverridePolicy):

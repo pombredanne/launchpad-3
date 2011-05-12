@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test generic override methods."""
+"""Test generic override policy classes."""
 
 from testtools.matchers import Equals
 
@@ -197,6 +197,8 @@ class TestOverrides(TestCaseWithFactory):
         self.assertContentEqual(expected, overrides)
 
     def test_ubuntu_override_policy_binaries(self):
+        # The Ubuntu policy incorporates both the existing and the unknown
+        # policy.
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         bpn = self.factory.makeBinaryPackageName()
