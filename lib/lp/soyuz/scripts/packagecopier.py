@@ -439,7 +439,7 @@ class CopyChecker:
         if check_permissions:
             check_copy_permissions(
                 person, self.archive, series, pocket,
-                source.sourcepackagerelease.sourcepackagename)
+                [source.sourcepackagerelease.sourcepackagename])
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
