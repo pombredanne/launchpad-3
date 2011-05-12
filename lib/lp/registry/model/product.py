@@ -489,11 +489,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _validate_license_approved(self, attr, value):
         """Ensure license approved is only applied to the correct licenses."""
         if not self._SO_creating:
-            licenses = self.licenses
+            licenses = list(self.licenses)
             if value:
-                assert License.OTHER_PROPRIETARY not in licenses, (
-                    "Projects with 'Other/Proprietary' licenses may not be "
-                    "marked as license_approved.")
+                if (License.OTHER_PROPRIETARY in licenses
+                    or [License.DONT_KNOW] == licenses):
+                    raise ValueError(
+                        "Projects without a license or have"
+                        "'Other/Proprietary' may not be approved.")
                 # Approving a license implies it has been reviewed.  Force
                 # `project_reviewed` to be True.
                 self.project_reviewed = True
