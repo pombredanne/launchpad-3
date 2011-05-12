@@ -219,6 +219,12 @@ class BugNominationEditView(LaunchpadFormView):
         self.current_bugtask = getUtility(ILaunchBag).bugtask
         super(BugNominationEditView, self).initialize()
 
+    @property
+    def action_url(self):
+        return "%s/nominations/%d/+editstatus" % (
+            canonical_url(self.current_bugtask),
+            self.context.id)
+
     def shouldShowApproveButton(self, action):
         """Should the approve button be shown?"""
         return self.context.isProposed() or self.context.isDeclined()
