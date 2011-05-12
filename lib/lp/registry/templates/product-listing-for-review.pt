@@ -26,14 +26,18 @@
         </dd>
       </dl>
 
-      <p tal:content="context/summary" />
+      <p
+        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive" 
+        tal:content="context/summary" />
 
       <div
+        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive"
         tal:condition="context/description"
         tal:attributes="id string:${context/name}-desciption"
         tal:content="structure context/description/fmt:text-to-html" />
 
-      <dl class="horizontal">
+      <dl class="horizontal"
+        title="Projects with packages and releases cannot be deactivated.">
         <dt>Has packages</dt>
         <dd
           tal:attributes="id string:${context/name}-packages"
@@ -45,6 +49,7 @@
       </dl>
 
       <dl class="horizontal"
+        title="Projects over 6 months old should be using an application."
         tal:attributes="id string:${context/name}-usage">
         <dt>Code usage</dt>
         <dd tal:content="context/codehosting_usage/title" />
@@ -62,7 +67,8 @@
         <dt>Project reviewed</dt>
         <dd tal:content="structure view/project_reviewed_widget" />
         <dt>License approved</dt>
-        <dd tal:content="structure view/license_approved_widget" />
+        <dd title="Approving a license also marks the project reviewed."
+          tal:content="structure view/license_approved_widget" />
       </dl>
 
       <dl class="horizontal"
