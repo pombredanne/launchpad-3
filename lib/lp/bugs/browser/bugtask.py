@@ -3556,6 +3556,14 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         return self.context.userCanEditImportance(self.user)
 
     @property
+    def user_can_edit_assignee(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.user is not None
+
+    @property
     def user_can_edit_milestone(self):
         """Can the user edit the Milestone field?
 
@@ -3606,6 +3614,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
+            'user_can_edit_assignee': self.user_can_edit_assignee,
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
             'user_can_edit_importance': (
