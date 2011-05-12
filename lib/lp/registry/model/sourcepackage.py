@@ -186,10 +186,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin,
-                    HasBugHeatMixin, HasCodeImportsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
