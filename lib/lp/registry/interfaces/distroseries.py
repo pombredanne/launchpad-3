@@ -173,6 +173,16 @@ class DistroSeriesVersionField(UniqueField):
                 "'%s': %s" % (version, error))
 
 
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
+        """Create a new milestone for this DistroSeries."""
+
+
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
@@ -823,11 +833,6 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getDerivedSeries():
-        """Get all `DistroSeries` derived from this one."""
-
     @operation_parameters(
         parent_series=Reference(
             schema=Interface, # IDistroSeries
@@ -940,6 +945,16 @@ class IDistroSeriesEditRestricted(Interface):
             series. If it's true, they will not be, and if it's false, they
             will be.
         """
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getParentSeries():
+        """Get all parent `DistroSeries`."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
