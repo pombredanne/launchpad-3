@@ -48,6 +48,24 @@ class TestPrivateBugLinks(BrowserTestCase):
         self.assertTrue('href' not in dupe_warning)
 
 
+class TestEmailObfuscated(BrowserTestCase):
+    """Test for obfuscated emails on bug pages."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_make_bug_with_email(self):
+        email_address = "mark@example.com"
+        bug = self.factory.makeBug(
+            title="Title with %s contained" % email_address,
+            description="Description with %s contained." % email_address)
+        url = canonical_url(bug, rootsite="bugs")
+        browser = self.getUserBrowser(url)
+        pos = browser.contents.find(email_address)
+        self.assertNotEqual(-1, pos)
+        pos = browser.contents.find(email_address, pos)
+        self.assertNotEqual(-1, pos)
+
+
 class TestBugPortletSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
