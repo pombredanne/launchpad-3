@@ -22,8 +22,9 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
-log = None # This is set by cronscripts/librarian-gc.py
+log = None  # This is set by cronscripts/librarian-gc.py
 debug = False
+
 
 def confirm_no_clock_skew(con):
     """Raise an exception if there is significant clock skew between the
@@ -136,7 +137,7 @@ def merge_duplicates(con):
     for sha1, filesize in rows:
         cur = con.cursor()
 
-        sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
+        sha1 = sha1.encode('US-ASCII')  # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes. Where multiple files exist, we return
         # the most recently added one first, because this is the version
@@ -282,8 +283,8 @@ class UnreferencedLibraryFileAliasPruner:
     implements(ITunableLoop)
 
     def __init__(self, con):
-        self.con = con # Database connection to use
-        self.total_deleted = 0 # Running total
+        self.con = con  # Database connection to use
+        self.total_deleted = 0  # Running total
         self.index = 1
 
         log.info("Deleting unreferenced LibraryFileAliases")
@@ -505,10 +506,6 @@ def delete_unwanted_files(con):
     the database records committed.
     """
     cur = con.cursor()
-
-    # Get the largest id in the database
-    cur.execute("SELECT max(id) from LibraryFileContent")
-    max_id = cur.fetchone()[0]
 
     # Calculate all stored LibraryFileContent ids that we want to keep.
     # Results are ordered so we don't have to suck them all in at once.
