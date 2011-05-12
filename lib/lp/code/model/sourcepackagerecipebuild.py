@@ -308,6 +308,10 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         # If our recipe has been deleted, any notification will fail.
         if self.recipe is None:
             return
+        if self.status == BuildStatus.FULLYBUILT:
+            # Don't send mail for successful recipe builds; it can be just
+            # too much.
+            return
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 

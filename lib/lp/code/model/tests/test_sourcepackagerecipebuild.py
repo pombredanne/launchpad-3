@@ -503,7 +503,10 @@ class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_notify(self):
-        """Notify sends email."""
+        """We do not send mail on completion of source package recipe builds.
+
+        See bug 778437.
+        """
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
             name=u'recipe', owner=person)
@@ -514,7 +517,11 @@ class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
         removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         IStore(build).flush()
         build.notify()
-        (message, ) = pop_notifications()
+        self.assertEquals(0, len(pop_notifications()))
+
+    def assertBuildMessageValid(self, build, message):
+        # Not currently used; can be used if we do want to check about any
+        # notifications sent in other cases.
         requester = build.requester
         requester_address = format_address(
             requester.displayname, requester.preferredemail.email)
