@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
@@ -199,7 +198,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 

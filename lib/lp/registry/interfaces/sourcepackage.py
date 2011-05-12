@@ -46,6 +46,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
@@ -67,7 +68,8 @@ from lp.translations.interfaces.hastranslationimports import (
 
 class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                      IHasOfficialBugTags, IHasCodeImports,
-                     IHasTranslationImports, IHasTranslationTemplates):
+                     IHasTranslationImports, IHasTranslationTemplates,
+                     IQuestionTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
