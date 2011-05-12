@@ -66,7 +66,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
-    IPackageCopyJobSource,
+    )
+from lp.soyuz.interfaces.packagecopyjob import (
+    IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -930,12 +932,12 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         series = dsd.derived_series
         view = self.makeView(series)
         view.requestUpgrades()
-        job_source = getUtility(IPackageCopyJobSource)
+        job_source = getUtility(IPlainPackageCopyJobSource)
         jobs = list(
             job_source.getActiveJobs(series.distribution.main_archive))
         self.assertEquals(1, len(jobs))
         job = jobs[0]
-        self.assertEquals(series, job.distroseries)
+        self.assertEquals(series, job.target_distroseries)
         source_package_info = list(job.source_packages)
         self.assertEquals(1, len(source_package_info))
         self.assertEqual(
