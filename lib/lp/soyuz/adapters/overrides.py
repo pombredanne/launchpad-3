@@ -40,7 +40,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 class BaseOverridePolicy:
 
-    def policySpecificChecks(self, **args):
+    def calculateOverrides(self, **args):
         raise AssertionError("Must be implemented by sub-class.")
 
 
@@ -101,7 +101,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             binary_resolve_ids, pre_iter_hook=binary_eager_load)
         return list(already_published)
 
-    def policySpecificChecks(self, archive, distroseries, pocket,
+    def calculateOverrides(self, archive, distroseries, pocket,
                              sources=None, binaries=None):
         if sources is not None and binaries is not None:
             raise AssertionError(
@@ -123,7 +123,7 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     def __init__(self):
         self.default_component = 'universe'
 
-    def policySpecificChecks(self, archive, distroseries, pocket,
+    def calculateOverrides(self, archive, distroseries, pocket,
                              sources=None, binaries=None):
         if sources is not None and binaries is not None:
             raise AssertionError(
@@ -160,32 +160,40 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     and the unknown policy.
     """
 
-    def policySpecificChecks(self, archive, distroseries, pocket,
-                             sources=None, binaries=None):
-        if sources:
-            total = set(sources)
-        if binaries:
-            total = set(binaries)
-        overrides = FromExistingOverridePolicy.policySpecificChecks(
-            self, archive, distroseries, pocket, sources=sources,
-            binaries=binaries)
-        if sources:
-            existing = set(override[0] for override in overrides)
-        if binaries:
-            existing = set((
-                overide[0], overide[1].architecturetag)
-                    for overide in overrides)
+    def sourceOverrides(self, archive, distroseries, pocket, sources=None):
+        total = set(sources)
+        overrides = FromExistingOverridePolicy.calculateOverrides(
+            self, archive, distroseries, pocket, sources=sources)
+        existing = set(override[0] for override in overrides)
         missing = total.difference(existing)
         if missing:
-            if sources:
-                sources = missing
-            if binaries:
-                binaries = missing
-            unknown_overrides = UnknownOverridePolicy.policySpecificChecks(
-                self, archive, distroseries, pocket, sources=sources,
-                binaries=binaries)
+            unknown_overrides = UnknownOverridePolicy.calculateOverrides(
+                self, archive, distroseries, pocket, sources=missing)
             overrides.extend(unknown_overrides)
         return overrides
+
+    def binaryOverrides(self, archive, distroseries, pocket, binaries=None):
+        total = set(binaries)
+        overrides = FromExistingOverridePolicy.calculateOverrides(
+            self, archive, distroseries, pocket, binaries=binaries)
+        existing = set((
+            overide[0], overide[1].architecturetag)
+                for overide in overrides)
+        missing = total.difference(existing)
+        if missing:
+            unknown_overrides = UnknownOverridePolicy.calculateOverrides(
+                self, archive, distroseries, pocket, binaries=missing)
+            overrides.extend(unknown_overrides)
+        return overrides
+
+    def calculateOverrides(self, archive, distroseries, pocket,
+                             sources=None, binaries=None):
+        if sources:
+            return self.sourceOverrides(
+                archive, distroseries, pocket, sources=sources)
+        if binaries:
+            return self.binaryOverrides(
+                archive, distroseries, pocket, binaries=binaries)
 
 
 def calculate_target_das(distroseries, binaries):
