@@ -50,8 +50,8 @@ class QuestionsPerson:
             UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
             UNION SELECT question
-                  FROM QuestionMessage JOIN Message ON (message = Message.id)
-                  WHERE Message.owner = %(personID)s
+                  FROM QuestionMessage
+                  WHERE owner = %(personID)s
             )""" % sqlvalues(personID=self.person.id),
             clauseTables=['Question'], distinct=True))
 
