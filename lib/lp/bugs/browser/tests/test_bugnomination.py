@@ -8,12 +8,14 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import Contains
 from lp.testing.views import create_initialized_view
 
 
@@ -50,3 +52,39 @@ class TestBugNominationView(TestCaseWithFactory):
         view = create_initialized_view(self.bug_task, name='+nominate')
         action = view.__class__.actions.byname['actions.submit']
         self.assertEqual('Target', action.label)
+
+
+class TestBugNominationEditView(TestCaseWithFactory):
+    """Tests for BugNominationEditView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_approving_twice_is_noop(self):
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries())
+        login_person(nomination.productseries.product.owner)
+        nomination.approve(nomination.productseries.product.owner)
+        getUtility(ILaunchBag).add(nomination.bug.default_bugtask)
+        view = create_initialized_view(
+            nomination, name='+editstatus',
+            current_request=True,
+            principal=get_current_principal(),
+            form={'field.actions.approve': 'Approve'})
+        self.assertThat(
+            view.render(),
+            Contains("This nomination has already been approved."))
+
+    def test_declining_approved_is_noop(self):
+        nomination = self.factory.makeBugNomination(
+            target=self.factory.makeProductSeries())
+        login_person(nomination.productseries.product.owner)
+        nomination.approve(nomination.productseries.product.owner)
+        getUtility(ILaunchBag).add(nomination.bug.default_bugtask)
+        view = create_initialized_view(
+            nomination, name='+editstatus',
+            current_request=True,
+            principal=get_current_principal(),
+            form={'field.actions.decline': 'Decline'})
+        self.assertThat(
+            view.render(),
+            Contains("This nomination has already been approved."))
