@@ -188,7 +188,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distro_sourcepackage, view_name='+filebug')
         if self.request.form.get('no-redirect') is not None:
             redirection_url += '?no-redirect'
-        return self.redirectSubTree(redirection_url)
+        return self.redirectSubTree(redirection_url, status=303)
 
 
 @adapter(ISourcePackage)
