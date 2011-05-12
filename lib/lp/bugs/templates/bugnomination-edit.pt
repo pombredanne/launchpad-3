@@ -11,11 +11,17 @@
   <metal:main metal:fill-slot="main">
     <div class="top-portlet">
       <div metal:use-macro="context/@@launchpad_form/form">
-        <p metal:fill-slot="extra_info">
-          Approving a nomination will target the bug to be fixed in a specific
-          series. Declining a nomination will show on the bug page that this
-          bug will not be fixed in that specific series.
-        </p>
+        <div metal:fill-slot="extra_info">
+          <p>
+            Approving a nomination will target the bug to be fixed in a
+            specific series. Declining a nomination will show on the bug
+            page that this bug will not be fixed in that specific
+            series.
+          </p>
+          <p tal:condition="context/isApproved">
+            This nomination has already been approved.
+          </p>
+        </div>
       </div>
     </div>
   </metal:main>
