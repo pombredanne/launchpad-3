@@ -171,7 +171,6 @@ Projects are available at their canonical URL on the API virtual host.
     is_permitted: False
     license_approved: False
     license_info: None
-    project_reviewed: False
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
@@ -179,6 +178,7 @@ Projects are available at their canonical URL on the API virtual host.
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    project_reviewed: False
     qualifies_for_free_hosting: False
     recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
@@ -236,7 +236,6 @@ several that are not available to non-privileged users marked as
     is_permitted:...redacted...
     license_approved:...redacted...
     license_info: None
-    project_reviewed:...redacted...
     licenses: []
     logo_link: u'http://.../firefox/logo'
     name: u'firefox'
@@ -244,6 +243,7 @@ several that are not available to non-privileged users marked as
     owner_link: u'http://.../~name12'
     programming_language: None
     project_group_link: u'http://.../mozilla'
+    project_reviewed:...redacted...
     qualifies_for_free_hosting: False
     recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
