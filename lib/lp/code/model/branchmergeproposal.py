@@ -688,7 +688,7 @@ class BranchMergeProposal(SQLBase):
 
         # Until these are moved into the lp module, import here to avoid
         # circular dependencies from canonical.launchpad.database.__init__.py
-        from canonical.launchpad.database.message import Message, MessageChunk
+        from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
