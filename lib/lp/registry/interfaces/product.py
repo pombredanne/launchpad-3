@@ -847,7 +847,7 @@ class IProductSet(Interface):
 
     def get_all_active(eager_load=True):
         """Get all active products.
-        
+
         :param eager_load: If False do not load related objects such as the
             owner.
         :return: An iterable of IProduct.
@@ -913,7 +913,7 @@ class IProductSet(Interface):
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
         license_reviewed=Bool(title=_("Is the project license reviewed")),
-        licenses = Set(title=_('Licenses'),
+        licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         license_info_is_empty=Bool(title=_("License info is empty")),
         has_zero_licenses=Bool(title=_("Has zero licenses")),

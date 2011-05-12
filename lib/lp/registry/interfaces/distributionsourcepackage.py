@@ -207,7 +207,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     def __ne__(other):
         """IDistributionSourcePackage comparison method.
 
-        Distro sourcepackages compare not equal if either of their distribution
-        or sourcepackagename compare not equal.
+        Distro sourcepackages compare not equal if either of their
+        distribution or sourcepackagename compare not equal.
         """
-
