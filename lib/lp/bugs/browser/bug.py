@@ -523,10 +523,15 @@ class BugViewMixin:
     def current_user_mute_class(self):
         bug = self.context
         subscription_class = self.current_user_subscription_class
-        if bug.isMuted(self.user):
-            return 'muted-true %s' % subscription_class
+        if self.user_should_see_mute_link:
+            visibility_class = ''
         else:
-            return 'muted-false %s' % subscription_class
+            visibility_class = 'hidden'
+        if bug.isMuted(self.user):
+            return 'muted-true %s %s' % (subscription_class, visibility_class)
+        else:
+            return 'muted-false %s %s' % (
+                subscription_class, visibility_class)
 
     @cachedproperty
     def user_should_see_mute_link(self):
