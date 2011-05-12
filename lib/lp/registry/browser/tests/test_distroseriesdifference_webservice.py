@@ -46,8 +46,9 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
@@ -63,8 +64,9 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
@@ -106,8 +108,9 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         # Reload and check that the package diffs are there.
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertIsNot(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 

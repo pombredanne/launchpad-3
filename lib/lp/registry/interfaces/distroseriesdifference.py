@@ -308,12 +308,18 @@ class IDistroSeriesDifferenceSource(Interface):
         :return: A result set of `IDistroSeriesDifference`.
         """
 
-    def getByDistroSeriesAndName(distro_series, source_package_name):
-        """Returns a single difference matching the series and name.
+    def getByDistroSeriesNameAndParentSeries(distro_series,
+                                             source_package_name,
+                                             parent_series):
+        """Returns a single difference matching the series, name and parent
+        series.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
         :type distro_series: `IDistroSeries`.
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
+        :param parent_series: The parent distribution series of the package
+        difference.
+        :type distro_series: `IDistroSeries`.
         """

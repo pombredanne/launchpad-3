@@ -74,6 +74,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Avoid circular import.
         from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         distro_series = distro_series_difference.derived_series
+        parent_series = distro_series_difference.parent_series
         source_package_name_str = (
             distro_series_difference.source_package_name.name)
         stp = SoyuzTestPublisher()
@@ -90,8 +91,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # updateDistroSeriesPackageCache reconnects the db, so the
         # objects need to be reloaded.
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = dsd_source.getByDistroSeriesAndName(
-            distro_series, source_package_name_str)
+        ds_diff = dsd_source.getByDistroSeriesNameAndParentSeries(
+            distro_series, source_package_name_str, parent_series)
         return ds_diff
 
     def test_binary_summaries_for_source_pub(self):
@@ -187,7 +188,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.1-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(2, len(tags))
@@ -208,7 +210,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.30-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
@@ -229,7 +232,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.30-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
