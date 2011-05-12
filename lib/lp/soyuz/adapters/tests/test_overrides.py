@@ -8,6 +8,7 @@ from testtools.matchers import Equals
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
+    UbuntuOverridePolicy,
     UnknownOverridePolicy,
     )
 from lp.soyuz.enums import PackagePublishingStatus
@@ -162,11 +163,65 @@ class TestOverrides(TestCaseWithFactory):
         # If the unknown policy is used, it does no checks, just returns the
         # defaults.
         bpph = self.factory.makeBinaryPackagePublishingHistory()
+        distroseries = bpph.distroarchseries.distroseries
+        distroseries.nominatedarchindep = bpph.distroarchseries
         policy = UnknownOverridePolicy()
         overrides = policy.policySpecificChecks(
-            bpph.distroarchseries.distroseries.main_archive,
-            bpph.distroarchseries.distroseries, bpph.pocket, 
+            distroseries.main_archive, distroseries, bpph.pocket,
             binaries=((bpph.binarypackagerelease.binarypackagename, None),))
-        expected = [(bpph.binarypackagerelease.binarypackagename, None,
-            'universe', None, None)]
+        expected = [(bpph.binarypackagerelease.binarypackagename,
+            bpph.distroarchseries, 'universe', None, None)]
         self.assertEqual(expected, overrides)
+
+    def test_ubuntu_override_policy_sources(self):
+        # The Ubuntu policy incorporates both the existing and the unknown
+        # policy.
+        spns = [self.factory.makeSourcePackageName()]
+        expected = [(spns[0], 'universe', None)]
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        for i in xrange(8):
+            spph = self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries, archive=distroseries.main_archive,
+                pocket=pocket)
+            spns.append(spph.sourcepackagerelease.sourcepackagename)
+            expected.append((
+                spph.sourcepackagerelease.sourcepackagename, spph.component,
+                spph.section))
+        spns.append(self.factory.makeSourcePackageName())
+        expected.append((spns[-1], 'universe', None))
+        policy = UbuntuOverridePolicy()
+        overrides = policy.policySpecificChecks(
+            distroseries.main_archive, distroseries, pocket, sources=spns)
+        self.assertEqual(10, len(overrides))
+        self.assertContentEqual(expected, overrides)
+
+    def test_ubuntu_override_policy_binaries(self):
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        bpn = self.factory.makeBinaryPackageName()
+        bpns = []
+        expected = []
+        for i in xrange(3):
+            distroarchseries = self.factory.makeDistroArchSeries(
+                distroseries=distroseries)
+            bpr = self.factory.makeBinaryPackageRelease(
+                binarypackagename=bpn)
+            bpph = self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagerelease=bpr, distroarchseries=distroarchseries,
+                archive=distroseries.main_archive, pocket=pocket)
+            bpns.append((bpn, distroarchseries.architecturetag))
+            expected.append((
+                bpn, distroarchseries, bpph.component, bpph.section,
+                bpph.priority))
+        for i in xrange(2):
+            distroarchseries = self.factory.makeDistroArchSeries(
+                distroseries=distroseries)
+            bpns.append((bpn, distroarchseries.architecturetag))
+            expected.append((bpn, distroarchseries, 'universe', None, None))
+        distroseries.nominatedarchindep = distroarchseries
+        policy = UbuntuOverridePolicy()
+        overrides = policy.policySpecificChecks(
+            distroseries.main_archive, distroseries, pocket, binaries=bpns)
+        self.assertEqual(5, len(overrides))
+        self.assertContentEqual(expected, overrides)

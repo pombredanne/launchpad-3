@@ -147,25 +147,44 @@ class UnknownOverridePolicy(BaseOverridePolicy):
             if archive.default_component:
                 self.default_component = archive.default_component
             overrides = []
-            for binary, archtag in binaries:
+            for binary, das in calculate_target_das(distroseries, binaries):
                 overrides.append((
-                    store.get(BinaryPackageName, binary.id), None,
+                    store.get(BinaryPackageName, binary.id), das,
                     self.default_component, None, None))
             return overrides
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
                            UnknownOverridePolicy):
+    """An override policy that incorporates both the from existing policy 
+    and the unknown policy.
+    """
 
     def policySpecificChecks(self, archive, distroseries, pocket,
                              sources=None, binaries=None):
+        if sources:
+            total = set(sources)
+        if binaries:
+            total = set(binaries)
         overrides = FromExistingOverridePolicy.policySpecificChecks(
-            archive, distroseries, pocket, sources=sources,
+            self, archive, distroseries, pocket, sources=sources,
             binaries=binaries)
-        if overrides is []:
-            overrides = UnknownOverridePolicy.policySpecificChecks(
-                archive, distroseries, pocket, sources=sources,
+        if sources:
+            existing = set(override[0] for override in overrides)
+        if binaries:
+            existing = set((
+                overide[0], overide[1].architecturetag)
+                    for overide in overrides)
+        missing = total.difference(existing)
+        if missing:
+            if sources:
+                sources = missing
+            if binaries:
+                binaries = missing
+            unknown_overrides = UnknownOverridePolicy.policySpecificChecks(
+                self, archive, distroseries, pocket, sources=sources,
                 binaries=binaries)
+            overrides.extend(unknown_overrides)
         return overrides
 
 
