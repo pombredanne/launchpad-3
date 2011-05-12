@@ -219,20 +219,22 @@ class BugNominationEditView(LaunchpadFormView):
         self.current_bugtask = getUtility(ILaunchBag).bugtask
         super(BugNominationEditView, self).initialize()
 
-    def getFormAction(self):
-        """Get the string used as the form action."""
-        return (
-            "%s/nominations/%d/+edit-form" % (
-                canonical_url(self.current_bugtask), self.context.id))
+    def shouldShowApproveButton(self, action):
+        """Should the approve button be shown?"""
+        return self.context.isProposed() or self.context.isDeclined()
 
-    @action(_("Approve"), name="approve")
+    def shouldShowDeclineButton(self, action):
+        """Should the decline button be shown?"""
+        return self.context.isProposed()
+
+    @action(_("Approve"), name="approve", condition=shouldShowApproveButton)
     def approve(self, action, data):
         self.context.approve(self.user)
         self.request.response.addNotification(
             "Approved nomination for %s" %
                 self.context.target.bugtargetdisplayname)
 
-    @action(_("Decline"), name="decline")
+    @action(_("Decline"), name="decline", condition=shouldShowDeclineButton)
     def decline(self, action, data):
         self.context.decline(self.user)
         self.request.response.addNotification(
@@ -242,14 +244,6 @@ class BugNominationEditView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.current_bugtask)
-
-    def shouldShowApproveButton(self):
-        """Should the approve button be shown?"""
-        return self.context.isProposed() or self.context.isDeclined()
-
-    def shouldShowDeclineButton(self):
-        """Should the decline button be shown?"""
-        return self.context.isProposed()
 
 
 class BugNominationContextMenu(BugContextMenu):
