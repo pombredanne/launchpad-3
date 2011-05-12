@@ -1153,10 +1153,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             header='Is this project active and usable by the community?')
 
     @property
-    def license_reviewed_widget(self):
+    def project_reviewed_widget(self):
         return BooleanChoiceWidget(
-            self.context, IProduct['license_reviewed'],
-            content_box_id='%s-edit-license-reviewed' % self.context.name,
+            self.context, IProduct['project_reviewed'],
+            content_box_id='%s-edit-project-reviewed' % self.context.name,
             edit_view='+review-license',
             tag='span',
             false_text='Unreviewed',
@@ -1665,7 +1665,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
-        "license_reviewed",
+        "project_reviewed",
         "license_approved",
         "active",
         "private_bugs",
@@ -1855,7 +1855,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     full_row_field_names = [
         'search_text',
         'active',
-        'license_reviewed',
+        'project_reviewed',
         'license_approved',
         'license_info_is_empty',
         'licenses',
@@ -1873,7 +1873,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         orientation='vertical')
     custom_widget('active', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
-    custom_widget('license_reviewed', LaunchpadRadioWidget,
+    custom_widget('project_reviewed', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")

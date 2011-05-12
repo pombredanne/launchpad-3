@@ -60,7 +60,7 @@
         <dt>Project enabled</dt>
         <dd tal:content="structure view/active_widget" />
         <dt>Project reviewed</dt>
-        <dd tal:content="structure view/license_reviewed_widget" />
+        <dd tal:content="structure view/project_reviewed_widget" />
         <dt>License approved</dt>
         <dd tal:content="structure view/license_approved_widget" />
       </dl>

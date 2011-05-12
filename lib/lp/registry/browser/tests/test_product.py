@@ -248,12 +248,12 @@ class TestProductView(TestCaseWithFactory):
             canonical_url(self.product, view_name='+review-license'),
             widget.edit_url)
 
-    def test_license_reviewed_widget(self):
+    def test_project_reviewed_widget(self):
         # The license reviewed widget is is unique to the product.
         login_celebrity('registry_experts')
         view = create_initialized_view(self.product, '+index')
-        widget = view.license_reviewed_widget
-        self.assertEqual('fnord-edit-license-reviewed', widget.content_box_id)
+        widget = view.project_reviewed_widget
+        self.assertEqual('fnord-edit-project-reviewed', widget.content_box_id)
         self.assertEqual(
             canonical_url(self.product, view_name='+review-license'),
             widget.edit_url)
@@ -302,7 +302,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         view = create_initialized_view(self.product_set, '+review-licenses')
         self.assertContentEqual(
             {'active': True,
-             'license_reviewed': False,
+             'project_reviewed': False,
              'license_approved': False,
              'search_text': None,
              'licenses': set(),
@@ -364,7 +364,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
             id='fnord-commercial-subscription') is not None)
 
     def test_project_widgets(self):
-        # The active, license_reviewed, and license_approved lazrjs widgets
+        # The active, project_reviewed, and license_approved lazrjs widgets
         # are used.
         self.factory.makeProduct(name='fnord')
         view = create_initialized_view(
@@ -375,7 +375,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
                 content.find(id='fnord-edit-active').parent))
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
-                content.find(id='fnord-edit-license-reviewed').parent))
+                content.find(id='fnord-edit-project-reviewed').parent))
         self.assertTrue(
             'Y.lp.app.choice.addBinaryChoice' in str(
                 content.find(id='fnord-edit-license-approved').parent))
