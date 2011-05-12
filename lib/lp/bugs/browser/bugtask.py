@@ -363,7 +363,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index==0:
+    if for_display and comments and comments[0].index == 0:
         # We show the text of the first comment as the bug description,
         # or via the special link "View original description", but we want
         # to display attachments filed together with the bug in the
@@ -565,7 +565,8 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context.bug:
-                return redirection(canonical_url(attachment), status=301)
+                return self.redirectSubTree(
+                    canonical_url(attachment), status=301)
 
     @stepthrough('+attachment')
     def traverse_attachment(self, name):
@@ -776,13 +777,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                < config.malone.comments_list_max_length)
 
         if not self.visible_comments_truncated_for_display:
-            comments=self.comments
+            comments = self.comments
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits
             # to adjust.
             oldest_count = 1 + self.visible_initial_comments
-            new_count = 1 + self.total_comments-self.visible_recent_comments
+            new_count = 1 + self.total_comments - self.visible_recent_comments
             show_spam_controls = check_permission(
                 'launchpad.Admin', self.context.bug)
             comments = get_comments_for_bugtask(
@@ -2995,7 +2996,8 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = formlib.form.Widgets(
+            widgets_list, len(self.prefix) + 1)
 
     @action('Save changes', name='submit', condition=canApproveNominations)
     def submit_action(self, action, data):
