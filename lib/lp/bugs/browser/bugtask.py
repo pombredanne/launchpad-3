@@ -326,7 +326,7 @@ def unique_title(title):
 
 
 def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
-    slice_info=None):
+    slice_info=None, show_spam_controls=False):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
@@ -339,7 +339,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
-        slice_info=slice_info)
+        slice_info=slice_info, show_spam_controls=show_spam_controls)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
@@ -734,8 +734,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
+        show_spam_controls = check_permission(
+            'launchpad.Admin', self.context.bug)
         return get_comments_for_bugtask(self.context, truncate=True,
-            for_display=True)
+            for_display=True, show_spam_controls=show_spam_controls)
 
     @cachedproperty
     def interesting_activity(self):
@@ -781,10 +783,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             # to adjust.
             oldest_count = 1 + self.visible_initial_comments
             new_count = 1 + self.total_comments-self.visible_recent_comments
+            show_spam_controls = check_permission(
+                'launchpad.Admin', self.context.bug)
             comments = get_comments_for_bugtask(
                 self.context, truncate=True, for_display=True,
                 slice_info=[
-                    slice(None, oldest_count), slice(new_count, None)])
+                    slice(None, oldest_count), slice(new_count, None)],
+                show_spam_controls=show_spam_controls)
 
         visible_comments = get_visible_comments(
             comments, user=self.user)
@@ -3150,7 +3155,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             self.milestones = list(
                 bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
         else:
-            self.milestones = []    
+            self.milestones = []
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
