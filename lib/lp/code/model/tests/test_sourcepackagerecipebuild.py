@@ -498,7 +498,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             build.getUploader(None))
 
 
-class TestAsBuildmaster(TestCaseWithFactory):
+class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
 
     layer = LaunchpadZopelessLayer
 
@@ -544,29 +544,44 @@ class TestAsBuildmaster(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
 
-    def test_handleStatusNotifies(self):
-        """"handleStatus causes notification, even if OK."""
-
-        def prepare_build():
-            queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-            build = queue_record.specific_job.build
-            naked_build = removeSecurityProxy(build)
-            naked_build.status = BuildStatus.FULLYBUILT
-            naked_build.date_started = self.factory.getUniqueDate()
-            queue_record.builder = self.factory.makeBuilder()
-            slave = WaitingSlave('BuildStatus.OK')
-            queue_record.builder.setSlaveForTesting(slave)
-            return build
-
-        def assertNotifyCount(status, build, count):
-            build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(count, len(pop_notifications()))
-        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
-        assertNotifyCount("OK", prepare_build(), 0)
-        build = prepare_build()
-        removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
+    def prepare_build(self, fake_successful_upload=False):
+        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue_record.specific_job.build
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_started = self.factory.getUniqueDate()
+        if fake_successful_upload:
+            naked_build.verifySuccessfulUpload = FakeMethod(
                 result=True)
-        assertNotifyCount("OK", prepare_build(), 0)
+        queue_record.builder = self.factory.makeBuilder()
+        slave = WaitingSlave('BuildStatus.OK')
+        queue_record.builder.setSlaveForTesting(slave)
+        transaction.commit()
+        return build
+
+    def assertDeferredNotifyCount(self, status, build, expected_count):
+        d = build.handleStatus(status, None, {'filemap': {}})
+        def cb(result):
+            self.assertEqual(expected_count, len(pop_notifications()))
+        d.addCallback(cb)
+        return d
+
+    def test_handleStatus_PACKAGEFAIL(self):
+        """Failing to build the package immediately sends a notification."""
+        return self.assertDeferredNotifyCount(
+            "PACKAGEFAIL", self.prepare_build(), 1)
+
+    def test_handleStatus_OK(self):
+        """Building the source package does _not_ immediately send mail.
+        
+        (The archive uploader mail send one later.
+        """
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(), 0)
+
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
