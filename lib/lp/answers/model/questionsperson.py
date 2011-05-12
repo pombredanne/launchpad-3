@@ -51,7 +51,7 @@ class QuestionsPerson:
                   WHERE person = %(personID)s
             UNION SELECT question
                   FROM QuestionMessage JOIN Message ON (message = Message.id)
-                  WHERE owner = %(personID)s
+                  WHERE Message.owner = %(personID)s
             )""" % sqlvalues(personID=self.person.id),
             clauseTables=['Question'], distinct=True))
 

@@ -11,6 +11,8 @@ CREATE INDEX questionmessage__owner__idx ON QuestionMessage(owner);
 UPDATE QuestionMessage SET owner = (
     SELECT owner FROM Message WHERE Message.id=QuestionMessage.message);
 
+ALTER TABLE QuestionMessage ALTER COLUMN owner SET NOT NULL;
+
 -- Triggers to maintain in both directions.
 CREATE TRIGGER questionmessage__owner__mirror
     AFTER UPDATE OR INSERT ON questionmessage
