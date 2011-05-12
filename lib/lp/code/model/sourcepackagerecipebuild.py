@@ -346,17 +346,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
-    def _handleStatus_OK(self, librarian, slave_status, logger):
-        """See `IPackageBuild`."""
-        d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
-            librarian, slave_status, logger)
-
-        def uploaded_build(ignored):
-            # Base implementation doesn't notify on success.
-            if self.status == BuildStatus.FULLYBUILT:
-                self.notify()
-        return d.addCallback(uploaded_build)
-
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         return self.requester
