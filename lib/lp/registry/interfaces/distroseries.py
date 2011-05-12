@@ -833,6 +833,16 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getParentSeries():
+        """Get all parent `DistroSeries`."""
+
     @operation_parameters(
         parent_series=Reference(
             schema=Interface, # IDistroSeries
@@ -945,16 +955,6 @@ class IDistroSeriesEditRestricted(Interface):
             series. If it's true, they will not be, and if it's false, they
             will be.
         """
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getDerivedSeries():
-        """Get all `DistroSeries` derived from this one."""
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getParentSeries():
-        """Get all parent `DistroSeries`."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,

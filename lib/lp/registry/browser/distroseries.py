@@ -95,7 +95,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
@@ -180,11 +179,6 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
     @stepthrough('+upload')
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
-
-    @stepthrough('+difference')
-    def traverse_difference(self, name):
-        dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        return dsd_source.getByDistroSeriesAndName(self.context, name)
 
 
 class DistroSeriesBreadcrumb(Breadcrumb):

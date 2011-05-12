@@ -696,6 +696,13 @@ class TestDistroSeriesLocalDifferencesPerformance(DistroSeriesDifferenceMixin,
             derived_series=derived_series)
         self._assertQueryCount(derived_series)
 
+    def test_queries_multiple_parents(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series)
+        self._assertQueryCount(derived_series)
+
 
 class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
                                                TestCaseWithFactory):
@@ -758,6 +765,19 @@ class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
         self.assertEqual(
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
+            view.label)
+
+    def test_label_multiple_parents(self):
+        # If the series has multiple parents, the view label mentions
+        # the generic term 'parent series'.
+        derived_series, parent_series = self._createChildAndParents()
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(
+            "Source package differences between 'Derilucid' and "
+            "parent series",
             view.label)
 
     def test_label_multiple_parents(self):
@@ -1086,7 +1106,7 @@ class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
         # A single web request may need to schedule large numbers of
         # package upgrades.  It must do so without issuing large numbers
         # of database queries.
-        derived_series, parent_series = self._create_child_and_parent()
+        derived_series, parent_series = self._createChildAndParent()
         # Take a baseline measure of queries.
         self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
@@ -1299,14 +1319,14 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
-        self.factory.makeDistroSeriesDifference(
+        diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str=src_name,
             derived_series=derived_series, versions=versions,
             difference_type=difference_type)
         sourcepackagename = self.factory.getOrMakeSourcePackageName(
             src_name)
         set_derived_series_ui_feature_flag(self)
-        return derived_series, parent_series, sourcepackagename
+        return derived_series, parent_series, sourcepackagename, str(diff.id)
 
     def test_canPerformSync_anon(self):
         # Anonymous users cannot sync packages.
@@ -1389,11 +1409,13 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
 
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
-        derived_series = self._setUpDSD('my-src-name')[0]
+        derived_series, unused, unused2, diff_id = self._setUpDSD(
+            'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
+        another_id = str(int(diff_id) + 1)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['some-other-name'])
+            derived_series, person, [another_id])
 
         self.assertEqual(2, len(view.errors))
         self.assertEqual(
@@ -1404,11 +1426,12 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
     def test_sync_error_no_perm_dest_archive(self):
         # A user without upload rights on the destination archive cannot
         # sync packages.
-        derived_series = self._setUpDSD('my-src-name')[0]
+        derived_series, unused, unused2, diff_id = self._setUpDSD(
+            'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
@@ -1426,27 +1449,27 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
     def test_sync_success_perm_component(self):
         # A user with upload rights on the destination component
         # can sync packages.
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name')
         person, _ = self.makePersonWithComponentPermission(
             derived_series.main_archive,
             derived_series.getSourcePackage(
-                sourcepackagename).latest_published_component)
+                sp_name).latest_published_component)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(0, len(view.errors))
 
     def test_sync_error_no_perm_component(self):
         # A user without upload rights on the destination component
         # will get an error when he syncs packages to this component.
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
@@ -1486,13 +1509,13 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
             'derived': '1.0derived1',
             'parent': '1.0-1',
         }
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
 
         # Setup a user with upload rights.
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
-            person, sourcepackagename)
+            person, sp_name)
 
         # The inital state is that 1.0-1 is not in the derived series.
         pubs = derived_series.main_archive.getPublishedSources(
@@ -1503,7 +1526,7 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
         # Now, sync the source from the parent using the form.
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         # The parent's version should now be in the derived series and
         # the notifications displayed:
@@ -1518,13 +1541,13 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
             'parent': '1.0-1',
         }
         missing = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'],
+            derived_series, person, [diff_id],
             view_name='+missingpackages')
 
         self.assertPackageCopied(
@@ -1536,7 +1559,7 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
         versions = {
             'parent': '1.0-1',
             }
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
         # Update destination series status to current and update
         # daterelease.
@@ -1547,9 +1570,9 @@ class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
         set_derived_series_sync_feature_flag(self)
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
-            person, sourcepackagename)
+            person, sp_name)
         self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
         parent_pub = parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
