@@ -15,6 +15,7 @@ import datetime
 
 import pytz
 from zope.component import getUtility
+from zope.interface import Interface
 from zope.publisher.interfaces import implements
 
 from canonical.launchpad import _
@@ -202,12 +203,21 @@ class BugNominationTableRowView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
 
-class BugNominationEditView(LaunchpadView):
+class BugNominationEditView(LaunchpadFormView):
     """Browser view class for approving and declining nominations."""
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+    schema = Interface
+    field_names = []
+
+    @property
+    def title(self):
+        return 'Approve or decline nomination for bug #%d in %s' % (
+            self.context.bug.id, self.context.target.bugtargetdisplayname)
+    label = title
+
+    def initialize(self):
         self.current_bugtask = getUtility(ILaunchBag).bugtask
+        super(BugNominationEditView, self).initialize()
 
     def getFormAction(self):
         """Get the string used as the form action."""
@@ -215,28 +225,23 @@ class BugNominationEditView(LaunchpadView):
             "%s/nominations/%d/+edit-form" % (
                 canonical_url(self.current_bugtask), self.context.id))
 
-    def processNominationDecision(self):
-        """Process the decision made on this nomination."""
-        form = self.request.form
-        approve_nomination = form.get("approve")
-        decline_nomination = form.get("decline")
+    @action(_("Approve"), name="approve")
+    def approve(self, action, data):
+        self.context.approve(self.user)
+        self.request.response.addNotification(
+            "Approved nomination for %s" %
+                self.context.target.bugtargetdisplayname)
 
-        if not (approve_nomination or decline_nomination):
-            return
+    @action(_("Decline"), name="decline")
+    def decline(self, action, data):
+        self.context.decline(self.user)
+        self.request.response.addNotification(
+            "Declined nomination for %s" %
+                self.context.target.bugtargetdisplayname)
 
-        if approve_nomination:
-            self.context.approve(self.user)
-            self.request.response.addNotification(
-                "Approved nomination for %s" %
-                    self.context.target.bugtargetdisplayname)
-        elif decline_nomination:
-            self.context.decline(self.user)
-            self.request.response.addNotification(
-                "Declined nomination for %s" %
-                    self.context.target.bugtargetdisplayname)
-
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).bugtask))
+    @property
+    def next_url(self):
+        return canonical_url(self.current_bugtask)
 
     def shouldShowApproveButton(self):
         """Should the approve button be shown?"""
@@ -245,15 +250,6 @@ class BugNominationEditView(LaunchpadView):
     def shouldShowDeclineButton(self):
         """Should the decline button be shown?"""
         return self.context.isProposed()
-
-    def getCurrentBugTaskURL(self):
-        """Return the URL of the current bugtask."""
-        return canonical_url(getUtility(ILaunchBag).bugtask)
-
-    @property
-    def title(self):
-        return 'Approve or decline nomination for bug #%d in %s' % (
-            self.context.bug.id, self.context.target.bugtargetdisplayname)
 
 
 class BugNominationContextMenu(BugContextMenu):
