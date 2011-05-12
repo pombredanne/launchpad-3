@@ -494,7 +494,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 if (License.OTHER_PROPRIETARY in licenses
                     or [License.DONT_KNOW] == licenses):
                     raise ValueError(
-                        "Projects without a license or have"
+                        "Projects without a license or have "
                         "'Other/Proprietary' may not be approved.")
                 # Approving a license implies it has been reviewed.  Force
                 # `project_reviewed` to be True.
