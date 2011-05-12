@@ -526,7 +526,8 @@ class DistroSeriesDifference(StormBase):
         """See `IDistroSeriesDifference`."""
         return self._getPackageDiffURL(self.parent_package_diff)
 
-    def getPackageSets(self):
+    @property
+    def packagesets(self):
         """See `IDistroSeriesDifference`."""
         if self.derived_series is not None:
             return getUtility(IPackagesetSet).setsIncludingSource(
@@ -534,7 +535,8 @@ class DistroSeriesDifference(StormBase):
         else:
             return []
 
-    def getParentPackageSets(self):
+    @property
+    def parent_packagesets(self):
         """See `IDistroSeriesDifference`."""
         return getUtility(IPackagesetSet).setsIncludingSource(
             self.source_package_name, self.parent_series)

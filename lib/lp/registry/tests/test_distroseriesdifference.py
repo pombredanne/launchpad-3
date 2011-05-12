@@ -408,24 +408,24 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 packagesets.append(ps)
         return packagesets
 
-    def test_getParentPackageSets(self):
+    def test_parent_packagesets(self):
         # All parent's packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.parent_series, 5)
-        parent_packagesets = ds_diff.getParentPackageSets()
+        parent_packagesets = ds_diff.parent_packagesets
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in parent_packagesets])
 
-    def test_getPackageSets(self):
+    def test_packagesets(self):
         # All the packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series, 5)
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
-            [packageset.name for packageset in ds_diff.getPackageSets()])
+            [packageset.name for packageset in ds_diff.packagesets])
 
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
