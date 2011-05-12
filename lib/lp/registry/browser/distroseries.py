@@ -104,7 +104,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
@@ -997,7 +997,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 (difference.source_package_name.name,
                  difference.parent_source_version)
                 for difference in differences]
-            getUtility(IPackageCopyJobSource).create(
+            getUtility(IPlainPackageCopyJobSource).create(
                 source_package_info, source_archive, target_archive,
                 target_distroseries, PackagePublishingPocket.UPDATES)
         self.request.response.addInfoNotification(
