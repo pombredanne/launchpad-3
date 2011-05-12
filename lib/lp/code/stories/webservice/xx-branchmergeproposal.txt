@@ -105,7 +105,6 @@ Our review request is listed in the votes collection.
     reviewer_link: u'http://api.launchpad.dev/devel/~person-name...'
     self_link: u'http://api.launchpad.dev/devel/~...'
 
-
 == Get an existing merge proposal ==
 
 Branch merge proposals can be fetched through the API.

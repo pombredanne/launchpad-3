@@ -39,6 +39,18 @@ the tables "numeric" and "textual," in that order.
     >>> copier = MultiTableCopy('test', ['numeric', 'textual'],
     ...     seconds_per_batch=0.1, minimum_batch_size=1)
 
+Note that the copier will not let us create tables with mixed case names.
+
+    >>> copier.getRawHoldingTableName('Foo')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Unsupported characters in table name per Bug #179821
+
+    >>> copier.getRawHoldingTableName('foo', '-bar')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Unsupported characters in table name per Bug #179821
+
 
 === Ordering ===
 

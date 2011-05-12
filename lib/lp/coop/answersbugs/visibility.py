@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'TestMessageVisibilityMixin',
-    'TestHideMessageControlMixin'
+    'TestHideMessageControlMixin',
     ]
 
 
@@ -66,8 +66,6 @@ class TestHideMessageControlMixin:
         context = self.getContext()
         registry_expert = self.factory.makeRegistryExpert()
         view = self.getView(context=context, user=registry_expert)
-        contents = view.contents
-        file('/home/jc/output.html','w').write(contents)
         hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
         self.assertIsNot(None, hide_link)
 

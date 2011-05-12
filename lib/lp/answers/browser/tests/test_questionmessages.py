@@ -11,7 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.coop.answersbugs.visibility import (
-    TestHideMessageControlMixin,     
+    TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
 from lp.testing import (

@@ -40,7 +40,7 @@ def copy_active_translations(child, transaction, logger):
         return
 
     translation_tables = [
-        'POTemplate', 'TranslationTemplateItem', 'POFile', 'POFileTranslator'
+        'potemplate', 'translationtemplateitem', 'pofile', 'pofiletranslator'
         ]
 
     full_name = "%s_%s" % (child.distribution.name, child.name)
@@ -83,7 +83,7 @@ def copy_active_translations(child, transaction, logger):
     # Copy relevant POTemplates from existing series into a holding table,
     # complete with their original id fields.
     where = 'distroseries = %s AND iscurrent' % quote(parent)
-    copier.extract('POTemplate', [], where)
+    copier.extract('potemplate', [], where)
 
     # Now that we have the data "in private," where nobody else can see it,
     # we're free to play with it.  No risk of locking other processes out of
@@ -98,19 +98,19 @@ def copy_active_translations(child, transaction, logger):
             datecreated =
                 timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone)
-    ''' % (copier.getHoldingTableName('POTemplate'), quote(child)))
+    ''' % (copier.getHoldingTableName('potemplate'), quote(child)))
 
 
     # Copy each TranslationTemplateItem whose template we copied, and let
     # MultiTableCopy replace each potemplate reference with a reference to
     # our copy of the original POTMsgSet's potemplate.
-    copier.extract('TranslationTemplateItem', ['POTemplate'], 'sequence > 0')
+    copier.extract('translationtemplateitem', ['potemplate'], 'sequence > 0')
 
     # Copy POFiles, making them refer to the child's copied POTemplates.
-    copier.extract('POFile', ['POTemplate'])
+    copier.extract('pofile', ['potemplate'])
 
     # Copy POFileTranslators, making them refer to the child's copied POFile.
-    copier.extract('POFileTranslator', ['POFile'])
+    copier.extract('pofiletranslator', ['pofile'])
 
     # Finally, pour the holding tables back into the originals.
     copier.pour(transaction)

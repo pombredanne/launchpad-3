@@ -15,11 +15,10 @@ from pytz import utc
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
 from lp.coop.answersbugs.visibility import (
-    TestHideMessageControlMixin,     
+    TestHideMessageControlMixin,
     TestMessageVisibilityMixin,
     )
 from lp.testing import (
@@ -199,7 +198,7 @@ class TestBugCommentVisibility(
     layer = DatabaseFunctionalLayer
 
     def makeHiddenMessage(self):
-        with celebrity_logged_in('admin') as administrator:
+        with celebrity_logged_in('admin'):
             bug = self.factory.makeBug()
             comment = self.factory.makeBugComment(
                     bug=bug, body=self.comment_text)
