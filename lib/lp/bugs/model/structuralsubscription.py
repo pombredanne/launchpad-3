@@ -272,7 +272,9 @@ class ProductTargetHelper:
         self.target_parent = target.project
         self.target_arguments = {"product": target}
         self.pillar = target
-        self.join = (StructuralSubscription.product == target)
+        self.join = Or(
+            StructuralSubscription.product == target,
+            StructuralSubscription.project == target.project)
 
 
 class ProductSeriesTargetHelper:
