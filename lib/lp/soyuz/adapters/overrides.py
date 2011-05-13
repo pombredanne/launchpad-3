@@ -137,27 +137,15 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
-        store = IStore(SourcePackageName)
-        bulk.load(SourcePackageName, (spn.id for spn in sources))
         default_component = archive.default_component or 'universe'
-        overrides = []
-        for source in sources:
-            overrides.append((
-                store.get(SourcePackageName, source.id), default_component,
-                None))
-        return overrides
+        return [(source, default_component, None) for source in sources]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        store = IStore(BinaryPackageName)
-        bulk.load(BinaryPackageName, (bpn.id for bpn, ign in binaries))
         default_component = archive.default_component or 'universe'
-        overrides = []
-        for binary, das in calculate_target_das(distroseries, binaries):
-            overrides.append((
-                store.get(BinaryPackageName, binary.id), das,
-                default_component, None, None))
-        return overrides
+        return [
+            (binary, das, default_component, None, None)
+            for binary, das in calculate_target_das(distroseries, binaries)]
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
