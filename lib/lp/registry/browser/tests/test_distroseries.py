@@ -728,13 +728,6 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
             principal=get_current_principal(),
             current_request=True)
 
-    def _createChildAndParent(self):
-        parent_series = self.factory.makeDistroSeries(name='lucid')
-        derived_series = self.factory.makeDistroSeries(name='derilucid')
-        self.factory.makeDistroSeriesParent(
-            derived_series=derived_series, parent_series=parent_series)
-        return (derived_series, parent_series)
-
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
         # view simply redirects to the derived series.
@@ -1106,13 +1099,6 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                                                  DistroSeriesDifferenceMixin):
 
     layer = LaunchpadFunctionalLayer
-
-    def _createChildAndParent(self):
-        parent_series = self.factory.makeDistroSeries(name='lucid')
-        derived_series = self.factory.makeDistroSeries(name='derilucid')
-        self.factory.makeDistroSeriesParent(
-            derived_series=derived_series, parent_series=parent_series)
-        return (derived_series, parent_series)
 
     def test_higher_radio_mentions_parent(self):
         # The user is shown an option to display only the blacklisted
@@ -1670,13 +1656,6 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
     """Test the distroseries +uniquepackages view."""
 
     layer = LaunchpadZopelessLayer
-
-    def _createChildAndParent(self):
-        derived_series = self.factory.makeDistroSeries(name='derilucid')
-        parent_series = self.factory.makeDistroSeries(name='lucid')
-        self.factory.makeDistroSeriesParent(
-            derived_series=derived_series, parent_series=parent_series)
-        return (derived_series, parent_series)
 
     def test_uniquepackages_differences(self):
         # The view fetches the differences with type
