@@ -841,7 +841,7 @@ class WindmillTestCase(TestCaseWithFactory):
             person.displayname, naked_person.preferredemail.email, password)
         return self.getClientFor(url, user=user)
 
-    def getClientForAnomymous(self, obj, view_name=None):
+    def getClientForAnonymous(self, obj, view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if isinstance(obj, basestring):
