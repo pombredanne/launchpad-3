@@ -61,6 +61,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns):
         store = IStore(SourcePackagePublishingHistory)
+        def eager_load(rows):
+            bulk.load(Component, (row[2] for row in rows))
+            bulk.load(Section, (row[3] for row in rows))
         already_published = DecoratedResultSet(
             store.find(
                 (SQL("""DISTINCT ON (
@@ -81,12 +84,17 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         SourcePackageRelease.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id)),
-            source_resolve_ids, pre_iter_hook=source_eager_load)
+            id_resolver([
+                (1, SourcePackageName), (2, Component), (3, Section)]),
+            pre_iter_hook=eager_load)
         return list(already_published)
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
         store = IStore(BinaryPackagePublishingHistory)
+        def eager_load(rows):
+            bulk.load(Component, (row[3] for row in rows))
+            bulk.load(Section, (row[4] for row in rows))
         expanded = calculate_target_das(distroseries, binaries)
         candidates = (
             make_package_condition(archive, das, bpn)
@@ -107,8 +115,15 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     active_publishing_status),
                 BinaryPackageRelease.id ==
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
-                Or(*candidates)),
-            binary_resolve_ids, pre_iter_hook=binary_eager_load)
+                Or(*candidates)).order_by(
+                    BinaryPackagePublishingHistory.distroarchseriesID,
+                    BinaryPackageRelease.binarypackagenameID,
+                    Desc(BinaryPackagePublishingHistory.datecreated),
+                    Desc(BinaryPackagePublishingHistory.id)),
+            id_resolver([
+                (1, BinaryPackageName), (2, DistroArchSeries),
+                (3, Component), (4, Section), (5, None)]),
+            pre_iter_hook=eager_load)
         return list(already_published)
 
 
@@ -119,34 +134,28 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     returns the defaults.
     """
     
-    def __init__(self):
-        self.default_component = 'universe'
-
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
         store = IStore(SourcePackageName)
-        store.find(SourcePackageName.id.is_in(spn.id for spn in sources))
-        if archive.default_component:
-            self.default_component = archive.default_component
+        bulk.load(SourcePackageName, (spn.id for spn in sources))
+        default_component = archive.default_component or 'universe'
         overrides = []
         for source in sources:
             overrides.append((
-                store.get(SourcePackageName, source.id),
-                self.default_component, None))
+                store.get(SourcePackageName, source.id), default_component,
+                None))
         return overrides
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
         store = IStore(BinaryPackageName)
-        store.find(
-            BinaryPackageName.id.is_in(bpn.id for bpn, ign in binaries))
-        if archive.default_component:
-            self.default_component = archive.default_component
+        bulk.load(BinaryPackageName, (bpn.id for bpn, ign in binaries))
+        default_component = archive.default_component or 'universe'
         overrides = []
         for binary, das in calculate_target_das(distroseries, binaries):
             overrides.append((
                 store.get(BinaryPackageName, binary.id), das,
-                self.default_component, None, None))
+                default_component, None, None))
         return overrides
 
 
@@ -188,8 +197,9 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
 
 
 def calculate_target_das(distroseries, binaries):
-    archs = list(distroseries.enabled_architectures)
-    arch_map = dict((arch.architecturetag, arch) for arch in archs)
+    arch_map = dict(
+        (arch.architecturetag, arch)
+        for arch in distroseries.enabled_architectures)
 
     with_das = []
     for bpn, archtag in binaries:
@@ -204,30 +214,13 @@ def make_package_condition(archive, das, bpn):
     return And(
         BinaryPackagePublishingHistory.archiveID == archive.id,
         BinaryPackagePublishingHistory.distroarchseriesID == das.id,
-        BinaryPackageRelease.binarypackagenameID ==
-            bpn.id)
+        BinaryPackageRelease.binarypackagenameID == bpn.id)
 
 
-def source_eager_load(rows):
-    bulk.load(Component, (row[2] for row in rows))
-    bulk.load(Section, (row[3] for row in rows))
-
-
-def binary_eager_load(rows):
-    bulk.load(Component, (row[3] for row in rows))
-    bulk.load(Section, (row[4] for row in rows))
-
-
-def source_resolve_ids(row):
-    store = IStore(SourcePackagePublishingHistory)
-    return (
-        store.get(SourcePackageName, row[1]), store.get(Component, row[2]),
-        store.get(Section, row[3]))
-
-
-def binary_resolve_ids(row):
-    store = IStore(BinaryPackagePublishingHistory)
-    return (
-        store.get(BinaryPackageName, row[1]),
-        store.get(DistroArchSeries, row[2]),
-        store.get(Component, row[3]), store.get(Section, row[4]), row[5])
+def id_resolver(mapping):
+    def _resolve(row):
+        store = IStore(SourcePackagePublishingHistory)
+        return tuple(
+            (row[index] if cls is None else store.get(cls, row[index]))
+            for index, cls in mapping)
+    return _resolve
