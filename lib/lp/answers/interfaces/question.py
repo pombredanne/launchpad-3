@@ -73,11 +73,12 @@ class IQuestion(IHasOwner):
         title=_('Summary'), required=True, description=_(
         "A one-line summary of the issue or problem.")),
         as_of="devel")
-    description = Text(
+    description = exported(Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead."))
+        "you take, what happens, and what you think should happen instead.")),
+        as_of="devel")
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True),
@@ -107,31 +108,37 @@ class IQuestion(IHasOwner):
         vocabulary='ValidPersonOrTeam'),
         as_of="devel",
         readonly=True)
+    # XXX sinzui 2011-05-13: export
     answer = Object(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
             schema=IQuestionMessage)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    datedue = Datetime(
+    datecreated = exported(Datetime(
+        title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created', as_of="devel")
+    datedue = exported(Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_(
-            "The date by which we should have resolved this question."))
-    datelastquery = Datetime(
+            "The date by which we should have resolved this question.")),
+        exported_as='date_due', as_of="devel")
+    datelastquery = exported(Datetime(
         title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
-        "customer (owner)."))
-    datelastresponse = Datetime(
+        "customer (owner).")),
+       exported_as='date_last_query',  as_of="devel")
+    datelastresponse = exported(Datetime(
         title=_("Date last Responded"),
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
-        "datelastresponse tells us in whose court the ball is."))
-    date_solved = Datetime(title=_("Date Answered"), required=False,
+        "datelastresponse tells us in whose court the ball is.")),
+        exported_as='date_last_response', as_of="devel")
+    date_solved = exported(Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the question owner confirmed that the "
-            "question is Solved."))
+            "question is Solved.")),
+        exported_as='date_solved', as_of="devel")
     product = Choice(
         title=_('Upstream Project'), required=False,
         vocabulary='Product',
@@ -153,7 +160,6 @@ class IQuestion(IHasOwner):
     target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
         description=_('The distribution, source package, or product the '
                       'question pertains to.'))
-
     faq = Object(
         title=_('Linked FAQ'),
         description=_('The FAQ document containing the long answer to this '

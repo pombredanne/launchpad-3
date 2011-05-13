@@ -101,8 +101,8 @@ Anyone can retrieve the collection of answer contacts for a language.
     http://.../~contact
 
 
-Questions
----------
+Question collections
+--------------------
 
 Anyone can retrieve a question from an `IQuestionTarget`.
 
@@ -138,3 +138,28 @@ title.
     ...     print question['title']
     Q 1 great
     Q 2 greater
+
+
+A question
+----------
+
+A question has many attributes about the details of the question, its state,
+the people involved, and the dates of important events.
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> pprint_entry(question_1)
+    answerer_link: None
+    assignee_link: None
+    date_created: u'20...+00:00'
+    date_due: None
+    date_last_query: u'20...+00:00'
+    date_last_response: None
+    date_solved: None
+    description: u'description'
+    id: ...
+    owner_link: u'http://api.launchpad.dev/devel/~asker'
+    resource_type_link: u'http://api.launchpad.dev/devel/#question'
+    self_link: u'http://api.launchpad.dev/devel/my-project/+question/...'
+    status: u'Open'
+    title: u'Q 1 great'
+    web_link: u'http://answers.launchpad.dev/my-project/+question/...'
