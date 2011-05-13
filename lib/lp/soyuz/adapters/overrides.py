@@ -25,6 +25,7 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -40,18 +41,25 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 class BaseOverridePolicy:
 
-    def calculateOverrides(self, archive, distroseries, pocket, sources=None,
-                           binaries=None):
-        raise NotImplementedError("Must be implemented by sub-class.")
+    def calculateSourceOverrides(self, archive, distroseries, pocket,
+                                 sources):
+        raise NotImplementedError()
+
+    def calculateBinaryOverrides(self, archive, distroseries, pocket,
+                                 binaries):
+        raise NotImplementedError()
 
 
 class FromExistingOverridePolicy(BaseOverridePolicy):
-    """Override policy that returns the SPN, component and section for
-    the latest published source publication, or the BPN, DAS, component,
-    section and priority for the latest published binary publication.
+    """Override policy that only searches for existing publications.
+    
+    Override policy that returns the SourcePackageName, component and
+    section for the latest published source publication, or the
+    BinaryPackageName, DistroArchSeries, component, section and priority
+    for the latest published binary publication.
     """
 
-    def findSourceOverrides(self, archive, distroseries, pocket, spns):
+    def calculateSourceOverrides(self, archive, distroseries, pocket, spns):
         store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
@@ -76,7 +84,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             source_resolve_ids, pre_iter_hook=source_eager_load)
         return list(already_published)
 
-    def findBinaryOverrides(self, archive, distroseries, pocket, binaries):
+    def calculateBinaryOverrides(self, archive, distroseries, pocket,
+                                 binaries):
         store = IStore(BinaryPackagePublishingHistory)
         expanded = calculate_target_das(distroseries, binaries)
         candidates = (
@@ -102,99 +111,80 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             binary_resolve_ids, pre_iter_hook=binary_eager_load)
         return list(already_published)
 
-    def calculateOverrides(self, archive, distroseries, pocket,
-                             sources=None, binaries=None):
-        if sources is not None and binaries is not None:
-            raise AssertionError(
-                "Can not check for both source and binary overrides "
-                "together.")
-        if sources:
-            return self.findSourceOverrides(
-                archive, distroseries, pocket, sources)
-        if binaries:
-            return self.findBinaryOverrides(
-                archive, distroseries, pocket, binaries)
-
 
 class UnknownOverridePolicy(BaseOverridePolicy):
-    """Override policy that assumes everything passed in doesn't exist, so
+    """Override policy that returns defaults.
+    
+    Override policy that assumes everything passed in doesn't exist, so
     returns the defaults.
     """
     
     def __init__(self):
         self.default_component = 'universe'
 
-    def calculateOverrides(self, archive, distroseries, pocket,
-                             sources=None, binaries=None):
-        if sources is not None and binaries is not None:
-            raise AssertionError(
-                "Can not check for both source and binary overrides "
-                "together.")
-        if sources:
-            store = IStore(SourcePackageName)
-            store.find(SourcePackageName.id.is_in(spn.id for spn in sources))
-            if archive.default_component:
-                self.default_component = archive.default_component
-            overrides = []
-            for source in sources:
-                overrides.append((
-                    store.get(SourcePackageName, source.id),
-                    self.default_component, None))
-            return overrides
-        if binaries:
-            store = IStore(BinaryPackageName)
-            store.find(
-                BinaryPackageName.id.is_in(bpn.id for bpn, ign in binaries))
-            if archive.default_component:
-                self.default_component = archive.default_component
-            overrides = []
-            for binary, das in calculate_target_das(distroseries, binaries):
-                overrides.append((
-                    store.get(BinaryPackageName, binary.id), das,
-                    self.default_component, None, None))
-            return overrides
+    def calculateSourceOverrides(self, archive, distroseries, pocket,
+                                 sources):
+        store = IStore(SourcePackageName)
+        store.find(SourcePackageName.id.is_in(spn.id for spn in sources))
+        if archive.default_component:
+            self.default_component = archive.default_component
+        overrides = []
+        for source in sources:
+            overrides.append((
+                store.get(SourcePackageName, source.id),
+                self.default_component, None))
+        return overrides
+
+    def calculateBinaryOverrides(self, archive, distroseries, pocket,
+                                 binaries):
+        store = IStore(BinaryPackageName)
+        store.find(
+            BinaryPackageName.id.is_in(bpn.id for bpn, ign in binaries))
+        if archive.default_component:
+            self.default_component = archive.default_component
+        overrides = []
+        for binary, das in calculate_target_das(distroseries, binaries):
+            overrides.append((
+                store.get(BinaryPackageName, binary.id), das,
+                self.default_component, None, None))
+        return overrides
 
 
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
                            UnknownOverridePolicy):
-    """An override policy that incorporates both the from existing policy 
+    """Override policy for Ubuntu.
+    
+    An override policy that incorporates both the from existing policy 
     and the unknown policy.
     """
 
-    def sourceOverrides(self, archive, distroseries, pocket, sources=None):
+    def calculateSourceOverrides(self, archive, distroseries, pocket,
+                                 sources):
         total = set(sources)
-        overrides = FromExistingOverridePolicy.calculateOverrides(
-            self, archive, distroseries, pocket, sources=sources)
+        overrides = FromExistingOverridePolicy.calculateSourceOverrides(
+            self, archive, distroseries, pocket, sources)
         existing = set(override[0] for override in overrides)
         missing = total.difference(existing)
         if missing:
-            unknown_overrides = UnknownOverridePolicy.calculateOverrides(
-                self, archive, distroseries, pocket, sources=missing)
-            overrides.extend(unknown_overrides)
+            unknown = UnknownOverridePolicy.calculateSourceOverrides(
+                self, archive, distroseries, pocket, missing)
+            overrides.extend(unknown)
         return overrides
 
-    def binaryOverrides(self, archive, distroseries, pocket, binaries=None):
+    def calculateBinaryOverrides(self, archive, distroseries, pocket,
+                                 binaries):
         total = set(binaries)
-        overrides = FromExistingOverridePolicy.calculateOverrides(
-            self, archive, distroseries, pocket, binaries=binaries)
+        overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
+            self, archive, distroseries, pocket, binaries)
         existing = set((
             overide[0], overide[1].architecturetag)
                 for overide in overrides)
         missing = total.difference(existing)
         if missing:
-            unknown_overrides = UnknownOverridePolicy.calculateOverrides(
-                self, archive, distroseries, pocket, binaries=missing)
-            overrides.extend(unknown_overrides)
+            unknown = UnknownOverridePolicy.calculateBinaryOverrides(
+                self, archive, distroseries, pocket, missing)
+            overrides.extend(unknown)
         return overrides
-
-    def calculateOverrides(self, archive, distroseries, pocket,
-                             sources=None, binaries=None):
-        if sources:
-            return self.sourceOverrides(
-                archive, distroseries, pocket, sources=sources)
-        if binaries:
-            return self.binaryOverrides(
-                archive, distroseries, pocket, binaries=binaries)
 
 
 def calculate_target_das(distroseries, binaries):
@@ -219,17 +209,13 @@ def make_package_condition(archive, das, bpn):
 
 
 def source_eager_load(rows):
-    IStore(Component).find(
-        Component, Component.id.is_in(row[2] for row in rows))
-    IStore(Section).find(
-        Section, Section.id.is_in(row[3] for row in rows))
+    bulk.load(Component, (row[2] for row in rows))
+    bulk.load(Section, (row[3] for row in rows))
 
 
 def binary_eager_load(rows):
-    IStore(Component).find(
-        Component, Component.id.is_in(row[3] for row in rows))
-    IStore(Section).find(
-        Section, Section.id.is_in(row[4] for row in rows))
+    bulk.load(Component, (row[3] for row in rows))
+    bulk.load(Section, (row[4] for row in rows))
 
 
 def source_resolve_ids(row):
