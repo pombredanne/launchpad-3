@@ -173,16 +173,6 @@ class DistroSeriesVersionField(UniqueField):
                 "'%s': %s" % (version, error))
 
 
-class IDistroSeriesEditRestricted(Interface):
-    """IDistroSeries properties which require launchpad.Edit."""
-
-    @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(
-        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
-    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
-        """Create a new milestone for this DistroSeries."""
-
-
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
