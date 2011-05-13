@@ -1046,6 +1046,7 @@ COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing th
 COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
 COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
 COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
+COMMENT ON COLUMN QuestionMessage.owner IS 'Denormalised owner from Message, used for efficient queries on commentors.';
 
 -- QuestionReopening
 
@@ -1128,6 +1129,16 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+
+
+-- PackageCopyJob
+
+COMMENT ON TABLE PackageCopyJob IS 'Contains references to jobs for copying packages between archives.';
+COMMENT ON COLUMN PackageCopyJob.source_archive IS 'The archive from which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_archive IS 'The archive to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_distroseries IS 'The distroseries to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.job_type IS 'The type of job';
+COMMENT ON COLUMN PackageCopyJob.json_data IS 'A JSON struct containing data for the job.';
 
 
 -- PackageDiff

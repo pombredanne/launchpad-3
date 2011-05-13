@@ -10,25 +10,19 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
-    "IPackageCopyJob",
-    "IPackageCopyJobSource",
 ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
-    Bool,
     Int,
-    List,
     Object,
-    Tuple,
     )
 
 from canonical.launchpad import _
@@ -39,7 +33,6 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.soyuz.interfaces.archive import IArchive
 
 
 class IDistributionJob(Interface):
@@ -100,79 +93,8 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
         """
 
 
-class IPackageCopyJobSource(IJobSource):
-    """An interface for acquiring IIPackageCopyJobs."""
-
-    def create(cls, source_archive, source_packages,
-               target_archive, target_distroseries, target_pocket,
-               include_binaries=False):
-        """Create a new sync package job.
-
-        :param source_archive: The `IArchive` in which `source_packages` are
-            found.
-        :param source_packages: This is an iterable of `(source_package_name,
-            version)` tuples, where both `source_package_name` and `version`
-            are strings.
-        :param target_archive: The `IArchive` to which to copy the packages.
-        :param target_distroseries: The `IDistroSeries` to which to copy the
-            packages.
-        :param target_pocket: The pocket into which to copy the packages. Must
-            be a member of `PackagePublishingPocket`.
-        :param include_binaries: See `do_copy`.
-        """
-
-    def getActiveJobs(archive):
-        """Retrieve all active sync jobs for an archive."""
-
-
 class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
-
-
-class IPackageCopyJob(IRunnableJob):
-    """A Job that synchronizes packages."""
-
-    source_packages = List(
-        title=_("Source Packages"),
-        value_type=Tuple(min_length=3, max_length=3),
-        required=True, readonly=True,
-        )
-
-    source_archive_id = Int(
-        title=_('Source Archive ID'), required=True, readonly=True,
-        )
-
-    source_archive = Reference(
-        schema=IArchive, title=_('Source Archive'),
-        required=True, readonly=True,
-        )
-
-    target_archive_id = Int(
-        title=_('Target Archive ID'), required=True, readonly=True,
-        )
-
-    target_archive = Reference(
-        schema=IArchive, title=_('Target Archive'),
-        required=True, readonly=True,
-        )
-
-    target_distroseries = Reference(
-        schema=IDistroSeries, title=_('Target DistroSeries.'),
-        required=True, readonly=True)
-
-    target_pocket = Int(
-        title=_('Target package publishing pocket'), required=True,
-        readonly=True,
-        )
-
-    include_binaries = Bool(
-        title=_("Copy binaries"),
-        required=False, readonly=True,
-        )
-
-
-class IDistroSeriesDifferenceJob(IRunnableJob):
-        """A Job that performs actions related to DSDs."""
 
 
 class IDistroSeriesDifferenceJobSource(IJobSource):
@@ -187,3 +109,7 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
             published in `distroseries`.
         :param pocket: The `PackagePublishingPocket` for the publication.
         """
+
+
+class IDistroSeriesDifferenceJob(IRunnableJob):
+        """A Job that performs actions related to DSDs."""

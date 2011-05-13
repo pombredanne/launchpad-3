@@ -26,6 +26,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_entry,
     )
 
 from canonical.launchpad import _
@@ -95,6 +96,7 @@ class IQuestionSet(IQuestionCollection):
         question_id=Int(
             title=_('The id of the question to get'),
             required=True))
+    @operation_returns_entry(Interface)
     @export_read_operation()
     @export_operation_as("getByID")
     @operation_for_version('devel')

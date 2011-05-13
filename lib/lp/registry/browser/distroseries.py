@@ -104,10 +104,19 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
     )
+
+# DistroSeries statuses that benefit from mass package upgrade support.
+UPGRADABLE_SERIES_STATUSES = [
+    SeriesStatus.FUTURE,
+    SeriesStatus.EXPERIMENTAL,
+    SeriesStatus.DEVELOPMENT,
+    ]
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -786,10 +795,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         series_title = self.context.displayname
 
         # If the series is released, sync packages in the "updates" pocket.
-        if self.context.datereleased is None:
-            destination_pocket = PackagePublishingPocket.RELEASE
-        else:
+        if self.context.supported:
             destination_pocket = PackagePublishingPocket.UPDATES
+        else:
+            destination_pocket = PackagePublishingPocket.RELEASE
 
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
@@ -851,30 +860,28 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
         if self.specified_package_type == NON_BLACKLISTED:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
             child_version_higher = False
         elif self.specified_package_type == BLACKLISTED:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = False
         elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
-            status=(
+            status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = True
         elif self.specified_package_type == RESOLVED:
-            status=DistroSeriesDifferenceStatus.RESOLVED
+            status = DistroSeriesDifferenceStatus.RESOLVED
             child_version_higher = False
         else:
             raise AssertionError('specified_package_type unknown')
 
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                difference_type = self.differences_type,
+                self.context, difference_type=self.differences_type,
                 source_package_name_filter=self.specified_name_filter,
-                status=status,
-                child_version_higher=child_version_higher)
+                status=status, child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -892,7 +899,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             differences = getUtility(
                 IDistroSeriesDifferenceSource).getForDistroSeries(
                     self.context,
-                    difference_type = self.differences_type,
+                    difference_type=self.differences_type,
                     status=(
                         DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
@@ -959,6 +966,58 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             condition='canPerformSync')
     def sync_sources(self, action, data):
         self._sync_sources(action, data)
+
+    def getUpgrades(self):
+        """Find straightforward package upgrades.
+
+        These are updates for packages that this distroseries shares
+        with a parent series, for which there have been updates in the
+        parent, and which do not have any changes in this series that
+        might complicate a sync.
+
+        :return: A result set of `DistroSeriesDifference`s.
+        """
+        return getUtility(IDistroSeriesDifferenceSource).getSimpleUpgrades(
+            self.context)
+
+    @action(_("Upgrade Packages"), name="upgrade", condition='canUpgrade')
+    def upgrade(self, action, data):
+        """Request synchronization of straightforward package upgrades."""
+        self.requestUpgrades()
+
+    def requestUpgrades(self):
+        """Request sync of packages that can be easily upgraded."""
+        target_distroseries = self.context
+        target_archive = target_distroseries.main_archive
+        differences_by_archive = (
+            getUtility(IDistroSeriesDifferenceSource)
+                .collateDifferencesByParentArchive(self.getUpgrades()))
+        for source_archive, differences in differences_by_archive.iteritems():
+            source_package_info = [
+                (difference.source_package_name.name,
+                 difference.parent_source_version)
+                for difference in differences]
+            getUtility(IPlainPackageCopyJobSource).create(
+                source_package_info, source_archive, target_archive,
+                target_distroseries, PackagePublishingPocket.UPDATES)
+        self.request.response.addInfoNotification(
+            (u"Upgrades of {context.displayname} packages have been "
+             u"requested. Please give Launchpad some time to complete "
+             u"these.").format(context=self.context))
+
+    def canUpgrade(self, action=None):
+        """Should the form offer a packages upgrade?"""
+        if getFeatureFlag("soyuz.derived-series-sync.enabled") is None:
+            return False
+        elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
+            # A feature freeze precludes blanket updates.
+            return False
+        elif self.getUpgrades().is_empty():
+            # There are no simple updates to perform.
+            return False
+        else:
+            queue = PackageUploadQueue(self.context, None)
+            return check_permission("launchpad.Edit", queue)
 
 
 class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
