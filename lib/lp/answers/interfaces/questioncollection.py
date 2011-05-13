@@ -34,6 +34,10 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 
 from canonical.launchpad import _
 from lp.answers.enums import (
@@ -53,20 +57,20 @@ class IQuestionCollection(Interface):
                         language=None, sort=None):
         """Return the questions from the collection matching search criteria.
 
-        :search_text: A string that is matched against the question
-        title and description. If None, the search_text is not included as
-        a filter criteria.
+        :param search_text: A string that is matched against the question
+            title and description. If None, the search_text is not included as
+            a filter criteria.
 
-        :status: A sequence of QuestionStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
+        :param status: A sequence of QuestionStatus Items. If None or an empty
+            sequence, the status is not included as a filter criteria.
 
-        :language: An ILanguage or a sequence of ILanguage objects to match
-        against the question's language. If None or an empty sequence,
-        the language is not included as a filter criteria.
+        :parma language: An ILanguage or a sequence of ILanguage objects to
+            match against the question's language. If None or an empty
+            sequence, the language is not included as a filter criteria.
 
-        :sort: An attribute of QuestionSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by
-        RELEVANCY, otherwise results are sorted NEWEST_FIRST.
+        :parma sort: An attribute of QuestionSort. If None, a default value is
+            used. When there is a search_text value, the default is to sort by
+            RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
 
     def getQuestionLanguages():
@@ -80,8 +84,6 @@ class ISearchableByQuestionOwner(IQuestionCollection):
     @operation_parameters(
         search_text=TextLine(
             title=_('Search text'),
-            description=_(
-                "Optional text that is in the text of the questions."),
             required=False),
 #        status=List(
 #            title=_('Status'),
@@ -90,22 +92,17 @@ class ISearchableByQuestionOwner(IQuestionCollection):
 #            value_type=Choice(vocabulary=QuestionStatus), required=False),
         language=List(
             title=_('Language'),
-            description=_(
-                'An optional list of languages the questions are in.'),
-            value_type=Choice(vocabulary='Language'), required=False),
-#        sort=Choice(
-#            title=_('Sort'),
-#            description=_('The optional method to sort the questions by'),
-#            vocabulary=QuestionSort, required=False),
+            value_type=ReferenceChoice(vocabulary='Language'),
+            required=False),
         owner=PublicPersonChoice(
             title=_('Owner'),
-            description=_('The optional user that asked the question.'),
             vocabulary='ValidPerson', required=False),
         needs_attention_from=PublicPersonChoice(
             title=_('Needs attentions from'),
-            description=_(
-                'The optional user with questions that need attention.'),
-            vocabulary='ValidPerson', required=False))
+            vocabulary='ValidPerson', required=False),
+        sort=Choice(
+            title=_('Sort'),
+            vocabulary=QuestionSort, required=False))
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     @operation_for_version('devel')
@@ -118,13 +115,23 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         See `IQuestionCollection` for the description of the standard search
         parameters.
 
+        :param search_text: A string that is matched against the question
+            title and description. If None, the search_text is not included as
+            a filter criteria.
+        :param status: A sequence of QuestionStatus Items. If None or an empty
+            sequence, the status is not included as a filter criteria.
+        :param language: An ILanguage or a sequence of ILanguage objects to
+            match against the question's language. If None or an empty
+            sequence, the language is not included as a filter criteria.
         :param owner: The IPerson that created the question.
-
         :param needs_attention_from: Selects questions that need attention
             from an IPerson. These are the questions in the NEEDSINFO or
             ANSWERED state owned by the person. The questions not owned by the
             person but on which the person requested more information or gave
             an answer and that are back in the OPEN state are also included.
+        :param sort: An attribute of QuestionSort. If None, a default value is
+            used. When there is a search_text value, the default is to sort by
+            RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
 
 

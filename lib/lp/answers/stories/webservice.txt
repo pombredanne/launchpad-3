@@ -118,7 +118,10 @@ Anyone can retrieve a collection of questions from an `IQuestionTarget` by
 searching for questions that match the search criteria.
 
     >>> questions = contact_webservice.named_get(
-    ...     project['self_link'], 'searchQuestions', search_text='q great',
+    ...     project['self_link'], 'searchQuestions',
+    ...     search_text='q great',
+    ...     language=[english['self_link']],
+    ...     sort='oldest first',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
     ...     print question['title']
@@ -130,8 +133,7 @@ title.
 
     >>> questions = contact_webservice.named_get(
     ...     project['self_link'], 'findSimilarQuestions',
-    ...     phrase='q great', language=[english['self_link']],
-    ...     needs_attention_from=contact['self_link'],
+    ...     phrase='q great',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
     ...     print question['title']
