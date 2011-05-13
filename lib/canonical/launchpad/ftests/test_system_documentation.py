@@ -205,9 +205,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'message.txt': LayeredDocFileSuite(
-        '../doc/message.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer),
     'close-account.txt': LayeredDocFileSuite(
         '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer),
