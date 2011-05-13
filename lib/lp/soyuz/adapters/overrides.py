@@ -84,8 +84,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                         SourcePackageRelease.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
                         Desc(SourcePackagePublishingHistory.id)),
-            id_resolver([
-                (1, SourcePackageName), (2, Component), (3, Section)]),
+            id_resolver(
+                (SourcePackageName, Component, Section), slice(1, None)),
             pre_iter_hook=eager_load)
         return list(already_published)
 
@@ -120,9 +120,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     BinaryPackageRelease.binarypackagenameID,
                     Desc(BinaryPackagePublishingHistory.datecreated),
                     Desc(BinaryPackagePublishingHistory.id)),
-            id_resolver([
-                (1, BinaryPackageName), (2, DistroArchSeries),
-                (3, Component), (4, Section), (5, None)]),
+            id_resolver(
+                (BinaryPackageName, DistroArchSeries, Component, Section,
+                None),
+                slice(1, None)),
             pre_iter_hook=eager_load)
         return list(already_published)
 
@@ -217,10 +218,10 @@ def make_package_condition(archive, das, bpn):
         BinaryPackageRelease.binarypackagenameID == bpn.id)
 
 
-def id_resolver(mapping):
+def id_resolver(lookups, slice):
     def _resolve(row):
         store = IStore(SourcePackagePublishingHistory)
         return tuple(
-            (row[index] if cls is None else store.get(cls, row[index]))
-            for index, cls in mapping)
+            (value if cls is None else store.get(cls, value))
+            for value, cls in zip(row[slice], lookups))
     return _resolve
