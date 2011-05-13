@@ -198,6 +198,7 @@ class TestBugCommentVisibility(
     layer = DatabaseFunctionalLayer
 
     def makeHiddenMessage(self):
+        """Required by the mixin."""
         with celebrity_logged_in('admin'):
             bug = self.factory.makeBug()
             comment = self.factory.makeBugComment(
@@ -206,6 +207,7 @@ class TestBugCommentVisibility(
         return bug
 
     def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
         view = self.getViewBrowser(
             context=context.default_bugtask,
             user=user,
@@ -219,6 +221,7 @@ class TestBugHideCommentControls(
     layer = DatabaseFunctionalLayer
 
     def getContext(self):
+        """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         bug = self.factory.makeBug()
         with person_logged_in(administrator):
@@ -226,6 +229,7 @@ class TestBugHideCommentControls(
         return bug
 
     def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
         view = self.getViewBrowser(
             context=context.default_bugtask,
             user=user,

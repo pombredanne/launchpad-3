@@ -1,13 +1,13 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for the bugcomment module."""
+"""Provides mixins for visibility tests in messages."""
 
 __metaclass__ = type
 
 __all__ = [
-    'TestMessageVisibilityMixin',
     'TestHideMessageControlMixin',
+    'TestMessageVisibilityMixin',
     ]
 
 
@@ -19,10 +19,20 @@ class TestMessageVisibilityMixin:
     comment_text = "You can't see me."
 
     def makeHiddenMessage(self):
-        pass
+        """To be overwridden by subclasses.
+
+        This method must create and return a message bearing object
+        (e.g. bug or question) with a hidden message/comment.
+        """
+        raise NotImplementedError
 
     def getView(self, context, user=None, no_login=False):
-        pass
+        """To be overwridden by subclasses.
+
+        This method returns a view object rendered on the context
+        obtained from makeHiddenMessage.
+        """
+        raise NotImplementedError
 
     def test_admin_can_see_comments(self):
         context = self.makeHiddenMessage()
@@ -50,10 +60,20 @@ class TestMessageVisibilityMixin:
 class TestHideMessageControlMixin:
 
     def getContext(self):
-        pass
+        """To be overwridden by subclasses.
+
+        This method must create and return a message bearing object
+        (e.g. bug or question) with a hidden message/comment.
+        """
+        raise NotImplementedError
 
     def getView(self, context, user=None, no_login=False):
-        pass
+        """To be overwridden by subclasses.
+
+        This method returns a view object rendered on the context
+        obtained from makeHiddenMessage.
+        """
+        raise NotImplementedError
 
     def test_admin_sees_hide_control(self):
         context = self.getContext()

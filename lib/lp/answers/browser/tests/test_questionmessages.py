@@ -26,6 +26,7 @@ class TestQuestionMessageVisibility(
     layer = DatabaseFunctionalLayer
 
     def makeHiddenMessage(self):
+        """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         with person_logged_in(administrator):
             question = self.factory.makeQuestion()
@@ -34,6 +35,7 @@ class TestQuestionMessageVisibility(
         return question
 
     def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
         view = self.getViewBrowser(
             context=context,
             user=user,
@@ -47,6 +49,7 @@ class TestHideQuestionMessageControls(
     layer = DatabaseFunctionalLayer
 
     def getContext(self):
+        """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()
         body = self.factory.getUniqueString()
@@ -55,6 +58,7 @@ class TestHideQuestionMessageControls(
         return question
 
     def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
         view = self.getViewBrowser(
             context=context,
             user=user,
