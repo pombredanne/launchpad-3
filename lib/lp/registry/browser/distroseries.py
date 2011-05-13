@@ -353,7 +353,7 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DerivedDistroSeriesMixin():
+class DerivedDistroSeriesMixin:
 
     @cachedproperty
     def has_unique_parent(self):
@@ -370,14 +370,15 @@ class DerivedDistroSeriesMixin():
     def number_of_parents(self):
         return len(self.context.getParentSeries())
 
-    @cachedproperty
-    def parent_name(self):
+    def getParentName(self, multiple_parent_default=None):
         if self.has_unique_parent:
-            parent_name = ("parent series '%s'" %
+            return ("parent series '%s'" %
                 self.unique_parent.displayname)
         else:
-            parent_name = 'a parent series'
-        return parent_name
+            if multiple_parent_default is not None:
+                return multiple_parent_default
+            else:
+                return 'a parent series'
 
 
 class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
@@ -957,19 +958,15 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             'target="help">Read more about syncing from a parent series'
             '</a>).',
             self.context.displayname,
-            self.parent_name)
+            self.getParentName())
 
     @property
     def label(self):
-        if self.has_unique_parent:
-            parent_name = self.parent_name
-        else:
-            parent_name = 'parent series'
         return (
             "Source package differences between '%s' and"
             " %s" % (
                 self.context.displayname,
-                parent_name,
+                self.getParentName(multiple_parent_default='parent series'),
                 ))
 
     @action(_("Update"), name="update")
@@ -1058,9 +1055,9 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def explanation(self):
         return structured(
             "Packages that are listed here are those that have been added to "
-            "the specific set of packages in %s that were used to create %s. "
+            "the specific packages in %s that were used to create %s. "
             "They are listed here so you can consider including them in %s.",
-            self.parent_name,
+            self.getParentName(),
             self.context.displayname,
             self.context.displayname)
 
@@ -1068,7 +1065,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def label(self):
         return (
             "Packages in %s but not in '%s'" % (
-                self.parent_name,
+                self.getParentName(),
                 self.context.displayname,
                 ))
 
@@ -1103,14 +1100,14 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
             "Packages that are listed here are those that have been added to "
             "%s but are not yet part of %s.",
             self.context.displayname,
-            self.parent_name)
+            self.getParentName())
 
     @property
     def label(self):
         return (
             "Packages in '%s' but not in %s" % (
                 self.context.displayname,
-                self.parent_name,
+                self.getParentName(),
                 ))
 
     @action(_("Update"), name="update")
