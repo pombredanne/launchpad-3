@@ -526,9 +526,9 @@ raises a LookupError, but Message.fromEmail() tries parsing them as latin-1,
 which often works.
 
     >>> import os.path
-    >>> msg_path = os.path.join(
-    ...     os.path.dirname(__file__),
-    ...     '../mail/ftests/emails/x-unknown-encoding.txt')
+    >>> mail_path = ('../../../../canonical/launchpad/mail/'
+    ...              'ftests/emails/x-unknown-encoding.txt')
+    >>> msg_path = os.path.join(os.path.dirname(__file__), mail_path)
     >>> raw_msg = open(msg_path).read()
     >>> print raw_msg
     MIME-Version: 1.0
