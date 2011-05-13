@@ -560,14 +560,14 @@ class TestDistroSeriesLocalDifferences(
             'Parent packagesets')
 
 
-class TestDistroSeriesLocalDifferencesPerformance(DistroSeriesDifferenceMixin,
-                                                  TestCaseWithFactory):
+class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
+                                           DistroSeriesDifferenceMixin):
     """Test the distroseries +localpackagediffs page's performance."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDistroSeriesLocalDifferencesPerformance,
+        super(TestDistroSeriesLocalDiffPerformance,
              self).setUp('foo.bar@canonical.com')
         set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
@@ -696,16 +696,9 @@ class TestDistroSeriesLocalDifferencesPerformance(DistroSeriesDifferenceMixin,
             derived_series=derived_series)
         self._assertQueryCount(derived_series)
 
-    def test_queries_multiple_parents(self):
-        dsp = self.factory.makeDistroSeriesParent()
-        derived_series = dsp.derived_series
-        self.factory.makeDistroSeriesParent(
-            derived_series=derived_series)
-        self._assertQueryCount(derived_series)
 
-
-class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
-                                               TestCaseWithFactory):
+class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
+                                               DistroSeriesDifferenceMixin):
     """Test the distroseries +localpackagediffs view."""
 
     layer = LaunchpadFunctionalLayer
@@ -765,19 +758,6 @@ class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
         self.assertEqual(
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
-            view.label)
-
-    def test_label_multiple_parents(self):
-        # If the series has multiple parents, the view label mentions
-        # the generic term 'parent series'.
-        derived_series, parent_series = self._createChildAndParents()
-
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
-
-        self.assertEqual(
-            "Source package differences between 'Derilucid' and "
-            "parent series",
             view.label)
 
     def test_label_multiple_parents(self):
@@ -1122,8 +1102,8 @@ class TestDistroSeriesLocalDifferencesZopeless(DistroSeriesDifferenceMixin,
         self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
 
-class TestDistroSeriesLocalDifferencesFunctional(DistroSeriesDifferenceMixin,
-                                                 TestCaseWithFactory):
+class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
+                                                 DistroSeriesDifferenceMixin):
 
     layer = LaunchpadFunctionalLayer
 
@@ -1649,8 +1629,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
             [], view.cached_differences.batch)
 
 
-class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
-                                              TestCaseWithFactory):
+class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
+                                              DistroSeriesDifferenceMixin):
     """Test the distroseries +missingpackages page."""
 
     layer = DatabaseFunctionalLayer
@@ -1685,8 +1665,8 @@ class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
             'Parent packagesets')
 
 
-class DistroSerieUniquePackageDiffsTestCase(DistroSeriesDifferenceMixin,
-                                            TestCaseWithFactory):
+class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
+                                            DistroSeriesDifferenceMixin):
     """Test the distroseries +uniquepackages view."""
 
     layer = LaunchpadZopelessLayer
@@ -1741,8 +1721,8 @@ class DistroSerieUniquePackageDiffsTestCase(DistroSeriesDifferenceMixin,
             [], view.cached_differences.batch)
 
 
-class DistroSeriesUniquePackagesPageTestCase(DistroSeriesDifferenceMixin,
-                                             TestCaseWithFactory):
+class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
+                                             DistroSeriesDifferenceMixin):
     """Test the distroseries +uniquepackages page."""
 
     layer = DatabaseFunctionalLayer
