@@ -6,6 +6,7 @@ search and update questions. This demonstration will use a project, it's
 contact, and asker, and three questions.
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.app.enums import ServiceUsage
@@ -23,11 +24,12 @@ contact, and asker, and three questions.
     >>> _team_project = factory.makeProduct(name='team-project', owner=_team)
     >>> _asker = factory.makePerson(name='asker')
     >>> _question_1 = factory.makeQuestion(
-    ...     target=_project, title="Q 1", owner=_asker)
+    ...     target=_project, title="Q 1 great", owner=_asker)
     >>> _question_2 = factory.makeQuestion(
-    ...     target=_project, title="Q 2", owner=_asker)
+    ...     target=_project, title="Q 2 greater", owner=_asker)
     >>> _question_3 = factory.makeQuestion(
-    ...     target=_team_project, title="Q 3", owner=_asker)
+    ...     target=_team_project, title="Q 3 greatest", owner=_asker)
+    >>> IStore(_question_3).flush()
     >>> logout()
 
     >>> contact_webservice = webservice_for_person(
@@ -61,8 +63,8 @@ be added.
     ...     person=contact['self_link'], api_version='devel').jsonBody()
     True
 
-User can also make the teams they administer answer contacts if the team has a
-preferred language.
+Users can also make the teams they administer answer contacts if the team has
+a preferred language.
 
     >>> team = contact_webservice.get(
     ...     '/~my-team', api_version='devel').jsonBody()
@@ -104,10 +106,31 @@ Anyone can retrieve the collection of answer contacts for a language.
 Questions
 ---------
 
-Anyone can retrieve a question from a `IQuestionTarget`.
+Anyone can retrieve a question from an `IQuestionTarget`.
 
     >>> question_1 = anon_webservice.named_get(
     ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
     ...     api_version='devel').jsonBody()
     >>> print question_1['title']
-    Q 1
+    Q 1 great
+
+Anyone can retrieve a collection of questions from an `IQuestionTarget` by
+searching for questions that match the search criteria.
+
+    >>> questions = contact_webservice.named_get(
+    ...     project['self_link'], 'searchQuestions', search_text='greater',
+    ...     api_version='devel').jsonBody()
+    >>> for question in questions['entries']:
+    ...     print question['title']
+    Q 2 greater
+
+Anyone can retrieve a collection of questions that are similar to a phrase,
+such as the words that might appear in a question's title.
+
+    >>> questions = contact_webservice.named_get(
+    ...     project['self_link'], 'findSimilarQuestions', phrase='q great',
+    ...     api_version='devel').jsonBody()
+    >>> for question in questions['entries']:
+    ...     print question['title']
+    Q 1 great
+    Q 2 greater

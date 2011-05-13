@@ -17,7 +17,10 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import Int
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from lazr.restful.declarations import (
     collection_default_content,
@@ -26,6 +29,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     )
 
@@ -66,6 +70,13 @@ class IQuestionCollection(Interface):
 class ISearchableByQuestionOwner(IQuestionCollection):
     """Collection that support searching by question owner."""
 
+    @operation_parameters(
+        search_text=TextLine(
+            title=_('A string that is in the question title or description'),
+            required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
