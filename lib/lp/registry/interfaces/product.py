@@ -77,6 +77,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -815,7 +816,8 @@ class IProductPublic(
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
-    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
+    IProductPublic, IQuestionTarget, IRootContext,
+    IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups

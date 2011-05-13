@@ -179,6 +179,11 @@
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
     />
+  <adapter
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+    provides=".interfaces.questiontarget.IQuestionTarget"
+    factory=".adapters.sourcepackage_to_questiontarget"
+    />
 
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
