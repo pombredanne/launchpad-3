@@ -115,11 +115,12 @@ Anyone can retrieve a question from an `IQuestionTarget`.
     Q 1 great
 
 Anyone can retrieve a collection of questions from an `IQuestionTarget` by
-searching for questions that match the search criteria.
+searching for questions that match the precise search criteria.
 
     >>> questions = contact_webservice.named_get(
     ...     project['self_link'], 'searchQuestions',
     ...     search_text='q great',
+    ...     status=['Open', 'Needs information'],
     ...     language=[english['self_link']],
     ...     sort='oldest first',
     ...     api_version='devel').jsonBody()

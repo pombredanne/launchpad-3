@@ -34,10 +34,7 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     )
-from lazr.restful.fields import (
-    Reference,
-    ReferenceChoice,
-    )
+from lazr.restful.fields import ReferenceChoice
 
 from canonical.launchpad import _
 from lp.answers.enums import (
@@ -83,27 +80,23 @@ class ISearchableByQuestionOwner(IQuestionCollection):
 
     @operation_parameters(
         search_text=TextLine(
-            title=_('Search text'),
-            required=False),
-#        status=List(
-#            title=_('Status'),
-#            description=_(
-#                'An optional list of statuses the questions may be'),
-#            value_type=Choice(vocabulary=QuestionStatus), required=False),
+            title=_('Search text'), required=False),
+        status=List(
+            title=_('Status'), required=False,
+            value_type=Choice(vocabulary=QuestionStatus)),
         language=List(
-            title=_('Language'),
-            value_type=ReferenceChoice(vocabulary='Language'),
-            required=False),
+            title=_('Language'), required=False,
+            value_type=ReferenceChoice(vocabulary='Language')),
         owner=PublicPersonChoice(
-            title=_('Owner'),
-            vocabulary='ValidPerson', required=False),
+            title=_('Owner'), required=False,
+            vocabulary='ValidPerson'),
         needs_attention_from=PublicPersonChoice(
-            title=_('Needs attentions from'),
-            vocabulary='ValidPerson', required=False),
+            title=_('Needs attentions from'), required=False,
+            vocabulary='ValidPerson'),
         sort=Choice(
-            title=_('Sort'),
-            vocabulary=QuestionSort, required=False))
-    @operation_returns_collection_of(Interface)
+            title=_('Sort'), required=False,
+            vocabulary=QuestionSort))
+    @operation_returns_collection_of(Interface)  # IQuestion.
     @export_read_operation()
     @operation_for_version('devel')
     def searchQuestions(search_text=None,
