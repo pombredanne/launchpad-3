@@ -18,7 +18,9 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Choice,
     Int,
+    List,
     TextLine,
     )
 
@@ -34,7 +36,12 @@ from lazr.restful.declarations import (
     )
 
 from canonical.launchpad import _
-from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.services.fields import PublicPersonChoice
 
 
 class IQuestionCollection(Interface):
@@ -72,8 +79,33 @@ class ISearchableByQuestionOwner(IQuestionCollection):
 
     @operation_parameters(
         search_text=TextLine(
-            title=_('A string that is in the question title or description'),
-            required=False))
+            title=_('Search text'),
+            description=_(
+                "Optional text that is in the text of the questions."),
+            required=False),
+#        status=List(
+#            title=_('Status'),
+#            description=_(
+#                'An optional list of statuses the questions may be'),
+#            value_type=Choice(vocabulary=QuestionStatus), required=False),
+        language=List(
+            title=_('Language'),
+            description=_(
+                'An optional list of languages the questions are in.'),
+            value_type=Choice(vocabulary='Language'), required=False),
+#        sort=Choice(
+#            title=_('Sort'),
+#            description=_('The optional method to sort the questions by'),
+#            vocabulary=QuestionSort, required=False),
+        owner=PublicPersonChoice(
+            title=_('Owner'),
+            description=_('The optional user that asked the question.'),
+            vocabulary='ValidPerson', required=False),
+        needs_attention_from=PublicPersonChoice(
+            title=_('Needs attentions from'),
+            description=_(
+                'The optional user with questions that need attention.'),
+            vocabulary='ValidPerson', required=False))
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     @operation_for_version('devel')
@@ -86,13 +118,13 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         See `IQuestionCollection` for the description of the standard search
         parameters.
 
-        :owner: The IPerson that created the question.
+        :param owner: The IPerson that created the question.
 
-        :needs_attention_from: Selects questions that nee attention from an
-        IPerson. These are the questions in the NEEDSINFO or ANSWERED state
-        owned by the person. The questions not owned by the person but on
-        which the person requested more information or gave an answer
-        and that are back in the OPEN state are also included.
+        :param needs_attention_from: Selects questions that need attention
+            from an IPerson. These are the questions in the NEEDSINFO or
+            ANSWERED state owned by the person. The questions not owned by the
+            person but on which the person requested more information or gave
+            an answer and that are back in the OPEN state are also included.
         """
 
 

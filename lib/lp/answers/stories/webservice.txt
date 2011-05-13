@@ -129,7 +129,9 @@ are similar to a phrase, such as the words that might appear in a question's
 title.
 
     >>> questions = contact_webservice.named_get(
-    ...     project['self_link'], 'findSimilarQuestions', phrase='q great',
+    ...     project['self_link'], 'findSimilarQuestions',
+    ...     phrase='q great', language=[english['self_link']],
+    ...     needs_attention_from=contact['self_link'],
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
     ...     print question['title']
