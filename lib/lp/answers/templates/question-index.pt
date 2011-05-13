@@ -18,9 +18,10 @@
     </style>
     <script type="text/javascript">
         LPS.use('base', 'node', 'event',
-                'lp.answers.question_spam', function(Y) {
+                'lp.services.comments.hide-comments', function(Y) {
         Y.on('domready', function() {
-            Y.lp.answers.question_spam.setup_spam_links();
+            LP.cache.comment_context = LP.cache.context;
+            Y.lp.services.comments.hide-comments.setup_hide_links();
         });
       });
     </script>
