@@ -118,14 +118,15 @@ Anyone can retrieve a collection of questions from an `IQuestionTarget` by
 searching for questions that match the search criteria.
 
     >>> questions = contact_webservice.named_get(
-    ...     project['self_link'], 'searchQuestions', search_text='greater',
+    ...     project['self_link'], 'searchQuestions', search_text='q great',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
     ...     print question['title']
-    Q 2 greater
+    Q 1 great
 
-Anyone can retrieve a collection of questions that are similar to a phrase,
-such as the words that might appear in a question's title.
+Anyone can retrieve a collection of questions from an `IQuestionTarget` that
+are similar to a phrase, such as the words that might appear in a question's
+title.
 
     >>> questions = contact_webservice.named_get(
     ...     project['self_link'], 'findSimilarQuestions', phrase='q great',
