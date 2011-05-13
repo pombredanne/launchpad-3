@@ -99,13 +99,15 @@
         tal:condition="view/show_license_info"
         tal:attributes="id string:${context/name/fmt:css-id}-license-info">
         <dt>Licenses info</dt>
-        <dd tal:content="structure context/license_info/fmt:text-to-html" />
+        <dd class="scrolled"
+          tal:content="structure context/license_info/fmt:text-to-html" />
       </dl>
 
       <dl
         tal:attributes="id string:${context/name/fmt:css-id}-whiteboard">
         <dt>Whiteboard</dt>
-        <dd tal:content="structure context/reviewer_whiteboard/fmt:text-to-html" />
+        <dd class="scrolled"
+          tal:content="structure context/reviewer_whiteboard/fmt:text-to-html" />
       </dl>
     </td>
   </tr>

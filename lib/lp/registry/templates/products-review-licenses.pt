@@ -26,6 +26,10 @@
       dl + p {
             margin-top: 1em;
             }
+      .scrolled {
+            max-height: 6em;
+            overflow: auto;
+            }
     </style>
   </metal:block>
 
