@@ -67,9 +67,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.packagecopyjob import (
-    IPlainPackageCopyJobSource,
-    )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -679,7 +677,7 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
         # recorder3.count == recorder2.count. 4 queries above the recorder2
         # count is 2 queries per difference which is not acceptable, but is
         # *far* better than without the changes introduced by landing this.
-        compromise_statement_count = recorder2.count + 4
+        compromise_statement_count = recorder2.count + 2
         self.assertThat(
             recorder3, HasQueryCount(
                 LessThan(compromise_statement_count + 1)))
