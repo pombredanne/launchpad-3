@@ -68,12 +68,6 @@ class DistributionJobType(DBEnumeratedType):
         populating the archive from the parent distroseries.
         """)
 
-    COPY_PACKAGE = DBItem(2, """
-        Copy a single package from another distribution.
-
-        This job copies a single package, optionally including binaries.
-        """)
-
     DISTROSERIESDIFFERENCE = DBItem(3, """
         Create, delete, or update a Distro Series Difference.
 
