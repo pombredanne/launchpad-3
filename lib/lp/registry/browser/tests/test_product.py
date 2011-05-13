@@ -346,7 +346,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         content = find_tag_by_id(view.render(), 'project-fnord')
         self.assertTrue(content.find(id='fnord-maintainer') is not None)
         self.assertTrue(content.find(id='fnord-registrant') is not None)
-        self.assertTrue(content.find(id='fnord-desciption') is not None)
+        self.assertTrue(content.find(id='fnord-description') is not None)
         self.assertTrue(content.find(id='fnord-packages') is not None)
         self.assertTrue(content.find(id='fnord-releases') is not None)
         self.assertTrue(content.find(id='fnord-usage') is not None)
