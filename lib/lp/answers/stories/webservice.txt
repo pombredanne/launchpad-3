@@ -6,7 +6,6 @@ search and update questions. This demonstration will use a project, it's
 contact, and asker, and three questions.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.app.enums import ServiceUsage
@@ -29,7 +28,6 @@ contact, and asker, and three questions.
     ...     target=_project, title="Q 2 greater", owner=_asker)
     >>> _question_3 = factory.makeQuestion(
     ...     target=_team_project, title="Q 3 greatest", owner=_asker)
-    >>> IStore(_question_3).flush()
     >>> logout()
 
     >>> contact_webservice = webservice_for_person(
