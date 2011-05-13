@@ -70,7 +70,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -219,7 +218,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IServiceUsage)
+        IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
