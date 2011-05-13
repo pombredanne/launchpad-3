@@ -27,7 +27,7 @@
       </dl>
 
       <p
-        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive" 
+        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive"
         tal:content="context/summary" />
 
       <div
@@ -104,7 +104,7 @@
 
       <div
         tal:attributes="id string:${context/name}-whiteboard"
-        tal:content="context/reviewer_whiteboard/fmt:text-to-html" />
+        tal:content="structure context/reviewer_whiteboard/fmt:text-to-html" />
     </td>
   </tr>
 </tal:root>
