@@ -9,6 +9,7 @@ from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
+    SLEEP,
     )
 
 ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +
@@ -73,7 +74,7 @@ class TestInlineAssignment(WindmillTestCase):
         HIDDEN_ASSIGN_BUTTON = (u"//*[@id='affected-software']//tr//td[5]" +
             "//button[contains(@class,'yui3-activator-act') and "
             "contains(@class,'yui3-activator-hidden')]")
-        client.waits.sleep(milliseconds=1000)
+        client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertNode(xpath=HIDDEN_ASSIGN_BUTTON)
 
     def test_no_search_widget_for_teamless_users(self):
