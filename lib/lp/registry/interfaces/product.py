@@ -390,7 +390,7 @@ class IProductModerateRestricted(Interface):
                 "hosting or the project has an up-to-date "
                 "subscription.")))
 
-    license_reviewed = exported(
+    project_reviewed = exported(
         Bool(
             title=_('Project reviewed'),
             description=_("Whether or not this project has been reviewed. "
@@ -399,7 +399,7 @@ class IProductModerateRestricted(Interface):
 
     license_approved = exported(
         Bool(
-            title=_("Project approved"),
+            title=_("License approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
                 "Not applicable to 'Other/Proprietary'.")))
@@ -893,7 +893,7 @@ class IProductSet(Interface):
                    'project', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'license_reviewed', 'licenses', 'license_info',
+                   'project_reviewed', 'licenses', 'license_info',
                    'registrant'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
@@ -901,7 +901,7 @@ class IProductSet(Interface):
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      license_reviewed=False, mugshot=None, logo=None,
+                      project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
@@ -912,7 +912,7 @@ class IProductSet(Interface):
     @operation_parameters(
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
-        license_reviewed=Bool(title=_("Is the project license reviewed")),
+        project_reviewed=Bool(title=_("Is the project license reviewed")),
         licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         license_info_is_empty=Bool(title=_("License info is empty")),
@@ -932,7 +932,7 @@ class IProductSet(Interface):
     @export_operation_as('licensing_search')
     def forReview(search_text=None,
                   active=None,
-                  license_reviewed=None,
+                  project_reviewed=None,
                   licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
@@ -1054,7 +1054,7 @@ class IProductReviewSearch(Interface):
         title=_('Active'), values=[True, False],
         required=False, default=True)
 
-    license_reviewed = Choice(
+    project_reviewed = Choice(
         title=_('Project Reviewed'), values=[True, False],
         required=False, default=False)
 

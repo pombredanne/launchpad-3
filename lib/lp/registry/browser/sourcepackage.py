@@ -71,7 +71,6 @@ from canonical.launchpad.webapp import (
     canonical_url,
     GetitemNavigation,
     Link,
-    redirection,
     StandardLaunchpadFacets,
     stepto,
     )
@@ -182,14 +181,14 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distro_sourcepackage, view_name='+filebug')
         if self.request.form.get('no-redirect') is not None:
             redirection_url += '?no-redirect'
-        return redirection(redirection_url)
+        return self.redirectSubTree(redirection_url, status=303)
 
     @stepto('+gethelp')
     def gethelp(self):
         """Redirect to the IDistributionSourcePackage +gethelp page."""
         dsp = self.context.distribution_sourcepackage
         redirection_url = canonical_url(dsp, view_name='+gethelp')
-        return redirection(redirection_url)
+        return self.redirectSubTree(redirection_url, status=303)
 
 
 @adapter(ISourcePackage)
