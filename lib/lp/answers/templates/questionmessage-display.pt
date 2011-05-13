@@ -1,12 +1,11 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  define="index context/index"
   omit-tag="">
 <div
   tal:define="css_classes view/getBoardCommentCSSClass"
   tal:attributes="class string:${css_classes};
-                  id string:comment-${index}">
+                  id string:comment-${context/index}">
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
@@ -21,7 +20,7 @@
       tal:content="context/datecreated/fmt:displaydate">Thursday
     13:21</span>:
     <span style="float:right;"
-       tal:content="string: #${context/index}" />
+       tal:content="string: #${context/display_index}" />
   </div>
 
   <div class="boardCommentBody"
@@ -47,7 +46,7 @@
   <div
     tal:condition="view/canSeeSpamControls"
     class="boardCommentFooter">
-    <a tal:attributes="id string:mark-spam-${index};"
+    <a tal:attributes="id string:mark-spam-${context/index};"
        class="js-action sprite edit mark-spam" href="#">
          <tal:not-spam condition="not: context/visible">
          Mark as not spam
