@@ -18,4 +18,5 @@
   <include package=".scripts" />
   <include package=".session" />
   <include package=".worlddata" />
+  <include package=".messages" />
 </configure>
