@@ -75,11 +75,11 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.parent_series is not None:
+        if self.distroseries.previous_series is not None:
             raise InitialisationError(
                 ("DistroSeries {child.name} has been initialized; it already "
-                 "derives from {child.parent_series.distribution.name}/"
-                 "{child.parent_series.name}.").format(
+                 "derives from {child.previous_series.distribution.name}/"
+                 "{child.previous_series.name}.").format(
                     child=self.distroseries))
         if self.distroseries.distribution.id == self.parent.distribution.id:
             self._checkBuilds()
@@ -140,7 +140,7 @@ class InitialiseDistroSeries:
         transaction.commit()
 
     def _set_parent(self):
-        self.distroseries.parent_series = self.parent
+        self.distroseries.previous_series = self.parent
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = \
@@ -270,7 +270,7 @@ class InitialiseDistroSeries:
                 -- the data set for the series being updated, yet results are
                 -- in fact the data from the original series.
                 JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = ChildSeries.parent_series
+                    ON Packaging.distroseries = ChildSeries.previous_series
             WHERE
                 -- Select only the packaging links that are in the parent
                 -- that are not in the child.
@@ -281,7 +281,7 @@ class InitialiseDistroSeries:
                     WHERE distroseries in (
                         SELECT id
                         FROM Distroseries
-                        WHERE id = ChildSeries.parent_series
+                        WHERE id = ChildSeries.previous_series
                         )
                     EXCEPT
                     SELECT sourcepackagename

@@ -92,7 +92,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         parent = self.factory.makeDistroSeries()
         child = self.factory.makeDistroSeries(
-            distribution=parent.distribution, parent_series=parent)
+            distribution=parent.distribution, previous_series=parent)
         self.assertFalse(may_require_job(child, package))
 
     def test_may_require_job_only_considers_waiting_jobs_for_redundancy(self):
@@ -580,7 +580,7 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
             'uploader',
             ]
         derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+            previous_series=self.factory.makeDistroSeries())
         packages = dict(
             (user, self.factory.makeSourcePackageName())
             for user in script_users)

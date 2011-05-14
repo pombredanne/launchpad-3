@@ -578,7 +578,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            parent_series=None,
+            previous_series=None,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
