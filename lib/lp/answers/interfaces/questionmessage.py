@@ -18,6 +18,11 @@ from zope.schema import (
     Int,
     )
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
 from lp.answers.enums import (
@@ -31,6 +36,8 @@ class IQuestionMessage(IMessage):
 
     It adds attributes to the IMessage interface.
     """
+    export_as_webservice_entry(as_of='devel')
+
     # This is really an Object field with schema=IQuestion, but that
     # would create a circular dependency between IQuestion
     # and IQuestionMessage
@@ -49,11 +56,12 @@ class IQuestionMessage(IMessage):
         "related the action operated by this message."), required=True,
         readonly=True, default=QuestionStatus.OPEN,
         vocabulary=QuestionStatus)
-    index = Int(
+    index = exported(Int(
         title=_("Message index."),
         description=_("The messages index in the question's list of "
         "messages."),
-        readonly=True)
+        readonly=True),
+        as_of="devel")
     visible = Bool(
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),

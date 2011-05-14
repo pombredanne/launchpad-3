@@ -169,3 +169,24 @@ state, the people involved, and the dates of important events.
     target_link: u'http://api.launchpad.dev/devel/my-project'
     title: u'Q 1 great'
     web_link: u'http://answers.launchpad.dev/my-project/+question/...'
+
+
+Question messages
+-----------------
+
+    >>> messages = contact_webservice.get(
+    ...     question_1['messages_collection_link'],
+    ...     api_version='devel').jsonBody()
+    >>> pprint_entry(messages['entries'][0])
+    bug_attachments_collection_link: u'...'
+    content: u'This is the answer'
+    date_created: u'20...+00:00'
+    index: 1
+    owner_link: u'http://api.launchpad.dev/devel/~contact'
+    parent_link: None
+    resource_type_link: u'http://api.launchpad.dev/devel/#question_message'
+    self_link:
+        u'http://api.launchpad.dev/devel/my-project/+question/.../+message/1'
+    subject: u'Re: Q 1 great'
+    web_link:
+        u'http://answers.launchpad.dev/my-project/+question/.../+message/1'
