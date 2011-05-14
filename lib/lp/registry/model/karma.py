@@ -16,10 +16,7 @@ __all__ = [
     'KarmaContextMixin',
     ]
 
-from storm.expr import (
-    Desc,
-    Expr,
-    )
+from storm.expr import Desc
 from sqlobject import (
     ForeignKey,
     IntCol,
