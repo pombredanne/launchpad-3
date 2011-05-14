@@ -306,6 +306,6 @@ class QuestionStatus(DBEnumeratedType):
         """)
 
 
-QUESTION_STATUS_DEFAULT_SEARCH = [
+QUESTION_STATUS_DEFAULT_SEARCH = (
     QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED,
-    QuestionStatus.SOLVED]
+    QuestionStatus.SOLVED)
