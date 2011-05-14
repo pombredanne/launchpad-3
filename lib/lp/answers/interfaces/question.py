@@ -115,36 +115,37 @@ class IQuestion(IHasOwner):
         vocabulary='ValidPersonOrTeam'),
         as_of="devel",
         readonly=True)
-    answer = Object(
+    answer = exported(Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
-        schema=IQuestionMessage)
+        schema=IQuestionMessage),
+        readonly=True, as_of="devel")
     datecreated = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True),
-        exported_as='date_created', as_of="devel")
+        exported_as='date_created', readonly=True, as_of="devel")
     datedue = exported(Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_(
             "The date by which we should have resolved this question.")),
-        exported_as='date_due', as_of="devel")
+        exported_as='date_due', readonly=True, as_of="devel")
     datelastquery = exported(Datetime(
         title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
         "customer (owner).")),
-       exported_as='date_last_query',  as_of="devel")
+       exported_as='date_last_query',  readonly=True, as_of="devel")
     datelastresponse = exported(Datetime(
         title=_("Date last Responded"),
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
         "datelastresponse tells us in whose court the ball is.")),
-        exported_as='date_last_response', as_of="devel")
+        exported_as='date_last_response', readonly=True, as_of="devel")
     date_solved = exported(Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the question owner confirmed that the "
             "question is Solved.")),
-        exported_as='date_solved', as_of="devel")
+        exported_as='date_solved', readonly=True, as_of="devel")
     product = Choice(
         title=_('Upstream Project'), required=False,
         vocabulary='Product',

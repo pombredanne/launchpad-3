@@ -148,6 +148,7 @@ state, the people involved, and the dates of important events.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(question_1)
+    answer_link: None
     answerer_link: None
     assignee_link: None
     date_created: u'20...+00:00'
