@@ -25,7 +25,10 @@ from lazr.restful.declarations import (
     operation_parameters,
     REQUEST_USER,
     )
-from lazr.restful.fields import ReferenceChoice
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 
 from zope.interface import (
     Attribute,
@@ -52,6 +55,7 @@ from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 class InvalidQuestionStateError(Exception):
@@ -91,7 +95,7 @@ class IQuestion(IHasOwner):
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = exported(ReferenceChoice(
-        title=_('Language'), vocabulary='Language',
+        title=_('Language'), vocabulary='Language', schema=ILanguage,
         description=_('The language in which this question is written.')),
         as_of="devel")
     owner = exported(PublicPersonChoice(
@@ -111,12 +115,11 @@ class IQuestion(IHasOwner):
         vocabulary='ValidPersonOrTeam'),
         as_of="devel",
         readonly=True)
-    # XXX sinzui 2011-05-13: export
     answer = Object(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
-            schema=IQuestionMessage)
+        schema=IQuestionMessage)
     datecreated = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created', as_of="devel")
@@ -160,9 +163,11 @@ class IQuestion(IHasOwner):
         title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
-    target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
+    target = exported(Reference(
+        title=_('Project'), required=True, schema=IQuestionTarget,
         description=_('The distribution, source package, or product the '
-                      'question pertains to.'))
+                      'question pertains to.')),
+        as_of="devel")
     faq = Object(
         title=_('Linked FAQ'),
         description=_('The FAQ document containing the long answer to this '

@@ -143,8 +143,8 @@ title.
 A question
 ----------
 
-A question has many attributes about the details of the question, its state,
-the people involved, and the dates of important events.
+A question has many exported attributes about the details of the question, its
+state, the people involved, and the dates of important events.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(question_1)
@@ -162,5 +162,6 @@ the people involved, and the dates of important events.
     resource_type_link: u'http://api.launchpad.dev/devel/#question'
     self_link: u'http://api.launchpad.dev/devel/my-project/+question/...'
     status: u'Open'
+    target_link: u'http://api.launchpad.dev/devel/my-project'
     title: u'Q 1 great'
     web_link: u'http://answers.launchpad.dev/my-project/+question/...'
