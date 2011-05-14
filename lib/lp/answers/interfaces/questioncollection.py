@@ -61,11 +61,11 @@ class IQuestionCollection(Interface):
         :param status: A sequence of QuestionStatus Items. If None or an empty
             sequence, the status is not included as a filter criteria.
 
-        :parma language: An ILanguage or a sequence of ILanguage objects to
+        :param language: An ILanguage or a sequence of ILanguage objects to
             match against the question's language. If None or an empty
             sequence, the language is not included as a filter criteria.
 
-        :parma sort: An attribute of QuestionSort. If None, a default value is
+        :param sort: An attribute of QuestionSort. If None, a default value is
             used. When there is a search_text value, the default is to sort by
             RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
