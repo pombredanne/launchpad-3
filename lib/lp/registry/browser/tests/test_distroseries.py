@@ -320,7 +320,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
     def test_submit(self):
         # When creating a new DistroSeries via DistroSeriesAddView, the title
         # is set to the same as the displayname (title is, in any case,
-        # deprecated), the description is left empty, and parent_series is
+        # deprecated), the description is left empty, and previous_series is
         # None (DistroSeriesInitializeView takes care of setting that).
         user = self.factory.makePerson()
         distribution = self.factory.makeDistribution(owner=user)
@@ -340,7 +340,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
-        self.assertIs(None, distroseries.parent_series)
+        self.assertIs(None, distroseries.previous_series)
         self.assertEqual(user, distroseries.owner)
 
 

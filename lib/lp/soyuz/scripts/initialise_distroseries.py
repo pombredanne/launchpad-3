@@ -270,7 +270,7 @@ class InitialiseDistroSeries:
                 -- the data set for the series being updated, yet results are
                 -- in fact the data from the original series.
                 JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = ChildSeries.previous_series
+                    ON Packaging.distroseries = ChildSeries.parent_series
             WHERE
                 -- Select only the packaging links that are in the parent
                 -- that are not in the child.
@@ -281,7 +281,7 @@ class InitialiseDistroSeries:
                     WHERE distroseries in (
                         SELECT id
                         FROM Distroseries
-                        WHERE id = ChildSeries.previous_series
+                        WHERE id = ChildSeries.parent_series
                         )
                     EXCEPT
                     SELECT sourcepackagename

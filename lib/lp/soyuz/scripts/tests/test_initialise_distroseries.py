@@ -363,7 +363,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # distribution series where the parent series is specified at the time
         # of adding the series. New-style derivation leaves the specification
         # of the parent series until later.
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
+        child = self.factory.makeDistroSeries(previous_series=self.parent)
         transaction.commit()
         ifp = os.path.join(
             config.root, 'scripts', 'ftpmaster-tools',
