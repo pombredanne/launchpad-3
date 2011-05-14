@@ -28,6 +28,7 @@ contact, and asker, and three questions.
     ...     target=_project, title="Q 2 greater", owner=_asker)
     >>> _question_3 = factory.makeQuestion(
     ...     target=_team_project, title="Q 3 greatest", owner=_asker)
+    >>> _message = _question_1.giveAnswer(_contact, 'This is the answer')
     >>> logout()
 
     >>> contact_webservice = webservice_for_person(
@@ -118,7 +119,7 @@ searching for questions that match the precise search criteria.
     >>> questions = contact_webservice.named_get(
     ...     project['self_link'], 'searchQuestions',
     ...     search_text='q great',
-    ...     status=['Open', 'Needs information'],
+    ...     status=['Open', 'Needs information', 'Answered'],
     ...     language=[english['self_link']],
     ...     sort='oldest first',
     ...     api_version='devel').jsonBody()
@@ -154,7 +155,7 @@ state, the people involved, and the dates of important events.
     date_created: u'20...+00:00'
     date_due: None
     date_last_query: u'20...+00:00'
-    date_last_response: None
+    date_last_response: u'20...+00:00'
     date_solved: None
     description: u'description'
     id: ...
@@ -164,7 +165,7 @@ state, the people involved, and the dates of important events.
     owner_link: u'http://api.launchpad.dev/devel/~asker'
     resource_type_link: u'http://api.launchpad.dev/devel/#question'
     self_link: u'http://api.launchpad.dev/devel/my-project/+question/...'
-    status: u'Open'
+    status: u'Answered'
     target_link: u'http://api.launchpad.dev/devel/my-project'
     title: u'Q 1 great'
     web_link: u'http://answers.launchpad.dev/my-project/+question/...'
