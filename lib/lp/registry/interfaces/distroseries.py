@@ -351,8 +351,8 @@ class IDistroSeriesPublic(
             """))
 
     # other properties
-    previous_series = Attribute("Previous series from the same "
-        "distribution.")
+    prior_series = Attribute(
+        "Prior series *by date* from the same distribution.")
 
     main_archive = exported(
         Reference(

@@ -675,7 +675,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return result
 
     @cachedproperty
-    def previous_series(self):
+    def prior_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
