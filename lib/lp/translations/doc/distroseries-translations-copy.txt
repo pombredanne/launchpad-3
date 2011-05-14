@@ -174,8 +174,8 @@ copyTranslationsFromParent. For that we create a new child series to receive
 those translations. For testing purposes this series has translation imports
 enabled.
 
-    >>> darty = factory.makeDistroRelease(foobuntu, '99.2',
-    ...                                   name='darty', parent_series=barty)
+    >>> darty = factory.makeDistroRelease(
+    ...     foobuntu, '99.2', name='darty', previous_series=barty)
     >>> darty_id = darty.id
     >>> darty.defer_translation_imports = False
 
