@@ -157,6 +157,7 @@ the people involved, and the dates of important events.
     date_solved: None
     description: u'description'
     id: ...
+    language_link: u'http://api.launchpad.dev/devel/+languages/en'
     owner_link: u'http://api.launchpad.dev/devel/~asker'
     resource_type_link: u'http://api.launchpad.dev/devel/#question'
     self_link: u'http://api.launchpad.dev/devel/my-project/+question/...'

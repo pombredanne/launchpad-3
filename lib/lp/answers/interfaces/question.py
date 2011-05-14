@@ -25,6 +25,8 @@ from lazr.restful.declarations import (
     operation_parameters,
     REQUEST_USER,
     )
+from lazr.restful.fields import ReferenceChoice
+
 from zope.interface import (
     Attribute,
     Interface,
@@ -88,9 +90,10 @@ class IQuestion(IHasOwner):
         default=QuestionPriority.NORMAL)
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
-    language = Choice(
+    language = exported(ReferenceChoice(
         title=_('Language'), vocabulary='Language',
-        description=_('The language in which this question is written.'))
+        description=_('The language in which this question is written.')),
+        as_of="devel")
     owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam'),
