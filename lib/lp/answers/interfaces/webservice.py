@@ -19,6 +19,7 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type,
     patch_entry_return_type,
+    patch_reference_property,
     )
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import (
@@ -36,3 +37,4 @@ patch_collection_return_type(
     IQuestionTarget, 'findSimilarQuestions', IQuestion)
 patch_collection_return_type(
     ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
+patch_reference_property(IQuestionMessage, 'question', IQuestion)
