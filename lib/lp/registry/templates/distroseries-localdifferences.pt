@@ -23,7 +23,6 @@
     <div class="top-portlet" metal:fill-slot="main"
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
-                  parent_name view/parent_series/displayname;
                   can_perform_sync view/canPerformSync;">
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
@@ -43,8 +42,17 @@
           <thead>
             <tr>
               <th>Source</th>
+              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+                Parent
+              </th>
               <th tal:condition="view/show_parent_version">
-                <tal:replace replace="parent_name" /> version</th>
+                <tal:one_parent condition="view/has_unique_parent">
+                  <tal:replace replace="view/unique_parent/displayname" /> version
+                </tal:one_parent>
+                <tal:multiple_parents condition="not: view/has_unique_parent">
+                  Parent version
+                </tal:multiple_parents>
+              </th>
               <th tal:condition="view/show_derived_version">
                 <tal:replace replace="series_name" /> version</th>
               <th tal:condition="view/show_parent_packagesets">
@@ -61,6 +69,7 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
+                            diff_id difference/id;
                             src_name difference/source_package_name/name;"
                 tal:attributes="class src_name">
 
@@ -68,13 +77,17 @@
                 <input tal:condition="can_perform_sync"
                   name="field.selected_differences" type="checkbox"
                   tal:attributes="
-                    value src_name;
-                    id string:field.selected_differences.${src_name}"/>
+                    value diff_id;
+                    id string:field.selected_differences.${diff_id}"/>
 
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
                    tal:content="src_name">Foo</a>
               </td>
-
+              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+                <a tal:attributes="href difference/parent_series/fmt:url"
+                   tal:content="difference/parent_series/displayname"
+                   class="parent-name">Warty</a>
+              </td>
               <td tal:condition="view/show_parent_version">
                 <a tal:condition="difference/parent_source_package_release"
                    tal:attributes="href difference/parent_source_package_release/fmt:url"

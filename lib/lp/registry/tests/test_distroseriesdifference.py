@@ -1027,14 +1027,14 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertContentEqual(diffs['normal'], results)
         self.assertContentEqual(diffs2['normal'], results2)
 
-    def test_getByDistroSeriesAndName(self):
+    def test_getByDistroSeriesNameAndParentSeries(self):
         # An individual difference is obtained using the name.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str='fooname')
 
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        result = dsd_source.getByDistroSeriesAndName(
-            ds_diff.derived_series, 'fooname')
+        result = dsd_source.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, 'fooname', ds_diff.parent_series)
 
         self.assertEqual(ds_diff, result)
 

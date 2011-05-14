@@ -385,11 +385,15 @@ class DistroSeriesDifference(StormBase):
             differences, pre_iter_hook=eager_load)
 
     @staticmethod
-    def getByDistroSeriesAndName(distro_series, source_package_name):
+    def getByDistroSeriesNameAndParentSeries(distro_series,
+                                             source_package_name,
+                                             parent_series):
         """See `IDistroSeriesDifferenceSource`."""
+
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
             DistroSeriesDifference.derived_series == distro_series,
+            DistroSeriesDifference.parent_series == parent_series,
             DistroSeriesDifference.source_package_name == (
                 SourcePackageName.id),
             SourcePackageName.name == source_package_name).one()
