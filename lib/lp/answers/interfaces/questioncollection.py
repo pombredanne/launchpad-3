@@ -105,9 +105,6 @@ class ISearchableByQuestionOwner(IQuestionCollection):
                         needs_attention_from=None):
         """Return the questions from the collection matching search criteria.
 
-        See `IQuestionCollection` for the description of the standard search
-        parameters.
-
         :param search_text: A string that is matched against the question
             title and description. If None, the search_text is not included as
             a filter criteria.
