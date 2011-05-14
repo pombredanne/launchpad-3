@@ -105,14 +105,6 @@ Anyone can retrieve the collection of answer contacts for a language.
 Question collections
 --------------------
 
-Anyone can retrieve a question from an `IQuestionTarget`.
-
-    >>> question_1 = anon_webservice.named_get(
-    ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
-    ...     api_version='devel').jsonBody()
-    >>> print question_1['title']
-    Q 1 great
-
 Anyone can retrieve a collection of questions from an `IQuestionTarget` by
 searching for questions that match the precise search criteria.
 
@@ -139,6 +131,14 @@ title.
     ...     print question['title']
     Q 1 great
     Q 2 greater
+
+Anyone can retrieve a question from an `IQuestionTarget`.
+
+    >>> question_1 = anon_webservice.named_get(
+    ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
+    ...     api_version='devel').jsonBody()
+    >>> print question_1['title']
+    Q 1 great
 
 
 A question
@@ -177,7 +177,7 @@ Question messages
 An `IQuestionMessage` provides the IMessage fields and additional fields
 that indicate how the message changed the question.
 
-    >>> messages = contact_webservice.get(
+    >>> messages = anon_webservice.get(
     ...     question_1['messages_collection_link'],
     ...     api_version='devel').jsonBody()
     >>> pprint_entry(messages['entries'][0])
