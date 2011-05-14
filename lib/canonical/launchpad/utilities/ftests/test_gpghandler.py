@@ -2,15 +2,17 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
+import gpgme
+import os
 
 from calendar import timegm
 from datetime import (
     datetime,
     timedelta,
     )
+from math import floor
 from pytz import UTC
-import gpgme
-import os
+from time import time
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -200,10 +202,9 @@ class TestImportKeyRing(unittest.TestCase):
         for fname in files_to_check:
             os.utime(fname, (lm_time, lm_time))
 
-        # Touch the files and re-check the last modified times.
+        # Touch the files and re-check the last modified times have been
+        # updated to "now".
+        now = floor(time())
         gpghandler.touchConfigurationDirectory()
-        second_last_modified_times = dict(
-            (fname, os.path.getmtime(fname)) for fname in files_to_check)
         for fname in files_to_check:
-            self.assertTrue(
-                lm_time + 12 * 3600 <= second_last_modified_times[fname])
+            self.assertTrue(now <= floor(os.path.getmtime(fname)))

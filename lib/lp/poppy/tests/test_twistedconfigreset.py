@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessLayer
 from lp.poppy.twistedconfigreset import GPGHandlerConfigResetJob
 from lp.testing import TestCase
 
 
 class TestGPGHandlerConfigResetJob(TestCase):
 
-    layer = ZopelessDatabaseLayer
+    layer = ZopelessLayer
 
     def test_gpghandler_config_reset_job_setup(self):
         # Does the gpghandler job get setup correctly.

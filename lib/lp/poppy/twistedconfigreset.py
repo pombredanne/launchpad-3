@@ -37,13 +37,9 @@ class GPGHandlerConfigResetJob(Service):
         # at time last modified.
 
         self._stopGPGHandlerJob()
-        try:
-            self._gpghandler_job = task.LoopingCall(
-                getUtility(IGPGHandler).touchConfigurationDirectory)
-            return self._gpghandler_job.start(touch_interval)
-        except ComponentLookupError:
-            # No GPGHandler so no need to start the job.
-            pass
+        self._gpghandler_job = task.LoopingCall(
+            getUtility(IGPGHandler).touchConfigurationDirectory)
+        return self._gpghandler_job.start(touch_interval)
 
     def _stopGPGHandlerJob(self):
         try:
