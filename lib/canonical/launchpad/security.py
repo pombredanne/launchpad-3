@@ -223,6 +223,7 @@ class ViewByLoggedInUser(AuthorizationBase):
         """Any authenticated user can see this object."""
         return True
 
+
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
@@ -1683,6 +1684,10 @@ class QuestionOwner(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+class ViewQuestionQuestion(AnonymousAuthorization):
+    usedfor = IQuestion
 
 
 class AppendFAQTarget(EditByOwnersOrAdmins):
