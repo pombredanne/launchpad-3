@@ -159,6 +159,8 @@ state, the people involved, and the dates of important events.
     description: u'description'
     id: ...
     language_link: u'http://api.launchpad.dev/devel/+languages/en'
+    messages_collection_link:
+        u'http://api.launchpad.dev/devel/my-project/+question/.../messages'
     owner_link: u'http://api.launchpad.dev/devel/~asker'
     resource_type_link: u'http://api.launchpad.dev/devel/#question'
     self_link: u'http://api.launchpad.dev/devel/my-project/+question/...'

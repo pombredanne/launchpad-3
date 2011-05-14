@@ -26,6 +26,7 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -39,7 +40,6 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
-    List,
     Object,
     Text,
     TextLine,
@@ -180,13 +180,14 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = List(
+    messages = exported(CollectionField(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
-        value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True)
+        value_type=Reference(schema=IQuestionMessage),
+        required=True, default=[], readonly=True),
+        as_of='devel')
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
