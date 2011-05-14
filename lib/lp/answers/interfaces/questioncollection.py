@@ -112,7 +112,8 @@ class ISearchableByQuestionOwner(IQuestionCollection):
             title and description. If None, the search_text is not included as
             a filter criteria.
         :param status: A sequence of QuestionStatus Items. If None or an empty
-            sequence, the status is not included as a filter criteria.
+            sequence, the status is not included as a filter criteria. The
+            default is to match all status except Expired and Invalid.
         :param language: An ILanguage or a sequence of ILanguage objects to
             match against the question's language. If None or an empty
             sequence, the language is not included as a filter criteria.
