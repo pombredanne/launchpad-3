@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-  <tr tal:attributes="id string:project-${context/name}">
+  <tr tal:attributes="id string:project-${context/name/fmt:css-id}">
     <td>
       <p>
         <a tal:replace="structure context/fmt:link" />
@@ -17,40 +17,40 @@
 
       <dl class="horizontal">
         <dt>Maintained by</dt>
-        <dd tal:attributes="id string:${context/name}-maintainer">
+        <dd tal:attributes="id string:${context/name/fmt:css-id}-maintainer">
           <a tal:replace="structure context/owner/fmt:link" />
         </dd>
         <dt>Registered by</dt>
-        <dd tal:attributes="id string:${context/name}-registrant">
+        <dd tal:attributes="id string:${context/name/fmt:css-id}-registrant">
           <a tal:replace="structure context/registrant/fmt:link" />
         </dd>
       </dl>
 
       <p
-        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive" 
+        title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive"
         tal:content="context/summary" />
 
       <div
         title="Beware of these words: test, prueba, personal, sandbox, repo, package, archive"
         tal:condition="context/description"
-        tal:attributes="id string:${context/name}-desciption"
+        tal:attributes="id string:${context/name/fmt:css-id}-description"
         tal:content="structure context/description/fmt:text-to-html" />
 
       <dl class="horizontal"
         title="Projects with packages and releases cannot be deactivated.">
         <dt>Has packages</dt>
         <dd
-          tal:attributes="id string:${context/name}-packages"
+          tal:attributes="id string:${context/name/fmt:css-id}-packages"
           tal:content="structure context/ubuntu_packages/image:boolean" />
         <dt>Has releases</dt>
         <dd
-          tal:attributes="id string:${context/name}-releases"
+          tal:attributes="id string:${context/name/fmt:css-id}-releases"
           tal:content="structure view/latest_release_with_download_files/image:boolean" />
       </dl>
 
       <dl class="horizontal"
         title="Projects over 6 months old should be using an application."
-        tal:attributes="id string:${context/name}-usage">
+        tal:attributes="id string:${context/name/fmt:css-id}-usage">
         <dt>Code usage</dt>
         <dd tal:content="context/codehosting_usage/title" />
         <dt>Bug usage</dt>
@@ -61,7 +61,7 @@
     </td>
 
     <td>
-      <dl tal:attributes="id string:${context/name}-statuses">
+      <dl tal:attributes="id string:${context/name/fmt:css-id}-statuses">
         <dt>Project enabled</dt>
         <dd tal:content="structure view/active_widget" />
         <dt>Project reviewed</dt>
@@ -72,7 +72,7 @@
       </dl>
 
       <dl class="horizontal"
-        tal:attributes="id string:${context/name}-licenses">
+        tal:attributes="id string:${context/name/fmt:css-id}-licenses">
         <dt>Licenses</dt>
         <dd>
           <ul class="horizontal">
@@ -86,7 +86,7 @@
 
       <dl class="horizontal"
         tal:condition="view/is_proprietary"
-        tal:attributes="id string:${context/name}-commercial-subscription">
+        tal:attributes="id string:${context/name/fmt:css-id}-commercial-subscription">
         <dt>Commercial subscription expiration</dt>
         <dd
           tal:condition="context/commercial_subscription"
@@ -97,14 +97,18 @@
 
       <dl class="horizontal"
         tal:condition="view/show_license_info"
-        tal:attributes="id string:${context/name}-license-info">
+        tal:attributes="id string:${context/name/fmt:css-id}-license-info">
         <dt>Licenses info</dt>
-        <dd tal:content="structure context/license_info/fmt:text-to-html" />
+        <dd class="scrolled"
+          tal:content="structure context/license_info/fmt:text-to-html" />
       </dl>
 
-      <div
-        tal:attributes="id string:${context/name}-whiteboard"
-        tal:content="context/reviewer_whiteboard/fmt:text-to-html" />
+      <dl
+        tal:attributes="id string:${context/name/fmt:css-id}-whiteboard">
+        <dt>Whiteboard</dt>
+        <dd class="scrolled"
+          tal:content="structure context/reviewer_whiteboard/fmt:text-to-html" />
+      </dl>
     </td>
   </tr>
 </tal:root>
