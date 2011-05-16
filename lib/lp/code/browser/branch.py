@@ -1078,6 +1078,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
+                except BranchCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own branches in %s." % (
+                        owner.displayname, self.context.target.displayname))
                 except BranchExists, e:
                     self._setBranchExists(e.existing_branch)
 
