@@ -456,7 +456,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         subscription = self.current_user_subscription
         subscription.bug_notification_level = level
         self.request.response.addNotification(
-            "Your subscription to this bug report has been updated.")
+            "Your bug report subscription has been updated.")
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.
