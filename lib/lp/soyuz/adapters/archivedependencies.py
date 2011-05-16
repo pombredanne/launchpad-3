@@ -42,7 +42,9 @@ import logging
 import traceback
 
 from lazr.uri import URI
+from zope.component import getUtility
 
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -51,9 +53,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS,
-    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
 
 
 component_dependencies = {
@@ -61,7 +61,7 @@ component_dependencies = {
     'restricted': ['main', 'restricted'],
     'universe': ['main', 'universe'],
     'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
-    'partner' : ['partner'],
+    'partner': ['partner'],
     }
 
 pocket_dependencies = {
@@ -172,6 +172,12 @@ def expand_dependencies(archive, distro_series, pocket, component,
         primary_dependencies = _get_default_primary_dependencies(
             archive, component, pocket)
         deps.extend(primary_dependencies)
+
+    # Add dependencies for overlay archives.
+    for dsp in getUtility(
+        IDistroSeriesParentSet).getFlattenedOverlayTree(distro_series):
+        dep_archive = dsp.parent_series.distribution.main_archive
+        deps.append((dep_archive, dsp.pocket, (dsp.component.name, )))
 
     return deps
 
