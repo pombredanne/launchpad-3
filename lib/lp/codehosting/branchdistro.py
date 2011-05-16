@@ -23,6 +23,7 @@ from bzrlib.errors import (
     NotBranchError,
     NotStacked,
     )
+from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
 
@@ -371,8 +372,11 @@ class DistroBrancher:
         tip_revision = old_db_branch.getTipRevision()
         new_db_branch.updateScannedDetails(
             tip_revision, old_db_branch.revision_count)
+        tip_revision_id = (
+            tip_revision.revision_id if tip_revision is not None else
+            NULL_REVISION)
         new_db_branch.branchChanged(
-            '', tip_revision.revision_id,
+            '', tip_revision_id,
             old_db_branch.control_format,
             old_db_branch.branch_format,
             old_db_branch.repository_format)
