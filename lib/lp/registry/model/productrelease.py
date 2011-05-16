@@ -241,12 +241,18 @@ class ProductReleaseSet(object):
         # Local import of Milestone to avoid circular imports.
         from lp.registry.model.milestone import Milestone
         store = IStore(productseries)
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it.
         result = store.find(
-            ProductRelease,
+            (ProductRelease, Milestone),
             Milestone.productseries == productseries,
             ProductRelease.milestone == Milestone.id,
             Milestone.name == version)
-        return result.one()
+        found = result.one()
+        if found is None:
+            return None
+        product_release, milestone = found
+        return product_release
 
     def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""
