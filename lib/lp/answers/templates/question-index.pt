@@ -21,7 +21,7 @@
                 'lp.comments.hide', function(Y) {
         Y.on('domready', function() {
             LP.cache.comment_context = LP.cache.context;
-            Y.lp.comments.hide.setup_hide_links();
+            Y.lp.comments.hide.setup_hide_controls();
         });
       });
     </script>
