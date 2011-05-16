@@ -21,11 +21,12 @@ from sqlobject import StringCol
 from storm.exceptions import NotOneError
 from storm.expr import (
     And,
+    Column,
     compile as storm_compile,
     Desc,
     SQL,
+    Table,
     )
-from canonical.database.sqlbase import cursor
 from storm.locals import (
     Int,
     Reference,
@@ -36,7 +37,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from itertools import groupby
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
@@ -86,11 +86,11 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -202,39 +202,35 @@ def packagesets(dsds, in_parent):
     if len(dsds) == 0:
         return {}
 
-    if in_parent:
-        distroseries_clause = 'parent_series'
-    else:
-        distroseries_clause = 'derived_series'
+    PackagesetSources = Table("PackageSetSources")
+    FlatPackagesetInclusion = Table("FlatPackagesetInclusion")
 
-    source_name_and_package_query = ('''
-        SELECT dsd.id, ps.id
-        FROM packagesetsources pss, flatpackagesetinclusion fpsi,
-            packageset ps, distroseriesdifference dsd
-        WHERE pss.packageset = fpsi.child AND
-            ps.distroseries = dsd.%s AND
-            fpsi.parent = ps.id AND
-            pss.sourcepackagename = dsd.source_package_name AND
-            dsd.id IN (%s)
-        ORDER BY pss.sourcepackagename, ps.name
-            ''' %
-            (distroseries_clause, ','.join([str(dsd.id) for dsd in dsds])))
+    tables = IStore(Packageset).using(
+        DistroSeriesDifference, Packageset,
+        PackagesetSources, FlatPackagesetInclusion)
+    results = tables.find(
+        (DistroSeriesDifference.id, Packageset),
+        Column("packageset", PackagesetSources) == (
+            Column("child", FlatPackagesetInclusion)),
+        Packageset.distroseries_id == (
+            DistroSeriesDifference.parent_series_id if in_parent else
+            DistroSeriesDifference.derived_series_id),
+        Column("parent", FlatPackagesetInclusion) == Packageset.id,
+        Column("sourcepackagename", PackagesetSources) == (
+            DistroSeriesDifference.source_package_name_id),
+        DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds))
+    results = results.order_by(
+        Column("sourcepackagename", PackagesetSources),
+        Packageset.name)
 
-    cur = cursor()
-    cur.execute(source_name_and_package_query)
-    res = cur.fetchall()
+    grouped = {}
+    for dsd_id, packageset in results:
+        if dsd_id in grouped:
+            grouped[dsd_id].append(packageset)
+        else:
+            grouped[dsd_id] = [packageset]
 
-    store = IStore(Packageset)
-    packagesets = store.find(
-        Packageset,
-        Packageset.id.is_in(set([r[1] for r in res])))
-
-    # Build a dict to be able to get packagesets by id.
-    key_packagesets = dict([(p.id, p) for p in packagesets])
-
-    return dict(
-        [(f, [key_packagesets.get(id) for id in map(itemgetter(1), k)])
-            for f, k in groupby(res, itemgetter(0))])
+    return grouped
 
 
 class DistroSeriesDifference(StormBase):
@@ -587,16 +583,16 @@ class DistroSeriesDifference(StormBase):
     def packagesets(self):
         """See `IDistroSeriesDifference`."""
         if self.derived_series is not None:
-            return getUtility(IPackagesetSet).setsIncludingSource(
-                self.source_package_name, self.derived_series)
+            return list(getUtility(IPackagesetSet).setsIncludingSource(
+                self.source_package_name, self.derived_series))
         else:
             return []
 
     @cachedproperty
     def parent_packagesets(self):
         """See `IDistroSeriesDifference`."""
-        return getUtility(IPackagesetSet).setsIncludingSource(
-            self.source_package_name, self.parent_series)
+        return list(getUtility(IPackagesetSet).setsIncludingSource(
+            self.source_package_name, self.parent_series))
 
     @property
     def package_diff_status(self):
