@@ -16,6 +16,7 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from canonical.launchpad.components.apihelpers import patch_entry_return_type
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -23,5 +24,4 @@ from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 IQuestionSet.queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IQuestion
-IQuestionSet['get'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'] = IQuestion
+patch_entry_return_type(IQuestionSet, 'get', IQuestion)

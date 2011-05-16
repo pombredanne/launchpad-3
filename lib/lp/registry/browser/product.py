@@ -129,7 +129,11 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
-from lp.app.browser.lazrjs import TextLineEditorWidget
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
@@ -1133,6 +1137,52 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             License.OTHER_OPEN_SOURCE in self.context.licenses
             or License.OTHER_PROPRIETARY in self.context.licenses)
 
+    @cachedproperty
+    def is_proprietary(self):
+        """Is the project proprietary."""
+        return License.OTHER_PROPRIETARY in self.context.licenses
+
+    @property
+    def active_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['active'],
+            content_box_id='%s-edit-active' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Deactivted',
+            true_text='Active',
+            header='Is this project active and usable by the community?')
+
+    @property
+    def project_reviewed_widget(self):
+        return BooleanChoiceWidget(
+            self.context, IProduct['project_reviewed'],
+            content_box_id='%s-edit-project-reviewed' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unreviewed',
+            true_text='Reviewed',
+            header='Have you reviewed the project?')
+
+    @property
+    def license_approved_widget(self):
+        licenses = list(self.context.licenses)
+        if License.OTHER_PROPRIETARY in licenses:
+            return 'Commercial subscription required'
+        elif [License.DONT_KNOW] == licenses or [] == licenses:
+            return 'License required'
+        return BooleanChoiceWidget(
+            self.context, IProduct['license_approved'],
+            content_box_id='%s-edit-license-approved' % FormattersAPI(
+                self.context.name).css_id(),
+            edit_view='+review-license',
+            tag='span',
+            false_text='Unapproved',
+            true_text='Approved',
+            header='Does the license qualifiy the project for free hosting?')
+
 
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
@@ -1619,7 +1669,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
-        "license_reviewed",
+        "project_reviewed",
         "license_approved",
         "active",
         "private_bugs",
@@ -1804,11 +1854,12 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
 
     schema = IProductReviewSearch
     label = 'Review projects'
+    page_title = label
 
     full_row_field_names = [
         'search_text',
         'active',
-        'license_reviewed',
+        'project_reviewed',
         'license_approved',
         'license_info_is_empty',
         'licenses',
@@ -1826,7 +1877,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         orientation='vertical')
     custom_widget('active', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
-    custom_widget('license_reviewed', LaunchpadRadioWidget,
+    custom_widget('project_reviewed', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
@@ -1858,21 +1909,25 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         """Return all widgets that span all columns."""
         return (self.widgets[name] for name in self.full_row_field_names)
 
+    @property
+    def initial_values(self):
+        """See `ILaunchpadFormView`."""
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        return search_params
+
     def forReviewBatched(self):
         """Return a `BatchNavigator` to review the matching projects."""
         # Calling _validate populates the data dictionary as a side-effect
         # of validation.
         data = {}
         self._validate(None, data)
-        # Get default values from the schema since the form defaults
-        # aren't available until the search button is pressed.
-        search_params = {}
-        for name in self.schema:
-            search_params[name] = self.schema[name].default
+        search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=100)
+                              self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

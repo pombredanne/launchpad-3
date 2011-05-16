@@ -91,6 +91,7 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import Matcher, Mismatch
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -840,7 +841,7 @@ class WindmillTestCase(TestCaseWithFactory):
             person.displayname, naked_person.preferredemail.email, password)
         return self.getClientFor(url, user=user)
 
-    def getClientForAnomymous(self, obj, view_name=None):
+    def getClientForAnonymous(self, obj, view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if isinstance(obj, basestring):
@@ -1322,3 +1323,26 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class RegexMatcher(Matcher):
+    """A matcher that matches a regular expression."""
+
+    def __init__(self, pattern, flags=0):
+        """Constructor.
+
+        :param pattern: The pattern to match.
+        :param flags: The flags to use when performing the match.
+        """
+        self.pattern = pattern
+        self.flags = flags
+
+    def match(self, something):
+        """See `Matcher`."""
+        if re.match(self.pattern, something, self.flags):
+            return None
+        return Mismatch('Pattern "%s" not in "%s".' % (self.pattern, something))
+
+    def __str__(self):
+        """See `Matcher`."""
+        return 'RegexMatcher(%r)' % self.pattern

@@ -48,10 +48,83 @@ from lp.services.fields import PublicPersonChoice
 from lp.services.worlddata.interfaces.language import ILanguage
 
 
-class IQuestionTarget(ISearchableByQuestionOwner):
-    """An object that can have a new question asked about it."""
+class IQuestionTargetPublic(ISearchableByQuestionOwner):
+    """Methods that anonymous in user can access."""
 
-    export_as_webservice_entry(as_of='devel')
+    @operation_parameters(
+        question_id=Int(title=_('Question Number'), required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getQuestion(question_id):
+        """Return the question by its id, if it is applicable to this target.
+
+        :question_id: A question id.
+
+        If there is no such question number for this target, return None
+        """
+
+    def findSimilarQuestions(title):
+        """Return questions similar to title.
+
+        Return a list of question similar to the title provided. These
+        questions should be found using a fuzzy search. The list should be
+        ordered from the most similar question to the least similar question.
+
+        :title: A phrase
+        """
+
+    @operation_parameters(
+        language=Reference(ILanguage))
+    @operation_returns_collection_of(IPerson)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getAnswerContactsForLanguage(language):
+        """Return the list of Persons that provide support for a language.
+
+        An answer contact supports questions in his preferred languages.
+        """
+
+    def getAnswerContactRecipients(language):
+        """Return an `INotificationRecipientSet` of answer contacts.
+
+        :language: an ILanguage or None. When language is none, all
+                   answer contacts are returned.
+
+        Return an INotificationRecipientSet of the answer contacts and the
+        reason they are recipients of an email. The answer contacts are
+        selected by their language and the fact that they are answer contacts
+        for the QuestionTarget.
+        """
+
+    @operation_returns_collection_of(ILanguage)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getSupportedLanguages():
+        """Return a list of languages spoken by at the answer contacts.
+
+        An answer contact is considered to speak a given language if that
+        language is listed as one of his preferred languages.
+        """
+
+    answer_contacts = List(
+        title=_("Answer Contacts"),
+        description=_(
+            "Persons that are willing to provide support for this target. "
+            "They receive email notifications about each new question as "
+            "well as for changes to any questions related to this target."),
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
+
+    direct_answer_contacts = List(
+        title=_("Direct Answer Contacts"),
+        description=_(
+            "IPersons that registered as answer contacts explicitely on "
+            "this target. (answer_contacts may include answer contacts "
+            "inherited from other context.)"),
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
+
+
+class IQuestionTargetView(Interface):
+    """Methods that logged in user can access."""
 
     def newQuestion(owner, title, description, language=None,
                     datecreated=None):
@@ -84,28 +157,6 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         active.
 
         :bug: An IBug.
-        """
-
-    @operation_parameters(
-        question_id=Int(title=_('Question Number'), required=True))
-    @export_read_operation()
-    @operation_for_version('devel')
-    def getQuestion(question_id):
-        """Return the question by its id, if it is applicable to this target.
-
-        :question_id: A question id.
-
-        If there is no such question number for this target, return None
-        """
-
-    def findSimilarQuestions(title):
-        """Return questions similar to title.
-
-        Return a list of question similar to the title provided. These
-        questions should be found using a fuzzy search. The list should be
-        ordered from the most similar question to the least similar question.
-
-        :title: A phrase
         """
 
     @operation_parameters(
@@ -159,54 +210,10 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             answer contact.
         """
 
-    @operation_parameters(
-        language=Reference(ILanguage))
-    @operation_returns_collection_of(IPerson)
-    @export_read_operation()
-    @operation_for_version('devel')
-    def getAnswerContactsForLanguage(language):
-        """Return the list of Persons that provide support for a language.
 
-        An answer contact supports questions in his preferred languages.
-        """
-
-    def getAnswerContactRecipients(language):
-        """Return an `INotificationRecipientSet` of answer contacts.
-
-        :language: an ILanguage or None. When language is none, all
-                   answer contacts are returned.
-
-        Return an INotificationRecipientSet of the answer contacts and the
-        reason they are recipients of an email. The answer contacts are
-        selected by their language and the fact that they are answer contacts
-        for the QuestionTarget.
-        """
-
-    @operation_returns_collection_of(ILanguage)
-    @export_read_operation()
-    @operation_for_version('devel')
-    def getSupportedLanguages():
-        """Return a list of languages spoken by at the answer contacts.
-
-        An answer contact is considered to speak a given language if that
-        language is listed as one of his preferred languages.
-        """
-
-    answer_contacts = List(
-        title=_("Answer Contacts"),
-        description=_(
-            "Persons that are willing to provide support for this target. "
-            "They receive email notifications about each new question as "
-            "well as for changes to any questions related to this target."),
-        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
-
-    direct_answer_contacts = List(
-        title=_("Direct Answer Contacts"),
-        description=_(
-            "IPersons that registered as answer contacts explicitely on "
-            "this target. (answer_contacts may include answer contacts "
-            "inherited from other context.)"),
-        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
+class IQuestionTarget(IQuestionTargetPublic, IQuestionTargetView):
+    """An object that can have a new question asked about it."""
+    export_as_webservice_entry(as_of='devel')
 
 
 # These schemas are only used by browser/questiontarget.py and should really

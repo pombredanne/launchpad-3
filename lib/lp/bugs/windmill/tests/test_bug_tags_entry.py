@@ -60,7 +60,7 @@ class TestBugTagsEntry(WindmillTestCase):
 
         # Test that anonymous users are prompted to log in.
 
-        client, start_url = self.getClientForAnomymous(bug)
+        client, start_url = self.getClientForAnonymous(bug)
         client.waits.sleep(milliseconds=constants.SLEEP)
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
