@@ -48,11 +48,9 @@
     class="boardCommentFooter">
     <a tal:attributes="id string:mark-spam-${context/index};"
        class="js-action sprite edit mark-spam" href="#">
-         <tal:not-spam condition="not: context/visible"
-         >Unhide comment</
-         tal:not-spam>
-         <tal:spam condition="context/visible"
-         >Hide comment</tal:spam>
+       <tal:not-spam
+         condition="not: context/visible">Unhide comment</tal:not-spam>
+       <tal:spam condition="context/visible">Hide comment</tal:spam>
     </a>
   </div>
 </div>
