@@ -483,7 +483,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Subscribed directly to the bug, muted.
         with person_logged_in(self.subscriber):
             self.bug.subscribe(self.subscriber, self.subscriber,
-                               level=BugNotificationLevel.NOTHING)
+                               level=BugNotificationLevel.METADATA)
 
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()

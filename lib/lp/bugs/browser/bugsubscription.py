@@ -43,7 +43,7 @@ from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
-from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
@@ -121,17 +121,12 @@ class AdvancedSubscriptionMixin:
             SimpleTerm(
                 level, level.title,
                 self._bug_notification_level_descriptions[level])
-            # We reorder the items so that COMMENTS comes first. We also
-            # drop the NOTHING option since it just makes the UI
-            # confusing.
-            for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level not in HIDDEN_BUG_NOTIFICATION_LEVELS]
+            # We reorder the items so that COMMENTS comes first.
+            for level in sorted(BugNotificationLevel.items, reverse=True)]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
-        if (self.current_user_subscription is not None and
-            self.current_user_subscription.bug_notification_level not in
-                HIDDEN_BUG_NOTIFICATION_LEVELS):
+        if self.current_user_subscription is not None:
             default_value = (
                 self.current_user_subscription.bug_notification_level)
         else:
@@ -537,9 +532,6 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
             if not check_permission('launchpad.View', subscription.person):
-                continue
-            if (subscription.bug_notification_level ==
-                BugNotificationLevel.NOTHING):
                 continue
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe

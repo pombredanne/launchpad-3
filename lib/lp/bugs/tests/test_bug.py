@@ -46,8 +46,8 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertEqual(True, self.bug.isMuted(self.person))
 
     def test_is_muted_returns_false_for_direct_subscribers(self):
-        # Bug.isMuted() will return False if the user has a subscription
-        # with BugNotificationLevel that's not NOTHING.
+        # Bug.isMuted() will return False if the user has a
+        # regular subscription.
         with person_logged_in(self.person):
             self.bug.subscribe(
                 self.person, self.person, level=BugNotificationLevel.METADATA)

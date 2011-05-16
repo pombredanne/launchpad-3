@@ -492,8 +492,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def isMuted(person):
         """Does person have a muted subscription on this bug?
 
-        :returns: True if the user has a direct subscription to this bug
-            with a BugNotificationLevel of NOTHING.
+        :returns: True if the user has muted all email from this bug.
         """
 
     @operation_parameters(
