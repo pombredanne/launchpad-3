@@ -33,4 +33,4 @@ DELETE
     FROM BugSubscription
     WHERE bug_notification_level=10;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 70, 0);
