@@ -38,6 +38,7 @@ from operator import (
 import os
 from random import randint
 from StringIO import StringIO
+import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -422,7 +423,10 @@ class ObjectFactory:
             defaults to 'generic-string'.
         """
         if prefix is None:
-            prefix = "generic-string"
+            frame = sys._getframe(1)
+            prefix = 'unique-%s-line%d-' % (
+                frame.f_code.co_filename.rsplit('/', 1)[-1],
+                frame.f_lineno)
         string = "%s%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
@@ -2560,11 +2564,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
-            name = self.getUniqueString()
+            name = self.getUniqueString('builder-name')
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('builder-title')
         if description is None:
-            description = self.getUniqueString()
+            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
@@ -2616,9 +2620,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
-            name = self.getUniqueString().decode('utf8')
+            name = self.getUniqueString('spr-name').decode('utf8')
         if description is None:
-            description = self.getUniqueString().decode('utf8')
+            description = self.getUniqueString(
+                'spr-description').decode('utf8')
         if daily_build_archive is None:
             daily_build_archive = self.makeArchive(
                 distribution=distroseries.distribution, owner=owner)
