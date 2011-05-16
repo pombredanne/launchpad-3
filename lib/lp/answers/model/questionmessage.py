@@ -57,7 +57,7 @@ class QuestionMessage(SQLBase):
     @cachedproperty
     def display_index(self):
         # Return the index + 1 so that messages appear 1-indexed in the UI.
-        return list(self.question.messages).index(self) + 1
+        return self.index + 1
 
     @property
     def visible(self):
