@@ -43,6 +43,9 @@ class ConfigFixture(Fixture):
         """Add sectioncontent to the lazy config."""
         with open(self.absroot + '/launchpad-lazr.conf', 'ab') as out:
             out.write(sectioncontent)
+        # Trigger a refresh IFF the config is in use at the moment.
+        if config.instance_name == self.instance_name:
+            config._invalidateConfig()
 
     def setUp(self):
         super(ConfigFixture, self).setUp()

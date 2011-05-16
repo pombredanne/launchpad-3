@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import socket
+from textwrap import dedent
 
 from amqplib import client_0_8 as amqp
 from fixtures import EnvironmentVariableFixture
@@ -28,14 +29,25 @@ class TestRabbitFixture(TestCase):
             self.addCleanup(self._gather_details, fixture.getDetails)
             fixture.setUp()
             # We can connect.
-            host = 'localhost:%s' % fixture.config.port
+            host = fixture.host
             conn = amqp.Connection(host=host, userid="guest",
-                password="guest", virtual_host="/", insist=False)
+            password="guest", virtual_host="/", insist=False)
             conn.close()
             # And get a log file
             log = fixture.getDetails()['rabbit log file']
             # Which shouldn't blow up on iteration.
             list(log.iter_text())
+            # There is a (launchpad specific) config fixture. (This could be a
+            # separate class if we make the fixture external in the future).
+            expected = dedent("""\
+                [rabbitmq]
+                host: %s
+                userid: guest
+                password: guest
+                virtual_host: /
+                """ % host)
+            self.assertEqual(expected, fixture.config.service_config)
+
         finally:
             fixture.cleanUp()
         # The daemon should be closed now.

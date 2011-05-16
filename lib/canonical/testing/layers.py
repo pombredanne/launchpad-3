@@ -115,6 +115,7 @@ from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
+from lp.services.rabbit.testing.server import RabbitServer
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup)
@@ -639,6 +640,43 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.flush_all() # Only do this in tests!
 
 
+class RabbitMQLayer(BaseLayer):
+    """Provides tests access to a rabbitMQ instance."""
+    _reset_between_tests = True
+
+    rabbit = RabbitServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.rabbit.setUp()
+        cls.config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls.appserver_config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.rabbit.cleanUp()
+        cls._is_setup = False
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 # We store a reference to the DB-API connect method here when we
 # put a proxy in its place.
 _org_connect = None
@@ -934,7 +972,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon

@@ -10,6 +10,7 @@ import sys
 import socket
 import optparse
 import subprocess
+from textwrap import dedent
 import time
 
 import bzrlib.branch
@@ -177,6 +178,13 @@ class AllocateRabbitServer(Fixture):
         self.logfile = os.path.join(self.rabbitdir, 'rabbit.log')
         self.pidfile = os.path.join(self.rabbitdir, 'rabbit.pid')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
+        self.service_config = dedent("""\
+            [rabbitmq]
+            host: localhost:%d
+            userid: guest
+            password: guest
+            virtual_host: /
+            """ % self.port)
 
     def fq_nodename(self):
         """Get the node of the rabbit that is being exported."""
@@ -381,7 +389,7 @@ class RabbitServer(Fixture):
         self.config = self.useFixture(AllocateRabbitServer())
         self.server = RunRabbitServer(self.config)
         self.useFixture(self.server)
+        self.host = 'localhost:%s' % self.config.port
 
     def getDetails(self):
         return self.server.getDetails()
-
