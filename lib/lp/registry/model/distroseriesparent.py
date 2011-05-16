@@ -16,12 +16,18 @@ from storm.locals import (
     Reference,
     Storm,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
@@ -87,3 +93,26 @@ class DistroSeriesParentSet:
         return store.find(
             DistroSeriesParent,
             DistroSeriesParent.parent_series_id == parent_series.id)
+
+    def getFlattenedOverlayTree(self, derived_series):
+        """See `IDistroSeriesParentSet`."""
+        self.getByDerivedSeries(derived_series)
+        rec_overlay_query = '''
+        WITH RECURSIVE t_parents(parent_series) AS (
+                SELECT parent_series
+                FROM DistroSeriesParent
+                WHERE derived_series=? AND
+                    is_overlay = True
+            UNION ALL
+                SELECT dsp.parent_series
+                FROM DistroSeriesParent dsp, t_parents p
+                WHERE dsp.derived_series = p.parent_series AND
+                    dsp.is_overlay = True
+        )
+        SELECT * FROM t_parents;
+        '''
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        res = store.execute(
+            rec_overlay_query, (derived_series.id, )).get_all()
+        return store.find(DistroSeriesParent,
+            DistroSeriesParent.parent_series_id.is_in(r[0] for r in res))

@@ -75,3 +75,20 @@ class IDistroSeriesParentSet(Interface):
 
         :param parent_series: An `IDistroseries`
         """
+
+    def getFlattenedOverlayTree(derived_series):
+        """Get the list of DistroSeriesParents corresponding to the
+        flattened overlay tree.
+
+        :param parent_series: An `IDistroseries`
+
+        For instance, given the following structure:
+               /-o- parent11 -o- parent12 --- parent13
+        series
+               \-o- parent21 --- parent22
+                \--- parent 31
+        -o-: overlay
+        ---: not overlay
+        The result would be:
+        [dsp(series, parent11), dsp(series, parent12), dsp(series, parent21)]
+        """
