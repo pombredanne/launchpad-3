@@ -293,4 +293,7 @@ class ReadOnlyErrorView(SystemErrorView):
 class NoReferrerErrorView(SystemErrorView):
     """View rendered when a POST request does not include a REFERER header."""
 
+    page_title = "Error: Forbidden"
+    override_title_breadcrumbs = True
+
     response_code = 403 # Forbidden.

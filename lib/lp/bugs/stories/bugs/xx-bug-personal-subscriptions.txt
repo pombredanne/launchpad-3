@@ -32,7 +32,7 @@ this.
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...   print tag.renderContents()
-  You have been subscribed to this bug.
+  You have subscribed to this bug report.
 
 There's also now a link to unsubscribe the user next to the name. It's a
 relative URL to +subscribe, so it will only work when the portlet is
