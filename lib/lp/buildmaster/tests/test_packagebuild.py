@@ -381,10 +381,22 @@ class TestHandleStatusMixin:
         return d.addCallback(got_status)
 
     def _test_handleStatus_notifies(self, status):
-        # An email notification is sent for a given build status.
+        # An email notification is sent for a given build status if
+        # notifications are allowed for that status.
+
+        naked_build = removeSecurityProxy(self.build)
+        expected_notification = (
+            status in naked_build._getAllowedStatusNotifications())
+
         def got_status(ignored):
-            self.failIf(
-                len(pop_notifications()) == 0, "No notifications received")
+            if expected_notification:
+                self.failIf(
+                    len(pop_notifications()) == 0,
+                    "No notifications received")
+            else:
+                self.failIf(
+                    len(pop_notifications()) > 0,
+                    "Notifications received")
 
         d = self.build.handleStatus(status, None, {})
         return d.addCallback(got_status)
