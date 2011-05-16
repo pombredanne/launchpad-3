@@ -109,7 +109,6 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
@@ -235,12 +234,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 bug=108240
-        # We test for ISourcePackage because it is a valid QuestionTarget even
-        # though it should not be. SourcePackages are never passed to this
-        # mutator.
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
