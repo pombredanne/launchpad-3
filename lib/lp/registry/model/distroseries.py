@@ -790,7 +790,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
         # the bug is fixed.
-        return self.parent_series is not None
+        return self.previous_series is not None
 
     @property
     def is_initialising(self):
@@ -1999,13 +1999,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeriesPublic`."""
         # XXX rvb 2011-04-08 bug=754750: The clause
         # 'DistroSeries.distributionID!=self.distributionID' is only
-        # required because the parent_series attribute has been
+        # required because the previous_series attribute has been
         # (mis-)used to denote other relations than proper derivation
         # relashionships. We should be rid of this condition once
         # the bug is fixed.
         results = Store.of(self).find(
             DistroSeries,
-            DistroSeries.parent_series==self.id,
+            DistroSeries.previous_series==self.id,
             DistroSeries.distributionID!=self.distributionID)
         return results.order_by(Desc(DistroSeries.date_created))
 

@@ -89,7 +89,7 @@ class FactoryHelper:
     def makeDerivedDistroSeries(self):
         """Create a `DistroSeries` that's derived from another distro."""
         return self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+            previous_series=self.factory.makeDistroSeries())
 
     def getDistroSeriesDiff(self, distroseries):
         """Find the `DistroSeriesDifference` records for `distroseries`."""
@@ -228,8 +228,8 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_find_grandparents_packages(self):
         parent = self.makeDerivedDistroSeries()
-        distroseries = self.factory.makeDistroSeries(parent_series=parent)
-        self.makeSPPH(distroseries=parent.parent_series)
+        distroseries = self.factory.makeDistroSeries(previous_series=parent)
+        self.makeSPPH(distroseries=parent.previous_series)
         query = compose_sql_find_differences(distroseries)
         self.assertContentEqual([], Store.of(distroseries).execute(query))
 
@@ -237,7 +237,7 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         distroseries = self.makeDerivedDistroSeries()
         spr = self.factory.makeSourcePackageRelease()
         self.makeSPPH(
-            distroseries=distroseries.parent_series, sourcepackagerelease=spr)
+            distroseries=distroseries.previous_series, sourcepackagerelease=spr)
         self.makeSPPH(
             distroseries=distroseries, sourcepackagerelease=spr)
         query = compose_sql_find_differences(distroseries)
@@ -246,7 +246,7 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
     def test_ignores_releases_for_same_version(self):
         derived_series = self.makeDerivedDistroSeries()
         version_string = self.factory.getUniqueString()
-        parent_series = derived_series.parent_series
+        previous_series = derived_series.previous_series
         package = self.factory.makeSourcePackageName()
         self.makeSPPH(
             distroseries=derived_series,
@@ -254,16 +254,16 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
                 sourcepackagename=package, distroseries=derived_series,
                 version=version_string))
         self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                sourcepackagename=package, distroseries=parent_series,
+                sourcepackagename=package, distroseries=previous_series,
                 version=version_string))
         query = compose_sql_find_differences(derived_series)
         self.assertContentEqual([], Store.of(derived_series).execute(query))
 
     def test_finds_release_missing_in_derived_series(self):
         distroseries = self.makeDerivedDistroSeries()
-        spph = self.makeSPPH(distroseries=distroseries.parent_series)
+        spph = self.makeSPPH(distroseries=distroseries.previous_series)
         query = compose_sql_find_differences(distroseries)
         self.assertContentEqual(
             [(
@@ -287,7 +287,7 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_conflate_releases_of_different_packages(self):
         distroseries = self.makeDerivedDistroSeries()
-        parent_spph = self.makeSPPH(distroseries=distroseries.parent_series)
+        parent_spph = self.makeSPPH(distroseries=distroseries.previous_series)
         derived_spph = self.makeSPPH(distroseries=distroseries)
         query = compose_sql_find_differences(distroseries)
         self.assertEqual(2, Store.of(distroseries).execute(query).rowcount)
@@ -304,12 +304,12 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
 
     def test_finds_different_releases_of_same_package(self):
         distroseries = self.makeDerivedDistroSeries()
-        parent_series = distroseries.parent_series
+        previous_series = distroseries.previous_series
         spn = self.factory.makeSourcePackageName()
         parent_spph = self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                distroseries=parent_series, sourcepackagename=spn))
+                distroseries=previous_series, sourcepackagename=spn))
         derived_spph = self.makeSPPH(
             distroseries=distroseries,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
@@ -325,12 +325,12 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
 
     def test_finds_newer_release_even_when_same_release_also_exists(self):
         derived_series = self.makeDerivedDistroSeries()
-        parent_series = derived_series.parent_series
+        previous_series = derived_series.previous_series
         spn = self.factory.makeSourcePackageName()
         shared_spr = self.factory.makeSourcePackageRelease(
-            distroseries=parent_series, sourcepackagename=spn)
+            distroseries=previous_series, sourcepackagename=spn)
         parent_spph = self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=shared_spr)
         derived_spph = self.makeSPPH(
             distroseries=derived_series,
@@ -411,10 +411,10 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
         self.assertIn(self.makeDerivedDistroSeries(), find_derived_series())
 
     def test_ignores_parent_within_same_distro(self):
-        parent_series = self.factory.makeDistroSeries()
+        previous_series = self.factory.makeDistroSeries()
         derived_series = self.factory.makeDistroSeries(
-            distribution=parent_series.distribution,
-            parent_series=parent_series)
+            distribution=previous_series.distribution,
+            previous_series=previous_series)
         self.assertNotIn(derived_series, find_derived_series())
 
 
@@ -610,10 +610,10 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
             distroseries=distroseries,
             sourcepackagerelease=derived_spr)
         parent_spr = self.factory.makeSourcePackageRelease(
-            distroseries=distroseries.parent_series,
+            distroseries=distroseries.previous_series,
             sourcepackagename=package)
         self.makeSPPH(
-            distroseries=distroseries.parent_series,
+            distroseries=distroseries.previous_series,
             sourcepackagerelease=parent_spr)
         script = self.makeScript([
             '--distribution', distroseries.distribution.name,
