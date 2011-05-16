@@ -46,6 +46,7 @@ from lp.testing import (
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPackageBuildBase(TestCaseWithFactory):
@@ -373,9 +374,29 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
+
         def got_status(ignored):
             self.assertNotEqual(None, self.build.log)
+
         return d.addCallback(got_status)
+
+    def _test_handleStatus_notifies(self, status):
+        # An email notification is sent for a given build status.
+        def got_status(ignored):
+            self.failIf(
+                len(pop_notifications()) == 0, "No notifications received")
+
+        d = self.build.handleStatus(status, None, {})
+        return d.addCallback(got_status)
+
+    def test_handleStatus_DEPFAIL_notifies(self):
+        return self._test_handleStatus_notifies("DEPFAIL")
+
+    def test_handleStatus_CHROOTFAIL_notifies(self):
+        return self._test_handleStatus_notifies("CHROOTFAIL")
+
+    def test_handleStatus_PACKAGEFAIL_notifies(self):
+        return self._test_handleStatus_notifies("PACKAGEFAIL")
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
@@ -384,6 +405,8 @@ class TestHandleStatusMixin:
         d = self.build.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
+
         def got_status(ignored):
             self.assertNotEqual(None, self.build.date_finished)
+
         return d.addCallback(got_status)

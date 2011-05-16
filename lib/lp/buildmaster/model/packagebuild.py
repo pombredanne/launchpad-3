@@ -298,7 +298,7 @@ class PackageBuildDerived:
         # Release the builder for another job.
         d = self.buildqueue_record.builder.cleanSlave()
         # Remove BuildQueue record.
-        return d.addCallback(lambda x:self.buildqueue_record.destroySelf())
+        return d.addCallback(lambda x: self.buildqueue_record.destroySelf())
 
     def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
@@ -367,8 +367,8 @@ class PackageBuildDerived:
             # files from the slave.
             if successful_copy_from_slave:
                 logger.info(
-                    "Gathered %s %d completely. Moving %s to uploader queue." % (
-                    self.__class__.__name__, self.id, upload_leaf))
+                    "Gathered %s %d completely. Moving %s to uploader queue."
+                    % (self.__class__.__name__, self.id, upload_leaf))
                 target_dir = os.path.join(root, "incoming")
                 self.status = BuildStatus.UPLOADING
             else:
@@ -384,8 +384,8 @@ class PackageBuildDerived:
             # Release the builder for another job.
             d = self._release_builder_and_remove_queue_item()
 
-            # Commit so there are no race conditions with archiveuploader about
-            # self.status.
+            # Commit so there are no race conditions with archiveuploader
+            # about self.status.
             Store.of(self).commit()
 
             # Move the directory used to grab the binaries into
@@ -411,11 +411,12 @@ class PackageBuildDerived:
         remove Buildqueue entry.
         """
         self.status = BuildStatus.FAILEDTOBUILD
+
         def build_info_stored(ignored):
             self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
@@ -428,12 +429,14 @@ class PackageBuildDerived:
         entry and release builder slave for another job.
         """
         self.status = BuildStatus.MANUALDEPWAIT
+
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
                             % self.buildqueue_record.builder.name)
+            self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
@@ -446,13 +449,14 @@ class PackageBuildDerived:
         and release the builder.
         """
         self.status = BuildStatus.CHROOTWAIT
+
         def build_info_stored(ignored):
             logger.critical("***** %s is CHROOTWAIT *****" %
                             self.buildqueue_record.builder.name)
             self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
@@ -468,6 +472,7 @@ class PackageBuildDerived:
                        % self.buildqueue_record.builder.name)
         self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
+
         def build_info_stored(ignored):
             # simply reset job
             self.buildqueue_record.reset()
@@ -484,6 +489,7 @@ class PackageBuildDerived:
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
+
         def build_info_stored(ignored):
             # XXX cprov 2006-05-30: Currently this information is not
             # properly presented in the Web UI. We will discuss it in
