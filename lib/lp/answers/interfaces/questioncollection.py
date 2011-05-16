@@ -100,6 +100,8 @@ class ISearchableByQuestionOwner(IQuestionCollection):
     @export_read_operation()
     @operation_for_version('devel')
     def searchQuestions(search_text=None,
+                        # Lp wants a sequence, but lazr.restful only supports
+                        # lists; cast the tuple as a list.
                         status=list(QUESTION_STATUS_DEFAULT_SEARCH),
                         language=None, sort=None, owner=None,
                         needs_attention_from=None):
