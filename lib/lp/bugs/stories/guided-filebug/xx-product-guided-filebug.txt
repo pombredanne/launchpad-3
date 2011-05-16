@@ -131,7 +131,7 @@ set to ensure that we get subscribed to the bug.
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     This bug is already marked as affecting you.
-    You have been subscribed to this bug.
+    You have subscribed to this bug report.
 
 
 Filing a bug when there are none similar
