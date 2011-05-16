@@ -51,7 +51,7 @@ class PackageSearchViewBase(LaunchpadView):
     @cachedproperty
     def search_results(self):
         """Search for packages matching the request text.
-        
+
         Try to find the packages that match the given text, then present
         those as a list. Cache previous results so the search is only done
         once.
