@@ -18,10 +18,10 @@
     </style>
     <script type="text/javascript">
         LPS.use('base', 'node', 'event',
-                'lp.services.comments.hide-comments', function(Y) {
+                'lp.comments.hide', function(Y) {
         Y.on('domready', function() {
             LP.cache.comment_context = LP.cache.context;
-            Y.lp.services.comments.hide-comments.setup_hide_links();
+            Y.lp.comments.hide.setup_hide_links();
         });
       });
     </script>
