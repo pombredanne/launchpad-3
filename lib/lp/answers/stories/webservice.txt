@@ -200,8 +200,8 @@ that indicate how the message changed the question.
     question_link: u'http://api.launchpad.dev/devel/my-project/+question/...'
     resource_type_link: u'http://api.launchpad.dev/devel/#question_message'
     self_link:
-        u'http://api.launchpad.dev/devel/my-project/+question/.../+message/1'
+        u'http://api.launchpad.dev/devel/my-project/+question/.../messages/1'
     subject: u'Re: Q 1 great'
     visible: True
     web_link:
-        u'http://answers.launchpad.dev/my-project/+question/.../+message/1'
+        u'http://answers.launchpad.dev/my-project/+question/.../messages/1'
