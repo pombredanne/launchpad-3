@@ -274,6 +274,9 @@ class IGPGHandler(Interface):
 
         This function is called so that the configuration directory does not
         get cleaned up by any reaper scripts which look at time last modified.
+        It is only required in the case where a long running daemon uses an
+        IGPGHandler instance such that the lifetime of the daemon exceeds the
+        reaping (ie tmp clean up) interval.
         """
 
 

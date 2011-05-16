@@ -1,18 +1,18 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-import gpgme
-import os
-
 from calendar import timegm
 from datetime import (
     datetime,
     timedelta,
     )
 from math import floor
-from pytz import UTC
+import os
 from time import time
+import unittest
+
+import gpgme
+from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
