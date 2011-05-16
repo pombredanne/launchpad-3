@@ -76,11 +76,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """Registers a subscriber of a duplicate of this bug."""
         reason = "Subscriber of Duplicate"
         if person.isTeam():
-            text = ("are a member of %s, which is a subscriber "
-                    "of a duplicate bug" % person.displayname)
+            text = ("are a member of %s, which is subscribed "
+                    "to a duplicate bug report" % person.displayname)
             reason += " @%s" % person.name
         else:
-            text = "are a direct subscriber of a duplicate bug"
+            text = "are subscribed to a duplicate bug report"
         if duplicate_bug is not None:
             text += " (%s)" % duplicate_bug.id
         self._addReason(person, text, reason)
@@ -89,11 +89,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """Registers a direct subscriber of this bug."""
         reason = "Subscriber"
         if person.isTeam():
-            text = ("are a member of %s, which is a direct subscriber"
+            text = ("are a member of %s, which is subscribed"
                     % person.displayname)
             reason += " @%s" % person.name
         else:
-            text = "are a direct subscriber of the bug"
+            text = "are subscribed to the bug report"
         self._addReason(person, text, reason)
 
     def addAssignee(self, person):
