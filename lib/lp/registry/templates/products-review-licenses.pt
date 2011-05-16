@@ -26,6 +26,10 @@
       dl + p {
             margin-top: 1em;
             }
+      .scrolled {
+            max-height: 6em;
+            overflow: auto;
+            }
     </style>
   </metal:block>
 
@@ -39,7 +43,7 @@
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
     <table id="product-listing" class="listing">
       <thead>
-        <th style="max-width: 45em">Project information</th>
+        <th style="width: 45em">Project information</th>
         <th>Status and Licenses</th>
       </thead>
       <tbody>

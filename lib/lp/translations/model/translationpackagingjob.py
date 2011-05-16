@@ -12,11 +12,13 @@ __all__ = [
     'TranslationSplitJob',
     ]
 
+import logging
 
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectDeletedEvent,
     )
+import transaction
 from zope.interface import (
     classProvides,
     implements,
@@ -85,9 +87,16 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     def run(self):
         """See `IRunnableJob`."""
+        logger = logging.getLogger()
         if not self.distroseries.distribution.full_functionality:
+            logger.warning(
+                'Skipping merge for unsupported distroseries "%s".' %
+                self.distroseries.displayname)
             return
-        tm = TransactionManager(None, False)
+        logger.info(
+            'Merging %s and %s', self.productseries.displayname,
+            self.sourcepackage.displayname)
+        tm = TransactionManager(transaction.manager, False)
         TranslationMerger.mergePackagingTemplates(
             self.productseries, self.sourcepackagename, self.distroseries, tm)
 
@@ -103,4 +112,8 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     def run(self):
         """See `IRunnableJob`."""
+        logger = logging.getLogger()
+        logger.info(
+            'Splitting %s and %s', self.productseries.displayname,
+            self.sourcepackage.displayname)
         TranslationSplitter(self.productseries, self.sourcepackage).split()
