@@ -19,7 +19,14 @@ class PackageSearchViewBase(LaunchpadView):
         """Save the search text set by the user."""
         self.text = self.request.get("text", None)
         if self.text is not None:
+            # The user may have URL hacked a query string with more than one
+            # "text" parameter. We'll take the last one.
+            if isinstance(self.text, list):
+                self.text = self.text[-1]
             self.text = self.text.strip()
+            # We need to ensure the form on the refreshed page shows the
+            # correct text.
+            self.request.form['text'] = self.text
 
     @property
     def search_requested(self):
