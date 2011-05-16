@@ -137,6 +137,7 @@ from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
     )
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.fields import URIField
@@ -194,7 +195,8 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
 
     def traverse(self, name):
         """See `INavigation`."""
-        return self.context.getRelease(name)
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self.context, name)
 
 
 class ProductSeriesBreadcrumb(Breadcrumb):
