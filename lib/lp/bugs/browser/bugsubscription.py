@@ -307,6 +307,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
+        self.widgets['subscription'].widget_class = 'bug-subscription-basic'
         if self._use_advanced_features:
             self.widgets['bug_notification_level'].widget_class = (
                 'bug-notification-level-field')
