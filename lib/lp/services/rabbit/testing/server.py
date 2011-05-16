@@ -6,22 +6,22 @@
 import errno
 import os
 import re
-import sys
 import socket
-import optparse
 import subprocess
+import sys
 import time
 
-import bzrlib.branch
+from amqplib import client_0_8 as amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     TempDir,
     )
-from testtools.content import Content
+from testtools.content import (
+    Content,
+    content_from_file,
+    )
 from testtools.content_type import UTF8_TEXT
-
-from amqplib import client_0_8 as amqp
 
 # The default binaries have a check that the running use is uid 0 or uname
 # 'rabbitmq', neither of which are needed to operate correctly. So we run the
@@ -97,8 +97,7 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     if fnullr:
         os.close(fnullr)
     # open up the logfile and start up the process
-    f = os.open(logfilename,
-                os.O_WRONLY|os.O_CREAT|os.O_TRUNC)
+    f = os.open(logfilename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
     os.dup2(f, 1)
     os.dup2(f, 2)
     if f > 2:
@@ -151,7 +150,7 @@ def allocate_ports(n=1):
             s.bind(('localhost', 0))
         ports = map(lambda s: s.getsockname()[1], sockets)
     finally:
-        for s in sockets: 
+        for s in sockets:
             s.close()
     return ports
 
@@ -187,8 +186,8 @@ class AllocateRabbitServer(Fixture):
 
 
 class ExportRabbitServer(Fixture):
-    """Export the environmen variables needed to talk to a rabbit instance.
-    
+    """Export the environment variables needed to talk to a RabbitMQ instance.
+
     When setup this exports the key rabbit variables::
      * RABBITMQ_MNESIA_BASE
      * RABBITMQ_LOG_BASE
@@ -199,8 +198,8 @@ class ExportRabbitServer(Fixture):
     def __init__(self, config):
         """Create a ExportRabbitServer instance.
 
-        :param config: An object exporting the variables `AllocateRabbitServer`
-            exports.
+        :param config: An object exporting the variables
+            `AllocateRabbitServer` exports.
         """
         super(ExportRabbitServer, self).__init__()
         self.config = config
@@ -229,13 +228,13 @@ class ExportRabbitServer(Fixture):
 
     def rabbitctl(self, command, strip=False):
         """ executes a rabbitctl command and returns status """
-        ctlbin = RABBITBIN + "/rabbitmqctl"
+        ctlbin = os.path.join(RABBITBIN, "rabbitmqctl")
         nodename = self.config.fq_nodename()
         env = dict(os.environ)
         env['HOME'] = self.config.rabbitdir
-        ctl = subprocess.Popen((ctlbin, "-n", nodename, command),
-                               stdout = subprocess.PIPE,
-                               stderr = subprocess.PIPE, env=env)
+        ctl = subprocess.Popen(
+            (ctlbin, "-n", nodename, command), env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         outstr, errstr = ctl.communicate()
         if strip:
             return outstr.strip(), errstr.strip()
@@ -260,7 +259,7 @@ class ExportRabbitServer(Fixture):
                   [^@']+                # hostname
                 )                       # end capturing group
                 '?                      # individual node may be quoted
-                ,?                      # may be multiple nodes, comma-separated
+                ,?                      # may be multiple nodes, comma-sep
               \]                        # end list
             \}                          # end section
         """, re.VERBOSE)
@@ -268,31 +267,32 @@ class ExportRabbitServer(Fixture):
         if not match:
             self._errors.append(outdata)
             return False
-        found_node = match.groupdict()['nodename']
+        found_node = match.group('nodename')
         return found_node == nodename
 
     def get_connection(self):
         """Get an AMQP connection to the RabbitMQ server.
-        
+
         :raises socket.error: If the connection cannot be made.
         """
         host_port = "%s:%s" % (self.config.hostname, self.config.port)
-        conn = amqp.Connection(host=host_port, userid="guest",
-                               password="guest", virtual_host="/", insist=False)
+        conn = amqp.Connection(
+            host=host_port, userid="guest",
+            password="guest", virtual_host="/", insist=False)
         return conn
 
 
 class RunRabbitServer(Fixture):
     """Run a rabbit server.
-    
+
     :ivar pid: The pid of the server.
     """
 
     def __init__(self, config):
         """Create a RunRabbitServer instance.
 
-        :param config: An object exporting the variables `AllocateRabbitServer`
-            exports.
+        :param config: An object exporting the variables
+            `AllocateRabbitServer` exports.
         """
         super(RunRabbitServer, self).__init__()
         self.config = config
@@ -304,37 +304,40 @@ class RunRabbitServer(Fixture):
         self.addDetail('rabbitctl errors',
             Content(UTF8_TEXT, self.rabbit._get_errors))
         self.addDetail('rabbit log file',
-            Content(UTF8_TEXT, lambda:[file(self.config.logfile, 'rb').read()]))
-        cmd = RABBITBIN + '/rabbitmq-server'
+            content_from_file(self.config.logfile))
+        cmd = os.path.join(RABBITBIN, 'rabbitmq-server')
         name = "RabbitMQ server node:%s on port:%d" % (
             self.config.nodename, self.config.port)
         daemon(name, self.config.logfile, self.config.pidfile, command=cmd,
             homedir=self.config.rabbitdir)
-        # now wait about 5 secs for it to start
+        # Wait for the server to come up...
         timeout = time.time() + 5
-        while True:
+        while time.time() < timeout:
             if self.rabbit.check_running():
                 break
-            elif time.time() > timeout:
-                raise Exception('Timeout waiting for rabbit OTP server to start.')
+            time.sleep(0.3)
+        else:
+            raise Exception(
+                "Timeout waiting for RabbitMQ OTP server to start.")
         # The erlang OTP is up, but rabbit may not be usable. We need to
-        # cleanup up the process from here on in even if the full service fails
-        # to get together.
+        # cleanup up the process from here on in even if the full service
+        # fails to get together.
         self.addCleanup(self.stop)
-        while True:
+        # Wait until the server is ready...
+        while time.time() < timeout:
             # rabbitctl can say a node is up before it is ready to
             # accept connections ... :-(
             try:
                 conn = self.rabbit.get_connection()
             except socket.error:
-                pass
+                time.sleep(0.1)
             else:
                 conn.close()
                 break
-            time.sleep(0.1)
-            if time.time() > timeout:
-                raise Exception('Timeout waiting for rabbit to start listening.')
-        # all should be well here
+        else:
+            raise Exception(
+                "Timeout waiting for RabbitMQ to start listening.")
+        # All should be well here.
         with open(self.config.pidfile, "r") as f:
             self.pid = int(f.read().strip())
 
@@ -345,26 +348,31 @@ class RunRabbitServer(Fixture):
             return
         outstr, errstr = self.rabbit.rabbitctl("stop", strip=True)
         if outstr:
-            self.addDetail('stop-out', Content(UTF8_TEXT, lambda:[outstr]))
+            self.addDetail('stop-out', Content(UTF8_TEXT, lambda: [outstr]))
         if errstr:
-            self.addDetail('stop-err', Content(UTF8_TEXT, lambda:[errstr]))
-        # wait for the process to finish...
+            self.addDetail('stop-err', Content(UTF8_TEXT, lambda: [errstr]))
+        # Wait for the server to go down...
         timeout = time.time() + 15
-        while self.rabbit.check_running():
+        while time.time() < timeout:
+            if not self.rabbit.check_running():
+                break
             time.sleep(0.3)
-            if time.time() > timeout:
-                raise Exception(
-                    "Error - reached timeout waiting for RabbitMQ shutdown")
+        else:
+            raise Exception(
+                "Timeout waiting for RabbitMQ shutdown.")
+        # Wait for the process to end...
         while time.time() < timeout:
             try:
                 os.kill(self.pid, 0)
             except OSError, e:
                 if e.errno == errno.ESRCH:
                     break
-            time.sleep(0.1)
-            if time.time() > timeout:
-                raise Exception(
-                    "Error - rabbit pid %d did not quit." % (pid,))
+                raise
+            else:
+                time.sleep(0.1)
+        else:
+            raise Exception(
+                "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
 
 class RabbitServer(Fixture):
@@ -384,4 +392,3 @@ class RabbitServer(Fixture):
 
     def getDetails(self):
         return self.server.getDetails()
-
