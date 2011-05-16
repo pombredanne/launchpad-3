@@ -40,7 +40,7 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,

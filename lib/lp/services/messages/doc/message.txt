@@ -58,7 +58,7 @@ the Message.
 You can build a Message from an email easily. This stuffs the original,
 unadulterated, email into the Librarian and builds all the MessageChunks.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> msgset = getUtility(IMessageSet)
     >>> raw_msg = u"""\
     ... Content-Type: multipart/mixed; charset="latin-1";
@@ -526,9 +526,9 @@ raises a LookupError, but Message.fromEmail() tries parsing them as latin-1,
 which often works.
 
     >>> import os.path
-    >>> msg_path = os.path.join(
-    ...     os.path.dirname(__file__),
-    ...     '../mail/ftests/emails/x-unknown-encoding.txt')
+    >>> mail_path = ('../../../../canonical/launchpad/mail/'
+    ...              'ftests/emails/x-unknown-encoding.txt')
+    >>> msg_path = os.path.join(os.path.dirname(__file__), mail_path)
     >>> raw_msg = open(msg_path).read()
     >>> print raw_msg
     MIME-Version: 1.0
