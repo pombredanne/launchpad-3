@@ -304,7 +304,7 @@ class TestDistroBrancher(TestCaseWithFactory):
         # Branches with no commits work.
         db_branch = self.makeOfficialPackageBranch(make_revisions=False)
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
-        new_branch = brancher.makeOneNewBranch(db_branch)
+        brancher.makeOneNewBranch(db_branch)
 
     def test_makeNewBranches(self):
         # makeNewBranches calls makeOneNewBranch for each official branch in
@@ -647,4 +647,3 @@ class TestDistroBrancher(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

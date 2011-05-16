@@ -357,7 +357,8 @@ class DistroBrancher:
         switch_branches(
             config.codehosting.mirrored_branches_root,
             'lp-internal', old_db_branch, new_db_branch)
-        # Directly copy the branch revisions from the old branch to the new branch.
+        # Directly copy the branch revisions from the old branch to the new
+        # branch.
         store = IMasterStore(BranchRevision)
         store.execute(
             """
