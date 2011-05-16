@@ -386,7 +386,7 @@ class TestHandleStatusMixin:
 
         naked_build = removeSecurityProxy(self.build)
         expected_notification = (
-            status in naked_build._getAllowedStatusNotifications())
+            status in naked_build.ALLOWED_STATUS_NOTIFICATIONS)
 
         def got_status(ignored):
             if expected_notification:

@@ -261,12 +261,11 @@ class PackageBuildDerived:
     """
     delegates(IPackageBuild, context="package_build")
 
-    def _getAllowedStatusNotifications(self):
-        # The list of build status values for which email notifications are
-        # allowed to be sent. It is up to each callback as to whether it will
-        # consider sending a notification but it won't do so if vetoed by this
-        # list.
-        return ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
@@ -293,13 +292,13 @@ class PackageBuildDerived:
         """See `IPackageBuild`."""
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-        notification_allowed = status in self._getAllowedStatusNotifications()
+        send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
             return
-        d = method(librarian, slave_status, logger, notification_allowed)
+        d = method(librarian, slave_status, logger, send_notification)
         return d
 
     def _release_builder_and_remove_queue_item(self):
@@ -309,7 +308,7 @@ class PackageBuildDerived:
         return d.addCallback(lambda x: self.buildqueue_record.destroySelf())
 
     def _handleStatus_OK(self, librarian, slave_status, logger,
-                         notification_allowed):
+                         send_notification):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -384,7 +383,7 @@ class PackageBuildDerived:
                 logger.warning(
                     "Copy from slave for build %s was unsuccessful.", self.id)
                 self.status = BuildStatus.FAILEDTOUPLOAD
-                if notification_allowed:
+                if send_notification:
                     self.notify(
                         extra_info='Copy from slave was unsuccessful.')
                 target_dir = os.path.join(root, "failed")
@@ -415,7 +414,7 @@ class PackageBuildDerived:
         return d
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
-                                  notification_allowed):
+                                  send_notification):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
@@ -425,7 +424,7 @@ class PackageBuildDerived:
         self.status = BuildStatus.FAILEDTOBUILD
 
         def build_info_stored(ignored):
-            if notification_allowed:
+            if send_notification:
                 self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
@@ -435,7 +434,7 @@ class PackageBuildDerived:
         return d.addCallback(build_info_stored)
 
     def _handleStatus_DEPFAIL(self, librarian, slave_status, logger,
-                              notification_allowed):
+                              send_notification):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
@@ -447,7 +446,7 @@ class PackageBuildDerived:
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
                             % self.buildqueue_record.builder.name)
-            if notification_allowed:
+            if send_notification:
                 self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
@@ -457,7 +456,7 @@ class PackageBuildDerived:
         return d.addCallback(build_info_stored)
 
     def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger,
-                                 notification_allowed):
+                                 send_notification):
         """Handle a package that had failed when unpacking the CHROOT.
 
         Build has failed when installing the current CHROOT, mark the
@@ -469,7 +468,7 @@ class PackageBuildDerived:
         def build_info_stored(ignored):
             logger.critical("***** %s is CHROOTWAIT *****" %
                             self.buildqueue_record.builder.name)
-            if notification_allowed:
+            if send_notification:
                 self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
@@ -479,7 +478,7 @@ class PackageBuildDerived:
         return d.addCallback(build_info_stored)
 
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
-                                  notification_allowed):
+                                  send_notification):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -498,7 +497,7 @@ class PackageBuildDerived:
         return d.addCallback(build_info_stored)
 
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
-                                notification_allowed):
+                                send_notification):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
