@@ -54,6 +54,11 @@ class IQuestionMessage(IMessage):
         description=_("The messages index in the question's list of "
         "messages."),
         readonly=True)
+    display_index = Int(
+        title=_("Human readable Message index."),
+        description=_("The message's index in the question's list of "
+        "messages, meant for humans."),
+        readonly=True)
     visible = Bool(
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),
