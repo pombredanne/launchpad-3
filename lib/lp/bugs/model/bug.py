@@ -871,10 +871,12 @@ BugMessage""" % sqlvalues(self.id))
         if person is None:
             # This may be a webservice request.
             person = muted_by
+        assert not person.is_team, (
+            "Muting a subscription for entire team is not allowed.")
+
         # If it's already muted, ignore the request.
         mutes = self._getMutes(person)
         if mutes.is_empty():
-            # XXX: Execute addChange() to add muting to the activity log.
             BugMute(person, self)
         else:
             # It's already muted, pass.
@@ -887,7 +889,6 @@ BugMessage""" % sqlvalues(self.id))
             # This may be a webservice request.
             person = unmuted_by
         mutes = self._getMutes(person)
-        # XXX: Execute addChange() to add unmuting to the activity log.
         store.remove(mutes.one())
 
     @property

@@ -59,6 +59,13 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.assertEqual(False, self.bug.isMuted(self.person))
 
+    def test_mute_team_fails(self):
+        # Muting a subscription for an entire team doesn't work.
+        with person_logged_in(self.person):
+            team = self.factory.makeTeam(owner=self.person)
+            self.assertRaises(AssertionError,
+                              self.bug.mute, team, team)
+
     def test_mute_mutes_user(self):
         # Bug.mute() adds a BugMute record for the person passed to it.
         with person_logged_in(self.person):
