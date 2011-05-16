@@ -32,6 +32,25 @@ from lp.translations.interfaces.translations import (
     )
 
 
+class ProductSeriesGetReleaseTestCase(TestCaseWithFactory):
+    """Test for ProductSeries.getRelease()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getRelease_match(self):
+        # The release is returned when there is a matching release version.
+        milestone = self.factory.makeMilestone(name='0.0.1')
+        release = self.factory.makeProductRelease(milestone=milestone)
+        series = milestone.series_target
+        self.assertEqual(release, series.getRelease('0.0.1'))
+
+    def test_getRelease_None(self):
+        # None is returned when there is no matching release version.
+        milestone = self.factory.makeMilestone(name='0.0.1')
+        series = milestone.series_target
+        self.assertEqual(None, series.getRelease('0.0.1'))
+
+
 class TestProductSeriesSetPackaging(TestCaseWithFactory):
     """Test for ProductSeries.setPackaging()."""
 

@@ -74,6 +74,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
@@ -458,10 +459,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""
