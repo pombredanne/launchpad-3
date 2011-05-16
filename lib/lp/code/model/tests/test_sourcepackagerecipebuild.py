@@ -498,7 +498,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             build.getUploader(None))
 
 
-class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
+class TestAsBuildmaster(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -551,6 +551,16 @@ class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
 
+
+class TestBuildNotifications(TrialTestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildNotifications, self).setUp()
+        from lp.testing.factory import LaunchpadObjectFactory
+        self.factory = LaunchpadObjectFactory()
+
     def prepare_build(self, fake_successful_upload=False):
         queue_record = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue_record.specific_job.build
@@ -563,7 +573,6 @@ class TestAsBuildmaster(TestCaseWithFactory, TrialTestCase):
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
         queue_record.builder.setSlaveForTesting(slave)
-        transaction.commit()
         return build
 
     def assertDeferredNotifyCount(self, status, build, expected_count):
