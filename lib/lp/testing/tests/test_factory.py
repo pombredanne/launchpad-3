@@ -650,7 +650,7 @@ class TestFactory(TestCaseWithFactory):
         # With no name given, the default prefix gives a clue as to the
         # source location that called it.
         s = self.factory.getUniqueString()
-        self.assertTrue(s.startswith("unique-from-test-factory.py-line"),
+        self.assertTrue(s.startswith("unique-from-test-factory-py-line"),
             s)
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
