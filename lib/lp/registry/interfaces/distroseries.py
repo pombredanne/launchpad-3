@@ -239,8 +239,9 @@ class IDistroSeriesPublic(
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'),
-        # TODO: Test this.
+        ("devel", dict(exported_as="previous_series")),
         ("1.0", dict(exported_as="parent_series")),
+        ("beta", dict(exported_as="parent_series")),
         readonly=True)
     registrant = exported(
         PublicPersonChoice(
