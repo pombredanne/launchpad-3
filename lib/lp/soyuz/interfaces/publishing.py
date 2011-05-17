@@ -44,6 +44,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Date,
     Datetime,
@@ -787,6 +788,10 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     binary_package_version = exported(
         TextLine(
             title=_("Binary Package Version"),
+            required=False, readonly=True))
+    architecture_specific = exported(
+        Bool(
+            title=_("Architecture Specific"),
             required=False, readonly=True))
     priority_name = exported(
         TextLine(

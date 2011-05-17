@@ -1046,6 +1046,7 @@ COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing th
 COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
 COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
 COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
+COMMENT ON COLUMN QuestionMessage.owner IS 'Denormalised owner from Message, used for efficient queries on commentors.';
 
 -- QuestionReopening
 

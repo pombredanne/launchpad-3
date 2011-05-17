@@ -66,7 +66,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     Navigation,
-    redirection,
     StandardLaunchpadFacets,
     stepthrough,
     structured,
@@ -146,7 +145,8 @@ class BugNavigation(Navigation):
         if name.isdigit():
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
-                return redirection(canonical_url(attachment), status=301)
+                return self.redirectSubTree(
+                    canonical_url(attachment), status=301)
 
     @stepthrough('+attachment')
     def traverse_attachment(self, name):
@@ -438,7 +438,7 @@ class MaloneView(LaunchpadFormView):
             #      If fixed_bugtasks isn't sliced, it will take a long time
             #      to iterate over it, even over just 10, because
             #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4*limit]:
+            for bugtask in fixed_bugtasks[:4 * limit]:
                 if bugtask.bug not in fixed_bugs:
                     fixed_bugs.append(bugtask.bug)
                     if len(fixed_bugs) >= limit:
@@ -536,6 +536,7 @@ class BugViewMixin:
     @cachedproperty
     def user_should_see_mute_link(self):
         """Return True if the user should see the Mute link."""
+        user_is_subscribed = False
         if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
             user_is_subscribed = (
                 # Note that we don't have to check for isMuted(), since
@@ -544,9 +545,7 @@ class BugViewMixin:
                 self.context.isSubscribed(self.user) or
                 self.context.isSubscribedToDupes(self.user) or
                 self.context.personIsAlsoNotifiedSubscriber(self.user))
-            return user_is_subscribed
-        else:
-            return False
+        return user_is_subscribed
 
     @cachedproperty
     def _bug_attachments(self):

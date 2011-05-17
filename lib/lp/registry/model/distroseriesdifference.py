@@ -42,10 +42,6 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.message import (
-    Message,
-    MessageChunk,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -77,6 +73,10 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -108,11 +108,7 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
     """
-    distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
-        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
-        # does not seem to be possible to express DISTINCT ON with Storm.
-        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
@@ -156,9 +152,12 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         DistroSeriesDifference.source_package_name_id,
         Desc(SourcePackagePublishingHistory.id),
         )
+    distinct_on = (
+        DistroSeriesDifference.source_package_name_id,
+        )
     store = IStore(SourcePackagePublishingHistory)
-    results = store.find(columns, conditions).order_by(*order_by)
-    return DecoratedResultSet(results, itemgetter(1, 2))
+    return store.find(
+        columns, conditions).order_by(*order_by).config(distinct=distinct_on)
 
 
 def most_recent_comments(dsds):
@@ -169,13 +168,7 @@ def most_recent_comments(dsds):
 
     :param dsds: An iterable of `DistroSeriesDifference` instances.
     """
-    distinct_on = storm_compile(
-        DistroSeriesDifferenceComment.distro_series_difference_id)
     columns = (
-        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a
-        # hack; it does not seem to be possible to express DISTINCT ON
-        # with Storm.
-        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
         DistroSeriesDifferenceComment,
         Message,
         )
@@ -187,9 +180,13 @@ def most_recent_comments(dsds):
         DistroSeriesDifferenceComment.distro_series_difference_id,
         Desc(DistroSeriesDifferenceComment.id),
         )
+    distinct_on = (
+        DistroSeriesDifferenceComment.distro_series_difference_id,
+        )
     store = IStore(DistroSeriesDifferenceComment)
-    comments = store.find(columns, conditions).order_by(*order_by)
-    return DecoratedResultSet(comments, itemgetter(1))
+    comments = store.find(
+        columns, conditions).order_by(*order_by).config(distinct=distinct_on)
+    return DecoratedResultSet(comments, itemgetter(0))
 
 
 def packagesets(dsds, in_parent):
