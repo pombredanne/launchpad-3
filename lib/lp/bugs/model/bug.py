@@ -944,7 +944,7 @@ BugMessage""" % sqlvalues(self.id))
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
                 BugSubscription.person_id).config(
-                    distinct=(BugSubscription.personID,)),
+                    distinct=(BugSubscription.person_id,)),
             operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
