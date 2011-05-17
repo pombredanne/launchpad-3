@@ -24,7 +24,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )

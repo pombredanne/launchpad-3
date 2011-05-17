@@ -786,7 +786,7 @@ Adding an attachment.
     >>> from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
 
     >>> firefox_bug.attachments.count()
     0

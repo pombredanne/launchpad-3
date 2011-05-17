@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
@@ -35,6 +35,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.interfaces.security import IAuthorization
@@ -222,6 +223,7 @@ class ViewByLoggedInUser(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
         return True
+
 
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -1685,6 +1687,14 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
+class ViewQuestion(AnonymousAuthorization):
+    usedfor = IQuestion
+
+
+class ViewQuestionMessage(AnonymousAuthorization):
+    usedfor = IQuestionMessage
+
+
 class AppendFAQTarget(EditByOwnersOrAdmins):
     permission = 'launchpad.Append'
     usedfor = IFAQTarget
@@ -1892,24 +1902,31 @@ class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
 
+    @property
+    def branches(self):
+        required = [self.obj.source_branch, self.obj.target_branch]
+        if self.obj.prerequisite_branch:
+            required.append(self.obj.prerequisite_branch)
+        return required
+
     def checkAuthenticated(self, user):
         """Is the user able to view the branch merge proposal?
 
-        The user can see a merge proposal between two branches
-        that the user can see.
+        The user can see a merge proposal if they can see the source, target
+        and prerequisite branches.
         """
-        return (AccessBranch(self.obj.source_branch).checkAuthenticated(user)
-                and
-                AccessBranch(self.obj.target_branch).checkAuthenticated(user))
+        return all(map(
+            lambda b: AccessBranch(b).checkAuthenticated(user),
+            self.branches))
 
     def checkUnauthenticated(self):
         """Is anyone able to view the branch merge proposal?
 
         Anyone can see a merge proposal between two public branches.
         """
-        return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
-                and
-                AccessBranch(self.obj.target_branch).checkUnauthenticated())
+        return all(map(
+            lambda b: AccessBranch(b).checkUnauthenticated(),
+            self.branches))
 
 
 class PreviewDiffView(AuthorizationBase):

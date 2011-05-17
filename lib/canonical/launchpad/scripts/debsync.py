@@ -18,7 +18,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IMessageSet,
     InvalidEmailMessage,
     UnknownSender,
