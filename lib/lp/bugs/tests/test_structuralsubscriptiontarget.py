@@ -396,7 +396,8 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.pillar)
         self.assertEqual({"product": target}, helper.target_arguments)
         self.assertEqual(
-            u"StructuralSubscription.product = ?",
+            u"StructuralSubscription.product = ? OR "
+            "StructuralSubscription.project = ?",
             compile_storm(helper.join))
 
     def test_product_series(self):
@@ -475,6 +476,19 @@ class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
                 self.team, self.team.teamowner)
         subscriptions = self.getSubscriptions()
         self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
+
+    def test_subscribed_to_project_group(self):
+        # If a user is subscribed to a project group, calls to
+        # get_structural_subscriptions_for_target made against the
+        # products in that group will return the group-level
+        # subscription along with any subscriptions to the product.
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(project=project)
+        project_sub = project.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = get_structural_subscriptions_for_target(
+            product, self.subscriber)
+        self.assertEqual(set([project_sub]), set(subscriptions))
 
 
 def distributionSourcePackageSetUp(test):

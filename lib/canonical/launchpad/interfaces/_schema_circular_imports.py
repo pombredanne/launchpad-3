@@ -31,7 +31,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_reference_property,
     )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
     IUserToUserEmail,

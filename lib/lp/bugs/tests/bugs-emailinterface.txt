@@ -275,7 +275,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
