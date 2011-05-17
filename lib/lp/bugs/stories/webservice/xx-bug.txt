@@ -62,12 +62,6 @@ Bugs are indexed by number beneath the top-level collection.
   >>> bug_one['id']
   1
 
-If a bug does not exist, the web service returns None.
-
- >>> none_bug = webservice.get("/bugs/123456789").jsonBody()
- >>> print none_bug
- None
-
 Bugs have relationships to other bugs, like "duplicate_of".
 
   >>> duplicates_of_five = webservice.get(

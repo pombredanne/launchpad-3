@@ -47,17 +47,6 @@ from lp.testing.sampledata import (
     )
 
 
-class TestBugAttributes(TestCaseWithFactory):
-    """Test basic bug attributes over the API."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_unavailable_bug(self):
-        """Bugs that do not exist return as None."""
-        lp = launchpadlib_for('test', self.factory.makePerson())
-        self.assertEqual(None, lp.bugs['1234'])
-
-
 class TestBugConstraints(TestCaseWithFactory):
     """Test constrainsts on bug inputs over the API."""
 
