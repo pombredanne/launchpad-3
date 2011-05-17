@@ -66,7 +66,7 @@ from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasSet,
     )
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
     IMessageChunk,

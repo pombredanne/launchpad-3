@@ -257,7 +257,7 @@ class SanitizeDb(LaunchpadScript):
     def removePrivateBugMessages(self):
         """Remove all hidden bug messages."""
         from lp.bugs.model.bugmessage import BugMessage
-        from canonical.launchpad.database.message import Message
+        from lp.services.messages.model.message import Message
         message_ids = list(self.store.using(*[
             BugMessage,
             Join(Message, BugMessage.messageID == Message.id),

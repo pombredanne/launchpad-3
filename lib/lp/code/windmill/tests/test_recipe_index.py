@@ -22,8 +22,7 @@ class TestRecipeSetDaily(WindmillTestCase):
     layer = CodeWindmillLayer
     suite_name = "Recipe daily build flag setting"
 
-    # Disabled due to spurious failures (bug #753240).
-    def disabled_test_inline_recipe_daily_build(self):
+    def test_inline_recipe_daily_build(self):
         eric = self.factory.makePerson(
             name="eric", displayname="Eric the Viking", password="test",
             email="eric@example.com")
@@ -36,7 +35,7 @@ class TestRecipeSetDaily(WindmillTestCase):
             classname=u'yui3-ichoicelist-content', timeout=FOR_ELEMENT)
         client.click(link=u'Built daily')
         client.waits.forElement(
-            jquery=u'("div#edit-build_daily a.editicon.sprite.edit")',
+            jquery=u'("#edit-build_daily a.editicon.sprite.edit")',
             timeout=FOR_ELEMENT)
         client.asserts.assertTextIn(
             id=u'edit-build_daily', validator=u'Built daily')
