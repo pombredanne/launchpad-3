@@ -80,24 +80,24 @@ class TestQuestionSpamControls(BrowserTestCase):
         question = self.makeQuestionWithMessage()
         administrator = self.factory.makeAdministrator()
         view = self.getViewBrowser(context=question, user=administrator)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-0')
         self.assertIsNot(None, spam_link)
 
     def test_registry_sees_spam_control(self):
         question = self.makeQuestionWithMessage()
         registry_expert = self.factory.makeRegistryExpert()
         view = self.getViewBrowser(context=question, user=registry_expert)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-0')
         self.assertIsNot(None, spam_link)
 
     def test_anon_doesnt_see_spam_control(self):
         question = self.makeQuestionWithMessage()
         view = self.getViewBrowser(context=question, no_login=True)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-0')
         self.assertIs(None, spam_link)
 
     def test_random_doesnt_see_spam_control(self):
         question = self.makeQuestionWithMessage()
         view = self.getViewBrowser(context=question)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        spam_link = find_tag_by_id(view.contents, 'mark-spam-0')
         self.assertIs(None, spam_link)
