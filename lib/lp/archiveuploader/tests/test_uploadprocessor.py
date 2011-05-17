@@ -1996,12 +1996,12 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_success_mail(self):
-        # When a source package recipe build succeeds, it sends a build-style
-        # email, not user-upload-style one.
+        """Source package recipe build success does not cause mail.
+        
+        See bug 778437.
+        """
         self.doSuccessRecipeBuild()
-        (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
-        self.assertIn('Successfully built', subject)
+        self.assertEquals(len(pop_notifications()), 0, pop_notifications)
 
     def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.
