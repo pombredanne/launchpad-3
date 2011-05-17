@@ -1225,10 +1225,10 @@ class QuestionTargetMixin:
             return False
         return True
 
-    def findSimilarQuestions(self, title):
+    def findSimilarQuestions(self, phrase):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self.getTargetTypes()).getResults()
+            phrase, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""

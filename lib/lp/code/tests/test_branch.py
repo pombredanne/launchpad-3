@@ -58,6 +58,14 @@ class PermissionTest(TestCaseWithFactory):
         """
         self.assertAuthenticatedView(branch, None, can_access)
 
+    def assertCanView(self, person, secured_object):
+        """Assert 'person' can view 'secured_object'."""
+        self.assertPermission(True, person, secured_object, 'launchpad.View')
+
+    def assertCannotView(self, person, secured_object):
+        """Assert 'person' cannot view 'secured_object'."""
+        self.assertPermission(False, person, secured_object, 'launchpad.View')
+
     def assertCanEdit(self, person, secured_object):
         """Assert 'person' can edit 'secured_object'.
 
