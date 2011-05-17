@@ -86,13 +86,20 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     is_private = False
 
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = [
+        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
+
     @property
     def binary_builds(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(BinaryPackageBuild,
-            BinaryPackageBuild.source_package_release==
+            BinaryPackageBuild.source_package_release ==
             SourcePackageRelease.id,
-            SourcePackageRelease.source_package_recipe_build==self.id)
+            SourcePackageRelease.source_package_recipe_build == self.id)
 
     @property
     def current_component(self):
@@ -346,14 +353,15 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         except KeyError:
             raise NotFoundError(filename)
 
-    def _handleStatus_OK(self, librarian, slave_status, logger):
+    def _handleStatus_OK(self, librarian, slave_status, logger,
+                         send_notification):
         """See `IPackageBuild`."""
         d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
-            librarian, slave_status, logger)
+            librarian, slave_status, logger, send_notification)
 
         def uploaded_build(ignored):
             # Base implementation doesn't notify on success.
-            if self.status == BuildStatus.FULLYBUILT:
+            if self.status == BuildStatus.FULLYBUILT and send_notification:
                 self.notify()
         return d.addCallback(uploaded_build)
 
