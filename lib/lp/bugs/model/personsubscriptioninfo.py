@@ -13,7 +13,7 @@ from zope.proxy import sameProxiedObjects
 
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bug import Bug
+from lp.bugs.model.bug import Bug, BugMute
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IAbstractSubscriptionInfoCollection,
     IRealSubscriptionInfoCollection,
@@ -241,8 +241,7 @@ class PersonSubscriptions(object):
             self._getDirectAndDuplicateSubscriptions(person, bug))
 
         # Then get the 'muted' flag.
-        self.muted = bool(
-            direct.personal and self._isMuted(person, bug))
+        self.muted = self._isMuted(person, bug)
 
         # Then get owner and assignee virtual subscriptions.
         as_owner = VirtualSubscriptionInfoCollection(

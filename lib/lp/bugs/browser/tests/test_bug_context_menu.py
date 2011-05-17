@@ -73,6 +73,8 @@ class TestBugContextMenu(TestCaseWithFactory):
         person = self.factory.makePerson()
         with feature_flags():
             with person_logged_in(person):
+                self.bug.subscribe(
+                    person, person, level=BugNotificationLevel.METADATA)
                 self.bug.mute(person, person)
                 request = LaunchpadTestRequest()
                 request.features = get_relevant_feature_controller()
