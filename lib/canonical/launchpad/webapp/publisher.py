@@ -51,6 +51,8 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lazr.restful.error import expose
+
 from canonical.launchpad.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -691,7 +693,7 @@ class Navigation:
         """
         # Avoid circular imports.
         if nextobj is None:
-            raise NotFound(self.context, name)
+            raise expose(NotFound(self.context, name), 404)
         elif isinstance(nextobj, redirection):
             return RedirectionView(
                 nextobj.toname, request, status=nextobj.status)
