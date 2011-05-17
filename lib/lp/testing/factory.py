@@ -419,12 +419,13 @@ class ObjectFactory:
         The string returned will always be a valid name that can be used in
         Launchpad URLs.
 
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to 'generic-string'.
+        :param prefix: Used as a prefix for the unique string. If 
+            unspecified, generates a name starting with 'unique' and
+            mentioning the calling source location.
         """
         if prefix is None:
-            frame = sys._getframe(1)
-            prefix = 'unique-%s-line%d-' % (
+            frame = sys._getframe(2)
+            prefix = 'unique-from-%s-line%d-' % (
                 frame.f_code.co_filename.rsplit('/', 1)[-1],
                 frame.f_lineno)
         string = "%s%s" % (prefix, self.getUniqueInteger())

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -642,6 +642,16 @@ class TestFactory(TestCaseWithFactory):
             dir(self.factory._factory),
             dir(self.factory))
 
+    def test_getUniqueString_with_prefix(self):
+        s = self.factory.getUniqueString("with-my-prefix")
+        self.assertTrue(s.startswith("with-my-prefix"))
+
+    def test_getUniqueString_with_default_prefix(self):
+        # With no name given, the default prefix gives a clue as to the
+        # source location that called it.
+        s = self.factory.getUniqueString()
+        self.assertTrue(s.startswith("unique-from-test-factory.py-line"),
+            s)
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
 
