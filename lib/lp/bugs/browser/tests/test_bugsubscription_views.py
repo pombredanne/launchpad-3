@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import transaction
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -287,6 +289,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
+                self.bug.mute(self.person, self.person)
                 subscribe_view = create_initialized_view(
                     self.bug.default_bugtask, name='+subscribe')
                 subscription_widget = (
@@ -325,12 +328,10 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
-                level = BugNotificationLevel.METADATA
                 form_data = {
                     'field.subscription': self.person.name,
                     # Although this isn't used we must pass it for the
                     # sake of form validation.
-                    'field.bug_notification_level': level.title,
                     'field.actions.continue': 'Continue',
                     }
                 create_initialized_view(
@@ -344,7 +345,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         # muted subscription will update the existing subscription to a
         # new BugNotificationLevel.
         with person_logged_in(self.person):
-            muted_subscription = self.bug.mute(self.person, self.person)
+            self.bug.mute(self.person, self.person)
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
@@ -357,10 +358,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 create_initialized_view(
                     self.bug.default_bugtask, form=form_data,
                     name='+subscribe')
+                transaction.commit()
                 self.assertFalse(self.bug.isMuted(self.person))
                 self.assertTrue(self.bug.isSubscribed(self.person))
-                self.assertEqual(
-                    level, muted_subscription.bug_notification_level)
 
     def test_bug_notification_level_field_has_widget_class(self):
         # The bug_notification_level widget has a widget_class property

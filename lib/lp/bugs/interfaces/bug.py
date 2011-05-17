@@ -14,6 +14,7 @@ __all__ = [
     'IBugAddForm',
     'IBugBecameQuestionEvent',
     'IBugDelta',
+    'IBugMute',
     'IBugSet',
     'IFileBugData',
     'IFrontPageBugAddForm',
@@ -85,6 +86,7 @@ from lp.services.fields import (
     ContentNameField,
     Description,
     DuplicateBug,
+    PersonChoice,
     PublicPersonChoice,
     Tag,
     Title,
@@ -1210,3 +1212,18 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
+
+
+class IBugMute(Interface):
+    """A mute on an IBug."""
+
+    person = PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person subscribed."))
+    bug = Reference(
+        IBug, title=_("Bug"),
+        required=True, readonly=True,
+        description=_("The bug to be muted."))
+    date_created = Datetime(
+        title=_("The date on which the mute was created."), required=False,
+        readonly=True)

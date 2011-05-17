@@ -8,6 +8,7 @@ __metaclass__ = type
 from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -39,11 +40,9 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         self.person = self.factory.makePerson()
 
     def test_is_muted_returns_true_for_muted_users(self):
-        # Bug.isMuted() will return True if the passed to it has a
-        # BugSubscription with a BugNotificationLevel of NOTHING.
+        # Bug.isMuted() will return True if the person passed to it is muted.
         with person_logged_in(self.person):
-            self.bug.subscribe(
-                self.person, self.person, level=BugNotificationLevel.NOTHING)
+            self.bug.mute(self.person, self.person)
             self.assertEqual(True, self.bug.isMuted(self.person))
 
     def test_is_muted_returns_false_for_direct_subscribers(self):
@@ -60,15 +59,21 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.assertEqual(False, self.bug.isMuted(self.person))
 
-    def test_mute_mutes_user(self):
-        # Bug.mute() adds a muted subscription for the user passed to
-        # it.
+    def test_mute_team_fails(self):
+        # Muting a subscription for an entire team doesn't work.
         with person_logged_in(self.person):
-            muted_subscription = self.bug.mute(
-                self.person, self.person)
-            self.assertEqual(
-                BugNotificationLevel.NOTHING,
-                muted_subscription.bug_notification_level)
+            team = self.factory.makeTeam(owner=self.person)
+            self.assertRaises(AssertionError,
+                              self.bug.mute, team, team)
+
+    def test_mute_mutes_user(self):
+        # Bug.mute() adds a BugMute record for the person passed to it.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            naked_bug = removeSecurityProxy(self.bug)
+            bug_mute = naked_bug._getMutes(self.person).one()
+            self.assertEqual(self.bug, bug_mute.bug)
+            self.assertEqual(self.person, bug_mute.person)
 
     def test_mute_mutes_muter(self):
         # When exposed in the web API, the mute method regards the
@@ -80,14 +85,15 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(self.person))
 
     def test_mute_mutes_user_with_existing_subscription(self):
-        # Bug.mute() will update an existing subscription so that it
-        # becomes muted.
+        # Bug.mute() will not touch the existing subscription.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(self.person, self.person)
-            muted_subscription = self.bug.mute(self.person, self.person)
-            self.assertEqual(subscription, muted_subscription)
+            subscription = self.bug.subscribe(
+                self.person, self.person,
+                level=BugNotificationLevel.METADATA)
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
             self.assertEqual(
-                BugNotificationLevel.NOTHING,
+                BugNotificationLevel.METADATA,
                 subscription.bug_notification_level)
 
     def test_unmute_unmutes_user(self):

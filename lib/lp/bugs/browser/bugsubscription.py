@@ -216,6 +216,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 persons_for_user[person.id] = person
                 person_count += 1
 
+        # The view code previously expected a 'mute' to be a subscription
+        # as well.  Since it is not anymore, we add the user to the
+        # subscribers list as needed.
+        if self.user_is_muted:
+            if self.user.id not in persons_for_user:
+                persons_for_user[self.user.id] = self.user
+                person_count += 1
+
         self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
@@ -254,7 +262,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             if person.id == self.user.id:
                 if (self._use_advanced_features and
                     (self.user_is_subscribed_directly or
-                    self.user_is_muted)):
+                     self.user_is_muted)):
                         subscription_terms.append(
                             self._update_subscription_term)
                 subscription_terms.insert(
@@ -388,9 +396,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         if (subscription_person == self._update_subscription_term.value and
             (self.user_is_subscribed or self.user_is_muted)):
-            self._handleUpdateSubscription(level=bug_notification_level)
+            if self.user_is_muted:
+                self._handleUnmute()
+            if self.user_is_subscribed:
+                self._handleUpdateSubscription(level=bug_notification_level)
+            else:
+                self._handleSubscribe(level=bug_notification_level)
         elif self.user_is_muted and subscription_person == self.user:
-            self._handleUnsubscribeCurrentUser()
+            self._handleUnmute()
         elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
             self._handleSubscribe(bug_notification_level)
@@ -410,6 +423,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             self._handleUnsubscribeCurrentUser()
         else:
             self._handleUnsubscribeOtherUser(user)
+
+    def _handleUnmute(self):
+        """Handle an unmute request."""
+        self.context.bug.unmute(self.user, self.user)
 
     def _handleUnsubscribeCurrentUser(self):
         """Handle the special cases for unsubscribing the current user.
