@@ -425,11 +425,18 @@ class ObjectFactory:
         """
         if prefix is None:
             frame = sys._getframe(2)
+            source_filename = frame.f_code.co_filename
+            # Dots and dashes cause trouble with some consumers of these
+            # names.
+            source_short_name = (
+                os.path.basename(source_filename)
+                .replace('_', '-')
+                .replace('.', '-'))
             prefix = 'unique-from-%s-line%d' % (
-                frame.f_code.co_filename.rsplit('/', 1)[-1],
+                source_short_name,
                 frame.f_lineno)
         string = "%s-%s" % (prefix, self.getUniqueInteger())
-        return string.replace('_', '-').lower()
+        return string
 
     def getUniqueUnicode(self):
         return self.getUniqueString().decode('latin-1')
