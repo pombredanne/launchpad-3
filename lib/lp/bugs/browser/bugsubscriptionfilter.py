@@ -65,16 +65,10 @@ class BugSubscriptionFilterView(LaunchpadView):
         description = self.context.description
         return u"" if description is None else description.strip()
 
-    @property
-    def filters_everything(self):
-        """Return a boolean as to whether the filter masks everything.
-
-        Right now the only thing we check is the bug_notification_level.  We
-        could check more later--in particular, if no importances are checked,
-        or no statuses.
-        """
-        return (self.context.bug_notification_level <
-                BugNotificationLevel.LIFECYCLE)
+    # At the moment, we never filter everything.
+    # We could turn it into a property and check more later--
+    # in particular, if no importances are checked, or no statuses.
+    filters_everything = False
 
     @property
     def conditions(self):

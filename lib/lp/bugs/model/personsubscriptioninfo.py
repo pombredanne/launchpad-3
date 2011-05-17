@@ -11,7 +11,6 @@ from storm.store import Store
 from zope.interface import implements
 from zope.proxy import sameProxiedObjects
 
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bug import Bug, BugMute
 from lp.bugs.interfaces.personsubscriptioninfo import (
