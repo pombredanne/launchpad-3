@@ -359,6 +359,37 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
                 {self.subscriber: sources},
                 [self.notification, self.notification2]))
 
+    def test_muting_works_for_teams_with_contact_addresses(self):
+        # This is a regression test for bug 778847.
+        team = self.factory.makeTeam(email="none@example.com")
+        team_member = self.factory.makePerson()
+        with person_logged_in(team.teamowner):
+            team.addMember(team_member, team.teamowner)
+            team_subscription = self.target.addBugSubscription(
+                team, team.teamowner)
+        with person_logged_in(team_member):
+            filter = team_subscription.bug_filters.one()
+            filter.mute(team_member)
+        bug = self.factory.makeBug(product=self.target)
+        store = Store.of(bug)
+        store.flush()
+        store.execute(
+            SQL("""
+                UPDATE Message SET
+                    datecreated = (now() at time zone 'UTC') -
+                        interval '1 day'
+                WHERE Message.id IN (
+                    SELECT BugNotification.message FROM BugNotification
+                    WHERE BugNotification.bug = %d);""" % bug.id))
+        store.flush()
+        bug_notifications = store.find(
+            BugNotification,
+            BugNotification.bug == bug).order_by('-id')
+        self.assertNotEqual(0, bug_notifications.count())
+        email_notifications = get_email_notifications(
+            [n for n in bug_notifications])
+        self.assertNotEqual(0, len([n for n in email_notifications]))
+
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
     """Adding notificatons without any recipients does not cause any harm.
