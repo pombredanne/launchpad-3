@@ -658,7 +658,7 @@ def make_package_type_vocabulary(parent_name, higher_version_option=False):
         SimpleTerm(
             NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
         SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
-        SimpleTerm(RESOLVED, RESOLVED, "Resolved packages")]
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
