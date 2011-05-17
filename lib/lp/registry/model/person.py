@@ -3570,15 +3570,15 @@ class PersonSet:
             FROM StructuralSubscription
             WHERE StructuralSubscription.subscriber=%(to_id)d AND (
                 StructuralSubscription.product=SSub.product
-                OR 
+                OR
                 StructuralSubscription.project=SSub.project
-                OR 
+                OR
                 StructuralSubscription.distroseries=SSub.distroseries
-                OR 
+                OR
                 StructuralSubscription.milestone=SSub.milestone
-                OR 
+                OR
                 StructuralSubscription.productseries=SSub.productseries
-                OR 
+                OR
                 (StructuralSubscription.distribution=SSub.distribution
                  AND StructuralSubscription.sourcepackagename IS NULL
                  AND SSub.sourcepackagename IS NULL)
@@ -3595,7 +3595,7 @@ class PersonSet:
             WHERE subscriber=%(from_id)d AND id NOT IN (
                 SELECT SSub.id
                 FROM StructuralSubscription AS SSub
-                WHERE 
+                WHERE
                     SSub.subscriber=%(from_id)d
                     AND EXISTS (''' + exists_query + ''')
             )
