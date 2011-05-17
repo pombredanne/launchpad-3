@@ -28,7 +28,6 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
-    BrowserTestCase,
     )
 from lp.testing.views import create_initialized_view
 
@@ -42,7 +41,6 @@ class TestSpecificationSearch(TestCaseWithFactory):
         specs = getUtility(ISpecificationSet)
         form = {'field.search_text': r'%'}
         view = create_initialized_view(specs, '+index', form=form)
-        import pdb; pdb.set_trace()
         self.assertEqual([], view.errors)
 
 
@@ -164,8 +162,9 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_records_started(self):
+        not_started = SpecificationImplementationStatus.NOTSTARTED
         spec = self.factory.makeSpecification(
-            implementation_status=SpecificationImplementationStatus.NOTSTARTED)
+            implementation_status=not_started)
         login_person(spec.owner)
         form = {
             'field.implementation_status': 'STARTED',
@@ -173,7 +172,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             }
         view = create_initialized_view(spec, name='+status', form=form)
         self.assertEqual(
-            SpecificationImplementationStatus.STARTED, spec.implementation_status)
+            SpecificationImplementationStatus.STARTED,
+            spec.implementation_status)
         self.assertEqual(spec.owner, spec.starter)
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
@@ -190,12 +190,13 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
             }
         view = create_initialized_view(spec, name='+status', form=form)
         self.assertEqual(
-            SpecificationImplementationStatus.SLOW, spec.implementation_status)
+            SpecificationImplementationStatus.SLOW,
+            spec.implementation_status)
         self.assertEqual(0, len(view.request.notifications))
 
     def test_records_unstarting(self):
-        # If a spec was started, and is changed to not started, a notice is shown.
-        # Also the spec.starter is cleared out.
+        # If a spec was started, and is changed to not started,
+        # a notice is shown. Also the spec.starter is cleared out.
         spec = self.factory.makeSpecification(
             implementation_status=SpecificationImplementationStatus.STARTED)
         login_person(spec.owner)
@@ -211,7 +212,8 @@ class TestSpecificationEditStatusView(TestCaseWithFactory):
         [notification] = view.request.notifications
         self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
         self.assertEqual(
-            'Blueprint is now considered "Not started".', notification.message)
+            'Blueprint is now considered "Not started".',
+            notification.message)
 
     def test_records_completion(self):
         # If a spec is marked as implemented the user is notifiec it is now
@@ -294,8 +296,6 @@ class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
             blueprint, ISpecification['completer'], None)
         expected = format_link(user) + ' on 2011-01-01'
         self.assertThat(repr_method(), Equals(expected))
-
-
 
 
 def test_suite():
