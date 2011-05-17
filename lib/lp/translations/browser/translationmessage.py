@@ -335,7 +335,6 @@ class BaseTranslationView(LaunchpadView):
             UTC = pytz.timezone('UTC')
             self.lock_timestamp = datetime.datetime.now(UTC)
 
-
         # The batch navigator needs to be initialized early, before
         # _submitTranslations is called; the reason for this is that
         # _submitTranslations, in the case of no errors, redirects to
@@ -1115,12 +1114,6 @@ class CurrentTranslationMessageView(LaunchpadView):
             other_translation = self.getOtherTranslation(index)
             shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
-            if (submitted_translation is None and
-                self.user_is_official_translator):
-                # We don't have anything to show as the submitted translation
-                # and the user is the official one. We prefill the 'New
-                # translation' field with the current translation.
-                translation = current_translation
             is_multi_line = (count_lines(current_translation) > 1 or
                              count_lines(submitted_translation) > 1 or
                              count_lines(self.singular_text) > 1 or
