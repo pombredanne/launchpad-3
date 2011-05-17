@@ -372,8 +372,7 @@ class TestBugSubscriptionFilterView(
             u"There are no filter conditions!")
 
     def test_render_with_no_events_allowed(self):
-        from lp.testing.fakemethod import FakeMethod
-        self.view.filters_everything = FakeMethod(result=True)
+        self.view.filters_everything = True
         self.assertRender(
             u"This filter allows no mail through.",
             u"")
