@@ -11,12 +11,22 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
+import operator
+
 from lazr.delegates import delegates
-from storm.expr import Desc
+from storm.expr import (
+    Desc,
+    In,
+    Join,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -152,33 +162,52 @@ class DistributionSourcePackageRelease:
     @property
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
-        all_published = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = BinaryPackageName.id AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            BinaryPackageBuild.source_package_release = %s
-            """ % sqlvalues(self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            self.sourcepackagerelease),
-            distinct=True,
-            orderBy=['BinaryPackageName.name'],
-            clauseTables=['DistroArchSeries', 'DistroSeries',
-                          'BinaryPackageRelease', 'BinaryPackageName',
-                          'BinaryPackageBuild'],
-            prejoinClauseTables=['BinaryPackageRelease', 'BinaryPackageName'])
+        #avoid circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_row = (
+            SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
+            BinaryPackagePublishingHistory, BinaryPackageRelease,
+            BinaryPackageName)
+        tables = (
+            BinaryPackagePublishingHistory,
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                 BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                DistroSeries,
+                DistroArchSeries.distroseriesID == DistroSeries.id),
+            Join(
+                BinaryPackageRelease,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID),
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID))
+
+        all_published = store.using(*tables).find(
+            result_row,
+            DistroSeries.distribution == self.distribution,
+            In(
+                BinaryPackagePublishingHistory.archiveID,
+                list(self.distribution.all_distro_archive_ids)),
+            BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease)
+        all_published = all_published.order_by(
+            BinaryPackageName.name)
+        all_published = DecoratedResultSet(
+            all_published, operator.itemgetter(1))
+
         samples = []
-        names = set()
         for publishing in all_published:
-            if publishing.binarypackagerelease.binarypackagename not in names:
-                names.add(publishing.binarypackagerelease.binarypackagename)
-                samples.append(
-                    DistroSeriesBinaryPackage(
-                        publishing.distroarchseries.distroseries,
-                        publishing.binarypackagerelease.binarypackagename))
+            samples.append(
+                DistroSeriesBinaryPackage(
+                    publishing.distroarchseries.distroseries,
+                    publishing.binarypackagerelease.binarypackagename))
         return samples

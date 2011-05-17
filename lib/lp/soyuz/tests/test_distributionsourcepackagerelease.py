@@ -55,7 +55,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             [release.name for release in dsp_release.sample_binary_packages])
 
     def test_sample_binary_packages__two_releases_one_binary_package(self):
-        # If a two binary releases with the same name exist,
+        # If two binary releases with the same name exist,
         # DistributionSourcePackageRelease.sample_binary_packages
         # returns only one.
         sourcepackage_release = self.factory.makeSourcePackageRelease()
