@@ -124,9 +124,13 @@ class GPGHandler:
         for file in os.listdir(self.home):
             try:
                 os.utime(os.path.join(self.home, file), None)
-            except OSError:
-                # The file has been deleted.
-                pass
+            except OSError as e:
+                if e.errno == ENOENT:
+                    # The file has been deleted.
+                    pass
+                else:
+                    # Some other unexpected error.
+                    raise e
 
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
