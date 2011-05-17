@@ -112,11 +112,6 @@
                 </span>
               </td>
 
-              <tal:comment replace="nothing">
-                XXX: GavinPanella 2011-04-14 bug=760733: In
-                TestDistroSeriesLocalDifferences.test_queries, this
-                cell needs 1 QUERY per row: PackageSet
-              </tal:comment>
               <td tal:condition="view/show_parent_packagesets"
                   class="parent-packagesets">
                 <tal:replace replace="difference/@@/parent_packagesets_names"/>

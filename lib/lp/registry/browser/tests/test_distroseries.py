@@ -67,9 +67,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
-from lp.soyuz.interfaces.packagecopyjob import (
-    IPlainPackageCopyJobSource,
-    )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -676,10 +674,10 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
             text_content(u"%.2f" % statement_count_per_row))
         # XXX: GavinPanella 2011-04-12 bug=760733: Reducing the query count
         # further needs work. Ideally this test would be along the lines of
-        # recorder3.count == recorder2.count. 4 queries above the recorder2
-        # count is 2 queries per difference which is not acceptable, but is
+        # recorder3.count == recorder2.count. 2 queries above the recorder2
+        # count is 1 query per difference which is not acceptable, but is
         # *far* better than without the changes introduced by landing this.
-        compromise_statement_count = recorder2.count + 4
+        compromise_statement_count = recorder2.count + 2
         self.assertThat(
             recorder3, HasQueryCount(
                 LessThan(compromise_statement_count + 1)))
