@@ -330,10 +330,6 @@ class Archive(SQLBase):
         return self.displayname
 
     @property
-    def unique_name(self):
-        return '%s/%s' % (self.owner.name, self.name)
-
-    @property
     def is_ppa(self):
         """See `IArchive`."""
         return self.purpose == ArchivePurpose.PPA
@@ -1527,9 +1523,14 @@ class Archive(SQLBase):
         else:
             series = None
 
-        # Perform the copy, may raise CannotCopy.
+        # Perform the copy, may raise CannotCopy. Don't do any further
+        # permission checking: this method is protected by
+        # launchpad.Append, which is mostly more restrictive than archive
+        # permissions, except that it also allows ubuntu-security to
+        # copy packages they wouldn't otherwise be able to.
         do_copy(
-            sources, self, series, pocket, include_binaries, person=person)
+            sources, self, series, pocket, include_binaries, person=person,
+            check_permissions=False)
 
     def getAuthToken(self, person):
         """See `IArchive`."""

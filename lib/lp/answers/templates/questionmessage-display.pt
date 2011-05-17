@@ -1,10 +1,12 @@
 <tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define="index context/index"
   omit-tag="">
 <div
   tal:define="css_classes view/getBoardCommentCSSClass"
-  tal:attributes="class string:${css_classes}">
+  tal:attributes="class string:${css_classes};
+                  id string:comment-${index}">
   <div class="boardCommentDetails">
     <tal:bestanswer condition="view/isBestAnswer">
       <img src="/@@/favourite-yes" style="float:right;" alt="Best"
@@ -40,6 +42,20 @@
               name="field.actions.confirm"
               value="This Solved My Problem" />
     </form>
+  </div>
+
+  <div
+    tal:condition="view/canSeeSpamControls"
+    class="boardCommentFooter">
+    <a tal:attributes="id string:mark-spam-${index};"
+       class="js-action sprite edit mark-spam" href="#">
+         <tal:not-spam condition="not: context/visible">
+         Mark as not spam
+         </tal:not-spam>
+         <tal:spam condition="context/visible">
+         Mark as spam
+         </tal:spam>
+    </a>
   </div>
 </div>
 </tal:root>

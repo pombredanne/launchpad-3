@@ -267,6 +267,7 @@ bundled with that comment in the UI.
     ... ago:
     #2
     Lookit, a change!
+    ...
     Changed in mozilla-firefox (Ubuntu):
     status:
     New => Confirmed

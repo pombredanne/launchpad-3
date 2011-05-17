@@ -16,10 +16,25 @@ __all__ = [
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
+from canonical.launchpad.components.apihelpers import (
+    patch_collection_return_type,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
 from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questionmessage import  IQuestionMessage
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+
 
 IQuestionSet.queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IQuestion
-IQuestionSet['get'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['return_type'] = IQuestion
+patch_entry_return_type(IQuestionSet, 'get', IQuestion)
+patch_collection_return_type(
+    IQuestionTarget, 'findSimilarQuestions', IQuestion)
+patch_collection_return_type(
+    ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
+patch_reference_property(IQuestionMessage, 'question', IQuestion)

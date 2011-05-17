@@ -12,7 +12,7 @@ from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.translations.model.translationpackagingjob import (
     TranslationSplitJob)
-from lp.testing import TestCaseWithFactory
+from lp.testing import RegexMatcher, TestCaseWithFactory
 from lp.translations.tests.test_translationpackagingjob import (
     make_translation_merge_job,
     )
@@ -30,11 +30,14 @@ class TestMergeTranslations(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/run_jobs.py', ['packaging_translations'],
             expect_returncode=0)
-        self.assertEqual(dedent("""\
+        matcher = RegexMatcher(dedent("""\
             INFO    Creating lockfile: /var/lock/launchpad-jobcronscript.lock
             INFO    Running synchronously.
+            INFO    Merging .* and .* in Ubuntu Distroseries.*
             INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.
+            INFO    Splitting .* and .* in Ubuntu Distroseries.*
             INFO    Ran 1 TranslationMergeJob jobs.
             INFO    Ran 1 TranslationSplitJob jobs.
-            """), stderr)
+            """))
+        self.assertThat(stderr, matcher)
         self.assertEqual('', stdout)

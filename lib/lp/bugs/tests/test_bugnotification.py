@@ -18,7 +18,7 @@ from zope.interface import providedBy
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.message import MessageSet
+from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.ftests import login
 from canonical.testing import (
     DatabaseFunctionalLayer,

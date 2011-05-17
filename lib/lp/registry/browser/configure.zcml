@@ -508,9 +508,17 @@
         name="+edit"
         facet="overview"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        permission="zope.Public"
+        class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageHelpView"
+        name="+gethelp"
+        facet="answers"
+        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             DistributionSourcePackageActionMenu
+            DistributionSourcePackageAnswersMenu
             DistributionSourcePackageBugsMenu
             DistributionSourcePackageFacets
             DistributionSourcePackageOverviewMenu"
@@ -2088,10 +2096,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="lp.bugs.publisher.BugsLayer"
         name="+bugs"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="lp.answers.publisher.AnswersLayer"
-        name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.sourcepackage"
         classes="
@@ -2137,18 +2141,10 @@
         facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
         template="../templates/sourcepackage-upstream-connections.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
-        name="+gethelp"
-        facet="answers"
-        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             SourcePackageFacets
-            SourcePackageOverviewMenu
-            SourcePackageAnswersMenu"
+            SourcePackageOverviewMenu"
         module="lp.registry.browser.sourcepackage"/>
     <browser:navigation
         module="lp.registry.browser.productrelease"

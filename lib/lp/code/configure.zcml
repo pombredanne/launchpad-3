@@ -122,6 +122,10 @@
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_product"/>
   <adapter
+      for="lp.registry.interfaces.personproduct.IPersonProduct"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_person_product"/>
+  <adapter
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
@@ -287,7 +291,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
+    <allow interface="lp.services.messages.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility

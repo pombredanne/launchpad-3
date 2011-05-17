@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from BeautifulSoup import BeautifulSoup
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -64,26 +66,6 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         launchbag.add(self.bug)
         launchbag.add(self.bug.default_bugtask)
 
-    def test_mute_subscription_link_not_shown_for_non_subscribers(self):
-        # If a person is not already subscribed to a bug in some way,
-        # the mute link will not be displayed to them.
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            with FeatureFixture({self.feature_flag_2: None}):
-                # The user isn't subscribed or muted already.
-                self.assertFalse(self.bug.isSubscribed(person))
-                self.assertFalse(self.bug.isMuted(person))
-                self.assertFalse(
-                    self.bug.personIsAlsoNotifiedSubscriber(
-                        person))
-                view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
-                self.assertFalse(view.user_should_see_mute_link)
-                # The template uses user_should_see_mute_link to decide
-                # whether or not to display the mute link.
-                html = view.render()
-                self.assertFalse('mute_subscription' in html)
-
     def test_edit_subscriptions_link_shown_when_feature_enabled(self):
         with FeatureFixture({self.feature_flag_2: 'on'}):
             request = LaunchpadTestRequest()
@@ -101,6 +83,24 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         self.assertTrue('menu-link-editsubscriptions' not in html)
         self.assertTrue('/+subscriptions' not in html)
 
+    def test_mute_subscription_link_not_shown_with_no_feature_flag(self):
+        # Mute link is not shown when the feature flag is off.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture({self.feature_flag_1: None}):
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertFalse(view.user_should_see_mute_link)
+                html = view.render()
+                self.assertFalse('mute_subscription' in html)
+
+    def _hasCSSClass(self, html, element_id, css_class):
+        # Return True if element with ID `element_id` in `html` has
+        # a CSS class `css_class`.
+        soup = BeautifulSoup(html)
+        element = soup.find(attrs={'id': element_id})
+        return css_class in element['class'].split(' ')
+
     def test_bug_mute_for_individual_structural_subscription(self):
         # If the person has a structural subscription to the pillar,
         # then the mute link will be displayed to them.
@@ -116,6 +116,9 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 contents = view.render()
                 self.assertTrue('mute_subscription' in contents,
                                 "'mute_subscription' not in contents.")
+                self.assertFalse(
+                    self._hasCSSClass(
+                        contents, 'mute-link-container', 'hidden'))
                 create_initialized_view(
                     self.bug.default_bugtask, name="+mute",
                     form={'field.actions.mute': 'Mute bug mail'})
@@ -136,6 +139,94 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertTrue(
                     self.bug.personIsAlsoNotifiedSubscriber(
                         person), "Person should be a notified subscriber")
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertTrue(view.user_should_see_mute_link,
+                                "User should see mute link.")
+                contents = view.render()
+                self.assertTrue('mute_subscription' in contents,
+                                "'mute_subscription' not in contents.")
+                self.assertFalse(
+                    self._hasCSSClass(
+                        contents, 'mute-link-container', 'hidden'))
+                create_initialized_view(
+                    self.bug.default_bugtask, name="+mute",
+                    form={'field.actions.mute': 'Mute bug mail'})
+                self.assertTrue(self.bug.isMuted(person))
+
+    def test_mute_subscription_link_hidden_for_non_subscribers(self):
+        # If a person is not already subscribed to a bug in some way,
+        # the mute link will not be displayed to them.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture({self.feature_flag_1: 'on'}):
+                # The user isn't subscribed or muted already.
+                self.assertFalse(self.bug.isSubscribed(person))
+                self.assertFalse(self.bug.isMuted(person))
+                self.assertFalse(
+                    self.bug.personIsAlsoNotifiedSubscriber(
+                        person))
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertFalse(view.user_should_see_mute_link)
+                html = view.render()
+                self.assertTrue('mute_subscription' in html)
+                # The template uses user_should_see_mute_link to decide
+                # whether or not to display the mute link.
+                soup = BeautifulSoup(html)
+                self.assertTrue(
+                    self._hasCSSClass(html, 'mute-link-container', 'hidden'),
+                    'No "hidden" CSS class in mute-link-container.')
+
+    def test_mute_link_shown_for_team_subscription_to_duplicate(self):
+        # If the person belongs to a team with a structural subscription to a
+        # duplicate of this bug, then the mute link will be displayed to them.
+        person = self.factory.makePerson(name="a-person")
+        team_owner = self.factory.makePerson(name="team-owner")
+        team = self.factory.makeTeam(owner=team_owner, name="subscribed-team")
+        dupe = self.factory.makeBug()
+        with person_logged_in(self.bug.owner):
+            dupe.markAsDuplicate(self.bug)
+        with FeatureFixture({self.feature_flag_1: 'on'}):
+            with person_logged_in(team_owner):
+                team.addMember(person, team_owner)
+                dupe_target = dupe.default_bugtask.target
+                dupe_target.addBugSubscription(team, team_owner)
+            with person_logged_in(person):
+                self.assertFalse(self.bug.isMuted(person))
+                # This is a sanity check for the test.
+                self.assertFalse(self.bug.duplicates.is_empty())
+                self.assertEqual(self.bug, dupe.duplicateof)
+                self.assertTrue(
+                    self.bug.personIsAlsoNotifiedSubscriber(
+                        person), "Person should be a notified subscriber")
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertTrue(view.user_should_see_mute_link,
+                                "User should see mute link.")
+                contents = view.render()
+                self.assertTrue('mute_subscription' in contents,
+                                "'mute_subscription' not in contents.")
+                create_initialized_view(
+                    self.bug.default_bugtask, name="+mute",
+                    form={'field.actions.mute': 'Mute bug mail'})
+                self.assertTrue(self.bug.isMuted(person))
+
+    def test_mute_subscription_link_shown_for_team_direct_subscription(self):
+        # If the person belongs to a team with a direct subscription,
+        # then the mute link will be displayed to them.
+        person = self.factory.makePerson(name="a-person")
+        team_owner = self.factory.makePerson(name="team-owner")
+        team = self.factory.makeTeam(owner=team_owner, name="subscribed-team")
+        with FeatureFixture({self.feature_flag_1: 'on'}):
+            with person_logged_in(team_owner):
+                team.addMember(person, team_owner)
+                self.bug.subscribe(team, team_owner)
+            with person_logged_in(person):
+                self.assertFalse(self.bug.isMuted(person))
+                self.assertTrue(
+                    self.bug.personIsAlsoNotifiedSubscriber(person),
+                    "Person should be a notified subscriber")
                 view = create_initialized_view(
                     self.bug, name="+portlet-subscribers")
                 self.assertTrue(view.user_should_see_mute_link,

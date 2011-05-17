@@ -24,10 +24,19 @@ value_domain_info = sorted([
      'Any non-empty value is true; an empty value is false.'),
     ('float',
      'The flag value is set to the given floating point number.'),
+    ('int',
+     "An integer."),
     ])
 
-# This table of flag name, value domain, and prose documentation is used to
-# generate the web-visible feature flag documentation.
+# Data for generating web-visible feature flag documentation.
+#
+# Entries for each flag are:
+# flag name, value domain, prose documentation, default behaviour.
+#
+# Value domain as in value_domain_info above.
+#
+# NOTE: "default behaviour" does not specify a default value.  It
+# merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
     ('code.branchmergequeue',
      'boolean',
@@ -65,9 +74,17 @@ flag_info = sorted([
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
      ''),
+    ('soyuz.derived_series.max_synchronous_syncs',
+     'int',
+     "How many package syncs may be done directly in a web request.",
+     '100'),
     ('soyuz.derived-series-ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
+     ''),
+    ('soyuz.derived-series-sync.enabled',
+     'boolean',
+     'Enables syncing of packages on derivative distributions pages.',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',

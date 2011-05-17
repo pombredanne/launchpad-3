@@ -166,7 +166,7 @@ class QuestionCollectionOpenCountView:
     """View used to render the number of open questions.
 
     This view is used to render the number of open questions on
-    each ISourcePackageRelease on the person-packages-templates.pt.
+    each IDistributionSourcePackage on the person-packages-templates.pt.
     It is simpler to define generic view and an adapter (since
     SourcePackageRelease does not provide IQuestionCollection), than
     to write a specific view for that template.
@@ -738,12 +738,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
             self._updatePreferredLanguages(self.user)
-            if self.context.addAnswerContact(self.user):
+            if self.context.addAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
-            if self.context.removeAnswerContact(self.user):
+            if self.context.removeAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
@@ -752,12 +752,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)
-                if self.context.addAnswerContact(team):
+                if self.context.addAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
-                if self.context.removeAnswerContact(team):
+                if self.context.removeAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))

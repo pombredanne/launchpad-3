@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
