@@ -396,7 +396,8 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.pillar)
         self.assertEqual({"product": target}, helper.target_arguments)
         self.assertEqual(
-            u"StructuralSubscription.product = ?",
+            u"StructuralSubscription.product = ? OR "
+            "StructuralSubscription.project = ?",
             compile_storm(helper.join))
 
     def test_product_series(self):
