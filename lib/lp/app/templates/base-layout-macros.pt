@@ -171,13 +171,13 @@
     </script>
     <script tal:repeat="key objects"
       tal:content="string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
+                   ${objects/?key/webservice:json/fmt:obfuscate-email};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
     tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json};">
+                 ${context/webservice:json/fmt:obfuscate-email};">
   </script>
 </metal:lp-client-cache>
 
