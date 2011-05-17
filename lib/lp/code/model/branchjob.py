@@ -54,7 +54,6 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
@@ -105,6 +104,7 @@ from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -170,6 +170,7 @@ class BranchJobType(DBEnumeratedType):
 
         This job scans a branch for new revisions.
         """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -365,7 +366,7 @@ class BranchUpgradeJob(BranchJobDerived):
         yield
         server.stop_server()
 
-    def run(self):
+    def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
         upgrade_branch_path = tempfile.mkdtemp()
@@ -376,10 +377,13 @@ class BranchUpgradeJob(BranchJobDerived):
                 self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
+            transaction.commit()
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
-            # Perform the upgrade.
-            upgrade(upgrade_branch.base)
+            # No transactions are open so the DB connection won't be killed.
+            with TransactionFreeOperation():
+                # Perform the upgrade.
+                upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(

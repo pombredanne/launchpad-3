@@ -15,11 +15,11 @@ but Bart's email addresses are hidden.  Anne decides to use Launchpad's direct
 user-to-user contact form to send Bart a message.  Is she allowed to?
 
     # For testing purposes, we can't use the current date and time.
-    >>> from canonical.launchpad.database.message import (
+    >>> from lp.services.messages.model.message import (
     ...     utcdatetime_from_field)
     >>> date = utcdatetime_from_field('Thu, 25 Sep 2008 15:29:37 +0100')
 
-    >>> from canonical.launchpad.interfaces.message import (
+    >>> from lp.services.messages.interfaces.message import (
     ...     IDirectEmailAuthorization)
     >>> IDirectEmailAuthorization(anne)._isAllowedAfter(date)
     True
@@ -31,7 +31,7 @@ user-to-user contact form to send Bart a message.  Is she allowed to?
 
 Launchpad records the event when Anne sends the message to Bart.
 
-    >>> from canonical.launchpad.database.message import UserToUserEmail
+    >>> from lp.services.messages.model.message import UserToUserEmail
     >>> from email import message_from_string
 
     >>> contact = UserToUserEmail(message_from_string("""\
@@ -50,7 +50,7 @@ Launchpad records the event when Anne sends the message to Bart.
 Anne really likes Bart's project, so she sends him another message.
 
     # Use an explicit cutoff date instead of yesterday.
-    >>> from canonical.launchpad.database.message import (
+    >>> from lp.services.messages.model.message import (
     ...     utcdatetime_from_field)
     >>> after = utcdatetime_from_field('Thu, 25 Sep 2008 15:20:00 +0100')
 

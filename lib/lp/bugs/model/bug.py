@@ -94,7 +94,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     MessageSet,
@@ -107,7 +107,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
@@ -939,16 +939,13 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers.
         return DecoratedResultSet(
             IStore(BugSubscription).find(
-                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
-                # hack; it does not seem to be possible to express DISTINCT ON
-                # with Storm.
-                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
-                 Person, BugSubscription),
+                (Person, BugSubscription),
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id),
-            operator.itemgetter(2))
+                BugSubscription.person_id).config(
+                    distinct=(BugSubscription.person_id,)),
+            operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -956,18 +953,30 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
+        if self.private:
+            # We short-circuit for private bugs, since actually
+            # returning something non-empty here causes things to break
+            # in fun and interesting ways (see bug 780248).
+            return []
+
         if level is None:
             level = BugNotificationLevel.NOTHING
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
-            # Pre-load duplicate bugs.
+            # Pre-load duplicates
             list(self.duplicates)
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
+            for subscription in info.structural_subscriptions_from_duplicates:
+                recipients.addDupeSubscriber(
+                    subscription.subscriber)
 
-        return info.duplicate_only_subscriptions.subscribers.sorted
+        unified_subscribers = (
+            info.duplicate_only_subscriptions.subscribers.union(
+                info.structural_subscriptions_from_duplicates.subscribers))
+        return unified_subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -979,20 +988,15 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
 
         def cache_subscriber(row):
-            _, subscriber, subscription = row
+            subscriber, subscription = row
             if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
         return DecoratedResultSet(Store.of(self).find(
-            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
-            # hack; it does not seem to be possible to express DISTINCT ON
-            # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
-                 "0 AS ignore"),
              # Return people and subscriptions
-             Person, BugSubscription),
+            (Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -1012,7 +1016,8 @@ BugMessage""" % sqlvalues(self.id))
             # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name),
+            ).order_by(Person.name).config(
+                distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
@@ -1036,12 +1041,16 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
+        # Call getDirectSubscribers to update the recipients list with direct
+        # subscribers.  The results of the method call are not used.
         self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
+            # Call getIndirectSubscribers to update the recipients list with direct
+            # subscribers.  The results of the method call are not used.
             self.getIndirectSubscribers(recipients, level=level)
             if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
@@ -1908,6 +1917,22 @@ BugMessage""" % sqlvalues(self.id))
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
+        # This is here to avoid circular imports.
+        from lp.bugs.mail.bugnotificationrecipients import (
+            BugNotificationRecipients,
+            )
+
+        def check_person_in_team(person, list_of_people):
+            """Is the person in one of the teams?
+
+            Given a person and a list of people/teams, see if the person
+            belongs to one of the teams.
+            """
+            for subscriber in list_of_people:
+                if subscriber.is_team and person.inTeam(subscriber):
+                    return True
+            return False
+
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
         # actually a composite of bug contacts, structural subscribers
@@ -1918,9 +1943,16 @@ BugMessage""" % sqlvalues(self.id))
             return True
         # Otherwise check to see if the person is a member of any of the
         # subscribed teams.
-        for subscriber in also_notified_subscribers:
-            if subscriber.is_team and person.inTeam(subscriber):
-                return True
+        if check_person_in_team(person, also_notified_subscribers):
+            return True
+
+        direct_subscribers = self.getDirectSubscribers()
+        if check_person_in_team(person, direct_subscribers):
+            return True
+        duplicate_subscribers = self.getSubscribersFromDuplicates(
+            recipients=BugNotificationRecipients())
+        if check_person_in_team(person, duplicate_subscribers):
+            return True
         return False
 
     def personIsSubscribedToDuplicate(self, person):
@@ -2278,6 +2310,24 @@ class BugSubscriptionInfo:
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
         return get_structural_subscriptions_for_bug(self.bug)
+
+    @cachedproperty
+    @freeze(StructuralSubscriptionSet)
+    def structural_subscriptions_from_duplicates(self):
+        """Structural subscriptions from the bug's duplicates."""
+        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        higher_precedence = (
+            self.direct_subscriptions.subscribers.union(
+                self.also_notified_subscribers))
+        all_duplicate_structural_subscriptions = list()
+        for duplicate in self.bug.duplicates:
+            duplicate_struct_subs = get_structural_subscriptions_for_bug(
+                duplicate)
+            all_duplicate_structural_subscriptions += duplicate_struct_subs
+        return (
+            subscription for subscription in
+                all_duplicate_structural_subscriptions
+                if subscription.subscriber not in higher_precedence)
 
     @cachedproperty
     @freeze(BugSubscriberSet)

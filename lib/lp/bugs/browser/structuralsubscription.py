@@ -381,6 +381,11 @@ class StructuralSubscriptionMenuMixin:
         bug subscriptions.
         """
         sst = self._getSST()
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
+        if IProjectGroupMilestone.providedBy(sst):
+            return False
         pillar = IStructuralSubscriptionTargetHelper(sst).pillar
         return (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
                 sst.userCanAlterBugSubscription(self.user, self.user))

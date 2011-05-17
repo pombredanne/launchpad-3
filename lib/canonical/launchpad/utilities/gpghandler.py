@@ -72,7 +72,7 @@ class GPGHandler:
         """Create a new directory containing the required configuration.
 
         This method is called inside the class constructor and genereates
-        a new directory (name ramdomly generated with the 'gpg-' prefix)
+        a new directory (name randomly generated with the 'gpg-' prefix)
         containing the proper file configuration and options.
 
         Also installs an atexit handler to remove the directory on normal
@@ -117,6 +117,20 @@ class GPGHandler:
             filename = os.path.join(self.home, filename)
             if os.path.exists(filename):
                 os.remove(filename)
+
+    def touchConfigurationDirectory(self):
+        """See IGPGHandler."""
+        os.utime(self.home, None)
+        for file in os.listdir(self.home):
+            try:
+                os.utime(os.path.join(self.home, file), None)
+            except OSError as e:
+                if e.errno == ENOENT:
+                    # The file has been deleted.
+                    pass
+                else:
+                    # Some other unexpected error.
+                    raise e
 
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""

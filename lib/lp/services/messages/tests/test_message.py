@@ -18,16 +18,16 @@ from sqlobject import SQLObjectNotFound
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database.message import (
+from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
     MessageSet,
     )
-from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.message import IMessageJob
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
@@ -178,14 +178,3 @@ class TestMessageJob(TestCaseWithFactory):
         self.assertEqual('to@example.com', message['To'])
         self.assertEqual('subject', message['Subject'])
         self.assertEqual('body', message.get_payload())
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite('canonical.launchpad.database.message'))
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-if __name__ == '__main__':
-    unittest.main(test_suite())
-

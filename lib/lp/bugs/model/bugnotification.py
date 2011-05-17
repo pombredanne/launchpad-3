@@ -40,7 +40,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,

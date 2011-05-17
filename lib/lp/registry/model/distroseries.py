@@ -468,8 +468,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) "
-                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
@@ -524,9 +522,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
 
         def decorator(row):
-            _, spn, score, bug_count, total_messages = row
+            spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -1952,11 +1951,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                            description=None, version=None,
                            architectures=(), packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
-        # XXX StevenK bug=643369 This should be in the security adapter
-        # This should be allowed if the user is a driver for self.parent
-        # or the child.parent's drivers.
-        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
-            raise Unauthorized
         if distribution is None:
             distribution = self.distribution
         child = IStore(self).find(

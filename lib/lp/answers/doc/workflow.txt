@@ -53,7 +53,7 @@ Ubuntu Team owning the distribution.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> english = getUtility(ILanguageSet)['en']
     >>> sample_person.addLanguage(english)
-    >>> ubuntu.addAnswerContact(sample_person)
+    >>> ubuntu.addAnswerContact(sample_person, sample_person)
     True
 
     # Sanity check: the admin isn't in the team owning the distribution.
@@ -739,7 +739,7 @@ Using an IMessage as an explanation
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)

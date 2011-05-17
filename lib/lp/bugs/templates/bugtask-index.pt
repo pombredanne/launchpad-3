@@ -44,14 +44,18 @@
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.bugtask_index.portlets',
-                  'lp.code.branchmergeproposal.diff', function(Y) {
+                  'lp.code.branchmergeproposal.diff', 'lp.bugs.bug_spam',
+                  function(Y) {
             Y.lp.bugs.bugtask_index.portlets.use_advanced_subscriptions =
                 use_advanced_subscriptions;
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
-        });
+            Y.on('domready', function() {
+                Y.lp.bugs.bug_spam.setup_spam_links();
+            });
+         });
       </script>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
@@ -60,6 +64,14 @@
         #add-comment-form .actions {float: right;}
         .bug-branch-summary dd { font-size: 85% }
         a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
+      </style>
+      <style type="text/css">
+        .yui3-overlay .value label  {
+          /* It normally makes sense for form labels to be bold, but since
+          this form consists only of radio buttons, there's nothing but labels
+          so we just get wall-to-wall bold. */
+          font-weight: normal !important;
+        }
       </style>
     </metal:block>
 

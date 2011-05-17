@@ -125,12 +125,6 @@
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
 
-        // Hook up an event hanlder that will close any message boxes when they
-        // are clicked.
-        Y.delegate('click', function(e) {
-            this.setStyle('display', 'none');
-        }, 'body', '.message');
-
         Y.on('lp:context:web_link:changed', function(e) {
             window.location = e.new_value;
         });
@@ -177,13 +171,13 @@
     </script>
     <script tal:repeat="key objects"
       tal:content="string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
+                   ${objects/?key/webservice:json/fmt:obfuscate-email};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
     tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json};">
+                 ${context/webservice:json/fmt:obfuscate-email};">
   </script>
 </metal:lp-client-cache>
 

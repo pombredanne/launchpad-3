@@ -74,7 +74,6 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -244,7 +243,7 @@ class QuestionSetNavigation(Navigation):
         if hasattr(self.request, 'version'):
             return question
         else:
-            return redirection(
+            return self.redirectSubTree(
                 canonical_url(question, self.request), status=301)
 
 
@@ -437,7 +436,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([english])
+            supported_languages = [english]
 
         terms = []
         for lang in languages:
@@ -1112,6 +1111,10 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    @cachedproperty
+    def canSeeSpamControls(self):
+        return check_permission('launchpad.Moderate', self.context.question)
 
     def getBoardCommentCSSClass(self):
         css_classes = ["boardComment"]
