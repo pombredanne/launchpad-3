@@ -25,10 +25,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     REQUEST_USER,
     )
-from lazr.restful.fields import (
-    CollectionField,
-    Reference,
-    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -46,7 +42,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionPriority,
     QuestionStatus,
     )
@@ -67,7 +63,7 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    export_as_webservice_entry(as_of="devel")
+    export_as_webservice_entry(as_of='beta')
 
     id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
@@ -462,22 +458,13 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    def getDirectRecipients():
-        """Return the set of persons who are subscribed to this question.
+    direct_recipients = Attribute(
+        "Return An `INotificationRecipientSet` containing the persons to "
+        "notify along the rationale for doing so.")
 
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
-        """
-
-    def getIndirectRecipients():
-        """Return the set of persons implicitly subscribed to this question.
-
-        That includes  the answer contacts for the question's target as well
-        as the question's assignee.
-
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
-        """
+    indirect_recipients = Attribute(
+        "Return the INotificationRecipientSet of answer contacts for the "
+        "question's target as well as the question's assignee.")
 
     @operation_parameters(
         comment_number=Int(
@@ -489,7 +476,7 @@ class IQuestion(IHasOwner):
     @operation_for_version('devel')
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a question message.
-        
+
         This is restricted to Launchpad admins and registry members, and will
         return a HTTP Error 401: Unauthorized error for non-admin callers.
         """

@@ -6,19 +6,20 @@
 from __future__ import absolute_import
 from lp.testing.windmill.lpuser import LaunchpadUser
 
+
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
     'api_url',
-    'build_yui_unittest_suite',
     'BrowserTestCase',
+    'build_yui_unittest_suite',
     'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
-    'launchpadlib_for',
     'launchpadlib_credentials_for',
+    'launchpadlib_for',
     'login',
     'login_as',
     'login_celebrity',
@@ -31,13 +32,13 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_script',
     'run_with_login',
     'run_with_storm_debug',
-    'run_script',
     'StormStatementRecorder',
+    'test_tales',
     'TestCase',
     'TestCaseWithFactory',
-    'test_tales',
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
@@ -90,6 +91,7 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import Matcher, Mismatch
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -165,6 +167,26 @@ from lp.testing.windmill import (
     constants,
     lpuser,
     )
+
+# The following names have been imported for the purpose of being
+# exported. They are referred to here to silence lint warnings.
+anonymous_logged_in
+api_url
+celebrity_logged_in
+is_logged_in
+launchpadlib_credentials_for
+launchpadlib_for
+login_as
+login_celebrity
+login_person
+login_team
+oauth_access_token_for
+person_logged_in
+run_with_login
+test_tales
+with_anonymous_login
+with_celebrity_logged_in
+with_person_logged_in
 
 
 class FakeTime:
@@ -498,6 +520,16 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
 
+    def assertVectorEqual(self, *args):
+        """Apply assertEqual to all given pairs in one go.
+
+        Takes any number of (expected, observed) tuples and asserts each
+        equality in one operation, thus making sure all tests are performed.
+        If any of the tuples mismatches, AssertionError is raised.
+        """
+        expected_vector, observed_vector = zip(*args)
+        return self.assertEqual(expected_vector, observed_vector)
+
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 
@@ -809,8 +841,7 @@ class WindmillTestCase(TestCaseWithFactory):
             person.displayname, naked_person.preferredemail.email, password)
         return self.getClientFor(url, user=user)
 
-
-    def getClientForAnomymous(self, obj, view_name=None):
+    def getClientForAnonymous(self, obj, view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if isinstance(obj, basestring):
@@ -1092,17 +1123,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line):
+def run_script(cmd_line, env=None):
     """Run the given command line as a subprocess.
 
-    Return a 3-tuple containing stdout, stderr and the process' return code.
-
-    The environment given to the subprocess is the same as the one in the
-    parent process except for the PYTHONPATH, which is removed so that the
-    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
-    up properly.
+    :param cmd_line: A command line suitable for passing to
+        `subprocess.Popen`.
+    :param env: An optional environment dict.  If none is given, the
+        script will get a copy of your present environment.  Either way,
+        PYTHONPATH will be removed from it because it will break the
+        script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
     """
-    env = os.environ.copy()
+    if env is None:
+        env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -1290,3 +1323,26 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class RegexMatcher(Matcher):
+    """A matcher that matches a regular expression."""
+
+    def __init__(self, pattern, flags=0):
+        """Constructor.
+
+        :param pattern: The pattern to match.
+        :param flags: The flags to use when performing the match.
+        """
+        self.pattern = pattern
+        self.flags = flags
+
+    def match(self, something):
+        """See `Matcher`."""
+        if re.match(self.pattern, something, self.flags):
+            return None
+        return Mismatch('Pattern "%s" not in "%s".' % (self.pattern, something))
+
+    def __str__(self):
+        """See `Matcher`."""
+        return 'RegexMatcher(%r)' % self.pattern

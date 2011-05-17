@@ -60,29 +60,29 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.mailnotification import NotificationRecipientSet
+from lp.services.messages.interfaces.message import IMessage
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
     IQuestion,
     )
-from lp.answers.interfaces.questioncollection import (
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questionenums import (
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.enums import (
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,
     QuestionSort,
     QuestionStatus,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.errors import (
+    AddAnswerContactError,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
@@ -109,8 +109,9 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
 
@@ -233,12 +234,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 bug=108240
-        # We test for ISourcePackage because it is a valid QuestionTarget even
-        # though it should not be. SourcePackages are never passed to this
-        # mutator.
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
@@ -256,7 +252,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def followup_subject(self):
         """See `IMessageTarget`."""
         if not self.messages:
-            return 'Re: '+ self.title
+            return 'Re: ' + self.title
         subject = self.messages[-1].title
         if subject[:4].lower() == 're: ':
             return subject
@@ -278,7 +274,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         if new_status == self.status:
             raise InvalidQuestionStateError(
                 "New status is same as the old one.")
-
 
         # If the previous state recorded an answer, clear those
         # information as well, but copy it out for the reopening.
@@ -536,7 +531,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getDirectSubscribers(self):
         """See `IQuestion`.
 
-        This method is sorted so that it iterates like getDirectRecipients().
+        This method is sorted so that it iterates like direct_recipients.
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
@@ -545,7 +540,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`.
 
         This method adds the assignee and is sorted so that it iterates like
-        getIndirectRecipients().
+        indirect_recipients.
         """
         subscribers = set(
             self.target.getAnswerContactsForLanguage(self.language))
@@ -555,19 +550,29 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getRecipients(self):
         """See `IQuestion`."""
-        subscribers = self.getDirectRecipients()
-        subscribers.update(self.getIndirectRecipients())
+        # return a mutable instance of the cached recipients.
+        subscribers = NotificationRecipientSet()
+        subscribers.update(self.direct_recipients)
+        subscribers.update(self.indirect_recipients)
         return subscribers
 
-    def getDirectRecipients(self):
+    @cachedproperty
+    def direct_recipients(self):
         """See `IQuestion`."""
         subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
+        if self.owner in subscribers:
+            subscribers.remove(self.owner)
+            reason = (
+                "You received this question notification because you "
+                "asked the question.")
+            subscribers.add(self.owner, reason, 'Asker')
         return subscribers
 
-    def getIndirectRecipients(self):
+    @cachedproperty
+    def indirect_recipients(self):
         """See `IQuestion`."""
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
@@ -807,7 +812,6 @@ class QuestionSet:
         cur = cursor()
         cur.execute(query)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
-        packages_with_questions = set()
         # Only packages with open questions are included in the query
         # result, so initialize each package to 0.
         counts = dict((package, 0) for package in packages)
@@ -1192,13 +1196,18 @@ class QuestionTargetMixin:
         # Give the datelastresponse a current datetime, otherwise the
         # Launchpad Janitor would quickly expire questions made from old bugs.
         question.datelastresponse = datetime.now(pytz.timezone('UTC'))
-        question.linkBug(bug)
-        for message in bug.messages[1:]:
-            # Bug.message[0] is the original message, and probably a duplicate
-            # of Bug.description.
-            question.addComment(
-                message.owner, message.text_contents,
-                datecreated=message.datecreated)
+        # Directly create the BugLink so that users do not receive duplicate
+        # messages about the bug.
+        question.createBugLink(bug)
+        # Copy the last message that explains why the bug is a question.
+        message = bug.messages[-1]
+        question.addComment(
+            message.owner, message.text_contents,
+            datecreated=message.datecreated)
+        # Direct subscribers to the bug want to know the question answer.
+        for subscriber in bug.getDirectSubscribers():
+            if subscriber != question.owner:
+                question.subscribe(subscriber)
         return question
 
     def getQuestion(self, question_id):
@@ -1307,15 +1316,29 @@ class QuestionTargetMixin:
             person.setLanguagesCache(languages)
         return sorted(D.keys(), key=operator.attrgetter('displayname'))
 
-    def addAnswerContact(self, person):
+    def canUserAlterAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if person is None or subscribed_by is None:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if (person == subscribed_by
+            or person in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(admins)):
+            return True
+        return False
+
+    def addAnswerContact(self, person, subscribed_by):
+        """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         answer_contact = AnswerContact.selectOneBy(
             person=person, **self.getTargetTypes())
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
-        assert len(person.languages) > 0, (
-            "An Answer Contact must speak a language.")
+        if len(person.languages) == 0:
+            raise AddAnswerContactError(
+                "An answer contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
         answer_contact = AnswerContact(person=person, **params)
@@ -1358,8 +1381,8 @@ class QuestionTargetMixin:
         else:
             constraints.append("""
                 Language.id = %s""" % sqlvalues(language))
-        return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage', 'Language']))
+        return list((self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage', 'Language'])))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1383,8 +1406,10 @@ class QuestionTargetMixin:
             recipients.add(person, reason, header)
         return recipients
 
-    def removeAnswerContact(self, person):
+    def removeAnswerContact(self, person, subscribed_by):
         """See `IQuestionTarget`."""
+        if not self.canUserAlterAnswerContact(person, subscribed_by):
+            return False
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
@@ -1404,4 +1429,4 @@ class QuestionTargetMixin:
         languages.add(getUtility(ILaunchpadCelebrities).english)
         languages = set(
             lang for lang in languages if not is_english_variant(lang))
-        return languages
+        return list(languages)

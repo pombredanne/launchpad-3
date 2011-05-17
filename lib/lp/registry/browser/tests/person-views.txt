@@ -121,6 +121,7 @@ Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
 are there any email addresses.
 
+    >>> login(ANONYMOUS)
     >>> view = create_initialized_view(mark, '+index')
     >>> view.email_address_visibility.is_login_required
     True

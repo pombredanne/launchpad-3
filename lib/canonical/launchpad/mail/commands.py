@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces.mail import (
     IBugTaskEditEmailCommand,
     IBugTaskEmailCommand,
     )
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.mail.helpers import (
     get_error_message,
     get_person_or_team,

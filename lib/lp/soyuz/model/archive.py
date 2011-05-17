@@ -7,7 +7,10 @@
 
 __metaclass__ = type
 
-__all__ = ['Archive', 'ArchiveSet']
+__all__ = [
+    'Archive',
+    'ArchiveSet',
+    ]
 
 from operator import attrgetter
 import re
@@ -25,8 +28,8 @@ from storm.expr import (
     Desc,
     Or,
     Select,
-    Sum,
     SQL,
+    Sum,
     )
 from storm.locals import (
     Count,
@@ -108,6 +111,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
+    archive_suffixes,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -408,12 +412,6 @@ class Archive(SQLBase):
     @property
     def archive_url(self):
         """See `IArchive`."""
-        archive_postfixes = {
-            ArchivePurpose.PRIMARY: '',
-            ArchivePurpose.PARTNER: '-partner',
-            ArchivePurpose.DEBUG: '-debug',
-        }
-
         if self.is_ppa:
             if self.private:
                 url = config.personalpackagearchive.private_base_url
@@ -432,7 +430,7 @@ class Archive(SQLBase):
             return urlappend(url, self.distribution.name)
 
         try:
-            postfix = archive_postfixes[self.purpose]
+            postfix = archive_suffixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
@@ -465,21 +463,24 @@ class Archive(SQLBase):
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
         # callers are problematic. (Migrate them and test to see).
         clauses = []
         storm_clauses = [
-            SourcePackagePublishingHistory.archiveID==self.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID==
+            SourcePackagePublishingHistory.archiveID == self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID==
-                SourcePackageName.id
+            SourcePackageRelease.sourcepackagenameID ==
+                SourcePackageName.id,
             ]
-        orderBy = [SourcePackageName.name,
-                   Desc(SourcePackagePublishingHistory.id)]
+        orderBy = [
+            SourcePackageName.name,
+            Desc(SourcePackagePublishingHistory.id),
+            ]
 
         if name is not None:
             if exact_match:
@@ -509,7 +510,8 @@ class Archive(SQLBase):
 
         if distroseries is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.distroseriesID==distroseries.id)
+                SourcePackagePublishingHistory.distroseriesID ==
+                    distroseries.id)
 
         if pocket is not None:
             storm_clauses.append(
@@ -526,6 +528,8 @@ class Archive(SQLBase):
         resultset = store.find(SourcePackagePublishingHistory,
             *storm_clauses).order_by(
             *orderBy)
+        if not eager_load:
+            return resultset
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):
@@ -997,6 +1001,19 @@ class Archive(SQLBase):
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
 
+    def hasAnyPermission(self, person):
+        """See `IArchive`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
+
+        any_perm_on_archive = Store.of(self).find(
+            TeamParticipation,
+            ArchivePermission.archive == self.id,
+            TeamParticipation.person == person.id,
+            TeamParticipation.teamID == ArchivePermission.personID,
+            )
+        return not any_perm_on_archive.is_empty()
+
     def getBuildCounters(self, include_needsbuild=True):
         """See `IArchiveSet`."""
 
@@ -1172,7 +1189,7 @@ class Archive(SQLBase):
             strict_component)
 
     def verifyUpload(self, person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                     distroseries, strict_component=True):
         """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
@@ -1431,15 +1448,17 @@ class Archive(SQLBase):
             reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
-        self._copySources(sources, to_pocket, to_series, include_binaries)
+        self._copySources(
+            sources, to_pocket, to_series, include_binaries,
+            person=person)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
@@ -1448,7 +1467,9 @@ class Archive(SQLBase):
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
 
-        self._copySources([source], to_pocket, to_series, include_binaries)
+        self._copySources(
+            [source], to_pocket, to_series, include_binaries,
+            person=person)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1474,7 +1495,7 @@ class Archive(SQLBase):
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
-                     include_binaries=False):
+                     include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
 
         It takes a list of SourcePackagePublishingHistory but the other args
@@ -1502,8 +1523,14 @@ class Archive(SQLBase):
         else:
             series = None
 
-        # Perform the copy, may raise CannotCopy.
-        do_copy(sources, self, series, pocket, include_binaries)
+        # Perform the copy, may raise CannotCopy. Don't do any further
+        # permission checking: this method is protected by
+        # launchpad.Append, which is mostly more restrictive than archive
+        # permissions, except that it also allows ubuntu-security to
+        # copy packages they wouldn't otherwise be able to.
+        do_copy(
+            sources, self, series, pocket, include_binaries, person=person,
+            check_permissions=False)
 
     def getAuthToken(self, person):
         """See `IArchive`."""

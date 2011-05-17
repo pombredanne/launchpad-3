@@ -23,14 +23,14 @@
                   tal:content="structure item/fmt:link"/>
               <li tal:condition="not:view/linkify_items"
                   tal:repeat="item items"
-                  tal:content="structure item"/>
+                  tal:content="item/displayname"/>
         </ul>
     <tal:items-close-tag replace="structure view/items_close_tag"/>
   </span>
   <div class="yui3-activator-message-box yui3-activator-hidden"/>
 </span>
 <script tal:condition="view/can_write"
-        tal:content="structure string:
+        tal:content="string:
 LPS.use('lp.app.multicheckbox', function(Y) {
     if (Y.UA.ie) {
         return;

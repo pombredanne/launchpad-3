@@ -69,10 +69,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -221,7 +218,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
         IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IServiceUsage)
+        IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -271,7 +268,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
-    active = True # Required by IPillar interface.
+    active = True
     max_bug_heat = Int()
 
     def __repr__(self):
@@ -469,7 +466,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if by_country and mirrors:
             # Since country data is needed, fetch countries into the cache.
-            countries = list(Store.of(self).find(
+            list(Store.of(self).find(
                 Country,
                 Country.id.is_in(mirror.countryID for mirror in mirrors)))
 
@@ -602,7 +599,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def derivatives(self):
         """See `IDistribution`."""
         ParentDistroSeries = ClassAlias(DistroSeries)
-        # rvb 2011-04-08 bug=754750: The clause
+        # XXX rvb 2011-04-08 bug=754750: The clause
         # 'DistroSeries.distributionID!=self.id' is only required
         # because the parent_series attribute has been (mis-)used
         # to denote other relations than proper derivation
@@ -610,9 +607,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # the bug is fixed.
         ret = Store.of(self).find(
             DistroSeries,
-            ParentDistroSeries.id==DistroSeries.parent_seriesID,
-            ParentDistroSeries.distributionID==self.id,
-            DistroSeries.distributionID!=self.id)
+            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID == self.id,
+            DistroSeries.distributionID != self.id)
         return ret.config(
             distinct=True).order_by(Desc(DistroSeries.date_created))
 
@@ -649,9 +646,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
-        return get_bug_tags_open_count(BugTask.distribution == self, user)
+        return get_bug_tags_open_count(
+            BugTask.distribution == self, user, wanted_tags=wanted_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1544,7 +1542,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauses.append(
                 "Archive.private = FALSE AND Archive.enabled = TRUE")
 
-
         query = ' AND '.join(clauses)
         return Archive.select(
             query, orderBy=orderBy, clauseTables=clauseTables)
@@ -1874,10 +1871,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         distroseries task than any other.
         """
         distributionID = self.id
+
         def weight_function(bugtask):
             if bugtask.distributionID == distributionID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
             return OrderedBugTask(2, bugtask.id, bugtask)
+
         return weight_function
 
 

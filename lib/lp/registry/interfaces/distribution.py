@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver,
     IHasDrivers,
     )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -318,7 +319,9 @@ class IDistributionPublic(
 
     all_distro_archives = exported(doNotSnapshot(
         CollectionField(
-            title=_("A sequence of the distribution's non-PPA Archives."),
+            title=_(
+                "A sequence of the distribution's primary, "
+                "partner and debug archives."),
             readonly=True, required=False,
             value_type=Reference(schema=Interface))),
                 # Really IArchive, see _schema_circular_imports.py.
@@ -639,7 +642,7 @@ class IDistributionPublic(
 
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
-    IRootContext, IStructuralSubscriptionTarget):
+    IQuestionTarget, IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution.
 
     Launchpadlib example: retrieving the current version of a package in a

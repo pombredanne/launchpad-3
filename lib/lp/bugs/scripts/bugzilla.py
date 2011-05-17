@@ -33,7 +33,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import canonical_url
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bug import (

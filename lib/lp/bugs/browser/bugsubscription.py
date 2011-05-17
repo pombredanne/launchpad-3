@@ -166,13 +166,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     # A mapping of BugNotificationLevel values to descriptions to be
     # shown on the +subscribe page.
     _bug_notification_level_descriptions = {
-        BugNotificationLevel.LIFECYCLE: (
-            "The bug is fixed or re-opened."),
-        BugNotificationLevel.METADATA: (
-            "Any change is made to this bug, other than a new comment "
-            "being added."),
         BugNotificationLevel.COMMENTS: (
-            "A change is made to this bug or a new comment is added."),
+            "a change is made to this bug or a new comment is added, "),
+        BugNotificationLevel.METADATA: (
+            "any change is made to this bug, other than a new comment "
+            "being added, or"),
+        BugNotificationLevel.LIFECYCLE: (
+            "this bug is fixed or re-opened."),
         }
 
     @property
@@ -232,18 +232,18 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     @cachedproperty
     def _update_subscription_term(self):
         if self.user_is_muted:
-            label = "Unmute bug mail from this bug and subscribe me to it"
+            label = "unmute bug mail from this bug and subscribe me to it"
         else:
-            label = "Update my current subscription"
+            label = "update my current subscription"
         return SimpleTerm(
             'update-subscription', 'update-subscription', label)
 
     @cachedproperty
     def _unsubscribe_current_user_term(self):
         if self._use_advanced_features and self.user_is_muted:
-            label = "Unmute bug mail from this bug"
+            label = "unmute bug mail from this bug"
         else:
-            label = 'Unsubscribe me from this bug'
+            label = 'unsubscribe me from this bug'
         return SimpleTerm(self.user, self.user.name, label)
 
     @cachedproperty
@@ -264,13 +264,21 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 subscription_terms.append(
                     SimpleTerm(
                         person, person.name,
-                        'Unsubscribe <a href="%s">%s</a> from this bug' % (
+                        'unsubscribe <a href="%s">%s</a> from this bug' % (
                             canonical_url(person),
                             cgi.escape(person.displayname))))
         if not self_subscribed:
             subscription_terms.insert(0,
                 SimpleTerm(
-                    self.user, self.user.name, 'Subscribe me to this bug'))
+                    self.user, self.user.name, 'subscribe me to this bug'))
+
+        # Add punctuation to the list of terms.
+        if len(subscription_terms) > 1:
+            for term in subscription_terms[:-1]:
+                term.title += ','
+            subscription_terms[-2].title += ' or'
+            subscription_terms[-1].title += '.'
+
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         if (self._use_advanced_features and
             self.user_is_subscribed_directly):
@@ -278,6 +286,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         else:
             default_subscription_value = (
                 subscription_vocabulary.getTermByToken(self.user.name).value)
+
         subscription_field = Choice(
             __name__='subscription', title=_("Subscription options"),
             vocabulary=subscription_vocabulary, required=True,
@@ -298,6 +307,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
+        self.widgets['subscription'].widget_class = 'bug-subscription-basic'
         if self._use_advanced_features:
             self.widgets['bug_notification_level'].widget_class = (
                 'bug-notification-level-field')
@@ -595,7 +605,6 @@ class BugSubscriptionListView(LaunchpadView):
         cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
-        
 
     @property
     def label(self):

@@ -6,8 +6,8 @@
       i18n:domain="launchpad"
 >
   <head>
-    <style metal:fill-slot="head_epilogue"
-           type="text/css" media="screen">
+    <metal:block fill-slot="head_epilogue">
+    <style type="text/css" media="screen">
   div.confirmBox {
     margin: 0;
     padding-right: 0.5em;
@@ -16,6 +16,15 @@
     font-size: smaller;
   }
     </style>
+    <script type="text/javascript">
+        LPS.use('base', 'node', 'event',
+                'lp.answers.question_spam', function(Y) {
+        Y.on('domready', function() {
+            Y.lp.answers.question_spam.setup_spam_links();
+        });
+      });
+    </script>
+    </metal:block>
   </head>
   <body>
     <metal:registering fill-slot="registering">
@@ -90,10 +99,8 @@
         </div>
       </div>
 
-
-      <tal:message repeat="message context/messages">
-      <div tal:condition="message/visible"
-           tal:replace="structure message/@@+display" />
+      <tal:message repeat="message view/visible_messages">
+      <div tal:replace="structure message/@@+display" />
       </tal:message>
 
       <div id="question"

@@ -1058,7 +1058,7 @@
         name="+index"/>
     <browser:url
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
-        path_expression="string:+translation-templates-build/${build_farm_job/id}"
+        path_expression="string:+translation-templates-build/${id}"
         attribute_to_parent="branch"/>
     <browser:page
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"

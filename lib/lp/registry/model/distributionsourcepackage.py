@@ -38,7 +38,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
@@ -140,8 +139,7 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
-        IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -488,12 +486,12 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distribution == self.distribution,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()

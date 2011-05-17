@@ -77,6 +77,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -389,7 +390,7 @@ class IProductModerateRestricted(Interface):
                 "hosting or the project has an up-to-date "
                 "subscription.")))
 
-    license_reviewed = exported(
+    project_reviewed = exported(
         Bool(
             title=_('Project reviewed'),
             description=_("Whether or not this project has been reviewed. "
@@ -398,7 +399,7 @@ class IProductModerateRestricted(Interface):
 
     license_approved = exported(
         Bool(
-            title=_("Project approved"),
+            title=_("License approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
                 "Not applicable to 'Other/Proprietary'.")))
@@ -815,7 +816,8 @@ class IProductPublic(
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
-    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
+    IProductPublic, IQuestionTarget, IRootContext,
+    IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -842,6 +844,14 @@ class IProductSet(Interface):
 
     all_active = Attribute(
         "All the active products, sorted newest first.")
+
+    def get_all_active(eager_load=True):
+        """Get all active products.
+
+        :param eager_load: If False do not load related objects such as the
+            owner.
+        :return: An iterable of IProduct.
+        """
 
     def __iter__():
         """Return an iterator over all the active products."""
@@ -883,7 +893,7 @@ class IProductSet(Interface):
                    'project', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'license_reviewed', 'licenses', 'license_info',
+                   'project_reviewed', 'licenses', 'license_info',
                    'registrant'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
@@ -891,7 +901,7 @@ class IProductSet(Interface):
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      license_reviewed=False, mugshot=None, logo=None,
+                      project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
@@ -902,8 +912,8 @@ class IProductSet(Interface):
     @operation_parameters(
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
-        license_reviewed=Bool(title=_("Is the project license reviewed")),
-        licenses = Set(title=_('Licenses'),
+        project_reviewed=Bool(title=_("Is the project license reviewed")),
+        licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         license_info_is_empty=Bool(title=_("License info is empty")),
         has_zero_licenses=Bool(title=_("Has zero licenses")),
@@ -922,7 +932,7 @@ class IProductSet(Interface):
     @export_operation_as('licensing_search')
     def forReview(search_text=None,
                   active=None,
-                  license_reviewed=None,
+                  project_reviewed=None,
                   licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
@@ -1044,7 +1054,7 @@ class IProductReviewSearch(Interface):
         title=_('Active'), values=[True, False],
         required=False, default=True)
 
-    license_reviewed = Choice(
+    project_reviewed = Choice(
         title=_('Project Reviewed'), values=[True, False],
         required=False, default=False)
 

@@ -121,6 +121,11 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
         review.claimReview(self.claimant)
         self.assertEqual(self.claimant, review.reviewer)
 
+    def test_repeat_claim(self):
+        # Attempting to claim an already-claimed review works.
+        review = self.factory.makeCodeReviewVoteReference()
+        review.claimReview(review.reviewer)
+
 
 class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     """Tests for CodeReviewVoteReference.delete."""
@@ -233,8 +238,7 @@ class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
         # pending review assigned to them.
         bmp, review = self.makeMergeProposalWithReview()
         reviewer = self.factory.makePerson(name='eric')
-        user_review = bmp.nominateReviewer(
-            reviewer=reviewer, registrant=bmp.registrant)
+        bmp.nominateReviewer(reviewer=reviewer, registrant=bmp.registrant)
         self.assertRaisesWithContent(
             UserHasExistingReview,
             'Eric (eric) has already been asked to review this',
@@ -258,7 +262,7 @@ class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
         # review assigned to them.
         bmp, review = self.makeMergeProposalWithReview()
         reviewer_team = self.factory.makeTeam()
-        team_review = bmp.nominateReviewer(
+        bmp.nominateReviewer(
             reviewer=reviewer_team, registrant=bmp.registrant)
         review.reassignReview(reviewer_team)
         self.assertEqual(reviewer_team, review.reviewer)

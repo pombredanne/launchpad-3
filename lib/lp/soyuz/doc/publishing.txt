@@ -768,17 +768,8 @@ Perform the source-only copy.
     >>> ppa_copied_source = SourcePackagePublishingHistory.get(
     ...     ppa_copied_source.id)
 
-Since it's a rebuild we can immediately create the corresponding
-builds.
-
-    >>> builds = ppa_copied_source.createMissingBuilds()
-
-    >>> for build in builds:
-    ...     print build.title
-    i386 build of jkl 666 in ubuntutest hoary-test RELEASE
-
-If createMissingBuilds get called again on either sources no builds
-will get created.
+createMissingBuilds will not create any builds because this is an
+intra-archive copy: 
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -1125,7 +1116,7 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    8
+    7
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
@@ -1179,7 +1170,7 @@ there were 8 sources and builds.
     >>> cprov_builds_new = publishing_set.getBuildsForSources(
     ...     cprov_sources_new)
     >>> cprov_builds_new.count()
-    9
+    8
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources

@@ -13,6 +13,9 @@ __all__ = [
     'PackageDiffAlreadyRequested',
     ]
 
+import httplib
+
+from lazr.restful.declarations import webservice_error
 from zope.interface import (
     Attribute,
     Interface,
@@ -25,11 +28,15 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
 from lp.soyuz.enums import PackageDiffStatus
 
 
-class PackageDiffAlreadyRequested(Exception):
+class PackageDiffRequestException(Exception):
+    """Base class for package diff request errors."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class PackageDiffAlreadyRequested(PackageDiffRequestException):
     """Raised on attempts to request an already recorded diff request. """
 
 
@@ -105,4 +112,13 @@ class IPackageDiffSet(Interface):
         :return a `ResultSet` ordered by `SourcePackageRelease` ID and
         then diff request date in descending order.  If sprs is empty,
         EmptyResultSet is returned.
+        """
+
+    def getDiffBetweenReleases(self, from_spr, to_spr):
+        """Return the diff that is targetted to the two SPRs.
+
+        :param from_spr: a `SourcePackageRelease` object.
+        :param to_spr:  a `SourcePackageRelease` object.
+
+        :return a `PackageDiff` or None.
         """

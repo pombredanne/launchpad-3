@@ -25,17 +25,14 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
@@ -143,9 +140,11 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
         # Sourcepackages are supported by their distribtions too.
-        persons = self.distribution.getAnswerContactsForLanguage(language)
-        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
-            self, language))
+        persons = set(
+            self.distribution.getAnswerContactsForLanguage(language))
+        persons.update(
+            set(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language)))
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
 
@@ -187,10 +186,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin,
-                    HasBugHeatMixin, HasCodeImportsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -199,7 +197,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
@@ -496,12 +494,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distroseries == self.distroseries,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     @property
     def max_bug_heat(self):
@@ -532,19 +530,52 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
-            # we should update the current packaging
-            target.productseries = productseries
-            target.owner = owner
-            target.datecreated = UTC_NOW
-        else:
-            # ok, we need to create a new one
-            Packaging(
-                distroseries=self.distroseries,
-                sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=owner,
-                packaging=PackagingType.PRIME)
+            if target.productseries == productseries:
+                return
+            # Delete the current packaging and create a new one so
+            # that the translation sharing jobs are started.
+            self.direct_packaging.destroySelf()
+        Packaging(
+            distroseries=self.distroseries,
+            sourcepackagename=self.sourcepackagename,
+            productseries=productseries, owner=owner,
+            packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def setPackagingReturnSharingDetailPermissions(self, productseries,
+                                                   owner):
+        """See `ISourcePackage`."""
+        self.setPackaging(productseries, owner)
+        return self.getSharingDetailPermissions()
+
+    def getSharingDetailPermissions(self):
+        user = getUtility(ILaunchBag).user
+        productseries = self.productseries
+        permissions = {
+                'user_can_change_product_series': False,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False}
+        if user is None:
+            pass
+        elif productseries is None:
+            permissions['user_can_change_product_series'] = user.canAccess(
+                self, 'setPackaging')
+        else:
+            permissions.update({
+                'user_can_change_product_series':
+                    self.direct_packaging.userCanDelete(),
+                'user_can_change_branch':
+                    user.canWrite(productseries, 'branch'),
+                'user_can_change_translation_usage':
+                    user.canWrite(
+                        productseries.product, 'translations_usage'),
+                'user_can_change_translations_autoimport_mode':
+                    user.canWrite(
+                        productseries, 'translations_autoimport_mode'),
+                })
+        return permissions
 
     def deletePackaging(self):
         """See `ISourcePackage`."""
@@ -767,6 +798,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         sourcepackagenameID = self.sourcepackagename.id
         seriesID = self.distroseries.id
         distributionID = self.distroseries.distributionID
+
         def weight_function(bugtask):
             if bugtask.sourcepackagenameID == sourcepackagenameID:
                 if bugtask.distroseriesID == seriesID:

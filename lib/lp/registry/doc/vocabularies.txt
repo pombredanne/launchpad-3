@@ -992,7 +992,6 @@ will be returned.
      (u'Other Team', u'Owner'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
-     (u'ShipIt Administrators', u'Mark Shuttleworth'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Security Team', u'Colin Watson'),
@@ -1271,7 +1270,7 @@ _clauseTables).
     gentoo          Gentoo               The Gentoo Linux (Distribution)
     gnome           GNOME                The GNOME Project (ProjectGroup)
     gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
-    mozilla the     Mozilla Project      The Mozilla Project (ProjectGroup)
+    mozilla The     Mozilla Project      The Mozilla Project (ProjectGroup)
     thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 

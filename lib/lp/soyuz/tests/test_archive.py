@@ -37,6 +37,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
@@ -60,6 +61,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -67,6 +69,7 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
@@ -823,6 +826,22 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         self.assertEqual(
             False,
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_hasAnyPermission(self):
+        # hasAnyPermission returns true if the person is the member of a
+        # team with any kind of permission on the archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        main = getUtility(IComponentSet)["main"]
+        ArchivePermission(
+            archive=archive, person=team, component=main,
+            permission=ArchivePermissionType.UPLOAD)
+
+        self.assertFalse(archive.hasAnyPermission(person))
+        with celebrity_logged_in('admin'):
+            team.addMember(person, team.teamowner)
+        self.assertTrue(archive.hasAnyPermission(person))
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
@@ -1725,3 +1744,37 @@ class TestGetPublishedSources(TestCaseWithFactory):
         two_hours_earlier = one_hour_earlier - one_hour_step
         self.assertEqual(3, cprov_archive.getPublishedSources(
             created_since_date=two_hours_earlier).count())
+
+
+class TestSyncSource(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_security_team_can_copy_to_primary(self):
+        # A member of ubuntu-security can use syncSource on any package
+        # in the Ubuntu primary archive, regardless of their normal
+        # upload permissions.
+        # This is until we can open syncSource up more widely and sort
+        # out the permissions that everyone needs.
+        with celebrity_logged_in('admin'):
+            security_person = self.factory.makePerson()
+            getUtility(ILaunchpadCelebrities).ubuntu_security.addMember(
+                security_person, security_person)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
+            distroseries=ubuntu.currentseries)
+        self.assertEqual(
+            0,
+            ubuntu.main_archive.getPublishedSources(
+                name=source.source_package_name).count())
+        with person_logged_in(security_person):
+            ubuntu.main_archive.syncSource(
+                source_name=source.source_package_name,
+                version=source.source_package_version,
+                from_archive=source.archive,
+                to_pocket='Security')
+        self.assertEqual(
+            1,
+            ubuntu.main_archive.getPublishedSources(
+                name=source.source_package_name).count())

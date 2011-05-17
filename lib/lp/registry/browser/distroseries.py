@@ -12,10 +12,12 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesInitializeView',
-    'DistroSeriesLocalDifferences',
+    'DistroSeriesLocalDifferencesView',
+    'DistroSeriesMissingPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
+    'DistroSeriesUniquePackagesView',
     'DistroSeriesView',
     ]
 
@@ -409,6 +411,29 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
     def milestone_batch_navigator(self):
         return BatchNavigator(self.context.all_milestones, self.request)
 
+    def _num_differences(self, difference_type):
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                difference_type=difference_type,
+                status=(DistroSeriesDifferenceStatus.NEEDS_ATTENTION,))
+        return differences.count()
+
+    @cachedproperty
+    def num_differences(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
+
+    @cachedproperty
+    def num_differences_in_parent(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+
+    @cachedproperty
+    def num_differences_in_child(self):
+        return self._num_differences(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
@@ -749,11 +774,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # setting up on-page notifications.
         series_url = canonical_url(self.context)
         series_title = self.context.displayname
+
+        # If the series is released, sync packages in the "updates" pocket.
+        if self.context.supported:
+            destination_pocket = PackagePublishingPocket.UPDATES
+        else:
+            destination_pocket = PackagePublishingPocket.RELEASE
+
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
-            self.context, PackagePublishingPocket.RELEASE,
-            include_binaries=False, dest_url=series_url,
-            dest_display_name=series_title):
+            self.context, destination_pocket, include_binaries=False,
+            dest_url=series_url, dest_display_name=series_title,
+            person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
@@ -772,7 +804,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         This method is used as a condition for the above sync action, as
         well as directly in the template.
         """
-        return (check_permission('launchpad.Edit', self.context) and
+        if not getFeatureFlag('soyuz.derived_series_sync.enabled'):
+            return False
+
+        archive = self.context.main_archive
+        has_perm = (self.user is not None and (
+                        archive.hasAnyPermission(self.user) or
+                        check_permission('launchpad.Append', archive)))
+        return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
     @property

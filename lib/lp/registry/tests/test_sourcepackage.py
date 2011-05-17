@@ -9,6 +9,10 @@ import unittest
 
 from storm.locals import Store
 import transaction
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -32,6 +36,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -263,9 +268,220 @@ class TestSourcePackage(TestCaseWithFactory):
         packaging = self.factory.makePackagingLink()
         packaging_id = packaging.id
         store = Store.of(packaging)
-        packaging.sourcepackage.deletePackaging()
+        with person_logged_in(packaging.owner):
+            packaging.sourcepackage.deletePackaging()
         result = store.find(Packaging, Packaging.id==packaging_id)
         self.assertIs(None, result.one())
+
+    def test_setPackaging__new(self):
+        """setPackaging() creates a Packaging link."""
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        sourcepackage.setPackaging(
+            productseries, owner=self.factory.makePerson())
+        packaging = sourcepackage.direct_packaging
+        self.assertEqual(packaging.productseries, productseries)
+
+    def test_setPackaging__change_existing_entry(self):
+        """setPackaging() changes existing Packaging links."""
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        other_series = self.factory.makeProductSeries()
+        owner = self.factory.makePerson()
+        with EventRecorder() as recorder:
+            with person_logged_in(owner):
+                sourcepackage.setPackaging(productseries, owner=owner)
+                sourcepackage.setPackaging(other_series, owner=owner)
+                packaging = sourcepackage.direct_packaging
+                self.assertEqual(packaging.productseries, other_series)
+        # The first call of setPackaging() created an ObjectCreatedEvent;
+        # the second call created an ObjectDeletedEvent for the deletion
+        # of the old packaging link, and another ObjectCreatedEvent
+        # for the new Packaging.
+        event1, event2, event3 = recorder.events
+        self.assertIsInstance(event1, ObjectCreatedEvent)
+        self.assertIsInstance(event2, ObjectDeletedEvent)
+        self.assertIsInstance(event3, ObjectCreatedEvent)
+
+    def test_setPackaging__change_existing_entry_different_users(self):
+        """An ordinary user cannot change a Packaging defined by
+        somebody else.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        other_series = self.factory.makeProductSeries()
+        owner = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        sourcepackage.setPackaging(productseries, owner=owner)
+        with person_logged_in(other_user):
+            self.assertRaises(
+                Unauthorized, sourcepackage.setPackaging,
+                other_series, owner=other_user)
+
+    def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
+        """An ordinary user can create a packaging link but he cannot
+        set the series' branch or translation syncronisation settings,
+        or the translation usage settings of the product.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        packaging_owner = self.factory.makePerson()
+        with person_logged_in(packaging_owner):
+            permissions = (
+                sourcepackage.setPackagingReturnSharingDetailPermissions(
+                    productseries, packaging_owner))
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertFalse(
+                packaging_owner.canWrite(productseries, 'branch'))
+            self.assertFalse(
+                packaging_owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                packaging_owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions__ordinary_user(self):
+        """An ordinary user cannot set the series' branch or translation
+        synchronisation settings, or the translation usage settings of the
+        product.
+        """
+        packaging = self.factory.makePackagingLink()
+        sourcepackage = packaging.sourcepackage
+        productseries = packaging.productseries
+        with person_logged_in(packaging.owner):
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertFalse(
+                packaging.owner.canWrite(productseries, 'branch'))
+            self.assertFalse(
+                packaging.owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                packaging.owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False,
+                }
+            self.assertEqual(expected, permissions)
+
+    def makeDistinctOwnerProductSeries(self):
+        # Ensure productseries owner is distinct from product owner.
+        return self.factory.makeProductSeries(
+            owner=self.factory.makePerson())
+
+    def test_getSharingDetailPermissions__series_owner(self):
+        """A product series owner can create a packaging link, and he can
+        set the series' branch or translation syncronisation settings,
+        but he cannot set the translation usage settings of the product.
+        """
+        productseries = self.makeDistinctOwnerProductSeries()
+        series_owner = productseries.owner
+        # Ensure productseries owner is distinct from product owner.
+        productseries = self.factory.makeProductSeries(
+            owner=series_owner)
+        with person_logged_in(series_owner):
+            packaging = self.factory.makePackagingLink(
+                productseries=productseries, owner=series_owner)
+            sourcepackage = packaging.sourcepackage
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertTrue(series_owner.canWrite(productseries, 'branch'))
+            self.assertTrue(
+                series_owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                series_owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': True,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': True,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions__product_owner(self):
+        """A product owner can create a packaging link, and he can set the
+        series' branch and the translation syncronisation settings, and the
+        translation usage settings of the product.
+        """
+        productseries = self.makeDistinctOwnerProductSeries()
+        product = productseries.product
+        with person_logged_in(product.owner):
+            packaging = self.factory.makePackagingLink(
+                productseries=productseries, owner=product.owner)
+            sourcepackage = packaging.sourcepackage
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertTrue(product.owner.canWrite(productseries, 'branch'))
+            self.assertTrue(
+                product.owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertTrue(
+                product.owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': True,
+                'user_can_change_translation_usage': True,
+                'user_can_change_translations_autoimport_mode': True,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions_change_product(self):
+        """Test user_can_change_product_series.
+
+        Until a Packaging is created, anyone can change product series.
+        Afterward, random people cannot change product series.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        person1 = self.factory.makePerson()
+        person2 = self.factory.makePerson()
+
+        def can_change_product_series():
+            return sourcepackage.getSharingDetailPermissions()[
+                    'user_can_change_product_series']
+        with person_logged_in(person1):
+            self.assertTrue(can_change_product_series())
+        with person_logged_in(person2):
+            self.assertTrue(can_change_product_series())
+        self.factory.makePackagingLink(
+            sourcepackage=sourcepackage, owner=person1)
+        with person_logged_in(person1):
+            self.assertTrue(can_change_product_series())
+        with person_logged_in(person2):
+            self.assertFalse(can_change_product_series())
+
+    def test_getSharingDetailPermissions_no_product_series(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        expected = {
+            'user_can_change_product_series': True,
+            'user_can_change_branch': False,
+            'user_can_change_translation_usage': False,
+            'user_can_change_translations_autoimport_mode': False}
+        self.assertEqual(
+            expected, sourcepackage.getSharingDetailPermissions())
+
+    def test_getSharingDetailPermissions_no_user(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        expected = {
+            'user_can_change_product_series': False,
+            'user_can_change_branch': False,
+            'user_can_change_translation_usage': False,
+            'user_can_change_translations_autoimport_mode': False}
+        logout()
+        self.assertEqual(
+            expected, sourcepackage.getSharingDetailPermissions())
 
 
 class TestSourcePackageWebService(WebServiceTestCase):
@@ -288,7 +504,7 @@ class TestSourcePackageWebService(WebServiceTestCase):
         packaging = self.factory.makePackagingLink()
         sourcepackage = packaging.sourcepackage
         transaction.commit()
-        self.wsObject(sourcepackage).deletePackaging()
+        self.wsObject(sourcepackage, user=packaging.owner).deletePackaging()
         transaction.commit()
         self.assertIs(None, sourcepackage.direct_packaging)
 

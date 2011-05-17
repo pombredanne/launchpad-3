@@ -21,6 +21,7 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'user_has_special_branch_access',
+    'WrongNumberOfReviewTypeArguments',
     ]
 
 from cgi import escape
@@ -29,6 +30,7 @@ import re
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_destructor_operation,
@@ -80,8 +82,8 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
+    BranchType,
     CodeReviewNotificationLevel,
-    UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
@@ -104,6 +106,13 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
+
+
+@error_status(400)
+class WrongNumberOfReviewTypeArguments(ValueError):
+    """Raised in the webservice API if `reviewers` and `review_types`
+    do not have equal length.
+    """
 
 
 def get_blacklisted_hostnames():
@@ -145,12 +154,6 @@ class BranchURIField(URIField):
 
         # Can't use super-- this derives from an old-style class
         URIField._validate(self, value)
-
-        # XXX thumper 2007-06-12:
-        # Move this validation code into IBranchSet so it can be
-        # reused in the XMLRPC code, and the Authserver.
-        # This also means we could get rid of the imports above.
-
         uri = URI(self.normalize(value))
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
@@ -978,29 +981,19 @@ class IBranchEditableAttributes(Interface):
             allow_fragment=False,
             trailing_slash=False,
             description=_(
-                "This is the external location where the Bazaar "
-                "branch is hosted. This is None when the branch is"
-                "Hosted by Launchpad")))
+                "The external location where the Bazaar "
+                "branch is hosted. It is None when the branch is "
+                "hosted by Launchpad.")))
 
     mirror_status_message = exported(
         Text(
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    # XXX: TimPenhey 2007-08-31
-    # The vocabulary set for branch_type is only used for the creation
-    # of branches through the automatically generated forms, and doesn't
-    # actually represent the complete range of real values that branch_type
-    # may actually hold.  Import branches are not created in the same
-    # way as Hosted, Mirrored or Remote branches.
-    # There are two option:
-    #   1) define a separate schema to use in the UI (sledgehammer solution)
-    #   2) work out some way to specify a restricted vocabulary in the view
-    # Personally I'd like a LAZR way to do number 2.
     branch_type = exported(
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
-            vocabulary=UICreatableBranchType))
+            vocabulary=BranchType))
 
     description = exported(
         Text(
