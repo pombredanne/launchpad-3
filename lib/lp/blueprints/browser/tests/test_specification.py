@@ -9,6 +9,7 @@ import unittest
 from lazr.restful.testing.webservice import FakeRequest
 import pytz
 from testtools.matchers import Equals
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
@@ -19,13 +20,30 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
 from lp.blueprints.enums import SpecificationImplementationStatus
-from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
+    )
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    BrowserTestCase,
     )
 from lp.testing.views import create_initialized_view
+
+
+class TestSpecificationSearch(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_with_percent(self):
+        # Using '%' in a search should not error.
+        specs = getUtility(ISpecificationSet)
+        form = {'field.search_text': r'%'}
+        view = create_initialized_view(specs, '+index', form=form)
+        import pdb; pdb.set_trace()
+        self.assertEqual([], view.errors)
 
 
 class LocalFakeRequest(FakeRequest):
