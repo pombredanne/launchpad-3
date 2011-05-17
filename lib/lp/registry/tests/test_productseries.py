@@ -10,6 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -30,6 +31,53 @@ from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+
+
+class ProductSeriesReleasesTestCase(TestCaseWithFactory):
+    """Test for ProductSeries.release property."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_releases(self):
+        # The release property returns an iterator of releases ordered
+        # by date_released from youngest to oldest.
+        series = self.factory.makeProductSeries()
+        milestone = self.factory.makeMilestone(
+            name='0.0.1', productseries=series)
+        release_1 = self.factory.makeProductRelease(milestone=milestone)
+        milestone = self.factory.makeMilestone(
+            name='0.0.2', productseries=series)
+        release_2 = self.factory.makeProductRelease(milestone=milestone)
+        self.assertEqual(
+            [release_2, release_1], list(series.releases))
+
+    def test_releases_caches_milestone(self):
+        # The release's milestone was cached when the release was retrieved.
+        milestone = self.factory.makeMilestone(name='0.0.1')
+        self.factory.makeProductRelease(milestone=milestone)
+        series = milestone.series_target
+        IStore(series).invalidate()
+        [release] = [release for release in series.releases]
+        self.assertStatementCount(0, getattr, release, 'milestone')
+
+
+class ProductSeriesGetReleaseTestCase(TestCaseWithFactory):
+    """Test for ProductSeries.getRelease()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getRelease_match(self):
+        # The release is returned when there is a matching release version.
+        milestone = self.factory.makeMilestone(name='0.0.1')
+        release = self.factory.makeProductRelease(milestone=milestone)
+        series = milestone.series_target
+        self.assertEqual(release, series.getRelease('0.0.1'))
+
+    def test_getRelease_None(self):
+        # None is returned when there is no matching release version.
+        milestone = self.factory.makeMilestone(name='0.0.1')
+        series = milestone.series_target
+        self.assertEqual(None, series.getRelease('0.0.1'))
 
 
 class TestProductSeriesSetPackaging(TestCaseWithFactory):
