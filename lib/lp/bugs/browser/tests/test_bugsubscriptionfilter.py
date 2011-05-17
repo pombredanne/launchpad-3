@@ -251,18 +251,6 @@ class TestBugSubscriptionFilterView(
         # If nothing is set the conditions list is empty.
         self.assertEqual([], self.view.conditions)
 
-    def test_conditions_with_no_events_subscribed(self):
-        with person_logged_in(self.owner):
-            self.subscription_filter.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
-        self.assertEqual([], self.view.conditions)
-
-    def test_filters_everything_with_no_events_subscribed(self):
-        with person_logged_in(self.owner):
-            self.subscription_filter.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
-        self.failUnless(self.view.filters_everything)
-
     def test_not_filters_everything_normally(self):
         self.failIf(self.view.filters_everything)
 
@@ -384,9 +372,8 @@ class TestBugSubscriptionFilterView(
             u"There are no filter conditions!")
 
     def test_render_with_no_events_allowed(self):
-        with person_logged_in(self.owner):
-            self.subscription_filter.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
+        from lp.testing.fakemethod import FakeMethod
+        self.view.filters_everything = FakeMethod(result=True)
         self.assertRender(
             u"This filter allows no mail through.",
             u"")
@@ -507,10 +494,8 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
         # When advanced features are turned on for subscriptions a user
         # can specify a bug_notification_level on the +filter form.
         with feature_flags():
-            # We don't display BugNotificationLevel.NOTHING as an option.
             displayed_levels = [
-                level for level in BugNotificationLevel.items
-                if level != BugNotificationLevel.NOTHING]
+                level for level in BugNotificationLevel.items]
             for level in displayed_levels:
                 person = self.factory.makePerson()
                 with person_logged_in(person):
@@ -538,26 +523,6 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                     "Bug notification level of filter should be %s, "
                     "is actually %s." % (
                         level.name, new_filter.bug_notification_level.name))
-
-    def test_nothing_is_not_a_valid_level(self):
-        # BugNotificationLevel.NOTHING isn't considered valid when a
-        # user is subscribing via the web UI.
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            subscription = self.target.addBugSubscription(person, person)
-            form = {
-                "field.description": "New description",
-                "field.statuses": ["NEW", "INCOMPLETE"],
-                "field.importances": ["LOW", "MEDIUM"],
-                "field.tags": u"foo bar",
-                "field.find_all_tags": "on",
-                'field.bug_notification_level': BugNotificationLevel.NOTHING,
-                "field.actions.create": "Create",
-                }
-            with feature_flags():
-                view = create_initialized_view(
-                    subscription, name="+new-filter", form=form)
-                self.assertTrue(view.errors)
 
     def test_extra_features_hidden_without_feature_flag(self):
         # If the malone.advanced-subscriptions.enabled flag is turned

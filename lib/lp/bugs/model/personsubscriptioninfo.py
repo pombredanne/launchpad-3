@@ -13,7 +13,7 @@ from zope.proxy import sameProxiedObjects
 
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bug import Bug
+from lp.bugs.model.bug import Bug, BugMute
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IAbstractSubscriptionInfoCollection,
     IRealSubscriptionInfoCollection,
@@ -219,6 +219,18 @@ class PersonSubscriptions(object):
                     pillar.security_contact, pillar.bug_supervisor)
         return (direct, duplicates)
 
+    def _isMuted(self, person, bug):
+        store = Store.of(person)
+        mutes = store.find(
+            BugMute,
+            BugMute.bug == bug,
+            BugMute.person == person)
+        is_muted = mutes.one()
+        if is_muted is None:
+            return False
+        else:
+            return True
+
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
         self.administrated_teams = person.getAdministratedTeams()
@@ -227,6 +239,9 @@ class PersonSubscriptions(object):
         # First get direct and duplicate real subscriptions.
         direct, from_duplicate = (
             self._getDirectAndDuplicateSubscriptions(person, bug))
+
+        # Then get the 'muted' flag.
+        self.muted = self._isMuted(person, bug)
 
         # Then get owner and assignee virtual subscriptions.
         as_owner = VirtualSubscriptionInfoCollection(
@@ -241,10 +256,6 @@ class PersonSubscriptions(object):
             assignee = bugtask.assignee
             if person.inTeam(assignee):
                 as_assignee.add(assignee, bug, pillar, bugtask)
-        self.muted = bool(
-            direct.personal and
-            direct.personal[0].subscription.bug_notification_level
-                == BugNotificationLevel.NOTHING)
         self.count = 0
         for name, collection in (
             ('direct', direct), ('from_duplicate', from_duplicate),

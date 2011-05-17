@@ -296,7 +296,7 @@ class BugSubscriptionFilter(StormBase):
 
 
 class BugSubscriptionFilterMute(StormBase):
-    """A filter to specialize a *structural* subscription."""
+    """Bug subscription filters a person has decided to block emails from."""
 
     implements(IBugSubscriptionFilterMute)
 
@@ -312,7 +312,7 @@ class BugSubscriptionFilterMute(StormBase):
     person = Reference(person_id, "Person.id")
 
     filter_id = Int("filter", allow_none=False)
-    filter = Reference(filter_id, "StructuralSubscription.id")
+    filter = Reference(filter_id, "BugSubscriptionFilter.id")
 
     __storm_primary__ = 'person_id', 'filter_id'
 

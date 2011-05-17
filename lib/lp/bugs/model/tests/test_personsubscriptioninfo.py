@@ -482,8 +482,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_is_muted(self):
         # Subscribed directly to the bug, muted.
         with person_logged_in(self.subscriber):
-            self.bug.subscribe(self.subscriber, self.subscriber,
-                               level=BugNotificationLevel.NOTHING)
+            self.bug.mute(self.subscriber, self.subscriber)
 
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()

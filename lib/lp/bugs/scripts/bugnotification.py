@@ -174,7 +174,7 @@ def construct_email_notifications(bug_notifications):
     from_address = get_bugmail_from_address(actor, bug)
     bug_notification_builder = BugNotificationBuilder(bug, actor)
     recipients = getUtility(IBugNotificationSet).getRecipientFilterData(
-        recipients, filtered_notifications)
+        bug, recipients, filtered_notifications)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
 
