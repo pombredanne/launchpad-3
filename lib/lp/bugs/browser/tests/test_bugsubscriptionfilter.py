@@ -510,7 +510,7 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                         'field.bug_notification_level': level.title,
                         "field.actions.create": "Create",
                         }
-                    view = create_initialized_view(
+                    create_initialized_view(
                         subscription, name="+new-filter", form=form)
 
                 filters = subscription.bug_filters

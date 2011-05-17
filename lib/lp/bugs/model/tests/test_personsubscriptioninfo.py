@@ -8,7 +8,6 @@ __metaclass__ = type
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import DatabaseFunctionalLayer
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
     IRealSubscriptionInfoCollection,
