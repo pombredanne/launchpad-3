@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,

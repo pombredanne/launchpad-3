@@ -68,7 +68,7 @@ from canonical.database.constants import (
     )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )

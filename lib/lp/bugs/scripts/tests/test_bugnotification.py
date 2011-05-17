@@ -22,7 +22,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.ftests import login
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,

@@ -17,7 +17,7 @@ from storm.store import Store
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
