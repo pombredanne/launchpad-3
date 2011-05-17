@@ -425,10 +425,10 @@ class ObjectFactory:
         """
         if prefix is None:
             frame = sys._getframe(2)
-            prefix = 'unique-from-%s-line%d-' % (
+            prefix = 'unique-from-%s-line%d' % (
                 frame.f_code.co_filename.rsplit('/', 1)[-1],
                 frame.f_lineno)
-        string = "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s-%s" % (prefix, self.getUniqueInteger())
         return string.replace('_', '-').lower()
 
     def getUniqueUnicode(self):
@@ -1646,7 +1646,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
         if sourcepackagename is not None:
