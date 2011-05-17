@@ -26,6 +26,7 @@ from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
 import urllib
+from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
 from pytz import timezone
@@ -96,6 +97,7 @@ from lp.app.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
@@ -1568,6 +1570,14 @@ class TargetSubscriptionView(LaunchpadView):
 
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
+        # Some resources such as help files are only provided on the bugs
+        # rootsite.  So if we got here via another, possibly hand-crafted, URL
+        # redirect to the equivalent URL on the bugs rootsite.
+        if not BugsLayer.providedBy(self.request):
+            new_url = urljoin(
+                self.request.getRootURL('bugs'), self.request['PATH_INFO'])
+            self.request.response.redirect(new_url)
+            return
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, self.subscriptions)
 
