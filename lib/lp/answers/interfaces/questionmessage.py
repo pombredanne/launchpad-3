@@ -62,7 +62,7 @@ class IQuestionMessage(IMessage):
         title=_("Message index."),
         description=_("The messages index in the question's list of "
         "messages."),
-        readonly=True)
+        readonly=True))
     display_index = Int(
         title=_("Human readable Message index."),
         description=_("The message's index in the question's list of "

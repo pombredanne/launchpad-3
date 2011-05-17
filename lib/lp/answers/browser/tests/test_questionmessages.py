@@ -48,6 +48,8 @@ class TestHideQuestionMessageControls(
 
     layer = DatabaseFunctionalLayer
 
+    control_text = 'mark-spam-0'
+
     def getContext(self):
         """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
