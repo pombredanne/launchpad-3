@@ -877,7 +877,8 @@ BugMessage""" % sqlvalues(self.id))
         # If it's already muted, ignore the request.
         mutes = self._getMutes(person)
         if mutes.is_empty():
-            BugMute(person, self)
+            mute = BugMute(person, self)
+            Store.of(mute).flush()
         else:
             # It's already muted, pass.
             pass

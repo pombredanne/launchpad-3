@@ -4037,6 +4037,9 @@ class PersonSet:
         # We ignore BugSubscriptionFilterMutes.
         skip.append(('bugsubscriptionfiltermute', 'person'))
 
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
