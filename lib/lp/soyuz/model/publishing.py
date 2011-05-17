@@ -800,14 +800,24 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket, archive):
+    def copyTo(self, distroseries, pocket, archive, policy=None):
         """See `ISourcePackagePublishingHistory`."""
+        component = self.component
+        section = self.section
+        if policy is not None:
+            overrides = policy.calculateSourceOverrides(
+                archive, distroseries, pocket,
+                (self.sourcepackagerelease.sourcepackagename,))
+            for spn, ov_component, ov_section in overrides:
+                component = ov_component
+                if ov_section is not None:
+                    section = ov_section
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
             distroseries,
-            self.component,
-            self.section,
+            component,
+            section,
             pocket)
 
     def getStatusSummaryForBuilds(self):
@@ -1321,13 +1331,36 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive,
+                       policy=None):
         """See `IPublishingSet`."""
-        return self.publishBinaries(
-            archive, distroseries, pocket,
-            dict(
+        if policy is not None:
+            bpn_bpph = {}
+            for bpph in binaries:
+                key = '%s-%s' % (
+                    bpph.binarypackagerelease.binarypackagename.name,
+                    bpph.distroarchseries.architecturetag)
+                bpn_bpph[key] = bpph
+            with_archtags = [(
+                bpph.binarypackagerelease.binarypackagename,
+                bpph.distroarchseries.architecturetag)
+                for bpph in binaries]
+            with_overrides = {}
+            overrides = policy.calculateBinaryOverrides(
+                archive, distroseries, pocket, with_archtags)
+            for bpn, das, component, section, priority in overrides:
+                key = '%s-%s' % (bpn.name, das.architecturetag)
+                bpph = bpn_bpph[key]
+                new_section = section or bpph.section
+                new_priority = priority or bpph.priority
+                calculated = (component, new_section, new_priority)
+                with_overrides[bpph.binarypackagerelease] = calculated
+        else:
+            with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
-                 bpph.priority)) for bpph in binaries))
+                 bpph.priority)) for bpph in binaries)
+        return self.publishBinaries(
+            archive, distroseries, pocket, with_overrides)
 
     def publishBinaries(self, archive, distroseries, pocket,
                         binaries):

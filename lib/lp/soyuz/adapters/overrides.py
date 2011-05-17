@@ -19,6 +19,7 @@ from storm.expr import (
     Or,
     SQL,
     )
+from zope.component import getUtility
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -26,6 +27,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -137,12 +139,14 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
-        default_component = archive.default_component or 'universe'
+        default_component = archive.default_component or getUtility(
+            IComponentSet)['universe']
         return [(source, default_component, None) for source in sources]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        default_component = archive.default_component or 'universe'
+        default_component = archive.default_component or getUtility(
+            IComponentSet)['universe']
         return [
             (binary, das, default_component, None, None)
             for binary, das in calculate_target_das(distroseries, binaries)]

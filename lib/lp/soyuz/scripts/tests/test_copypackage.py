@@ -1150,11 +1150,12 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [copy.displayname for copy in copies])
 
     def doCopy(self, source, archive, series, pocket, include_binaries):
-        return _do_direct_copy(source, archive, series, pocket, True)
+        return _do_direct_copy(source, archive, series, pocket,
+            include_binaries)
 
     def testCanCopyArchIndependentBinariesBuiltInAnUnsupportedArch(self):
         # _do_direct_copy() uses the binary candidate build architecture,
-        # instead of the publish one, in other to check if it's
+        # instead of the published one, in order to check if it's
         # suitable for the destination. It avoids skipping the single
         # arch-indep publication returned by SPPH.getBuiltBinaries()
         # if it happens to be published in an unsupportted architecture
@@ -1243,6 +1244,83 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         # The copy succeeds, and no i386 publication is created.
         self.assertCopied(copies, nobby, ('hppa',))
+
+    def test_new_publication_overrides(self):
+        # When we copy publications, if the destination primary archive has
+        # no prior publications of the source/binaries, we set the component
+        # to the default.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='all')
+        source.component = getUtility(IComponentSet)['multiverse']
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+
+        nobby = self.createNobby(('i386', 'hppa'))
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False,
+            purpose=ArchivePurpose.PRIMARY)
+        # The package copier will want the changes files associated with the
+        # upload.
+        transaction.commit()
+
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+        universe = getUtility(IComponentSet)['universe']
+        self.assertEquals(universe, copied_source.component)
+
+    def test_existing_publication_overrides(self):
+        # When source/binaries are copied to a destination primary archive,
+        # if that archive has existing publications, we respect their
+        # component and section when copying.
+        nobby = self.createNobby(('i386', 'hppa'))
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False,
+            purpose=ArchivePurpose.PRIMARY)
+        existing_source = self.test_publisher.getPubSource(
+            archive=target_archive, version='1.0-1', distroseries=nobby,
+            architecturehintlist='all')
+        multiverse = getUtility(IComponentSet)['multiverse']
+        existing_source.component = multiverse
+        [ebin_i386, ebin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=existing_source)
+        section = self.factory.makeSection()
+        ebin_i386.section = section
+        ebin_hppa.section = section
+
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='all')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+        # The package copier will want the changes files associated with the
+        # upload.
+        transaction.commit()
+
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+        self.assertEquals(multiverse, copied_source.component)
+        self.assertEquals(section, copied_bin_i386.section)
+        self.assertEquals(section, copied_bin_hppa.section)
+
+    def test_existing_publication_no_overrides(self):
+        # When we copy source/binaries into a PPA, we don't respect their
+        # component and section.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='all')
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=True)
+        nobby = self.createNobby(('i386', 'hppa'))
+        copies = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
+        main = getUtility(IComponentSet)['main']
+        self.assertEquals(main, copies[0].component)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
