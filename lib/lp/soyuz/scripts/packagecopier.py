@@ -603,14 +603,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
-    # Round and round we go -- circular imports.
-    from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
     copies = []
 
     # Copy source if it's not yet copied.
-    policy = None
-    if archive.purpose == ArchivePurpose.PRIMARY:
-        policy = UbuntuOverridePolicy()
+    policy = archive.getOverridePolicy()
     source_in_destination = archive.getPublishedSources(
         name=source.sourcepackagerelease.name, exact_match=True,
         version=source.sourcepackagerelease.version,

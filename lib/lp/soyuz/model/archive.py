@@ -195,7 +195,6 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class Archive(SQLBase):
@@ -1501,6 +1500,8 @@ class Archive(SQLBase):
         It takes a list of SourcePackagePublishingHistory but the other args
         are strings.
         """
+        # Circular imports.
+        from lp.soyuz.scripts.packagecopier import do_copy
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
@@ -1811,6 +1812,15 @@ class Archive(SQLBase):
         # Cast to a list so we don't trip up with the security proxy not
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
+
+    def getOverridePolicy(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        if self.is_ppa:
+            return None # For now.
+        if self.purpose == ArchivePurpose.PRIMARY:
+            return UbuntuOverridePolicy()
 
 
 class ArchiveSet:

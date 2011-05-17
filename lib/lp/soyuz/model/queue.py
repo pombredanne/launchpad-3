@@ -94,7 +94,6 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from lp.soyuz.scripts.packagecopier import update_files_privacy
 from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
@@ -617,6 +616,8 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
+        # Circular imports.
+        from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through

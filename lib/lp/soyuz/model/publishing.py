@@ -805,13 +805,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         component = self.component
         section = self.section
         if policy is not None:
-            overrides = policy.calculateSourceOverrides(
+            override = policy.calculateSourceOverrides(
                 archive, distroseries, pocket,
-                (self.sourcepackagerelease.sourcepackagename,))
-            for spn, ov_component, ov_section in overrides:
-                component = ov_component
-                if ov_section is not None:
-                    section = ov_section
+                (self.sourcepackagerelease.sourcepackagename,))[0]
+            if override[1] is not None:
+                component = override[1]
+            if override[2] is not None:
+                section = override[2]
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
@@ -1337,23 +1337,18 @@ class PublishingSet:
         if policy is not None:
             bpn_bpph = {}
             for bpph in binaries:
-                key = '%s-%s' % (
-                    bpph.binarypackagerelease.binarypackagename.name,
-                    bpph.distroarchseries.architecturetag)
-                bpn_bpph[key] = bpph
-            with_archtags = [(
-                bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries.architecturetag)
-                for bpph in binaries]
+                bpn_bpph[(
+                    bpph.binarypackagerelease.binarypackagename,
+                    bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, with_archtags)
+                archive, distroseries, pocket, bpn_bpph.keys())
             for bpn, das, component, section, priority in overrides:
-                key = '%s-%s' % (bpn.name, das.architecturetag)
-                bpph = bpn_bpph[key]
+                bpph = bpn_bpph[(bpn, das.architecturetag)]
+                new_component = component or bpph.component
                 new_section = section or bpph.section
                 new_priority = priority or bpph.priority
-                calculated = (component, new_section, new_priority)
+                calculated = (new_component, new_section, new_priority)
                 with_overrides[bpph.binarypackagerelease] = calculated
         else:
             with_overrides = dict(

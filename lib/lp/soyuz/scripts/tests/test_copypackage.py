@@ -1252,23 +1252,27 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
         source = self.test_publisher.getPubSource(
-            archive=archive, architecturehintlist='all')
-        source.component = getUtility(IComponentSet)['multiverse']
+            archive=archive, architecturehintlist='any')
+        source.component = self.factory.makeComponent()
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=source)
-
-        nobby = self.createNobby(('i386', 'hppa'))
-        target_archive = self.factory.makeArchive(
-            distribution=self.test_publisher.ubuntutest, virtualized=False,
-            purpose=ArchivePurpose.PRIMARY)
         # The package copier will want the changes files associated with the
         # upload.
         transaction.commit()
+
+        nobby = self.createNobby(('i386', 'hppa'))
+        target_archive = self.test_publisher.ubuntutest.main_archive
 
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         universe = getUtility(IComponentSet)['universe']
         self.assertEquals(universe, copied_source.component)
+        self.assertEquals(universe, copied_bin_i386.component)
+        self.assertEquals(universe, copied_bin_hppa.component)
+        self.assertEquals(copied_bin_i386.section, bin_i386.section)
+        self.assertEquals(copied_bin_i386.priority, bin_i386.priority)
+        self.assertEquals(copied_bin_hppa.section, bin_hppa.section)
+        self.assertEquals(copied_bin_hppa.priority, bin_hppa.priority)
 
     def test_existing_publication_overrides(self):
         # When source/binaries are copied to a destination primary archive,
@@ -1283,8 +1287,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         existing_source = self.test_publisher.getPubSource(
             archive=target_archive, version='1.0-1', distroseries=nobby,
             architecturehintlist='all')
-        multiverse = getUtility(IComponentSet)['multiverse']
-        existing_source.component = multiverse
+        existing_source.component = self.factory.makeComponent()
         [ebin_i386, ebin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=existing_source)
         section = self.factory.makeSection()
@@ -1301,9 +1304,13 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
-        self.assertEquals(multiverse, copied_source.component)
+        self.assertEquals(copied_source.component, existing_source.component)
+        self.assertEquals(ebin_i386.component, copied_bin_i386.component)
         self.assertEquals(section, copied_bin_i386.section)
+        self.assertEquals(ebin_i386.priority, copied_bin_i386.priority)
+        self.assertEquals(ebin_hppa.component, copied_bin_hppa.component)
         self.assertEquals(section, copied_bin_hppa.section)
+        self.assertEquals(ebin_hppa.priority, copied_bin_hppa.priority)
 
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their

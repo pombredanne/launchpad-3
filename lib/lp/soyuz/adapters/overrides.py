@@ -20,6 +20,10 @@ from storm.expr import (
     SQL,
     )
 from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -41,7 +45,18 @@ from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+class IBaseOverridePolicy(Interface):
+
+    def calculateSourceOverrides(archive, distroseries, pocket, sources):
+        pass
+
+    def calculateBinaryOverrides(archive, distroseries, pocket, binaries):
+        pass
+
+
 class BaseOverridePolicy:
+
+    implements(IBaseOverridePolicy)
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
