@@ -35,6 +35,11 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     validate_person,
@@ -260,7 +265,7 @@ class ProductReleaseSet(object):
         from lp.registry.model.milestone import Milestone
         if len(list(series)) == 0:
             return EmptyResultSet()
-        store = IStore(series)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         series_ids = [s.id for s in series]
         result = store.find(
             ProductRelease,
