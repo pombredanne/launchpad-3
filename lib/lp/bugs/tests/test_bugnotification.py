@@ -36,7 +36,10 @@ from lp.bugs.model.bugnotification import (
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    person_logged_in,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import Contains
 
@@ -167,13 +170,15 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
                           notification, person,
                           u'reason header', u'reason body'))
 
-    def addNotification(self, person):
+    def addNotification(self, person, bug=None):
         # Add a notification along with recipient data.
         # This is generally done with BugTaskSet.addNotification()
         # but that requires a more complex set-up.
+        if bug is None:
+            bug = self.bug
         message = self.factory.makeMessage()
         notification = BugNotification(
-            message=message, activity=None, bug=self.bug,
+            message=message, activity=None, bug=bug,
             is_comment=False, date_emailed=None)
         self.addNotificationRecipient(notification, person)
         return notification
@@ -191,7 +196,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             bug_filter = subscription.bug_filters.one()
         if description is not None:
             bug_filter.description = description
-        BugNotificationFilter(
+        return BugNotificationFilter(
             bug_notification=notification,
             bug_subscription_filter=bug_filter)
 
@@ -361,34 +366,38 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
 
     def test_muting_works_for_teams_with_contact_addresses(self):
         # This is a regression test for bug 778847.
+        target = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=target)
         team = self.factory.makeTeam(email="none@example.com")
         team_member = self.factory.makePerson()
         with person_logged_in(team.teamowner):
             team.addMember(team_member, team.teamowner)
-            team_subscription = self.target.addBugSubscription(
+            team_subscription = target.addSubscription(
                 team, team.teamowner)
-        with person_logged_in(team_member):
-            filter = team_subscription.bug_filters.one()
-            filter.mute(team_member)
-        bug = self.factory.makeBug(product=self.target)
-        store = Store.of(bug)
-        store.flush()
-        store.execute(
-            SQL("""
-                UPDATE Message SET
-                    datecreated = (now() at time zone 'UTC') -
-                        interval '1 day'
-                WHERE Message.id IN (
-                    SELECT BugNotification.message FROM BugNotification
-                    WHERE BugNotification.bug = %d);""" % bug.id))
-        store.flush()
-        bug_notifications = store.find(
-            BugNotification,
-            BugNotification.bug == bug).order_by('-id')
-        self.assertNotEqual(0, bug_notifications.count())
-        email_notifications = get_email_notifications(
-            [n for n in bug_notifications])
-        self.assertNotEqual(0, len([n for n in email_notifications]))
+        # Mute the subscription for the team member.
+        notification = self.addNotification(team, bug)
+        filter = self.includeFilterInNotification(
+            description=u"A filter.", subscription=team_subscription,
+            notification=notification, create_new_filter=True)
+        BugSubscriptionFilterMute(
+            person=team_member, filter=filter.bug_subscription_filter)
+        sources = list(notification.recipients)
+        # Perform the test.
+        self.assertEqual(
+            {},
+            BugNotificationSet().getRecipientFilterData(
+                {team_member: sources},
+                [notification]))
+        self.assertEqual(
+            {team: {
+                 'sources': sources,
+                 'filter descriptions': [
+                    filter.bug_subscription_filter.description,
+                    ],
+                }},
+            BugNotificationSet().getRecipientFilterData(
+                {team: sources},
+                [notification]))
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
