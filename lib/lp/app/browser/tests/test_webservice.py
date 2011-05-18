@@ -64,13 +64,107 @@ class BaseMissingObjectWebService:
         self.assertEqual(response.getheader('x-lazr-oopsid'), None)
 
 
+class TestMissingBranches(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice branches requests."""
+
+    object_type = 'branches'
+
+
+class TestMissingBugTrackers(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice bug_trackers requests."""
+
+    object_type = 'bug_trackers'
+
+
 class TestMissingBugs(BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice bugs requests."""
 
     object_type = 'bugs'
 
 
+class TestMissingBuilders(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice builders requests."""
+
+    object_type = 'builders'
+
+
+class TestMissingCountries(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice countries requests."""
+
+    object_type = 'countries'
+
+
+class TestMissingCves(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice cves requests."""
+
+    object_type = 'cves'
+
+
+class TestMissingDistributions(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice distributions requests."""
+
+    object_type = 'distributions'
+
+
+class TestMissingLanguages(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice launguages requests."""
+
+    object_type = 'languages'
+
+
+class TestMissingPackagesets(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice packagesets requests."""
+
+    object_type = 'packagesets'
+
+
+class TestMissingPeople(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice branches requests."""
+
+    object_type = 'people'
+
+
+class TestMissingProjectGroups(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice project_groups requests."""
+
+    object_type = 'project_groups'
+
+
 class TestMissingProjects(BaseMissingObjectWebService, TestCaseWithFactory):
     """Test NotFound for webservice projects requests."""
 
     object_type = 'projects'
+
+
+class TestMissingQuestions(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice questions requests."""
+
+    object_type = 'questions'
+
+
+class TestMissingTemporaryBlobs(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice temporary_blobs requests."""
+
+    object_type = 'temporary_blobs'
+
+
+class TestMissingTranslationGroups(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice translation_groups requests."""
+
+    object_type = 'translation_groups'
+
+
+class TestMissingTranslationImportQueueEntries(
+    BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice translation_import_queue_entries requests.
+    """
+
+    object_type = 'translation_import_queue_entries'
+
+
