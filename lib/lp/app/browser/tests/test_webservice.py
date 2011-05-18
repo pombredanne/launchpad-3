@@ -49,25 +49,28 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
             renderer(text))
 
 
-class TestMissingBugs(TestCaseWithFactory):
+class BaseMissingObjectWebService:
+    """Base test of NotFound errors for top-level webservice objects."""
 
     layer = DatabaseFunctionalLayer
+    object_type = None
 
-    def test_bug_not_found(self):
+    def test_object_not_found(self):
+        """Missing top-level objects generate 404s but not OOPS."""
         webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
-        response = webservice.get('/bugs/123456789')
+        response = webservice.get('/%s/123456789' % self.object_type)
         self.assertEqual(response.status, 404)
         self.assertEqual(response.getheader('x-lazr-oopsid'), None)
 
 
-class TestMissingProjects(TestCaseWithFactory):
+class TestMissingBugs(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice bugs requests."""
 
-    layer = DatabaseFunctionalLayer
+    object_type = 'bugs'
 
-    def test_project_not_found(self):
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
-        response = webservice.get('/projects/123456789')
-        self.assertEqual(response.status, 404)
-        self.assertEqual(response.getheader('x-lazr-oopsid'), None)
+
+class TestMissingProjects(BaseMissingObjectWebService, TestCaseWithFactory):
+    """Test NotFound for webservice projects requests."""
+
+    object_type = 'projects'
