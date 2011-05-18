@@ -23,12 +23,12 @@ from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParentSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
-from lp.soyuz.interfaces.component import IComponentSet
 
 
 class TestDistroSeriesParent(TestCaseWithFactory):
@@ -167,13 +167,23 @@ class TestOverlayTree(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getFlattenedOverlayTree(self):
-        #        /-o- parent11 -o- parent12 --- parent13
-        # series
-        #        \-o- parent21 -o- parent22
-        #         \--- parent31
-        #          \-o- parent41
-        # -o-: overlay
-        # ---: not overlay
+        #
+        #             series
+        #               |
+        #    ----------------------------------
+        #    |          |          |          |
+        #    o          o          |          o
+        #    |          |          |          |
+        # parent11   parent21   parent31   parent41
+        #    |          |
+        #    o          o
+        #    |          |             type of relation:
+        # parent12   parent22          |           |
+        #    |                         |           o
+        #    |                         |           |
+        #    |                       no overlay  overlay
+        # parent13
+        #
         distroseries = self.factory.makeDistroSeries()
         parent11 = self.factory.makeDistroSeries()
         parent12 = self.factory.makeDistroSeries()

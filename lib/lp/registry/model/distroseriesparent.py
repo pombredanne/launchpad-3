@@ -16,18 +16,12 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
     )
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
@@ -111,7 +105,7 @@ class DistroSeriesParentSet:
         )
         SELECT * FROM t_parents;
         '''
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(DistroSeriesParent)
         res = store.execute(
             rec_overlay_query, (derived_series.id, )).get_all()
         return store.find(DistroSeriesParent,

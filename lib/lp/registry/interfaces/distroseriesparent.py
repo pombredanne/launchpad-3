@@ -83,12 +83,15 @@ class IDistroSeriesParentSet(Interface):
         :param parent_series: An `IDistroseries`
 
         For instance, given the following structure:
-               /-o- parent11 -o- parent12 --- parent13
-        series
-               \-o- parent21 --- parent22
-                \--- parent 31
-        -o-: overlay
-        ---: not overlay
+
+                     series               type of relation:
+                       |                    |           |
+            -----------------------         |           o
+            |          |          |         |           |
+            o          o          |      no overlay  overlay
+            |          |          |
+        parent1   parent2    parent3
+
         The result would be:
-        [dsp(series, parent11), dsp(series, parent12), dsp(series, parent21)]
+        [dsp(series, parent1), dsp(series, parent2), dsp(series, parent333)]
         """
