@@ -59,3 +59,15 @@ class TestMissingBugs(TestCaseWithFactory):
         response = webservice.get('/bugs/123456789')
         self.assertEqual(response.status, 404)
         self.assertEqual(response.getheader('x-lazr-oopsid'), None)
+
+
+class TestMissingProjects(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_project_not_found(self):
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        response = webservice.get('/projects/123456789')
+        self.assertEqual(response.status, 404)
+        self.assertEqual(response.getheader('x-lazr-oopsid'), None)
