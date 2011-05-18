@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for lp.registry.browser.webservice."""
+"""Tests for webservice features across Launchpad."""
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ from lazr.restful.interfaces import IFieldHTMLRenderer
 from lazr.restful.utils import get_current_web_service_request
 from zope.component import getMultiAdapter
 
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.registry.interfaces.product import IProduct
@@ -46,3 +47,15 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
             u'<p>\N{SNOWMAN} &lt;email address hidden&gt; '
             '<a href="/bugs/1">bug 1</a></p>',
             renderer(text))
+
+
+class TestMissingBugs(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_bug_not_found(self):
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+        response = webservice.get('/bugs/123456789')
+        self.assertEqual(response.status, 404)
+        self.assertEqual(response.getheader('x-lazr-oopsid'), None)
