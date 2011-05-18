@@ -11,13 +11,12 @@ __all__ = [
     'DistributionSourcePackageRelease',
     ]
 
-import operator
-
 from lazr.delegates import delegates
 from storm.expr import (
+    And,
     Desc,
-    In,
     Join,
+    LeftJoin,
     SQL,
     )
 from zope.component import getUtility
@@ -44,6 +43,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -166,10 +166,11 @@ class DistributionSourcePackageRelease:
         from lp.registry.model.distroseries import DistroSeries
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        archive_ids = list(self.distribution.all_distro_archive_ids)
         result_row = (
             SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
-            BinaryPackagePublishingHistory, BinaryPackageRelease,
-            BinaryPackageName)
+            BinaryPackagePublishingHistory, DistroSeriesPackageCache,
+            BinaryPackageRelease, BinaryPackageName)
         tables = (
             BinaryPackagePublishingHistory,
             Join(
@@ -189,25 +190,31 @@ class DistributionSourcePackageRelease:
                 BinaryPackageRelease.binarypackagenameID),
             Join(
                 BinaryPackageBuild,
-                BinaryPackageBuild.id == BinaryPackageRelease.buildID))
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            LeftJoin(
+                DistroSeriesPackageCache,
+                And(
+                    DistroSeriesPackageCache.distroseries == DistroSeries.id,
+                    DistroSeriesPackageCache.archiveID.is_in(archive_ids),
+                    DistroSeriesPackageCache.binarypackagename ==
+                    BinaryPackageName.id)))
 
         all_published = store.using(*tables).find(
             result_row,
             DistroSeries.distribution == self.distribution,
-            In(
-                BinaryPackagePublishingHistory.archiveID,
-                list(self.distribution.all_distro_archive_ids)),
+            BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
             BinaryPackageBuild.source_package_release ==
                 self.sourcepackagerelease)
         all_published = all_published.order_by(
             BinaryPackageName.name)
         all_published = DecoratedResultSet(
-            all_published, operator.itemgetter(1))
+            all_published, lambda row: row[1:3])
 
         samples = []
-        for publishing in all_published:
+        for publishing, package_cache in all_published:
             samples.append(
                 DistroSeriesBinaryPackage(
                     publishing.distroarchseries.distroseries,
-                    publishing.binarypackagerelease.binarypackagename))
+                    publishing.binarypackagerelease.binarypackagename,
+                    package_cache))
         return samples
