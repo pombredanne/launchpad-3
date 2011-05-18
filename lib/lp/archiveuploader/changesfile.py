@@ -103,16 +103,7 @@ class ChangesFile(SignableTagFile):
         self.policy = policy
         self.logger = logger
 
-        try:
-            with open(self.filepath, 'rb') as f:
-                raw_content = f.read()
-            self._dict = parse_tagfile_lines(
-                raw_content.splitlines(True),
-                allow_unsigned=self.policy.unsigned_changes_ok,
-                filename=self.filepath)
-        except (IOError, TagFileParseError), error:
-            raise UploadError("Unable to parse the changes %s: %s" % (
-                self.filename, error))
+        self.parse(allow_unsigned=policy.unsigned_changes_ok)
 
         for field in self.mandatory_fields:
             if field not in self._dict:
