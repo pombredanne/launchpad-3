@@ -902,7 +902,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
         """See `IBug`."""
         return BugSubscriptionInfo(self, level)
 
@@ -919,7 +919,7 @@ BugMessage""" % sqlvalues(self.id))
         it.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
@@ -968,7 +968,7 @@ BugMessage""" % sqlvalues(self.id))
         recipients argument.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
