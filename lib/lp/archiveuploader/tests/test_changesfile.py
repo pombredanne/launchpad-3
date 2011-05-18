@@ -8,8 +8,13 @@ __metaclass__ = type
 import os
 
 from debian.deb822 import Changes
+from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.ftests import import_public_test_keys
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -23,9 +28,15 @@ from lp.archiveuploader.nascentuploadfile import (
     UdebBinaryUploadFile,
     UploadError,
     )
-from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import (
+    AbsolutelyAnythingGoesUploadPolicy,
+    datadir,
+    )
+from lp.archiveuploader.uploadpolicy import InsecureUploadPolicy
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
+from lp.testing.keyserver import KeyServerTac
 
 
 class TestDetermineFileClassAndName(TestCase):
@@ -188,3 +199,20 @@ class ChangesFileTests(TestCase):
         self.assertRaises(
             UploadError,
             self.createChangesFile, "mypkg_0.1_i386.changes", contents)
+
+
+class TestSignatureVerification(TestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestSignatureVerification, self).setUp()
+        self.useFixture(KeyServerTac())
+        import_public_test_keys()
+
+    def test_valid_signature_accepted(self):
+        path = datadir('suite/foo_1.0-1/foo_1.0-1_source.changes')
+        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        self.assertEqual(
+            getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
+            parsed.signer)
