@@ -428,13 +428,19 @@ class ObjectFactory:
             source_filename = frame.f_code.co_filename
             # Dots and dashes cause trouble with some consumers of these
             # names.
-            source_short_name = (
+            source = (
                 os.path.basename(source_filename)
                 .replace('_', '-')
                 .replace('.', '-'))
+            if source.startswith(
+                    '<doctest '):
+                # Like '-<doctest xx-build-summary-txt[10]>'.
+                source = (source
+                    .replace('<doctest ', '')
+                    .replace('[', '')
+                    .replace(']>', ''))
             prefix = 'unique-from-%s-line%d' % (
-                source_short_name,
-                frame.f_lineno)
+                source, frame.f_lineno)
         string = "%s-%s" % (prefix, self.getUniqueInteger())
         return string
 
