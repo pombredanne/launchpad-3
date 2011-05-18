@@ -47,14 +47,17 @@
               </th>
               <th tal:condition="view/show_parent_version">
                 <tal:one_parent condition="view/has_unique_parent">
-                  <tal:replace replace="view/unique_parent/displayname" /> version
+                  <a tal:attributes="href view/unique_parent/fmt:url"
+                     tal:content="view/unique_parent/displayname">Warty</a> version
                 </tal:one_parent>
                 <tal:multiple_parents condition="not: view/has_unique_parent">
                   Parent version
                 </tal:multiple_parents>
               </th>
               <th tal:condition="view/show_derived_version">
-                <tal:replace replace="series_name" /> version</th>
+                <a tal:attributes="href context/fmt:url"
+                   tal:content="series_name">Deriwarty</a> version
+              </th>
               <th tal:condition="view/show_parent_packagesets">
                 Parent package-sets
               </th>
