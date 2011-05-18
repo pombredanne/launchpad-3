@@ -118,8 +118,8 @@ class SignableTagFile:
         if self.signingkey is not None:
             return self.signingkey.owner
 
-    def processSignature(self):
-        """Verify the signature on the filename.
+    def verifySignature(self, content, filename):
+        """Verify the signature on the file content.
 
         Stores the fingerprint, the IGPGKey used to sign, the owner of
         the key and a dictionary containing
@@ -130,17 +130,15 @@ class SignableTagFile:
         Returns the key owner (person object), the key (gpgkey object) and
         the pyme signature as a three-tuple
         """
-        self.logger.debug("Verifying signature on %s" % self.filename)
-        assert os.path.exists(self.filepath), (
-            "File not found: %s" % self.filepath)
+        self.logger.debug("Verifying signature on %s" % filename)
 
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
-                file(self.filepath, "rb").read())
+                content)
         except GPGVerificationError, error:
             raise UploadError(
                 "GPG verification of %s failed: %s" % (
-                self.filename, str(error)))
+                filename, str(error)))
 
         key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
         if key is None:
@@ -149,9 +147,9 @@ class SignableTagFile:
 
         if key.active == False:
             raise UploadError("File %s is signed with a deactivated key %s"
-                              % (self.filename, key.keyid))
+                              % (filename, key.keyid))
 
-        self.signingkey = key
+        return (key, sig.plain_data)
 
     def parseAddress(self, addr, fieldname="Maintainer"):
         """Parse an address, using the policy to decide if we should add a
@@ -271,7 +269,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
-            self.processSignature()
+            key, content = self.verifySignature(self.filecontents, filepath)
+            self.signingkey = key
 
     #
     # Useful properties.
@@ -305,6 +304,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         """Return the DSC claimed binary line."""
         return self._dict['Binary']
 
+    @property
+    def filecontents(self):
+        """Return files section contents."""
+        return self._dict['filecontents']
 
     #
     # DSC file checks.

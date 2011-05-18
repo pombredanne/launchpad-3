@@ -130,7 +130,8 @@ class ChangesFile(SignableTagFile):
         if policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned.")
         else:
-            self.processSignature()
+            key, content = self.verifySignature(self.filecontents, filepath)
+            self.signingkey = key
 
     def checkFileName(self):
         """Make sure the changes file name is well-formed.
