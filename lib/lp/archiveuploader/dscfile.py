@@ -122,12 +122,16 @@ class SignableTagFile:
         try:
             with open(self.filepath, 'rb') as f:
                 raw_content = f.read()
+        except IOError, error:
+            raise UploadError(
+                "Unable to read %s: %s" % (self.filename, error))
+        try:
             self._dict = parse_tagfile_lines(
                 raw_content.splitlines(True),
                 dsc_whitespace_rules=dsc_whitespace_rules,
                 allow_unsigned=allow_unsigned,
                 filename=self.filepath)
-        except (IOError, TagFileParseError), error:
+        except TagFileParseError, error:
             raise UploadError(
                 "Unable to parse %s: %s" % (self.filename, error))
 
