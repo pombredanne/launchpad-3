@@ -53,17 +53,18 @@ class TestEmailObfuscated(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    def test_make_bug_with_email(self):
-        email_address = "mark@example.com"
+    def getBrowserForBugWithEmail(self, email_address, no_login):
         bug = self.factory.makeBug(
             title="Title with %s contained" % email_address,
             description="Description with %s contained." % email_address)
-        url = canonical_url(bug, rootsite="bugs")
-        browser = self.getUserBrowser(url)
-        pos = browser.contents.find(email_address)
-        self.assertNotEqual(-1, pos)
-        pos = browser.contents.find(email_address, pos)
-        self.assertNotEqual(-1, pos)
+        return self.getViewBrowser(bug, rootsite="bugs", no_login=no_login)
+
+    def test_user_sees_email_address(self):
+        """A logged-in user can see the email address on the page."""
+        email_address = "mark@example.com"
+        browser = self.getBrowserForBugWithEmail(
+            email_address, no_login=False)
+        self.assertNotEqual(0, browser.contents.count(email_address))
 
 
 class TestBugPortletSubscribers(TestCaseWithFactory):
