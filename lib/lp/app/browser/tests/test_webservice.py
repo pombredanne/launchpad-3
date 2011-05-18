@@ -166,5 +166,3 @@ class TestMissingTranslationImportQueueEntries(
     """
 
     object_type = 'translation_import_queue_entries'
-
-
