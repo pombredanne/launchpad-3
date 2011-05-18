@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from collections import defaultdict
 from itertools import chain
 from operator import itemgetter
 
@@ -223,10 +224,9 @@ def packagesets(dsds, in_parent):
         Column("sourcepackagename", PackagesetSources),
         Packageset.name)
 
-    grouped = {}
+    grouped = defaultdict(list)
     for dsd_id, packageset in results:
-        packagesets = grouped.setdefault(dsd_id, [])
-        packagesets.append(packageset)
+        grouped[dsd_id].append(packageset)
     return grouped
 
 
@@ -241,11 +241,9 @@ def message_chunks(messages):
     chunks = store.find(MessageChunk,
         MessageChunk.messageID.is_in(m.id for m in messages))
 
-    grouped = {}
+    grouped = defaultdict(list)
     for chunk in chunks:
-        message_id = chunk.messageID
-        chunks = grouped.setdefault(message_id, [])
-        chunks.append(chunk)
+        grouped[chunk.messageID].append(chunk)
     return grouped
 
 

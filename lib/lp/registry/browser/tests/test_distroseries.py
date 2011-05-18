@@ -675,8 +675,7 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
         # Query count is ~O(1) (i.e. not dependent of the number of
         # differences displayed).
         self.assertThat(
-            recorder3, HasQueryCount(
-                LessThan(recorder2.count + 1)))
+            recorder3, HasQueryCount(Equals(recorder2.count)))
 
     def test_queries_single_parent(self):
         dsp = self.factory.makeDistroSeriesParent()
