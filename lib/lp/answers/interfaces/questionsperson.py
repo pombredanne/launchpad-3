@@ -36,7 +36,7 @@ from lp.answers.interfaces.questioncollection import IQuestionCollection
 
 class IQuestionsPerson(IQuestionCollection):
 
-    @operation_returns_collection_of(Interface)  # IQuestionTarger.
+    @operation_returns_collection_of(Interface)  # IQuestionTarget.
     @export_read_operation()
     @operation_for_version('devel')
     def getDirectAnswerQuestionTargets():
@@ -46,7 +46,7 @@ class IQuestionsPerson(IQuestionCollection):
         answer contact because he subscribed himself.
         """
 
-    @operation_returns_collection_of(Interface)  # IQuestionsTarget
+    @operation_returns_collection_of(Interface)  # IQuestionTarget
     @export_read_operation()
     @operation_for_version('devel')
     def getTeamAnswerQuestionTargets():
