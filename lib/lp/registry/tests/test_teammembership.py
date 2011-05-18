@@ -79,14 +79,15 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         adminteam = self.factory.makeTeam()
         adminteam.setContactAddress(None)
         team = self.factory.makeTeam(owner=adminteam)
-        removeSecurityProxy(team).renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-        removeSecurityProxy(team).defaultrenewalperiod = 10
+        naked_team = removeSecurityProxy(team)
+        naked_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+        naked_team.defaultrenewalperiod = 10
 
         # Create a person to be in the control team.
         person = self.factory.makePerson()
         team.addMember(person, team.teamowner)
         membershipset = getUtility(ITeamMembershipSet)
-        teammembership = membershipset.getByPersonAndTeam(person, team) 
+        teammembership = membershipset.getByPersonAndTeam(person, team)
 
         # Set expiration time to now
         now = datetime.now(pytz.UTC)
@@ -97,11 +98,12 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         # cronscript. Reload the membership object so we can assert against
         # it.
         self.layer.switchDbUser(config.expiredmembershipsflagger.dbuser)
-        membership = reload_object(team)
+        reload_object(teammembership)
         janitor = getUtility(ILaunchpadCelebrities).janitor
         membershipset.handleMembershipsExpiringToday(janitor)
         self.assertEqual(
             teammembership.status, TeamMembershipStatus.APPROVED)
+
 
 class TestTeamMembershipSet(TestCaseWithFactory):
 
@@ -172,8 +174,6 @@ class TestTeamMembershipSet(TestCaseWithFactory):
             membership,
             self.membershipset.getByPersonAndTeam(no_priv, ubuntu_team))
         self.assertEqual(membership.status, TeamMembershipStatus.ADMIN)
-
-
 
     def test_handleMembershipsExpiringToday(self):
         # Create a couple new teams, with one being a member of the other and
