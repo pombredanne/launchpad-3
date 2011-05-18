@@ -21,7 +21,6 @@ class TestProductSeriesHelp(TestCaseWithFactory):
         # The LP branch URL displayed to the user on the +code-summary page for
         # a product series will relate to that series instead of to the default
         # series for the Product.
-        super(TestProductSeriesHelp, self).setUp()
         product = self.factory.makeProduct()
         series = self.factory.makeProductSeries(product=product)
         person = product.owner
