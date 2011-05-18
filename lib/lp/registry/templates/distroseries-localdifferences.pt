@@ -80,7 +80,8 @@
                     value diff_id;
                     id string:field.selected_differences.${diff_id}"/>
 
-                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
+                <a tal:attributes="href difference/fmt:url"
+                   class="js-action toggle-extra"
                    tal:content="src_name">Foo</a>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
