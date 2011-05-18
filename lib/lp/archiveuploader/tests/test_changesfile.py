@@ -211,7 +211,7 @@ class TestSignatureVerification(TestCase):
         import_public_test_keys()
 
     def test_valid_signature_accepted(self):
-        path = datadir('suite/foo_1.0-1/foo_1.0-1_source.changes')
+        path = datadir('signatures/signed.changes')
         parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
@@ -220,3 +220,18 @@ class TestSignatureVerification(TestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected,
             parsed.parsed_content)
+
+    def test_no_signature_rejected(self):
+        path = datadir('signatures/unsigned.changes')
+        self.assertRaises(
+            UploadError,
+            ChangesFile, path, InsecureUploadPolicy(), BufferLogger())
+
+    def test_prefix_ignored(self):
+        path = datadir('signatures/prefixed.changes')
+        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        self.assertEqual(
+            getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
+            parsed.signer)
+        self.assertEqual("breezy", parsed.suite_name)
+        self.assertNotIn("evil", parsed.changes_comment)
