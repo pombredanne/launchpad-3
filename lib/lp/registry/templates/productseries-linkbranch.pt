@@ -28,7 +28,7 @@
             <li id="ssh-key-directions">
               Push the branch directly to Launchpad, e.g. with:<br />
               <tt><strong>
-                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk
+                bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/<tal:series replace="context/name"/>
               </strong></tt>
               <tal:no-keys condition="not:view/user/sshkeys">
                 <br/>To authenticate with the Launchpad branch upload service,

@@ -503,7 +503,10 @@ class TestAsBuildmaster(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_notify(self):
-        """Notify sends email."""
+        """We do not send mail on completion of source package recipe builds.
+
+        See bug 778437.
+        """
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
             name=u'recipe', owner=person)
@@ -514,7 +517,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
         removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         IStore(build).flush()
         build.notify()
-        (message, ) = pop_notifications()
+        self.assertEquals(0, len(pop_notifications()))
+
+    def assertBuildMessageValid(self, build, message):
+        # Not currently used; can be used if we do want to check about any
+        # notifications sent in other cases.
         requester = build.requester
         requester_address = format_address(
             requester.displayname, requester.preferredemail.email)
@@ -544,29 +551,53 @@ class TestAsBuildmaster(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
 
-    def test_handleStatusNotifies(self):
-        """"handleStatus causes notification, even if OK."""
 
-        def prepare_build():
-            queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-            build = queue_record.specific_job.build
-            naked_build = removeSecurityProxy(build)
-            naked_build.status = BuildStatus.FULLYBUILT
-            naked_build.date_started = self.factory.getUniqueDate()
-            queue_record.builder = self.factory.makeBuilder()
-            slave = WaitingSlave('BuildStatus.OK')
-            queue_record.builder.setSlaveForTesting(slave)
-            return build
+class TestBuildNotifications(TrialTestCase):
 
-        def assertNotifyCount(status, build, count):
-            build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(count, len(pop_notifications()))
-        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
-        assertNotifyCount("OK", prepare_build(), 0)
-        build = prepare_build()
-        removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildNotifications, self).setUp()
+        from lp.testing.factory import LaunchpadObjectFactory
+        self.factory = LaunchpadObjectFactory()
+
+    def prepare_build(self, fake_successful_upload=False):
+        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue_record.specific_job.build
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_started = self.factory.getUniqueDate()
+        if fake_successful_upload:
+            naked_build.verifySuccessfulUpload = FakeMethod(
                 result=True)
-        assertNotifyCount("OK", prepare_build(), 0)
+        queue_record.builder = self.factory.makeBuilder()
+        slave = WaitingSlave('BuildStatus.OK')
+        queue_record.builder.setSlaveForTesting(slave)
+        return build
+
+    def assertDeferredNotifyCount(self, status, build, expected_count):
+        d = build.handleStatus(status, None, {'filemap': {}})
+        def cb(result):
+            self.assertEqual(expected_count, len(pop_notifications()))
+        d.addCallback(cb)
+        return d
+
+    def test_handleStatus_PACKAGEFAIL(self):
+        """Failing to build the package immediately sends a notification."""
+        return self.assertDeferredNotifyCount(
+            "PACKAGEFAIL", self.prepare_build(), 1)
+
+    def test_handleStatus_OK(self):
+        """Building the source package does _not_ immediately send mail.
+        
+        (The archive uploader mail send one later.
+        """
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(), 0)
+
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:
