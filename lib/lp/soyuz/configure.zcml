@@ -919,9 +919,9 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-   <!-- BaseOverridePolicy -->
+   <!-- OverridePolicy -->
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
-        <allow interface="lp.soyuz.adapters.overrides.IBaseOverridePolicy" />
+        <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />

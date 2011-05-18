@@ -45,7 +45,7 @@ from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class IBaseOverridePolicy(Interface):
+class IOverridePolicy(Interface):
 
     def calculateSourceOverrides(archive, distroseries, pocket, sources):
         pass
@@ -56,7 +56,7 @@ class IBaseOverridePolicy(Interface):
 
 class BaseOverridePolicy:
 
-    implements(IBaseOverridePolicy)
+    implements(IOverridePolicy)
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
