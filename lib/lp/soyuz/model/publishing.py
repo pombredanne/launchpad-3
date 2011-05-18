@@ -805,13 +805,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         component = self.component
         section = self.section
         if policy is not None:
-            override = policy.calculateSourceOverrides(
+            [spn, new_comp, new_section] = policy.calculateSourceOverrides(
                 archive, distroseries, pocket,
                 (self.sourcepackagerelease.sourcepackagename,))[0]
-            if override[1] is not None:
-                component = override[1]
-            if override[2] is not None:
-                section = override[2]
+            if new_comp is not None:
+                component = new_comp
+            if new_section is not None:
+                section = new_section
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
