@@ -151,8 +151,6 @@ class SignableTagFile:
         self.fingerprint = sig.fingerprint
         self.signingkey = key
         self.signer = key.owner
-        self.signer_address = self.parseAddress("%s <%s>" % (
-            self.signer.displayname, self.signer.preferredemail.email))
 
     def parseAddress(self, addr, fieldname="Maintainer"):
         """Parse an address, using the policy to decide if we should add a
