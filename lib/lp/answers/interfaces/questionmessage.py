@@ -58,12 +58,16 @@ class IQuestionMessage(IMessage):
         readonly=True, default=QuestionStatus.OPEN,
         vocabulary=QuestionStatus),
         as_of="devel")
-    index = exported(Int(
+    index = Int(
         title=_("Message index."),
-        description=_("The messages index in the question's list of "
+        description=_("The messages 0-index in the question's list of "
         "messages."),
-        readonly=True),
-        as_of="devel")
+        readonly=True)
+    display_index = exported(Int(
+        title=_("Human readable Message index."),
+        description=_("The message's index in the question's list of "
+        "messages."),
+        readonly=True), exported_as='index')
     visible = exported(Bool(
         title=_("Message visibility."),
         description=_("Whether or not the message is visible."),
