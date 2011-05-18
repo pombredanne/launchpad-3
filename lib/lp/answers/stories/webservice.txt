@@ -102,6 +102,24 @@ getAnswerContactsForLanguage.
     >>> print_self_link_of_entries(contacts)
     http://.../~contact
 
+Anyone can retrieve the collection of `IQuestionTarget`s that a person
+is an answer contact for using getDirectAnswerQuestionTargets.
+
+    >>> targets = anon_webservice.named_get(
+    ...     contact['self_link'], 'getDirectAnswerQuestionTargets',
+    ...     api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(targets)
+    http://api.launchpad.dev/devel/my-project
+
+Anyone can retrieve the collection of `IQuestionTarget`s that a person's
+teams is an answer contact for using getTeamAnswerQuestionTargets.
+
+    >>> targets = anon_webservice.named_get(
+    ...     contact['self_link'], 'getTeamAnswerQuestionTargets',
+    ...     api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(targets)
+    http://api.launchpad.dev/devel/my-project
+
 
 Question collections
 --------------------
@@ -145,6 +163,23 @@ getQuestion with the question Id.
     ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
     ...     api_version='devel').jsonBody()
     >>> print question_1['title']
+    Q 1 great
+
+
+Anyone can retrieve a collection of questions from an `IPerson` with
+searchQuestions. The question will that match the precise search criteria
+called with searchQuestions.
+
+    >>> questions = anon_webservice.named_get(
+    ...     contact['self_link'], 'searchQuestions',
+    ...     search_text='q great',
+    ...     status=['Open', 'Needs information', 'Answered'],
+    ...     language=[english['self_link']],
+    ...     needs_attention=False,
+    ...     sort='oldest first',
+    ...     api_version='devel').jsonBody()
+    >>> for question in questions['entries']:
+    ...     print question['title']
     Q 1 great
 
 
