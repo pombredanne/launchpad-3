@@ -178,7 +178,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
         if text is None:
             return self.default_text
         else:
-            return standard_text_html_representation(text, linkify_text=False)
+            return FormattersAPI(text).obfuscate_email()
 
 
 class TextAreaEditorWidget(TextWidgetBase):
