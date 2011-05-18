@@ -112,6 +112,7 @@ class SignableTagFile:
     """Base class for signed file verification."""
 
     signingkey = None
+    parsed_content = None
 
     @property
     def signer(self):
@@ -125,11 +126,18 @@ class SignableTagFile:
         except IOError, error:
             raise UploadError(
                 "Unable to read %s: %s" % (self.filename, error))
+
+        if allow_unsigned:
+            self.logger.debug("%s can be unsigned." % self.filename)
+            self.parsed_content = raw_content  # XXX: Strip signature.
+        else:
+            self.signingkey, self.parsed_content = self.verifySignature(
+                raw_content, self.filepath)
         try:
             self._dict = parse_tagfile_lines(
-                raw_content.splitlines(True),
+                self.parsed_content.splitlines(True),
                 dsc_whitespace_rules=dsc_whitespace_rules,
-                allow_unsigned=allow_unsigned,
+                allow_unsigned=True,
                 filename=self.filepath)
         except TagFileParseError, error:
             raise UploadError(
@@ -278,11 +286,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
 
-        if self.policy.unsigned_dsc_ok:
-            self.logger.debug("DSC file can be unsigned.")
-        else:
-            key, content = self.verifySignature(self.filecontents, filepath)
-            self.signingkey = key
 
     #
     # Useful properties.

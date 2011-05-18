@@ -122,12 +122,6 @@ class ChangesFile(SignableTagFile):
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
 
-        if policy.unsigned_changes_ok:
-            self.logger.debug("Changes file can be unsigned.")
-        else:
-            key, content = self.verifySignature(self.filecontents, filepath)
-            self.signingkey = key
-
     def checkFileName(self):
         """Make sure the changes file name is well-formed.
 
