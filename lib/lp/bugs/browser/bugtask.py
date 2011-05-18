@@ -178,6 +178,7 @@ from lp.app.browser.lazrjs import (
     TextLineEditorWidget,
     vocabulary_to_choice_edit_items,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -649,7 +650,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def page_title(self):
         heading = 'Bug #%s in %s' % (
             self.context.bug.id, self.context.bugtargetdisplayname)
-        return smartquote('%s: "%s"') % (heading, self.context.bug.title)
+        title = FormattersAPI(self.context.bug.title).obfuscate_email()
+        return smartquote('%s: "%s"') % (heading, title)
 
     @property
     def next_url(self):
