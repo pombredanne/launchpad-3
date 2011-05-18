@@ -15,4 +15,4 @@ ALTER TABLE DistroSeriesParent
 ALTER TABLE DistroSeriesParent
     ADD COLUMN pocket INTEGER;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 71, 0);
