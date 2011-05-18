@@ -1817,9 +1817,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
-        if self.is_ppa:
-            return None # For now.
-        if self.purpose == ArchivePurpose.PRIMARY:
+        if self.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             return UbuntuOverridePolicy()
 
 
