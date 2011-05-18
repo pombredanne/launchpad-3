@@ -80,7 +80,8 @@ class IDistroSeriesParentSet(Interface):
         """Get the list of DistroSeriesParents corresponding to the
         flattened overlay tree.
 
-        :param parent_series: An `IDistroseries`
+        :param parent_series: An `IDistroseries`.
+        :return: A list of `IDistroSeriesParents`.
 
         For instance, given the following structure:
 
@@ -93,5 +94,5 @@ class IDistroSeriesParentSet(Interface):
         parent1   parent2    parent3
 
         The result would be:
-        [dsp(series, parent1), dsp(series, parent2), dsp(series, parent333)]
+        [dsp(series, parent1), dsp(series, parent2), dsp(series, parent3)]
         """

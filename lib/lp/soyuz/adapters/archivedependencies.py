@@ -174,8 +174,8 @@ def expand_dependencies(archive, distro_series, pocket, component,
         deps.extend(primary_dependencies)
 
     # Add dependencies for overlay archives.
-    dsps = getUtility(IDistroSeriesParentSet)
-    for dsp in dsps.getFlattenedOverlayTree(distro_series):
+    dsp_set = getUtility(IDistroSeriesParentSet)
+    for dsp in dsp_set.getFlattenedOverlayTree(distro_series):
         dep_archive = dsp.parent_series.distribution.main_archive
         deps.append((dep_archive, dsp.pocket, (dsp.component.name, )))
 

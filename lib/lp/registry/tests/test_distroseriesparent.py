@@ -190,39 +190,41 @@ class TestOverlayTree(TestCaseWithFactory):
         parent21 = self.factory.makeDistroSeries()
         main_component = getUtility(IComponentSet).ensure('main')
         # series -> parent11
-        s_p11 = self.factory.makeDistroSeriesParent(
+        dsp_series_parent11 = self.factory.makeDistroSeriesParent(
             derived_series=distroseries, parent_series=parent11,
             initialized=True, is_overlay=True,
             pocket=PackagePublishingPocket.RELEASE, component=main_component)
         # parent11 -> parent12
-        p11_p12 = self.factory.makeDistroSeriesParent(
+        dsp_parent11_parent12 = self.factory.makeDistroSeriesParent(
             derived_series=parent11, parent_series=parent12,
             initialized=True, is_overlay=True,
             pocket=PackagePublishingPocket.RELEASE, component=main_component)
         # parent12 -> parent13
         self.factory.makeDistroSeriesParent(derived_series=parent12,
             initialized=True, is_overlay=False)
-        # series -> parent2
-        s_p2 = self.factory.makeDistroSeriesParent(
+        # series -> parent21
+        dsp_series_parent21 = self.factory.makeDistroSeriesParent(
             derived_series=distroseries, parent_series=parent21,
             initialized=True, is_overlay=True,
             pocket=PackagePublishingPocket.RELEASE, component=main_component)
         # parent21 -> parent22
-        p21_p22 = self.factory.makeDistroSeriesParent(
+        dsp_parent21_parent22 = self.factory.makeDistroSeriesParent(
             derived_series=parent21, initialized=True, is_overlay=True,
             pocket=PackagePublishingPocket.RELEASE, component=main_component)
         # series -> parent31
         self.factory.makeDistroSeriesParent(derived_series=distroseries,
             initialized=True, is_overlay=False)
         # series -> parent41
-        s_p4 = self.factory.makeDistroSeriesParent(
+        dsp_series_parent41 = self.factory.makeDistroSeriesParent(
             derived_series=distroseries, initialized=True, is_overlay=True,
             pocket=PackagePublishingPocket.RELEASE, component=main_component)
         overlays = getUtility(
             IDistroSeriesParentSet).getFlattenedOverlayTree(distroseries)
 
         self.assertContentEqual(
-            [s_p11, p11_p12, s_p2, p21_p22, s_p4], overlays)
+            [dsp_series_parent11, dsp_parent11_parent12, dsp_series_parent21,
+             dsp_parent21_parent22, dsp_series_parent41],
+            overlays)
 
     def test_getFlattenedOverlayTree_empty(self):
         distroseries = self.factory.makeDistroSeries()
