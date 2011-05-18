@@ -66,6 +66,13 @@ class TestEmailObfuscated(BrowserTestCase):
             email_address, no_login=False)
         self.assertNotEqual(0, browser.contents.count(email_address))
 
+    def test_anonymous_sees_not_email_address(self):
+        """The anonymous user cannot see the email address on the page."""
+        email_address = "mark@example.com"
+        browser = self.getBrowserForBugWithEmail(
+            email_address, no_login=True)
+        self.assertEqual(0, browser.contents.count(email_address))
+
 
 class TestBugPortletSubscribers(TestCaseWithFactory):
 
