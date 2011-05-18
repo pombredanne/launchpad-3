@@ -1245,17 +1245,27 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # The copy succeeds, and no i386 publication is created.
         self.assertCopied(copies, nobby, ('hppa',))
 
+    def assertComponentSectionAndPriority(self, component, source,
+                                          destination):
+        self.assertEquals(component, destination.component)
+        self.assertEquals(source.section, destination.section)
+        self.assertEquals(source.priority, destination.priority)
+
     def test_new_publication_overrides(self):
         # When we copy publications, if the destination primary archive has
         # no prior publications of the source/binaries, we set the component
         # to the default.
+        # This is an oversimplication, in future we will also override
+        # contrib/non-free to multiverse.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
         source = self.test_publisher.getPubSource(
             archive=archive, architecturehintlist='any')
-        source.component = self.factory.makeComponent()
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=source)
+        component = self.factory.makeComponent()
+        for kind in (source, bin_i386, bin_hppa):
+            kind.component = component
         # The package copier will want the changes files associated with the
         # upload.
         transaction.commit()
@@ -1267,12 +1277,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             source, target_archive, nobby, source.pocket, True)
         universe = getUtility(IComponentSet)['universe']
         self.assertEquals(universe, copied_source.component)
-        self.assertEquals(universe, copied_bin_i386.component)
-        self.assertEquals(universe, copied_bin_hppa.component)
-        self.assertEquals(copied_bin_i386.section, bin_i386.section)
-        self.assertEquals(copied_bin_i386.priority, bin_i386.priority)
-        self.assertEquals(copied_bin_hppa.section, bin_hppa.section)
-        self.assertEquals(copied_bin_hppa.priority, bin_hppa.priority)
+        self.assertComponentSectionAndPriority(
+            universe, bin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(
+            universe, bin_hppa, copied_bin_hppa)
 
     def test_existing_publication_overrides(self):
         # When source/binaries are copied to a destination primary archive,
@@ -1305,12 +1313,10 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         self.assertEquals(copied_source.component, existing_source.component)
-        self.assertEquals(ebin_i386.component, copied_bin_i386.component)
-        self.assertEquals(section, copied_bin_i386.section)
-        self.assertEquals(ebin_i386.priority, copied_bin_i386.priority)
-        self.assertEquals(ebin_hppa.component, copied_bin_hppa.component)
-        self.assertEquals(section, copied_bin_hppa.section)
-        self.assertEquals(ebin_hppa.priority, copied_bin_hppa.priority)
+        self.assertComponentSectionAndPriority(
+            ebin_i386.component, ebin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(
+            ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their
@@ -1324,10 +1330,14 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=True)
         nobby = self.createNobby(('i386', 'hppa'))
-        copies = self.doCopy(
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         main = getUtility(IComponentSet)['main']
-        self.assertEquals(main, copies[0].component)
+        self.assertEquals(main, copied_source.component)
+        self.assertComponentSectionAndPriority(
+            main, bin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(
+            main, bin_hppa, copied_bin_hppa)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
