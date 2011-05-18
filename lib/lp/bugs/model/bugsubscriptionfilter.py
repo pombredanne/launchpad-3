@@ -255,9 +255,11 @@ class BugSubscriptionFilter(StormBase):
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""
+        subscriber = self.structural_subscription.subscriber
         return (
-            self.structural_subscription.subscriber.isTeam() and
-            person.inTeam(self.structural_subscription.subscriber))
+            subscriber.isTeam() and
+            person.inTeam(subscriber) and
+            subscriber.preferredemail is None)
 
     def muted(self, person):
         store = Store.of(self)
