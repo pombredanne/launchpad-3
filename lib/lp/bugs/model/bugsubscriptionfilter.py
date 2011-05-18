@@ -256,6 +256,10 @@ class BugSubscriptionFilter(StormBase):
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""
         subscriber = self.structural_subscription.subscriber
+        # The person can mute the Subscription if the subscription is via a
+        # team of which they are a member and the team doesn't have a contact
+        # address (because if the team does, then the mute would be
+        # ineffectual).
         return (
             subscriber.isTeam() and
             person.inTeam(subscriber) and
