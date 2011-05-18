@@ -42,9 +42,9 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.browser.distroseries import (
-    BLACKLISTED,
+    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
-    NON_BLACKLISTED,
+    NON_IGNORED,
     RESOLVED,
     )
 from lp.registry.enum import (
@@ -1111,7 +1111,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+            "&nbsp;Ignored packages with a higher version than in 'Lucid'"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -1186,7 +1186,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % NON_BLACKLISTED)
+            query_string='field.package_type=%s' % NON_IGNORED)
         filtered_view2 = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -1208,7 +1208,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % BLACKLISTED)
+            query_string='field.package_type=%s' % IGNORED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
