@@ -33,7 +33,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile,
+    parse_tagfile_lines,
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
@@ -104,8 +104,12 @@ class ChangesFile(SignableTagFile):
         self.logger = logger
 
         try:
-            self._dict = parse_tagfile(
-                self.filepath, allow_unsigned=self.policy.unsigned_changes_ok)
+            with open(self.filepath, 'rb') as f:
+                raw_content = f.read()
+            self._dict = parse_tagfile_lines(
+                raw_content.splitlines(True),
+                allow_unsigned=self.policy.unsigned_changes_ok,
+                filename=self.filepath)
         except (IOError, TagFileParseError), error:
             raise UploadError("Unable to parse the changes %s: %s" % (
                 self.filename, error))

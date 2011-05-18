@@ -42,7 +42,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile,
+    parse_tagfile_lines,
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
@@ -240,9 +240,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
         try:
-            self._dict = parse_tagfile(
-                self.filepath, dsc_whitespace_rules=1,
-                allow_unsigned=self.policy.unsigned_dsc_ok)
+            with open(self.filepath, 'rb') as f:
+                raw_content = f.read()
+            self._dict = parse_tagfile_lines(
+                raw_content.splitlines(True), dsc_whitespace_rules=1,
+                allow_unsigned=self.policy.unsigned_dsc_ok,
+                filename=self.filepath)
         except (IOError, TagFileParseError), error:
             raise UploadError(
                 "Unable to parse the dsc %s: %s" % (self.filename, error))
