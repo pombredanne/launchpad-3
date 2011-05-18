@@ -79,9 +79,9 @@ class TestTeamMembershipSetScripts(TestCaseWithFactory):
         adminteam = self.factory.makeTeam()
         adminteam.setContactAddress(None)
         team = self.factory.makeTeam(owner=adminteam)
-        naked_team = removeSecurityProxy(team)
-        naked_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-        naked_team.defaultrenewalperiod = 10
+        with person_logged_in(team.teamowner):
+            team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+            team.defaultrenewalperiod = 10
 
         # Create a person to be in the control team.
         person = self.factory.makePerson()
