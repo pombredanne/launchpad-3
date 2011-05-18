@@ -91,7 +91,7 @@ class IDistroSeriesParentSet(Interface):
             |          |          |         |           |
             o          o          |      no overlay  overlay
             |          |          |
-        parent1   parent2    parent3
+        parent1    parent2    parent3
 
         The result would be:
         [dsp(series, parent1), dsp(series, parent2), dsp(series, parent3)]
