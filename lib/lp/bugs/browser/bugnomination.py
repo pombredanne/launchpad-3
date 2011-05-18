@@ -67,8 +67,13 @@ class BugNominationView(LaunchpadFormView):
         submit_action = self.__class__.actions.byname['actions.submit']
         if self.userIsReleaseManager():
             submit_action.label = _("Target")
-        else:
+        elif self.userIsBugSupervisor():
             submit_action.label = _("Nominate")
+        else:
+            self.request.response.addErrorNotification(
+                "You do not have permission to nominate this bug.")
+            self.request.response.redirect(
+                canonical_url(self.current_bugtask))
 
     @property
     def label(self):
@@ -88,6 +93,12 @@ class BugNominationView(LaunchpadFormView):
         current_bugtask = getUtility(ILaunchBag).bugtask
         return check_permission(
             "launchpad.Driver", current_bugtask.target)
+
+    def userIsBugSupervisor(self):
+        """Is the current user the bug supervisor?"""
+        current_bugtask = getUtility(ILaunchBag).bugtask
+        return check_permission(
+            "launchpad.BugSupervisor", current_bugtask.target)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""

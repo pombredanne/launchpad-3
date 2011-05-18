@@ -678,25 +678,25 @@ class DistroSeriesPackagesView(LaunchpadView):
 
 
 # A helper to create package filtering radio button vocabulary.
-NON_BLACKLISTED = 'non-blacklisted'
-BLACKLISTED = 'blacklisted'
+NON_IGNORED = 'non-ignored'
+IGNORED = 'ignored'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 RESOLVED = 'resolved'
 
-DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
+DEFAULT_PACKAGE_TYPE = NON_IGNORED
 
 
 def make_package_type_vocabulary(parent_name, higher_version_option=False):
     voc = [
         SimpleTerm(
-            NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
-        SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
-        SimpleTerm(RESOLVED, RESOLVED, "Resolved packages")]
+            NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
+        SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
-            "Blacklisted packages with a higher version than in %s"
+            "Ignored packages with a higher version than in %s"
                 % parent_name)
         voc.insert(2, higher_term)
     return SimpleVocabulary(tuple(voc))
@@ -877,11 +877,11 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_package_type == NON_BLACKLISTED:
+        if self.specified_package_type == NON_IGNORED:
             status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
             child_version_higher = False
-        elif self.specified_package_type == BLACKLISTED:
+        elif self.specified_package_type == IGNORED:
             status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = False
