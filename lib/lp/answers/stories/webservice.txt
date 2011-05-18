@@ -67,8 +67,10 @@ addAnswerContact and removeAnswerContact if the team has a preferred language.
 
     >>> team = contact_webservice.get(
     ...     '/~my-team', api_version='devel').jsonBody()
+    >>> team_project = contact_webservice.get(
+    ...     '/team-project', api_version='devel').jsonBody()
     >>> contact_webservice.named_get(
-    ...     project['self_link'], 'canUserAlterAnswerContact',
+    ...     team_project['self_link'], 'canUserAlterAnswerContact',
     ...     person=team['self_link'], api_version='devel').jsonBody()
     True
 
@@ -76,25 +78,25 @@ addAnswerContact and removeAnswerContact if the team has a preferred language.
     ...     team['self_link'], 'addLanguage',
     ...     language='/+languages/fr', api_version='devel').jsonBody()
     >>> contact_webservice.named_post(
-    ...     project['self_link'], 'addAnswerContact',
+    ...     team_project['self_link'], 'addAnswerContact',
     ...     person=team['self_link'], api_version='devel').jsonBody()
     True
-
 
 Anyone can get the collection of languages spoken by at least one
 answer contact by calling getSupportedLanguages.
 
     >>> languages = anon_webservice.named_get(
-    ...     project['self_link'], 'getSupportedLanguages',
+    ...     team_project['self_link'], 'getSupportedLanguages',
     ...     api_version='devel').jsonBody()
     >>> print_self_link_of_entries(languages)
     http://.../+languages/en
     http://.../+languages/fr
 
-    >>> english = languages['entries'][0]
-
 Anyone can retrieve the collection of answer contacts for a language using
 getAnswerContactsForLanguage.
+
+    >>> english = anon_webservice.get(
+    ...     '/+languages/en', api_version='devel').jsonBody()
 
     >>> contacts = anon_webservice.named_get(
     ...     project['self_link'], 'getAnswerContactsForLanguage',
@@ -118,7 +120,7 @@ teams is an answer contact for using getTeamAnswerQuestionTargets.
     ...     contact['self_link'], 'getTeamAnswerQuestionTargets',
     ...     api_version='devel').jsonBody()
     >>> print_self_link_of_entries(targets)
-    http://api.launchpad.dev/devel/my-project
+    http://api.launchpad.dev/devel/team-project
 
 
 Question collections
