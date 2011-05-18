@@ -14,6 +14,7 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
+    SQL,
     Storm,
     )
 from zope.interface import implements
@@ -92,7 +93,7 @@ class DistroSeriesParentSet:
         """See `IDistroSeriesParentSet`."""
         self.getByDerivedSeries(derived_series)
         rec_overlay_query = '''
-        WITH RECURSIVE t_parents(parent_series) AS (
+            RECURSIVE t_parents(parent_series) AS (
                 SELECT parent_series
                 FROM DistroSeriesParent
                 WHERE derived_series=? AND
@@ -102,11 +103,11 @@ class DistroSeriesParentSet:
                 FROM DistroSeriesParent dsp, t_parents p
                 WHERE dsp.derived_series = p.parent_series AND
                     dsp.is_overlay = True
-        )
-        SELECT * FROM t_parents;
-        '''
+        ) '''
         store = IStore(DistroSeriesParent)
-        res = store.execute(
-            rec_overlay_query, (derived_series.id, )).get_all()
-        return store.find(DistroSeriesParent,
-            DistroSeriesParent.parent_series_id.is_in(r[0] for r in res))
+        return store.with_(
+            SQL(rec_overlay_query, (derived_series.id, ))).find(
+                DistroSeriesParent,
+                SQL('DistroSeriesParent.parent_series IN '
+                    '(SELECT parent_series FROM t_parents)')
+                )
