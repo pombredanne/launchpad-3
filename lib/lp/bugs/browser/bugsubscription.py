@@ -630,7 +630,10 @@ class BugMuteSelfView(LaunchpadFormView):
 
     @property
     def label(self):
-        return "Mute bug mail for bug %s" % self.context.bug.id
+        if self.context.bug.isMuted(self.user):
+            return "Unmute bug mail for bug %s" % self.context.bug.id
+        else:
+            return "Mute bug mail for bug %s" % self.context.bug.id
 
     page_title = label
 
@@ -641,15 +644,21 @@ class BugMuteSelfView(LaunchpadFormView):
     cancel_url = next_url
 
     def initialize(self):
+        self.is_muted = self.context.bug.isMuted(self.user)
         super(BugMuteSelfView, self).initialize()
-        # If the user is already muted, redirect them to the +subscribe
-        # page, since there's no point doing its work twice.
-        if self.context.bug.isMuted(self.user):
-            self.request.response.redirect(
-                canonical_url(self.context, view_name="+subscribe"))
 
-    @action('Mute bug mail', name='mute')
+    @action('Mute bug mail',
+            name='mute',
+            condition=lambda form, action: not form.is_muted)
     def mute_action(self, action, data):
         self.context.bug.mute(self.user, self.user)
         self.request.response.addInfoNotification(
             "Mail for bug #%s has been muted." % self.context.bug.id)
+
+    @action('Unmute bug mail',
+            name='unmute',
+            condition=lambda form, action: form.is_muted)
+    def unmute_action(self, action, data):
+        self.context.bug.unmute(self.user, self.user)
+        self.request.response.addInfoNotification(
+            "Mail for bug #%s has been unmuted." % self.context.bug.id)
