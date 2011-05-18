@@ -176,8 +176,9 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
     def value(self):
         text = getattr(self.context, self.attribute_name, self.default_text)
         if text is None:
-            text = self.default_text
-        return text
+            return self.default_text
+        else:
+            return standard_text_html_representation(text, linkify_text=False)
 
 
 class TextAreaEditorWidget(TextWidgetBase):
