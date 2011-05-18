@@ -111,9 +111,12 @@ def cleanup_unpacked_dir(unpacked_dir):
 class SignableTagFile:
     """Base class for signed file verification."""
 
-    fingerprint = None
     signingkey = None
-    signer = None
+
+    @property
+    def signer(self):
+        if self.signingkey is not None:
+            return self.signingkey.owner
 
     def processSignature(self):
         """Verify the signature on the filename.
@@ -148,9 +151,7 @@ class SignableTagFile:
             raise UploadError("File %s is signed with a deactivated key %s"
                               % (self.filename, key.keyid))
 
-        self.fingerprint = sig.fingerprint
         self.signingkey = key
-        self.signer = key.owner
 
     def parseAddress(self, addr, fieldname="Maintainer"):
         """Parse an address, using the policy to decide if we should add a
