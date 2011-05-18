@@ -170,7 +170,9 @@
             </tal:difference>
           </tbody>
         </table>
-        <tal:selectable_differences_end
+        <tal:navigation_bottom
+          replace="structure differences/@@+navigation-links-lower" />
+         <tal:selectable_differences_end
                define="widget nocall:view/widgets/selected_differences;
                        field_name widget/context/__name__;
                        error python:view.getFieldError(field_name);">
