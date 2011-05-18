@@ -1,14 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/div'
@@ -41,12 +39,10 @@ class TestDupeFinder(WindmillTestCase):
         duplicates for a bug, with an expander that allows the user to view
         more information if they wish.
         """
-        client = self.client
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Go to the +filebug page for Firefox
-        client.open(url=u'%s/firefox/+filebug' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            '/firefox/+filebug', user=lpuser.SAMPLE_PERSON)
 
         # Ensure the "search" field has finished loading, then enter a simple
         # search and hit search.
@@ -116,8 +112,4 @@ class TestDupeFinder(WindmillTestCase):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertText(
             xpath=u'//div[@class="message"]',
-            validator="Required input is missing.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+            validator="Provide details about the issue.")

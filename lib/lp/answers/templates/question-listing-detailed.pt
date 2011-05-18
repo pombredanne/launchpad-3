@@ -4,40 +4,17 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
   <tal:description
     define="global description context/description/fmt:obfuscate-email/fmt:shorten/320" />
-<tr class="lesser"
-    tal:attributes="title description">
-  <td class="icon left">
-    <img alt="" src="/@@/question" />
-  </td>
-  <td>
-    <div>
-      <a
-        tal:attributes="
-          href context/fmt:url;
-          class string:${context/status/title}
-        "
-        tal:content="context/title"
-      />
+<li tal:attributes="title description">
+      <a tal:replace="structure context/fmt:link" />
       (<span tal:replace="context/status/title">Approved</span>)
-    </div>
-    <div>
-      posted
+    <br />
+    <span class="registered">posted
       <span
         tal:attributes="title context/datecreated/fmt:datetime"
         tal:replace="context/datecreated/fmt:displaydate">2005-10-05</span>
-      by
-      <a tal:replace="structure context/owner/fmt:link"
-         >Foo Bar</a><tal:assignee condition="context/assignee">,
-      assigned to
-      <a tal:replace="structure context/assignee/fmt:link"
-         >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
-      answered by
-      <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
-      </tal:answerer>
       in
       <span tal:replace="context/target/title">SmegConf</span>
-    </div>
-  </td>
-</tr>
+    </span>
+</li>
 </tal:root>
 

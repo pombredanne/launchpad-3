@@ -209,7 +209,15 @@ class NotFoundView(SystemErrorView):
         """
         referrer = self.request.get('HTTP_REFERER')
         if referrer:
-            return referrer
+            # Since this is going to be included in the page template it will
+            # be coerced into unicode.  The byte string representation
+            # 'should' be ascii, but often it isn't.  The only use for this is
+            # to show a link back to the referring site, so we can't use
+            # replace or ignore.  Best to just pretent it doesn't exist.
+            try:
+                return unicode(referrer)
+            except UnicodeDecodeError:
+                return None
         else:
             return None
 
@@ -233,10 +241,6 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
-        # Reset the timeout timer, so that we can issue db queries when
-        # rendering the page.
-        clear_request_started()
-        set_request_started()
 
 
 class InvalidBatchSizeView(SystemErrorView):

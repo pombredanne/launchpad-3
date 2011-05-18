@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -11,14 +11,13 @@ __all__ = [
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
-    'SourcePackageHelpView',
     'SourcePackageNavigation',
+    'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
     'SourcePackageUpstreamConnectionsView',
     'SourcePackageView',
     ]
 
-from cgi import escape
 import string
 import urllib
 
@@ -56,13 +55,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad import (
     _,
     helpers,
     )
-from lp.app.interfaces.launchpad import IServiceUsage
-from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
@@ -75,26 +71,24 @@ from canonical.launchpad.webapp import (
     canonical_url,
     GetitemNavigation,
     Link,
-    redirection,
     StandardLaunchpadFacets,
     stepto,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import LaunchpadRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
-from lp.answers.browser.questiontarget import (
-    QuestionTargetAnswersMenu,
-    QuestionTargetFacetMixin,
-    )
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
 from lp.registry.interfaces.packaging import (
@@ -181,15 +175,20 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+filebug')
     def filebug(self):
         """Redirect to the IDistributionSourcePackage +filebug page."""
-        sourcepackage = self.context
-        distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
-            sourcepackage.name)
+        distro_sourcepackage = self.context.distribution_sourcepackage
 
         redirection_url = canonical_url(
             distro_sourcepackage, view_name='+filebug')
         if self.request.form.get('no-redirect') is not None:
             redirection_url += '?no-redirect'
-        return redirection(redirection_url)
+        return self.redirectSubTree(redirection_url, status=303)
+
+    @stepto('+gethelp')
+    def gethelp(self):
+        """Redirect to the IDistributionSourcePackage +gethelp page."""
+        dsp = self.context.distribution_sourcepackage
+        redirection_url = canonical_url(dsp, view_name='+gethelp')
+        return self.redirectSubTree(redirection_url, status=303)
 
 
 @adapter(ISourcePackage)
@@ -208,10 +207,10 @@ class SourcePackageBreadcrumb(Breadcrumb):
         return smartquote('"%s" source package') % (self.context.name)
 
 
-class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'branches', 'answers', 'translations']
+    enable_only = ['overview', 'bugs', 'branches', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -236,29 +235,29 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+copyright', 'View copyright', icon='info')
 
     def edit_packaging(self):
-        return Link('+edit-packaging', 'Change upstream link', icon='edit')
+        return Link(
+            '+edit-packaging', 'Change upstream link', icon='edit',
+            enabled=self.userCanDeletePackaging())
 
     def remove_packaging(self):
         return Link(
-            '+remove-packaging', 'Remove upstream link', icon='remove')
+            '+remove-packaging', 'Remove upstream link', icon='remove',
+            enabled=self.userCanDeletePackaging())
 
     def set_upstream(self):
-        return Link("+edit-packaging", "Set upstream link", icon="add")
+        return Link(
+            "+edit-packaging", "Set upstream link", icon="add",
+            enabled=self.userCanDeletePackaging())
 
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
 
-
-class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
-
-    usedfor = ISourcePackage
-    facet = 'answers'
-
-    links = QuestionTargetAnswersMenu.links + ['gethelp']
-
-    def gethelp(self):
-        return Link('+gethelp', 'Help and support options', icon='info')
+    def userCanDeletePackaging(self):
+        packaging = self.context.direct_packaging
+        if packaging is None:
+            return True
+        return packaging.userCanDelete()
 
 
 class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
@@ -414,13 +413,17 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
     @action('Unlink')
     def unlink(self, action, data):
         old_series = self.context.productseries
-        getUtility(IPackagingUtil).deletePackaging(
-            self.context.productseries,
-            self.context.sourcepackagename,
-            self.context.distroseries)
-        self.request.response.addInfoNotification(
-            'Removed upstream association between %s and %s.' % (
-            old_series.title, self.context.distroseries.displayname))
+        if self.context.direct_packaging is not None:
+            getUtility(IPackagingUtil).deletePackaging(
+                self.context.productseries,
+                self.context.sourcepackagename,
+                self.context.distroseries)
+            self.request.response.addInfoNotification(
+                'Removed upstream association between %s and %s.' % (
+                old_series.title, self.context.distroseries.displayname))
+        else:
+            self.request.response.addInfoNotification(
+                'The packaging link has already been deleted.')
 
 
 class SourcePackageView:
@@ -535,12 +538,6 @@ class SourcePackageView:
         return list(self.context.getCurrentTranslationTemplates())
 
 
-class SourcePackageHelpView:
-    """A View to show Answers help."""
-
-    page_title = 'Help and support options'
-
-
 class SourcePackageAssociationPortletView(LaunchpadFormView):
     """A view for linking to an upstream package."""
 
@@ -569,8 +566,8 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(product.displayname))
+            description = structured(
+                '<a href="%s">%s</a>', item_url, product.displayname)
             vocab_terms.append(SimpleTerm(product, product.name, description))
         # Add an option to represent the user's decision to choose a
         # different project. Note that project names cannot be uppercase.

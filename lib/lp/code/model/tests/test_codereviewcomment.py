@@ -6,7 +6,7 @@
 from textwrap import dedent
 import unittest
 
-from canonical.launchpad.database.message import MessageSet
+from lp.services.messages.model.message import MessageSet
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

@@ -24,7 +24,7 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.message import MessageSet
+from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
@@ -657,6 +657,15 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
+    def test_claim_no_oops(self):
+        """"An invalid attempt to claim a review should not oops."""
+        review = self.factory.makeCodeReviewVoteReference()
+        view = create_initialized_view(review.branch_merge_proposal, '+index')
+        view.claim_action.success({'review_id': review.id})
+        self.assertEqual(
+            ['Cannot claim non-team reviews.'],
+            [n.message for n in view.request.response.notifications])
+
     def test_preview_diff_text_with_no_diff(self):
         """preview_diff_text should be None if context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
@@ -726,7 +735,18 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual([], view.linked_bugs)
+        self.assertEqual([], view.linked_bugtasks)
+
+    def test_linked_bugs_excludes_private_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        private_bug = self.factory.makeBug(owner=person, private=True)
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        with person_logged_in(person):
+            self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([bug.default_bugtask], view.linked_bugtasks)
 
     def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
@@ -768,8 +788,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         revision_date = review_date + timedelta(days=1)
         bmp = self.factory.makeBranchMergeProposal(
             date_created=review_date)
-        revision = add_revision_to_branch(
-            self.factory, bmp.source_branch, revision_date)
+        add_revision_to_branch(self.factory, bmp.source_branch, revision_date)
 
         view = create_initialized_view(bmp, '+index')
         new_revisions = view.conversation.comments[0]

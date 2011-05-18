@@ -60,6 +60,31 @@
       <metal:nav-pofile-subpages
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
+      <!-- Sharing information -->
+      <div tal:condition="features/translations.sharing_information.enabled">
+        <div id="sharing-information"
+             tal:condition="view/is_sharing">
+          <p tal:define="sharing_pofile view/sharing_pofile;
+                         template sharing_pofile/potemplate">
+            These translations are shared with
+              <a class="sprite package-source"
+                tal:condition="view/is_upstream_pofile"
+                tal:content="template/sourcepackage/displayname"
+                tal:attributes="href template/sourcepackage/fmt:url">
+                apache in Ubuntu Hoary
+              </a><a class="sprite product"
+                tal:condition="not:view/is_upstream_pofile"
+                tal:content="template/productseries/title"
+                tal:attributes="href template/productseries/fmt:url">
+                Evolution trunk
+              </a> template
+              <a tal:attributes="href sharing_pofile/fmt:url"
+                 tal:content="template/name"
+               >evolution-2.2</a>.
+          </p>
+        </div>
+      </div>
+
         <!-- View filter and suggestions from alternative language. -->
         <form method="get" style="text-align: left;" action="+translate">
           <!-- the hidden elements -->

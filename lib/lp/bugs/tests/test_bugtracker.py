@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-import transaction
 from datetime import (
     datetime,
     timedelta,
@@ -14,6 +12,7 @@ from doctest import (
     ELLIPSIS,
     NORMALIZE_WHITESPACE,
     )
+import unittest
 from urllib2 import (
     HTTPError,
     Request,
@@ -21,12 +20,11 @@ from urllib2 import (
 
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
-
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -41,10 +39,19 @@ from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
     )
-from lp.bugs.model.bugtracker import BugTrackerSet
-from lp.bugs.tests.externalbugtracker import Urlib2TransportTestHandler
+from lp.bugs.model.bugtracker import (
+    BugTrackerSet,
+    make_bugtracker_name,
+    make_bugtracker_title,
+    )
+from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -278,7 +285,7 @@ class TestMantis(TestCaseWithFactory):
         # Ensure that the special Mantis login handler is used
         # by the Mantis tracker
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         test_handler.setRedirect('http://mantis.example.com/login_page.php'
             '?return=%2Fsome%2Fpage')
         opener = tracker._opener
@@ -297,7 +304,7 @@ class TestMantis(TestCaseWithFactory):
         # Ensure that the OpenerDirector of the Mantis bug tracker
         # handles cookies.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com', '')
@@ -312,7 +319,7 @@ class TestMantis(TestCaseWithFactory):
         # indication that we should screen scrape the bug data and
         # thus set csv_data to None.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         test_handler.setError(
@@ -326,7 +333,7 @@ class TestMantis(TestCaseWithFactory):
         # If the Mantis server returns other HTTP errors than 500,
         # they appear as BugTrackerConnectErrors.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         test_handler.setError(
@@ -342,6 +349,39 @@ class TestMantis(TestCaseWithFactory):
                 'Not Found', {}, None),
             'http://mantis.example.com/csv_export.php')
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
+
+
+class TestMakeBugtrackerName(TestCase):
+    """Tests for make_bugtracker_name."""
+
+    def test_url(self):
+        self.assertEquals(
+            'auto-bugs.example.com',
+            make_bugtracker_name('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'auto-foo.bar',
+            make_bugtracker_name('mailto:foo.bar@somewhere.com'))
+
+    def test_sanitises_forbidden_characters(self):
+        self.assertEquals(
+            'auto-foobar',
+            make_bugtracker_name('mailto:foo_bar@somewhere.com'))
+
+
+class TestMakeBugtrackerTitle(TestCase):
+    """Tests for make_bugtracker_title."""
+
+    def test_url(self):
+        self.assertEquals(
+            'bugs.example.com/shrubbery',
+            make_bugtracker_title('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'Email to foo.bar@somewhere',
+            make_bugtracker_title('mailto:foo.bar@somewhere.com'))
 
 
 def test_suite():

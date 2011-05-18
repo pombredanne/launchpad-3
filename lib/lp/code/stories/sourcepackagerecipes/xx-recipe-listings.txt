@@ -5,7 +5,6 @@ Recipe Listing Pages
 Pages that want to display lists of recipes use the recipe-listing
 page template, and views derived from RecipeListingView.
 
-
     >>> def print_recipe_listing_head(browser):
     ...     table = find_tag_by_id(browser.contents, 'recipetable')
     ...     for row in table.thead.fetch('tr'):

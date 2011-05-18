@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -59,13 +59,13 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets import LaunchpadRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.browser.team import HasRenewalPolicyMixin
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -572,6 +572,17 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         self.context.consume()
 
     def _doMerge(self):
+        """Merges a duplicate person into a target person.
+
+        - Reassigns the duplicate user's primary email address to the
+          requesting user.
+
+        - Ensures that the requesting user has a preferred email address, and
+          uses the newly acquired one if not.
+
+        - If the duplicate user has no other email addresses, does the merge.
+
+        """
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester
@@ -594,10 +605,11 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         if emailset.getByPerson(self.dupe):
             self.mergeCompleted = False
             return
-
-        # Call Stuart's magic function which will reassign all of the dupe
-        # account's stuff to the user account.
-        getUtility(IPersonSet).merge(self.dupe, requester)
+        getUtility(IPersonSet).mergeAsync(
+            self.dupe, requester, reviewer=requester)
+        merge_message = _(
+            'A merge is queued and is expected to complete in a few minutes.')
+        self.request.response.addInfoNotification(merge_message)
         self.mergeCompleted = True
 
 

@@ -3,7 +3,11 @@
 
 """Test Archive features."""
 
-from datetime import date
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -23,13 +27,17 @@ from canonical.testing.layers import (
     )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
+    ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
@@ -45,6 +53,7 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     NoRightsForArchive,
     NoRightsForComponent,
+    VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -52,6 +61,7 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -59,6 +69,7 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
+    celebrity_logged_in,
     login,
     login_person,
     person_logged_in,
@@ -816,6 +827,22 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             False,
             archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
+    def test_hasAnyPermission(self):
+        # hasAnyPermission returns true if the person is the member of a
+        # team with any kind of permission on the archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        main = getUtility(IComponentSet)["main"]
+        ArchivePermission(
+            archive=archive, person=team, component=main,
+            permission=ArchivePermissionType.UPLOAD)
+
+        self.assertFalse(archive.hasAnyPermission(person))
+        with celebrity_logged_in('admin'):
+            team.addMember(person, team.teamowner)
+        self.assertTrue(archive.hasAnyPermission(person))
+
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
     """Ensure that updatePackageDownloadCount works as expected."""
@@ -1157,19 +1184,19 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             self.archive.getBinaryPackageReleaseByFileName(
                 "this-is-not-real_1.2.3-4_all.deb"))
 
-    def test_returns_none_for_duplicate_file(self):
+    def test_returns_latest_for_duplicate_file(self):
         # In the unlikely case of multiple BPRs in this archive with the same
         # name (hopefully impossible, but it still happens occasionally due
-        # to bugs), None is returned.
+        # to bugs), the latest is returned.
 
         # Publish the same binaries again. Evil.
-        self.publisher.getPubBinaries(
+        new_pubs = self.publisher.getPubBinaries(
             version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertIs(
-            None,
+        self.assertEquals(
+            new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
 
@@ -1635,3 +1662,119 @@ class TestGetFileByName(TestCaseWithFactory):
         new_dsc = self.factory.makeLibraryFileAlias(filename=dsc.filename)
         pub.sourcepackagerelease.addFile(new_dsc)
         self.assertEquals(new_dsc, self.archive.getFileByName(dsc.filename))
+
+
+class TestGetPublishedSources(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPublishedSources_comprehensive(self):
+        # The doctests for getPublishedSources migrated from a doctest for
+        # better testing.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov_archive = cprov.archive
+        # There are three published sources by default - no args returns all
+        # publications.
+        self.assertEqual(3, cprov_archive.getPublishedSources().count())
+        # Various filters.
+        active_status = [PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.PUBLISHED]
+        inactive_status = [PackagePublishingStatus.SUPERSEDED,
+                           PackagePublishingStatus.DELETED]
+        warty = cprov_archive.distribution['warty']
+        hoary = cprov_archive.distribution['hoary']
+        breezy_autotest = cprov_archive.distribution['breezy-autotest']
+        all_sources = cprov_archive.getPublishedSources()
+        expected = [('cdrkit - 1.0', 'breezy-autotest'),
+            ('iceweasel - 1.0', 'warty'),
+            ('pmount - 0.1-1', 'warty'),
+            ]
+        found = []
+        for pub in all_sources:
+            title = pub.sourcepackagerelease.title
+            pub_ds = pub.distroseries.name
+            found.append((title, pub_ds))
+        self.assertEqual(expected, found)
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='cd').count())
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='ice').count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='iceweasel', exact_match=True).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', exact_match=True).count())
+        self.assertRaises(VersionRequiresName,
+            cprov_archive.getPublishedSources,
+            version='1.0')
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', version='1.0').count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', version='666').count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED).count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=active_status).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            status=inactive_status).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=hoary).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            distroseries=breezy_autotest).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.RELEASE).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.UPDATES).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', distroseries=breezy_autotest).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date='2007-07-09 14:00:00').count())
+        mid_2007 = datetime(year=2007, month=7, day=9, hour=14)
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date=mid_2007).count())
+        one_hour_step = timedelta(hours=1)
+        one_hour_earlier = mid_2007 - one_hour_step
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+             created_since_date=one_hour_earlier).count())
+        two_hours_earlier = one_hour_earlier - one_hour_step
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            created_since_date=two_hours_earlier).count())
+
+
+class TestSyncSource(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_security_team_can_copy_to_primary(self):
+        # A member of ubuntu-security can use syncSource on any package
+        # in the Ubuntu primary archive, regardless of their normal
+        # upload permissions.
+        # This is until we can open syncSource up more widely and sort
+        # out the permissions that everyone needs.
+        with celebrity_logged_in('admin'):
+            security_person = self.factory.makePerson()
+            getUtility(ILaunchpadCelebrities).ubuntu_security.addMember(
+                security_person, security_person)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
+            distroseries=ubuntu.currentseries)
+        self.assertEqual(
+            0,
+            ubuntu.main_archive.getPublishedSources(
+                name=source.source_package_name).count())
+        with person_logged_in(security_person):
+            ubuntu.main_archive.syncSource(
+                source_name=source.source_package_name,
+                version=source.source_package_version,
+                from_archive=source.archive,
+                to_pocket='Security')
+        self.assertEqual(
+            1,
+            ubuntu.main_archive.getPublishedSources(
+                name=source.source_package_name).count())

@@ -1,17 +1,15 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 import transaction
 
-from canonical.launchpad.windmill.testing import (
-    constants,
-    lpuser,
-    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.service_usage_helpers import set_service_usage
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class TestProductHiddenConfiguration(WindmillTestCase):
@@ -31,11 +29,10 @@ class TestProductHiddenConfiguration(WindmillTestCase):
     def test_not_fully_configured_starts_shown(self):
         # A product that is not fully configured displays the links on
         # page load, but they can be hidden.
-        client = self.client
 
-        client.open(url=u'http://launchpad.dev:8085/hidden-configs')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.FOO_BAR.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/hidden-configs', user=lpuser.FOO_BAR,
+            base_url=self.layer.appserver_root_url())
 
         # We can only safely use this class selector in this test b/c there's
         # only one collapsible element on this page.
@@ -64,11 +61,9 @@ class TestProductHiddenConfiguration(WindmillTestCase):
             translations_usage="NOT_APPLICABLE")
         transaction.commit()
 
-        client = self.client
-
-        client.open(url=u'http://launchpad.dev:8085/hidden-configs')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.FOO_BAR.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/hidden-configs', user=lpuser.FOO_BAR,
+            base_url=self.layer.appserver_root_url())
         client.waits.forElement(
             classname='collapseWrapper lazr-closed',
             timeout=constants.FOR_ELEMENT)
@@ -85,7 +80,3 @@ class TestProductHiddenConfiguration(WindmillTestCase):
         client.asserts.assertProperty(
             classname='collapseWrapper',
             validator='className|lazr-open')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

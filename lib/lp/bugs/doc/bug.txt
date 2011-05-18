@@ -141,7 +141,7 @@ need to log in here because the event object is security proxied.
     >>> login("foo.bar@canonical.com")
 
     >>> bug.addTask(owner=params.owner, target=jukebox)
-    <BugTask at ...>
+    <BugTask ...>
 
     >>> from zope.event import notify
     >>> notify(event)
@@ -689,13 +689,14 @@ And for a specific distribution series.
 
 Also for a specific distribution source package.
 
-    >>> linux_source = ubuntu.getSourcePackage('linux-source-2.6.15')
+    >>> tubuntu = factory.makeDistribution(name='tubuntu')
+    >>> linux_source = tubuntu.getSourcePackage('linux-source-2.6.15')
     >>> linux_task = firefox_bug.addTask(
     ...     owner=foobar, target=linux_source)
     >>> notify(ObjectCreatedEvent(linux_task))
 
     >>> print linux_task.bugtargetname
-    linux-source-2.6.15 (Ubuntu)
+    linux-source-2.6.15 (Tubuntu)
 
 And for a distro series source package.
 
@@ -785,7 +786,7 @@ Adding an attachment.
     >>> from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
     >>> from canonical.launchpad.interfaces.librarian import (
     ...     ILibraryFileAliasSet)
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
 
     >>> firefox_bug.attachments.count()
     0
@@ -983,7 +984,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Tomcat
     Ubuntu
     Hoary
-    mozilla-firefox in debian
+    mozilla-firefox in Debian
     mozilla-firefox in Debian Woody
 
 You can also get a list of the "LP pillars" affected by a particular bug.
@@ -1018,7 +1019,7 @@ use getBugTask() to get it.
     >>> mozilla_in_debian = debian.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_debian_task = bug_two.getBugTask(mozilla_in_debian)
     >>> mozilla_in_debian_task.target.displayname
-    u'mozilla-firefox in debian'
+    u'mozilla-firefox in Debian'
 
     >>> debian_woody = debian.getSeries('woody')
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
@@ -1116,15 +1117,15 @@ Bug Comments
 ------------
 
 A bug comment is actually made up of a number of chunks. The
-IBug.getMessageChunks() method allows you to retreive these chunks in a
-single shot.
+IBug.getMessagesForView() method allows you to get all the data needed to
+show messages in the bugtask index template in one shot.
 
-    >>> from canonical.ftests.pgsql import CursorWrapper
+    >>> from lp.testing.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
-    >>> chunks = bug_two.getMessageChunks()
-    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    >>> chunks = bug_two.getMessagesForView(None)
+    >>> for _, _1, chunk in sorted(chunks, key=lambda x:x[2].id):
     ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
     ...     chunk.content[:30])
     (4, 1, 16, u'Problem exists between chair a')
@@ -1140,6 +1141,24 @@ spurious failures it has been changed to tolerate this additional query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
     True
+
+getMessagesForView supports slicing operations:
+
+    >>> def message_ids(slices):
+    ...     chunks = bug_two.getMessagesForView(slices)
+    ...     return sorted(set(
+    ...         bugmessage.index for bugmessage, _, _1 in chunks))
+    >>> message_ids([slice(1, 2)])
+    [1]
+
+We use this to get the first N and last M messages in big bugs:
+    >>> message_ids([slice(None, 1), slice(2, None)])
+    [0, 2]
+
+We also support a negative lookup though the bug view does not use that at the
+moment:
+    >>> message_ids([slice(None, 1), slice(-1, None)])
+    [0, 2]
 
 Bugs have a special attribute, `indexed_messages` which returns the collection
 of messages, each decorated with the index of that message in its context

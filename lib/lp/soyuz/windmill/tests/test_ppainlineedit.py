@@ -3,11 +3,11 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.soyuz.windmill.testing import SoyuzWindmillLayer
+from lp.testing.windmill import (
     lpuser,
     widgets,
     )
-from lp.soyuz.windmill.testing import SoyuzWindmillLayer
 
 
 class TestPPAInlineEditing(unittest.TestCase):
@@ -20,11 +20,11 @@ class TestPPAInlineEditing(unittest.TestCase):
 
         ppa_displayname_inline_edit_test = widgets.InlineEditorWidgetTest(
             url='%s/~cprov/+archive/ppa' % SoyuzWindmillLayer.base_url,
-            widget_id='displayname',
+            widget_id='edit-displayname',
             expected_value='PPA for Celso Providelo',
             new_value="Celso's default PPA",
             name='test_ppa_displayname_inline_edit',
             user=lpuser.FOO_BAR,
-            suite=__name__)
+            suite_name=__name__)
 
         ppa_displayname_inline_edit_test()

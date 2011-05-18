@@ -4,6 +4,7 @@
 # This file is imported by parts/scripts/sitecustomize.py, as set up in our
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
+from collections import defaultdict
 import itertools
 import os
 import warnings
@@ -16,6 +17,7 @@ from twisted.internet.defer import (
 
 from bzrlib.branch import Branch
 from lp.services.log import loglevels
+from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
@@ -46,7 +48,27 @@ def add_custom_loglevels():
 
     # Install our customized Logger that provides easy access to our
     # custom loglevels.
-    logging.setLoggerClass(loglevels.LaunchpadLogger)
+    logging.setLoggerClass(LaunchpadLogger)
+
+    # Fix the root logger, replacing it with an instance of our
+    # customized Logger. The original one is instantiated on import of
+    # the logging module, so our override does not take effect without
+    # this manual effort.
+    old_root = logging.root
+    new_root = LaunchpadLogger('root', loglevels.WARNING)
+
+    # Fix globals.
+    logging.root = new_root
+    logging.Logger.root = new_root
+
+    # Fix manager.
+    manager = logging.Logger.manager
+    manager.root = new_root
+
+    # Fix existing Logger instances.
+    for logger in manager.loggerDict.values():
+        if getattr(logger, 'parent', None) is old_root:
+            logger.parent = new_root
 
 
 def silence_bzr_logger():
@@ -92,6 +114,15 @@ def silence_warnings():
         "ignore",
         category=DeprecationWarning,
         module="Crypto")
+    # Filter all deprecation warnings for Zope 3.6, which emanate from
+    # the zope package.
+    filter_pattern = '.*(Zope 3.6|provide.*global site manager).*'
+    warnings.filterwarnings(
+        'ignore', filter_pattern, category=DeprecationWarning)
+    # XXX wgrant 2010-03-30 bug=551510:
+    # Also filter apt_pkg warnings, since Lucid's python-apt has a new API.
+    warnings.filterwarnings(
+        'ignore', '.*apt_pkg.*', category=DeprecationWarning)
 
 
 def customize_logger():
@@ -120,6 +151,7 @@ def main(instance_name):
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker

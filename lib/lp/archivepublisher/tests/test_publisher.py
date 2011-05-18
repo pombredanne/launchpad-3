@@ -23,11 +23,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import (
-    Config,
-    getPubConfig,
-    )
+from lp.testing.keyserver import KeyServerTac
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -38,7 +35,10 @@ from lp.archivepublisher.publishing import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -50,6 +50,10 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+
+
+RELEASE = PackagePublishingPocket.RELEASE
+BACKPORTS = PackagePublishingPocket.BACKPORTS
 
 
 class TestPublisherBase(TestNativePublishingBase):
@@ -879,8 +883,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
 
-        # XXX cprov 20090427: we should write a Release file parsing for
-        # making tests less cryptic.
+        # XXX cprov 2009-04-27 bug=440014: Use a generic parser.
         release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
@@ -1036,6 +1039,38 @@ class TestPublisher(TestPublisherBase):
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1], 'Label: Partner archive')
 
+    def testReleaseFileForNotAutomaticBackports(self):
+        # Test Release file writing for series with NotAutomatic backports.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.getPubSource(filecontent='Hello world', pocket=RELEASE)
+        self.getPubSource(filecontent='Hello world', pocket=BACKPORTS)
+
+        publisher.A_publish(True)
+        publisher.C_writeIndexes(False)
+
+        def get_release(pocket):
+            release_file = os.path.join(
+                publisher._config.distsroot,
+                'breezy-autotest%s' % pocketsuffix[pocket], 'Release')
+            return open(release_file).read().splitlines()
+
+        # When backports_not_automatic is unset, no Release files have
+        # NotAutomatic: yes.
+        self.assertEqual(False, self.breezy_autotest.backports_not_automatic)
+        publisher.D_writeReleaseFiles(False)
+        self.assertNotIn("NotAutomatic: yes", get_release(RELEASE))
+        self.assertNotIn("NotAutomatic: yes", get_release(BACKPORTS))
+
+        # But with the flag set, -backports Release files gain
+        # NotAutomatic: yes and ButAutomaticUpgrades: yes.
+        self.breezy_autotest.backports_not_automatic = True
+        publisher.D_writeReleaseFiles(False)
+        self.assertNotIn("NotAutomatic: yes", get_release(RELEASE))
+        self.assertIn("NotAutomatic: yes", get_release(BACKPORTS))
+        self.assertIn("ButAutomaticUpgrades: yes", get_release(BACKPORTS))
+
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
@@ -1043,8 +1078,9 @@ class TestPublisher(TestPublisherBase):
             distribution=self.ubuntutest, private=True)
         ppa.buildd_secret = "geheim"
 
-        # Setup the publisher for it and publish its repository.
-        archive_publisher = getPublisher(ppa, [], self.logger)
+        # Set up the publisher for it and publish its repository.
+        # 'getPublisher' is what actually configures the htaccess file.
+        getPublisher(ppa, [], self.logger)
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
@@ -1286,8 +1322,8 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         # Start the test keyserver, so the signing_key can be uploaded.
-        z = ZecaTestSetup()
-        z.setUp()
+        tac = KeyServerTac()
+        tac.setUp()
 
         # Set a signing key for Celso's PPA.
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
@@ -1309,4 +1345,4 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
             signature.fingerprint, cprov.archive.signing_key.fingerprint)
 
         # All done, turn test-keyserver off.
-        z.tearDown()
+        tac.tearDown()

@@ -11,6 +11,7 @@ __all__ = [
 import os
 import signal
 import socket
+import sys
 import urlparse
 
 from zope.event import notify
@@ -21,7 +22,8 @@ from twisted.internet import (
     interfaces,
     process,
     )
-from twisted.python import log
+from twisted.python import log, failure
+from twisted.internet.main import CONNECTION_LOST, CONNECTION_DONE
 
 from canonical.config import config
 from lp.codehosting import get_bzr_path
@@ -129,6 +131,7 @@ class ForkedProcessTransport(process.BaseProcess):
             log.err('Connection failed: %s' % (e,))
             raise
         if response.startswith("FAILURE"):
+            client_sock.close()
             raise RuntimeError('Failed to send message: %r' % (response,))
         return response, client_sock
 
@@ -154,36 +157,62 @@ class ForkedProcessTransport(process.BaseProcess):
         message.append('end\n')
         message = ''.join(message)
         response, sock = self._sendMessageToService(message)
-        if response.startswith('FAILURE'):
-            # TODO: Is there a better error to raise?
-            raise RuntimeError("Failed while sending message to forking "
-                "service. message: %r, failure: %r"
-                % (message, response))
-        ok, pid, path, tail = response.split('\n')
-        assert ok == 'ok'
-        assert tail == ''
-        pid = int(pid)
-        log.msg('Forking returned pid: %d, path: %s' % (pid, path))
+        try:
+            ok, pid, path, tail = response.split('\n')
+            assert ok == 'ok'
+            assert tail == ''
+            pid = int(pid)
+            log.msg('Forking returned pid: %d, path: %s' % (pid, path))
+        except:
+            sock.close()
+            raise
         return pid, path, sock
 
+    def _openHandleFailures(self, call_on_failure, path, flags, proc_class,
+                            reactor, child_fd):
+        """Open the given path, adding a cleanup as appropriate.
+
+        :param call_on_failure: A list holding (callback, args) tuples. We will
+            append new entries for things that we open
+        :param path: The path to open
+        :param flags: Flags to pass to os.open
+        :param proc_class: The ProcessWriter/ProcessReader class to wrap this
+            connection.
+        :param reactor: The Twisted reactor we are connecting to.
+        :param child_fd: The child file descriptor number passed to proc_class
+        """
+        fd = os.open(path, flags)
+        call_on_failure.append((os.close, fd))
+        p = proc_class(reactor, self, child_fd, fd)
+        # Now that p has been created, it will close fd for us. So switch the
+        # cleanup to calling p.connectionLost()
+        call_on_failure[-1] = (p.connectionLost, (None,))
+        self.pipes[child_fd] = p
+
     def _connectSpawnToReactor(self, reactor):
+        self._exiter = _WaitForExit(reactor, self, self.process_sock)
+        call_on_failure = [(self._exiter.connectionLost, (None,))]
         stdin_path = os.path.join(self._fifo_path, 'stdin')
         stdout_path = os.path.join(self._fifo_path, 'stdout')
         stderr_path = os.path.join(self._fifo_path, 'stderr')
-        child_stdin_fd = os.open(stdin_path, os.O_WRONLY)
-        self.pipes[0] = process.ProcessWriter(reactor, self, 0,
-                                              child_stdin_fd)
-        child_stdout_fd = os.open(stdout_path, os.O_RDONLY)
-        # forceReadHack=True ? Used in process.py doesn't seem to be needed
-        # here
-        self.pipes[1] = process.ProcessReader(reactor, self, 1,
-                                              child_stdout_fd)
-        child_stderr_fd = os.open(stderr_path, os.O_RDONLY)
-        self.pipes[2] = process.ProcessReader(reactor, self, 2,
-                                              child_stderr_fd)
-        # Note: _exiter forms a GC cycle, since it points to us, and we hold a
-        # reference to it
-        self._exiter = _WaitForExit(reactor, self, self.process_sock)
+        try:
+            self._openHandleFailures(call_on_failure, stdin_path, os.O_WRONLY,
+                process.ProcessWriter, reactor, 0)
+            self._openHandleFailures(call_on_failure, stdout_path, os.O_RDONLY,
+                process.ProcessReader, reactor, 1)
+            self._openHandleFailures(call_on_failure, stderr_path, os.O_RDONLY,
+                process.ProcessReader, reactor, 2)
+        except:
+            exc_class, exc_value, exc_tb = sys.exc_info()
+            for func, args in call_on_failure:
+                try:
+                    func(*args)
+                except:
+                    # Just log any exceptions at this point. This makes sure
+                    # all cleanups get called so we don't get leaks. We know
+                    # there is an active exception, or we wouldn't be here.
+                    log.err()
+            raise exc_class, exc_value, exc_tb
         self.pipes['exit'] = self._exiter
 
     def _getReason(self, status):
@@ -248,12 +277,14 @@ class ForkedProcessTransport(process.BaseProcess):
     # Implemented because ProcessWriter/ProcessReader want to call it
     # Copied from twisted.internet.Process
     def childConnectionLost(self, childFD, reason):
-        close = getattr(self.pipes[childFD], 'close', None)
-        if close is not None:
-            close()
-        else:
-            os.close(self.pipes[childFD].fileno())
-        del self.pipes[childFD]
+        pipe = self.pipes.get(childFD)
+        if pipe is not None:
+            close = getattr(pipe, 'close', None)
+            if close is not None:
+                close()
+            else:
+                os.close(self.pipes[childFD].fileno())
+            del self.pipes[childFD]
         try:
             self.proto.childConnectionLost(childFD)
         except:

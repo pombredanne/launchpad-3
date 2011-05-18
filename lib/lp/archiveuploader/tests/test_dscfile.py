@@ -143,7 +143,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
 class BaseTestSourceFileVerification(TestCase):
 
     def assertErrorsForFiles(self, expected, files, components={},
-                             bzip2_count=0):
+                             bzip2_count=0, xz_count=0):
         """Check problems with the given set of files for the given format.
 
         :param expected: a list of expected errors, as strings.
@@ -152,6 +152,7 @@ class BaseTestSourceFileVerification(TestCase):
         :param components: a dict mapping orig component tarball components
             to counts.
         :param bzip2_count: number of files using bzip2 compression.
+        :param xz_count: number of files using xz compression.
         """
         full_files = {
             NATIVE_TARBALL: 0,
@@ -163,9 +164,9 @@ class BaseTestSourceFileVerification(TestCase):
         self.assertEquals(
             expected,
             [str(e) for e in format_to_file_checker_map[self.format](
-                'foo_1.dsc', full_files, components, bzip2_count)])
+                'foo_1.dsc', full_files, components, bzip2_count, xz_count)])
 
-    def assertFilesOK(self, files, components={}, bzip2_count=0):
+    def assertFilesOK(self, files, components={}, bzip2_count=0, xz_count=0):
         """Check that the given set of files is OK for the given format.
 
         :param format: the `SourcePackageFormat` to check against.
@@ -173,8 +174,9 @@ class BaseTestSourceFileVerification(TestCase):
         :param components: a dict mapping orig component tarball components
             to counts.
         :param bzip2_count: number of files using bzip2 compression.
+        :param xz_count: number of files using xz compression.
         """
-        self.assertErrorsForFiles([], files, components, bzip2_count)
+        self.assertErrorsForFiles([], files, components, bzip2_count, xz_count)
 
 
 class Test10SourceFormatVerification(BaseTestSourceFileVerification):
@@ -184,6 +186,7 @@ class Test10SourceFormatVerification(BaseTestSourceFileVerification):
     wrong_files_error = ('foo_1.dsc: must have exactly one tar.gz, or an '
                          'orig.tar.gz and diff.gz')
     bzip2_error = 'foo_1.dsc: is format 1.0 but uses bzip2 compression.'
+    xz_error = 'foo_1.dsc: is format 1.0 but uses xz compression.'
 
     def testFormat10Debian(self):
         # A 1.0 source can contain an original tarball and a Debian diff
@@ -209,7 +212,12 @@ class Test10SourceFormatVerification(BaseTestSourceFileVerification):
     def testFormat10CannotUseBzip2(self):
         # 1.0 sources cannot use bzip2 compression.
         self.assertErrorsForFiles(
-            [self.bzip2_error], {NATIVE_TARBALL: 1}, {}, 1)
+            [self.bzip2_error], {NATIVE_TARBALL: 1}, {}, 1, 0)
+
+    def testFormat10CannotUseXz(self):
+        # 1.0 sources cannot use xz compression.
+        self.assertErrorsForFiles(
+            [self.xz_error], {NATIVE_TARBALL: 1}, {}, 0, 1)
 
 
 class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
@@ -223,12 +231,13 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
     def testFormat30Quilt(self):
         # A 3.0 (quilt) source must contain an orig tarball and a debian
         # tarball. It may also contain at most one component tarball for
-        # each component, and can use gzip or bzip2 compression.
+        # each component, and can use gzip, bzip2, or xz compression.
         for components in ({}, {'foo': 1}, {'foo': 1, 'bar': 1}):
             for bzip2_count in (0, 1):
-                self.assertFilesOK(
-                    {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1}, components,
-                    bzip2_count)
+                for xz_count in (0, 1):
+                    self.assertFilesOK(
+                        {ORIG_TARBALL: 1, DEBIAN_TARBALL: 1}, components,
+                        bzip2_count, xz_count)
 
     def testFormat30QuiltCannotHaveConflictingComponentTarballs(self):
         # Multiple conflicting tarballs for a single component are
@@ -253,10 +262,11 @@ class Test30QuiltSourceFormatVerification(BaseTestSourceFileVerification):
 
     def testFormat30Native(self):
         # 3.0 (native) sources must contain just a native tarball. They
-        # may use gzip or bzip2 compression.
+        # may use gzip, bzip2, or xz compression.
         for bzip2_count in (0, 1):
             self.assertFilesOK({NATIVE_TARBALL: 1}, {},
-            bzip2_count)
+            bzip2_count, 0)
+        self.assertFilesOK({NATIVE_TARBALL: 1}, {}, 0, 1)
 
     def testFormat30NativeCannotHaveWrongFiles(self):
         # 3.0 (quilt) sources may not have a diff, Debian tarball, orig

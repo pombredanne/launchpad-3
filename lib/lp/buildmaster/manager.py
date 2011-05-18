@@ -326,6 +326,7 @@ class NewBuildersScanner:
             builder.name for builder in getUtility(IBuilderSet))
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
+        self.current_builders.extend(extra_builders)
         return list(extra_builders)
 
 

@@ -6,8 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import FOR_ELEMENT
+
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
@@ -47,16 +49,10 @@ class EnableActionLinksTest(WindmillTestCase):
           * simulates moving the mouse cursor off the table row;
           * verifies that the action links of the row are deactivated;
         """
-        client = self.client
-        url = ('%s/evolution/trunk/+templates'
-               % TranslationsWindmillLayer.base_url)
-        user = lpuser.TRANSLATIONS_ADMIN
-        # Go to templates page logged in as translations admin.
-        client.open(url=url)
-        client.waits.forPageLoad(timeout=u'20000')
-        user.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/evolution/trunk/+templates', lpuser.TRANSLATIONS_ADMIN)
 
-        client.waits.forElement(id=u'templates_table', timeout=u'8000')
+        client.waits.forElement(id=u'templates_table', timeout=FOR_ELEMENT)
         # All links are inactive to start with.
         for row_num in range(self.MAX_ROW):
             client.waits.forElement(

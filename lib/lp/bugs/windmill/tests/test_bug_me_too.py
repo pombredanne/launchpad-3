@@ -6,12 +6,12 @@ import unittest
 
 from windmill.authoring import WindmillTestClientException
 
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"
@@ -53,13 +53,11 @@ class TestMeToo(WindmillTestCase):
         This test ensures that, with Javascript enabled, the "me too"
         status can be edited in-page.
         """
-        client = self.client
 
         # Open bug 11 and wait for it to finish loading.
-        client.open(
-            url=u'%s/jokosher/+bug/11/+index' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/jokosher/+bug/11', user=lpuser.SAMPLE_PERSON,
+            view_name='+index')
 
         # Ensure the link for "Does this bug affect you?" is setup.
         client.waits.forElement(

@@ -6,10 +6,7 @@ __metaclass__ = type
 import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    )
+from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from canonical.config import config
@@ -43,6 +40,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     IPersonSet,
     )
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -67,6 +65,22 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonIndexView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_is_merge_pending(self):
+        dupe_person = self.factory.makePerson(name='finch')
+        target_person = self.factory.makePerson()
+        job_source = getUtility(IPersonMergeJobSource)
+        job_source.create(from_person=dupe_person, to_person=target_person)
+        view = create_initialized_view(dupe_person, name="+index")
+        notifications = view.request.response.notifications
+        message = 'Finch is queued to be be merged in a few minutes.'
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(message, notifications[0].message)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -666,16 +680,16 @@ class TestPersonRelatedSoftwareFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-software')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
-                self.build.url_id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
     def test_related_ppa_packages_with_failed_build(self):
         # The link to the failed build is displayed.
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertTrue(
-            '<a href="/ubuntutest/+source/foo/666/+buildjob/%d">i386</a>' % (
-                self.build.url_id) in html)
+            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+                self.build.id) in html)
 
 
 class TestPersonDeactivateAccountView(TestCaseWithFactory):

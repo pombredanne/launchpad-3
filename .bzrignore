@@ -76,3 +76,9 @@ lib/canonical/buildd/launchpad-files/*
 librarian.log
 configs/testrunner_*
 configs/testrunner-appserver_*
+doc/_build
+.idea
+run.gdb
+lib/canonical/launchpad/icing/icon-sprites
+lib/canonical/launchpad/icing/icon-sprites.positioning
+.emacs.desktop

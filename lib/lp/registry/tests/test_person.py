@@ -12,15 +12,12 @@ from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -28,10 +25,14 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -47,6 +48,8 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
@@ -59,12 +62,20 @@ from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
     )
-from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
+from lp.registry.model.person import (
+    get_recipients,
+    Person,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.soyuz.enums import ArchivePurpose
+from lp.services.propertycache import clear_property_cache
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
 from lp.testing import (
+    ANONYMOUS,
     celebrity_logged_in,
+    login,
     login_person,
     logout,
     person_logged_in,
@@ -74,6 +85,10 @@ from lp.testing import (
     )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
+from lp.testing.storm import (
+    reload_dsp,
+    reload_object,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -134,7 +149,7 @@ class TestPersonTeams(TestCaseWithFactory):
         d_team = self.factory.makeTeam(name='d', owner=self.b_team)
         e_team = self.factory.makeTeam(name='e')
         f_team = self.factory.makeTeam(name='f', owner=e_team)
-        unrelated_team = self.factory.makeTeam(name='unrelated')
+        self.factory.makeTeam(name='unrelated')
         login_person(self.a_team.teamowner)
         d_team.addMember(self.user, d_team.teamowner)
         login_person(e_team.teamowner)
@@ -257,6 +272,18 @@ class TestPersonTeams(TestCaseWithFactory):
         retrieved_members = sorted(list(self.a_team.all_members_prepopulated))
         self.assertEqual(expected_members, retrieved_members)
 
+    def test_administrated_teams(self):
+        # The property Person.administrated_teams is a cached copy of
+        # the result of Person.getAdministratedTeams().
+        expected = [self.b_team, self.c_team]
+        self.assertEqual(expected, list(self.user.getAdministratedTeams()))
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(expected, self.user.administrated_teams)
+            self.user.administrated_teams
+        # The second access of administrated_teams did not require an
+        # SQL query, hence the total number of SQL queries is 1.
+        self.assertEqual(1, len(recorder.queries))
+
 
 class TestPerson(TestCaseWithFactory):
 
@@ -272,6 +299,80 @@ class TestPerson(TestCaseWithFactory):
         received_pillars = [pillar.name for pillar in
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
+
+    def test_no_merge_pending(self):
+        # is_merge_pending returns False when this person is not the "from"
+        # person of an active merge job.
+        person = self.factory.makePerson()
+        self.assertFalse(person.is_merge_pending)
+
+    def test_is_merge_pending(self):
+        # is_merge_pending returns True when this person is being merged with
+        # another person in an active merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertTrue(from_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
+
+    def test_mergeAsync_success(self):
+        # mergeAsync returns a job with the from and to persons.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
+
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
+    def test_canAccess__anonymous(self):
+        # Anonymous users cannot call Person.canAccess()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canAccess')
+
+    def test_canAccess__checking_own_permissions(self):
+        # Logged in users can call Person.canAccess() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertTrue(person.canAccess(product, 'licenses'))
+            self.assertFalse(person.canAccess(product, 'newSeries'))
+
+    def test_canAccess__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canAccess() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canAccess')
+
+    def test_canWrite__anonymous(self):
+        # Anonymous users cannot call Person.canWrite()
+        person = self.factory.makePerson()
+        self.assertRaises(Unauthorized, getattr, person, 'canWrite')
+
+    def test_canWrite__checking_own_permissions(self):
+        # Logged in users can call Person.canWrite() on their own
+        # Person object.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        with person_logged_in(person):
+            self.assertFalse(person.canWrite(product, 'displayname'))
+        with person_logged_in(product.owner):
+            self.assertTrue(product.owner.canWrite(product, 'displayname'))
+
+    def test_canWrite__checking_permissions_of_others(self):
+        # Logged in users cannot call Person.canWrite() on Person
+        # object for other people.
+        person = self.factory.makePerson()
+        other = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, other, 'canWrite')
 
 
 class TestPersonStates(TestCaseWithFactory):
@@ -393,9 +494,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
@@ -470,6 +569,15 @@ class TestPersonSet(TestCaseWithFactory):
             "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
+
+    def test_isNameBlacklisted_user_is_admin(self):
+        team = self.factory.makeTeam()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
+        self.store = IStore(self.admin_exp)
+        self.store.flush()
+        user = team.teamowner
+        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
 
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'
@@ -568,6 +676,17 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         transaction.commit()
         logout()
 
+    def _do_merge(self, from_person, to_person, reviewer=None):
+        # Perform the merge as the db user that will be used by the jobs.
+        transaction.commit()
+        reconnect_stores('IPersonMergeJobSource')
+        from_person = reload_object(from_person)
+        to_person = reload_object(to_person)
+        if reviewer is not None:
+            reviewer = reload_object(reviewer)
+        self.person_set.merge(from_person, to_person, reviewer=reviewer)
+        return from_person, to_person
+
     def _get_testable_account(self, person, date_created, openid_identifier):
         # Return a naked account with predictable attributes.
         account = removeSecurityProxy(person.account)
@@ -585,7 +704,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             person.account).openid_identifiers.any().identifier
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual(
             0,
             removeSecurityProxy(duplicate.account).openid_identifiers.count())
@@ -611,7 +730,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.factory.makePerson()
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual([], duplicate.karma_category_caches)
         self.assertEqual(0, duplicate.karma)
         self.assertEqual(15, person.karma)
@@ -634,7 +753,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         person = self.person_set.get(person.id)
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual([], duplicate.karma_category_caches)
         self.assertEqual(0, duplicate.karma)
         self.assertEqual(28, person.karma)
@@ -648,38 +767,255 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         removeSecurityProxy(duplicate).datecreated = oldest_date
         self._do_premerge(duplicate, person)
         login_person(person)
-        self.person_set.merge(duplicate, person)
+        duplicate, person = self._do_merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team, target_team):
-        test_team.deactivateAllMembers(
-            comment='',
-            reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team)
+    def test_team_with_active_mailing_list_raises_error(self):
+        # A team with an active mailing list cannot be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError, self.person_set.merge, test_team, target_team)
+
+    def test_team_with_inactive_mailing_list(self):
+        # A team with an inactive mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual(
+            MailingListStatus.PURGED, test_team.mailing_list.status)
+        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
+        self.assertEqual(0, emails)
+
+    def test_team_with_purged_mailing_list(self):
+        # A team with a purges mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        mailing_list.purge()
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+
+    def test_team_with_members(self):
+        # Team members are removed before merging.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        former_member = self.factory.makePerson()
+        with person_logged_in(test_team.teamowner):
+            test_team.addMember(former_member, test_team.teamowner)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
         # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
-        self._doMerge(test_team, target_team)
+        self._do_merge(test_team, target_team, test_team.teamowner)
 
-    def test_team_with_super_teams_raises_error(self):
-        # A team with no members but with superteams
-        # raises an assertion error.
+    def test_team_with_super_teams(self):
+        # A team with superteams can be merged, but the memberships
+        # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError,
-            self._doMerge,
-            test_team,
-            target_team)
+        test_team, target_team = self._do_merge(
+            test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(target_team.super_teams))
+
+    def test_merge_moves_branches(self):
+        # When person/teams are merged, branches owned by the from person
+        # are moved.
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch()
+        duplicate = branch.owner
+        self._do_premerge(branch.owner, person)
+        login_person(person)
+        duplicate, person = self._do_merge(duplicate, person)
+        branches = person.getBranches()
+        self.assertEqual(1, branches.count())
+
+    def test_merge_with_duplicated_branches(self):
+        # If both the from and to people have branches with the same name,
+        # merging renames the duplicate from the from person's side.
+        product = self.factory.makeProduct()
+        from_branch = self.factory.makeBranch(name='foo', product=product)
+        to_branch = self.factory.makeBranch(name='foo', product=product)
+        mergee = to_branch.owner
+        duplicate = from_branch.owner
+        self._do_premerge(duplicate, mergee)
+        login_person(mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
+        branches = [b.name for b in mergee.getBranches()]
+        self.assertEqual(2, len(branches))
+        self.assertEqual([u'foo', u'foo-1'], branches)
+
+    def test_merge_moves_recipes(self):
+        # When person/teams are merged, recipes owned by the from person are
+        # moved.
+        person = self.factory.makePerson()
+        recipe = self.factory.makeSourcePackageRecipe()
+        duplicate = recipe.owner
+        # Delete the PPA, which is required for the merge to work.
+        with person_logged_in(duplicate):
+            recipe.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        duplicate, person = self._do_merge(duplicate, person)
+        self.assertEqual(1, person.recipes.count())
+
+    def test_merge_with_duplicated_recipes(self):
+        # If both the from and to people have recipes with the same name,
+        # merging renames the duplicate from the from person's side.
+        merge_from = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'FROM')
+        merge_to = self.factory.makeSourcePackageRecipe(
+            name=u'foo', description=u'TO')
+        duplicate = merge_from.owner
+        mergee = merge_to.owner
+        # Delete merge_from's PPA, which is required for the merge to work.
+        with person_logged_in(merge_from.owner):
+            merge_from.owner.archive.status = ArchiveStatus.DELETED
+        self._do_premerge(merge_from.owner, mergee)
+        login_person(mergee)
+        duplicate, mergee = self._do_merge(duplicate, mergee)
+        recipes = mergee.recipes
+        self.assertEqual(2, recipes.count())
+        descriptions = [r.description for r in recipes]
+        self.assertEqual([u'TO', u'FROM'], descriptions)
+        self.assertEqual(u'foo-1', recipes[1].name)
+
+    def assertSubscriptionMerges(self, target, reloader=reload_object):
+        # Given a subscription target, we want to make sure that subscriptions
+        # that the duplicate person made are carried over to the merged
+        # account.
+        duplicate = self.factory.makePerson()
+        with person_logged_in(duplicate):
+            target.addSubscription(duplicate, duplicate)
+        person = self.factory.makePerson()
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        duplicate, person = self._do_merge(duplicate, person)
+        # The merged person has the subscription, and the duplicate person
+        # does not.
+        target = reloader(target)
+        self.assertTrue(target.getSubscription(person) is not None)
+        self.assertTrue(target.getSubscription(duplicate) is None)
+
+    def assertConflictingSubscriptionDeletes(self, target,
+                                                      reloader=reload_object):
+        # Given a subscription target, we want to make sure that subscriptions
+        # that the duplicate person made that conflict with existing
+        # subscriptions in the merged account are deleted.
+        duplicate = self.factory.makePerson()
+        person = self.factory.makePerson()
+        with person_logged_in(duplicate):
+            target.addSubscription(duplicate, duplicate)
+        with person_logged_in(person):
+            # The description lets us show that we still have the right
+            # subscription later.
+            target.addBugSubscriptionFilter(person, person).description = (
+                u'a marker')
+        self._do_premerge(duplicate, person)
+        login_person(person)
+        duplicate, person = self._do_merge(duplicate, person)
+        target = reloader(target)
+        # The merged person still has the original subscription, as shown
+        # by the marker name.
+        self.assertEqual(
+            target.getSubscription(person).bug_filters[0].description,
+            u'a marker')
+        # The conflicting subscription on the duplicate has been deleted.
+        self.assertTrue(target.getSubscription(duplicate) is None)
+
+    def test_merge_with_product_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProduct())
+
+    def test_merge_with_conflicting_product_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(self.factory.makeProduct())
+
+    def test_merge_with_project_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProject())
+
+    def test_merge_with_conflicting_project_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(self.factory.makeProject())
+
+    def test_merge_with_distroseries_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeDistroRelease())
+
+    def test_merge_with_conflicting_distroseries_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeDistroRelease())
+
+    def test_merge_with_milestone_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeMilestone())
+
+    def test_merge_with_conflicting_milestone_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeMilestone())
+
+    def test_merge_with_productseries_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeProductSeries())
+
+    def test_merge_with_conflicting_productseries_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeProductSeries())
+
+    def test_merge_with_distribution_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        self.assertSubscriptionMerges(self.factory.makeDistribution())
+
+    def test_merge_with_conflicting_distribution_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        self.assertConflictingSubscriptionDeletes(
+            self.factory.makeDistribution())
+
+    def test_merge_with_sourcepackage_subscription(self):
+        # See comments in assertSubscriptionMerges.
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertSubscriptionMerges(dsp, reloader=reload_dsp)
+
+    def test_merge_with_conflicting_sourcepackage_subscription(self):
+        # See comments in assertConflictingSubscriptionDeletes.
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertConflictingSubscriptionDeletes(dsp, reloader=reload_dsp)
+
+    def test_mergeAsync(self):
+        # mergeAsync() creates a new `PersonMergeJob`.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        login_person(from_person)
+        job = self.person_set.mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
@@ -1144,7 +1480,84 @@ class TestAPIPartipication(TestCaseWithFactory):
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
-        # XXX: This number should really be 10, but see
+        # XXX: This number should really be 12, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(13)))
+        self.assertThat(collector, HasQueryCount(LessThan(16)))
+
+
+class TestGetRecipients(TestCaseWithFactory):
+    """Tests for get_recipients"""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetRecipients, self).setUp()
+        login('foo.bar@canonical.com')
+
+    def test_get_recipients_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([owner]), set(recipients))
+
+    def test_get_recipients_team(self):
+        """Ensure get_recipients uses teams with preferredemail."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        super_team = self.factory.makeTeam(team)
+        recipients = get_recipients(super_team)
+        self.assertEqual(set([team]), set(recipients))
+
+    def test_get_recipients_team_with_unvalidated_address(self):
+        """Ensure get_recipients handles teams with non-preferred addresses.
+
+        If there is no preferred address but one or more non-preferred ones,
+        email should still be sent to the members.
+        """
+        owner = self.factory.makePerson(email='foo@bar.com')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        self.assertContentEqual([team], get_recipients(team))
+        team.preferredemail.status = EmailAddressStatus.NEW
+        clear_property_cache(team)
+        self.assertContentEqual([owner], get_recipients(team))
+
+    def makePersonWithNoPreferredEmail(self, **kwargs):
+        kwargs['email_address_status'] = EmailAddressStatus.NEW
+        return self.factory.makePerson(**kwargs)
+
+    def get_test_recipients_person(self):
+        person = self.factory.makePerson()
+        recipients = get_recipients(person)
+        self.assertEqual(set([person]), set(recipients))
+
+    def test_get_recipients_empty(self):
+        """get_recipients returns empty set for person with no preferredemail.
+        """
+        recipients = get_recipients(self.makePersonWithNoPreferredEmail())
+        self.assertEqual(set(), set(recipients))
+
+    def test_get_recipients_complex_indirect(self):
+        """Ensure get_recipients uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team_member_person = self.factory.makePerson(
+            displayname='Bing Bar', email='bing@bar.com')
+        super_team_member_team = self.factory.makeTeam(
+            email='baz@bar.com')
+        super_team = self.factory.makeTeam(
+            team, members=[super_team_member_person,
+                           super_team_member_team,
+                           self.makePersonWithNoPreferredEmail()])
+        super_team_member_team.acceptInvitationToBeMemberOf(
+            super_team, u'Go Team!')
+        recipients = list(get_recipients(super_team))
+        self.assertEqual(set([owner,
+                              super_team_member_person,
+                              super_team_member_team]),
+                         set(recipients))

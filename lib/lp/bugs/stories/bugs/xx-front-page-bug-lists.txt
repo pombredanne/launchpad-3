@@ -35,59 +35,37 @@ The bugs front page can be consulted now for the list of reported bugs.
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> reported_bugs = find_tag_by_id(anon_browser.contents, 'reported-bugs')
 
-These bugs use a color-coded icon, via a sprite class, as an
-indication of the importance assigned to the bug.
-
-    >>> high_bugs = find_tags_by_class(str(reported_bugs), 'sprite bug-high')
-    >>> print high_bugs[0]
-    <span class="sprite bug-high">
-    </span>
-
 The list of recently reported bugs contains up to the last 5 bugs reported
 across Launchpad. The text for each bug contains links to the bug itself,
 to the bug target and to the bug reporter's page.
 
     >>> def print_bugs_links(bug_row):
-    ...     icon_td, summary_td, = bug_row('td')
     ...     print "%s: %s" % (
-    ...         summary_td.b.a.renderContents().strip(),
-    ...         summary_td.a.renderContents())
-    ...     bug_link, bug_target_link, bug_reporter_link = summary_td('a')
-    ...     print bug_link['href']
-    ...     print bug_target_link['href']
-    ...     print bug_reporter_link['href']
-    >>> for tr in reported_bugs('tr'):
-    ...     print_bugs_links(tr)
-    Bigfixer:
-             Summary for new bug ...
-    <BLANKLINE>
+    ...         bug_row.span.a.renderContents().strip(),
+    ...         bug_row.a.renderContents())
+    ...     print bug_row.a['href']
+    ...     print bug_row.span.a['href']
+    >>> for li in reported_bugs('li'):
+    ...     print_bugs_links(li)
+    Bigfixer: Bug #...: Summary for new bug ...
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug ...
-    <BLANKLINE>
+             Bug #...: Summary for new bug ...
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug ...
-    <BLANKLINE>
+             Bug #...: Summary for new bug ...
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug ...
-    <BLANKLINE>
+             Bug #...: Summary for new bug ...
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug ...
-    <BLANKLINE>
+             Bug #...: Summary for new bug ...
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
 
 
 Fixed bugs
@@ -97,46 +75,28 @@ The bugs front page also can be consulted for the list of fixed bugs.
 
     >>> fixed_bugs = find_tag_by_id(anon_browser.contents, 'fixed-bugs')
 
-These bugs also use a color-coded icon as an indication of the
-importance assigned to the bug.
-
-    >>> high_bugs = find_tags_by_class(str(fixed_bugs), 'sprite bug-high')
-    >>> print high_bugs[0]
-    <span class="sprite bug-high">
-    </span>
-
 The list of recently fixed bugs contains up to the last 5 bugs fixed
 across Launchpad.
 
-    >>> for tr in fixed_bugs('tr'):
-    ...     print_bugs_links(tr)
+    >>> for li in fixed_bugs('li'):
+    ...     print_bugs_links(li)
     Bigfixer:
-             Summary for new bug 10
-    <BLANKLINE>
+             Bug #...: Summary for new bug 10
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug 9
-    <BLANKLINE>
+             Bug #...: Summary for new bug 9
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug 8
-    <BLANKLINE>
+             Bug #...: Summary for new bug 8
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug 7
-    <BLANKLINE>
+             Bug #...: Summary for new bug 7
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...
     Bigfixer:
-             Summary for new bug 6
-    <BLANKLINE>
+             Bug #...: Summary for new bug 6
     /bugs/...
     /bigfixer
-    http://launchpad.dev/~person-name...

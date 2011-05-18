@@ -497,7 +497,8 @@ class FormattersAPI:
     # re-attaches parens if we do want them to be part of the url.
     _re_url_trailers = re.compile(r'([,.?:);>]+)$')
 
-    def text_to_html(self, linkify_text=True, linkify_substitution=None):
+    def text_to_html(self, linkify_text=True, linkify_substitution=None,
+                     last_paragraph_class=None):
         """Quote text according to DisplayingParagraphsOfText."""
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
@@ -509,12 +510,16 @@ class FormattersAPI:
         #    second does not begin with white space.
         # 3. Use <br /> to split logical lines within a paragraph.
         output = []
-        first_para = True
-        for para in split_paragraphs(self._stringtoformat):
-            if not first_para:
+        paras = list(split_paragraphs(self._stringtoformat))
+        last_paragraph_index = len(paras) - 1
+        for index, para in enumerate(paras):
+            if index > 0:
                 output.append('\n')
-            first_para = False
-            output.append('<p>')
+            css_class = ''
+            if last_paragraph_class and index == last_paragraph_index:
+                css_class = ' class="%s"' % last_paragraph_class
+            output.append('<p%s>' % css_class)
+
             first_line = True
             for line in para:
                 if not first_line:

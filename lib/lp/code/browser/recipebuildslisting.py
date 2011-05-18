@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View for daily builds listings."""
@@ -9,21 +9,21 @@ __all__ = [
     'CompletedDailyBuildsView',
     ]
 
-from zope.component import getUtility
-from zope.interface import Interface
-from zope.schema import Choice
-
 from lazr.enum import (
     EnumeratedType,
     Item,
     )
+from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import Choice
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.interfaces.recipebuild import IRecipeBuildRecordSet
 
 

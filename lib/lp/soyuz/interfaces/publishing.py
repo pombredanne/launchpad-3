@@ -44,6 +44,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Date,
     Datetime,
@@ -327,6 +328,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
+    sourcepackagereleaseID = Attribute(
+        "The DB id for the sourcepackagerelease.")
     sourcepackagerelease = Int(
             title=_('The source package release being published'),
             required=False, readonly=False,
@@ -338,6 +341,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             vocabulary=PackagePublishingStatus,
             required=False, readonly=False,
             ))
+    distroseriesID = Attribute("DB ID for distroseries.")
     distroseries = exported(
         Reference(
             IDistroSeries,
@@ -349,6 +353,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             title=_('The component being published into'),
             required=False, readonly=False,
             )
+    sectionID = Attribute("DB ID for the section")
     section = Int(
             title=_('The section being published into'),
             required=False, readonly=False,
@@ -635,7 +640,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A source package publishing history record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 #
@@ -653,10 +658,6 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
     binarypackagepublishing = Int(
             title=_('Binary Package publishing record id'), required=True,
-            readonly=True,
-            )
-    architecturetag = TextLine(
-            title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
             )
 
@@ -678,6 +679,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="distro_arch_series")
+    distroseries = Attribute("The distroseries being published into")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -787,6 +789,10 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))
+    architecture_specific = exported(
+        Bool(
+            title=_("Architecture Specific"),
+            required=False, readonly=True))
     priority_name = exported(
         TextLine(
             title=_("Priority Name"),
@@ -855,7 +861,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A binary package publishing record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPublishingSet(Interface):
@@ -878,7 +884,25 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
-    def publishBinary(archive, binarypackagerelease, distroarchseries,
+    def publishBinaries(archive, distroseries, pocket, binaries):
+        """Efficiently publish multiple BinaryPackageReleases in an Archive.
+
+        Creates `IBinaryPackagePublishingHistory` records for each binary,
+        handling architecture-independent and debug packages, avoiding
+        creation of duplicate publications, and leaving disabled
+        architectures alone.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A dict mapping `BinaryPackageReleases` to their
+            desired overrides as (`Component`, `Section`,
+            `PackagePublishingPriority`) tuples.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
+    def publishBinary(archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
         """Publish a `BinaryPackageRelease` in an archive.
 
@@ -890,9 +914,7 @@ class IPublishingSet(Interface):
 
         :param archive: The target `IArchive`.
         :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
-        :param distroarchseries: An `IDistroArchSeries`. If the binary is
-            architecture-independent, it will be published to all enabled
-            architectures in this series.
+        :param distroseries: An `IDistroSeries`.
         :param component: The target `IComponent`.
         :param section: The target `ISection`.
         :param priority: The target `PackagePublishingPriority`.

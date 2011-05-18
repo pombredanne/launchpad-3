@@ -11,17 +11,13 @@ import unittest
 import transaction
 import windmill
 
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
-from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person,
-    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
-from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import (
     login_person,
     WindmillTestCase,
     )
+from lp.testing.windmill.constants import PAGE_LOAD
 
 
 POPUP_DIFF = (
@@ -124,11 +120,8 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        windmill_login_person(objs['eric'], "test", client)
-
-        start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(
+            '/bugs/%d' % bug.id, objs['eric'])
         # Sleep for a bit to make sure that the JS onload has had time to
         # execute.
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)

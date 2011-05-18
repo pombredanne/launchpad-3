@@ -51,7 +51,7 @@ def main():
 
     root, port = args
     host = "0.0.0.0"
-    ident = "lucille upload server"
+    ident = "Launchpad upload server"
     numthreads = 4
 
     hooks = Hooks(root, log, allow_user=options.allow_user, cmd=options.cmd,

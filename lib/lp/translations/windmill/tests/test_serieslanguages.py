@@ -6,12 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD,
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
     SLEEP,
     )
-from lp.testing import WindmillTestCase
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
@@ -26,9 +25,9 @@ class LanguagesSeriesTest(WindmillTestCase):
     layer = TranslationsWindmillLayer
     suite_name = 'SeriesLanguages Tables'
 
-    def _toggle_languages_visiblity(self):
-        self.client.click(id="toggle-languages-visibility")
-        self.client.waits.sleep(milliseconds=SLEEP)
+    def _toggle_languages_visiblity(self, client):
+        client.click(id="toggle-languages-visibility")
+        client.waits.sleep(milliseconds=SLEEP)
 
     def _assert_languages_visible(self, languages):
         for language, visibility in languages.items():
@@ -46,17 +45,14 @@ class LanguagesSeriesTest(WindmillTestCase):
         The test cannot fully cover all languages so we just test with a
         person having Catalan and Spanish as preferred languages.
         """
-        client = self.client
-        start_url = '%s/ubuntu' % TranslationsWindmillLayer.base_url
-        user = lpuser.TRANSLATIONS_ADMIN
+
         # Go to the distribution languages page
-        self.client.open(url=start_url)
-        self.client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(self.client)
+        client, start_url = self.getClientFor(
+            '/ubuntu', user=lpuser.TRANSLATIONS_ADMIN)
 
         # A link will be displayed for viewing all languages
         # and only user preferred langauges are displayed
-        self.client.asserts.assertProperty(
+        client.asserts.assertProperty(
             id=u'toggle-languages-visibility',
             validator='text|View all languages')
         self._assert_languages_visible({
@@ -67,8 +63,8 @@ class LanguagesSeriesTest(WindmillTestCase):
             })
 
         # Toggle language visibility by clicking the toggle link.
-        self._toggle_languages_visiblity()
-        self.client.asserts.assertProperty(
+        self._toggle_languages_visiblity(client)
+        client.asserts.assertProperty(
             id=u'toggle-languages-visibility',
             validator='text|View only preferred languages')
         # All languages should be visible now

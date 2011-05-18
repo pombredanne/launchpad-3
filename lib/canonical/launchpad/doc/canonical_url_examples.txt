@@ -199,12 +199,10 @@ An IMessage on a bug.
     >>> canonical_url(getUtility(IBugSet).get(1).messages[0])
     u'http://bugs.launchpad.dev/firefox/+bug/1/comments/0'
 
-(But messages not related to bug, don't have such a URL.)
+An IMessage on a question.
 
     >>> canonical_url(getUtility(IQuestionSet).get(6).messages[0])
-    Traceback (most recent call last):
-      ...
-    NoCanonicalUrl: ...
+    u'http://answers.launchpad.dev/firefox/+question/6/messages/1'
 
 An IDistroBugTask.
 
@@ -287,7 +285,7 @@ An IBugNomination.
     >>> from lp.bugs.interfaces.bugnomination import IBugNominationSet
     >>> bug_nomination = getUtility(IBugNominationSet).get(1)
     >>> canonical_url(bug_nomination)
-    u'http://launchpad.dev/bugs/1/nominations/1'
+    u'http://bugs.launchpad.dev/bugs/1/nominations/1'
 
 
 == Remote Bug Trackers and Remote Bugs ==

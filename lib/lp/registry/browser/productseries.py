@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -58,7 +58,6 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.helpers import browserLanguages
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -72,10 +71,9 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -90,6 +88,8 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.registry.browser import (
+    add_subscribe_link,
     BaseRdfView,
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
@@ -127,7 +128,8 @@ from lp.registry.browser.pillar import (
     InvolvedMenu,
     PillarView,
     )
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -279,19 +281,23 @@ class ProductSeriesOverviewMenu(
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
-    links = [
-        'configure_bugtracker',
-        'create_milestone',
-        'create_release',
-        'delete',
-        'driver',
-        'edit',
-        'link_branch',
-        'rdf',
-        'set_branch',
-        'subscribe',
-        'ubuntupkg',
-        ]
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'configure_bugtracker',
+            'create_milestone',
+            'create_release',
+            'delete',
+            'driver',
+            'edit',
+            'link_branch',
+            'rdf',
+            'set_branch',
+            ]
+        add_subscribe_link(links)
+        links.append('ubuntupkg')
+        return links
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
@@ -380,11 +386,12 @@ class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
-    links = (
-        'new',
-        'nominations',
-        'subscribe',
-        )
+
+    @cachedproperty
+    def links(self):
+        links = ['new', 'nominations']
+        add_subscribe_link(links)
+        return links
 
     def new(self):
         """Return a link to report a bug in this series."""
@@ -438,6 +445,11 @@ def get_series_branch_error(product, branch):
 
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
+
+    def initialize(self):
+        super(ProductSeriesView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):

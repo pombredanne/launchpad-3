@@ -111,7 +111,7 @@ LaunchpadValidationError is the standard exception used for custom
 validators upon a validation error. Rendering one is done by getting
 an IWidgetInputErrorView:
 
-    >>> from canonical.launchpad.validators import (
+    >>> from lp.app.validators import (
     ...     LaunchpadValidationError)
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)

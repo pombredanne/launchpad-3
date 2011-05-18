@@ -3,14 +3,14 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
@@ -29,13 +29,8 @@ class TestInlineSubscribing(WindmillTestCase):
         This test makes sure that subscribing and unsubscribing
         from a bug works inline on a bug page.
         """
-        client = self.client
-
-        bug_url = u'%s/bugs/%%s' % BugsWindmillLayer.base_url
-        # Open a bug page and wait for it to finish loading.
-        client.open(url=bug_url % 11)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor('/bugs/11',
+            user=lpuser.SAMPLE_PERSON)
 
         # Ensure the subscriber's portlet has finished loading.
         client.waits.forElement(
@@ -125,8 +120,8 @@ class TestInlineSubscribing(WindmillTestCase):
 
         # Login Foo Bar who is a member of Ubuntu Team.
         # After login, wait for the page load and subscribers portlet.
-        lpuser.FOO_BAR.ensure_login(client)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor('/bugs/11',
+            user=lpuser.FOO_BAR)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
 
@@ -140,6 +135,8 @@ class TestInlineSubscribing(WindmillTestCase):
         client.asserts.assertProperty(
             xpath=SUBSCRIPTION_LINK,
             validator=u'className|remove')
+
+        bug_url = u'%s/bugs/%%s' % BugsWindmillLayer.base_url
 
         # Test unsubscribing via the remove icon for duplicates.
         # First, go to bug 6 and subscribe.
@@ -176,10 +173,9 @@ class TestInlineSubscribing(WindmillTestCase):
         #
         # First test case, ensure unsubscribing works when
         # dealing with a duplicate and an indirect subscription.
-        lpuser.SAMPLE_PERSON.ensure_login(client)
         # Go to bug 6, the dupe, and subscribe.
-        client.open(url=bug_url % 6)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor('/bugs/6',
+            user=lpuser.SAMPLE_PERSON)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         client.click(xpath=SUBSCRIPTION_LINK)

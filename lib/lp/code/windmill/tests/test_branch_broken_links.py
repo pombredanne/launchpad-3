@@ -12,12 +12,12 @@ import transaction
 import windmill
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.windmill.testing.constants import SLEEP
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import (
     login,
     WindmillTestCase,
     )
+from lp.testing.windmill.constants import SLEEP
 
 
 LOGIN_LINK = (

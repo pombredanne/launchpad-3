@@ -329,19 +329,19 @@ reverses the order so that the latest packages for the current ubuntu
 series are shown first.
 
     >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="b-recent-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="c-current-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> for package in product.sourcepackages:

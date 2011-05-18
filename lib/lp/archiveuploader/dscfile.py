@@ -10,11 +10,12 @@ files representing a source uploaded.
 __metaclass__ = type
 
 __all__ = [
-    'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findFile',
     'find_changelog',
     'find_copyright',
+    'SignableTagFile',
     ]
 
 from cStringIO import StringIO
@@ -28,7 +29,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
@@ -64,6 +64,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.encoding import guess as guess_encoding
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -459,6 +460,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             }
         component_orig_tar_counts = {}
         bzip2_count = 0
+        xz_count = 0
         files_missing = False
 
         for sub_dsc_file in self.files:
@@ -480,6 +482,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             if sub_dsc_file.filename.endswith('.bz2'):
                 bzip2_count += 1
+            elif sub_dsc_file.filename.endswith('.xz'):
+                xz_count += 1
 
             try:
                 library_file, file_archive = self._getFileByName(
@@ -533,7 +537,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         for error in file_checker(
             self.filename, file_type_counts, component_orig_tar_counts,
-            bzip2_count):
+            bzip2_count, xz_count):
             yield error
 
         if files_missing:
@@ -772,15 +776,19 @@ def find_changelog(source_dir, logger):
 
 
 def check_format_1_0_files(filename, file_type_counts, component_counts,
-                           bzip2_count):
+                           bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 1.0.
 
     A 1.0 source must be native (with only one tar.gz), or have an orig.tar.gz
-    and a diff.gz. It cannot use bzip2 compression.
+    and a diff.gz. It cannot use bzip2 or xz compression.
     """
     if bzip2_count > 0:
         yield UploadError(
             "%s: is format 1.0 but uses bzip2 compression."
+            % filename)
+    if xz_count > 0:
+        yield UploadError(
+            "%s: is format 1.0 but uses xz compression."
             % filename)
 
     valid_file_type_counts = [
@@ -806,11 +814,11 @@ def check_format_1_0_files(filename, file_type_counts, component_counts,
 
 
 def check_format_3_0_native_files(filename, file_type_counts,
-                                  component_counts, bzip2_count):
+                                  component_counts, bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
-    A 3.0 (native) source must have only one tar.*. Both gzip and bzip2
-    compression are permissible.
+    A 3.0 (native) source must have only one tar.*. Any of gzip, bzip2, and
+    xz compression are permissible.
     """
 
     valid_file_type_counts = [
@@ -828,12 +836,12 @@ def check_format_3_0_native_files(filename, file_type_counts,
 
 
 def check_format_3_0_quilt_files(filename, file_type_counts,
-                                 component_counts, bzip2_count):
+                                 component_counts, bzip2_count, xz_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
     A 3.0 (quilt) source must have exactly one orig.tar.*, one debian.tar.*,
-    and at most one orig-COMPONENT.tar.* for each COMPONENT. Both gzip and
-    bzip2 compression are permissible.
+    and at most one orig-COMPONENT.tar.* for each COMPONENT. Any of gzip,
+    bzip2, and xz compression are permissible.
     """
 
     valid_file_type_counts = [

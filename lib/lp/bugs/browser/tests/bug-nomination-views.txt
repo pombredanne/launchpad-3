@@ -146,9 +146,9 @@ buttons for a user with release management privileges.
     >>> hoary_nomination_edit_form = getMultiAdapter(
     ...     (hoary_nomination, request), name="+edit-form")
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     True
 
 If the nomination is declined, the only possible status change is
@@ -158,9 +158,9 @@ approval.
     >>> print hoary_nomination.status.title
     Declined
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     False
 
 
@@ -330,7 +330,7 @@ The product 'firefox' is the IBugTarget in
     >>> IPrimaryContext(firefox_nomination).context == bugtarget
     True
 
-The source package 'mozilla-firefox in ubuntu' is the IBugTarget in
+The source package 'mozilla-firefox in Ubuntu' is the IBugTarget in
 /ubuntu/+source/mozilla-firefox/+bug/1/nominations/2/+editstatus.
 
     >>> ubuntu_firefox_nomination = bugnominationset.get(2)
@@ -343,7 +343,7 @@ The source package 'mozilla-firefox in ubuntu' is the IBugTarget in
     >>> launchbag.add(bug_one_in_ubuntu_firefox.target)
     >>> launchbag.add(bug_one_in_ubuntu_firefox)
     >>> launchbag.bugtask.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
 
     >>> bugtarget = launchbag.bugtask.target
     >>> IPrimaryContext(ubuntu_firefox_nomination).context == bugtarget

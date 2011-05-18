@@ -13,7 +13,7 @@ __all__ = [
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
-    'ISpecificBuildFarmJob',
+    'ISpecificBuildFarmJobSource',
     ]
 
 from lazr.enum import (
@@ -172,7 +172,9 @@ class IBuildFarmJob(IBuildFarmJobOld):
             title=_("Date created"), required=True, readonly=True,
             description=_(
                 "The timestamp when the build farm job was created.")),
-        ("1.0", dict(exported=True, exported_as="datecreated")))
+        ("1.0", dict(exported_as="datecreated")),
+        as_of="beta",
+        )
 
     date_started = Datetime(
         title=_("Date started"), required=False, readonly=True,
@@ -183,7 +185,9 @@ class IBuildFarmJob(IBuildFarmJobOld):
             title=_("Date finished"), required=False, readonly=True,
             description=_(
                 "The timestamp when the build farm job was finished.")),
-        ("1.0", dict(exported=True, exported_as="datebuilt")))
+        ("1.0", dict(exported_as="datebuilt")),
+        as_of="beta",
+        )
 
     duration = Timedelta(
         title=_("Duration"), required=False,
@@ -214,7 +218,9 @@ class IBuildFarmJob(IBuildFarmJobOld):
             # _schema_circular_imports.py
             vocabulary=DBEnumeratedType,
             description=_("The current status of the job.")),
-        ("1.0", dict(exported=True, exported_as="buildstate")))
+        ("1.0", dict(exported_as="buildstate")),
+        as_of="beta",
+        )
 
     log = Reference(
         schema=ILibraryFileAlias, required=False,
@@ -226,7 +232,9 @@ class IBuildFarmJob(IBuildFarmJobOld):
             title=_("Build Log URL"), required=False,
             description=_("A URL for the build log. None if there is no "
                           "log available.")),
-        ("1.0", dict(exported=True, exported_as="build_log_url")))
+        ("1.0", dict(exported_as="build_log_url")),
+        as_of="beta",
+        )
 
     is_private = Bool(
         title=_("is private"), required=False, readonly=True,
@@ -252,7 +260,8 @@ class IBuildFarmJob(IBuildFarmJobOld):
     def gotFailure():
         """Increment the failure_count for this job."""
 
-    title = exported(TextLine(title=_("Title"), required=False))
+    title = exported(TextLine(title=_("Title"), required=False),
+                     as_of="beta")
 
     was_built = Attribute("Whether or not modified by the builddfarm.")
 
@@ -263,15 +272,28 @@ class IBuildFarmJob(IBuildFarmJobOld):
             title=_('Dependencies'), required=False,
             description=_(
                 'Debian-like dependency line that must be satisfied before '
-                'attempting to build this request.')))
+                'attempting to build this request.')),
+        as_of="beta")
 
 
-class ISpecificBuildFarmJob(IBuildFarmJob):
-    """A marker interface with which to define adapters for IBuildFarmJob.
+class ISpecificBuildFarmJobSource(Interface):
+    """A utility for retrieving objects of a specific IBuildFarmJob type.
 
-    This enables the registered adapters for ISpecificBuildFarmJob to be
-    iterated when calculating IBuildFarmJob.specific_job.
+    Implementations are registered with their BuildFarmJobType's name.
     """
+
+    def getByID(id):
+        """Look up a concrete `IBuildFarmJob` by ID.
+
+        :param id: An ID of the concrete job class to look up.
+        """
+
+    def getByBuildFarmJob(build_farm_job):
+        """"Look up the concrete `IBuildFarmJob` for a BuildFarmJob.
+
+        :param build_farm_job: A BuildFarmJob for which to get the concrete
+            job.
+        """
 
 
 class IBuildFarmJobSource(Interface):

@@ -1,0 +1,31 @@
+<span tal:attributes="id view/content_box_id">
+    <span class="yui3-activator-data-box">
+      <tal:attribute replace="structure view/default_html"/>
+    </span>
+    <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
+      Edit
+    </button>
+    <noscript tal:condition="view/can_write">
+      <a tal:attributes="href view/edit_url;
+                         title view/edit_title"
+         class="sprite edit"></a>
+    </noscript>
+    <div class="yui3-activator-message-box yui3-activator-hidden"></div>
+</span>
+<script tal:condition="view/can_write"
+        tal:content="structure string:
+LPS.use('lp.app.picker', function(Y) {
+    if (Y.UA.ie) {
+        return;
+    }
+
+    Y.on('load', function(e) {
+      Y.lp.app.picker.addPickerPatcher(
+        ${view/json_vocabulary_name},
+        ${view/json_resource_uri},
+        ${view/json_attribute},
+        ${view/json_content_box_id},
+        ${view/json_config});
+      }, window);
+});
+"/>

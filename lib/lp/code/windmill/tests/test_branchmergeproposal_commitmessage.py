@@ -6,19 +6,15 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing.constants import (
+from lp.code.windmill.testing import CodeWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
-from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
@@ -46,12 +42,7 @@ class TestCommitMessage(WindmillTestCase):
         bmp = self.factory.makeBranchMergeProposal(registrant=eric)
         transaction.commit()
 
-        client = self.client
-
-        login_person(eric, "test", client)
-
-        client.open(url=canonical_url(bmp))
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(bmp, eric)
 
         # Click on the element containing the branch status.
         client.click(xpath=EDIT_COMMIT_LINK)
@@ -67,7 +58,7 @@ class TestCommitMessage(WindmillTestCase):
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
 
         # Confirm that the change was saved.
-        client.open(url=canonical_url(bmp))
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
@@ -89,12 +80,7 @@ class TestQueueStatus(WindmillTestCase):
         merge_proposal = second_branch.addLandingTarget(mike, branch)
         transaction.commit()
 
-        client = self.client
-
-        merge_url = canonical_url(merge_proposal)
-        client.open(url=merge_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(mike, "test", client)
+        client, start_url = self.getClientForPerson(merge_proposal, mike)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
@@ -108,7 +94,7 @@ class TestQueueStatus(WindmillTestCase):
         client.waits.sleep(milliseconds=SLEEP)
 
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
 
         client.asserts.assertText(
@@ -116,15 +102,11 @@ class TestQueueStatus(WindmillTestCase):
             validator=u'5')
 
         # Reload the page and make sure the change sticks.
-        client.open(url=merge_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             timeout=FOR_ELEMENT)
         client.asserts.assertText(
-            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

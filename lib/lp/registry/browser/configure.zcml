@@ -112,7 +112,11 @@
             name="+portlet-package-summary"
             facet="overview"
             template="../templates/distroseries-portlet-packaging.pt"/>
-    </browser:pages>
+        <browser:page
+            name="+portlet-derivation"
+            facet="overview"
+            template="../templates/distroseries-portlet-derivation.pt"/>
+     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesPackagesView"
@@ -127,13 +131,6 @@
         name="+needs-packaging"
         facet="overview"
         template="../templates/distroseries-needs-packaging.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        permission="launchpad.Admin"
-        facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView"
-        name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Edit"
@@ -161,9 +158,21 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+uniquepackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesUniquePackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+     <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferencesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:url
@@ -499,9 +508,17 @@
         name="+edit"
         facet="overview"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        permission="zope.Public"
+        class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageHelpView"
+        name="+gethelp"
+        facet="answers"
+        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             DistributionSourcePackageActionMenu
+            DistributionSourcePackageAnswersMenu
             DistributionSourcePackageBugsMenu
             DistributionSourcePackageFacets
             DistributionSourcePackageOverviewMenu"
@@ -1443,9 +1460,6 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/product-listing-detailed.pt"/>
 
         <!-- Products Portlets -->
 
@@ -1482,6 +1496,12 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.LaunchpadView"
+        name="+listing-detailed"
+        template="../templates/product-listing-detailed.pt"/>
     <browser:renamed-page
         name="+distributions"
         for="lp.registry.interfaces.product.IProduct"
@@ -1940,6 +1960,20 @@
         template="../templates/distribution-series-and-milestones.pt"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionDerivativesView"
+        permission="zope.Public"
+        name="+derivatives"
+        facet="overview"
+        template="../templates/distribution-series.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionView"
+        permission="zope.Public"
+        name="+derivatives-slot"
+        facet="overview"
+        template="../templates/distribution-derivatives.pt"/>
+     <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distribution.DistributionView"
         permission="zope.Public"
         name="+details"
@@ -1948,27 +1982,36 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
+
+    <!-- DistroSeries create and initialize. -->
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-add.pt">
     </browser:page>
-
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
-        permission="launchpad.Append"
-        template="../../app/templates/generic-edit.pt">
+        permission="launchpad.Moderate"
+        template="../templates/distroseries-add.pt">
+    </browser:page>
+    <browser:page
+        name="+initseries"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
+        facet="overview"
+        permission="launchpad.Admin"
+        template="../templates/distroseries-initialize.pt">
     </browser:page>
 
     <browser:page
@@ -1992,6 +2035,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+pubconf"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionPublisherConfigView"
+        template="../../app/templates/generic-edit.pt"
+        facet="overview"
+        permission="launchpad.Admin"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
         name="+index"/>
@@ -2046,10 +2096,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="lp.bugs.publisher.BugsLayer"
         name="+bugs"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="lp.answers.publisher.AnswersLayer"
-        name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.sourcepackage"
         classes="
@@ -2095,18 +2141,10 @@
         facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
         template="../templates/sourcepackage-upstream-connections.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
-        name="+gethelp"
-        facet="answers"
-        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             SourcePackageFacets
-            SourcePackageOverviewMenu
-            SourcePackageAnswersMenu"
+            SourcePackageOverviewMenu"
         module="lp.registry.browser.sourcepackage"/>
     <browser:navigation
         module="lp.registry.browser.productrelease"
@@ -2280,29 +2318,6 @@
         template="../templates/sourcepackage-remove-packaging.pt"
         />
 
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+subscribe"
-        permission="launchpad.AnyPerson"
-        facet="bugs"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
-        template="../templates/structural-subscriptions-manage.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+portlet-structural-subscribers"
-        facet="bugs"
-        permission="zope.Public"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
-        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
-
-    <browser:url
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
-        path_expression="string:+subscription/${subscriber/name}"
-        attribute_to_parent="target"/>
-    <browser:navigation
-        module="lp.registry.browser.structuralsubscription"
-        classes="StructuralSubscriptionNavigation"/>
-
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"
         path_expression="product/name"
@@ -2327,10 +2342,5 @@
         path_expression="string:+gpg-keys/${keyid}"
         rootsite="api"
         attribute_to_parent="owner" />
-
-    <adapter
-        factory="lp.registry.browser.webservice.person_xhtml_representation"/>
-    <adapter
-        factory="lp.registry.browser.webservice.text_xhtml_representation"/>
 
 </configure>

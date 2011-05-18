@@ -6,20 +6,18 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.windmill.testing import constants
-from canonical.launchpad.windmill.testing.lpuser import LaunchpadUser
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
-from lp.testing import WindmillTestCase
+from lp.testing import (
+    login,
+    logout,
+    WindmillTestCase,
+    )
+from lp.testing.windmill import constants
+from lp.testing.windmill.lpuser import LaunchpadUser
 
 
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'
@@ -60,14 +58,9 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
 
     def test_add_subscriber(self):
         """Test adding a private PPA subscriber.."""
-        client = self.client
 
-        self.lpuser.ensure_login(client)
-
-        client.open(url='%s/~joe-bloggs/'
-                        '+archive/myppa/+subscriptions'
-                        % SoyuzWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            '/~joe-bloggs/+archive/myppa/+subscriptions', self.lpuser)
 
         # Click on the JS add access action.
         client.waits.forElement(
@@ -98,6 +91,3 @@ class TestArchiveSubscribersIndex(WindmillTestCase):
                       'to install software from PPA named myppa for Joe '
                       'Bloggs. Members of Launchpad Developers will be '
                       'notified of the access  via email.')
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

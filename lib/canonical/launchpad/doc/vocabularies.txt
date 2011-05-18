@@ -85,9 +85,6 @@ All the distributions that use Malone as their main bug tracker.
     >>> debian in using_malone_vocabulary
     False
 
-    >>> using_malone_vocabulary.getQuery() is None
-    True
-
     >>> term = using_malone_vocabulary.getTerm(ubuntu)
     >>> print term.token, term.value.displayname, term.title
     ubuntu Ubuntu Ubuntu

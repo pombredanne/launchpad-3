@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'HelpTranslateButtonView',
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
@@ -38,20 +37,6 @@ from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.publisher import TranslationsLayer
-
-
-class HelpTranslateButtonView:
-    """View that renders a button to help translate its context."""
-
-    def __call__(self):
-        return """
-              <a href="%s">
-                <img
-                  alt="Help translate"
-                  src="/+icing/but-sml-helptranslate.gif"
-                />
-              </a>
-        """ % canonical_url(self.context, rootsite='translations')
 
 
 class TranslationsMixin:

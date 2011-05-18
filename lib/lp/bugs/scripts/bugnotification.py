@@ -16,11 +16,9 @@ from itertools import groupby
 from operator import itemgetter
 
 import transaction
+from zope.component import getUtility
 
-from canonical.launchpad.helpers import (
-    emailPeople,
-    get_email_template,
-    )
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.mail.bugnotificationbuilder import (
@@ -28,7 +26,42 @@ from lp.bugs.mail.bugnotificationbuilder import (
     get_bugmail_from_address,
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.registry.model.person import get_recipients
 from lp.services.mail.mailwrapper import MailWrapper
+
+
+def get_activity_key(notification):
+    """Given a notification, return a key for the activity if it exists.
+
+    The key will be used to determine whether changes for the activity are
+    undone within the same batch of notifications (which are supposed to
+    be all for the same bug when they get to this function).  Therefore,
+    the activity's attribute is a good start for the key.
+
+    If the activity was on a bugtask, we will also want to distinguish
+    by bugtask, because, for instance, changing a status from INPROGRESS
+    to FIXCOMMITED on one bug task is not undone if the status changes
+    from FIXCOMMITTED to INPROGRESS on another bugtask.
+
+    Similarly, if the activity is about adding or removing something
+    that we can have multiple of, like a branch or an attachment, the
+    key should include information on that value, because adding one
+    attachment is not undone by removing another one.
+    """
+    activity = notification.activity
+    if activity is not None:
+        key = activity.attribute
+        if activity.target is not None:
+            key = ':'.join((activity.target, key))
+        if key in ('attachments', 'watches', 'cves', 'linked_branches'):
+            # We are intentionally leaving bug task bugwatches out of this
+            # list, so we use the key rather than the activity.attribute.
+            if activity.oldvalue is not None:
+                key = ':'.join((key, activity.oldvalue))
+            elif activity.newvalue is not None:
+                key = ':'.join((key, activity.newvalue))
+        return key
 
 
 def construct_email_notifications(bug_notifications):
@@ -39,26 +72,65 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person = first_notification.message.owner
+    actor = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
     references = []
     text_notifications = []
-
-    recipients = {}
-    for notification in bug_notifications:
-        for recipient in notification.recipients:
-            for email_person in emailPeople(recipient.person):
-                recipients[email_person] = recipient
+    old_values = {}
+    new_values = {}
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person, person.id
+        assert notification.message.owner == actor, actor.id
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
+        else:
+            key = get_activity_key(notification)
+            if key is not None:
+                if key not in old_values:
+                    old_values[key] = notification.activity.oldvalue
+                new_values[key] = notification.activity.newvalue
+
+    recipients = {}
+    filtered_notifications = []
+    omitted_notifications = []
+    for notification in bug_notifications:
+        key = get_activity_key(notification)
+        if (notification.is_comment or
+            key is None or
+            old_values[key] != new_values[key]):
+            # We will report this notification.
+            filtered_notifications.append(notification)
+            for subscription_source in notification.recipients:
+                for recipient in get_recipients(
+                    subscription_source.person):
+                    # The subscription_source.person may be a person or a
+                    # team.  The get_recipients function gives us everyone
+                    # who should actually get an email for that person.
+                    # If subscription_source.person is a person or a team
+                    # with a preferred email address, then the people to
+                    # be emailed will only be subscription_source.person.
+                    # However, if it is a team without a preferred email
+                    # address, then this list will be the people and teams
+                    # that comprise the team, transitively, stopping the walk
+                    # at each person and at each team with a preferred email
+                    # address.
+                    sources_for_person = recipients.get(recipient)
+                    if sources_for_person is None:
+                        sources_for_person = []
+                        recipients[recipient] = sources_for_person
+                    sources_for_person.append(subscription_source)
+        else:
+            omitted_notifications.append(notification)
+
+    # If the actor does not want self-generated bug notifications, remove the
+    # actor now.
+    if not actor.selfgenerated_bugnotifications:
+        recipients.pop(actor, None)
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -83,7 +155,7 @@ def construct_email_notifications(bug_notifications):
         msgid = first_notification.message.rfc822msgid
         email_date = first_notification.message.datecreated
 
-    for notification in bug_notifications:
+    for notification in filtered_notifications:
         if notification.message == comment:
             # Comments were just handled in the previous if block.
             continue
@@ -99,15 +171,28 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person, bug)
-    bug_notification_builder = BugNotificationBuilder(bug, person)
+    from_address = get_bugmail_from_address(actor, bug)
+    bug_notification_builder = BugNotificationBuilder(bug, actor)
+    recipients = getUtility(IBugNotificationSet).getRecipientFilterData(
+        recipients, filtered_notifications)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
-    for email_person, recipient in sorted_recipients:
-        address = str(email_person.preferredemail.email)
-        reason = recipient.reason_body
-        rationale = recipient.reason_header
 
+    for email_person, data in sorted_recipients:
+        address = str(email_person.preferredemail.email)
+        # Choosing the first source is a bit arbitrary, but it
+        # is simple for the user to understand.  We may want to reconsider
+        # this in the future.
+        reason = data['sources'][0].reason_body
+        rationale = data['sources'][0].reason_header
+
+        if data['filter descriptions']:
+            # There are some filter descriptions as well. Add them to
+            # the email body.
+            filters_text = u"\nMatching subscriptions: %s" % ", ".join(
+                data['filter descriptions'])
+        else:
+            filters_text = u""
         # XXX deryck 2009-11-17 Bug #484319
         # This should be refactored to add a link inside the
         # code where we build `reason`.  However, this will
@@ -125,7 +210,9 @@ def construct_email_notifications(bug_notifications):
             'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
-            'notification_rationale': mail_wrapper.format(reason)}
+            'notification_rationale': mail_wrapper.format(reason),
+            'subscription_filters': filters_text,
+            }
 
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
@@ -145,13 +232,14 @@ def construct_email_notifications(bug_notifications):
         else:
             email_template = 'bug-notification.txt'
 
-        body = get_email_template(email_template) % body_data
+        body_template = get_email_template(email_template, 'bugs')
+        body = (body_template % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
-            rationale, references, msgid)
+            rationale, references, msgid, filters=data['filter descriptions'])
         messages.append(msg)
 
-    return bug_notifications, messages
+    return filtered_notifications, omitted_notifications, messages
 
 
 def notification_comment_batches(notifications):

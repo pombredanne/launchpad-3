@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,7 +10,6 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     i18n_domain="launchpad">
-    <authorizations module=".security" />
     <include
         file="vocabularies.zcml"/>
     <include
@@ -88,19 +87,27 @@
 
     <!-- IPersonTransferJob -->
     <securedutility
-        component="lp.registry.model.persontransferjob.MembershipNotificationJob"
-        provides="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource"/>
+        component=".model.persontransferjob.MembershipNotificationJob"
+        provides=".interfaces.persontransferjob.IMembershipNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJobSource"/>
     </securedutility>
 
-    <class class="lp.registry.model.persontransferjob.PersonTransferJob">
-        <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
+    <securedutility
+        component=".model.persontransferjob.PersonMergeJob"
+        provides=".interfaces.persontransferjob.IPersonMergeJobSource">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJobSource"/>
+    </securedutility>
+
+    <class class=".model.persontransferjob.PersonTransferJob">
+        <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
 
-    <class class="lp.registry.model.persontransferjob.MembershipNotificationJob">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
+    <class class=".model.persontransferjob.MembershipNotificationJob">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.PersonMergeJob">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
     </class>
 
     <!-- INameBlacklist -->
@@ -171,6 +178,22 @@
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
+    <!-- DistroSeriesParent -->
+    <securedutility
+        class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesparent.DistroSeriesParent">
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
@@ -188,6 +211,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
+            permission="launchpad.Admin"
+            set_attributes="parent_series"/>
+        <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>
         <require
@@ -200,7 +226,8 @@
 
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver"/>
+            set_attributes="displayname title summary description driver
+                            backports_not_automatic"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -208,15 +235,15 @@
 
         <require
             permission="launchpad.Moderate"
-            set_attributes="version name status owner nominatedarchindep                                                                                                 changeslist datereleased"/>
+            set_attributes="version name status nominatedarchindep changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
     <securedutility
@@ -234,9 +261,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -351,10 +375,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <require
             permission="launchpad.Admin"
@@ -390,9 +414,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -485,31 +506,18 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
+
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -524,9 +532,6 @@
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
-    <adapter
-        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
-        permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
@@ -895,9 +900,6 @@
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
             <require
-                permission="launchpad.Moderate"
-                interface="lp.registry.interfaces.person.IPersonModerate" />
-            <require
                 permission="launchpad.Commercial"
                 set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
@@ -978,7 +980,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
+            interface="lp.app.interfaces.security.IAuthorization"/>
         <require
             permission="launchpad.Edit"
             set_attributes="name code_name dateexpected summary active
@@ -987,15 +989,12 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
-    <adapter
-        factory=".model.structuralsubscription.MilestoneTargetHelper"
-        permission="zope.Public"/>
 
     <!-- IMilestoneSet -->
 
@@ -1072,10 +1071,10 @@
 
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMailingList         lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"/>
+        handler="lp.registry.mail.notification.notify_mailinglist_activated"/>
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMessageApproval                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_message_held"/>
+        handler="lp.registry.mail.notification.notify_message_held"/>
     <class
         class="lp.registry.model.person.WikiName">
         <allow
@@ -1224,7 +1223,7 @@
             attributes="
                 reviewer_whiteboard
                 is_permitted
-                license_reviewed
+                project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
@@ -1241,24 +1240,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1274,10 +1259,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1289,9 +1274,6 @@
             attributes="
                 setBugSupervisor"/>
     </class>
-    <adapter
-        factory=".model.structuralsubscription.ProductTargetHelper"
-        permission="zope.Public"/>
 
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
@@ -1332,6 +1314,7 @@
                 people
                 all_active
                 get
+                get_all_active
                 getByName
                 getProductsWithBranches
                 createProduct
@@ -1384,10 +1367,10 @@
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
-        handler="canonical.launchpad.mailnotification.notify_team_join"/>
+        handler="lp.registry.mail.notification.notify_team_join"/>
     <subscriber
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
-        handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
+        handler="lp.registry.mail.notification.notify_invitation_to_join_team"/>
 
     <!-- This is class ProductSeries -->
 
@@ -1416,10 +1399,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
     <adapter
@@ -1436,9 +1419,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
         permission="zope.Public"/>
 
     <!-- This is class TimelineProductSeries -->
@@ -1527,24 +1507,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1560,10 +1526,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1590,8 +1556,11 @@
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        factory=".model.structuralsubscription.DistributionTargetHelper"
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        factory="lp.registry.adapters.distribution_to_publisherconfig"
         permission="zope.Public"/>
+
 
     <!-- DistributionSet -->
 
@@ -1617,27 +1586,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-
-        <!-- IQuestionTarget -->
-
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getSupportedLanguages
-                getAnswerContactRecipients"/>
-        <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
     </class>
     <securedutility
         component="lp.registry.model.sourcepackage.SourcePackage"
@@ -1857,20 +1805,6 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
-
-    <!-- StructuralSubscription -->
-
-    <class
-        class="lp.registry.model.structuralsubscription.StructuralSubscription">
-        <allow
-            interface=".interfaces.structuralsubscription.IStructuralSubscriptionPublic" />
-        <require
-            set_schema=".interfaces.structuralsubscription.IStructuralSubscriptionPublic"
-            permission="zope.Public" />
-        <require
-            interface=".interfaces.structuralsubscription.IStructuralSubscriptionRestricted"
-            permission="launchpad.Edit" />
-    </class>
 
     <!-- PersonNotification -->
 

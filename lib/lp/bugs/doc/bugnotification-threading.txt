@@ -10,27 +10,32 @@ you can't know to which comment the new comment was a reply to.
 Let's add add change notification and see how it works:
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database.message import MessageSet
+    >>> from lp.services.messages.model.message import MessageSet
 
     >>> login('test@canonical.com')
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.adapters.bugchange import BugVisibilityChange
+
     >>> ten_minutes_ago = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
     >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_one.addChangeNotification(
-    ...     '** Some change.', sample_person, when=ten_minutes_ago)
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         False, True))
 
     >>> from lp.bugs.interfaces.bugnotification import IBugNotificationSet
     >>> from lp.bugs.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
 
-    >>> messages = [emails for dummy, emails in
+    >>> messages = [emails for notifications, omitted, emails in
     ...     get_email_notifications(notifications)]
     >>> len(messages)
     1
@@ -62,10 +67,13 @@ id:
     >>> bug_one.addCommentNotification(comment)
     >>> bug_one.linkMessage(comment)
     <...>
-    >>> bug_one.addChangeNotification(
-    ...     '** Some other change.', sample_person, when=ten_minutes_ago)
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> messages = [emails for dummy, emails in
+    >>> bug_one.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "private",
+    ...         True, False))
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> messages = [emails for notifications, omitted, emails in
     ...     get_email_notifications(notifications)]
     >>> len(messages)
     1
@@ -87,7 +95,8 @@ are chained together properly:
     >>> flush_database_updates()
 
     >>> reply = MessageSet().fromText(
-    ...     'Re: subject', 'reply', sample_person, datecreated=ten_minutes_ago)
+    ...     'Re: subject', 'reply', sample_person,
+    ...     datecreated=ten_minutes_ago)
     >>> reply.parent = comment
     >>> bug_one.addCommentNotification(reply)
     >>> bug_one.linkMessage(reply)
@@ -95,8 +104,9 @@ are chained together properly:
 
 Grab the notifications:
 
-    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
-    >>> messages = [emails for dummy, emails in
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> messages = [emails for notifications, omitted, emails in
     ...     get_email_notifications(notifications)]
     >>> len(messages)
     1

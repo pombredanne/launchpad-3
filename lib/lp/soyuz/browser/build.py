@@ -50,6 +50,8 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
+from lp.code.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -90,7 +92,7 @@ class BuildUrl:
 
     @property
     def path(self):
-        return u"+buildjob/%d" % self.context.url_id
+        return u"+build/%d" % self.context.id
 
 
 class BuildNavigation(GetitemNavigation, FileNavigationMixin):
@@ -107,11 +109,21 @@ class BuildNavigationMixin:
         except ValueError:
             return None
         try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
+            return getUtility(IBinaryPackageBuildSet).getByID(build_id)
         except NotFoundError:
             return None
-        else:
-            return self.redirectSubTree(canonical_url(build))
+
+    @stepthrough('+recipebuild')
+    def traverse_recipebuild(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(ISourcePackageRecipeBuildSource).getByID(
+                build_id)
+        except NotFoundError:
+            return None
 
     @stepthrough('+buildjob')
     def traverse_buildjob(self, name):
@@ -121,7 +133,8 @@ class BuildNavigationMixin:
             return None
         try:
             build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-            return build_job.getSpecificJob()
+            return self.redirectSubTree(
+                canonical_url(build_job.getSpecificJob()))
         except NotFoundError:
             return None
 
@@ -210,6 +223,17 @@ class BuildView(LaunchpadView):
         """Return the corresponding package upload for this build."""
         return self.context.package_upload
 
+    @property
+    def binarypackagetitles(self):
+        """List the titles of this build's `BinaryPackageRelease`s.
+
+        :return: A list of title strings.
+        """
+        return [
+            binarypackagerelease.title
+            for binarypackagerelease, binarypackagename
+                in self.context.getBinaryPackageNamesForDisplay()]
+
     @cachedproperty
     def has_published_binaries(self):
         """Whether or not binaries were already published for this build."""
@@ -256,15 +280,11 @@ class BuildView(LaunchpadView):
         if not self.context.was_built:
             return None
 
-        files = []
-        for package in self.context.binarypackages:
-            for file in package.files:
-                if file.libraryfile.deleted is False:
-                    alias = ProxiedLibraryFileAlias(
-                        file.libraryfile, self.context)
-                    files.append(alias)
-
-        return files
+        return [
+            ProxiedLibraryFileAlias(alias, self.context)
+            for bpr, bpf, alias, content
+                in self.context.getBinaryFilesForDisplay()
+                if not alias.deleted]
 
     @property
     def dispatch_time_estimate_available(self):
@@ -375,6 +395,7 @@ class BuildRescoringView(LaunchpadFormView):
 class CompleteBuild:
     """Super object to store related IBinaryPackageBuild & IBuildQueue."""
     delegates(IBinaryPackageBuild)
+
     def __init__(self, build, buildqueue_record):
         self.context = build
         self._buildqueue_record = buildqueue_record
@@ -577,8 +598,7 @@ class BuildRecordsView(LaunchpadView):
                 selected = None
 
             self.available_states.append(
-                dict(name=name, value=tag, selected=selected)
-                )
+                dict(name=name, value=tag, selected=selected))
 
     @property
     def default_build_state(self):

@@ -21,6 +21,7 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'user_has_special_branch_access',
+    'WrongNumberOfReviewTypeArguments',
     ]
 
 from cgi import escape
@@ -29,6 +30,7 @@ import re
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_destructor_operation,
@@ -38,6 +40,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -66,9 +69,9 @@ from zope.schema import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -79,8 +82,8 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
+    BranchType,
     CodeReviewNotificationLevel,
-    UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
@@ -103,6 +106,13 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
+
+
+@error_status(400)
+class WrongNumberOfReviewTypeArguments(ValueError):
+    """Raised in the webservice API if `reviewers` and `review_types`
+    do not have equal length.
+    """
 
 
 def get_blacklisted_hostnames():
@@ -144,12 +154,6 @@ class BranchURIField(URIField):
 
         # Can't use super-- this derives from an old-style class
         URIField._validate(self, value)
-
-        # XXX thumper 2007-06-12:
-        # Move this validation code into IBranchSet so it can be
-        # reused in the XMLRPC code, and the Authserver.
-        # This also means we could get rid of the imports above.
-
         uri = URI(self.normalize(value))
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
@@ -261,6 +265,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         scheme=TextLine(title=_("URL scheme"), default=u'http'))
     @export_read_operation()
+    @operation_for_version('beta')
     def composePublicURL(scheme='http'):
         """Return a public URL for the branch using the given protocol.
 
@@ -348,6 +353,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_("A person for which the reviewer status is in question."),
             schema=IPerson))
     @export_read_operation()
+    @operation_for_version('beta')
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
@@ -409,13 +415,22 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         readonly=True,
         value_type=Reference(schema=Interface))) # Really IBug
 
-    def getLinkedBugsAndTasks():
-        """Return a result set for the bugs with their tasks."""
+    def getLinkedBugTasks(user, status_filter):
+        """Return a result set for the tasks that are relevant to this branch.
+
+        When multiple tasks are on a bug, if one of the tasks is for the
+        branch.target, then only that task is returned. Otherwise the default
+        bug task is returned.
+
+        :param user: The user doing the search.
+        :param status_filter: Passed onto the bug search as a constraint.
+        """
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug
     @export_write_operation()
+    @operation_for_version('beta')
     def linkBug(bug, registrant):
         """Link a bug to this branch.
 
@@ -427,6 +442,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug
     @export_write_operation()
+    @operation_for_version('beta')
     def unlinkBug(bug, user):
         """Unlink a bug to this branch.
 
@@ -439,12 +455,14 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         CollectionField(
             title=_("Specification linked to this branch."),
             readonly=True,
-            value_type=Reference(Interface))) # Really ISpecificationBranch
+            value_type=Reference(Interface)), # Really ISpecificationBranch
+        as_of="beta")
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
+    @operation_for_version('beta')
     def linkSpecification(spec, registrant):
         """Link an ISpecification to a branch.
 
@@ -456,6 +474,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
+    @operation_for_version('beta')
     def unlinkSpecification(spec, user):
         """Unlink an ISpecification to a branch.
 
@@ -549,6 +568,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
+    @operation_for_version('beta')
     def _createMergeProposal(
         registrant, target_branch, prerequisite_branch=None,
         needs_review=True, initial_comment=None, commit_message=None,
@@ -596,6 +616,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
+    @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
                           merged_revnos=None):
         """Return matching BranchMergeProposals."""
@@ -615,8 +636,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param end_date: Return revisions that were committed before the
             end_date
         :param oldest_first: Defines the ordering of the result set.
-        :returns: A resultset of tuples for
-            (BranchRevision, Revision, RevisionAuthor)
+        :returns: A resultset of tuples for (BranchRevision, Revision)
         """
 
     def getRevisionsSince(timestamp):
@@ -665,6 +685,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     @export_read_operation()
+    @operation_for_version('beta')
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -700,7 +721,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def associatedSuiteSourcePackages():
-        """Return the suite source packages that this branch is linked to."""
+        """Return the suite source packages that this branch is linked to.
+        
+        :return: A list of suite source packages ordered by pocket.
+        """
 
     def branchLinks():
         """Return a sorted list of ICanHasLinkedBranch objects.
@@ -750,6 +774,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_returns_entry(Interface) # Really IBranchSubscription
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def subscribe(person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
         """Subscribe this person to the branch.
@@ -771,6 +796,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             schema=IPerson))
     @operation_returns_entry(Interface) # Really IBranchSubscription
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscription(person):
         """Return the BranchSubscription for this person."""
 
@@ -783,6 +809,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             schema=IPerson))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def unsubscribe(person, unsubscribed_by):
         """Remove the person's subscription to this branch.
 
@@ -889,6 +916,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """Return the URL used to pull the branch into the mirror area."""
 
     @export_write_operation()
+    @operation_for_version('beta')
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -953,28 +981,19 @@ class IBranchEditableAttributes(Interface):
             allow_fragment=False,
             trailing_slash=False,
             description=_(
-                "This is the external location where the Bazaar "
-                "branch is hosted.")))
+                "The external location where the Bazaar "
+                "branch is hosted. It is None when the branch is "
+                "hosted by Launchpad.")))
 
     mirror_status_message = exported(
         Text(
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    # XXX: TimPenhey 2007-08-31
-    # The vocabulary set for branch_type is only used for the creation
-    # of branches through the automatically generated forms, and doesn't
-    # actually represent the complete range of real values that branch_type
-    # may actually hold.  Import branches are not created in the same
-    # way as Hosted, Mirrored or Remote branches.
-    # There are two option:
-    #   1) define a separate schema to use in the UI (sledgehammer solution)
-    #   2) work out some way to specify a restricted vocabulary in the view
-    # Personally I'd like a LAZR way to do number 2.
     branch_type = exported(
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
-            vocabulary=UICreatableBranchType))
+            vocabulary=BranchType))
 
     description = exported(
         Text(
@@ -1015,6 +1034,7 @@ class IBranchEdit(Interface):
             title=_("The new owner of the branch."),
             schema=IPerson))
     @export_write_operation()
+    @operation_for_version('beta')
     def setOwner(new_owner, user):
         """Set the owner of the branch to be `new_owner`."""
 
@@ -1027,6 +1047,7 @@ class IBranchEdit(Interface):
             title=_("The source package the branch belongs to."),
             schema=Interface, required=False)) # Really ISourcePackage
     @export_write_operation()
+    @operation_for_version('beta')
     def setTarget(user, project=None, source_package=None):
         """Set the target of the branch to be `project` or `source_package`.
 
@@ -1060,6 +1081,7 @@ class IBranchEdit(Interface):
         """
 
     @export_destructor_operation()
+    @operation_for_version('beta')
     def destroySelfBreakReferences():
         """Delete the specified branch.
 
@@ -1102,6 +1124,7 @@ class IMergeQueueable(Interface):
         queue=Reference(title=_('Branch Merge Queue'),
               schema=IBranchMergeQueue))
     @export_write_operation()
+    @operation_for_version('beta')
     def addToQueue(queue):
         """Add this branch to a specified queue.
 
@@ -1114,6 +1137,7 @@ class IMergeQueueable(Interface):
     @operation_parameters(
         config=TextLine(title=_("A JSON string of config values.")))
     @export_write_operation()
+    @operation_for_version('beta')
     def setMergeQueueConfig(config):
         """Set the merge_queue_config property.
 
@@ -1145,6 +1169,7 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
+    @operation_for_version('beta')
     def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
@@ -1228,6 +1253,7 @@ class IBranchSet(Interface):
         unique_name=TextLine(title=_('Branch unique name'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
@@ -1238,6 +1264,7 @@ class IBranchSet(Interface):
         url=TextLine(title=_('Branch URL'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUrl(url):
         """Find a branch by URL.
 
@@ -1261,6 +1288,7 @@ class IBranchSet(Interface):
             value_type=TextLine(),
             required=True))
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUrls(urls):
         """Finds branches by URL.
 
@@ -1277,8 +1305,13 @@ class IBranchSet(Interface):
         """
 
     @collection_default_content()
-    def getBranches(limit=50):
-        """Return a collection of branches."""
+    def getBranches(limit=50, eager_load=True):
+        """Return a collection of branches.
+        
+        :param eager_load: If True (the default because this is used in the 
+            web service and it needs the related objects to create links) eager
+            load related objects (products, code imports etc).
+        """
 
 
 class IBranchListingQueryOptimiser(Interface):

@@ -1,9 +1,12 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
     'FeatureController',
+    'flag_info',
     'NullFeatureController',
+    'undocumented_flags',
+    'value_domain_info',
     ]
 
 
@@ -16,7 +19,99 @@ from lp.services.features.rulesource import (
 __metaclass__ = type
 
 
-class Memoize(object):
+value_domain_info = sorted([
+    ('boolean',
+     'Any non-empty value is true; an empty value is false.'),
+    ('float',
+     'The flag value is set to the given floating point number.'),
+    ('int',
+     "An integer."),
+    ])
+
+# Data for generating web-visible feature flag documentation.
+#
+# Entries for each flag are:
+# flag name, value domain, prose documentation, default behaviour.
+#
+# Value domain as in value_domain_info above.
+#
+# NOTE: "default behaviour" does not specify a default value.  It
+# merely documents the code's behaviour if no value is specified.
+flag_info = sorted([
+    ('code.branchmergequeue',
+     'boolean',
+     'Enables merge queue pages and lists them on branch pages.',
+     ''),
+    ('code.incremental_diffs.enabled',
+     'boolean',
+     'Shows incremental diffs on merge proposals.',
+     ''),
+    ('hard_timeout',
+     'float',
+     'Sets the hard request timeout in milliseconds.',
+     ''),
+    ('mail.dkim_authentication.disabled',
+     'boolean',
+     'Disable DKIM authentication checks on incoming mail.',
+     ''),
+    ('malone.advanced-subscriptions.enabled',
+     'boolean',
+     'Enables advanced bug subscription features.',
+     ''),
+    ('malone.advanced-structural-subscriptions.enabled',
+     'boolean',
+     'Enables advanced structural subscriptions',
+     ''),
+    ('malone.disable_targetnamesearch',
+     'boolean',
+     'If true, disables consultation of target names during bug text search.',
+     ''),
+    ('memcache',
+     'boolean',
+     'Enables use of memcached where it is supported.',
+     'enabled'),
+    ('profiling.enabled',
+     'boolean',
+     'Overrides config.profiling.profiling_allowed to permit profiling.',
+     ''),
+    ('soyuz.derived_series.max_synchronous_syncs',
+     'int',
+     "How many package syncs may be done directly in a web request.",
+     '100'),
+    ('soyuz.derived-series-ui.enabled',
+     'boolean',
+     'Enables derivative distributions pages.',
+     ''),
+    ('soyuz.derived-series-sync.enabled',
+     'boolean',
+     'Enables syncing of packages on derivative distributions pages.',
+     ''),
+    ('soyuz.derived_series_jobs.enabled',
+     'boolean',
+     "Compute package differences for derived distributions.",
+     ''),
+    ('translations.sharing_information.enabled',
+     'boolean',
+     'Enables display of sharing information on translation pages.',
+     ''),
+    ('visible_render_time',
+     'boolean',
+     'Shows the server-side page render time in the login widget.',
+     ''),
+    ('bugs.private_notification.enabled',
+     'boolean',
+     'Changes the appearance of notifications on private bugs.',
+     ''),
+    ])
+
+# The set of all flag names that are documented.
+documented_flags = set(info[0] for info in flag_info)
+# The set of all the flags names that have been used during the process
+# lifetime, but were not documented in flag_info.
+undocumented_flags = set()
+
+
+class Memoize():
 
     def __init__(self, calc):
         self._known = {}
@@ -30,7 +125,7 @@ class Memoize(object):
         return v
 
 
-class ScopeDict(object):
+class ScopeDict():
     """Allow scopes to be looked up by getitem"""
 
     def __init__(self, features):
@@ -40,7 +135,7 @@ class ScopeDict(object):
         return self.features.isInScope(scope_name)
 
 
-class FeatureController(object):
+class FeatureController():
     """A FeatureController tells application code what features are active.
 
     It does this by meshing together two sources of data:
@@ -94,12 +189,15 @@ class FeatureController(object):
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
-        
+
         :param flag: A name to lookup. e.g. 'recipes.enabled'
 
         :return: The value of the flag determined by the highest priority rule
         that matched.
         """
+        # If this is an undocumented flag, record it.
+        if flag not in documented_flags:
+            undocumented_flags.add(flag)
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):

@@ -10,12 +10,18 @@ from datetime import (
     datetime,
     timedelta,
     )
+import logging
+from StringIO import StringIO
 import time
 
 from pytz import UTC
 from storm.expr import (
     Min,
     SQL,
+    )
+from storm.locals import (
+    Int,
+    Storm,
     )
 from storm.store import Store
 import transaction
@@ -29,7 +35,7 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
@@ -44,7 +50,9 @@ from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -66,12 +74,20 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.scripts.garbo import (
+    AntiqueSessionPruner,
+    BulkPruner,
     DailyDatabaseGarbageCollector,
+    DuplicateSessionPruner,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
+    UnusedSessionPruner,
     )
+from lp.services.log.logger import NullHandler
 from lp.services.job.model.job import Job
-from lp.services.log.logger import BufferLogger
+from lp.services.session.model import (
+    SessionData,
+    SessionPkgData,
+    )
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -97,22 +113,261 @@ class TestGarboScript(TestCase):
         self.failIf(err.strip(), "Output to stderr: %s" % err)
 
 
+class BulkFoo(Storm):
+    __storm_table__ = 'bulkfoo'
+    id = Int(primary=True)
+
+
+class BulkFooPruner(BulkPruner):
+    target_table_class = BulkFoo
+    ids_to_prune_query = "SELECT id FROM BulkFoo WHERE id < 5"
+    maximum_chunk_size = 2
+
+
+class TestBulkPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestBulkPruner, self).setUp()
+
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
+
+        for i in range(10):
+            self.store.add(BulkFoo())
+
+        self.log = logging.getLogger('garbo')
+
+    def test_bulkpruner(self):
+        pruner = BulkFooPruner(self.log)
+
+        # The loop thinks there is stuff to do. Confirm the initial
+        # state is sane.
+        self.assertFalse(pruner.isDone())
+
+        # An arbitrary chunk size.
+        chunk_size = 2
+
+        # Determine how many items to prune and to leave rather than
+        # hardcode these numbers.
+        num_to_prune = self.store.find(
+            BulkFoo, BulkFoo.id < 5).count()
+        num_to_leave = self.store.find(
+            BulkFoo, BulkFoo.id >= 5).count()
+        self.assertTrue(num_to_prune > chunk_size)
+        self.assertTrue(num_to_leave > 0)
+
+        # Run one loop. Make sure it committed by throwing away
+        # uncommitted changes.
+        pruner(chunk_size)
+        transaction.abort()
+
+        # Confirm 'chunk_size' items where removed; no more, no less.
+        num_remaining = self.store.find(BulkFoo).count()
+        expected_num_remaining = num_to_leave + num_to_prune - chunk_size
+        self.assertEqual(num_remaining, expected_num_remaining)
+
+        # The loop thinks there is more stuff to do.
+        self.assertFalse(pruner.isDone())
+
+        # Run the loop to completion, removing the remaining targetted
+        # rows.
+        while not pruner.isDone():
+            pruner(1000000)
+        transaction.abort()
+
+        # Confirm we have removed all targetted rows.
+        self.assertEqual(self.store.find(BulkFoo, BulkFoo.id < 5).count(), 0)
+
+        # Confirm we have the expected number of remaining rows.
+        # With the previous check, this means no untargetted rows
+        # where removed.
+        self.assertEqual(
+            self.store.find(BulkFoo, BulkFoo.id >= 5).count(), num_to_leave)
+
+        # Cleanup clears up our resources.
+        pruner.cleanUp()
+
+        # We can run it again - temporary objects cleaned up.
+        pruner = BulkFooPruner(self.log)
+        while not pruner.isDone():
+            pruner(chunk_size)
+
+
+class TestSessionPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+
+        # Session database isn't reset between tests. We need to do this
+        # manually.
+        nuke_all_sessions = IMasterStore(SessionData).find(SessionData).remove
+        nuke_all_sessions()
+        self.addCleanup(nuke_all_sessions)
+
+        recent = datetime.now(UTC)
+        yesterday = recent - timedelta(days=1)
+        ancient = recent - timedelta(days=61)
+
+        self.make_session(u'recent_auth', recent, 'auth1')
+        self.make_session(u'recent_unauth', recent, False)
+        self.make_session(u'yesterday_auth', yesterday, 'auth2')
+        self.make_session(u'yesterday_unauth', yesterday, False)
+        self.make_session(u'ancient_auth', ancient, 'auth3')
+        self.make_session(u'ancient_unauth', ancient, False)
+
+        self.log = logging.getLogger('garbo')
+
+    def make_session(self, client_id, accessed, authenticated=None):
+        session_data = SessionData()
+        session_data.client_id = client_id
+        session_data.last_accessed = accessed
+        IMasterStore(SessionData).add(session_data)
+
+        if authenticated:
+            # Add login time information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'logintime'
+            session_pkg_data.pickle = 'value is ignored'
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+            # Add authenticated as information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'accountid'
+            # Normally Account.id, but the session pruning works
+            # at the SQL level and doesn't unpickle anything.
+            session_pkg_data.pickle = authenticated
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+    def sessionExists(self, client_id):
+        store = IMasterStore(SessionData)
+        return not store.find(
+            SessionData, SessionData.client_id == client_id).is_empty()
+
+    def test_antique_session_pruner(self):
+        chunk_size = 2
+        pruner = AntiqueSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            # u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_unused_session_pruner(self):
+        chunk_size = 2
+        pruner = UnusedSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            # u'yesterday_unauth',
+            u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_duplicate_session_pruner(self):
+        # None of the sessions created in setUp() are duplicates, so
+        # they will all survive the pruning.
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            u'ancient_auth',
+            u'ancient_unauth',
+            ])
+
+        now = datetime.now(UTC)
+
+        # Make some duplicate logins from a few days ago.
+        # Only the most recent 6 will be kept. Oldest is 'old dupe 9',
+        # most recent 'old dupe 1'.
+        for count in range(1, 10):
+            self.make_session(
+                u'old dupe %d' % count,
+                now - timedelta(days=2, seconds=count),
+                'old dupe')
+        for count in range(1, 7):
+            expected_sessions.add(u'old dupe %d' % count)
+
+        # Make some other duplicate logins less than an hour old.
+        # All of these will be kept.
+        for count in range(1, 10):
+            self.make_session(u'new dupe %d' % count, now, 'new dupe')
+            expected_sessions.add(u'new dupe %d' % count)
+
+        chunk_size = 2
+        pruner = DuplicateSessionPruner(self.log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+
 class TestGarbo(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestGarbo, self).setUp()
+
+        # Silence the root Logger by instructing the garbo logger to not
+        # propagate messages.
+        self.log = logging.getLogger('garbo')
+        self.log.addHandler(NullHandler())
+        self.log.propagate = 0
+
         # Run the garbage collectors to remove any existing garbage,
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+
+        # Capture garbo log output to tests can examine it.
+        self.log_buffer = StringIO()
+        handler = logging.StreamHandler(self.log_buffer)
+        self.log.addHandler(handler)
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
         collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
@@ -120,12 +375,12 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
         collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
-        collector.logger = BufferLogger()
+        collector.logger = self.log
         collector.main()
         return collector
 
     def test_OAuthNoncePruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
             now - timedelta(days=1) - timedelta(seconds=60), # Garbage
@@ -203,7 +458,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         results_to_keep_count = (
@@ -260,7 +515,7 @@ class TestGarbo(TestCaseWithFactory):
             >= now - timedelta(days=30))
 
     def test_CodeImportEventPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -429,7 +684,7 @@ class TestGarbo(TestCaseWithFactory):
         # them will have the present day as its date created, and so will not
         # be deleted, whereas the other will have a creation date far in the
         # past, so it will be deleted.
-        person = self.factory.makePerson(name='test-unlinked-person-new')
+        self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
             2008, 01, 01, tzinfo=UTC)
@@ -457,7 +712,7 @@ class TestGarbo(TestCaseWithFactory):
             bugID=1,
             is_comment=True,
             date_emailed=None)
-        recipient = BugNotificationRecipient(
+        BugNotificationRecipient(
             bug_notification=notification,
             personID=1,
             reason_header='Whatever',
@@ -471,7 +726,7 @@ class TestGarbo(TestCaseWithFactory):
                 bugID=1,
                 is_comment=True,
                 date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
-            recipient = BugNotificationRecipient(
+            BugNotificationRecipient(
                 bug_notification=notification,
                 personID=1,
                 reason_header='Whatever',
@@ -525,7 +780,6 @@ class TestGarbo(TestCaseWithFactory):
         Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         self.assertEqual(
             store.find(
@@ -533,7 +787,7 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 1)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(
@@ -554,23 +808,18 @@ class TestGarbo(TestCaseWithFactory):
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        branch_job2 = BranchUpgradeJob.create(db_branch2)
-        job_id_newer = branch_job2.job.id
+        BranchUpgradeJob.create(db_branch2)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(
-            store.find(
-                BranchJob).count(),
-            1)
+        self.assertEqual(store.find(BranchJob).count(), 1)
 
-    def test_ObsoleteBugAttachmentDeleter(self):
+    def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
@@ -626,3 +875,22 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
+
+    def test_mirror_bugmessages(self):
+        # Nuke the owner in sampledata.
+        con = DatabaseLayer._db_fixture.superuser_connection()
+        try:
+            cur = con.cursor()
+            cur.execute("ALTER TABLE bugmessage "
+                "DISABLE TRIGGER bugmessage__owner__mirror")
+            cur.execute("UPDATE bugmessage set owner=NULL")
+            cur.execute("ALTER TABLE bugmessage "
+                "ENABLE TRIGGER bugmessage__owner__mirror")
+            con.commit()
+        finally:
+            con.close()
+        store = IMasterStore(BugMessage)
+        unmigrated = store.find(BugMessage, BugMessage.ownerID==None).count
+        self.assertNotEqual(0, unmigrated())
+        self.runHourly()
+        self.assertEqual(0, unmigrated())

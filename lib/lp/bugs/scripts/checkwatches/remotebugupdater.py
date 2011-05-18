@@ -13,13 +13,16 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from lp.bugs.externalbugtracker import (
+from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     InvalidBugId,
     PrivateRemoteBug,
-    UnknownRemoteStatusError,
+    UnknownRemoteValueError,
     )
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus,
     IBugWatchSet,
@@ -28,6 +31,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking,
     ISupportsCommentImport,
     ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE,
     UNKNOWN_REMOTE_STATUS,
     )
 from lp.bugs.scripts.checkwatches.base import (
@@ -132,10 +136,6 @@ class RemoteBugUpdater(WorkingBase):
             error = None
             oops_id = None
 
-            # XXX: 2007-10-17 Graham Binns
-            #      This nested set of try:excepts isn't really
-            #      necessary and can be refactored out when bug
-            #      136391 is dealt with.
             try:
                 new_remote_status = (
                     self.external_bugtracker.getRemoteStatus(
@@ -145,45 +145,33 @@ class RemoteBugUpdater(WorkingBase):
                 new_remote_importance = (
                     self.external_bugtracker.getRemoteImportance(
                         self.remote_bug))
-                new_malone_importance = (
-                    self.external_bugtracker.convertRemoteImportance(
-                        new_remote_importance))
+                new_malone_importance = self._convertRemoteImportance(
+                    new_remote_importance)
             except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
                 error = get_bugwatcherrortype_for_error(ex)
                 message = self.error_type_messages.get(
                     error, self.error_type_message_default)
-                oops_id = self.warning(
+                self.logger.info(
                     message % {
                         'bug_id': self.remote_bug,
                         'base_url': self.external_bugtracker.baseurl,
                         'local_ids': local_ids,
-                        },
-                    properties=[
-                        ('URL', remote_bug_url),
-                        ('bug_id', self.remote_bug),
-                        ('local_ids', local_ids),
-                        ] + get_remote_system_oops_properties(
-                            self.external_bugtracker),
-                    info=sys.exc_info())
-
+                        })
                 # Set the error and activity on all bug watches
                 with self.transaction:
                     getUtility(IBugWatchSet).bulkSetError(
                         bug_watches, error)
                     getUtility(IBugWatchSet).bulkAddActivity(
-                        bug_watches, result=error, oops_id=oops_id)
-
+                        bug_watches, result=error)
             else:
                 # Assuming nothing's gone wrong, we can now deal with
                 # each BugWatch in turn.
                 for bug_watch in bug_watches:
                     bug_watch_updater = BugWatchUpdater(
                         self, bug_watch, self.external_bugtracker)
-
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance)
-
         except Exception, error:
             # Send the error to the log.
             oops_id = self.error(
@@ -206,32 +194,46 @@ class RemoteBugUpdater(WorkingBase):
                     bug_watches, result=error_type, oops_id=oops_id)
 
     def _convertRemoteStatus(self, remote_status):
-        """Convert a remote bug status to a Launchpad status and return it.
+        """Convert a remote status to a Launchpad one and return it."""
+        return self._convertRemoteValue(
+            self.external_bugtracker.convertRemoteStatus,
+            UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN, remote_status)
 
-        :param remote_status: The remote status to be converted into a
-            Launchpad status.
+    def _convertRemoteImportance(self, remote_importance):
+        """Convert a remote importance to a Launchpad one and return it."""
+        return self._convertRemoteValue(
+            self.external_bugtracker.convertRemoteImportance,
+            UNKNOWN_REMOTE_IMPORTANCE, BugTaskImportance.UNKNOWN,
+            remote_importance)
 
-        If the remote status cannot be mapped to a Launchpad status,
-        BugTaskStatus.UNKNOWN will be returned and a warning will be
-        logged.
+    def _convertRemoteValue(self, conversion_method, remote_unknown,
+                            launchpad_unknown, remote_value):
+        """Convert a remote bug value to a Launchpad value and return it.
+
+        :param conversion_method: A method returning the Launchpad value
+            corresponding to the given remote value.
+        :param remote_unknown: The remote value which indicates an unknown
+            value.
+        :param launchpad_unknown: The Launchpad value which indicates an
+            unknown value.
+        :param remote_value: The remote value to be converted.
+
+        If the remote value cannot be mapped to a Launchpad value,
+        launchpad_unknown will be returned and a warning will be logged.
         """
-        # We don't bother trying to convert UNKNOWN_REMOTE_STATUS.
-        if remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
+        # We don't bother trying to convert remote_unknown.
+        if remote_value == remote_unknown:
+            return launchpad_unknown
 
         try:
-            launchpad_status = self.external_bugtracker.convertRemoteStatus(
-                remote_status)
-        except UnknownRemoteStatusError:
-            # We log the warning, since we need to know about statuses
+            launchpad_value = conversion_method(remote_value)
+        except UnknownRemoteValueError, e:
+            # We log the warning, since we need to know about values
             # that we don't handle correctly.
-            self.warning(
-                "Unknown remote status '%s'." % remote_status,
-                get_remote_system_oops_properties(
-                    self.external_bugtracker),
-                sys.exc_info())
+            self.logger.info(
+                "Unknown remote %s '%s' for bug %r on %s." %
+                (e.field_name, remote_value, self.remote_bug,
+                 self.bug_tracker_url))
+            launchpad_value = launchpad_unknown
 
-            launchpad_status = BugTaskStatus.UNKNOWN
-
-        return launchpad_status
-
+        return launchpad_value

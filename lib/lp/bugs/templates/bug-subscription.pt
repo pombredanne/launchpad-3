@@ -10,6 +10,32 @@
   i18n:domain="malone"
 >
 
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:content="string:var yui_base='${yui}';"></script>
+
+    <script type="text/javascript">
+        LPS.use('base', 'node', 'oop', 'event',
+                'lp.bugs.bug_notification_level',
+            function(Y) {
+                Y.on('domready', function () {
+                    Y.lp.bugs.bug_notification_level.setup();
+                });
+            });
+    </script>
+
+    <!-- It normally makes sense for form labels to be bold, but since this
+         form consists only of radio buttons, there's nothing but labels so we
+         just get wall-to-wall bold.  This rule turns the bold off. -->
+    <style type="text/css">
+      form table label {
+          font-weight: normal !important;
+      }
+    </style>
+
+  </metal:block>
+
 <body>
   <div metal:fill-slot="main">
 

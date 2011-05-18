@@ -24,7 +24,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
@@ -35,7 +35,6 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     UnknownRemoteStatusError,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -47,6 +46,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.bugs.scripts import debbugs
+from lp.services.database.isolation import ensure_no_transaction
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,

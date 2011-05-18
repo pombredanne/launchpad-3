@@ -101,16 +101,6 @@ class ViewLabel:
         return view.label
 
 
-archive_admin = ContextDisplayName('Administer %s')
-
-archive_activate = 'Activate Personal Package Archive'
-
-archive_copy_packages = ContextDisplayName('Copy packages from %s')
-
-archive_delete_packages = ContextDisplayName('Delete packages from %s')
-
-archive_edit = ContextDisplayName('Edit %s')
-
 bazaar_index = 'Launchpad Branches'
 
 branch_bug_links = ContextDisplayName(smartquote('Bug links for %s'))
@@ -326,40 +316,6 @@ rosetta_products = 'Projects with Translations in Launchpad'
 
 series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
-shipit_adminrequest = 'ShipIt admin request'
-
-shipit_exports = 'ShipIt exports'
-
-shipit_forbidden = 'Forbidden'
-
-shipit_index = 'ShipIt'
-
-shipit_index_edubuntu = 'Getting Edubuntu'
-
-shipit_index_ubuntu = 'Request an Ubuntu CD'
-
-shipit_login = 'ShipIt'
-
-shipit_login_error = 'ShipIt - Unsuccessful login'
-
-shipit_myrequest = "Your Ubuntu CD order"
-
-shipit_oops = 'Error: Oops'
-
-shipit_reports = 'ShipIt reports'
-
-shipit_requestcds = 'Your Ubuntu CD Request'
-
-shipit_survey = 'Ubuntu Server Edition survey'
-
-shipitrequests_index = 'ShipIt requests'
-
-shipitrequests_search = 'Search ShipIt requests'
-
-shipitrequest_edit = 'Edit ShipIt request'
-
-shipit_notfound = 'Error: Page not found'
-
 signedcodeofconduct_index = ContextDisplayName('%s')
 
 signedcodeofconduct_add = ContextTitle('Sign %s')
@@ -369,12 +325,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-standardshipitrequests_index = 'Standard ShipIt options'
-
-standardshipitrequest_new = 'Create a new standard option'
-
-standardshipitrequest_edit = 'Edit standard option'
 
 team_newpoll = ContextTitle('New poll for team %s')
 

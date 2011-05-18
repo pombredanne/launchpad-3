@@ -9,16 +9,14 @@ __all__ = []
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
+from lp.app.enums import ServiceUsage
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     SLEEP,
     )
-from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.app.enums import ServiceUsage
-from lp.testing import WindmillTestCase
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -77,13 +75,10 @@ class ImportQueueEntryTest(WindmillTestCase):
 
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
-        client = self.client
-        start_url = '%s/+imports/1' % TranslationsWindmillLayer.base_url
-        user = lpuser.TRANSLATIONS_ADMIN
+
         # Go to import queue page logged in as translations admin.
-        user.ensure_login(client)
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            '/+imports/1', user=lpuser.TRANSLATIONS_ADMIN)
 
         po_only_fields = set(self.FIELDS['PO']) - set(self.FIELDS['POT'])
         pot_only_fields = set(self.FIELDS['POT']) - set(self.FIELDS['PO'])
@@ -127,16 +122,11 @@ class ImportQueueEntryTest(WindmillTestCase):
         path = base_filename + '.pot'
         entry = self.factory.makeTranslationImportQueueEntry(
             path=path, productseries=productseries)
-        url = canonical_url(entry, rootsite='translations')
-
         transaction.commit()
 
         # The client reviews the upload.
-        client = self.client
-        user = lpuser.TRANSLATIONS_ADMIN
-        user.ensure_login(client)
-        client.open(url=url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            entry, user=lpuser.TRANSLATIONS_ADMIN)
         client.waits.sleep(milliseconds=SLEEP)
 
         # No template is preselected in the templates dropdown.
@@ -189,16 +179,11 @@ class ImportQueueEntryTest(WindmillTestCase):
             path=path, productseries=template.productseries,
             distroseries=template.distroseries,
             sourcepackagename=template.sourcepackagename)
-        url = canonical_url(entry, rootsite='translations')
-
         transaction.commit()
 
         # The client reviews the upload.
-        client = self.client
-        user = lpuser.TRANSLATIONS_ADMIN
-        user.ensure_login(client)
-        client.open(url=url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            entry, user=lpuser.TRANSLATIONS_ADMIN)
         client.waits.sleep(milliseconds=SLEEP)
 
         # The matching template is preselected in the templates dropdown.
@@ -216,15 +201,10 @@ class ImportQueueEntryTest(WindmillTestCase):
             path='foo.pot', productseries=template.productseries,
             distroseries=template.distroseries,
             sourcepackagename=template.sourcepackagename)
-        url = canonical_url(entry, rootsite='translations')
-
         transaction.commit()
 
-        client = self.client
-        user = lpuser.TRANSLATIONS_ADMIN
-        user.ensure_login(client)
-        client.open(url=url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor(
+            entry, user=lpuser.TRANSLATIONS_ADMIN)
         client.waits.sleep(milliseconds=SLEEP)
 
         client.select(id=u'field.potemplate', option=u'quote')
@@ -246,13 +226,10 @@ class ImportQueueStatusTest(WindmillTestCase):
 
     def test_import_queue_status_admin(self):
         """Tests that the admin can use the status picker."""
-        client = self.client
-        queue_url = self.layer.base_url+'/+imports'
-        user = lpuser.TRANSLATIONS_ADMIN
+
         # Go to import queue page logged in as translations admin.
-        client.open(url=queue_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        user.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/+imports', user=lpuser.TRANSLATIONS_ADMIN)
 
         # Click on the element containing the import status.
         client.waits.forElement(xpath=IMPORT_STATUS_1, timeout=FOR_ELEMENT)
@@ -265,15 +242,13 @@ class ImportQueueStatusTest(WindmillTestCase):
         client.asserts.assertText(xpath=IMPORT_STATUS_1, validator=u'Deleted')
 
         # Reload the page and make sure the change sticks.
-        client.open(url=queue_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(xpath=IMPORT_STATUS_1, timeout=FOR_ELEMENT)
         client.asserts.assertText(xpath=IMPORT_STATUS_1, validator=u'Deleted')
 
     def test_import_queue_status_nopriv(self):
         """Tests that a none-admin will have less choices."""
-        client = self.client
-        queue_url = self.layer.base_url+'/+imports'
         hubert = self.factory.makePerson(
             name="hubert", displayname="Hubert Hunt", password="test",
             email="hubert@example.com")
@@ -291,9 +266,7 @@ class ImportQueueStatusTest(WindmillTestCase):
         import_status = IMPORT_STATUS % entry.id
 
         # Go to import queue page logged in as a normal user.
-        client.open(url=queue_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(hubert, "test", client)
+        client, start_url = self.getClientForPerson('/+imports', hubert)
 
         # There should be no status picker for entry 1.
         client.waits.forElement(xpath=import_status, timeout=FOR_ELEMENT)
@@ -313,7 +286,7 @@ class ImportQueueStatusTest(WindmillTestCase):
         client.asserts.assertText(xpath=import_status, validator=u'Deleted')
 
         # Reload the page and make sure the change sticks.
-        client.open(url=queue_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(xpath=import_status, timeout=FOR_ELEMENT)
         client.asserts.assertText(xpath=import_status, validator=u'Deleted')

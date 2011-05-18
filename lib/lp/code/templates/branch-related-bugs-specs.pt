@@ -10,19 +10,18 @@
       <tal:bugs tal:define="branch context;
                             show_edit python:True;">
 
-        <ul tal:repeat="bug view/linked_bugs">
-          <li tal:condition="bug/required:launchpad.View"
-              tal:define="bugtask bug/bugtask;
-                          show_edit show_edit|Nothing"
-              tal:attributes="id string:buglink-${bug/id}"
+        <ul tal:repeat="bugtask view/linked_bugtasks">
+          <li tal:condition="bugtask/required:launchpad.View"
+              tal:define="show_edit show_edit|Nothing"
+              tal:attributes="id string:buglink-${bugtask/bug/id}"
               class="bug-branch-summary">
             <tal:buglink content="structure bugtask/fmt:link" />
             <tal:buglink-edit condition="show_edit|nothing">
               <a title="Remove link"
                  class="delete-buglink"
-                 tal:attributes="href string:+bug/${bug/id}/+delete;
-                                 id string:delete-buglink-${bug/id}">
-                <img src="/@@/remove"/>
+                 tal:attributes="href string:+bug/${bugtask/bug/id}/+delete;
+                                 id string:delete-buglink-${bugtask/bug/id}">
+                <img src="/@@/remove" alt="Remove"/>
               </a>
             </tal:buglink-edit>
           </li>
@@ -81,7 +80,7 @@
     }
 
     Y.on('domready', function() {
-        var logged_in = LP.client.links['me'] !== undefined;
+        var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
             Y.lp.code.branch.bugspeclinks.connect_branchlinks();

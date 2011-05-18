@@ -11,11 +11,11 @@ __all__ = [
 
 from datetime import datetime
 import operator
-import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 import pytz
+import simplejson
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -62,6 +62,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -69,6 +70,11 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -103,6 +109,7 @@ from lp.code.interfaces.branch import (
     IBranchNavigationMenu,
     IBranchSet,
     user_has_special_branch_access,
+    WrongNumberOfReviewTypeArguments,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -112,7 +119,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codehosting import compose_public_url
+from lp.code.interfaces.codehosting import (
+    BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -133,9 +143,11 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -301,16 +313,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
-    def getLinkedBugsAndTasks(self):
-        """Return a result set for the bugs with their tasks."""
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugbranch import BugBranch
-        from lp.bugs.model.bugtask import BugTask
-        return Store.of(self).find(
-            (Bug, BugTask),
-            BugBranch.branch == self,
-            BugBranch.bug == Bug.id,
-            BugTask.bug == Bug.id)
+    def getLinkedBugTasks(self, user, status_filter=None):
+        """See `IBranch`."""
+        params = BugTaskSearchParams(user=user, linked_branches=self.id,
+            status=status_filter)
+        tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
+        # Post process to discard irrelevant tasks: we only return one task per
+        # bug, and cannot easily express this in sql (yet).
+        return filter_bugtasks_by_context(self.target.context, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -466,7 +476,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_types is None:
             review_types = []
         if len(reviewers) != len(review_types):
-            raise ValueError(
+            raise WrongNumberOfReviewTypeArguments(
                 'reviewers and review_types must be equal length.')
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
@@ -574,17 +584,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         if end_date is not None:
             date_clause = And(date_clause, Revision.revision_date <= end_date)
         result = Store.of(self).find(
-            (BranchRevision, Revision, RevisionAuthor),
+            (BranchRevision, Revision),
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
-            Revision.revision_author == RevisionAuthor.id,
             date_clause)
         if oldest_first:
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
-        return result
+        def eager_load(rows):
+            revisions = map(operator.itemgetter(1), rows)
+            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
@@ -607,7 +619,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return True
 
-    @property
+    @cachedproperty
     def code_import(self):
         from lp.code.model.codeimport import CodeImportSet
         return CodeImportSet().getByBranch(self)
@@ -664,7 +676,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
-            for recipe in self.getRecipes())
+            for recipe in self.recipes)
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -703,13 +715,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             DeleteCodeImport(self.code_import)()
         Store.of(self).flush()
 
-    def associatedProductSeries(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedProductSeries(self):
+        """Helper for eager loading associatedProductSeries."""
+        # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def associatedProductSeries(self):
+        """See `IBranch`."""
+        return self._associatedProductSeries
 
     def getProductSeriesPushingTranslations(self):
         """See `IBranch`."""
@@ -719,13 +737,20 @@ class Branch(SQLBase, BzrIdentityMixin):
             ProductSeries,
             ProductSeries.translations_branch == self)
 
-    def associatedSuiteSourcePackages(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedSuiteSourcePackages(self):
+        """Helper for associatedSuiteSourcePackages."""
+        # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first.
+        # Order by the pocket to get the release one first. If changing this be
+        # sure to also change BranchCollection.getBranches.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
+
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
+        return self._associatedSuiteSourcePackages
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -929,8 +954,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        columns = (
-            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -938,7 +962,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for branch_revision_id, sequence, revision_id in rows:
+        for sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)
@@ -977,6 +1001,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
+    def _findStackedBranch(self, stacked_on_location):
+        location = stacked_on_location.strip('/')
+        if location.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            try:
+                branch_id = int(location.split('/', 1)[1])
+            except (ValueError, IndexError):
+                return None
+            return getUtility(IBranchLookup).get(branch_id)
+        else:
+            return getUtility(IBranchLookup).getByUniqueName(location)
+
     def branchChanged(self, stacked_on_location, last_revision_id,
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
@@ -984,8 +1019,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if stacked_on_location == '' or stacked_on_location is None:
             stacked_on_branch = None
         else:
-            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
-                stacked_on_location.strip('/'))
+            stacked_on_branch = self._findStackedBranch(stacked_on_location)
             if stacked_on_branch is None:
                 self.mirror_status_message = (
                     'Invalid stacked on location: ' + stacked_on_location)
@@ -1026,7 +1060,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        return self.destroySelf(break_references=True)
+        try:
+            return self.destroySelf(break_references=True)
+        except CannotDeleteBranch, e:
+            # Reraise and expose exception here so that the webservice_error
+            # is propogated.
+            raise CannotDeleteBranch(e.message)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
@@ -1155,7 +1194,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
@@ -1285,7 +1325,8 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1301,7 +1342,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1315,7 +1356,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -1334,10 +1376,10 @@ class BranchSet:
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
 
-    def getBranches(self, limit=50):
+    def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""
         anon_branches = getUtility(IAllBranches).visibleByUser(None)
-        branches = anon_branches.scanned().getBranches()
+        branches = anon_branches.scanned().getBranches(eager_load=eager_load)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)

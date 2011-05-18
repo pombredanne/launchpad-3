@@ -28,6 +28,7 @@ Anonymous users have read access to PO templates attributes.
     translation_domain: u'pmount'
     translation_files_collection_link:
         u'http://.../pmount/+pots/pmount/translation_files'
+    web_link: u'http://translations.launchpad.../ubuntu/hoary/+source/pmount/+pots/pmount'
 
 "translation_files" will list all POFiles associated with this template.
 

@@ -26,7 +26,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.base import Storm
 from storm.expr import (
     Desc,
     Not,
@@ -51,16 +50,16 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     urlappend,
     urlsplit,
     )
 from lp.app.errors import NotFoundError
+from lp.app.validators.email import valid_email
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
@@ -79,6 +78,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.stormbase import StormBase
 
 
 BUG_TRACKER_URL_FORMATS = {
@@ -751,7 +751,7 @@ class BugWatchSet(BugSetBase):
                     result, message, oops_id, bug_watch_ids))
 
 
-class BugWatchActivity(Storm):
+class BugWatchActivity(StormBase):
     """See `IBugWatchActivity`."""
 
     implements(IBugWatchActivity)

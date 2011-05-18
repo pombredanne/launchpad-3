@@ -67,11 +67,11 @@
 </div>
 <script>
 LPS.use('node', 'lp', function (Y) {
-    Y.get('div#reveal_profiling').on('click', function (e) {
-        Y.get('div#profiling_info').setStyle('display', 'block');
+    Y.one('div#reveal_profiling').on('click', function (e) {
+        Y.one('div#profiling_info').setStyle('display', 'block');
     });
-    Y.get('div#hide_profiling').on('click', function (e) {
-        Y.get('div#profiling_info').setStyle('display', 'none');
+    Y.one('div#hide_profiling').on('click', function (e) {
+        Y.one('div#profiling_info').setStyle('display', 'none');
     });
 });
 </script>

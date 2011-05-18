@@ -170,13 +170,12 @@ from canonical.launchpad.interfaces.launchpad import (
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.mailnotification import send_direct_contact_email
-from canonical.launchpad.validators.email import valid_email
+from lp.registry.mail.notification import send_direct_contact_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -205,19 +204,9 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    LaunchpadDropdownWidget,
-    LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription,
-    LocationWidget,
-    PasswordChangeWidget,
-    URIWidget,
-    )
-from canonical.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -234,6 +223,17 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.validators.email import valid_email
+from lp.app.widgets.image import ImageChangeWidget
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.app.widgets.location import LocationWidget
+from lp.app.widgets.password import PasswordChangeWidget
+from lp.app.widgets.textwidgets import URIWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -546,7 +546,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # Otherwise we return the normal view for a person's
             # archive subscriptions.
             return queryMultiAdapter(
-                (self.context, self.request), name ="+archivesubscriptions")
+                (self.context, self.request), name="+archivesubscriptions")
 
     @stepthrough('+recipe')
     def traverse_recipe(self, name):
@@ -1926,11 +1926,11 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].hasValidInput() and
             self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].hasValidInput() and
             self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
@@ -2120,10 +2120,6 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
     # Methods that customize the advanced search form.
-    def getAdvancedSearchPageHeading(self):
-        return (
-            "Bugs in %s: Advanced Search" % self.current_package.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs in %s" % self.current_package.displayname
 
@@ -2197,10 +2193,6 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        return "Bugs Related to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs related to %s" % self.context.displayname
 
@@ -2252,11 +2244,6 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """The header for the search page."""
         return "Bugs assigned to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Assigned to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
         return "Search bugs assigned to %s" % self.context.displayname
@@ -2297,11 +2284,6 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs commented on by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs commented on by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2346,11 +2328,6 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2400,11 +2377,6 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -3009,27 +2981,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             profile_url.host = config.launchpad.non_restricted_hostname
         return str(profile_url)
 
-    @property
-    def subscription_policy_description(self):
-        """Return the description of this team's subscription policy."""
-        assert self.team.isTeam(), (
-            'This method can only be called when the context is a team.')
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            description = _(
-                "This is a restricted team; new members can only be added "
-                "by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            description = _(
-                "This is a moderated team; all subscriptions are subjected "
-                "to approval by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            description = _(
-                "This is an open team; any user can join and no approval "
-                "is required.")
-        else:
-            raise AssertionError('Unknown subscription policy.')
-        return description
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -3440,6 +3391,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        if self.context.is_merge_pending:
+            if self.context.is_team:
+                merge_action = 'merged or deleted'
+            else:
+                merge_action = 'merged'
+            self.request.response.addInfoNotification(
+                "%s is queued to be be %s in a few minutes." % (
+                self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()
 
@@ -3931,7 +3890,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
@@ -4171,7 +4130,8 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
@@ -4263,6 +4223,8 @@ class PersonEditView(BasePersonEditView):
             removeSecurityProxy(self.context).name = new_name
             del data['name']
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4429,8 +4391,8 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpFields(self):
         terms = []
         for team in self.candidate_teams:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(team), team.displayname)
+            text = structured(
+                '<a href="%s">%s</a>', canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = FormFields(
             List(__name__='teams',
@@ -4528,7 +4490,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 team_string = team_names[0]
             elif len(team_names) > 1:
                 verb = 'have been'
-                team_string= (
+                team_string = (
                     ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
             full_message += '%s %s %s' % (team_string, verb, message)
         self.request.response.addInfoNotification(full_message)
@@ -4648,7 +4610,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
                    ),
-            custom_widget = self.custom_widgets['VALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['VALIDATED_SELECTED'])
 
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
@@ -4670,7 +4632,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
-            custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.

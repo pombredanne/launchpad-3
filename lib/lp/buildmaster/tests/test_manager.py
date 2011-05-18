@@ -555,6 +555,13 @@ class TestNewBuilders(TestCase):
         self.assertEqual(
             new_builders, builder_scanner.checkForNewBuilders())
 
+    def test_checkForNewBuilders_detects_builder_only_once(self):
+        # checkForNewBuilders() only detects a new builder once.
+        builder_scanner = self._getScanner()
+        LaunchpadObjectFactory().makeBuilder(name="sammy")
+        self.assertEqual(["sammy"], builder_scanner.checkForNewBuilders())
+        self.assertEqual([], builder_scanner.checkForNewBuilders())
+
     def test_scan(self):
         # See if scan detects new builders.
 

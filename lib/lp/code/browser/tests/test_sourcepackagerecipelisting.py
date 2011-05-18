@@ -15,8 +15,11 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_project_branch_recipe_listing(self):
+        # We can see recipes for the product. We need to create two, since
+        # only one will redirect to that recipe.
         branch = self.factory.makeProductBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
@@ -24,8 +27,11 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
             generic-string.*  Person-name""", text)
 
     def test_package_branch_recipe_listing(self):
+        # We can see recipes for the package. We need to create two, since
+        # only one will redirect to that recipe.
         branch = self.factory.makePackageBranch()
         recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+        recipe2 = self.factory.makeSourcePackageRecipe(branches=[branch])
         text = self.getMainText(recipe.base_branch, '+recipes')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*

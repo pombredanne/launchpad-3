@@ -70,6 +70,7 @@ from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
+from lp.services.encoding import is_ascii_only
 
 # HTTP Status code constants - define as appropriate.
 HTTP_MOVED_PERMANENTLY = 301
@@ -226,6 +227,7 @@ class UserAttributeCache:
         return self._user
 
     _is_beta = None
+
     @property
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
@@ -474,9 +476,9 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken
-    from the root_url given in launchpad.conf.
-
+    :param request: The web request; if not provided, canonical_url attempts
+        to guess at the current request, using the protocol, host, and port
+        taken from the root_url given in launchpad.conf.
     :param path_only_if_possible: If the protocol and hostname can be omitted
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
@@ -494,8 +496,7 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
-    # The request is needed when there's no rootsite specified and when
-    # handling the different shipit sites.
+    # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
@@ -550,8 +551,7 @@ def canonical_url(
     if ((path_only_if_possible and
          request is not None and
          root_url.startswith(request.getApplicationURL()))
-        or force_local_path
-        ):
+        or force_local_path):
         return unicode('/' + path)
     return unicode(root_url + path)
 
@@ -651,13 +651,16 @@ class Navigation:
         return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
-
     def publishTraverse(self, request, name):
         """Shim, to set objects in the launchbag when traversing them.
 
         This needs moving into the publication component, once it has been
         refactored.
         """
+        # Launchpad only produces ascii URLs.  If the name is not ascii, we
+        # can say nothing is found here.
+        if not is_ascii_only(name):
+            raise NotFound(self.context, name)
         nextobj = self._publishTraverse(request, name)
         getUtility(IOpenLaunchBag).add(nextobj)
         return nextobj
@@ -840,7 +843,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name, self.context)
+        raise NotFound(self.context, name)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

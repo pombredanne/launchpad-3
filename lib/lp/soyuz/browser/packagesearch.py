@@ -19,7 +19,14 @@ class PackageSearchViewBase(LaunchpadView):
         """Save the search text set by the user."""
         self.text = self.request.get("text", None)
         if self.text is not None:
+            # The user may have URL hacked a query string with more than one
+            # "text" parameter. We'll take the last one.
+            if isinstance(self.text, list):
+                self.text = self.text[-1]
             self.text = self.text.strip()
+            # We need to ensure the form on the refreshed page shows the
+            # correct text.
+            self.request.form['text'] = self.text
 
     @property
     def search_requested(self):
@@ -29,14 +36,14 @@ class PackageSearchViewBase(LaunchpadView):
     @cachedproperty
     def matches(self):
         """Return the number of matched search results."""
-        return self.search_results.count()
+        return self.batchnav.batch.total()
 
     @property
     def detailed(self):
         """Return whether detailed results should be provided."""
         return self.matches <= 5
 
-    @property
+    @cachedproperty
     def batchnav(self):
         """Return the batch navigator for the search results."""
         return BatchNavigator(self.search_results, self.request)
@@ -44,7 +51,7 @@ class PackageSearchViewBase(LaunchpadView):
     @cachedproperty
     def search_results(self):
         """Search for packages matching the request text.
-        
+
         Try to find the packages that match the given text, then present
         those as a list. Cache previous results so the search is only done
         once.

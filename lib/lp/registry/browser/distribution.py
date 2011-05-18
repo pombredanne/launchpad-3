@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -21,7 +21,10 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionPublisherConfigView',
+    'DistributionReassignmentView',
     'DistributionSeriesView',
+    'DistributionDerivativesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
     'DistributionSetActionNavigationMenu',
@@ -35,10 +38,12 @@ __all__ = [
     'DistributionView',
     ]
 
+from collections import defaultdict
 import datetime
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
@@ -65,7 +70,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.widgets.image import ImageChangeWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -77,20 +81,31 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.image import ImageChangeWidget
+from lp.archivepublisher.interfaces.publisherconfig import (
+    IPublisherConfig,
+    IPublisherConfigSet,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.registry.browser import RegistryEditFormView
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.registry.browser import (
+    add_subscribe_link,
+    RegistryEditFormView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin,
-    )
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -103,6 +118,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -264,8 +280,8 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionLinksMixin:
-    """A mixing to provide common links to menus."""
+class DistributionLinksMixin(StructuralSubscriptionMenuMixin):
+    """A mixin to provide common links to menus."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -277,7 +293,21 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit']
+
+    @enabled_with_permission("launchpad.Admin")
+    def pubconf(self):
+        text = "Configure publisher"
+        return Link("+pubconf", text, icon="edit")
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'pubconf']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+            links.append('edit_bug_mail')
+        return links
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -294,6 +324,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         'reassign',
         'addseries',
         'series',
+        'derivatives',
         'milestones',
         'top_contributors',
         'builds',
@@ -324,7 +355,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change registrant'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -391,6 +422,10 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'All series'
         return Link('+series', text, icon='info')
 
+    def derivatives(self):
+        text = 'All derivatives'
+        return Link('+derivatives', text, icon='info')
+
     def milestones(self):
         text = 'All milestones'
         return Link('+milestones', text, icon='info')
@@ -437,7 +472,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
 
     usedfor = IDerivativeDistribution
 
-    @enabled_with_permission('launchpad.Append')
+    @enabled_with_permission('launchpad.Moderate')
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
@@ -447,13 +482,17 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = (
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'filebug',
-        'subscribe',
-        )
+
+    @property
+    def links(self):
+        links = [
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            'filebug',
+            ]
+        add_subscribe_link(links)
+        return links
 
 
 class DistributionSpecificationsMenu(NavigationMenu,
@@ -593,6 +632,11 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
+    def initialize(self):
+        super(DistributionView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
         # Listify to remove repeated queries.
@@ -607,6 +651,11 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
                     canonical_url(milestone), milestone.name))
 
         return english_list(linked_milestones)
+
+    @cachedproperty
+    def latest_derivatives(self):
+        """The 5 most recent derivatives."""
+        return self.context.derivatives[:5]
 
 
 class DistributionArchivesView(LaunchpadView):
@@ -713,7 +762,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
     usedfor = IDistributionSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team', 'register_project', 'register_distribution',
+        'create_account']
 
 
 class DistributionSetView(LaunchpadView):
@@ -767,6 +818,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            registrant=self.user,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -812,16 +864,13 @@ class DistributionEditView(RegistryEditFormView):
             data['enable_bug_expiration'] = False
 
 
-class DistributionSeriesView(LaunchpadView):
-    """A view to list the distribution series"""
-
-    label = 'Timeline'
-
+class DistributionSeriesBaseView(LaunchpadView):
+    """A base view to list distroseries."""
     @cachedproperty
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.series:
+        for series in self._displayed_series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),
@@ -837,6 +886,28 @@ class DistributionSeriesView(LaunchpadView):
         else:
             # This is normal presentation.
             return ''
+
+
+class DistributionSeriesView(DistributionSeriesBaseView):
+    """A view to list the distribution series."""
+    label = 'Timeline'
+    show_add_series_link = True
+    show_milestones_link = True
+
+    @property
+    def _displayed_series(self):
+        return self.context.series
+
+
+class DistributionDerivativesView(DistributionSeriesBaseView):
+    """A view to list the distribution derivatives."""
+    label = 'Derivatives'
+    show_add_series_link = False
+    show_milestones_link = False
+
+    @property
+    def _displayed_series(self):
+        return self.context.derivatives
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
@@ -961,10 +1032,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -1001,6 +1072,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     @cachedproperty
     def mirror_count(self):
         return len(self.mirrors)
+
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
@@ -1077,3 +1149,62 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
+
+
+class DistributionReassignmentView(ObjectReassignmentView):
+    """View class for changing distribution maintainer."""
+    ownerOrMaintainerName = 'maintainer'
+
+
+class DistributionPublisherConfigView(LaunchpadFormView):
+    """View class for configuring publisher options for a DistroSeries.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+    schema = IPublisherConfig
+    field_names = ['root_dir', 'base_url', 'copy_base_url']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Publisher configuration for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """If the config already exists, set up the fields with data."""
+        config = getUtility(
+            IPublisherConfigSet).getByDistribution(self.context)
+        values = {}
+        if config is not None:
+            for name in self.field_names:
+                values[name] = getattr(config, name)
+
+        return values
+
+    @action("Save")
+    def save_action(self, action, data):
+        """Update the context and redirect to its overview page."""
+        config = getUtility(IPublisherConfigSet).getByDistribution(
+            self.context)
+        if config is None:
+            config = getUtility(IPublisherConfigSet).new(
+                distribution=self.context,
+                root_dir=data['root_dir'],
+                base_url=data['base_url'],
+                copy_base_url=data['copy_base_url'])
+        else:
+            form.applyChanges(config, self.form_fields, data, self.adapters)
+
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)

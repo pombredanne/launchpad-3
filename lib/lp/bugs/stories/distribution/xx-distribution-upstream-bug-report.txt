@@ -71,8 +71,7 @@ totalizing the watched bugs for native upstreams, but then we'd have a
 broken percentage when comparing with bugs marked upstream. Perhaps
 we'd solve this by separating the watched column into natively watched
 and remote watched, but I don't know how to fix this right now.  See
-https://bugs.launchpad.net/malone/+bug/188020
-    -- kiko, 2008-02-01
+bug #188020 -- kiko, 2008-02-01
 
 
 Useful links
@@ -369,25 +368,14 @@ The report now renders an icon and a link to the branch page:
 Empty distributions
 -------------------
 
-Some distributions aren't as happening as others. The page still works for
-them, though:
+If a distribution does not use Launchpad for bug tracking, no
+upstream bug report is shown, only a message that no data is
+available.
 
     >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
-    >>> print extract_text(table, True)
-    mozilla-firefox  Missing corresponding project.  (find)  (link)
-        3    0     0.00  3  2      66.67    1    0    0.00  2  -
-
-    >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
-    >>> print extract_text(table)
-        Totals: 3    0     0.00  3  2      66.67    1    0    0.00  2  0
-
-    >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
-    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
     >>> print table
     None
-    >>> content = find_main_content(browser.contents)
-    >>> print extract_text(content.h1)
-    Upstream bug report for Kubuntu
-    >>> print extract_text(content.find('div', 'top-portlet'))
-    Kubuntu has no bugs filed against it.
+    >>> message = find_tag_by_id(browser.contents, 'no-lp-usage')
+    >>> print extract_text(message)
+    This distribution does not use Launchpad for development.

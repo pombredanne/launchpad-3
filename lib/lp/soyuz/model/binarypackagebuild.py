@@ -4,7 +4,10 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BinaryPackageBuild', 'BinaryPackageBuildSet']
+__all__ = [
+    'BinaryPackageBuild',
+    'BinaryPackageBuildSet',
+    ]
 
 import datetime
 import logging
@@ -16,6 +19,7 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
+    SQL,
     )
 from storm.locals import (
     Int,
@@ -27,10 +31,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import (
-    ProxyFactory,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -54,6 +55,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     ISlaveStore,
+    IStore,
     )
 from canonical.launchpad.mail import (
     format_address,
@@ -87,8 +89,10 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     CannotBeRescored,
     IBinaryPackageBuild,
     IBinaryPackageBuildSet,
+    UnparsableDependencies,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
@@ -97,24 +101,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
-
-
-def get_binary_build_for_build_farm_job(build_farm_job):
-    """Factory method to returning a binary for a build farm job."""
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-    resulting_tuple = store.find(
-        find_spec,
-        BinaryPackageBuild.package_build == PackageBuild.id,
-        PackageBuild.build_farm_job == BuildFarmJob.id,
-        BuildFarmJob.id == build_farm_job.id).one()
-
-    if resulting_tuple is None:
-        return None
-
-    # We specifically return a proxied BinaryPackageBuild so that we can
-    # be sure it has the correct proxy.
-    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
@@ -160,18 +146,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
     def current_component(self):
         """See `IBuild`."""
         latest_publication = self._getLatestPublication()
-
-        # XXX cprov 2009-06-06 bug=384220:
-        # This assertion works fine in production, since all build records
-        # are legitimate and have a corresponding source publishing record
-        # (which triggered their creation, in first place). However our
-        # sampledata is severely broken in this area and depends heavily
-        # on the fallback to the source package original component.
-        #assert latest_publication is not None, (
-        #    'Build %d lacks a corresponding source publication.' % self.id)
-        if latest_publication is None:
-            return self.source_package_release.component
-
+        assert latest_publication is not None, (
+            'Build %d lacks a corresponding source publication.' % self.id)
         return latest_publication.component
 
     @property
@@ -299,6 +275,32 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
 
+    def getBinaryPackageNamesForDisplay(self):
+        """See `IBuildView`."""
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageName),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackageName.id == BinaryPackageRelease.binarypackagenameID)
+        return result.order_by(
+            [BinaryPackageName.name, BinaryPackageRelease.id])
+
+    def getBinaryFilesForDisplay(self):
+        """See `IBuildView`."""
+        store = Store.of(self)
+        result = store.find(
+            (BinaryPackageRelease, BinaryPackageFile, LibraryFileAlias,
+             LibraryFileContent),
+            BinaryPackageRelease.build == self,
+            BinaryPackageRelease.id ==
+                BinaryPackageFile.binarypackagereleaseID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            LibraryFileContent.id == LibraryFileAlias.contentID)
+        return result.order_by(
+            [LibraryFileAlias.filename, BinaryPackageRelease.id]).config(
+            distinct=True)
+
     @property
     def binarypackages(self):
         """See `IBuild`."""
@@ -365,6 +367,15 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             raise CannotBeRescored("Build cannot be rescored.")
 
         self.buildqueue_record.manualScore(score)
+
+    @property
+    def api_score(self):
+        """See `IBinaryPackageBuild`."""
+        # Score of the related buildqueue record (if any)
+        if self.buildqueue_record is None:
+            return None
+        else:
+            return self.buildqueue_record.lastscore
 
     def makeJob(self):
         """See `IBuildFarmJob`."""
@@ -467,7 +478,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         try:
             parsed_deps = apt_pkg.ParseDepends(self.dependencies)
         except (ValueError, TypeError):
-            raise AssertionError(
+            raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.dependencies))
@@ -590,6 +601,8 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         """
 
         if not config.builddmaster.send_build_notification:
+            return
+        if self.status == BuildStatus.FULLYBUILT:
             return
 
         recipients = set()
@@ -804,12 +817,24 @@ class BinaryPackageBuildSet:
 
         return BinaryPackageBuild.select(query, clauseTables=clauseTables)
 
-    def getByBuildID(self, id):
+    def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
+
+    def getByBuildFarmJob(self, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        resulting_tuple = Store.of(build_farm_job).find(
+            find_spec,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id == build_farm_job.id).one()
+        if resulting_tuple is None:
+            return None
+        return resulting_tuple[0]
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""
@@ -941,7 +966,7 @@ class BinaryPackageBuildSet:
     def getBuildsByArchIds(self, distribution, arch_ids, status=None,
                            name=None, pocket=None):
         """See `IBinaryPackageBuildSet`."""
-        # If not distroarchseries was found return empty list
+        # If no distroarchseries were passed in, return an empty list
         if not arch_ids:
             return EmptyResultSet()
 
@@ -1049,7 +1074,12 @@ class BinaryPackageBuildSet:
             # We're changing 'build' so make sure we have an object from
             # the master store.
             build = IMasterObject(build)
-            build.updateDependencies()
+            try:
+                build.updateDependencies()
+            except UnparsableDependencies, e:
+                logger.error(e)
+                continue
+
             if build.dependencies:
                 logger.debug(
                     "Skipping %s: %s" % (build.title, build.dependencies))
@@ -1064,6 +1094,8 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
+        # Circular.
+        from lp.soyuz.model.archive import Archive
 
         query = """
             source_package_release IN %s AND
@@ -1076,9 +1108,13 @@ class BinaryPackageBuildSet:
         if buildstate is not None:
             query += "AND buildfarmjob.status = %s" % sqlvalues(buildstate)
 
-        return BinaryPackageBuild.select(
-            query, orderBy=["-buildfarmjob.date_created", "id"],
-            clauseTables=["Archive", "PackageBuild", "BuildFarmJob"])
+        resultset = IStore(BinaryPackageBuild).using(
+            BinaryPackageBuild, PackageBuild, BuildFarmJob, Archive).find(
+            (BinaryPackageBuild, PackageBuild, BuildFarmJob),
+            SQL(query))
+        resultset.order_by(
+            Desc(BuildFarmJob.date_created), BinaryPackageBuild.id)
+        return DecoratedResultSet(resultset, operator.itemgetter(0))
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""

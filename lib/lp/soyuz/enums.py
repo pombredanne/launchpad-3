@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
@@ -10,6 +10,7 @@ __all__ = [
     'ArchivePurpose',
     'ArchiveStatus',
     'ArchiveSubscriberStatus',
+    'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
     'PackageCopyStatus',
@@ -102,6 +103,13 @@ class ArchivePurpose(DBEnumeratedType):
         """)
 
 
+archive_suffixes = {
+    ArchivePurpose.PRIMARY: '',
+    ArchivePurpose.PARTNER: '-partner',
+    ArchivePurpose.DEBUG: '-debug',
+}
+
+
 class ArchiveStatus(DBEnumeratedType):
     """The status of an archive, e.g. active, disabled. """
 
@@ -127,19 +135,19 @@ class ArchiveStatus(DBEnumeratedType):
 
 class ArchiveSubscriberStatus(DBEnumeratedType):
     """The status of an `ArchiveSubscriber`."""
-    
+
     CURRENT = DBItem(1, """
         Active
 
         The subscription is current.
         """)
-    
+
     EXPIRED = DBItem(2, """
         Expired
 
         The subscription has expired.
         """)
-    
+
     CANCELLED = DBItem(3, """
         Cancelled
 
@@ -523,15 +531,12 @@ class SourcePackageFormat(DBEnumeratedType):
         3.0 (quilt)
 
         Specifies a non-native package, with an orig.tar.* and a debian.tar.*.
-        Supports gzip and bzip2 compression.
+        Supports gzip, bzip2, and xz compression.
         """)
 
     FORMAT_3_0_NATIVE = DBItem(2, """
         3.0 (native)
 
-        Specifies a native package, with a single tar.*. Supports gzip and
-        bzip2 compression.
+        Specifies a native package, with a single tar.*. Supports gzip,
+        bzip2, and xz compression.
         """)
-
-
-

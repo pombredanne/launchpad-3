@@ -566,8 +566,10 @@ class NascentUpload:
             candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
-            if candidates:
+            try:
                 return candidates[0]
+            except IndexError:
+                pass
 
         return None
 

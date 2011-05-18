@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
@@ -9,7 +9,6 @@ __all__ = [
     'LibrarianServerFixture',
     ]
 
-import atexit
 import os
 import shutil
 import tempfile
@@ -216,7 +215,7 @@ class LibrarianServerFixture(TacTestSetup):
     @property
     def logfile(self):
         # Store the log in the server root; if its wanted after a test, that
-        # test can use addDetail to grab the log and include it in its 
+        # test can use addDetail to grab the log and include it in its
         # error.
         try:
             return os.path.join(self.root, 'librarian.log')

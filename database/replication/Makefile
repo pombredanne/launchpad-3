@@ -15,9 +15,9 @@
 #
 #  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
-#  $ pg_dump --format=c launchpad_dev | bzip2 -c > launchpad.dump.bz2
+#  $ pg_dump --format=c launchpad_dev > launchpad.dump
 #  $ make stagingsetup \
-#        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump.bz2
+#        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
 # To restore a dogfood database:
@@ -32,6 +32,10 @@
 # We should put this back when DBLoopTuner is more intelligent, perhaps
 # pulling the allowable lag setting from a config file.
 LAG=0 seconds
+
+# For real restores, this is being run on an 8 core system. Let pg_restore
+# run multiprocess.
+MULTIPROC=-j 4
 
 DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
@@ -54,7 +58,7 @@ CREATEDB=${CREATEDB_84}
 # Set this to --exit-on-error once our dumps are coming from a PG 8.4
 # source. Currently, the PG 8.3 dumps generate some spurious errors
 # when being restored into a PG 8.4 database.
-EXIT_ON_ERROR=
+EXIT_ON_ERROR=--exit-on-error
 
 # Turn off output silencing so we can see details of staging deployments.
 # Without the timestamps, we are unable to estimate production deployment
@@ -110,9 +114,8 @@ stagingsetup:
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	# Stop ignoring error code after dumps come from an 8.4 system.
-	-bunzip2 --stdout ${STAGING_DUMP} | \
-	    pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR}
+	pg_restore --dbname=lpmain_staging_new --no-owner ${EXIT_ON_ERROR} \
+	    ${MULTIPROC} ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py

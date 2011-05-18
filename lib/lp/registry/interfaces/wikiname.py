@@ -26,7 +26,7 @@ from lp.services.fields import URIField
 
 class IWikiName(IHasOwner):
     """Wiki for Users"""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.

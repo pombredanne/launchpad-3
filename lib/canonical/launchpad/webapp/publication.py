@@ -85,6 +85,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
+from lp.services.osutils import open_for_writing
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -245,7 +246,8 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
+        threadrequestfile = open_for_writing(
+            'logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:
@@ -462,7 +464,7 @@ class LaunchpadBrowserPublication(
             'RootObject:OpStats', 'RootObject:+opstats',
             'RootObject:+haproxy'):
             request.features = NullFeatureController()
-            features.per_thread.features = request.features
+            features.install_feature_controller(request.features)
 
         # Calculate the hard timeout: needed because featureflags can be used
         # to control the hard timeout, and they trigger DB access, but our
@@ -705,6 +707,8 @@ class LaunchpadBrowserPublication(
         superclass.endRequest(self, request, object)
 
         da.clear_request_started()
+
+        getUtility(IOpenLaunchBag).clear()
 
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):

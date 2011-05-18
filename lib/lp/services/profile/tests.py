@@ -16,7 +16,10 @@ import unittest
 
 from lp.testing import TestCase
 from bzrlib.lsprof import BzrProfiler
-from zope.app.publication.interfaces import EndRequestEvent
+from zope.app.publication.interfaces import (
+    BeforeTraverseEvent,
+    EndRequestEvent,
+    )
 from zope.component import getSiteManager
 
 import canonical.launchpad.webapp.adapter as da
@@ -26,6 +29,8 @@ from canonical.launchpad.webapp.errorlog import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
+from canonical.testing import layers
+from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
 
 EXAMPLE_HTML_START = '''\
@@ -69,22 +74,26 @@ class BaseTest(TestCase):
             memory_profile_log=memory_profile_log)
 
 
-class TestRequestStartHandler(BaseTest):
-    """Tests for the start handler of the profiler integration.
-
-    See lib/canonical/doc/profiling.txt for an end-user description of
-    the functionality.
-    """
+class TestCleanupProfiler(BaseTest):
+    """Add a tearDown that will cleanup the profiler if it is running."""
 
     def tearDown(self):
         "Do the usual tearDown, plus clean up the profiler object."
         if getattr(profile._profilers, 'profiler', None) is not None:
             profile._profilers.profiler.stop()
             del profile._profilers.profiler
-        for name in ('actions', 'memory_profile_start'):
+        for name in ('actions', 'memory_profile_start', 'profiling'):
             if getattr(profile._profilers, name, None) is not None:
                 delattr(profile._profilers, name)
-        TestCase.tearDown(self)
+        super(TestCleanupProfiler, self).tearDown()
+
+
+class TestRequestStartHandler(TestCleanupProfiler):
+    """Tests for the start handler of the profiler integration.
+
+    See lib/canonical/doc/profiling.txt for an end-user description of
+    the functionality.
+    """
 
     def test_config_stops_profiling(self):
         """The ``profiling_allowed`` configuration should disable all
@@ -450,5 +459,21 @@ class TestRequestEndHandler(BaseTest):
         self.assertCleanProfilerState()
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestBeforeTraverseHandler(TestCleanupProfiler):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def test_can_enable_profiling_over_config(self):
+        # The flag profiling.enabled wins over a config that has
+        # disabled profiling. This permits the use of profiling on qastaging
+        # and similar systems.
+        self.pushProfilingConfig(
+            profiling_allowed='False', profile_all_requests='True',
+            memory_profile_log='.')
+        event = BeforeTraverseEvent(None,
+            self._get_request('/++profile++show,log'))
+        with FeatureFixture({'profiling.enabled':'on'}):
+            profile.before_traverse(event)
+            self.assertTrue(profile._profilers.profiling)
+            self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
+            self.assertEquals(profile._profilers.actions, set(('show', 'log')))

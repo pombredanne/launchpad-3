@@ -16,12 +16,12 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.encoding import escape_nonascii_uniquely
+from lp.services.encoding import escape_nonascii_uniquely
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 from lp.registry.interfaces.mailinglist import (

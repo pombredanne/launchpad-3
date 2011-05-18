@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
 import time
-from unittest import TestLoader
 
 import pytz
 from storm.locals import Store
@@ -18,7 +17,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -34,7 +33,7 @@ from lp.testing import TestCase
 class TestJob(TestCase):
     """Ensure Job behaves as intended."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_implements_IJob(self):
         """Job should implement IJob."""
@@ -211,7 +210,7 @@ class TestJob(TestCase):
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def _sampleData(self):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -296,7 +295,3 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

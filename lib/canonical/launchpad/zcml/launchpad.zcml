@@ -166,8 +166,8 @@
       permission="zope.Public"
       />
 
-  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
-  shipit-forbidden.pt, initially. -->
+  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt,
+  initially. -->
   <browser:page
       for="*"
       name="+forbidden-page-macros"
@@ -257,13 +257,6 @@
       name="+authorize-token"
       class="canonical.launchpad.browser.OAuthAuthorizeTokenView"
       template="../templates/oauth-authorize.pt"
-      permission="launchpad.AnyPerson" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+token-authorized"
-      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
-      template="../templates/token-authorized.pt"
       permission="launchpad.AnyPerson" />
 
   <browser:page

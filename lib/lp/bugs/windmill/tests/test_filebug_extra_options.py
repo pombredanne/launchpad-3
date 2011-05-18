@@ -1,14 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 class TestFilebugExtras(WindmillTestCase):
@@ -22,12 +20,10 @@ class TestFilebugExtras(WindmillTestCase):
         This test ensures that, with Javascript enabled, the extra options
         expander starts closed, and contains several fields when opened.
         """
-        client = self.client
 
         # Open a +filebug page and wait for it to finish loading.
-        client.open(url=u'%s/firefox/+filebug' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/firefox/+filebug', user=lpuser.SAMPLE_PERSON)
 
         # Search for a possible duplicate.
         client.waits.forElement(
@@ -50,18 +46,14 @@ class TestFilebugExtras(WindmillTestCase):
 
 def _test_expander(client):
     extra_opts_form = u"//fieldset[@id='filebug-extra-options']/div"
-    form_closed = u"%s[@class='collapsed']" % extra_opts_form
-    form_opened = u"%s[@class='expanded']" % extra_opts_form
+    form_closed = u"%s[contains(@class, 'lazr-closed')]" % extra_opts_form
+    form_opened = u"%s[contains(@class, 'lazr-opened')]" % extra_opts_form
 
     # The collapsible area is collapsed and doesn't display.
-    client.asserts.assertNode(xpath=form_closed)
+    client.waits.forElement(xpath=form_closed)
 
     # Click to expand the extra options form.
     client.click(link=u'Extra options')
 
     # The collapsible area is expanded and does display.
-    client.asserts.assertNode(xpath=form_opened)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    client.waits.forElement(xpath=form_opened)

@@ -2,11 +2,11 @@ This test verifies that we correctly handle keys which are in some way
 special: either invalid, broken, revoked, expired, or already imported.
 
   >>> import email
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> from lp.testing.keyserver import KeyServerTac
   >>> from lp.services.mail import stub
 
-  >>> z = ZecaTestSetup()
-  >>> z.setUp()
+  >>> tac = KeyServerTac()
+  >>> tac.setUp()
 
   >>> sign_only   = "447D BF38 C4F9 C4ED 7522  46B7 7D88 9137 17B0 5A8F"
   >>> preimported = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
@@ -26,7 +26,5 @@ Try to import a key which is already imported:
   ...
   ...has already been imported...
 
-Finally, kill zeca:
-
-  >>> z.tearDown()
+  >>> tac.tearDown()
 

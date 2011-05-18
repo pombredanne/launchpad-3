@@ -3846,7 +3846,6 @@ reg ./tests/bug-249185.txt
     ./tests/test_branchtarget.py
     ./tests/test_branchurifield.py
     ./tests/test_bugnotification.py
-    ./tests/test_chunkydiff_setting.py
     ./tests/test_datetimeutils.py
     ./tests/test_helpers.py
     ./tests/test_imports.py

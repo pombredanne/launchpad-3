@@ -15,10 +15,12 @@ import hashlib
 from lazr.delegates import delegates
 import pytz
 from storm.expr import (
-    Coalesce,
+    And,
     Desc,
     LeftJoin,
     Or,
+    Select,
+    Union,
     )
 from storm.locals import (
     Bool,
@@ -61,7 +63,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     InconsistentBuildFarmJobError,
-    ISpecificBuildFarmJob,
+    ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
@@ -349,29 +351,26 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         # Adapt ourselves based on our job type.
         try:
-            build = getAdapter(
-                self, ISpecificBuildFarmJob, self.job_type.name)
+            source = getUtility(
+                ISpecificBuildFarmJobSource, self.job_type.name)
         except ComponentLookupError:
             raise InconsistentBuildFarmJobError(
-                "No adapter was found for the build farm job type %s." % (
+                "No source was found for the build farm job type %s." % (
                     self.job_type.name))
 
-        # Since the adapters of to ISpecificBuildFarmJob proxy their
-        # results manually, we don't want the second proxy added by
-        # getAdapter above.
-        build_without_outer_proxy = removeSecurityProxy(build)
+        build = source.getByBuildFarmJob(self)
 
-        if build_without_outer_proxy is None:
+        if build is None:
             raise InconsistentBuildFarmJobError(
                 "There is no related specific job for the build farm "
                 "job with id %d." % self.id)
 
         # Just to be on the safe side, make sure the build is still
         # proxied before returning it.
-        assert isProxy(build_without_outer_proxy), (
-            "Unproxied result returned from ISpecificBuildFarmJob adapter.")
+        assert isProxy(build), (
+            "Unproxied result returned from ISpecificBuildFarmJobSource.")
 
-        return build_without_outer_proxy
+        return build
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
@@ -400,19 +399,55 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        origin = [BuildFarmJob]
-        left_join_archive = [
+        origin = [
+            BuildFarmJob,
             LeftJoin(
                 PackageBuild,
                 PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(
-                Archive, PackageBuild.archive == Archive.id),
             ]
+
+        # STORM syntax has totally obfuscated this query and wasted
+        # THREE hours of my time converting perfectly good SQL syntax.  I'm
+        # really sorry if you're the poor sap who has to maintain this.
+
+        inner_privacy_query = (
+            Union(
+                Select(
+                    Archive.id,
+                    tables=(Archive,),
+                    where=(Archive.private == False)
+                    ),
+                Select(
+                    Archive.id,
+                    tables=(Archive,),
+                    where=And(
+                        Archive.private == True,
+                        Archive.ownerID.is_in(
+                            Select(
+                                TeamParticipation.teamID,
+                                where=(TeamParticipation.person == user),
+                                distinct=True
+                            )
+                        )
+                    )
+                )
+            )
+        )
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            origin.extend(left_join_archive)
-            extra_clauses.append(Coalesce(Archive.private, False) == False)
+            extra_clauses.append(
+                Or(
+                    PackageBuild.id == None,
+                    PackageBuild.archive_id.is_in(
+                        Select(
+                            Archive.id,
+                            tables=(Archive,),
+                            where=(Archive.private == False)
+                            )
+                        )
+                    )
+                )
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             # Admins get to see everything.
@@ -420,13 +455,12 @@ class BuildFarmJobSet:
         else:
             # Everyone else sees all public builds and the
             # specific private builds to which they have access.
-            origin.extend(left_join_archive)
-            origin.append(LeftJoin(
-                TeamParticipation,
-                TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
-                Or(Coalesce(Archive.private, False) == False,
-                   TeamParticipation.person == user))
+                Or(
+                    PackageBuild.id == None,
+                    PackageBuild.archive_id.is_in(inner_privacy_query)
+                    )
+                )
 
         filtered_builds = IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *extra_clauses)

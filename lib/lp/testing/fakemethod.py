@@ -1,8 +1,7 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0702
-
 
 __metaclass__ = type
 __all__ = [
@@ -55,3 +54,11 @@ class FakeMethod:
     @property
     def call_count(self):
         return len(self.calls)
+
+    def extract_args(self):
+        """Return just the calls' positional-arguments tuples."""
+        return [args for args, kwargs in self.calls]
+
+    def extract_kwargs(self):
+        """Return just the calls' keyword-arguments dicts."""
+        return [kwargs for args, kwargs in self.calls]

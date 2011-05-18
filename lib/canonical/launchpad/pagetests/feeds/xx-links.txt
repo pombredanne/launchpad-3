@@ -256,7 +256,7 @@ show a link to the atom feed for that source package's latest bugs.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom"
-        title="Latest Bugs for cnews in ubuntu" />]
+        title="Latest Bugs for cnews in Ubuntu" />]
 
 
 == Latest Branches for a ProjectGroup ==
@@ -269,10 +269,10 @@ to the atom feed for that project group's latest branches.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/mozilla/branches.atom"
-        title="Latest Branches for the Mozilla Project" />,
+        title="Latest Branches for The Mozilla Project" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/mozilla/revisions.atom"
-        title="Latest Revisions for the Mozilla Project" />]
+        title="Latest Revisions for The Mozilla Project" />]
 
 
 == Latest Branches for a Product ==

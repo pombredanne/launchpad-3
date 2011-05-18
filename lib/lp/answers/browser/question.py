@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -64,6 +64,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -73,19 +74,12 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    LaunchpadRadioWidget,
-    TokensTextWidget,
-    )
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -96,7 +90,7 @@ from lp.answers.interfaces.question import (
     IQuestionLinkFAQForm,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionAction,
     QuestionSort,
     QuestionStatus,
@@ -116,6 +110,10 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.widgets.project import ProjectScopeWidget
+from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.propertycache import cachedproperty
 
@@ -229,6 +227,7 @@ class QuestionSetContextMenu(ContextMenu):
 
 class QuestionSetNavigation(Navigation):
     """Navigation for the IQuestionSet."""
+
     usedfor = IQuestionSet
 
     def traverse(self, name):
@@ -239,7 +238,13 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return redirection(canonical_url(question), status=301)
+        # We need to check if this is an API request, as we don't want to
+        # send a redirect in that instance (it breaks launchpadlib).
+        if hasattr(self.request, 'version'):
+            return question
+        else:
+            return self.redirectSubTree(
+                canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
@@ -431,7 +436,7 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([english])
+            supported_languages = [english]
 
         terms = []
         for lang in languages:
@@ -651,7 +656,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             # Remove the description widget.
             widgets = [(True, self.widgets[name])
                        for name in self.search_field_names]
-            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
+            self.widgets = form.Widgets(widgets, len(self.prefix) + 1)
             return self.search_template()
         return self.continue_action.success(data)
 
@@ -881,6 +886,17 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 return True
         return False
 
+    @property
+    def visible_messages(self):
+        messages = self.context.messages
+        strip_invisible = True
+        if self.user is not None:
+            role = PersonRoles(self.user)
+            strip_invisible = not (role.in_admin or role.in_registry_experts)
+        if strip_invisible:
+            messages = [message for message in messages if message.visible]
+        return messages
+
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
@@ -1095,6 +1111,18 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    @cachedproperty
+    def canSeeSpamControls(self):
+        return check_permission('launchpad.Moderate', self.context.question)
+
+    def getBoardCommentCSSClass(self):
+        css_classes = ["boardComment"]
+        if not self.context.visible:
+            # If a comment that isn't visible is being rendered, it's being
+            # rendered for an admin or registry_expert.
+            css_classes.append("adminHiddenComment")
+        return " ".join(css_classes)
 
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""

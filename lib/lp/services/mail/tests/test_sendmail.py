@@ -7,7 +7,7 @@ from doctest import DocTestSuite
 from email.Message import Message
 import unittest
 
-from canonical.launchpad.helpers import is_ascii_only
+from lp.services.encoding import is_ascii_only
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCase

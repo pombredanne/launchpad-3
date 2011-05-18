@@ -129,7 +129,7 @@ don't use Launchpad for bug tracking will inform the user that a bug can
 be reported on the project's source packages.
 
     >>> login('foo.bar@canonical.com')
-    >>> factory.makePackagingLink(
+    >>> packaging = factory.makePackagingLink(
     ...     productseries=test_project.development_focus,
     ...     sourcepackagename='test-project-package',
     ...     in_ubuntu=True)
@@ -138,4 +138,4 @@ be reported on the project's source packages.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
     Ubuntu also tracks bugs for packages derived from this project:
-    test-project-package in ubuntu.
+    test-project-package in Ubuntu.

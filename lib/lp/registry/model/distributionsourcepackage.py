@@ -38,7 +38,6 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
@@ -51,6 +50,9 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -66,9 +68,6 @@ from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
-    )
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -140,8 +139,7 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
-        IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -169,7 +167,7 @@ class DistributionSourcePackage(BugTargetBase,
     def displayname(self):
         """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
-            self.sourcepackagename.name, self.distribution.name)
+            self.sourcepackagename.name, self.distribution.displayname)
 
     @property
     def bugtargetdisplayname(self):
@@ -488,12 +486,12 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
+    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             And(BugTask.distribution == self.distribution,
                 BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            user, wanted_tags=wanted_tags)
 
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()
@@ -572,14 +570,15 @@ class DistributionSourcePackage(BugTargetBase,
 
         Only create a record for primary archives (i.e. not for PPAs).
         """
-        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
-        distribution = spph.distroseries.distribution
+        if spph.archive.purpose != ArchivePurpose.PRIMARY:
+            return
 
-        if spph.archive.purpose == ArchivePurpose.PRIMARY:
-            dsp = cls._get(distribution, sourcepackagename)
-            if dsp is None:
-                cls._new(distribution, sourcepackagename,
-                         is_upstream_link_allowed(spph))
+        distribution = spph.distroseries.distribution
+        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        dsp = cls._get(distribution, sourcepackagename)
+        if dsp is None:
+            upstream_link_allowed = is_upstream_link_allowed(spph)
+            cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
 class DistributionSourcePackageInDatabase(Storm):

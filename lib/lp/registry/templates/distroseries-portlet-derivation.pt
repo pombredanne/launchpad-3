@@ -1,0 +1,56 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="series-derivation" class="portlet"
+  tal:define="overview_menu context/menu:overview">
+  <tal:is_derived condition="context/is_derived_series">
+    <tal:is_initialised condition="not: context/is_initialising">
+    <h2>Derived from <tal:name replace="context/parent_series/displayname"/></h2>
+
+      <tal:diffs define="nb_diffs view/num_differences;
+                         nb_diffs_in_parent view/num_differences_in_parent;
+                         nb_diffs_in_child view/num_differences_in_child;">
+        <ul id="derivation_stats">
+          <li tal:condition="nb_diffs">
+            <a tal:attributes="href string:${context/fmt:url}/+localpackagediffs"
+               class="sprite info"
+               title="Source package differences between this series and his parent">
+              <tal:nb_diffs replace="nb_diffs"/> package<tal:plural
+                content="string:s"
+                condition="python:nb_diffs!=1"/> with differences
+            </a>
+          </li>
+         <li tal:condition="nb_diffs_in_parent">
+            <a tal:attributes="href string:${context/fmt:url}/+missingpackages"
+               class="sprite info"
+               title="Source packages only in parent series">
+              <tal:nb_diffs replace="nb_diffs_in_parent"/> package<tal:plural
+                content="string:s"
+                condition="python:nb_diffs_in_parent!=1"/> only in <tal:replace
+                  replace="context/parent_series/displayname">Sid</tal:replace>
+            </a>
+          </li>
+          <li tal:condition="nb_diffs_in_child">
+            <a tal:attributes="href string:${context/fmt:url}/+uniquepackages"
+               class="sprite info"
+               title="Source packages only in derived series">
+              <tal:nb_diffs replace="nb_diffs_in_child"/> package<tal:plural
+                content="string:s"
+                condition="python:nb_diffs_in_child!=1"/> only in <tal:replace
+                  replace="context/displayname">Natty</tal:replace>
+            </a>
+          </li>
+         </ul>
+        <tal:no_diffs
+          condition="python:not(nb_diffs or nb_diffs_in_parent or nb_diffs_in_child)">
+          No differences.
+        </tal:no_diffs>
+      </tal:diffs>
+  </tal:is_initialised>
+  <tal:is_initialising condition="context/is_initialising">
+    <h2>Series initialisation in progress</h2>
+      This series is initialising.
+  </tal:is_initialising>
+  </tal:is_derived>
+</div>

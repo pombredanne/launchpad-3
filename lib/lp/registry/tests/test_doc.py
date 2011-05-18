@@ -51,7 +51,7 @@ def mailingListXMLRPCExternalSetUp(test):
     # Use a real XMLRPC server proxy so that the same test is run through the
     # full security machinery.  This is more representative of the real-world,
     # but more difficult to debug.
-    from canonical.functional import XMLRPCTestTransport
+    from lp.testing.xmlrpc import XMLRPCTestTransport
     from xmlrpclib import ServerProxy
     mailinglist_api = ServerProxy(
         'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',

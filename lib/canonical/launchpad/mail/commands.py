@@ -23,7 +23,10 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.schema import ValidationError
+from zope.schema.interfaces import (
+    TooLong,
+    ValidationError,
+    )
 
 from canonical.launchpad.interfaces.mail import (
     BugTargetNotFound,
@@ -33,21 +36,22 @@ from canonical.launchpad.interfaces.mail import (
     IBugTaskEditEmailCommand,
     IBugTaskEmailCommand,
     )
-from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.mail.helpers import (
     get_error_message,
     get_person_or_team,
     )
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.validators.name import valid_name
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
+    IBugAddForm,
     IBugSet,
     )
 from lp.bugs.interfaces.bugtask import (
@@ -159,11 +163,28 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
-            if message.text_contents.strip() == '':
+            description = message.text_contents
+            if description.strip() == '':
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
+
+            # Check the message validator.
+            validator = IBugAddForm['comment'].validate
+            try:
+                validator(description)
+            except TooLong:
+                raise EmailProcessingError(
+                    'The description is too long. If you have lots of '
+                    'text to add, use an attachment instead.',
+                    stop_processing=True)
+            except ValidationError as e:
+                # More a just in case than any real expectation of getting
+                # something.
+                raise EmailProcessingError(
+                    str(e),
                     stop_processing=True)
 
             params = CreateBugParams(
@@ -180,6 +201,8 @@ class BugEmailCommand(EmailCommand):
             try:
                 bug = getUtility(IBugSet).get(bugid)
             except NotFoundError:
+                bug = None
+            if bug is None or not check_permission('launchpad.View', bug):
                 raise EmailProcessingError(
                     get_error_message('no-such-bug.txt', bug_id=bugid))
             return bug, None
@@ -400,6 +423,11 @@ class SummaryEmailCommand(EditEmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
+        if bug is None:
+            raise EmailProcessingError(
+                get_error_message('command-with-no-bug.txt'),
+                stop_processing=True)
+
         # Do a manual control of the number of arguments, in order to
         # provide a better error message than the default one.
         if len(self.string_args) > 1:
@@ -589,6 +617,11 @@ class AffectsEmailCommand(EmailCommand):
 
     def execute(self, bug):
         """See IEmailCommand."""
+        if bug is None:
+            raise EmailProcessingError(
+                get_error_message('command-with-no-bug.txt'),
+                stop_processing=True)
+
         string_args = list(self.string_args)
         try:
             path = string_args.pop(0)

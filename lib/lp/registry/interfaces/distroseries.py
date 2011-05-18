@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     webservice_error,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -52,16 +53,19 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.version import sane_version
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.version import sane_version
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
     IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
@@ -75,9 +79,6 @@ from lp.registry.interfaces.series import (
     SeriesStatus,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     ContentNameField,
     Description,
@@ -171,16 +172,6 @@ class DistroSeriesVersionField(UniqueField):
                 "'%s': %s" % (version, error))
 
 
-class IDistroSeriesEditRestricted(Interface):
-    """IDistroSeries properties which require launchpad.Edit."""
-
-    @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(
-        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
-    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
-        """Create a new milestone for this DistroSeries."""
-
-
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
@@ -223,6 +214,7 @@ class IDistroSeriesPublic(
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
+    distributionID = Attribute('The distribution ID.')
     named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
@@ -233,6 +225,12 @@ class IDistroSeriesPublic(
         Choice(
             title=_("Status"), required=True,
             vocabulary=SeriesStatus))
+    is_derived_series = Bool(
+        title=u'Is this series a derived series?', readonly=True,
+        description=(u"Whether or not this series is a derived series."))
+    is_initialising = Bool(
+        title=u'Is this series initialising?', readonly=True,
+        description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     parent_series = exported(
@@ -240,9 +238,15 @@ class IDistroSeriesPublic(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
-            vocabulary='DistroSeries'))
-    owner = exported(
-        PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
+            vocabulary='DistroSeries'),
+        readonly=True)
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
+    owner = exported(Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the distribution.")))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
@@ -338,6 +342,14 @@ class IDistroSeriesPublic(
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
 
+    backports_not_automatic = Bool(
+        title=_("Don't upgrade to backports automatically"), required=True,
+        description=_("""
+            Set NotAutomatic: yes and ButAutomaticUpgrades: yes in Release
+            files generated for the backports pocket. This tells apt to
+            automatically upgrade within backports, but not into it.
+            """))
+
     # other properties
     previous_series = Attribute("Previous series from the same "
         "distribution.")
@@ -389,7 +401,11 @@ class IDistroSeriesPublic(
         """
 
     # DistroArchSeries lookup properties/methods.
-    architectures = Attribute("All architectures in this series.")
+    architectures = exported(
+        CollectionField(
+            title=_("All architectures in this series."),
+            value_type=Reference(schema=Interface), # IDistroArchSeries.
+            readonly=True))
 
     enabled_architectures = Attribute(
         "All architectures in this series with the 'enabled' flag set.")
@@ -551,6 +567,8 @@ class IDistroSeriesPublic(
                             include_pending=False, exclude_pocket=None,
                             archive=None):
         """Return the SourcePackagePublishingHistory(s)
+
+        Deprecated.  Use IArchive.getPublishedSources instead.
 
         Given a ISourcePackageName or name.
 
@@ -767,7 +785,7 @@ class IDistroSeriesPublic(
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def copyTranslationsFromParent(ztm):
@@ -804,16 +822,35 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
+
+
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
+        """Create a new milestone for this DistroSeries."""
+
     @operation_parameters(
-        name=copy_field(name, required=True),
-        displayname=copy_field(displayname, required=False),
-        title=copy_field(title, required=False),
+        name=copy_field(IDistroSeriesPublic['name'], required=True),
+        displayname=copy_field(
+            IDistroSeriesPublic['displayname'], required=False),
+        title=copy_field(IDistroSeriesPublic['title'], required=False),
         summary=TextLine(
             title=_("The summary of the distroseries to derive."),
             required=False),
-        description=copy_field(description, required=False),
-        version=copy_field(version, required=False),
-        distribution=copy_field(distribution, required=False),
+        description=copy_field(
+            IDistroSeriesPublic['description'], required=False),
+        version=copy_field(
+            IDistroSeriesPublic['version'], required=False),
+        distribution=copy_field(
+            IDistroSeriesPublic['distribution'], required=False),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),
@@ -862,6 +899,7 @@ class IDistroSeriesPublic(
             series. If it's true, they will not be, and if it's false, they
             will be.
         """
+
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
@@ -914,6 +952,15 @@ class IDistroSeriesSet(Interface):
         :param suite: A string that forms the name of a suite.
         :return: (`IDistroSeries`, `DBItem`) where the item is from
             `PackagePublishingPocket`.
+        """
+
+    def getCurrentSourceReleases(distro_series_source_packagenames):
+        """Lookup many distroseries source package releases.
+
+        :param distro_series_to_source_packagenames: A dictionary with
+            its keys being `IDistroSeries` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistroSeries.getCurrentSourceReleases`
         """
 
     def search(distribution=None, released=None, orderBy=None):

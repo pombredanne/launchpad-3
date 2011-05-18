@@ -31,25 +31,27 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
+                                 IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IHasOfficialBugTags):
+                                 IQuestionTarget):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -205,7 +207,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     def __ne__(other):
         """IDistributionSourcePackage comparison method.
 
-        Distro sourcepackages compare not equal if either of their distribution
-        or sourcepackagename compare not equal.
+        Distro sourcepackages compare not equal if either of their
+        distribution or sourcepackagename compare not equal.
         """
-
