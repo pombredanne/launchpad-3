@@ -11,6 +11,7 @@ import cgi
 import threading
 import xmlrpclib
 
+from lazr.restful.error import expose
 from lazr.restful.interfaces import (
     ICollectionResource,
     IWebServiceConfiguration,
@@ -1235,8 +1236,8 @@ class WebServicePublication(WebServicePublicationMixin,
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
             if consumer_key == '':
-                raise Unauthorized(
-                    'Anonymous requests must provide a User-Agent.')
+                raise expose(Unauthorized(
+                    'Anonymous requests must provide a User-Agent.'), 401)
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
