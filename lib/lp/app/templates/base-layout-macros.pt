@@ -179,12 +179,12 @@
       tal:content="string:LP.cache['${key}'] =
                    ${objects/?key/webservice:json};">
     </script>
+    <script tal:condition="context/webservice:is_entry"
+      tal:content="string:LP.cache['context'] =
+                   ${context/webservice:json};">
+    </script>
   </tal:cache>
 
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json};">
-  </script>
 </metal:lp-client-cache>
 
 
