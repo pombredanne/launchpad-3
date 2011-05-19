@@ -198,7 +198,7 @@
       <dd><a id="karma-total"
              tal:attributes="href overview_menu/karma/url"
              tal:content="context/karma">342</a>
-          <a target="help" href="https://help.launchpad.net/YourAccount/Karma" class="sprite maybe">&nbsp;
+          <a target="help" href="/+help/karma.html" class="sprite maybe">&nbsp;
           <span class="invisible-link">Karma help</span></a>
       </dd>
     </dl>
