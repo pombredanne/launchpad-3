@@ -99,6 +99,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
@@ -1817,6 +1818,8 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        if not getFeatureFlag('soyuz.generic-overrides.enabled'):
+            return None
         # XXX StevenK: bug= 2011-05-19 Return PPAOverridePolicy() for
         # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
