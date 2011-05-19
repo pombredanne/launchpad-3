@@ -161,6 +161,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -181,6 +182,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
         job_1, job_2 = self.makeTwoJobs()
+
         def handleError():
             reporter = errorlog.globalErrorUtility
             try:
@@ -216,6 +218,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_mails_oopses(self):
         """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -243,8 +246,10 @@ class TestJobRunner(TestCaseWithFactory):
         error messages are mailed to interested parties verbatim.
         """
         job_1, job_2 = self.makeTwoJobs()
+
         class ExampleError(Exception):
             pass
+
         def raiseError():
             raise ExampleError('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
@@ -272,6 +277,7 @@ class TestJobRunner(TestCaseWithFactory):
         """
         runner = JobRunner([object()])
         self.assertRaises(TypeError, runner.runAll)
+
         class Runnable:
             implements(IRunnableJob)
         runner = JobRunner([Runnable()])
