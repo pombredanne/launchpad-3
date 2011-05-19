@@ -86,6 +86,7 @@
                 </tal:checkbox>
                 <tal:clockface condition="view/hasPendingSync/difference">
                   <span class="sprite build_depwait"></span>
+                  <i>(Synchronizing)</i>
                 </tal:clockface>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
