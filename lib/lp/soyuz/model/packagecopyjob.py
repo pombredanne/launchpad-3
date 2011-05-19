@@ -34,6 +34,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -183,7 +184,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         jobs = IStore(PackageCopyJob).find(
             PackageCopyJob,
             PackageCopyJob.job_type == cls.class_job_type,
-            PackageCopyJob.target_archive == target_archive)
+            PackageCopyJob.target_archive == target_archive,
+            Job.id == PackageCopyJob.job_id,
+            Job._status == JobStatus.WAITING)
+        jobs = jobs.order_by(PackageCopyJob.id)
         return DecoratedResultSet(jobs, cls)
 
     @classmethod

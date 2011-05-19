@@ -78,6 +78,21 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
+    def test_getActiveJobs_gets_oldest_first(self):
+        # getActiveJobs returns the oldest available job first.
+        dsd = self.factory.makeDistroSeriesDifference()
+        target_archive = dsd.derived_series.main_archive
+        jobs = [self.makeJob(dsd) for counter in xrange(2)]
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(jobs[0], source.getActiveJobs(target_archive)[0])
+
+    def test_getActiveJobs_only_returns_waiting_jobs(self):
+        # getActiveJobs ignores jobs that aren't in the WAITING state.
+        job = self.makeJob(self.factory.makeDistroSeriesDifference())
+        removeSecurityProxy(job).job._status = JobStatus.RUNNING
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertContentEqual([], source.getActiveJobs(job.target_archive))
+
     def test_run_unknown_package(self):
         # A job properly records failure.
         distroseries = self.factory.makeDistroSeries()
