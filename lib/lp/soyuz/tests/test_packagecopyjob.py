@@ -234,7 +234,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(other_series))
 
-    def test_getPendingJobsPerPackage_only_returns_upcoming_jobs(self):
+    def test_getPendingJobsPerPackage_only_returns_pending_jobs(self):
         # getPendingJobsPerPackage ignores jobs that have already been
         # run.
         dsd = self.factory.makeDistroSeriesDifference()
@@ -250,6 +250,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         expected = {
             JobStatus.WAITING: job,
             JobStatus.RUNNING: job,
+            JobStatus.SUSPENDED: job,
         }
         self.assertEqual(expected, found_by_state)
 

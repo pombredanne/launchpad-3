@@ -74,7 +74,7 @@
                 tal:attributes="class src_name">
 
               <td>
-                <tal:checkbox tal:condition="view/canRequestSync/difference">
+                <tal:checkbox tal:condition="python: view.canRequestSync(difference)">
                   <input tal:condition="can_perform_sync"
                     name="field.selected_differences" type="checkbox"
                     tal:attributes="
@@ -84,7 +84,7 @@
                   <a tal:attributes="href difference/fmt:url" class="toggle-extra"
                      tal:content="src_name">Foo</a>
                 </tal:checkbox>
-                <tal:clockface condition="view/hasPendingSync/difference">
+                <tal:clockface condition="python: view.hasPendingSync(difference)">
                   <span class="sprite build_depwait"></span>
                   <i>(Synchronizing)</i>
                 </tal:clockface>
