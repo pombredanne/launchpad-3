@@ -21,7 +21,6 @@
     <include file="lifecycle.zcml" />
     <include file="logintoken.zcml" />
     <include file="marketing.zcml" />
-    <include file="message.zcml" />
     <include file="oauth.zcml" />
     <include file="openidconsumer.zcml" />
     <include file="packagecopyrequest.zcml" />

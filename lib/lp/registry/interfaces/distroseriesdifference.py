@@ -22,7 +22,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -183,6 +186,12 @@ class IDistroSeriesDifferencePublic(Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
+    packagesets = Attribute("The packagesets for this source package in the "
+                            "derived series.")
+
+    parent_packagesets = Attribute("The packagesets for this source package "
+                                   "in the parent series.")
+
     def update():
         """Checks that difference type and status matches current publishings.
 
@@ -201,16 +210,6 @@ class IDistroSeriesDifferencePublic(Interface):
 
     def getComments():
         """Return a result set of the comments for this difference."""
-
-    def getPackageSets():
-        """Return a result set of the derived series packagesets for the
-        sourcepackagename of this difference.
-        """
-
-    def getParentPackageSets():
-        """Return a result set of the parent packagesets for the
-        sourcepackagename of this difference.
-        """
 
 
 class IDistroSeriesDifferenceEdit(Interface):
@@ -308,14 +307,20 @@ class IDistroSeriesDifferenceSource(Interface):
         :return: A result set of `IDistroSeriesDifference`.
         """
 
-    def getByDistroSeriesAndName(distro_series, source_package_name):
-        """Returns a single difference matching the series and name.
+    def getByDistroSeriesNameAndParentSeries(distro_series,
+                                             source_package_name,
+                                             parent_series):
+        """Returns a single difference matching the series, name and parent
+        series.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
         :type distro_series: `IDistroSeries`.
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
+        :param parent_series: The parent distribution series of the package
+        difference.
+        :type distro_series: `IDistroSeries`.
         """
 
     def getSimpleUpgrades(distro_series):

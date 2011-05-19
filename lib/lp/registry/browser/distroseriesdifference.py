@@ -45,7 +45,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
-from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -74,16 +73,14 @@ class DistroSeriesDifferenceNavigation(Navigation):
         """Return the formatted list of packagesets for the related
         sourcepackagename in the parent.
         """
-        packagesets = self.context.getParentPackageSets()
-        return self._formatPackageSets(packagesets)
+        return self._formatPackageSets(self.context.parent_packagesets)
 
     @property
     def packagesets_names(self):
         """Return the formatted list of packagesets for the related
         sourcepackagename in the derived series.
         """
-        packagesets = self.context.getPackageSets()
-        return self._formatPackageSets(packagesets)
+        return self._formatPackageSets(self.context.packagesets)
 
     def _formatPackageSets(self, packagesets):
         """Format a list of packagesets to display in the UI."""
@@ -104,7 +101,7 @@ class IDistroSeriesDifferenceForm(Interface):
         SimpleTerm(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT.name,
-            'This version'),
+            'These versions'),
         )))
 
 

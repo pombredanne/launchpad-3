@@ -47,7 +47,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
     :param principal: The principal for the request, default to the
         unauthenticated principal.
     :param query_string: The query string for the request.
-    :patam cookie: The HTTP_COOKIE value for the request.
+    :param cookie: The HTTP_COOKIE value for the request.
     :param request: Use this request instead of creating a new one.
     :param path_info: The PATH_INFO value for the request.
     :param current_request: If True, the request will be set as the current

@@ -223,10 +223,13 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
 
     def makeDerivedSeries(self):
         """Create a derived `DistroSeries`, quickly."""
-        series = self.makeDistroSeries(parent_series=self.makeDistroSeries())
+        parent_series = self.makeDistroSeries()
+        derived_series = self.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(
+            parent_series=parent_series, derived_series=derived_series)
         getUtility(ISourcePackageFormatSelectionSet).add(
-            series, SourcePackageFormat.FORMAT_1_0)
-        return series
+            derived_series, SourcePackageFormat.FORMAT_1_0)
+        return derived_series
 
     def makeView(self):
         """Create a `PackageCopyingMixin`-based view."""

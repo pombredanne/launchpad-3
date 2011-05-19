@@ -286,6 +286,21 @@ class TestProductView(TestCaseWithFactory):
         text = view.license_approved_widget
         self.assertEqual('License required', text)
 
+    def test_widget_id_for_name_dots(self):
+        # Dots are replaced with dashes to make a valid CSS Id.
+        login_celebrity('registry_experts')
+        self.product.name = 'fnord.dom'
+        view = create_initialized_view(self.product, '+index')
+        self.assertEqual(
+            'fnord-dom-edit-active',
+            view.active_widget.content_box_id)
+        self.assertEqual(
+            'fnord-dom-edit-project-reviewed',
+            view.project_reviewed_widget.content_box_id)
+        self.assertEqual(
+            'fnord-dom-edit-license-approved',
+            view.license_approved_widget.content_box_id)
+
 
 class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
     """Tests the ProductSetReviewLicensesView."""
@@ -331,7 +346,7 @@ class ProductSetReviewLicensesViewTestCase(TestCaseWithFactory):
         content = find_tag_by_id(view.render(), 'project-fnord')
         self.assertTrue(content.find(id='fnord-maintainer') is not None)
         self.assertTrue(content.find(id='fnord-registrant') is not None)
-        self.assertTrue(content.find(id='fnord-desciption') is not None)
+        self.assertTrue(content.find(id='fnord-description') is not None)
         self.assertTrue(content.find(id='fnord-packages') is not None)
         self.assertTrue(content.find(id='fnord-releases') is not None)
         self.assertTrue(content.find(id='fnord-usage') is not None)

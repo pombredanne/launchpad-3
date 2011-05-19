@@ -31,7 +31,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_reference_property,
     )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
     IUserToUserEmail,
@@ -490,6 +490,8 @@ patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistroSeries, 'getParentSeries', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
 patch_choice_parameter_type(
@@ -856,8 +858,8 @@ patch_entry_explicit_version(IDistroArchSeries, 'beta')
 patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
     IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
-    "getDistroArchSeries", "getPackageUploads", "getSourcePackage",
-    "newMilestone")
+    "getParentSeries", "getDistroArchSeries", "getPackageUploads",
+    "getSourcePackage", "newMilestone")
 
 # IDistroSeriesDifference
 patch_entry_explicit_version(IDistroSeriesDifference, 'beta')

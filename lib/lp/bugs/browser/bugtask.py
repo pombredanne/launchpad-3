@@ -3563,6 +3563,14 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         return self.context.userCanEditImportance(self.user)
 
     @property
+    def user_can_edit_assignee(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.user is not None
+
+    @property
     def user_can_edit_milestone(self):
         """Can the user edit the Milestone field?
 
@@ -3613,6 +3621,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
+            'user_can_edit_assignee': self.user_can_edit_assignee,
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
             'user_can_edit_importance': (
@@ -3903,17 +3912,22 @@ class BugActivityItem:
         elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
-            return self._formatted_tags_change.replace('\n', '<br />')
+            return cgi.escape(self._formatted_tags_change).replace(
+                '\n', '<br />')
 
         elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         else:
             # Our default state is to just return oldvalue and newvalue.

@@ -190,6 +190,12 @@ COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
 COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
 COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
+-- BugMute
+COMMENT ON TABLE BugMute IS 'Mutes for bug notifications.';
+COMMENT ON COLUMN BugMute.person IS 'The person that muted all notifications from this bug.';
+COMMENT ON COLUMN BugMute.bug IS 'The bug of this record';
+COMMENT ON COLUMN BugMute.date_created IS 'The date at which this mute was created.';
+
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';

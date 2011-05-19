@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import transaction
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -47,12 +49,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.unsubscribe(bug.owner, bug.owner)
 
-        # We don't display BugNotificationLevel.NOTHING as an option.
-        # This is tested below.
         with FeatureFixture({self.feature_flag: ON}):
             displayed_levels = [
-                level for level in BugNotificationLevel.items
-                if level != BugNotificationLevel.NOTHING]
+                level for level in BugNotificationLevel.items]
             for level in displayed_levels:
                 person = self.factory.makePerson()
                 with person_logged_in(person):
@@ -71,28 +70,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     "actually %s." % (
                         level.title,
                         subscription.bug_notification_level.title))
-
-    def test_nothing_is_not_a_valid_level(self):
-        # BugNotificationLevel.NOTHING isn't considered valid when
-        # someone is trying to subscribe.
-        bug = self.factory.makeBug()
-        person = self.factory.makePerson()
-        with FeatureFixture({self.feature_flag: ON}):
-            with person_logged_in(person):
-                level = BugNotificationLevel.NOTHING
-                harness = LaunchpadFormHarness(
-                    bug.default_bugtask, BugSubscriptionSubscribeSelfView)
-                form_data = {
-                    'field.subscription': person.name,
-                    'field.bug_notification_level': level.title,
-                    }
-                harness.submit('continue', form_data)
-                self.assertTrue(harness.hasErrors())
-                self.assertEqual(
-                    'Invalid value',
-                    harness.getFieldError('bug_notification_level'),
-                    "The view should treat BugNotificationLevel.NOTHING "
-                    "as an invalid value.")
 
     def test_user_can_update_subscription(self):
         # A user can update their bug subscription using the
@@ -253,31 +230,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
 
-    def test_bug_721400(self):
-        # If a subscription exists with a BugNotificationLevel of
-        # NOTHING the view will still render correctly, even though
-        # NOTHING is not accepted as a valid value for the
-        # bug_notification_level field.
-        # This is a regression test for bug 721400.
-        bug = self.factory.makeBug()
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            bug.subscribe(
-                person, person, level=BugNotificationLevel.NOTHING)
-
-        with FeatureFixture({self.feature_flag: ON}):
-            with person_logged_in(person):
-                subscribe_view = create_initialized_view(
-                    bug.default_bugtask, name='+subscribe')
-                self.assertEqual(0, len(subscribe_view.errors))
-                bug_notification_level_widget = (
-                    subscribe_view.widgets['bug_notification_level'])
-                default_notification_level_value = (
-                    bug_notification_level_widget._getDefault())
-                self.assertEqual(
-                    BugNotificationLevel.COMMENTS,
-                    default_notification_level_value)
-
     def test_muted_subs_have_unmute_option(self):
         # If a user has a muted subscription, the
         # BugSubscriptionSubscribeSelfView's subscription field will
@@ -287,6 +239,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
+                self.bug.mute(self.person, self.person)
                 subscribe_view = create_initialized_view(
                     self.bug.default_bugtask, name='+subscribe')
                 subscription_widget = (
@@ -325,12 +278,10 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
-                level = BugNotificationLevel.METADATA
                 form_data = {
                     'field.subscription': self.person.name,
                     # Although this isn't used we must pass it for the
                     # sake of form validation.
-                    'field.bug_notification_level': level.title,
                     'field.actions.continue': 'Continue',
                     }
                 create_initialized_view(
@@ -344,7 +295,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         # muted subscription will update the existing subscription to a
         # new BugNotificationLevel.
         with person_logged_in(self.person):
-            muted_subscription = self.bug.mute(self.person, self.person)
+            self.bug.mute(self.person, self.person)
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
@@ -357,10 +308,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 create_initialized_view(
                     self.bug.default_bugtask, form=form_data,
                     name='+subscribe')
+                transaction.commit()
                 self.assertFalse(self.bug.isMuted(self.person))
                 self.assertTrue(self.bug.isSubscribed(self.person))
-                self.assertEqual(
-                    level, muted_subscription.bug_notification_level)
 
     def test_bug_notification_level_field_has_widget_class(self):
         # The bug_notification_level widget has a widget_class property
@@ -447,34 +397,6 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             harness = LaunchpadFormHarness(
                 self.bug.default_bugtask, BugSubscriptionListView)
             harness.view.initialize()
-
-
-class BugPortletSubscribersContentsTestCase(TestCaseWithFactory):
-    """Tests for the BugPortletSubscribersContents view."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(BugPortletSubscribersContentsTestCase, self).setUp()
-        self.bug = self.factory.makeBug()
-        self.subscriber = self.factory.makePerson()
-
-    def test_sorted_direct_subscriptions_doesnt_show_mutes(self):
-        # BugPortletSubscribersContents.sorted_direct_subscriptions does
-        # not return muted subscriptions.
-        with person_logged_in(self.subscriber):
-            subscription = self.bug.subscribe(
-                self.subscriber, self.subscriber,
-                level=BugNotificationLevel.NOTHING)
-            view = create_initialized_view(
-                self.bug, name="+bug-portlet-subscribers-content")
-            # Loop over the results of sorted_direct_subscriptions to
-            # extract the subscriptions from their
-            # SubscriptionAttrDecorator intances.
-            sorted_subscriptions = [
-                decorator.subscription for decorator in
-                view.sorted_direct_subscriptions]
-            self.assertFalse(subscription in sorted_subscriptions)
 
 
 class BugMuteSelfViewTestCase(TestCaseWithFactory):

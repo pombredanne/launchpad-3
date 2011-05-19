@@ -127,7 +127,7 @@ was not imported by the bug watch.
 CVE watches and bug watches are also created, when a message is imported from
 an external bug tracker.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> message = getUtility(IMessageSet).fromText(
     ...    'subject',
     ...    """This is a comment from an external tracker. It has a link

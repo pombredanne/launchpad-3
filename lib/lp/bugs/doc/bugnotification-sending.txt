@@ -45,7 +45,7 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
@@ -390,6 +390,21 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
+We will need some helper functions.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
+
 We will also need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
@@ -570,8 +585,7 @@ few notifications to show that it works.
     ...         ten_minutes_ago, sample_person, "title",
     ...         True, False))
 
-    >>> notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
     8
 

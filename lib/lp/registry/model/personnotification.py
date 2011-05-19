@@ -62,13 +62,16 @@ class PersonNotification(SQLBase):
         """See `IPersonNotification`."""
         return len(self.to_addresses) > 0
 
-    def send(self):
+    def send(self, logger=None):
         """See `IPersonNotification`."""
         if not self.can_send:
             raise AssertionError(
                 "Can't send a notification to a person without an email.")
+        to_addresses = self.to_addresses
+        if logger:
+            logger.info("Sending notification to %r." % to_addresses)
         from_addr = config.canonical.bounce_address
-        simple_sendmail(from_addr, self.to_addresses, self.subject, self.body)
+        simple_sendmail(from_addr, to_addresses, self.subject, self.body)
         self.date_emailed = datetime.now(pytz.timezone('UTC'))
 
 

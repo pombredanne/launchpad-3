@@ -133,6 +133,7 @@ from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     TextLineEditorWidget,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
@@ -1145,7 +1146,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def active_widget(self):
         return BooleanChoiceWidget(
             self.context, IProduct['active'],
-            content_box_id='%s-edit-active' % self.context.name,
+            content_box_id='%s-edit-active' % FormattersAPI(
+                self.context.name).css_id(),
             edit_view='+review-license',
             tag='span',
             false_text='Deactivted',
@@ -1156,7 +1158,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def project_reviewed_widget(self):
         return BooleanChoiceWidget(
             self.context, IProduct['project_reviewed'],
-            content_box_id='%s-edit-project-reviewed' % self.context.name,
+            content_box_id='%s-edit-project-reviewed' % FormattersAPI(
+                self.context.name).css_id(),
             edit_view='+review-license',
             tag='span',
             false_text='Unreviewed',
@@ -1172,7 +1175,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             return 'License required'
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
-            content_box_id='%s-edit-license-approved' % self.context.name,
+            content_box_id='%s-edit-license-approved' % FormattersAPI(
+                self.context.name).css_id(),
             edit_view='+review-license',
             tag='span',
             false_text='Unapproved',
