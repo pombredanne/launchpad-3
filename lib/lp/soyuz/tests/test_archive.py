@@ -1428,26 +1428,6 @@ class TestFindDepCandidates(TestCaseWithFactory):
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
 
-    def test_searches_overlays(self):
-        # Dependencies can be found in overlays.
-        # series --overlay--> parent1 --overlay--> parent2
-        main_component = getUtility(IComponentSet)['main']
-        dsp1 = self.factory.makeDistroSeriesParent(
-            derived_series=self.publisher.distroseries,
-            initialized=True, is_overlay=True,
-            pocket=PackagePublishingPocket.RELEASE, component=main_component)
-        dsp2 = self.factory.makeDistroSeriesParent(
-            derived_series=dsp1.parent_series,
-            initialized=True, is_overlay=True,
-            pocket=PackagePublishingPocket.RELEASE, component=main_component)
-        main_bins = self.publisher.getPubBinaries(
-            binaryname='foo-main',
-            archive=dsp2.parent_series.distribution.main_archive,
-            component='main',
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self.assertDep('i386', 'foo-main', [main_bins[0]])
-
 
 class TestComponents(TestCaseWithFactory):
 
