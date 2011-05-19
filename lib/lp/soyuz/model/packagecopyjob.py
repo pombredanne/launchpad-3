@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -33,6 +33,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -171,7 +172,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         jobs = IStore(PackageCopyJob).find(
             PackageCopyJob,
             PackageCopyJob.job_type == cls.class_job_type,
-            PackageCopyJob.target_archive == target_archive)
+            PackageCopyJob.target_archive == target_archive,
+            Job.id == PackageCopyJob.job_id,
+            Job.status == JobStatus.WAITING)
         return DecoratedResultSet(jobs, cls)
 
     @property
