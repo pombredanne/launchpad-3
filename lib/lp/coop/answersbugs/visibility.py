@@ -59,6 +59,8 @@ class TestMessageVisibilityMixin:
 
 class TestHideMessageControlMixin:
 
+    control_text = 'mark-spam-1'
+
     def getContext(self):
         """To be overwridden by subclasses.
 
@@ -79,24 +81,24 @@ class TestHideMessageControlMixin:
         context = self.getContext()
         administrator = self.factory.makeAdministrator()
         view = self.getView(context=context, user=administrator)
-        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIsNot(None, hide_link)
 
     def test_registry_sees_hide_control(self):
         context = self.getContext()
         registry_expert = self.factory.makeRegistryExpert()
         view = self.getView(context=context, user=registry_expert)
-        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIsNot(None, hide_link)
 
     def test_anon_doesnt_see_hide_control(self):
         context = self.getContext()
         view = self.getView(context=context, no_login=True)
-        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIs(None, hide_link)
 
     def test_random_doesnt_see_hide_control(self):
         context = self.getContext()
         view = self.getView(context=context)
-        hide_link = find_tag_by_id(view.contents, 'mark-spam-1')
+        hide_link = find_tag_by_id(view.contents, self.control_text)
         self.assertIs(None, hide_link)
