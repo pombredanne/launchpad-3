@@ -637,7 +637,7 @@ class DistroSeriesDifference(StormBase):
             return DistroSeriesSourcePackageRelease(
                 distro_series, pub.sourcepackagerelease)
 
-    def update(self):
+    def update(self, manual=False):
         """See `IDistroSeriesDifference`."""
         # Updating is expected to be a heavy operation (not called
         # during requests). We clear the cache beforehand - even though
@@ -647,7 +647,7 @@ class DistroSeriesDifference(StormBase):
         # update() (like the tests for this method do).
         clear_property_cache(self)
         self._updateType()
-        updated = self._updateVersionsAndStatus()
+        updated = self._updateVersionsAndStatus(manual=manual)
         if updated is True:
             self._setPackageDiffs()
         return updated
@@ -668,10 +668,13 @@ class DistroSeriesDifference(StormBase):
         if new_type != self.difference_type:
             self.difference_type = new_type
 
-    def _updateVersionsAndStatus(self):
+    def _updateVersionsAndStatus(self, manual):
         """Helper for the update() interface method.
 
         Check whether the status of this difference should be updated.
+
+        :param manual: Boolean, True if this is a user-requested change.
+            This overrides auto-blacklisting.
         """
         updated = False
         new_source_version = new_parent_source_version = None
@@ -695,9 +698,16 @@ class DistroSeriesDifference(StormBase):
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if self.source_version != self.parent_source_version:
+            if self.source_version < self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+            elif (
+                self.source_version > self.parent_source_version
+                and not manual):
+                # The child was updated with a higher version so it's
+                # auto-blacklisted.
+                updated = True
+                self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
         # If this difference was needing attention, or the current version
         # was blacklisted and the versions now match we resolve it. Note:
         # we don't resolve it if this difference was blacklisted for all
@@ -708,6 +718,12 @@ class DistroSeriesDifference(StormBase):
             if self.source_version == self.parent_source_version:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
+            elif (
+                self.source_version < self.parent_source_version
+                and not manual):
+                # If the derived version is lower than the parent's, we
+                # ensure the diff status is blacklisted.
+                self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
 
         if self._updateBaseVersion():
             updated = True
@@ -785,7 +801,7 @@ class DistroSeriesDifference(StormBase):
     def unblacklist(self):
         """See `IDistroSeriesDifference`."""
         self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        self.update()
+        self.update(manual=True)
 
     def requestPackageDiffs(self, requestor):
         """See `IDistroSeriesDifference`."""

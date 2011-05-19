@@ -192,7 +192,7 @@ class IDistroSeriesDifferencePublic(Interface):
     parent_packagesets = Attribute("The packagesets for this source package "
                                    "in the parent series.")
 
-    def update():
+    def update(manual=False):
         """Checks that difference type and status matches current publishings.
 
         If the record is updated, a relevant comment is added.
@@ -200,6 +200,8 @@ class IDistroSeriesDifferencePublic(Interface):
         If there is no longer a difference (ie. the versions are
         the same) then the status is updated to RESOLVED.
 
+        :param manual: Boolean, True if this is a user-requested change.
+            This overrides auto-blacklisting.
         :return: True if the record was updated, False otherwise.
         """
 
