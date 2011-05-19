@@ -257,6 +257,8 @@ class ErrorReportingUtility:
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
         'TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
+    _ignored_exceptions_for_non_lp_referer = set([
+        'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
 
     def __init__(self):

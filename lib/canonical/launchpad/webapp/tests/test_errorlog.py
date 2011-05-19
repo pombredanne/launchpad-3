@@ -17,6 +17,7 @@ from textwrap import dedent
 import traceback
 import unittest
 
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import webservice_error
 import pytz
 import testtools
@@ -25,6 +26,7 @@ from zope.app.publication.tests.test_zopepublication import (
     )
 from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
@@ -41,7 +43,10 @@ from canonical.launchpad.webapp.errorlog import (
     )
 from canonical.launchpad.webapp.interfaces import NoReferrerError
 from canonical.testing import reset_logging
-from lp.app.errors import TranslationUnavailable
+from lp.app.errors import (
+    GoneError,
+    TranslationUnavailable,
+    )
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
@@ -639,6 +644,15 @@ class TestErrorReportingUtility(testtools.TestCase):
         errorfile = os.path.join(
             utility.log_namer.output_dir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_non_lp_referer(self):
+        # Exceptions caused by bad URLs that may not be an Lp code issue.
+        utility = ErrorReportingUtility()
+        errors = set([
+            GoneError.__name__, InvalidBatchSizeError.__name__,
+            NotFound.__name__])
+        self.assertEqual(
+            errors, utility._ignored_exceptions_for_non_lp_referer)
 
     def test_raising_no_referrer_error(self):
         """Test ErrorReportingUtility.raising() with a NoReferrerError
