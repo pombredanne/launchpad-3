@@ -8,7 +8,9 @@ from datetime import (
     datetime,
     timedelta,
     )
+import doctest
 
+from testtools.matchers import DocTestMatches
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -1500,26 +1502,25 @@ class TestOverlays(TestCaseWithFactory):
         sources_list = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
 
-        self.assertEqual(
-            [u'deb http://archive.launchpad.dev/ubuntutest '
-                 'breezy-autotest main',
-             u'deb http://archive.launchpad.dev/depdistro '
-                 'series11 main universe',
-             u'deb http://archive.launchpad.dev/depdistro '
-                 'series11-security main universe',
-             u'deb http://archive.launchpad.dev/depdistro2 '
-                 'series21 main restricted universe multiverse',
-             u'deb http://archive.launchpad.dev/depdistro2 '
-                 'series21-security main restricted universe multiverse',
-             u'deb http://archive.launchpad.dev/depdistro2 '
-                 'series21-updates main restricted universe multiverse',
-             u'deb http://archive.launchpad.dev/depdistro4 '
-                 'series12 main restricted universe multiverse',
-             u'deb http://archive.launchpad.dev/depdistro4 '
-                 'series12-security main restricted universe multiverse',
-             u'deb http://archive.launchpad.dev/depdistro4 '
-                 'series12-updates main restricted universe multiverse'],
-            sources_list)
+        self.assertThat(
+            "\n".join(sources_list),
+            DocTestMatches(
+                ".../ubuntutest breezy-autotest main\n"
+                ".../depdistro series11 main universe\n"
+                ".../depdistro series11-security main universe\n"
+                ".../depdistro2 series21 "
+                    "main restricted universe multiverse\n"
+                ".../depdistro2 series21-security "
+                    "main restricted universe multiverse\n"
+                ".../depdistro2 series21-updates "
+                   "main restricted universe multiverse\n"
+                ".../depdistro4 series12 main restricted "
+                    "universe multiverse\n"
+                ".../depdistro4 series12-security main "
+                    "restricted universe multiverse\n"
+                ".../depdistro4 series12-updates "
+                    "main restricted universe multiverse\n"
+                , doctest.ELLIPSIS))
 
 
 class TestComponents(TestCaseWithFactory):
