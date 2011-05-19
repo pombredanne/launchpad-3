@@ -44,9 +44,7 @@ class PersonNotificationManager:
                     "%s has no email address." % person.name)
                 continue
             self.logger.info(
-                "Sending notification to %s <%s>."
-                % (person.name,
-                   removeSecurityProxy(person).preferredemail.email))
+                "Sending notification to %s." % person.name)
             notification.send()
             notifications_sent = True
             # Commit after each email sent, so that we won't re-mail the
