@@ -13,6 +13,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import Not
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
@@ -364,41 +365,6 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
                 {self.subscriber: sources},
                 [self.notification, self.notification2]))
 
-    def test_muting_works_for_teams_with_contact_addresses(self):
-        # This is a regression test for bug 778847.
-        target = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=target)
-        team = self.factory.makeTeam(email="test@example.com")
-        team_member = self.factory.makePerson()
-        with person_logged_in(team.teamowner):
-            team.addMember(team_member, team.teamowner)
-            team_subscription = target.addSubscription(
-                team, team.teamowner)
-        # Mute the subscription for the team member.
-        notification = self.addNotification(team, bug)
-        filter = self.includeFilterInNotification(
-            description=u"A filter.", subscription=team_subscription,
-            notification=notification, create_new_filter=True)
-        BugSubscriptionFilterMute(
-            person=team_member, filter=filter.bug_subscription_filter)
-        sources = list(notification.recipients)
-        # Perform the test.
-        self.assertEqual(
-            {},
-            BugNotificationSet().getRecipientFilterData(
-                {team_member: sources},
-                [notification]))
-        self.assertEqual(
-            {team: {
-                 'sources': sources,
-                 'filter descriptions': [
-                    filter.bug_subscription_filter.description,
-                    ],
-                }},
-            BugNotificationSet().getRecipientFilterData(
-                {team: sources},
-                [notification]))
-
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
     """Adding notificatons without any recipients does not cause any harm.
@@ -579,3 +545,44 @@ class TestNotificationsForRegistrantsForProducts(
         return self.factory.makeBug(
             product=self.pillar,
             owner=self.bug_owner)
+
+
+class TestBug778847(TestCaseWithFactory):
+    """Regression tests for bug 778847."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_mutes_for_teams_with_contact_addresses(self):
+        # If a user holds a mute on a Team subscription,
+        # getRecipientFilterData() will handle the mute correctly.
+        team_owner = self.factory.makePerson(name="team-owner")
+        team = self.factory.makeTeam(
+            email="test@example.com", owner=team_owner)
+        product = self.factory.makeProduct()
+        with person_logged_in(team_owner):
+            subscription = product.addBugSubscription(
+                team, team_owner)
+            subscription_filter = subscription.bug_filters.one()
+            subscription_filter.mute(team_owner)
+        bug = self.factory.makeBug(product=product)
+        transaction.commit()
+        store = Store.of(bug)
+        store.execute("""
+            UPDATE Message SET
+                datecreated = now() at time zone 'utc' - interval '1 hour'
+            WHERE id IN (
+                SELECT message FROM BugNotification WHERE bug = %s);
+            """ % bug.id)
+        [notification] = BugNotificationSet().getNotificationsToSend()
+        # In this situation, only the team's subscription should be
+        # returned, since the Person has muted the subscription (whether
+        # or not they'll get email from the team contact address is not
+        # covered by this code).
+        self.assertEqual(
+            {team: {
+                'filter descriptions': [],
+                'sources': [notification.recipients[1]]}},
+            BugNotificationSet().getRecipientFilterData(
+            {team.teamowner: [notification.recipients[0]],
+             team: [notification.recipients[1]]},
+            [notification]))
