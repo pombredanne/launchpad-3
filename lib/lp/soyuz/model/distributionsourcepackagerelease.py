@@ -207,14 +207,12 @@ class DistributionSourcePackageRelease:
                 self.sourcepackagerelease)
         all_published = all_published.order_by(
             BinaryPackageName.name)
-        all_published = DecoratedResultSet(
-            all_published, lambda row: row[1:3])
 
-        samples = []
-        for publishing, package_cache in all_published:
-            samples.append(
-                DistroSeriesBinaryPackage(
-                    publishing.distroarchseries.distroseries,
-                    publishing.binarypackagerelease.binarypackagename,
-                    package_cache))
-        return samples
+        def make_dsb_package(row):
+            publishing = row[1]
+            package_cache = row[2]
+            return DistroSeriesBinaryPackage(
+                publishing.distroarchseries.distroseries,
+                publishing.binarypackagerelease.binarypackagename,
+                package_cache)
+        return DecoratedResultSet(all_published, make_dsb_package)

@@ -9,6 +9,10 @@ __all__ = [
     'test_suite',
     ]
 
+from testtools.matchers import (
+    Equals,
+    NotEquals,
+    )
 import transaction
 
 from canonical.config import config
@@ -20,6 +24,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
@@ -75,11 +80,11 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
             self.distroseries, self.binary_package_name, cache=None)
         with StormStatementRecorder() as recorder:
             binary_package.cache
-        self.assertEqual(0, len(recorder.statements))
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
         # If the parameter "cache" was not passed, accessing
         # DistroSeriesBinaryPackage.cache for the first time requires
         # at least one SQL query.
         with StormStatementRecorder() as recorder:
             self.distroseries_binary_package.cache
-        self.assertTrue(len(recorder.statements) > 0)
+        self.assertThat(recorder, HasQueryCount(NotEquals(0)))

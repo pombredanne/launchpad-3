@@ -55,7 +55,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
     def test_sample_binary_packages__no_releases(self):
         # If no binary releases exist,
         # DistributionSourcePackageRelease.sample_binary_packages is empty.
-        self.assertEqual([], self.dsp_release.sample_binary_packages)
+        self.assertEqual(0, self.dsp_release.sample_binary_packages.count())
 
     def test_sample_binary_packages__one_release(self):
         # If a binary release exists,
@@ -128,7 +128,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(1, len(self.dsp_release.sample_binary_packages))
+        self.assertEqual(1, self.dsp_release.sample_binary_packages.count())
 
         for iteration in range(5):
             self.makeBinaryPackageRelease()
@@ -137,7 +137,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(6, len(self.dsp_release.sample_binary_packages))
+        self.assertEqual(6, self.dsp_release.sample_binary_packages.count())
 
         # Even if the cache is not updated for binary packages,
         # DistributionSourcePackageRelease objects do not try to
@@ -149,4 +149,4 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             for ds_package in self.dsp_release.sample_binary_packages:
                 ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(11, len(self.dsp_release.sample_binary_packages))
+        self.assertEqual(11, self.dsp_release.sample_binary_packages.count())
