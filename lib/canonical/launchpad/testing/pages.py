@@ -721,6 +721,19 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
+def request_with_user_agent(agent, url="/devel"):
+    """Create and API request with the specified User-Agent."""
+    if agent is None:
+        agent_string = ''
+    else:
+        agent_string = '\nUser-Agent: %s' % agent
+    http = HTTPCaller()
+    request = ("GET %s HTTP/1.1\n"
+               "Host: api.launchpad.dev"
+               "%s\n\n") % (url, agent_string)
+    return http(request)
+
+
 def ws_uncache(obj):
     """Manually remove an object from the web service representation cache.
 
