@@ -186,7 +186,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         # make a translation record for an inactive project (will be excluded)
         [pofile] = self._makePOFiles(1, previously_worked_on=True)
-        removeSecurityProxy(pofile).potemplate.product.active = False
+        removeSecurityProxy(pofile.potemplate.product).active = False
 
         # and make one which has not been worked on (will be excluded)
         self._makePOFiles(1, previously_worked_on=False)
@@ -197,13 +197,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
         person_name = urllib.urlencode({'person': self.view.context.name})
         expected_links = [
             (pofile.potemplate.translationtarget.title,
-            canonical_url(pofile) + "/+filter?%s" % person_name)
+            canonical_url(pofile, view_name="+filter") + "?%s" % person_name)
             for pofile in pofiles_worked_on[:10]]
 
         recent_activity = self.view.recent_activity
-        self.assertEqual(
-            set(expected_links),
-            set([(item.title, item.url) for item in recent_activity]))
+        self.assertContentEqual(
+            expected_links,
+            ((item.title, item.url) for item in recent_activity))
 
     def test_top_p_n_p_to_review_caps_existing_involvement(self):
         # top_projects_and_packages will return at most 9 POFiles that

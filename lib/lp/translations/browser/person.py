@@ -15,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import islice
 import urllib
 
 import pytz
@@ -216,7 +217,7 @@ class PersonTranslationView(LaunchpadView):
 
         active_entries = [entry for entry in all_entries if is_active(entry)]
         return [ActivityDescriptor(self.context, entry)
-            for entry in active_entries[:10]]
+            for entry in islice(active_entries, 10)]
 
     @cachedproperty
     def latest_activity(self):
