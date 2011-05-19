@@ -215,7 +215,7 @@ class PersonTranslationView(LaunchpadView):
             product = potemplate.product
             return product is None or product.active
 
-        active_entries = [entry for entry in all_entries if is_active(entry)]
+        active_entries = (entry for entry in all_entries if is_active(entry))
         return [ActivityDescriptor(self.context, entry)
             for entry in islice(active_entries, 10)]
 
