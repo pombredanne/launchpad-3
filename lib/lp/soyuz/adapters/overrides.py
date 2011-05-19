@@ -79,15 +79,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns):
         store = IStore(SourcePackagePublishingHistory)
         def eager_load(rows):
-            bulk.load(Component, (row[2] for row in rows))
-            bulk.load(Section, (row[3] for row in rows))
+            bulk.load(Component, (row[1] for row in rows))
+            bulk.load(Section, (row[2] for row in rows))
         already_published = DecoratedResultSet(
             store.find(
-                (SQL("""DISTINCT ON (
-                    SourcePackageRelease.sourcepackagename) 0 AS ignore"""),
-                    SourcePackageRelease.sourcepackagenameID,
-                    SourcePackagePublishingHistory.componentID,
-                    SourcePackagePublishingHistory.sectionID),
+                (SourcePackageRelease.sourcepackagenameID,
+                 SourcePackagePublishingHistory.componentID,
+                 SourcePackagePublishingHistory.sectionID),
                 SourcePackagePublishingHistory.archiveID == archive.id,
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
@@ -99,9 +97,10 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     spn.id for spn in spns)).order_by(
                         SourcePackageRelease.sourcepackagenameID,
                         Desc(SourcePackagePublishingHistory.datecreated),
-                        Desc(SourcePackagePublishingHistory.id)),
-            id_resolver(
-                (SourcePackageName, Component, Section), slice(1, None)),
+                        Desc(SourcePackagePublishingHistory.id),
+                ).config(
+                    distinct=(SourcePackageRelease.sourcepackagenameID,)),
+            id_resolver((SourcePackageName, Component, Section)),
             pre_iter_hook=eager_load)
         return list(already_published)
 
@@ -109,23 +108,19 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                                  binaries):
         store = IStore(BinaryPackagePublishingHistory)
         def eager_load(rows):
-            bulk.load(Component, (row[3] for row in rows))
-            bulk.load(Section, (row[4] for row in rows))
+            bulk.load(Component, (row[2] for row in rows))
+            bulk.load(Section, (row[3] for row in rows))
         expanded = calculate_target_das(distroseries, binaries)
         candidates = (
             make_package_condition(archive, das, bpn)
             for bpn, das in expanded)
         already_published = DecoratedResultSet(
             store.find(
-                (SQL("""DISTINCT ON (
-                    BinaryPackagePublishingHistory.distroarchseries,
-                    BinaryPackageRelease.binarypackagename) 0
-                    AS ignore"""),
-                    BinaryPackageRelease.binarypackagenameID,
-                    BinaryPackagePublishingHistory.distroarchseriesID,
-                    BinaryPackagePublishingHistory.componentID,
-                    BinaryPackagePublishingHistory.sectionID,
-                    BinaryPackagePublishingHistory.priority),
+                (BinaryPackageRelease.binarypackagenameID,
+                 BinaryPackagePublishingHistory.distroarchseriesID,
+                 BinaryPackagePublishingHistory.componentID,
+                 BinaryPackagePublishingHistory.sectionID,
+                 BinaryPackagePublishingHistory.priority),
                 BinaryPackagePublishingHistory.status.is_in(
                     active_publishing_status),
                 BinaryPackageRelease.id ==
@@ -134,11 +129,15 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackageRelease.binarypackagenameID,
                     Desc(BinaryPackagePublishingHistory.datecreated),
-                    Desc(BinaryPackagePublishingHistory.id)),
+                    Desc(BinaryPackagePublishingHistory.id),
+                ).config(distinct=(
+                    BinaryPackagePublishingHistory.distroarchseriesID,
+                    BinaryPackageRelease.binarypackagenameID,
+                    )
+                ),
             id_resolver(
                 (BinaryPackageName, DistroArchSeries, Component, Section,
-                None),
-                slice(1, None)),
+                None)),
             pre_iter_hook=eager_load)
         return list(already_published)
 
@@ -223,10 +222,10 @@ def make_package_condition(archive, das, bpn):
         BinaryPackageRelease.binarypackagenameID == bpn.id)
 
 
-def id_resolver(lookups, slice):
+def id_resolver(lookups):
     def _resolve(row):
         store = IStore(SourcePackagePublishingHistory)
         return tuple(
             (value if cls is None else store.get(cls, value))
-            for value, cls in zip(row[slice], lookups))
+            for value, cls in zip(row, lookups))
     return _resolve

@@ -35,7 +35,7 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus

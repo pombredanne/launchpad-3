@@ -60,13 +60,13 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
@@ -1227,10 +1227,10 @@ class QuestionTargetMixin:
             return False
         return True
 
-    def findSimilarQuestions(self, title):
+    def findSimilarQuestions(self, phrase):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self.getTargetTypes()).getResults()
+            phrase, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""

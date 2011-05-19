@@ -170,7 +170,7 @@ from canonical.launchpad.interfaces.launchpad import (
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )

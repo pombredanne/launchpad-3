@@ -963,6 +963,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.binarypackagerelease.version
 
     @property
+    def architecture_specific(self):
+        """See `IBinaryPackagePublishingHistory`"""
+        return self.binarypackagerelease.architecturespecific
+
+    @property
     def priority_name(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name
