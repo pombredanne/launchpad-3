@@ -9,6 +9,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.googlesearch import PageMatch
 from lp.testing import TestCaseWithFactory
 
+
 class TestPageMatchURLHandling(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

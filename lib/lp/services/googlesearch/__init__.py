@@ -18,7 +18,6 @@ import urllib
 import urllib2
 from urlparse import (
     urlunparse,
-    urlparse,
     parse_qsl,
     )
 
