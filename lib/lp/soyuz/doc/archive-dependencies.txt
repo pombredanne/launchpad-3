@@ -590,14 +590,17 @@ the builders.
     ...     name='depseries', distribution=depdistro)
     >>> deparchseries = factory.makeDistroArchSeries(
     ...     distroseries = depseries, architecturetag = 'i386')
-    >>> main_component = getUtility(IComponentSet)['main']
+    >>> universe_component = getUtility(IComponentSet)['universe']
     >>> dsp = factory.makeDistroSeriesParent(
     ...     derived_series=hoary, parent_series=depseries,
     ...     initialized=True, is_overlay=True,
-    ...     pocket=PackagePublishingPocket.SECURITY, component=main_component)
+    ...     pocket=PackagePublishingPocket.SECURITY,
+    ...     component=universe_component)
     >>> pub_source = test_publisher.getPubSource(
     ...     version='1.1', archive=hoary.main_archive)
     >>> [hoary_build] = pub_source.createMissingBuilds()
     >>> print_building_sources_list(hoary_build)
     deb http://archive.launchpad.dev/ubuntu hoary main
-    deb http://archive.launchpad.dev/depdistro depseries-security main
+    deb http://archive.launchpad.dev/depdistro depseries main universe
+    deb http://archive.launchpad.dev/depdistro depseries-security
+        main universe

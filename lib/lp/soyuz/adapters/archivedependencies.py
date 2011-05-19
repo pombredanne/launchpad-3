@@ -176,16 +176,21 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
             archive, distro_arch_series, component, pocket)
         deps.extend(primary_dependencies)
 
-    # Add dependencies for overlay archives.
+    # Add dependencies for overlay archives defined in DistroSeriesParent.
+    # This currently only applies for derived distributions but in the future
+    # should be merged with ArchiveDependency so we don't have two separate
+    # tables essentially doing the same thing.
     dsp_set = getUtility(IDistroSeriesParentSet)
     for dsp in dsp_set.getFlattenedOverlayTree(distro_series):
         try:
             dep_arch_series = dsp.parent_series.getDistroArchSeries(
                 distro_arch_series.architecturetag)
             dep_archive = dsp.parent_series.distribution.main_archive
-            deps.append(
-                (dep_archive, dep_arch_series, dsp.pocket,
-                 (dsp.component.name, )))
+            components = component_dependencies[dsp.component.name]
+            # Follow pocket dependencies.
+            for pocket in pocket_dependencies[dsp.pocket]:
+                deps.append(
+                    (dep_archive, dep_arch_series, pocket, components))
         except NotFoundError:
             pass
 
