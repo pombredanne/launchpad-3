@@ -741,13 +741,14 @@ class PackageUpload(SQLBase):
             unsigned = not self.signing_key
         else:
             unsigned = allow_unsigned
-        changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
-
+        unsigned = True  # XXX
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
         changes_lines = strip_pgp_signature(
             "".join(changes_lines)).splitlines(True)
+        changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
+
 
         return changes, changes_lines
 

@@ -52,8 +52,9 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
+    from lp.soyuz.model.queue import strip_pgp_signature
     contents = changes_file.read()
-    changes_lines = contents.splitlines(True)
+    changes_lines = strip_pgp_signature(contents).splitlines(True)
     tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []

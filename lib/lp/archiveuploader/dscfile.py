@@ -120,6 +120,7 @@ class SignableTagFile:
             return self.signingkey.owner
 
     def parse(self, allow_unsigned=False, dsc_whitespace_rules=False):
+        from lp.soyuz.model.queue import strip_pgp_signature
         try:
             with open(self.filepath, 'rb') as f:
                 raw_content = f.read()
@@ -129,7 +130,7 @@ class SignableTagFile:
 
         if allow_unsigned:
             self.logger.debug("%s can be unsigned." % self.filename)
-            self.parsed_content = raw_content  # XXX: Strip signature.
+            self.parsed_content = strip_pgp_signature(raw_content)
         else:
             self.signingkey, self.parsed_content = self.verifySignature(
                 raw_content, self.filepath)
