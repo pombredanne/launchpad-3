@@ -231,15 +231,14 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     harness.view.widgets['bug_notification_level'].visible)
 
     def test_muted_subs_have_unmute_option(self):
-        # If a user has a muted subscription, the
-        # BugSubscriptionSubscribeSelfView's subscription field will
-        # show an "Unmute" option.
+        # If a user has a muted subscription, but no previous
+        # direct bug subscription, the BugSubscriptionSubscribeSelfView's
+        # subscription field will show an "Unmute" option.
         with person_logged_in(self.person):
             self.bug.mute(self.person, self.person)
 
         with FeatureFixture({self.feature_flag: ON}):
             with person_logged_in(self.person):
-                self.bug.mute(self.person, self.person)
                 subscribe_view = create_initialized_view(
                     self.bug.default_bugtask, name='+subscribe')
                 subscription_widget = (
@@ -247,15 +246,17 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 # The Unmute option is actually treated the same way as
                 # the unsubscribe option.
                 self.assertEqual(
-                    "unmute bug mail from this bug, or",
+                    "unmute bug mail from this bug",
                     subscription_widget.vocabulary.getTerm(self.person).title)
 
-    def test_muted_subs_have_unmute_and_update_option(self):
+    def test_muted_subs_have_unmute_and_restore_option(self):
         # If a user has a muted subscription, the
         # BugSubscriptionSubscribeSelfView's subscription field will
-        # show an option to unmute the subscription and update it to a
-        # new BugNotificationLevel.
+        # show an option to unmute the subscription and restore it to a
+        # previous or new BugNotificationLevel.
         with person_logged_in(self.person):
+            self.bug.subscribe(self.person, self.person,
+                               level=BugNotificationLevel.COMMENTS)
             self.bug.mute(self.person, self.person)
 
         with FeatureFixture({self.feature_flag: ON}):
@@ -267,7 +268,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 update_term = subscription_widget.vocabulary.getTermByToken(
                     'update-subscription')
                 self.assertEqual(
-                    "unmute bug mail from this bug and subscribe me to it.",
+                    "unmute bug mail from this bug and restore my subscription",
                     update_term.title)
 
     def test_unmute_unmutes(self):
