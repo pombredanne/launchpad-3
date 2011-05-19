@@ -12,8 +12,10 @@ from StringIO import StringIO
 
 from bzrlib import urlutils
 from bzrlib.tests import (
-    HttpServer,
     TestCaseWithTransport,
+    )
+from bzrlib.tests.http_server import (
+    HttpServer,
     )
 from bzrlib.tests.http_server import (
     TestingHTTPServer,
