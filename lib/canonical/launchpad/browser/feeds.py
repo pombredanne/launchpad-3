@@ -177,6 +177,14 @@ class FeedLinkBase:
             "Context %r does not provide interface %r"
             % (context, self.usedfor))
 
+    @classmethod
+    def feed_allowed(cls, context):
+        """Return True if a feed is allowed for the given context.
+
+        Subclasses should override this method as necessary.
+        """
+        return True
+
 
 class BugFeedLink(FeedLinkBase):
     usedfor = IBugTask
@@ -189,6 +197,12 @@ class BugFeedLink(FeedLinkBase):
     def href(self):
         return urlappend(self.rooturl,
                          'bugs/' + str(self.context.bug.id) + '/bug.atom')
+
+    @classmethod
+    def feed_allowed(cls, context):
+        """See `FeedLinkBase`"""
+        # No feeds for private bugs.
+        return not context.bug.private
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
@@ -221,6 +235,7 @@ class AnnouncementsFeedLink(FeedLinkBase):
         else:
             return urlappend(canonical_url(self.context, rootsite='feeds'),
                              'announcements.atom')
+
 
 class RootAnnouncementsFeedLink(AnnouncementsFeedLink):
     usedfor = ILaunchpadRoot
@@ -296,10 +311,17 @@ class BranchFeedLink(FeedLinkBase):
     @property
     def title(self):
         return 'Latest Revisions for Branch %s' % self.context.displayname
+
     @property
     def href(self):
         return urlappend(canonical_url(self.context, rootsite="feeds"),
                          'branch.atom')
+
+    @classmethod
+    def feed_allowed(cls, context):
+        """See `FeedLinkBase`"""
+        # No feeds for private branches.
+        return not context.private
 
 
 class PersonRevisionsFeedLink(FeedLinkBase):
@@ -346,4 +368,5 @@ class FeedsMixin:
     def feed_links(self):
         return [feed_type(self.context)
                 for feed_type in self.feed_types
-                if feed_type.usedfor.providedBy(self.context)]
+                if feed_type.usedfor.providedBy(self.context) and
+                feed_type.feed_allowed(self.context)]

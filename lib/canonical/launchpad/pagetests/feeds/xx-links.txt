@@ -42,6 +42,18 @@ atom feed for that one bug.
         href="http://feeds.launchpad.dev/bugs/1/bug.atom"
         title="Bug 1 Feed" />]
 
+But if the bug is private, there should be no link.
+
+    >>> from canonical.launchpad.testing.pages import setupBrowserForUser
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> user = getUtility(IPersonSet).getByEmail('daf@canonical.com')
+    >>> auth_browser = setupBrowserForUser(user, 'daf')
+    >>> auth_browser.open('http://bugs.launchpad.dev/jokosher/+bug/14')
+    >>> soup = BeautifulSoup(auth_browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    []
 
 == Latest Bugs and Branches for a Person ==
 
@@ -319,3 +331,14 @@ atom feed for that branch's revisions.
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom"
 	title="Latest Revisions for Branch lp://dev/~mark/firefox/release--0.9.1" />]
+
+But if the branch is private, there should be no link.
+
+    >>> login(ANONYMOUS)
+    >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> auth_browser = setupBrowserForUser(user)
+    >>> auth_browser.open(
+    ... 'https://code.launchpad.dev/~name12/landscape/feature-x')
+    >>> soup = BeautifulSoup(auth_browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    []
