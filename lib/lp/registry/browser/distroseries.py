@@ -851,6 +851,15 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
+    @cachedproperty
+    def pending_syncs(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        return job_source.getPendingJobsPerPackage(self.context)
+
+    def canRequestSync(self, dsd):
+        """Does it make sense to request a sync for this difference?"""
+        return self.pending_syncs.get(dsd) is None
+
     @property
     def specified_name_filter(self):
         """If specified, return the name filter from the GET form data."""

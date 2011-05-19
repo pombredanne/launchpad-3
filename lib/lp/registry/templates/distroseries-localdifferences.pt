@@ -74,14 +74,16 @@
                 tal:attributes="class src_name">
 
               <td>
-                <input tal:condition="can_perform_sync"
-                  name="field.selected_differences" type="checkbox"
-                  tal:attributes="
-                    value diff_id;
-                    id string:field.selected_differences.${diff_id}"/>
+                <tal:checkbox tal:condition="view/canRequestSync/difference">
+                  <input tal:condition="can_perform_sync"
+                    name="field.selected_differences" type="checkbox"
+                    tal:attributes="
+                      value diff_id;
+                      id string:field.selected_differences.${diff_id}"/>
 
-                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
-                   tal:content="src_name">Foo</a>
+                  <a tal:attributes="href difference/fmt:url" class="toggle-extra"
+                     tal:content="src_name">Foo</a>
+                </tal:checkbox>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
                 <a tal:attributes="href difference/parent_series/fmt:url"
