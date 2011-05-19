@@ -1130,7 +1130,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in parent"
+            "&nbsp;Ignored packages with a higher version than in parent"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
