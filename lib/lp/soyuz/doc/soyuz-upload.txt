@@ -92,7 +92,7 @@ session.
   ...         assert ftp.connect("localhost", 3421).startswith("220 ")
   ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
   ...
-  ...     tf = parse_tagfile(changes_filepath)
+  ...     tf = parse_tagfile(changes_filepath, allow_unsigned=True)
   ...
   ...     if tf.has_key("Source"):
   ...         package_names.append(tf["Source"])
