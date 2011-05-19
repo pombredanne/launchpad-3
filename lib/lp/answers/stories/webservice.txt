@@ -67,8 +67,10 @@ addAnswerContact and removeAnswerContact if the team has a preferred language.
 
     >>> team = contact_webservice.get(
     ...     '/~my-team', api_version='devel').jsonBody()
+    >>> team_project = contact_webservice.get(
+    ...     '/team-project', api_version='devel').jsonBody()
     >>> contact_webservice.named_get(
-    ...     project['self_link'], 'canUserAlterAnswerContact',
+    ...     team_project['self_link'], 'canUserAlterAnswerContact',
     ...     person=team['self_link'], api_version='devel').jsonBody()
     True
 
@@ -76,31 +78,49 @@ addAnswerContact and removeAnswerContact if the team has a preferred language.
     ...     team['self_link'], 'addLanguage',
     ...     language='/+languages/fr', api_version='devel').jsonBody()
     >>> contact_webservice.named_post(
-    ...     project['self_link'], 'addAnswerContact',
+    ...     team_project['self_link'], 'addAnswerContact',
     ...     person=team['self_link'], api_version='devel').jsonBody()
     True
-
 
 Anyone can get the collection of languages spoken by at least one
 answer contact by calling getSupportedLanguages.
 
     >>> languages = anon_webservice.named_get(
-    ...     project['self_link'], 'getSupportedLanguages',
+    ...     team_project['self_link'], 'getSupportedLanguages',
     ...     api_version='devel').jsonBody()
     >>> print_self_link_of_entries(languages)
     http://.../+languages/en
     http://.../+languages/fr
 
-    >>> english = languages['entries'][0]
-
 Anyone can retrieve the collection of answer contacts for a language using
 getAnswerContactsForLanguage.
+
+    >>> english = anon_webservice.get(
+    ...     '/+languages/en', api_version='devel').jsonBody()
 
     >>> contacts = anon_webservice.named_get(
     ...     project['self_link'], 'getAnswerContactsForLanguage',
     ...     language=english['self_link'], api_version='devel').jsonBody()
     >>> print_self_link_of_entries(contacts)
     http://.../~contact
+
+Anyone can retrieve the collection of `IQuestionTarget`s that a person
+is an answer contact for using getDirectAnswerQuestionTargets.
+
+    >>> targets = anon_webservice.named_get(
+    ...     contact['self_link'], 'getDirectAnswerQuestionTargets',
+    ...     api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(targets)
+    http://api.launchpad.dev/devel/my-project
+
+Anyone can retrieve the collection of `IQuestionTarget`s that a person's
+teams is an answer contact for using getTeamAnswerQuestionTargets.
+
+    >>> targets = anon_webservice.named_get(
+    ...     contact['self_link'], 'getTeamAnswerQuestionTargets',
+    ...     api_version='devel').jsonBody()
+    >>> print_self_link_of_entries(targets)
+    http://api.launchpad.dev/devel/team-project
 
 
 Question collections
@@ -145,6 +165,23 @@ getQuestion with the question Id.
     ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
     ...     api_version='devel').jsonBody()
     >>> print question_1['title']
+    Q 1 great
+
+
+Anyone can retrieve a collection of questions from an `IPerson` with
+searchQuestions. The question will that match the precise search criteria
+called with searchQuestions.
+
+    >>> questions = anon_webservice.named_get(
+    ...     contact['self_link'], 'searchQuestions',
+    ...     search_text='q great',
+    ...     status=['Open', 'Needs information', 'Answered'],
+    ...     language=[english['self_link']],
+    ...     needs_attention=False,
+    ...     sort='oldest first',
+    ...     api_version='devel').jsonBody()
+    >>> for question in questions['entries']:
+    ...     print question['title']
     Q 1 great
 
 
