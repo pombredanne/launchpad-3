@@ -123,17 +123,17 @@ class SignableTagFile:
     def parse(self, allow_unsigned=False, dsc_whitespace_rules=False):
         try:
             with open(self.filepath, 'rb') as f:
-                raw_content = f.read()
+                self.raw_content = f.read()
         except IOError, error:
             raise UploadError(
                 "Unable to read %s: %s" % (self.filename, error))
 
         if allow_unsigned:
             self.logger.debug("%s can be unsigned." % self.filename)
-            self.parsed_content = strip_pgp_signature(raw_content)
+            self.parsed_content = strip_pgp_signature(self.raw_content)
         else:
             self.signingkey, self.parsed_content = self.verifySignature(
-                raw_content, self.filepath)
+                self.raw_content, self.filepath)
         try:
             self._dict = parse_tagfile_lines(
                 self.parsed_content.splitlines(True),
@@ -240,7 +240,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Build-Conflicts-Indep",
         "Format",
         "Standards-Version",
-        "filecontents",
         "homepage",
         ]))
 
@@ -319,11 +318,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     def binary(self):
         """Return the DSC claimed binary line."""
         return self._dict['Binary']
-
-    @property
-    def filecontents(self):
-        """Return files section contents."""
-        return self._dict['filecontents']
 
     #
     # DSC file checks.
@@ -633,6 +627,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
+        encoded_raw_content = guess_encoding(self.raw_content)
         encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
@@ -670,7 +665,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
             homepage=encoded.get('homepage'),
-            dsc=encoded['filecontents'],
+            dsc=encoded_raw_content,
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['Maintainer'],
             dsc_format=encoded['Format'],

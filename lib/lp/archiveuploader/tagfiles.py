@@ -210,8 +210,6 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
         raise TagFileParseError(
             "%s: invalid .dsc format at line %d" % (filename, index))
 
-    changes["filecontents"] = "".join(lines)
-
     if error:
         raise TagFileParseError(
             "%s: unable to parse .changes file: %s" % (filename, error))
