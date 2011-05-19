@@ -509,7 +509,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     @operation_for_version('devel')
     def unmute(person, unmuted_by):
-        """Remove a muted subscription for `person`."""
+        """Remove a muted subscription for `person`.
+        
+        Returns previously muted direct subscription, if any."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""

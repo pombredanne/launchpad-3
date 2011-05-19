@@ -292,7 +292,7 @@ class BugContextMenu(ContextMenu):
 
         return Link(
             link, text, icon='remove', summary=(
-                "Mute this bug so that you will never receive emails "
+                "Mute this bug so that you will not receive emails "
                 "about it."))
 
     def nominate(self):
@@ -536,17 +536,14 @@ class BugViewMixin:
     @cachedproperty
     def user_should_see_mute_link(self):
         """Return True if the user should see the Mute link."""
+        user_is_subscribed = False
         if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
             user_is_subscribed = (
-                # Note that we don't have to check for isMuted(), since
-                # if isMuted() is True isSubscribed() will also be
-                # True.
+                self.context.isMuted(self.user) or
                 self.context.isSubscribed(self.user) or
                 self.context.isSubscribedToDupes(self.user) or
                 self.context.personIsAlsoNotifiedSubscriber(self.user))
-            return user_is_subscribed
-        else:
-            return False
+        return user_is_subscribed
 
     @cachedproperty
     def _bug_attachments(self):
