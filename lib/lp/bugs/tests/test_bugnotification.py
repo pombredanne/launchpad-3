@@ -552,9 +552,10 @@ class TestBug778847(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_mutes_for_teams_with_contact_addresses(self):
+    def test_muted_filters_for_teams_with_contact_addresses_dont_oops(self):
         # If a user holds a mute on a Team subscription,
         # getRecipientFilterData() will handle the mute correctly.
+        # This is a regression test for bug 778847.
         team_owner = self.factory.makePerson(name="team-owner")
         team = self.factory.makeTeam(
             email="test@example.com", owner=team_owner)
@@ -567,6 +568,9 @@ class TestBug778847(TestCaseWithFactory):
         bug = self.factory.makeBug(product=product)
         transaction.commit()
         store = Store.of(bug)
+        # Ensure that the notification about the bug being created will
+        # appear when we call getNotificationsToSend() by setting its
+        # message's datecreated time to 1 hour in the past.
         store.execute("""
             UPDATE Message SET
                 datecreated = now() at time zone 'utc' - interval '1 hour'
