@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -51,6 +52,10 @@ class FakeDistroSeries:
     def __init__(self):
         self.distribution = FakeDistribution()
 
+    def getSourcePackage(self, sourcepackagename):
+        return FakeSourcePackage(
+            distroseries=self, sourcepackagename=sourcepackagename)
+
 
 class FakeSPN:
     name = "spn-name"
@@ -66,6 +71,9 @@ class FakeArchive:
     def __init__(self, displayname="archive-name"):
         self.displayname = displayname
 
+    def checkUpload(self, *args, **kwargs):
+        return None
+
 
 class FakeSPPH:
     def __init__(self, archive=None):
@@ -74,6 +82,21 @@ class FakeSPPH:
         self.sourcepackagerelease = FakeSPR()
         self.displayname = "spph-displayname"
         self.archive = archive
+
+
+class FakeSourcePackage:
+    def __init__(self, distroseries=None, sourcepackagename=None):
+        if distroseries is None:
+            distroseries = FakeDistroSeries()
+        if sourcepackagename is None:
+            sourcepackagename = FakeSPN()
+        self.sourcepackagename = sourcepackagename
+        self.distroseries = distroseries
+        self.latest_published_component = None
+
+
+class FakePerson:
+    pass
 
 
 class TestPackageCopyingMixinLight(TestCase):
@@ -168,24 +191,6 @@ class TestPackageCopyingMixinLight(TestCase):
         self.assertNotIn("x<y", html_text)
         self.assertIn("x&lt;y", html_text)
 
-    def test_copy_synchronously_checks_permissions(self):
-        # Unless told not to, copy_synchronously does a permissions
-        # check.
-        pocket = self.getPocket()
-        self.assertRaises(
-            CannotCopy,
-            copy_synchronously,
-            [FakeSPPH()], FakeArchive(), FakeDistroSeries(), pocket, False)
-
-    def test_copy_asynchronously_checks_permissions(self):
-        # Unless told not to, copy_asynchronously does a permissions
-        # check.
-        pocket = self.getPocket()
-        self.assertRaises(
-            CannotCopy,
-            copy_asynchronously,
-            [FakeSPPH()], FakeArchive(), FakeDistroSeries(), pocket, False)
-
 
 class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
     """Integration tests for `PackageCopyingMixin`."""
@@ -232,6 +237,12 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         """Create a `PackageCopyingMixin`-based view."""
         return create_initialized_view(
             self.makeDerivedSeries(), "+localpackagediffs")
+
+    def getUploader(self, archive, spn):
+        """Get person with upload rights for the given package and archive."""
+        uploader = archive.owner
+        removeSecurityProxy(archive).newPackageUploader(uploader, spn)
+        return uploader
 
     def test_canCopySynchronously_obeys_feature_flag(self):
         packages = [self.getUniqueString() for counter in range(3)]
@@ -307,3 +318,51 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
             False, check_permissions=False)
         jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
         self.assertNotEqual([], jobs)
+
+    def test_copy_synchronously_may_allow_copy(self):
+        # In a normal working situation, copy_synchronously allows a
+        # copy.
+        spph = self.makeSPPH()
+        pocket = PackagePublishingPocket.RELEASE
+        dest_series = self.makeDerivedSeries()
+        dest_archive = dest_series.main_archive
+        spn = spph.sourcepackagerelease.sourcepackagename
+        notification = copy_synchronously(
+            [spph], dest_archive, dest_series, pocket, False,
+            person=self.getUploader(dest_archive, spn))
+        self.assertIn("Packages copied", notification.escapedtext)
+
+    def test_copy_synchronously_checks_permissions(self):
+        # Unless told not to, copy_synchronously does a permissions
+        # check.
+        spph = self.makeSPPH()
+        pocket = self.factory.getAnyPocket()
+        dest_series = self.makeDistroSeries()
+        self.assertRaises(
+            CannotCopy,
+            copy_synchronously,
+            [spph], dest_series.main_archive, dest_series, pocket, False)
+
+    def test_copy_asynchronously_may_allow_copy(self):
+        # In a normal working situation, copy_asynchronously allows a
+        # copy.
+        spph = self.makeSPPH()
+        pocket = PackagePublishingPocket.RELEASE
+        dest_series = self.makeDerivedSeries()
+        dest_archive = dest_series.main_archive
+        spn = spph.sourcepackagerelease.sourcepackagename
+        notification = copy_asynchronously(
+            [spph], dest_archive, dest_series, pocket, False,
+            person=self.getUploader(dest_archive, spn))
+        self.assertIn("Requested", notification.escapedtext)
+
+    def test_copy_asynchronously_checks_permissions(self):
+        # Unless told not to, copy_asynchronously does a permissions
+        # check.
+        spph = self.makeSPPH()
+        pocket = self.factory.getAnyPocket()
+        dest_series = self.makeDistroSeries()
+        self.assertRaises(
+            CannotCopy,
+            copy_asynchronously,
+            [spph], dest_series.main_archive, dest_series, pocket, False)
