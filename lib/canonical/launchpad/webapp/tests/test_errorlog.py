@@ -662,7 +662,10 @@ class TestErrorReportingUtility(testtools.TestCase):
         # that caused an exception.
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-        request = TestRequestWithUnauthenticatedPrincipal()
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://launchpad.dev/snarf'})
         try:
             raise GoneError('fnord')
         except GoneError:
