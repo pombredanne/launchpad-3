@@ -174,7 +174,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             PackageCopyJob.job_type == cls.class_job_type,
             PackageCopyJob.target_archive == target_archive,
             Job.id == PackageCopyJob.job_id,
-            Job.status == JobStatus.WAITING)
+            Job._status == JobStatus.WAITING)
         return DecoratedResultSet(jobs, cls)
 
     @property
