@@ -16,7 +16,11 @@ __all__ = [
 import xml.etree.cElementTree as ET
 import urllib
 import urllib2
-from urlparse import urlunparse
+from urlparse import (
+    urlunparse,
+    urlparse,
+    parse_qsl,
+    )
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
@@ -80,6 +84,15 @@ class PageMatch:
         self.summary = summary
         self.url = self._rewrite_url(url)
 
+    def _sanitize_query_string(self, url):
+        """Escapes invalid urls."""
+        parts = urlparse(url)
+        querydata = parse_qsl(parts.query)
+        querystring = urllib.urlencode(querydata)
+        urldata = list(parts)
+        urldata[-2] = querystring
+        return urlunparse(urldata)
+
     def _strip_trailing_slash(self, url):
         """Return the url without a trailing slash."""
         uri = URI(url).ensureNoSlash()
@@ -96,6 +109,7 @@ class PageMatch:
             launchpad environment.
         :return: A URL str.
         """
+        url = self._sanitize_query_string(url)
         if self.url_rewrite_hostname == 'launchpad.net':
             # Do not rewrite the url is the hostname is the public hostname.
             return self._strip_trailing_slash(url)
