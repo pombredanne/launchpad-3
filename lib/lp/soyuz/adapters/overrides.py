@@ -88,7 +88,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     SourcePackageRelease.sourcepackagenameID,
                     SourcePackagePublishingHistory.componentID,
                     SourcePackagePublishingHistory.sectionID),
-                SourcePackagePublishingHistory.pocket == pocket,
                 SourcePackagePublishingHistory.archiveID == archive.id,
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
@@ -127,7 +126,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                     BinaryPackagePublishingHistory.componentID,
                     BinaryPackagePublishingHistory.sectionID,
                     BinaryPackagePublishingHistory.priority),
-                BinaryPackagePublishingHistory.pocket == pocket,
                 BinaryPackagePublishingHistory.status.is_in(
                     active_publishing_status),
                 BinaryPackageRelease.id ==

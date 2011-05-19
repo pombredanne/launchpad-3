@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1318,6 +1318,29 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertComponentSectionAndPriority(
             ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
+    def test_existing_publication_overrides_pockets(self):
+        # When we copy source/binaries from one pocket to another, the
+        # overrides are unchanged from the source publication overrides.
+        nobby = self.createNobby(('i386', 'hppa'))
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-1', architecturehintlist='any',
+            distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source, distroseries=nobby,
+            pocket=PackagePublishingPocket.PROPOSED)
+        component = self.factory.makeComponent()
+        for kind in (source, bin_i386, bin_hppa):
+            kind.component = component
+        transaction.commit()
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, archive, nobby, PackagePublishingPocket.UPDATES, True)
+        self.assertEquals(copied_source.component, source.component)
+        self.assertComponentSectionAndPriority(
+            bin_i386.component, bin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(
+            bin_hppa.component, bin_hppa, copied_bin_hppa)
+        
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their
         # component and section.
