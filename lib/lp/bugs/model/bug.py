@@ -11,6 +11,7 @@ __all__ = [
     'Bug',
     'BugAffectsPerson',
     'BugBecameQuestionEvent',
+    'BugMute',
     'BugSet',
     'BugTag',
     'FileBugData',
@@ -29,6 +30,7 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
+import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -63,6 +65,11 @@ from storm.expr import (
     Union,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -94,7 +101,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     MessageSet,
@@ -107,7 +114,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
@@ -138,6 +145,7 @@ from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
+    IBugMute,
     IBugSet,
     IFileBugData,
     )
@@ -188,6 +196,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
@@ -201,6 +210,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.stormbase import StormBase
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
@@ -843,40 +853,44 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    def _getMutes(self, person):
+        store = Store.of(self)
+        mutes = store.find(
+            BugMute,
+            BugMute.bug == self,
+            BugMute.person == person)
+        return mutes
+
     def isMuted(self, person):
         """See `IBug`."""
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person,
-            BugSubscription.bug_notification_level ==
-                BugNotificationLevel.NOTHING)
-        return not subscriptions.is_empty()
+        mutes = self._getMutes(person)
+        return not mutes.is_empty()
 
     def mute(self, person, muted_by):
         """See `IBug`."""
         if person is None:
             # This may be a webservice request.
             person = muted_by
-        # If there's an existing subscription, update it.
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person)
-        if subscriptions.is_empty():
-            return self.subscribe(
-                person, muted_by, level=BugNotificationLevel.NOTHING)
+        assert not person.is_team, (
+            "Muting a subscription for entire team is not allowed.")
+
+        # If it's already muted, ignore the request.
+        mutes = self._getMutes(person)
+        if mutes.is_empty():
+            mute = BugMute(person, self)
+            Store.of(mute).flush()
         else:
-            subscription = subscriptions.one()
-            subscription.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
-            return subscription
+            # It's already muted, pass.
+            pass
 
     def unmute(self, person, unmuted_by):
         """See `IBug`."""
-        self.unsubscribe(person, unmuted_by)
+        store = Store.of(self)
+        if person is None:
+            # This may be a webservice request.
+            person = unmuted_by
+        mutes = self._getMutes(person)
+        store.remove(mutes.one())
 
     @property
     def subscriptions(self):
@@ -888,7 +902,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
         """See `IBug`."""
         return BugSubscriptionInfo(self, level)
 
@@ -905,7 +919,7 @@ BugMessage""" % sqlvalues(self.id))
         it.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
@@ -939,16 +953,13 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers.
         return DecoratedResultSet(
             IStore(BugSubscription).find(
-                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
-                # hack; it does not seem to be possible to express DISTINCT ON
-                # with Storm.
-                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
-                 Person, BugSubscription),
+                (Person, BugSubscription),
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id),
-            operator.itemgetter(2))
+                BugSubscription.person_id).config(
+                    distinct=(BugSubscription.person_id,)),
+            operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -957,7 +968,7 @@ BugMessage""" % sqlvalues(self.id))
         recipients argument.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
@@ -979,20 +990,15 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
 
         def cache_subscriber(row):
-            _, subscriber, subscription = row
+            subscriber, subscription = row
             if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
         return DecoratedResultSet(Store.of(self).find(
-            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
-            # hack; it does not seem to be possible to express DISTINCT ON
-            # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
-                 "0 AS ignore"),
              # Return people and subscriptions
-             Person, BugSubscription),
+            (Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -1012,7 +1018,8 @@ BugMessage""" % sqlvalues(self.id))
             # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name),
+            ).order_by(Person.name).config(
+                distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
@@ -2644,3 +2651,29 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
+
+
+class BugMute(StormBase):
+    """Contains bugs a person has decided to block notifications from."""
+
+    implements(IBugMute)
+
+    __storm_table__ = "BugMute"
+
+    def __init__(self, person=None, bug=None):
+        if person is not None:
+            self.person = person
+        if bug is not None:
+            self.bug_id = bug.id
+
+    person_id = Int("person", allow_none=False, validator=validate_person)
+    person = Reference(person_id, "Person.id")
+
+    bug_id = Int("bug", allow_none=False)
+    bug = Reference(bug_id, "Bug.id")
+
+    __storm_primary__ = 'person_id', 'bug_id'
+
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)

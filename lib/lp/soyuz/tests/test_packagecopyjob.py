@@ -11,9 +11,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import CannotCopy
-from lp.soyuz.interfaces.distributionjob import (
+from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
-    IPackageCopyJobSource,
+    IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -23,8 +23,8 @@ from lp.testing import (
     )
 
 
-class PackageCopyJobTests(TestCaseWithFactory):
-    """Test case for PackageCopyJob."""
+class PlainPackageCopyJobTests(TestCaseWithFactory):
+    """Test case for PlainPackageCopyJob."""
 
     layer = LaunchpadZopelessLayer
 
@@ -33,7 +33,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
             source_archive=archive1, target_archive=archive2,
@@ -41,7 +41,6 @@ class PackageCopyJobTests(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertProvides(job, IPackageCopyJob)
-        self.assertEquals(distroseries, job.distroseries)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
         self.assertEquals(archive2.id, job.target_archive_id)
@@ -58,7 +57,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[("foo", "1.0-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
@@ -71,7 +70,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[("foo", "1.0-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
@@ -84,7 +83,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
@@ -106,7 +105,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
 
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[("libc", "2.8-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
@@ -132,7 +131,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPackageCopyJobSource)
+        source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             source_packages=[("foo", "1.0-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
@@ -141,10 +140,16 @@ class PackageCopyJobTests(TestCaseWithFactory):
         oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
-            ('distribution_id', distroseries.distribution.id), oops_vars)
-        self.assertIn(('distroseries_id', distroseries.id), oops_vars)
+            ('source_archive_id', archive1.id), oops_vars)
         self.assertIn(
-            ('distribution_job_id', naked_job.context.id), oops_vars)
+            ('target_archive_id', archive2.id), oops_vars)
+        self.assertIn(
+            ('target_distroseries_id', distroseries.id), oops_vars)
+        self.assertIn(
+            ('package_copy_job_id', naked_job.context.id), oops_vars)
+        self.assertIn(
+            ('package_copy_job_type', naked_job.context.job_type.title),
+            oops_vars)
 
     def test_smoke(self):
         publisher = SoyuzTestPublisher()
@@ -156,7 +161,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
-        getUtility(IPackageCopyJobSource).create(
+        getUtility(IPlainPackageCopyJobSource).create(
             source_packages=[("libc", "2.8-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
@@ -165,7 +170,7 @@ class PackageCopyJobTests(TestCaseWithFactory):
 
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
-                IPackageCopyJobSource.getName()))
+                IPlainPackageCopyJobSource.getName()))
 
         self.addDetail("stdout", text_content(out))
         self.addDetail("stderr", text_content(err))
@@ -174,3 +179,24 @@ class PackageCopyJobTests(TestCaseWithFactory):
         copied_source_package = archive2.getPublishedSources(
             name="libc", version="2.8-1", exact_match=True).first()
         self.assertIsNot(copied_source_package, None)
+
+    def test___repr__(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
+            source_archive=archive1, target_archive=archive2,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=True)
+        self.assertEqual(
+            ("<PlainPackageCopyJob to copy 2 package(s) from "
+             "{distroseries.distribution.name}/{archive1.name} to "
+             "{distroseries.distribution.name}/{archive2.name}, "
+             "RELEASE pocket, in {distroseries.distribution.name} "
+             "{distroseries.name}, including binaries>").format(
+                distroseries=distroseries, archive1=archive1,
+                archive2=archive2),
+            repr(job))

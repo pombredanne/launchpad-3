@@ -68,7 +68,7 @@ from canonical.database.constants import (
     )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
@@ -2365,12 +2365,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None, set_base_version=False):
+        changelogs=None, set_base_version=False, parent_series=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            parent_series = self.makeDistroSeries()
-            derived_series = self.makeDistroSeries(
+            dsp = self.makeDistroSeriesParent(
                 parent_series=parent_series)
+            derived_series = dsp.derived_series
+            parent_series = dsp.parent_series
+        else:
+            if parent_series is None:
+                dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                    derived_series)
+                if dsp.count() == 0:
+                    new_dsp = self.makeDistroSeriesParent(
+                        derived_series=derived_series,
+                        parent_series=parent_series)
+                    parent_series = new_dsp.parent_series
+                else:
+                    parent_series = dsp[0].parent_series
 
         if source_package_name_str is None:
             source_package_name_str = self.getUniqueString('src-name')
@@ -2385,7 +2397,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         base_version = versions.get('base')
         if base_version is not None:
-            for series in [derived_series, derived_series.parent_series]:
+            for series in [derived_series, parent_series]:
                 spr = self.makeSourcePackageRelease(
                     sourcepackagename=source_package_name,
                     version=base_version)
@@ -2410,12 +2422,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 version=versions.get('parent'),
                 changelog=changelogs.get('parent'))
             self.makeSourcePackagePublishingHistory(
-                distroseries=derived_series.parent_series,
+                distroseries=parent_series,
                 sourcepackagerelease=spr,
                 status=PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name)
+            derived_series, source_package_name, parent_series)
 
         removeSecurityProxy(diff).status = status
 
@@ -2442,13 +2454,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series_difference, owner, comment)
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
-                               initialized=False):
+                               initialized=False, is_overlay=False,
+                               pocket=None, component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized)
+            derived_series, parent_series, initialized, is_overlay, pocket,
+            component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,

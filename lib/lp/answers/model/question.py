@@ -60,13 +60,13 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import (
     InvalidQuestionStateError,
@@ -109,7 +109,6 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
@@ -235,12 +234,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 bug=108240
-        # We test for ISourcePackage because it is a valid QuestionTarget even
-        # though it should not be. SourcePackages are never passed to this
-        # mutator.
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
@@ -904,10 +898,8 @@ class QuestionSearch:
         particular person."""
         joins = [
             ("""LEFT OUTER JOIN QuestionMessage
-                ON QuestionMessage.question = Question.id"""),
-            ("""LEFT OUTER JOIN Message
-                ON QuestionMessage.message = Message.id
-                AND Message.owner = %s""" % sqlvalues(person))]
+                ON QuestionMessage.question = Question.id
+                AND QuestionMessage.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -938,7 +930,7 @@ class QuestionSearch:
                     AND Question.status IN %(owner_status)s)
                 OR (Question.owner != %(person)s AND
                     Question.status = %(open_status)s AND
-                    Message.owner = %(person)s)
+                    QuestionMessage.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
                     owner_status=[
@@ -1149,7 +1141,7 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ANSWERER: "Question.answerer = %s",
         QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
         QuestionParticipation.OWNER: "Question.owner = %s",
-        QuestionParticipation.COMMENTER: "Message.owner = %s",
+        QuestionParticipation.COMMENTER: "QuestionMessage.owner = %s",
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
@@ -1233,10 +1225,10 @@ class QuestionTargetMixin:
             return False
         return True
 
-    def findSimilarQuestions(self, title):
+    def findSimilarQuestions(self, phrase):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self.getTargetTypes()).getResults()
+            phrase, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""

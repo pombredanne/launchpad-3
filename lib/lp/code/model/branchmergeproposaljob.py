@@ -62,11 +62,11 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
     )
-from canonical.launchpad.interfaces.message import IMessageJob
+from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (

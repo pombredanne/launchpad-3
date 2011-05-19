@@ -130,7 +130,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
 
     def getInfo(self):
         return BugSubscriptionInfo(
-            self.bug, BugNotificationLevel.NOTHING)
+            self.bug, BugNotificationLevel.LIFECYCLE)
 
     def test_direct(self):
         # The set of direct subscribers.
@@ -370,7 +370,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.target = self.factory.makeProduct()
         self.bug = self.factory.makeBug(product=self.target)
         self.info = BugSubscriptionInfo(
-            self.bug, BugNotificationLevel.NOTHING)
+            self.bug, BugNotificationLevel.LIFECYCLE)
         # Get the Storm cache into a known state.
         self.store = Store.of(self.bug)
         self.store.invalidate()

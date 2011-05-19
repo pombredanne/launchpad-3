@@ -43,7 +43,7 @@ from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
-from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
@@ -121,17 +121,12 @@ class AdvancedSubscriptionMixin:
             SimpleTerm(
                 level, level.title,
                 self._bug_notification_level_descriptions[level])
-            # We reorder the items so that COMMENTS comes first. We also
-            # drop the NOTHING option since it just makes the UI
-            # confusing.
-            for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level not in HIDDEN_BUG_NOTIFICATION_LEVELS]
+            # We reorder the items so that COMMENTS comes first.
+            for level in sorted(BugNotificationLevel.items, reverse=True)]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
-        if (self.current_user_subscription is not None and
-            self.current_user_subscription.bug_notification_level not in
-                HIDDEN_BUG_NOTIFICATION_LEVELS):
+        if self.current_user_subscription is not None:
             default_value = (
                 self.current_user_subscription.bug_notification_level)
         else:
@@ -216,6 +211,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 persons_for_user[person.id] = person
                 person_count += 1
 
+        # The view code previously expected a 'mute' to be a subscription
+        # as well.  Since it is not anymore, we add the user to the
+        # subscribers list as needed.
+        if self.user_is_muted:
+            if self.user.id not in persons_for_user:
+                persons_for_user[self.user.id] = self.user
+                person_count += 1
+
         self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
@@ -254,7 +257,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             if person.id == self.user.id:
                 if (self._use_advanced_features and
                     (self.user_is_subscribed_directly or
-                    self.user_is_muted)):
+                     self.user_is_muted)):
                         subscription_terms.append(
                             self._update_subscription_term)
                 subscription_terms.insert(
@@ -307,6 +310,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
+        self.widgets['subscription'].widget_class = 'bug-subscription-basic'
         if self._use_advanced_features:
             self.widgets['bug_notification_level'].widget_class = (
                 'bug-notification-level-field')
@@ -387,9 +391,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         if (subscription_person == self._update_subscription_term.value and
             (self.user_is_subscribed or self.user_is_muted)):
-            self._handleUpdateSubscription(level=bug_notification_level)
+            if self.user_is_muted:
+                self._handleUnmute()
+            if self.user_is_subscribed:
+                self._handleUpdateSubscription(level=bug_notification_level)
+            else:
+                self._handleSubscribe(level=bug_notification_level)
         elif self.user_is_muted and subscription_person == self.user:
-            self._handleUnsubscribeCurrentUser()
+            self._handleUnmute()
         elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
             self._handleSubscribe(bug_notification_level)
@@ -409,6 +418,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             self._handleUnsubscribeCurrentUser()
         else:
             self._handleUnsubscribeOtherUser(user)
+
+    def _handleUnmute(self):
+        """Handle an unmute request."""
+        self.context.bug.unmute(self.user, self.user)
 
     def _handleUnsubscribeCurrentUser(self):
         """Handle the special cases for unsubscribing the current user.
@@ -537,9 +550,6 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         cannot_unsubscribe = []
         for subscription in direct_subscriptions:
             if not check_permission('launchpad.View', subscription.person):
-                continue
-            if (subscription.bug_notification_level ==
-                BugNotificationLevel.NOTHING):
                 continue
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe

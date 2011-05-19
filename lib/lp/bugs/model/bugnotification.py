@@ -40,7 +40,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -144,12 +144,12 @@ class BugNotificationSet:
         # Now we do some calls that are purely for cacheing.
         # Converting these into lists forces the queries to execute.
         if pending_notifications:
-            cached_people = list(
+            list(
                 getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                     list(people_ids),
                     need_validity=True,
                     need_preferred_email=True))
-            cached_bugs = list(
+            list(
                 IStore(Bug).find(Bug, In(Bug.id, list(bug_ids))))
         pending_notifications.reverse()
         return pending_notifications
@@ -189,11 +189,18 @@ class BugNotificationSet:
 
         return bug_notification
 
-    def getRecipientFilterData(self, recipient_to_sources, notifications):
+    def getRecipientFilterData(self, bug, recipient_to_sources,
+                               notifications):
         """See `IBugNotificationSet`."""
         if not notifications or not recipient_to_sources:
             # This is a shortcut that will remove some error conditions.
             return {}
+        # Collect bug mute information.
+        from lp.bugs.model.bug import BugMute
+        store = IStore(BugMute)
+        muted_person_ids = set(list(
+            store.find(BugMute.person_id,
+                       BugMute.bug == bug)))
         # This makes two calls to the database to get all the
         # information we need. The first call gets the filter ids and
         # descriptions for each recipient, and then we divide up the
@@ -202,6 +209,8 @@ class BugNotificationSet:
         source_person_id_map = {}
         recipient_id_map = {}
         for recipient, sources in recipient_to_sources.items():
+            if recipient.id in muted_person_ids:
+                continue
             source_person_ids = set()
             recipient_id_map[recipient.id] = {
                 'principal': recipient,
@@ -231,14 +240,17 @@ class BugNotificationSet:
             Join(StructuralSubscription,
                  BugSubscriptionFilter.structural_subscription_id ==
                     StructuralSubscription.id))
-        filter_data = source.find(
-            (StructuralSubscription.subscriberID,
-             BugSubscriptionFilter.id,
-             BugSubscriptionFilter.description),
-            In(BugNotificationFilter.bug_notification_id,
-               [notification.id for notification in notifications]),
-            In(StructuralSubscription.subscriberID,
-               source_person_id_map.keys()))
+        if len(source_person_id_map) == 0:
+            filter_data = []
+        else:
+            filter_data = source.find(
+                (StructuralSubscription.subscriberID,
+                 BugSubscriptionFilter.id,
+                 BugSubscriptionFilter.description),
+                In(BugNotificationFilter.bug_notification_id,
+                   [notification.id for notification in notifications]),
+                In(StructuralSubscription.subscriberID,
+                   source_person_id_map.keys()))
         filter_ids = []
         # Record the filters for each source.
         for source_person_id, filter_id, filter_description in filter_data:
@@ -259,7 +271,8 @@ class BugNotificationSet:
             mute_data = store.find(
                 (BugSubscriptionFilterMute.person_id,
                  BugSubscriptionFilterMute.filter_id),
-                In(BugSubscriptionFilterMute.person_id, recipient_id_map.keys()),
+                In(BugSubscriptionFilterMute.person_id,
+                   recipient_id_map.keys()),
                 In(BugSubscriptionFilterMute.filter_id, filter_ids))
             for person_id, filter_id in mute_data:
                 del recipient_id_map[person_id]['filters'][filter_id]

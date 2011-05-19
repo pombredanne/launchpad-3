@@ -27,7 +27,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.message import IMessageJob
+from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (

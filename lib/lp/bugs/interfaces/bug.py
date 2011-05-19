@@ -14,6 +14,7 @@ __all__ = [
     'IBugAddForm',
     'IBugBecameQuestionEvent',
     'IBugDelta',
+    'IBugMute',
     'IBugSet',
     'IFileBugData',
     'IFrontPageBugAddForm',
@@ -64,7 +65,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.app.validators.name import bug_name_validator
 from lp.app.errors import NotFoundError
@@ -85,6 +86,7 @@ from lp.services.fields import (
     ContentNameField,
     Description,
     DuplicateBug,
+    PersonChoice,
     PublicPersonChoice,
     Tag,
     Title,
@@ -490,8 +492,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def isMuted(person):
         """Does person have a muted subscription on this bug?
 
-        :returns: True if the user has a direct subscription to this bug
-            with a BugNotificationLevel of NOTHING.
+        :returns: True if the user has muted all email from this bug.
         """
 
     @operation_parameters(
@@ -1210,3 +1211,18 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
+
+
+class IBugMute(Interface):
+    """A mute on an IBug."""
+
+    person = PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person subscribed."))
+    bug = Reference(
+        IBug, title=_("Bug"),
+        required=True, readonly=True,
+        description=_("The bug to be muted."))
+    date_created = Datetime(
+        title=_("The date on which the mute was created."), required=False,
+        readonly=True)

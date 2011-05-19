@@ -843,6 +843,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3800,6 +3806,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfiltermute ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugsubscriptionfilterstatus DISABLE TRIGGER ALL;
 
 
@@ -4179,9 +4192,9 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1', 1);
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1', 1);
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version, parent_series) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1', 1);
 
 
 ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
@@ -4234,6 +4247,13 @@ INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name,
 
 
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesparent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesparent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -6263,6 +6283,13 @@ ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
 ALTER TABLE packagebugsupervisor ENABLE TRIGGER ALL;
 
 
+ALTER TABLE packagecopyjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagecopyjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
@@ -6293,21 +6320,21 @@ ALTER TABLE packagesetsources ENABLE TRIGGER ALL;
 
 ALTER TABLE packageupload DISABLE TRIGGER ALL;
 
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 10);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 10, NULL);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -10062,14 +10089,14 @@ ALTER TABLE questionjob ENABLE TRIGGER ALL;
 
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (2, 7, 13, 10, 15);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (3, 11, 18, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (4, 9, 19, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (5, 8, 20, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (6, 10, 21, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (7, 9, 22, 40, 20);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (8, 11, 23, 80, 10);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (1, 6, 12, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (2, 7, 13, 10, 15, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (3, 11, 18, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (4, 9, 19, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (5, 8, 20, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (6, 10, 21, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (7, 9, 22, 40, 20, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (8, 11, 23, 80, 10, 12);
 
 
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;

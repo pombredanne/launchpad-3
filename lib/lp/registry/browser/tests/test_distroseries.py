@@ -20,6 +20,7 @@ from testtools.content import (
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
+    Equals,
     LessThan,
     Not,
     )
@@ -31,8 +32,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -40,16 +42,15 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.browser.distroseries import (
-    BLACKLISTED,
+    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
-    NON_BLACKLISTED,
+    NON_IGNORED,
     RESOLVED,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -66,11 +67,13 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
+    anonymous_logged_in,
     celebrity_logged_in,
     feature_flags,
     login_person,
@@ -78,6 +81,7 @@ from lp.testing import (
     set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
+    with_celebrity_logged_in,
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
@@ -109,11 +113,11 @@ class TestDistroSeriesView(TestCaseWithFactory):
 
     def _createDifferenceAndGetView(self, difference_type):
         # Helper function to create a valid DSD.
-        distroseries = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+        dsp = self.factory.makeDistroSeriesParent()
         self.factory.makeDistroSeriesDifference(
-            derived_series=distroseries, difference_type=difference_type)
-        return create_initialized_view(distroseries, '+index')
+            derived_series=dsp.derived_series,
+            difference_type=difference_type)
+        return create_initialized_view(dsp.derived_series, '+index')
 
     def test_num_differences(self):
         diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -136,28 +140,42 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _setupDifferences(self, name, parent_name, nb_diff_versions,
+    def _setupDifferences(self, name, parent_names, nb_diff_versions,
                           nb_diff_child, nb_diff_parent):
-        # Helper to create DSD of the different types.
-        derived_series = self.factory.makeDistroSeries(
-            name=name,
-            parent_series=self.factory.makeDistroSeries(name=parent_name))
+        # Helper to create DSDs of the different types.
+        derived_series = self.factory.makeDistroSeries(name=name)
         self.simple_user = self.factory.makePerson()
+        # parent_names can be a list of parent names or a single name
+        # for a single parent (e.g. ['parent1_name', 'parent2_name'] or
+        # 'parent_name').
+        # If multiple parents are created, the DSDs will be created with
+        # the first one.
+        if type(parent_names) == str:
+            parent_names = [parent_names]
+        dsps = []
+        for parent_name in parent_names:
+            parent_series = self.factory.makeDistroSeries(name=parent_name)
+            dsps.append(self.factory.makeDistroSeriesParent(
+                derived_series=derived_series, parent_series=parent_series))
+        first_parent_series = dsps[0].parent_series
         for i in range(nb_diff_versions):
             diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
-                difference_type=diff_type)
+                difference_type=diff_type,
+                parent_series=first_parent_series)
         for i in range(nb_diff_child):
             diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
-                difference_type=diff_type)
+                difference_type=diff_type,
+                parent_series=first_parent_series)
         for i in range(nb_diff_parent):
             diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
-                difference_type=diff_type)
+                difference_type=diff_type,
+                parent_series=first_parent_series)
         return derived_series
 
     def test_differences_no_flag_no_portlet(self):
@@ -213,6 +231,33 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             html_content = view()
 
         self.assertThat(html_content, portlet_display)
+
+    def test_differences_portlet_all_differences_multiple_parents(self):
+        # The difference portlet shows the differences with the multiple
+        # parent series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self._setupDifferences(
+            'deri', ['sid1', 'sid2'], 0, 1, 0)
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derivation portlet header', 'h2',
+                text='Derived from 2 parents'),
+            soupmatchers.Tag(
+                'Parent diffs link', 'a',
+                text=re.compile('\s*1 package only in a parent series\s*'),
+                attrs={'href': re.compile('.*/\+missingpackages')}))
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series,
+                '+index',
+                principal=self.simple_user)
+            # XXX rvb 2011-04-12 bug=758649: LaunchpadTestRequest overrides
+            # self.features to NullFeatureController.
+            view.request.features = get_relevant_feature_controller()
+            html_text = view()
+
+        self.assertThat(html_text, portlet_display)
 
     def test_differences_portlet_no_differences(self):
         # The difference portlet displays 'No differences' if there is no
@@ -412,6 +457,19 @@ class DistroSeriesDifferenceMixin:
 
         self.assertThat(html_content, parent_packagesets)
 
+    def _createChildAndParent(self):
+        derived_series = self.factory.makeDistroSeries(name='derilucid')
+        parent_series = self.factory.makeDistroSeries(name='lucid')
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series, parent_series=parent_series)
+        return (derived_series, parent_series)
+
+    def _createChildAndParents(self, other_parent_series=None):
+        derived_series, parent_series = self._createChildAndParent()
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series, parent_series=other_parent_series)
+        return (derived_series, parent_series)
+
 
 class TestDistroSeriesLocalDifferences(
     DistroSeriesDifferenceMixin, TestCaseWithFactory):
@@ -429,9 +487,7 @@ class TestDistroSeriesLocalDifferences(
         # Test that the page includes the filter form if differences
         # are present
         login_person(self.simple_user)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
@@ -447,9 +503,7 @@ class TestDistroSeriesLocalDifferences(
         # Test that the page doesn't includes the filter form if no
         # differences are present
         login_person(self.simple_user)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
 
         view = create_initialized_view(
             derived_series, '+localpackagediffs', principal=self.simple_user)
@@ -465,7 +519,7 @@ class TestDistroSeriesLocalDifferences(
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[ds_diff.source_package_name],
-                distroseries=ds_diff.derived_series.parent_series)
+                distroseries=ds_diff.parent_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -488,27 +542,39 @@ class TestDistroSeriesLocalDifferences(
                 self.factory.makePackageset(
                     name=name,
                     packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.derived_series.parent_series)
+                    distroseries=ds_diff.parent_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         packageset_text = re.compile(
             '\s*' + ', '.join(sorted(unsorted_names)))
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_content, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
-    def test_queries(self):
+
+class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
+                                           DistroSeriesDifferenceMixin):
+    """Test the distroseries +localpackagediffs page's performance."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesLocalDiffPerformance,
+             self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def _assertQueryCount(self, derived_series):
         # With no DistroSeriesDifferences the query count should be low and
         # fairly static. However, with some DistroSeriesDifferences the query
         # count will be higher, but it should remain the same no matter how
         # many differences there are.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
         ArchivePermission(
             archive=derived_series.main_archive, person=self.simple_user,
             component=getUtility(IComponentSet)["main"],
@@ -608,31 +674,66 @@ class TestDistroSeriesLocalDifferences(
             text_content(u"%.2f" % statement_count_per_row))
         # XXX: GavinPanella 2011-04-12 bug=760733: Reducing the query count
         # further needs work. Ideally this test would be along the lines of
-        # recorder3.count == recorder2.count. 4 queries above the recorder2
-        # count is 2 queries per difference which is not acceptable, but is
+        # recorder3.count == recorder2.count. 2 queries above the recorder2
+        # count is 1 query per difference which is not acceptable, but is
         # *far* better than without the changes introduced by landing this.
-        compromise_statement_count = recorder2.count + 4
+        compromise_statement_count = recorder2.count + 2
         self.assertThat(
             recorder3, HasQueryCount(
                 LessThan(compromise_statement_count + 1)))
 
+    def test_queries_single_parent(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
+        self._assertQueryCount(derived_series)
 
-class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
+    def test_queries_multiple_parents(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series)
+        self._assertQueryCount(derived_series)
+
+
+class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
+                                               DistroSeriesDifferenceMixin):
     """Test the distroseries +localpackagediffs view."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
+
+    def makePackageUpgrade(self, derived_series=None):
+        """Create a `DistroSeriesDifference` for a package upgrade."""
+        base_version = '1.%d' % self.factory.getUniqueInteger()
+        versions = {
+            'base': base_version,
+            'parent': base_version + '-' + self.factory.getUniqueString(),
+            'derived': base_version,
+        }
+        return self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, versions=versions,
+            set_base_version=True)
+
+    def makeView(self, distroseries=None):
+        """Create a +localpackagediffs view for `distroseries`."""
+        if distroseries is None:
+            distroseries = (
+                self.factory.makeDistroSeriesParent().derived_series)
+        # current_request=True causes the current interaction to end so we
+        # must explicitly ask that the current principal be used for the
+        # request.
+        return create_initialized_view(
+            distroseries, '+localpackagediffs',
+            principal=get_current_principal(),
+            current_request=True)
 
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
         # view simply redirects to the derived series.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
 
         self.assertIs(
             None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         response = view.request.response
         self.assertEqual(302, response.getStatus())
@@ -641,41 +742,46 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
     def test_label(self):
         # The view label includes the names of both series.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertEqual(
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
             view.label)
 
+    def test_label_multiple_parents(self):
+        # If the series has multiple parents, the view label mentions
+        # the generic term 'parent series'.
+        derived_series, parent_series = self._createChildAndParents()
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+
+        self.assertEqual(
+            "Source package differences between 'Derilucid' and "
+            "parent series",
+            view.label)
+
     def test_batch_includes_needing_attention_only(self):
         # The differences attribute includes differences needing
         # attention only.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         current_difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.RESOLVED)
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [current_difference], view.cached_differences.batch)
 
     def test_batch_includes_different_versions_only(self):
         # The view contains differences of type DIFFERENT_VERSIONS only.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         different_versions_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
         self.factory.makeDistroSeriesDifference(
@@ -683,21 +789,16 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
 
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         self.assertContentEqual(
             [different_versions_diff], view.cached_differences.batch)
 
     def test_template_includes_help_link(self):
         # The help link for popup help is included.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-
+        derived_series, parent_series = self._createChildAndParent()
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         soup = BeautifulSoup(view())
         help_links = soup.findAll(
@@ -706,17 +807,15 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
     def test_diff_row_includes_last_comment_only(self):
         # The most recent comment is rendered for each difference.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
-        difference.addComment(difference.owner, "Earlier comment")
-        difference.addComment(difference.owner, "Latest comment")
+        with person_logged_in(derived_series.owner):
+            difference.addComment(difference.owner, "Earlier comment")
+            difference.addComment(difference.owner, "Latest comment")
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
 
         # Find all the rows within the body of the table
         # listing the differences.
@@ -730,31 +829,63 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
 
     def test_diff_row_links_to_extra_details(self):
         # The source package name links to the difference details.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.findAll('tr')[0]
 
-        href = canonical_url(difference).replace('http://launchpad.dev', '')
-        links = row.findAll('a', href=href)
+        links = row.findAll('a', href=canonical_url(difference))
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
+
+    def test_multiple_parents_display(self):
+        package_name = 'package-1'
+        other_parent_series = self.factory.makeDistroSeries(name='other')
+        derived_series, parent_series = self._createChildAndParents(
+            other_parent_series=other_parent_series)
+        versions = {
+            'base': u'1.0',
+            'derived': u'1.0derived1',
+            'parent': u'1.0-1',
+        }
+
+        self.factory.makeDistroSeriesDifference(
+            versions=versions,
+            parent_series=other_parent_series,
+            source_package_name_str=package_name,
+            derived_series=derived_series)
+        self.factory.makeDistroSeriesDifference(
+            versions=versions,
+            parent_series=parent_series,
+            source_package_name_str=package_name,
+            derived_series=derived_series)
+        set_derived_series_ui_feature_flag(self)
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        multiple_parents_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "Parent table header", 'th',
+                text=re.compile("\s*Parent\s")),
+            soupmatchers.Tag(
+                "Parent version table header", 'th',
+                text=re.compile("\s*Parent version\s*")),
+            soupmatchers.Tag(
+                "Parent name", 'a',
+                attrs={'class': 'parent-name'},
+                text=re.compile("\s*Other\s*")),
+             )
+        self.assertThat(view.render(), multiple_parents_matches)
 
     def test_diff_row_shows_version_attached(self):
         # The +localpackagediffs page shows the version attached to the
         # DSD and not the last published version (bug=745776).
         package_name = 'package-1'
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         versions = {
             'base': u'1.0',
             'derived': u'1.0derived1',
@@ -776,8 +907,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             version=new_version)
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -799,9 +929,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         # The +localpackagediffs page shows only the version (no link)
         # if we fail to fetch the published version.
         package_name = 'package-1'
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         versions = {
             'base': u'1.0',
             'derived': u'1.0derived1',
@@ -814,14 +942,16 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             derived_series=derived_series)
 
         # Delete the publications.
-        difference.source_pub.status = PackagePublishingStatus.DELETED
-        difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+        with celebrity_logged_in("admin"):
+            difference.source_pub.status = (
+                PackagePublishingStatus.DELETED)
+            difference.parent_source_pub.status = (
+                PackagePublishingStatus.DELETED)
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 
         set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs')
+        view = self.makeView(derived_series)
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
@@ -838,17 +968,141 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())
 
+    def test_getUpgrades_shows_updates_in_parent(self):
+        # The view's getUpgrades methods lists packages that can be
+        # trivially upgraded: changed in the parent, not changed in the
+        # derived series, but present in both.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        self.assertContentEqual([dsd], view.getUpgrades())
 
-class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
+    def enableDerivedSeriesSyncFeature(self):
+        self.useFixture(
+            FeatureFixture(
+                {u'soyuz.derived-series-sync.enabled': u'on'}))
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_offered_only_with_feature_flag(self):
+        # The "Upgrade Packages" button will only be shown when a specific
+        # feature flag is enabled.
+        view = self.makeView()
+        self.makePackageUpgrade(view.context)
+        self.assertFalse(view.canUpgrade())
+        self.enableDerivedSeriesSyncFeature()
+        self.assertTrue(view.canUpgrade())
+
+    def test_upgrades_are_offered_if_appropriate(self):
+        # The "Upgrade Packages" button will only be shown to privileged
+        # users.
+        self.enableDerivedSeriesSyncFeature()
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        with celebrity_logged_in("admin"):
+            self.assertTrue(view.canUpgrade())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(view.canUpgrade())
+        with anonymous_logged_in():
+            self.assertFalse(view.canUpgrade())
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_offered_only_if_available(self):
+        # If there are no upgrades, the "Upgrade Packages" button won't
+        # be shown.
+        self.enableDerivedSeriesSyncFeature()
+        view = self.makeView()
+        self.assertFalse(view.canUpgrade())
+        self.makePackageUpgrade(view.context)
+        self.assertTrue(view.canUpgrade())
+
+    @with_celebrity_logged_in("admin")
+    def test_upgrades_not_offered_after_feature_freeze(self):
+        # There won't be an "Upgrade Packages" button once feature
+        # freeze has occurred.  Mass updates would not make sense after
+        # that point.
+        self.enableDerivedSeriesSyncFeature()
+        upgradeable = {}
+        for status in SeriesStatus.items:
+            dsd = self.makePackageUpgrade()
+            dsd.derived_series.status = status
+            view = self.makeView(dsd.derived_series)
+            upgradeable[status] = view.canUpgrade()
+        expected = {
+            SeriesStatus.FUTURE: True,
+            SeriesStatus.EXPERIMENTAL: True,
+            SeriesStatus.DEVELOPMENT: True,
+            SeriesStatus.FROZEN: False,
+            SeriesStatus.CURRENT: False,
+            SeriesStatus.SUPPORTED: False,
+            SeriesStatus.OBSOLETE: False,
+        }
+        self.assertEqual(expected, upgradeable)
+
+    def test_upgrade_creates_sync_jobs(self):
+        # requestUpgrades generates PackageCopyJobs for the upgrades
+        # that need doing.
+        dsd = self.makePackageUpgrade()
+        series = dsd.derived_series
+        view = self.makeView(series)
+        view.requestUpgrades()
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        jobs = list(
+            job_source.getActiveJobs(series.distribution.main_archive))
+        self.assertEquals(1, len(jobs))
+        job = jobs[0]
+        self.assertEquals(series, job.target_distroseries)
+        source_package_info = list(job.source_packages)
+        self.assertEquals(1, len(source_package_info))
+        self.assertEqual(
+            (dsd.source_package_name.name, dsd.parent_source_version),
+            source_package_info[0][:2])
+
+    def test_upgrade_gives_feedback(self):
+        # requestUpgrades doesn't instantly perform package upgrades,
+        # but it shows the user a notice that the upgrades have been
+        # requested.
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        view.requestUpgrades()
+        expected = {
+            "level": BrowserNotificationLevel.INFO,
+            "message":
+                ("Upgrades of {0.displayname} packages have been "
+                 "requested. Please give Launchpad some time to "
+                 "complete these.").format(dsd.derived_series),
+            }
+        observed = map(vars, view.request.response.notifications)
+        self.assertEqual([expected], observed)
+
+    def test_requestUpgrade_is_efficient(self):
+        # A single web request may need to schedule large numbers of
+        # package upgrades.  It must do so without issuing large numbers
+        # of database queries.
+        derived_series, parent_series = self._createChildAndParent()
+        # Take a baseline measure of queries.
+        self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder1:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
+        # The query count does not increase with more differences.
+        for index in xrange(3):
+            self.makePackageUpgrade(derived_series=derived_series)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder2:
+            self.makeView(derived_series).requestUpgrades()
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+
+class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
+                                                 DistroSeriesDifferenceMixin):
 
     layer = LaunchpadFunctionalLayer
 
     def test_higher_radio_mentions_parent(self):
+        # The user is shown an option to display only the blacklisted
+        # package with a higer version than in the parent.
         set_derived_series_ui_feature_flag(self)
-        parent_series = self.factory.makeDistroSeries(
-            name='lucid', displayname='Lucid')
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=parent_series)
+        derived_series, parent_series = self._createChildAndParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
@@ -857,7 +1111,26 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+            "&nbsp;Ignored packages with a higher version than in 'Lucid'"
+        radio_option_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "radio displays parent's name", 'label',
+                text=radio_title),
+            )
+        self.assertThat(view.render(), radio_option_matches)
+
+    def test_higher_radio_mentions_parents(self):
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParents()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        radio_title = \
+            "&nbsp;Ignored packages with a higher version than in parent"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -875,9 +1148,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_batch_filtered(self):
         # The name_filter parameter allows filtering of packages by name.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         diff1 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
@@ -901,9 +1172,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_batch_non_blacklisted(self):
         # The default filter is all non blacklisted differences.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         diff1 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
@@ -917,7 +1186,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % NON_BLACKLISTED)
+            query_string='field.package_type=%s' % NON_IGNORED)
         filtered_view2 = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -931,9 +1200,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # field.package_type parameter allows to list only
         # blacklisted differences.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         blacklisted_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
@@ -941,7 +1208,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % BLACKLISTED)
+            query_string='field.package_type=%s' % IGNORED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -955,9 +1222,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # field.package_type parameter allows to list only
         # blacklisted differences with a child's version higher than parent's.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
         blacklisted_diff_higher = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
@@ -985,9 +1250,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # Test that we can search for differences that we marked
         # resolved.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
 
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
@@ -1016,16 +1279,18 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             distribution = self.factory.makeDistribution('deribuntu')
         derived_series = self.factory.makeDistroSeries(
             distribution=distribution,
-            name='derilucid', parent_series=parent_series)
+            name='derilucid')
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
-        self.factory.makeDistroSeriesDifference(
+        diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str=src_name,
             derived_series=derived_series, versions=versions,
             difference_type=difference_type)
         sourcepackagename = self.factory.getOrMakeSourcePackageName(
             src_name)
         set_derived_series_ui_feature_flag(self)
-        return derived_series, parent_series, sourcepackagename
+        return derived_series, parent_series, sourcepackagename, str(diff.id)
 
     def test_canPerformSync_anon(self):
         # Anonymous users cannot sync packages.
@@ -1108,11 +1373,13 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
 
     def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
-        derived_series = self._setUpDSD('my-src-name')[0]
+        derived_series, unused, unused2, diff_id = self._setUpDSD(
+            'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
+        another_id = str(int(diff_id) + 1)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['some-other-name'])
+            derived_series, person, [another_id])
 
         self.assertEqual(2, len(view.errors))
         self.assertEqual(
@@ -1123,11 +1390,12 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_error_no_perm_dest_archive(self):
         # A user without upload rights on the destination archive cannot
         # sync packages.
-        derived_series = self._setUpDSD('my-src-name')[0]
+        derived_series, unused, unused2, diff_id = self._setUpDSD(
+            'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
@@ -1145,27 +1413,27 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
     def test_sync_success_perm_component(self):
         # A user with upload rights on the destination component
         # can sync packages.
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name')
         person, _ = self.makePersonWithComponentPermission(
             derived_series.main_archive,
             derived_series.getSourcePackage(
-                sourcepackagename).latest_published_component)
+                sp_name).latest_published_component)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(0, len(view.errors))
 
     def test_sync_error_no_perm_component(self):
         # A user without upload rights on the destination component
         # will get an error when he syncs packages to this component.
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         self.assertEqual(1, len(view.errors))
         self.assertTrue(
@@ -1205,13 +1473,13 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'derived': '1.0derived1',
             'parent': '1.0-1',
         }
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
 
         # Setup a user with upload rights.
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
-            person, sourcepackagename)
+            person, sp_name)
 
         # The inital state is that 1.0-1 is not in the derived series.
         pubs = derived_series.main_archive.getPublishedSources(
@@ -1222,7 +1490,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         # Now, sync the source from the parent using the form.
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
 
         # The parent's version should now be in the derived series and
         # the notifications displayed:
@@ -1237,18 +1505,17 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             'parent': '1.0-1',
         }
         missing = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, ['my-src-name'],
+            derived_series, person, [diff_id],
             view_name='+missingpackages')
 
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
-
 
     def test_sync_in_released_series_in_updates(self):
         # If the destination series is released, the sync packages end
@@ -1256,7 +1523,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         versions = {
             'parent': '1.0-1',
             }
-        derived_series, parent_series, sourcepackagename = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
         # Update destination series status to current and update
         # daterelease.
@@ -1267,9 +1534,9 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         set_derived_series_sync_feature_flag(self)
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
-            person, sourcepackagename)
+            person, sp_name)
         self._syncAndGetView(
-            derived_series, person, ['my-src-name'])
+            derived_series, person, [diff_id])
         parent_pub = parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
@@ -1304,8 +1571,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
     def test_missingpackages_differences(self):
         # The view fetches the differences with type
         # MISSING_FROM_DERIVED_SERIES.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
 
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         # Missing blacklisted diff.
@@ -1328,8 +1595,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
     def test_missingpackages_differences_empty(self):
         # The view is empty if there is no differences with type
         # MISSING_FROM_DERIVED_SERIES.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_series = dsp.derived_series
 
         not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
@@ -1346,8 +1613,8 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
             [], view.cached_differences.batch)
 
 
-class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
-                                              TestCaseWithFactory):
+class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
+                                              DistroSeriesDifferenceMixin):
     """Test the distroseries +missingpackages page."""
 
     layer = DatabaseFunctionalLayer
@@ -1367,21 +1634,23 @@ class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[self.ds_diff.source_package_name],
-                distroseries=self.ds_diff.derived_series.parent_series)
+                distroseries=self.ds_diff.parent_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 self.ds_diff.derived_series,
                 '+missingpackages',
                 principal=self.simple_user)
-            html = view()
+            html_content = view()
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
+            html_content, packageset_text, 'parent-packagesets',
+            'Parent packagesets')
 
 
-class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
+class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
+                                            DistroSeriesDifferenceMixin):
     """Test the distroseries +uniquepackages view."""
 
     layer = LaunchpadZopelessLayer
@@ -1389,9 +1658,7 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
     def test_uniquepackages_differences(self):
         # The view fetches the differences with type
         # UNIQUE_TO_DERIVED_SERIES.
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+        derived_series, parent_series = self._createChildAndParent()
 
         missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         # Missing blacklisted diff.
@@ -1414,8 +1681,7 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
     def test_uniquepackages_differences_empty(self):
         # The view is empty if there is no differences with type
         # UNIQUE_TO_DERIVED_SERIES.
-        derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+        derived_series, parent_series = self._createChildAndParent()
 
         not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
 
@@ -1432,8 +1698,8 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
             [], view.cached_differences.batch)
 
 
-class DistroSeriesUniquePackagesPageTestCase(DistroSeriesDifferenceMixin,
-                                             TestCaseWithFactory):
+class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
+                                             DistroSeriesDifferenceMixin):
     """Test the distroseries +uniquepackages page."""
 
     layer = DatabaseFunctionalLayer
