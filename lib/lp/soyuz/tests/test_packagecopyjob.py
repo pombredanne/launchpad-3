@@ -215,6 +215,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             repr(job))
 
     def test_getPendingJobsPerPackage_finds_jobs(self):
+        # getPendingJobsPerPackage finds jobs, and the packages they
+        # belong to.
         dsd = self.factory.makeDistroSeriesDifference()
         job = self.makeJob(dsd)
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -223,6 +225,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             job_source.getPendingJobsPerPackage(dsd.derived_series))
 
     def test_getPendingJobsPerPackage_ignores_other_distroseries(self):
+        # getPendingJobsPerPackage only looks for jobs on the indicated
+        # distroseries.
         dsd = self.factory.makeDistroSeriesDifference()
         self.makeJob(dsd)
         other_series = self.factory.makeDistroSeries()
@@ -231,6 +235,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             {}, job_source.getPendingJobsPerPackage(other_series))
 
     def test_getPendingJobsPerPackage_only_returns_upcoming_jobs(self):
+        # getPendingJobsPerPackage ignores jobs that have already been
+        # run.
         dsd = self.factory.makeDistroSeriesDifference()
         package = specify_dsd_package(dsd)
         job = self.makeJob(dsd)
@@ -248,6 +254,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.assertEqual(expected, found_by_state)
 
     def test_getPendingJobsPerPackage_distinguishes_jobs(self):
+        # getPendingJobsPerPackage associates the right job with the
+        # right package.
         derived_series = self.factory.makeDistroSeries()
         dsds = [
             self.factory.makeDistroSeriesDifference(
@@ -260,6 +268,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             job_source.getPendingJobsPerPackage(derived_series))
 
     def test_getPendingJobsPerPackage_picks_oldest_job_for_dsd(self):
+        # If there are multiple jobs for one package,
+        # getPendingJobsPerPackage picks the oldest.
         dsd = self.factory.makeDistroSeriesDifference()
         jobs = [self.makeJob(dsd) for counter in xrange(2)]
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -268,6 +278,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             job_source.getPendingJobsPerPackage(dsd.derived_series))
 
     def test_getPendingJobsPerPackage_ignores_dsds_without_jobs(self):
+        # getPendingJobsPerPackage produces no dict entry for packages
+        # that have no pending jobs, even if they do have DSDs.
         dsd = self.factory.makeDistroSeriesDifference()
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
