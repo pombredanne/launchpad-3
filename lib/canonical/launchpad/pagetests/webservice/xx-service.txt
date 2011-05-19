@@ -155,28 +155,6 @@ isn't logged in as any particular user:
     ...
     You need to be logged in to view this URL.
 
-An empty or missing user agent results in an error.  But there is
-no OOPS generated for this error.
-
-    >>> response = request_with_user_agent(' ')
-    >>> output = response.getOutput()
-    >>> print output
-    HTTP/1.1 401 Unauthorized
-    ...
-    Anonymous requests must provide a User-Agent.
-
-    >>> 'X-Lazr-Oopsid' not in output
-    True
-
-    >>> response = request_with_user_agent(None)
-    >>> output = response.getOutput()
-    >>> print output
-    HTTP/1.1 401 Unauthorized
-    ...
-    Anonymous requests must provide a User-Agent.
-
-    >>> 'X-Lazr-Oopsid' not in output
-    True
 
 API Requests to other hosts
 ===========================
@@ -231,7 +209,7 @@ anonymous request.
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Anonymous requests must provide a User-Agent.
+    You need to be logged in to view this URL.
 
 
 The 'Vary' Header
