@@ -1820,7 +1820,7 @@ class Archive(SQLBase):
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
         if not getFeatureFlag('soyuz.generic-overrides.enabled'):
             return None
-        # XXX StevenK: bug= 2011-05-19 Return PPAOverridePolicy() for
+        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
         # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             return UbuntuOverridePolicy()
