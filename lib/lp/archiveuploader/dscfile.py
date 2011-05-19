@@ -65,6 +65,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.encoding import guess as guess_encoding
+from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -120,7 +121,6 @@ class SignableTagFile:
             return self.signingkey.owner
 
     def parse(self, allow_unsigned=False, dsc_whitespace_rules=False):
-        from lp.soyuz.model.queue import strip_pgp_signature
         try:
             with open(self.filepath, 'rb') as f:
                 raw_content = f.read()

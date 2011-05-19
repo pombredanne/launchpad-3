@@ -30,6 +30,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -52,7 +53,6 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
-    from lp.soyuz.model.queue import strip_pgp_signature
     contents = changes_file.read()
     changes_lines = strip_pgp_signature(contents).splitlines(True)
     tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))

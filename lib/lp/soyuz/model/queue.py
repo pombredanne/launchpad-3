@@ -50,7 +50,6 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     format_address,
     sendmail,
-    signed_message_from_string,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import DownloadFailed
@@ -70,6 +69,7 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
@@ -140,16 +140,6 @@ def sanitize_string(s):
         return s
     else:
         return guess_encoding(s)
-
-
-def strip_pgp_signature(text):
-    """Strip any PGP signature from the supplied changes lines."""
-    signed_message = signed_message_from_string(text)
-    # For unsigned '.changes' files we'll get a None `signedContent`.
-    if signed_message.signedContent is not None:
-        return signed_message.signedContent
-    else:
-        return text
 
 
 class PackageUploadQueue:
