@@ -52,10 +52,6 @@ class FakeDistroSeries:
     def __init__(self):
         self.distribution = FakeDistribution()
 
-    def getSourcePackage(self, sourcepackagename):
-        return FakeSourcePackage(
-            distroseries=self, sourcepackagename=sourcepackagename)
-
 
 class FakeSPN:
     name = "spn-name"
@@ -71,9 +67,6 @@ class FakeArchive:
     def __init__(self, displayname="archive-name"):
         self.displayname = displayname
 
-    def checkUpload(self, *args, **kwargs):
-        return None
-
 
 class FakeSPPH:
     def __init__(self, archive=None):
@@ -82,21 +75,6 @@ class FakeSPPH:
         self.sourcepackagerelease = FakeSPR()
         self.displayname = "spph-displayname"
         self.archive = archive
-
-
-class FakeSourcePackage:
-    def __init__(self, distroseries=None, sourcepackagename=None):
-        if distroseries is None:
-            distroseries = FakeDistroSeries()
-        if sourcepackagename is None:
-            sourcepackagename = FakeSPN()
-        self.sourcepackagename = sourcepackagename
-        self.distroseries = distroseries
-        self.latest_published_component = None
-
-
-class FakePerson:
-    pass
 
 
 class TestPackageCopyingMixinLight(TestCase):
