@@ -94,5 +94,5 @@ class IDistroSeriesParentSet(Interface):
         parent1    parent2    parent3
 
         The result would be:
-        [dsp(series, parent1), dsp(series, parent2), dsp(series, parent3)]
+        [dsp(series, parent1), dsp(series, parent2)]
         """
