@@ -142,6 +142,16 @@ def sanitize_string(s):
         return guess_encoding(s)
 
 
+def strip_pgp_signature(text):
+    """Strip any PGP signature from the supplied changes lines."""
+    signed_message = signed_message_from_string(text)
+    # For unsigned '.changes' files we'll get a None `signedContent`.
+    if signed_message.signedContent is not None:
+        return signed_message.signedContent
+    else:
+        return text
+
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -709,16 +719,6 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.is_ppa
 
-    def _stripPgpSignature(self, changes_lines):
-        """Strip any PGP signature from the supplied changes lines."""
-        text = "".join(changes_lines)
-        signed_message = signed_message_from_string(text)
-        # For unsigned '.changes' files we'll get a None `signedContent`.
-        if signed_message.signedContent is not None:
-            return signed_message.signedContent.splitlines(True)
-        else:
-            return changes_lines
-
     def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
@@ -746,7 +746,8 @@ class PackageUpload(SQLBase):
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_lines = self._stripPgpSignature(changes_lines)
+        changes_lines = strip_pgp_signature(
+            "".join(changes_lines)).splitlines(True)
 
         return changes, changes_lines
 
