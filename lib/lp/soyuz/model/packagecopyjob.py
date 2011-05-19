@@ -34,7 +34,6 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -190,16 +189,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @classmethod
     def getPendingJobsForTargetSeries(cls, target_series):
         """Get upcoming jobs for `target_series`, ordered by age."""
-        pending_states = [
-            JobStatus.WAITING,
-            JobStatus.RUNNING,
-            ]
         raw_jobs = IStore(PackageCopyJob).find(
             PackageCopyJob,
             Job.id == PackageCopyJob.job_id,
             PackageCopyJob.job_type == cls.class_job_type,
             PackageCopyJob.target_distroseries == target_series,
-            Job._status.is_in(pending_states)).order_by(PackageCopyJob.id)
+            Job._status.is_in(Job.PENDING_STATUSES))
+        raw_jobs = raw_jobs.order_by(PackageCopyJob.id)
         return DecoratedResultSet(raw_jobs, cls)
 
     @classmethod

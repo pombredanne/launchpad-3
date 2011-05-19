@@ -105,6 +105,7 @@ from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -863,7 +864,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def hasPendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        return self.pending_syncs.get(dsd) is None
+        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
 
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
