@@ -200,9 +200,23 @@ class PersonTranslationView(LaunchpadView):
 
     @cachedproperty
     def recent_activity(self):
-        """Recent translation activity by this person."""
-        entries = ITranslationsPerson(self.context).translation_history[:10]
-        return [ActivityDescriptor(self.context, entry) for entry in entries]
+        """Recent translation activity by this person.
+
+        If the translation activity is associated with a project, we ensure
+        that the project is active.
+        """
+        all_entries = ITranslationsPerson(self.context).translation_history
+
+        def is_active(entry):
+            potemplate = entry.pofile.potemplate
+            if potemplate is None:
+                return True
+            product = potemplate.product
+            return product is None or product.active
+
+        active_entries = [entry for entry in all_entries if is_active(entry)]
+        return [ActivityDescriptor(self.context, entry)
+            for entry in active_entries[:10]]
 
     @cachedproperty
     def latest_activity(self):
