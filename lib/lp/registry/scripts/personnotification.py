@@ -42,9 +42,8 @@ class PersonNotificationManager:
                 self.logger.info(
                     "%s has no email address." % person.name)
                 continue
-            self.logger.info(
-                "Sending notification to %s." % person.name)
-            notification.send()
+            self.logger.info("Notifying %s." % person.name)
+            notification.send(logger=self.logger)
             notifications_sent = True
             # Commit after each email sent, so that we won't re-mail the
             # notifications in case of something going wrong in the middle.
