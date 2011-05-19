@@ -46,11 +46,42 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class IOverridePolicy(Interface):
+    """Override policy.
+
+    An override policy returns overrides suitable for the given archive,
+    distroseries, pocket for source or binary publications.
+
+    For example, an implementation might allow existing publications to
+    keep the same component and section as their ancestor publications.
+    """
 
     def calculateSourceOverrides(archive, distroseries, pocket, sources):
+        """Calculate source overrides.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param sources: A tuple of `ISourcePackageName`s.
+
+        :return: A list of tuples containing `ISourcePackageName`,
+            `IComponent` and `ISection`.
+        """
         pass
 
     def calculateBinaryOverrides(archive, distroseries, pocket, binaries):
+        """Calculate binary overrides.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A tuple of `IBinaryPackageName`, architecturetag
+            pairs. Architecturetag can be None for architecture-independant
+            publications.
+
+        :return: A list of tuples containing `IBinaryPackageName`,
+            `IDistroArchSeries`, `IComponent`, `ISection` and
+            `PackagePublishingPriority`.
+        """
         pass
 
 
