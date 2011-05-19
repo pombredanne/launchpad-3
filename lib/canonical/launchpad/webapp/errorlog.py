@@ -238,7 +238,7 @@ class ErrorReport:
                 "Unable to interpret oops line: %s" % line)
             start, end, db_id, statement = match.groups()
             if db_id is not None:
-                db_id = intern(db_id) # This string is repeated lots.
+                db_id = intern(db_id)  # This string is repeated lots.
             statements.append(
                 (int(start), int(end), db_id, statement))
 
@@ -257,7 +257,7 @@ class ErrorReportingUtility:
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
         'TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
-    _ignored_exceptions_for_non_lp_referer = set([
+    _ignored_exceptions_for_offsite_referer = set([
         'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
 
@@ -370,6 +370,10 @@ class ErrorReportingUtility:
         notify(ErrorReportEvent(entry))
         return entry
 
+    def _isIgnoredException(self, strtype, request):
+        if strtype in self._ignored_exceptions:
+            return True
+
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
         """Return an ErrorReport for the supplied data.
@@ -389,7 +393,7 @@ class ErrorReportingUtility:
         tb_text = None
 
         strtype = str(getattr(info[0], '__name__', info[0]))
-        if strtype in self._ignored_exceptions:
+        if self._isIgnoredException(strtype, request):
             return
 
         if not isinstance(info[2], basestring):
@@ -500,8 +504,8 @@ class ErrorReportingUtility:
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
         when = _rate_restrict_pool.get(strtype, distant_past)
         if now > when:
-            next_when = max(when,
-                            now - _rate_restrict_burst*_rate_restrict_period)
+            next_when = max(
+                when, now - _rate_restrict_burst * _rate_restrict_period)
             next_when += _rate_restrict_period
             _rate_restrict_pool[strtype] = next_when
             # Sometimes traceback information can be passed in as a string. In
