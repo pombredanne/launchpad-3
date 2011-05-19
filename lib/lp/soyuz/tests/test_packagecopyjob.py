@@ -76,7 +76,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
 
     def test_getActiveJobs_only_returns_waiting_jobs(self):
         # getActiveJobs ignores jobs that aren't in the WAITING state.
-        job = self.makeJob()
+        job = self.makeJob(self.factory.makeDistroSeriesDifference())
         removeSecurityProxy(job).job._status = JobStatus.RUNNING
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertContentEqual([], source.getActiveJobs(job.target_archive))
