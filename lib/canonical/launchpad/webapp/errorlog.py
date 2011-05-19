@@ -17,6 +17,7 @@ import re
 import rfc822
 import types
 import urllib
+import urlparse
 
 from lazr.restful.utils import get_current_browser_request
 import pytz
@@ -41,6 +42,7 @@ from canonical.launchpad.webapp.interfaces import (
     IErrorReportRequest,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -375,9 +377,11 @@ class ErrorReportingUtility:
             return True
         if strtype in self._ignored_exceptions_for_offsite_referer:
             if request is not None:
-                # XXX sinzui 2011-05-19: these two lines are brittle.
                 referer = request.get('HTTP_REFERER', '')
-                if 'launchpad.' not in referer:
+                referer_parts = urlparse.urlparse(referer)
+                root_parts = urlparse.urlparse(
+                    allvhosts.configs['mainsite'].rooturl)
+                if root_parts.netloc not in referer_parts.netloc:
                     return True
         return False
 
