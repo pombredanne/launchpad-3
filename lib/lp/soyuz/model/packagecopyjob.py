@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     "PackageCopyJob",
     "PlainPackageCopyJob",
+    "specify_dsd_package",
 ]
 
 from lazr.delegates import delegates
@@ -44,6 +45,17 @@ from lp.soyuz.interfaces.packagecopyjob import (
     )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
+
+
+def specify_dsd_package(dsd):
+    """Return (name, parent version) for `dsd`'s package.
+
+    This describes the package that `dsd` is for in a format suitable for
+    `PlainPackageCopyJobSource`.
+
+    :param dsd: A `DistroSeriesDifference`.
+    """
+    return (dsd.source_package_name.name, dsd.parent_source_version)
 
 
 class PackageCopyJob(StormBase):
@@ -173,6 +185,31 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             PackageCopyJob.job_type == cls.class_job_type,
             PackageCopyJob.target_archive == target_archive)
         return DecoratedResultSet(jobs, cls)
+
+    @classmethod
+    def getPendingJobsForTargetSeries(cls, target_series):
+        """Get upcoming jobs for `target_series`, ordered by age."""
+        raw_jobs = IStore(PackageCopyJob).find(
+            PackageCopyJob,
+            Job.id == PackageCopyJob.job_id,
+            PackageCopyJob.job_type == cls.class_job_type,
+            PackageCopyJob.target_distroseries == target_series,
+            Job._status.is_in(Job.PENDING_STATUSES))
+        raw_jobs = raw_jobs.order_by(PackageCopyJob.id)
+        return DecoratedResultSet(raw_jobs, cls)
+
+    @classmethod
+    def getPendingJobsPerPackage(cls, target_series):
+        """See `IPlainPackageCopyJobSource`."""
+        result = {}
+        # Go through jobs in-order, picking the first matching job for
+        # any (package, version) tuple.  Because of how
+        # getPendingJobsForTargetSeries orders its results, the first
+        # will be the oldest and thus presumably the first to finish.
+        for job in cls.getPendingJobsForTargetSeries(target_series):
+            for package in job.metadata["source_packages"]:
+                result.setdefault(tuple(package), job)
+        return result
 
     @property
     def source_packages(self):

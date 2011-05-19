@@ -105,6 +105,7 @@ from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -850,6 +851,25 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                         check_permission('launchpad.Append', archive)))
         return (has_perm and
                 self.cached_differences.batch.total() > 0)
+
+    @cachedproperty
+    def pending_syncs(self):
+        """Pending synchronization jobs for this distroseries.
+
+        :return: A dict mapping (name, version) package specifications to
+            pending sync jobs.
+        """
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        return job_source.getPendingJobsPerPackage(self.context)
+
+    def hasPendingSync(self, dsd):
+        """Is there a package-copying job pending to resolve `dsd`?"""
+        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+
+    def canRequestSync(self, dsd):
+        """Does it make sense to request a sync for this difference?"""
+        # XXX JeroenVermeulen bug=783435: Also compare versions.
+        return not self.hasPendingSync(dsd)
 
     @property
     def specified_name_filter(self):
