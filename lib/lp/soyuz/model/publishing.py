@@ -1335,16 +1335,16 @@ class PublishingSet:
                        policy=None):
         """See `IPublishingSet`."""
         if policy is not None:
-            bpn_bpph = {}
+            bpn_archtag = {}
             for bpph in binaries:
-                bpn_bpph[(
+                bpn_archtag[(
                     bpph.binarypackagerelease.binarypackagename,
                     bpph.distroarchseries.architecturetag)] = bpph
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, bpn_bpph.keys())
+                archive, distroseries, pocket, bpn_archtag.keys())
             for bpn, das, component, section, priority in overrides:
-                bpph = bpn_bpph[(bpn, das.architecturetag)]
+                bpph = bpn_archtag[(bpn, das.architecturetag)]
                 new_component = component or bpph.component
                 new_section = section or bpph.section
                 new_priority = priority or bpph.priority
