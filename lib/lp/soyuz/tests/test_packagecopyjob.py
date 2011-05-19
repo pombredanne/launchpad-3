@@ -247,14 +247,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         }
         self.assertEqual(expected, found_by_state)
 
-    def test_getPendingJobsPerPackage_distinguishes_package_versions(self):
-        dsd = self.factory.makeDistroSeriesDifference()
-        self.makeJob(dsd)
-        removeSecurityProxy(dsd).parent_source_version = '9999'
-        job_source = getUtility(IPlainPackageCopyJobSource)
-        self.assertEqual(
-            {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
-
     def test_getPendingJobsPerPackage_distinguishes_jobs(self):
         derived_series = self.factory.makeDistroSeries()
         dsds = [
