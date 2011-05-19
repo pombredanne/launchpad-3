@@ -30,6 +30,9 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         self.sourcepackagerelease = self.factory.makeSourcePackageRelease()
         self.distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=self.sourcepackagerelease.sourcepackage.distroseries)
+        distribution = self.distroarchseries.distroseries.distribution
+        self.dsp_release = DistributionSourcePackageRelease(
+            distribution, self.sourcepackagerelease)
 
     def makeBinaryPackageRelease(self, name=None):
         if name is None:
@@ -52,10 +55,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
     def test_sample_binary_packages__no_releases(self):
         # If no binary releases exist,
         # DistributionSourcePackageRelease.sample_binary_packages is empty.
-        distribution = self.distroarchseries.distroseries.distribution
-        dsp_release = DistributionSourcePackageRelease(
-            distribution, self.sourcepackagerelease)
-        self.assertEqual([], dsp_release.sample_binary_packages)
+        self.assertEqual([], self.dsp_release.sample_binary_packages)
 
     def test_sample_binary_packages__one_release(self):
         # If a binary release exists,
@@ -63,12 +63,10 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # returns it.
         self.makeBinaryPackageRelease(
             self.factory.makeBinaryPackageName(name='binary-package'))
-        distribution = self.distroarchseries.distroseries.distribution
-        dsp_release = DistributionSourcePackageRelease(
-            distribution, self.sourcepackagerelease)
         self.assertEqual(
             ['binary-package'],
-            [release.name for release in dsp_release.sample_binary_packages])
+            [release.name
+             for release in self.dsp_release.sample_binary_packages])
 
     def test_sample_binary_packages__two_releases_one_binary_package(self):
         # If two binary releases with the same name exist,
@@ -77,12 +75,10 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         name = self.factory.makeBinaryPackageName(name='binary-package')
         self.makeBinaryPackageRelease(name)
         self.makeBinaryPackageRelease(name)
-        distribution = self.distroarchseries.distroseries.distribution
-        dsp_release = DistributionSourcePackageRelease(
-            distribution, self.sourcepackagerelease)
         self.assertEqual(
             ['binary-package'],
-            [release.name for release in dsp_release.sample_binary_packages])
+            [release.name
+             for release in self.dsp_release.sample_binary_packages])
 
     def test_sample_binary_packages__two_release_two_binary_packages(self):
         # If a two binary releases with different names exist,
@@ -92,12 +88,10 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             self.factory.makeBinaryPackageName(name='binary-package'))
         self.makeBinaryPackageRelease(
             self.factory.makeBinaryPackageName(name='binary-package-2'))
-        distribution = self.distroarchseries.distroseries.distribution
-        dsp_release = DistributionSourcePackageRelease(
-            distribution, self.sourcepackagerelease)
         self.assertEqual(
             ['binary-package', 'binary-package-2'],
-            [release.name for release in dsp_release.sample_binary_packages])
+            [release.name
+             for release in self.dsp_release.sample_binary_packages])
 
     def updateDistroSeriesPackageCache(self):
         # Create DistroSeriesPackageCache records for new binary
@@ -119,8 +113,8 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         distribution = self.distroarchseries.distroseries.distribution
         releases = distribution.getCurrentSourceReleases([sourcepackagename])
         [(distribution_sourcepackage, dsp_release)] = releases.items()
+        self.dsp_release = dsp_release
         self.sourcepackagerelease = dsp_release.sourcepackagerelease
-        return dsp_release
 
     def test_sample_binary_packages__constant_number_sql_queries(self):
         # Retrieving
@@ -129,21 +123,21 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         # constant number of SQL queries, regardless of the number
         # of existing binary package releases.
         self.makeBinaryPackageRelease()
-        dsp_release = self.updateDistroSeriesPackageCache()
+        self.updateDistroSeriesPackageCache()
         with StormStatementRecorder() as recorder:
-            for dsp_package in dsp_release.sample_binary_packages:
-                dsp_package.summary
+            for ds_package in self.dsp_release.sample_binary_packages:
+                ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(1, len(dsp_release.sample_binary_packages))
+        self.assertEqual(1, len(self.dsp_release.sample_binary_packages))
 
         for iteration in range(5):
             self.makeBinaryPackageRelease()
-        dsp_release = self.updateDistroSeriesPackageCache()
+        self.updateDistroSeriesPackageCache()
         with StormStatementRecorder() as recorder:
-            for dsp_package in dsp_release.sample_binary_packages:
-                dsp_package.summary
+            for ds_package in self.dsp_release.sample_binary_packages:
+                ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(6, len(dsp_release.sample_binary_packages))
+        self.assertEqual(6, len(self.dsp_release.sample_binary_packages))
 
         # Even if the cache is not updated for binary packages,
         # DistributionSourcePackageRelease objects do not try to
@@ -152,7 +146,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         for iteration in range(5):
             self.makeBinaryPackageRelease()
         with StormStatementRecorder() as recorder:
-            for dsp_package in dsp_release.sample_binary_packages:
-                dsp_package.summary
+            for ds_package in self.dsp_release.sample_binary_packages:
+                ds_package.summary
         self.assertThat(recorder, HasQueryCount(LessThan(5)))
-        self.assertEqual(11, len(dsp_release.sample_binary_packages))
+        self.assertEqual(11, len(self.dsp_release.sample_binary_packages))
