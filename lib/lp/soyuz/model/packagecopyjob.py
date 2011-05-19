@@ -206,6 +206,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def getPendingJobsPerPackage(cls, target_series):
         """See `IPlainPackageCopyJobSource`."""
         result = {}
+        # Go through jobs in-order, picking the first matching job for
+        # any (package, version) tuple.  Because of how
+        # getPendingJobsForTargetSeries orders its results, the first
+        # will be the oldest and thus presumably the first to finish.
         for job in cls.getPendingJobsForTargetSeries(target_series):
             for package in job.metadata["source_packages"]:
                 result.setdefault(tuple(package), job)

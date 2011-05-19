@@ -853,12 +853,22 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     @cachedproperty
     def pending_syncs(self):
+        """Pending synchronization jobs for this distroseries.
+
+        :return: A dict mapping (name, version) package specifications to
+            pending sync jobs.
+        """
         job_source = getUtility(IPlainPackageCopyJobSource)
         return job_source.getPendingJobsPerPackage(self.context)
 
+    def hasPendingSync(self, dsd):
+        """Is there a package-copying job pending to resolve `dsd`?"""
+        return self.pending_syncs.get(dsd) is None
+
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
-        return self.pending_syncs.get(dsd) is None
+        # XXX JeroenVermeulen bug=783435: Also compare versions.
+        return not self.hasPendingSync(dsd)
 
     @property
     def specified_name_filter(self):
