@@ -22,3 +22,4 @@ class TestWebServiceAccess(TestCaseWithFactory):
         # Does not matter what object we request for this test.
         response = webservice.get('/bugs/1')
         self.assertEqual(response.status, 401)
+        self.assertEqual(response.getheader('x-lazr-oopsid'), None)
