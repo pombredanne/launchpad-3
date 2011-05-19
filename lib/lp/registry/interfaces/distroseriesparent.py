@@ -15,12 +15,14 @@ __all__ = [
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
-    Int,
     Bool,
+    Choice,
+    Int,
     )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class IDistroSeriesParent(Interface):
@@ -42,11 +44,24 @@ class IDistroSeriesParent(Interface):
             "Whether or not the derived_series has been populated with "
             "packages from its parent_series."))
 
+    is_overlay = Bool(
+        title=_("Is this relationship an overlay?"), required=True,
+        default=False)
+
+    pocket = Choice(
+        title=_("The pocket for this overlay"), required=False,
+        vocabulary=PackagePublishingPocket)
+
+    component = Choice(
+        title=_("The component for this overlay"), required=False,
+        vocabulary='Component')
+
 
 class IDistroSeriesParentSet(Interface):
     """`DistroSeriesParentSet` interface."""
 
-    def new(derived_series, parent_series, initialized):
+    def new(derived_series, parent_series, initialized, is_overlay=False,
+            pocket=None, component=None):
         """Create a new `DistroSeriesParent`."""
 
     def getByDerivedSeries(derived_series):

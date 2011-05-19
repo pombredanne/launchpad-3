@@ -11,13 +11,14 @@ __all__ = [
     ]
 
 from storm.locals import (
+    Bool,
     Int,
     Reference,
     Storm,
-    Bool,
     )
 from zope.interface import implements
 
+from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -26,6 +27,7 @@ from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
     IDistroSeriesParentSet,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class DistroSeriesParent(Storm):
@@ -43,19 +45,32 @@ class DistroSeriesParent(Storm):
 
     initialized = Bool(allow_none=False)
 
+    is_overlay = Bool(allow_none=False, default=False)
+
+    pocket = EnumCol(
+        dbName='pocket', notNull=False,
+        schema=PackagePublishingPocket)
+
+    component_id = Int(name='component', allow_none=True)
+    component = Reference(component_id, 'Component.id')
+
 
 class DistroSeriesParentSet:
     """See `IDistroSeriesParentSet`."""
     implements(IDistroSeriesParentSet)
     title = "Cross reference of parent and derived distroseries."
 
-    def new(self, derived_series, parent_series, initialized):
+    def new(self, derived_series, parent_series, initialized,
+            is_overlay=False, pocket=None, component=None):
         """Make and return a new `DistroSeriesParent`."""
         store = IMasterStore(DistroSeriesParent)
         dsp = DistroSeriesParent()
         dsp.derived_series = derived_series
         dsp.parent_series = parent_series
         dsp.initialized = initialized
+        dsp.is_overlay = is_overlay
+        dsp.pocket = pocket
+        dsp.component = component
         store.add(dsp)
         return dsp
 

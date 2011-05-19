@@ -471,8 +471,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) "
-                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
@@ -527,9 +525,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
 
         def decorator(row):
-            _, spn, score, bug_count, total_messages = row
+            spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),

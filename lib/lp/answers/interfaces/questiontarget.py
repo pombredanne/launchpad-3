@@ -63,14 +63,19 @@ class IQuestionTargetPublic(ISearchableByQuestionOwner):
         If there is no such question number for this target, return None
         """
 
-    def findSimilarQuestions(title):
-        """Return questions similar to title.
+    @operation_parameters(
+        phrase=TextLine(title=_('A phrase'), required=True))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def findSimilarQuestions(phrase):
+        """Return questions similar to phrase.
 
-        Return a list of question similar to the title provided. These
-        questions should be found using a fuzzy search. The list should be
+        Return a list of question similar to the provided phrase. These
+        questions will be found using a fuzzy search. The list is
         ordered from the most similar question to the least similar question.
 
-        :title: A phrase
+        :param phrase: A phrase such as the summary of a question.
         """
 
     @operation_parameters(

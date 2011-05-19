@@ -22,7 +22,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -183,6 +186,12 @@ class IDistroSeriesDifferencePublic(Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
+    packagesets = Attribute("The packagesets for this source package in the "
+                            "derived series.")
+
+    parent_packagesets = Attribute("The packagesets for this source package "
+                                   "in the parent series.")
+
     def update():
         """Checks that difference type and status matches current publishings.
 
@@ -201,16 +210,6 @@ class IDistroSeriesDifferencePublic(Interface):
 
     def getComments():
         """Return a result set of the comments for this difference."""
-
-    def getPackageSets():
-        """Return a result set of the derived series packagesets for the
-        sourcepackagename of this difference.
-        """
-
-    def getParentPackageSets():
-        """Return a result set of the parent packagesets for the
-        sourcepackagename of this difference.
-        """
 
 
 class IDistroSeriesDifferenceEdit(Interface):

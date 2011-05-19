@@ -9,7 +9,11 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    ILaunchBag,
+    )
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -52,6 +56,21 @@ class TestBugNominationView(TestCaseWithFactory):
         view = create_initialized_view(self.bug_task, name='+nominate')
         action = view.__class__.actions.byname['actions.submit']
         self.assertEqual('Target', action.label)
+
+    def test_submit_action_unauthorised(self):
+        # An unauthorised user sees an error on the bug target page.
+        login_person(None)
+        view = create_initialized_view(self.bug_task, name='+nominate')
+        self.assertEqual(
+            canonical_url(self.bug_task),
+            view.request.response.getHeader('Location'))
+        notifications = view.request.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            BrowserNotificationLevel.ERROR, notifications[0].level)
+        self.assertEqual(
+            "You do not have permission to nominate this bug.",
+            notifications[0].message)
 
 
 class TestBugNominationEditView(TestCaseWithFactory):

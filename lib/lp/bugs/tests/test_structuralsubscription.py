@@ -516,6 +516,22 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
              (dist_sourcepackage_bugtask, dist_sourcepackage),
              (dist_sourcepackage_bugtask, distribution))))
 
+    def test_product_with_project_group(self):
+        # get_structural_subscription_targets() will yield both a
+        # product and its parent project group if it has one.
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            project=project, owner=project.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self_sub = project.addBugSubscription(subscriber, subscriber)
+        # This is a sanity check.
+        self.assertEqual(project, product.parent_subscription_target)
+        bug = self.factory.makeBug(product=product)
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(
+            set([(bug.bugtasks[0], product), (bug.bugtasks[0], project)]),
+            set(result))
 
 class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
 
@@ -599,6 +615,22 @@ class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
                 self.team, self.team.teamowner)
         subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
+
+    def test_subscriptions_from_parent(self):
+        # get_structural_subscriptions_for_bug() will return any
+        # structural subscriptions from the parents of the targets of
+        # that bug.
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            project=project, owner=project.owner)
+        subscriber = self.factory.makePerson()
+        self_sub = project.addBugSubscription(subscriber, subscriber)
+        # This is a sanity check.
+        self.assertEqual(project, product.parent_subscription_target)
+        bug = self.factory.makeBug(product=product)
+        subscriptions = get_structural_subscriptions_for_bug(
+            bug, subscriber)
+        self.assertEqual(set([self_sub]), set(subscriptions))
 
 
 class TestGetStructuralSubscribers(TestCaseWithFactory):

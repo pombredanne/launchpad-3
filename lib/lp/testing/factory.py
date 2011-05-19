@@ -2454,13 +2454,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series_difference, owner, comment)
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
-                               initialized=False):
+                               initialized=False, is_overlay=False,
+                               pocket=None, component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized)
+            derived_series, parent_series, initialized, is_overlay, pocket,
+            component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
