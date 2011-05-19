@@ -51,6 +51,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from cStringIO import StringIO
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -91,6 +92,7 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import MatchesRegex
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -528,6 +530,19 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         expected_vector, observed_vector = zip(*args)
         return self.assertEqual(expected_vector, observed_vector)
+
+    @contextmanager
+    def expectedLog(self, regex):
+        """Expect a log to be written that matches the regex."""
+        output = StringIO()
+        handler = logging.StreamHandler(output)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+        try:
+            yield
+        finally:
+            logger.removeHandler(handler)
+        self.assertThat(output.getvalue(), MatchesRegex(regex))
 
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.

@@ -8,6 +8,7 @@ import sys
 from textwrap import dedent
 from time import sleep
 
+from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
@@ -114,6 +115,20 @@ class RaisingJobRaisingNotifyUserError(NullJob):
 
     def notifyUserError(self, error):
         raise RaisingJobException('oops notifying users')
+
+
+class RetryError(Exception):
+    pass
+
+
+class RaisingRetryJob(NullJob):
+
+    retry_error_types = (RetryError,)
+
+    max_retries = 1
+
+    def run(self):
+        raise RetryError()
 
 
 class TestJobRunner(TestCaseWithFactory):
@@ -306,6 +321,18 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job])
         runner.runJobHandleError(job)
         self.assertEqual(0, len(self.oopses))
+
+    def test_runJob_retry_error(self):
+        job = RaisingRetryJob('completion')
+        runner = JobRunner([job])
+        with self.expectedLog('Scheduling retry due to RetryError'):
+            runner.runJob(job)
+        self.assertEqual(0, len(self.oopses))
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+        with ExpectedException(RetryError, ''):
+            runner.runJob(job)
 
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""
