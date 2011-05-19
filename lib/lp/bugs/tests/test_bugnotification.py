@@ -368,7 +368,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         # This is a regression test for bug 778847.
         target = self.factory.makeProduct()
         bug = self.factory.makeBug(product=target)
-        team = self.factory.makeTeam(email="none@example.com")
+        team = self.factory.makeTeam(email="test@example.com")
         team_member = self.factory.makePerson()
         with person_logged_in(team.teamowner):
             team.addMember(team_member, team.teamowner)
