@@ -593,7 +593,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 
         :param distroseries: The `IDistroSeries` to copy the source
             publication into.
-        :param pocket: The pocket to copy into.
+        :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
         :param policy: The `IOverridePolicy` to apply to the copy.
 

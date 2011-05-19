@@ -930,7 +930,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """Return iterable containing valid pocket names for this archive."""
 
     def getOverridePolicy():
-        """Returns an instantiated override policy for the archive."""
+        """Returns an instantiated `IOverridePolicy` for the archive."""
 
 
 class IArchiveView(IHasBuildRecords):
