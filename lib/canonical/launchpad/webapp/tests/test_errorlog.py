@@ -674,6 +674,21 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
 
+    def test_ignored_exceptions_for_offsite_referer_not_reported(self):
+        # Oopses are not reported when Launchpad is not the referer.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        # There is no HTTP_REFERER header in this request
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://launchpad.dev/fnord'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
     def test_raising_no_referrer_error(self):
         """Test ErrorReportingUtility.raising() with a NoReferrerError
         exception.

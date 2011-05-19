@@ -370,9 +370,16 @@ class ErrorReportingUtility:
         notify(ErrorReportEvent(entry))
         return entry
 
-    def _isIgnoredException(self, strtype, request):
+    def _isIgnoredException(self, strtype, request=None):
         if strtype in self._ignored_exceptions:
             return True
+        if strtype in self._ignored_exceptions_for_offsite_referer:
+            if request is not None:
+                # XXX sinzui 2011-05-19: these two lines are brittle.
+                referer = request.get('HTTP_REFERER', '')
+                if 'launchpad.' not in referer:
+                    return True
+        return False
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
