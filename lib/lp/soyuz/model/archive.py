@@ -1817,8 +1817,11 @@ class Archive(SQLBase):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        # XXX StevenK: bug= 2011-05-19 Return PPAOverridePolicy() for
+        # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             return UbuntuOverridePolicy()
+        return None
 
 
 class ArchiveSet:
