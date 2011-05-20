@@ -273,7 +273,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
     def test_unmute_unmutes(self):
         # Using the "Unmute bug mail" option when the user has a muted
-        # subscription will remove the muted subscription.
+        # subscription will unmute.
         with person_logged_in(self.person):
             self.bug.mute(self.person, self.person)
 
@@ -290,28 +290,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     name='+subscribe')
                 self.assertFalse(self.bug.isMuted(self.person))
                 self.assertFalse(self.bug.isSubscribed(self.person))
-
-    def test_update_when_muted_updates(self):
-        # Using the "Unmute and subscribe me" option when the user has a
-        # muted subscription will update the existing subscription to a
-        # new BugNotificationLevel.
-        with person_logged_in(self.person):
-            self.bug.mute(self.person, self.person)
-
-        with FeatureFixture({self.feature_flag: ON}):
-            with person_logged_in(self.person):
-                level = BugNotificationLevel.COMMENTS
-                form_data = {
-                    'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.title,
-                    'field.actions.continue': 'Continue',
-                    }
-                create_initialized_view(
-                    self.bug.default_bugtask, form=form_data,
-                    name='+subscribe')
-                transaction.commit()
-                self.assertFalse(self.bug.isMuted(self.person))
-                self.assertTrue(self.bug.isSubscribed(self.person))
 
     def test_bug_notification_level_field_has_widget_class(self):
         # The bug_notification_level widget has a widget_class property

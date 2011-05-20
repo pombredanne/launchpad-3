@@ -226,10 +226,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @cachedproperty
     def _update_subscription_term(self):
-        if self.user_is_muted:
-            label = "unmute bug mail from this bug and update my subscription"
-        else:
-            label = "update my current subscription"
+        label = "update my current subscription"
         return SimpleTerm(
             'update-subscription', 'update-subscription', label)
 
@@ -256,7 +253,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         subscription_terms = []
         self_subscribed = False
         is_really_muted = self._use_advanced_features and self.user_is_muted
-        #import pdb; pdb.set_trace()
         if is_really_muted:
             subscription_terms.insert(0, self._unmute_user_term)
         for person in self._subscribers_for_current_user:
@@ -334,8 +330,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 # subscribe theirself or unsubscribe their team.
                 self.widgets['subscription'].visible = True
 
-            if ((self.user_is_subscribed and
-                 self.user_is_subscribed_to_dupes_only) or
+            if (self.user_is_subscribed_to_dupes_only or
                 (self._use_advanced_features and self.user_is_muted and
                  not self.user_is_subscribed)):
                 # If the user is subscribed via a duplicate but is not
