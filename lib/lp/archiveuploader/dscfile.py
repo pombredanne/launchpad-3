@@ -120,7 +120,7 @@ class SignableTagFile:
         if self.signingkey is not None:
             return self.signingkey.owner
 
-    def parse(self, verify_signature=True, dsc_whitespace_rules=False):
+    def parse(self, verify_signature=True):
         try:
             with open(self.filepath, 'rb') as f:
                 self.raw_content = f.read()
@@ -137,7 +137,6 @@ class SignableTagFile:
         try:
             self._dict = parse_tagfile_lines(
                 self.parsed_content.splitlines(True),
-                dsc_whitespace_rules=dsc_whitespace_rules,
                 filename=self.filepath)
         except TagFileParseError, error:
             raise UploadError(
@@ -263,9 +262,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
-        self.parse(
-            verify_signature=not policy.unsigned_dsc_ok,
-            dsc_whitespace_rules=True)
+        self.parse(verify_signature=not policy.unsigned_dsc_ok)
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:

@@ -80,26 +80,12 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^(\s.*)")
 
 
-def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
+def parse_tagfile_lines(lines, filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
     list of lines.
-
-    dsc_whitespace_rules is an optional boolean argument which defaults
-    to off.  If true, it turns on strict format checking to avoid
-    allowing in source packages which are unextracable by the
-    inappropriately fragile dpkg-source.
-
-    The rules are:
-
-    o The PGP header consists of '-----BEGIN PGP SIGNED MESSAGE-----'
-      followed by any PGP header data and must end with a blank line.
-
-    o The data section must end with a blank line and must be followed by
-      '-----BEGIN PGP SIGNATURE-----'.
     """
-    # XXX: No dsc_whitespace_rules
 
     with tempfile.TemporaryFile() as f:
         f.write("".join(lines))
@@ -122,21 +108,18 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
     return trimmed_dict
 
 
-def parse_tagfile(filename, dsc_whitespace_rules=0):
+def parse_tagfile(filename):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the filename of the tag file, and
     the contents of that file is passed on to parse_tagfile_lines.
 
-    See parse_tagfile_lines's docstring for description of the
-    dsc_whitespace_rules and allow_unsigned arguments.
+    This will also strip any OpenPGP cleartext signature that is present
+    before handing the data over.
     """
     changes_in = open(filename, "r")
     lines = strip_pgp_signature(changes_in.read()).splitlines(True)
     changes_in.close()
     if not lines:
-        raise TagFileParseError( "%s: empty file" % filename )
-    return parse_tagfile_lines(
-        lines, dsc_whitespace_rules=dsc_whitespace_rules,
-        filename=filename)
-
+        raise TagFileParseError("%s: empty file" % filename)
+    return parse_tagfile_lines(lines, filename=filename)
