@@ -140,5 +140,5 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
         raise TagFileParseError( "%s: empty file" % filename )
     return parse_tagfile_lines(
         lines, dsc_whitespace_rules=dsc_whitespace_rules,
-        allow_unsigned=allow_unsigned, filename=filename)
+        allow_unsigned=True, filename=filename)
 
