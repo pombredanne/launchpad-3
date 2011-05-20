@@ -14,7 +14,6 @@ __all__ = [
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.webapp import (
@@ -141,8 +140,8 @@ class BugsFeedBase(FeedBase):
     def getBugsFromBugTasks(self, tasks):
         """Given a list of BugTasks return the list of associated bugs.
 
-        Since a Bug can have multiple BugTasks, we only select bugs that have not
-        yet been seen.
+        Since a Bug can have multiple BugTasks, we only select bugs that have
+        not yet been seen.
         """
         bug_ids = []
         for task in tasks:
@@ -171,7 +170,9 @@ class BugFeed(BugsFeedBase):
         # For a `BugFeed` we must ensure that the bug is not private.
         super(BugFeed, self).initialize()
         if self.context.private:
-            raise Unauthorized("Feeds do not serve private bugs")
+            self.request.response.addErrorNotification(
+                "Feeds do not serve private bugs.")
+            self.request.response.redirect(canonical_url(self.context))
 
     @property
     def title(self):
