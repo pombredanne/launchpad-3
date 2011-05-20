@@ -12,4 +12,7 @@ ALTER TABLE DistroSeriesParent
 CREATE INDEX distroseriesparent__derived_series__ordering__idx
     ON DistroSeriesParent USING btree (derived_series, ordering);
 
+-- Drop redundant index.
+DROP INDEX distroseriesparent__derivedseries__idx;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
