@@ -42,9 +42,9 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.browser.distroseries import (
-    BLACKLISTED,
+    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
-    NON_BLACKLISTED,
+    NON_IGNORED,
     RESOLVED,
     )
 from lp.registry.enum import (
@@ -72,6 +72,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
@@ -1111,7 +1112,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+            "&nbsp;Ignored packages with a higher version than in 'Lucid'"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -1130,7 +1131,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in parent"
+            "&nbsp;Ignored packages with a higher version than in parent"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -1186,7 +1187,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % NON_BLACKLISTED)
+            query_string='field.package_type=%s' % NON_IGNORED)
         filtered_view2 = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -1208,7 +1209,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % BLACKLISTED)
+            query_string='field.package_type=%s' % IGNORED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -1347,6 +1348,32 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                 derived_series, '+localpackagediffs')
 
             self.assertFalse(view.canPerformSync())
+
+    def test_hasPendingSync_returns_False_if_no_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.hasPendingSync(dsd))
+
+    def test_hasPendingSync_returns_True_if_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        self.assertTrue(view.hasPendingSync(dsd))
+
+    def test_canRequestSync_returns_False_if_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        self.assertFalse(view.canRequestSync(dsd))
+
+    def test_canRequestSync_returns_True_if_sync_makes_sense(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.canRequestSync(dsd))
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs'):

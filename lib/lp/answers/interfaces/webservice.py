@@ -27,6 +27,7 @@ from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
     )
 from lp.answers.interfaces.questionmessage import  IQuestionMessage
+from lp.answers.interfaces.questionsperson import  IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 
 
@@ -38,3 +39,9 @@ patch_collection_return_type(
 patch_collection_return_type(
     ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
 patch_reference_property(IQuestionMessage, 'question', IQuestion)
+patch_collection_return_type(
+    IQuestionsPerson, 'getDirectAnswerQuestionTargets', IQuestionTarget)
+patch_collection_return_type(
+    IQuestionsPerson, 'getTeamAnswerQuestionTargets', IQuestionTarget)
+patch_collection_return_type(
+    IQuestionsPerson, 'searchQuestions', IQuestion)

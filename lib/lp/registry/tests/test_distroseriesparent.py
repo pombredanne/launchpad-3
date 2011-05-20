@@ -9,7 +9,6 @@ from testtools.matchers import (
     Equals,
     MatchesStructure,
     )
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
@@ -23,11 +22,13 @@ from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
     IDistroSeriesParentSet,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
+from lp.soyuz.interfaces.component import IComponentSet
 
 
 class TestDistroSeriesParent(TestCaseWithFactory):
@@ -55,7 +56,35 @@ class TestDistroSeriesParent(TestCaseWithFactory):
             MatchesStructure(
                 derived_series=Equals(derived_series),
                 parent_series=Equals(parent_series),
-                initialized=Equals(True)
+                initialized=Equals(True),
+                is_overlay=Equals(False),
+                component=Equals(None),
+                pocket=Equals(None),
+                ))
+
+    def test_properties_overlay(self):
+        # Test the model properties if the DSP represents an overlay.
+        parent_series = self.factory.makeDistroSeries()
+        derived_series = self.factory.makeDistroSeries()
+        main_component = getUtility(IComponentSet).ensure('main')
+        dsp = self.factory.makeDistroSeriesParent(
+            derived_series=derived_series,
+            parent_series=parent_series,
+            initialized=True,
+            is_overlay=True,
+            component=main_component,
+            pocket=PackagePublishingPocket.SECURITY,
+            )
+
+        self.assertThat(
+            dsp,
+            MatchesStructure(
+                derived_series=Equals(derived_series),
+                parent_series=Equals(parent_series),
+                initialized=Equals(True),
+                is_overlay=Equals(True),
+                component=Equals(main_component),
+                pocket=Equals(PackagePublishingPocket.SECURITY),
                 ))
 
     def test_getByDerivedSeries(self):
@@ -78,7 +107,7 @@ class TestDistroSeriesParent(TestCaseWithFactory):
     def test_getByParentSeries(self):
         parent_series = self.factory.makeDistroSeries()
         derived_series = self.factory.makeDistroSeries()
-        dsp = self.factory.makeDistroSeriesParent(
+        self.factory.makeDistroSeriesParent(
             derived_series, parent_series)
         results = getUtility(IDistroSeriesParentSet).getByParentSeries(
             parent_series)

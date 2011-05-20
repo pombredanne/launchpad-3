@@ -14,7 +14,10 @@ __all__ = [
     'StructuralSubscribersPortletView',
     ]
 
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -491,20 +494,33 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
-            user_is_team_admin = (is_team and
-                                  subscriber in administered_teams)
+            user_is_team_admin = (
+                is_team and subscriber in administered_teams)
+            team_has_contact_address = (
+                is_team and subscriber.preferredemail is not None)
+            mailing_list = subscriber.mailing_list
+            user_is_on_team_mailing_list = (
+                team_has_contact_address and
+                mailing_list is not None and
+                mailing_list.is_usable and
+                mailing_list.getSubscription(subscriber) is not None)
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),
-                subscriber_url = canonical_url(
+                subscriber_url=canonical_url(
                     subscriber, rootsite='mainsite'),
+                target_bugs_url=canonical_url(
+                    target, rootsite='bugs'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
                 user_is_team_admin=user_is_team_admin,
+                team_has_contact_address=team_has_contact_address,
+                user_is_on_team_mailing_list=user_is_on_team_mailing_list,
                 can_mute=filter.isMuteAllowed(user),
-                is_muted=filter.muted(user) is not None))
+                is_muted=filter.muted(user) is not None,
+                target_title=target.title))
     info = info.values()
-    info.sort(key=lambda item: item['target_url'])
+    info.sort(key=itemgetter('target_url'))
     IJSONRequestCache(request).objects['subscription_info'] = info
 
 

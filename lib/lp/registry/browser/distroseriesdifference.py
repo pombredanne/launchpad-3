@@ -101,7 +101,7 @@ class IDistroSeriesDifferenceForm(Interface):
         SimpleTerm(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT.name,
-            'This version'),
+            'These versions'),
         )))
 
 

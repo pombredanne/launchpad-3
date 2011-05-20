@@ -105,6 +105,7 @@ from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -678,25 +679,25 @@ class DistroSeriesPackagesView(LaunchpadView):
 
 
 # A helper to create package filtering radio button vocabulary.
-NON_BLACKLISTED = 'non-blacklisted'
-BLACKLISTED = 'blacklisted'
+NON_IGNORED = 'non-ignored'
+IGNORED = 'ignored'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 RESOLVED = 'resolved'
 
-DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
+DEFAULT_PACKAGE_TYPE = NON_IGNORED
 
 
 def make_package_type_vocabulary(parent_name, higher_version_option=False):
     voc = [
         SimpleTerm(
-            NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
-        SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
+            NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
+        SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
         SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
-            "Blacklisted packages with a higher version than in %s"
+            "Ignored packages with a higher version than in %s"
                 % parent_name)
         voc.insert(2, higher_term)
     return SimpleVocabulary(tuple(voc))
@@ -851,6 +852,25 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
+    @cachedproperty
+    def pending_syncs(self):
+        """Pending synchronization jobs for this distroseries.
+
+        :return: A dict mapping (name, version) package specifications to
+            pending sync jobs.
+        """
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        return job_source.getPendingJobsPerPackage(self.context)
+
+    def hasPendingSync(self, dsd):
+        """Is there a package-copying job pending to resolve `dsd`?"""
+        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+
+    def canRequestSync(self, dsd):
+        """Does it make sense to request a sync for this difference?"""
+        # XXX JeroenVermeulen bug=783435: Also compare versions.
+        return not self.hasPendingSync(dsd)
+
     @property
     def specified_name_filter(self):
         """If specified, return the name filter from the GET form data."""
@@ -877,11 +897,11 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_package_type == NON_BLACKLISTED:
+        if self.specified_package_type == NON_IGNORED:
             status = (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
             child_version_higher = False
-        elif self.specified_package_type == BLACKLISTED:
+        elif self.specified_package_type == IGNORED:
             status = (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = False
