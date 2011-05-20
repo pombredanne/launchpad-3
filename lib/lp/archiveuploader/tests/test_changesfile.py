@@ -233,5 +233,9 @@ class TestSignatureVerification(TestCase):
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
             parsed.signer)
+        expected = "\AFormat: 1.7\n.*foo_1.0-1.diff.gz\Z"
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected,
+            parsed.parsed_content)
         self.assertEqual("breezy", parsed.suite_name)
         self.assertNotIn("evil", parsed.changes_comment)

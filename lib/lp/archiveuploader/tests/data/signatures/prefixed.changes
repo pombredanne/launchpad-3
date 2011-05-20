@@ -1,8 +1,8 @@
 -----BEGIN PGP SIGNED MESSAGE
 Hash: SHA1
 
-Format: 1.7
-Date: Thu, 66 Jun 2006 06:06:06 +0000
+Format: 1.6
+Date: Thu, 06 Jun 2006 06:06:06 +0000
 Source: evil
 Binary: evil
 Architecture: source
@@ -18,9 +18,9 @@ Changes:
  .
    * Evil prefixed version.
 Files: 
- eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 512 devel optional foo_1.0-1.dsc
- eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 160 devel optional foo_1.0.orig.tar.gz
- eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 563 devel optional foo_1.0-1.diff.gz
+ eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 512 devel optional evil_1.0-1.dsc
+ eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 160 devel optional evil_1.0.orig.tar.gz
+ eeeeeeeeeeeeeeeeeeeeeeeeeeeeevil 563 devel optional evil_1.0-1.diff.gz
 
 -----BEGIN PGP SIGNATURE
 -----BEGIN PGP SIGNED MESSAGE-----
