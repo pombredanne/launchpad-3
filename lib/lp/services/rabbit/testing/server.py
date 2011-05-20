@@ -63,7 +63,7 @@ RABBITBIN = "/usr/lib/rabbitmq/bin"
 
 
 def os_exec(*args):
-    """ warpper for os.execve() that catches execution errors """
+    """Wrapper for `os.execve()` that catches execution errors."""
     try:
         os.execv(args[0], args)
         os._exit(1)
@@ -74,7 +74,7 @@ def os_exec(*args):
 
 
 def daemon(name, logfilename, pidfilename, *args, **kwargs):
-    """Execute a double fork to start up a daemon """
+    """Execute a double fork to start up a daemon."""
 
     # fork 1 - close fds and start new process group
     pid = os.fork()
@@ -137,12 +137,11 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
 
 
 def allocate_ports(n=1):
-    """
-    Allocate n unused ports
+    """Allocate `n` unused ports.
 
-    There is a small race condition here (between the time we allocate
-    the port, and the time it actually gets used), but for the purposes
-    for which this function gets used it isn't a problem in practice.
+    There is a small race condition here (between the time we allocate the
+    port, and the time it actually gets used), but for the purposes for which
+    this function gets used it isn't a problem in practice.
     """
     sockets = map(lambda _: socket.socket(), xrange(n))
     try:
@@ -155,13 +154,13 @@ def allocate_ports(n=1):
 
 
 class AllocateRabbitServer(Fixture):
-    """Allocate the resources a rabbit server needs.
+    """Allocate the resources a RabbitMQ server needs.
 
-    :ivar hostname: The host the rabbit is on (always localhost for
-        AllocateRabbitServer).
+    :ivar hostname: The host the RabbitMQ is on (always localhost for
+        `AllocateRabbitServer`).
     :ivar port: A port that was free at the time setUp() was called.
-    :ivar rabbitdir: A directory to put the rabbit logs in.
-    :ivar mnesiadir: A directory for the rabbit db.
+    :ivar rabbitdir: A directory to put the RabbitMQ logs in.
+    :ivar mnesiadir: A directory for the RabbitMQ db.
     :ivar logfile: The logfile allocated for the server.
     :ivar pidfile: The file the pid should be written to.
     :ivar nodename: The name of the node.
@@ -178,7 +177,7 @@ class AllocateRabbitServer(Fixture):
 
     @property
     def fq_nodename(self):
-        """Get the node of the rabbit that is being exported."""
+        """The node of the RabbitMQ that is being exported."""
         # Note that socket.gethostname is recommended by the rabbitctl manpage
         # even though we're always on localhost, its what the erlang cluster
         # code wants.
@@ -188,15 +187,17 @@ class AllocateRabbitServer(Fixture):
 class ExportRabbitServer(Fixture):
     """Export the environment variables needed to talk to a RabbitMQ instance.
 
-    When setup this exports the key rabbit variables::
-     * RABBITMQ_MNESIA_BASE
-     * RABBITMQ_LOG_BASE
-     * RABBITMQ_NODE_PORT
-     * RABBITMQ_NODENAME
+    When setup this exports the key RabbitMQ variables:
+
+    - ``RABBITMQ_MNESIA_BASE``
+    - ``RABBITMQ_LOG_BASE``
+    - ``RABBITMQ_NODE_PORT``
+    - ``RABBITMQ_NODENAME``
+
     """
 
     def __init__(self, config):
-        """Create a ExportRabbitServer instance.
+        """Create a `ExportRabbitServer` instance.
 
         :param config: An object exporting the variables
             `AllocateRabbitServer` exports.
@@ -216,9 +217,10 @@ class ExportRabbitServer(Fixture):
             "RABBITMQ_NODENAME", self.config.nodename))
         self._errors = []
         self.addDetail('rabbit-errors',
-            Content(UTF8_TEXT, self._get_errors))
+            Content(UTF8_TEXT, self._getErrors))
 
-    def _get_errors(self):
+    def _getErrors(self):
+        """Yield all errors as UTF-8 encoded text."""
         for error in self._errors:
             if type(error) is unicode:
                 yield error.encode('utf8')
@@ -227,7 +229,7 @@ class ExportRabbitServer(Fixture):
             yield '\n'
 
     def rabbitctl(self, command, strip=False):
-        """ executes a rabbitctl command and returns status """
+        """Executes a ``rabbitctl`` command and returns status."""
         ctlbin = os.path.join(RABBITBIN, "rabbitmqctl")
         nodename = self.config.fq_nodename
         env = dict(os.environ)
@@ -240,8 +242,8 @@ class ExportRabbitServer(Fixture):
             return outstr.strip(), errstr.strip()
         return outstr, errstr
 
-    def check_running(self):
-        """ checks that the rabbitmq process is up and running """
+    def checkRunning(self):
+        """Checks that RabbitMQ is up and running."""
         nodename = self.config.fq_nodename
         outdata, errdata = self.rabbitctl("status")
         if errdata:
@@ -276,20 +278,19 @@ class ExportRabbitServer(Fixture):
         :raises socket.error: If the connection cannot be made.
         """
         host_port = "%s:%s" % (self.config.hostname, self.config.port)
-        conn = amqp.Connection(
+        return amqp.Connection(
             host=host_port, userid="guest",
             password="guest", virtual_host="/", insist=False)
-        return conn
 
 
 class RunRabbitServer(Fixture):
-    """Run a rabbit server.
+    """Run a RabbitMQ server.
 
     :ivar pid: The pid of the server.
     """
 
     def __init__(self, config):
-        """Create a RunRabbitServer instance.
+        """Create a `RunRabbitServer` instance.
 
         :param config: An object exporting the variables
             `AllocateRabbitServer` exports.
@@ -302,9 +303,12 @@ class RunRabbitServer(Fixture):
         self.rabbit = self.useFixture(ExportRabbitServer(self.config))
         # Workaround fixtures not adding details from used fixtures.
         self.addDetail('rabbitctl errors',
-            Content(UTF8_TEXT, self.rabbit._get_errors))
+            Content(UTF8_TEXT, self.rabbit._getErrors))
         self.addDetail('rabbit log file',
             content_from_file(self.config.logfile))
+        self.start()
+
+    def start(self):
         cmd = os.path.join(RABBITBIN, 'rabbitmq-server')
         name = "RabbitMQ server node:%s on port:%d" % (
             self.config.nodename, self.config.port)
@@ -313,13 +317,13 @@ class RunRabbitServer(Fixture):
         # Wait for the server to come up...
         timeout = time.time() + 5
         while time.time() < timeout:
-            if self.rabbit.check_running():
+            if self.rabbit.checkRunning():
                 break
             time.sleep(0.3)
         else:
             raise Exception(
                 "Timeout waiting for RabbitMQ OTP server to start.")
-        # The erlang OTP is up, but rabbit may not be usable. We need to
+        # The erlang OTP is up, but RabbitMQ may not be usable. We need to
         # cleanup up the process from here on in even if the full service
         # fails to get together.
         self.addCleanup(self.stop)
@@ -343,7 +347,7 @@ class RunRabbitServer(Fixture):
 
     def stop(self):
         """Stop the running server. Normally called by cleanups."""
-        if not self.rabbit.check_running():
+        if not self.rabbit.checkRunning():
             # If someone has shut it down already, we're done.
             return
         outstr, errstr = self.rabbit.rabbitctl("stop", strip=True)
@@ -354,7 +358,7 @@ class RunRabbitServer(Fixture):
         # Wait for the server to go down...
         timeout = time.time() + 15
         while time.time() < timeout:
-            if not self.rabbit.check_running():
+            if not self.rabbit.checkRunning():
                 break
             time.sleep(0.3)
         else:
@@ -381,10 +385,10 @@ class RunRabbitServer(Fixture):
 class RabbitServer(Fixture):
     """A RabbitMQ server fixture.
 
-    When setup a rabbit instance will be running and the environment variables
-    needed to talk to it will be already configured.
+    When setup a RabbitMQ instance will be running and the environment
+    variables needed to talk to it will be already configured.
 
-    :ivar config: The `AllocateRabbitServer` used to start the rabbit.
+    :ivar config: The `AllocateRabbitServer` used to start the server.
     """
 
     def setUp(self):
