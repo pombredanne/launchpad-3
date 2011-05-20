@@ -1233,9 +1233,7 @@ class WebServicePublication(WebServicePublicationMixin,
             # Try to retrieve a consumer based on the User-Agent
             # header.
             anonymous_request = True
-            consumer_key = request.getHeader('User-Agent', '')
-            if consumer_key == '':
-                consumer_key = 'anonymous client'
+            consumer_key = 'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
