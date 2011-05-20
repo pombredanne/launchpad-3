@@ -8,7 +8,6 @@ __metaclass__ = type
 import transaction
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
-from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
@@ -452,7 +451,7 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
         # its form is submitted.
         with person_logged_in(self.person):
             self.assertFalse(self.bug.isMuted(self.person))
-            view = create_initialized_view(
+            create_initialized_view(
                 self.bug.default_bugtask, name="+mute",
                 form={'field.actions.mute': 'Mute bug mail'})
             self.assertTrue(self.bug.isMuted(self.person))
@@ -463,7 +462,7 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.bug.mute(self.person, self.person)
             self.assertTrue(self.bug.isMuted(self.person))
-            view = create_initialized_view(
+            create_initialized_view(
                 self.bug.default_bugtask, name="+mute",
                 form={'field.actions.mute': 'Unmute bug mail'})
             self.assertTrue(self.bug.isMuted(self.person))

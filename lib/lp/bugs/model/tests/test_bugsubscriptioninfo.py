@@ -341,7 +341,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # also_notified_subscribers.
         assignee, supervisor, structural_subscriber = (
             self._create_also_notified_subscribers())
-        # As a control, we first show that the 
+        # As a control, we first show that the
         # the assignee, supervisor and structural subscriber do show up
         # when they are not muted.
         found_subscribers = self.getInfo().also_notified_subscribers
@@ -527,7 +527,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
             self.info.all_pillar_owners_without_bug_supervisors
 
     def test_also_notified_subscribers(self):
-        with self.exactly_x_queries(5):
+        with self.exactly_x_queries(6):
             self.info.also_notified_subscribers
 
     def test_also_notified_subscribers_later(self):
@@ -537,11 +537,11 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.info.all_pillar_owners_without_bug_supervisors
         self.info.direct_subscriptions.subscribers
         self.info.structural_subscriptions.subscribers
-        with self.exactly_x_queries(0):
+        with self.exactly_x_queries(1):
             self.info.also_notified_subscribers
 
     def test_indirect_subscribers(self):
-        with self.exactly_x_queries(6):
+        with self.exactly_x_queries(7):
             self.info.indirect_subscribers
 
     def test_indirect_subscribers_later(self):
