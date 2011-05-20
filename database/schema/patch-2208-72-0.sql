@@ -15,4 +15,4 @@ CREATE INDEX distroseriesparent__derived_series__ordering__idx
 -- Drop redundant index.
 DROP INDEX distroseriesparent__derivedseries__idx;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 72, 0);
