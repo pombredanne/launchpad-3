@@ -103,6 +103,21 @@ class IPlainPackageCopyJobSource(IJobSource):
     def getActiveJobs(target_archive):
         """Retrieve all active sync jobs for an archive."""
 
+    def getPendingJobsPerPackage(target_series):
+        """Find pending jobs for each package in `target_series`.
+
+        This is meant for finding jobs that will resolve specific
+        `DistroSeriesDifference`s, so see also `specify_dsd_package`.
+
+        :param target_series: Target `DistroSeries`; this corresponds to
+            `DistroSeriesDifference.derived_series`.
+        :return: A dict containing as keys the (name, version) tuples for
+            each `DistroSeriesDifference` that has a resolving
+            `PlainPackageCopyJob` pending.  Each of these DSDs maps to its
+            oldest pending job.  The `version` corresponds to
+            `DistroSeriesDifference.parent_source_version`.
+        """
+
 
 class IPlainPackageCopyJob(IRunnableJob):
     """A no-frills job to copy packages between `IArchive`s."""

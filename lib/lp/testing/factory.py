@@ -38,6 +38,7 @@ from operator import (
 import os
 from random import randint
 from StringIO import StringIO
+import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -418,13 +419,30 @@ class ObjectFactory:
         The string returned will always be a valid name that can be used in
         Launchpad URLs.
 
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to 'generic-string'.
+        :param prefix: Used as a prefix for the unique string. If 
+            unspecified, generates a name starting with 'unique' and
+            mentioning the calling source location.
         """
         if prefix is None:
-            prefix = "generic-string"
-        string = "%s%s" % (prefix, self.getUniqueInteger())
-        return string.replace('_', '-').lower()
+            frame = sys._getframe(2)
+            source_filename = frame.f_code.co_filename
+            # Dots and dashes cause trouble with some consumers of these
+            # names.
+            source = (
+                os.path.basename(source_filename)
+                .replace('_', '-')
+                .replace('.', '-'))
+            if source.startswith(
+                    '<doctest '):
+                # Like '-<doctest xx-build-summary-txt[10]>'.
+                source = (source
+                    .replace('<doctest ', '')
+                    .replace('[', '')
+                    .replace(']>', ''))
+            prefix = 'unique-from-%s-line%d' % (
+                source, frame.f_lineno)
+        string = "%s-%s" % (prefix, self.getUniqueInteger())
+        return string
 
     def getUniqueUnicode(self):
         return self.getUniqueString().decode('latin-1')
@@ -1641,7 +1659,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
         if sourcepackagename is not None:
@@ -2574,11 +2592,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
-            name = self.getUniqueString()
+            name = self.getUniqueString('builder-name')
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('builder-title')
         if description is None:
-            description = self.getUniqueString()
+            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
@@ -2630,9 +2648,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
-            name = self.getUniqueString().decode('utf8')
+            name = self.getUniqueString('spr-name').decode('utf8')
         if description is None:
-            description = self.getUniqueString().decode('utf8')
+            description = self.getUniqueString(
+                'spr-description').decode('utf8')
         if daily_build_archive is None:
             daily_build_archive = self.makeArchive(
                 distribution=distroseries.distribution, owner=owner)

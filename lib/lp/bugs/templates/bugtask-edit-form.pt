@@ -187,16 +187,14 @@
         <td title="Changeable only by a project maintainer or bug supervisor">
           <span
             tal:condition="not:view/userCanEditImportance"
-            class="sprite read-only"
-          />
+            class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
             title="Changeable only by a project maintainer or bug supervisor">
           <span
             tal:condition="not:view/userCanEditMilestone"
-            class="sprite read-only"
-          />
+            class="sprite read-only"></span>
           <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>
@@ -233,7 +231,7 @@
         The information about this bug in Launchpad is
         automatically pulled daily from the remote bug.
         <tal:has_bugwatch tal:condition="context/bugwatch">
-          <tal:has_been_pulled 
+          <tal:has_been_pulled
               tal:condition="context/bugwatch/lastchecked">
               This information was last pulled
               <b
@@ -242,7 +240,7 @@
                 3 minutes ago
               </b>.
           </tal:has_been_pulled>
-          <tal:has_not_been_pulled 
+          <tal:has_not_been_pulled
               tal:condition="not:context/bugwatch/lastchecked">
             This information hasn't been pulled yet.
           </tal:has_not_been_pulled>
