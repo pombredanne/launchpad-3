@@ -284,7 +284,7 @@ class TestBug(TestCaseWithFactory):
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
 
     def test_personIsAlsoNotifiedSubscriber_direct_subscriber(self):
-        # personIsAlsoNotifiedSubscriber() returns true for
+        # personIsAlsoNotifiedSubscriber() returns false for
         # direct subscribers.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug()
@@ -293,7 +293,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             bug.subscribe(subscriber, subscriber)
 
-        self.assertTrue(
+        self.assertFalse(
             bug.personIsAlsoNotifiedSubscriber(subscriber))
 
     def test_personIsAlsoNotifiedSubscriber_direct_subscriber_team(self):
@@ -313,7 +313,7 @@ class TestBug(TestCaseWithFactory):
             bug.personIsAlsoNotifiedSubscriber(person))
 
     def test_personIsAlsoNotifiedSubscriber_duplicate_subscriber(self):
-        # personIsAlsoNotifiedSubscriber() returns true for
+        # personIsAlsoNotifiedSubscriber() returns false for
         # duplicate subscribers.
         product = self.factory.makeProduct()
         bug = self.factory.makeBug()
@@ -329,7 +329,7 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             duplicate_bug.subscribe(subscriber, subscriber)
 
-        self.assertTrue(
+        self.assertFalse(
             bug.personIsAlsoNotifiedSubscriber(subscriber))
 
     def test_personIsAlsoNotifiedSubscriber_duplicate_subscriber_team(self):
