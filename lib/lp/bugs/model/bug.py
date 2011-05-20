@@ -2372,14 +2372,14 @@ class BugSubscriptionInfo:
             return BugSubscriberSet()
         else:
             muted = IStore(BugMute).find(
-                BugMute.person,
+                Person,
+                BugMute.person_id==Person.id,
                 BugMute.bug==self.bug)
             return BugSubscriberSet().union(
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
                 self.direct_subscriptions.subscribers).difference(muted)
-                
 
     @cachedproperty
     def indirect_subscribers(self):
