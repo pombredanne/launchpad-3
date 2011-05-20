@@ -105,9 +105,12 @@ class DistroSeriesParentSet:
                     dsp.is_overlay = True
         ) '''
         store = IStore(DistroSeriesParent)
+        # XXX: rvb 2011-05-20 bug=785733: Order by DSD.id for now.
+        # Once the ordering is specified in the database, it should
+        # be used to sort the results.
         return store.with_(
             SQL(rec_overlay_query, (derived_series.id, ))).find(
                 DistroSeriesParent,
                 SQL('DistroSeriesParent.parent_series IN '
                     '(SELECT parent_series FROM t_parents)')
-                )
+                ).order_by(DistroSeriesParent.id)
