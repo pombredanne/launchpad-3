@@ -182,7 +182,6 @@ class BugFeed(BugsFeedBase):
                 self.request.response.redirect(
                     canonical_url(root, rootsite='bugs'))
 
-
     @property
     def title(self):
         """See `IFeed`."""
