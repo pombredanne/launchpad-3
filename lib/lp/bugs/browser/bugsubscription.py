@@ -275,7 +275,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                         'unsubscribe <a href="%s">%s</a> from this bug' % (
                             canonical_url(person),
                             cgi.escape(person.displayname))))
-        if not self_subscribed and not(is_really_muted):
+        if not self_subscribed and not is_really_muted:
             subscription_terms.insert(0,
                 SimpleTerm(
                     self.user, self.user.name, 'subscribe me to this bug'))
