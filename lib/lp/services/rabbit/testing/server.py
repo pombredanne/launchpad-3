@@ -30,37 +30,37 @@ from testtools.content_type import UTF8_TEXT
 RABBITBIN = "/usr/lib/rabbitmq/bin"
 
 
-def setup_exchange(conf, port):
-    """ create an exchange """
-    # Not ported yet.
-    conn = _get_connection(conf, port)
-    # see if we already have the exchange
-    must_create = False
-    chan = conn.channel()
-    try:
-        chan.exchange_declare(exchange=conf.exchange_name + BRANCH_NICK,
-                              type=conf.exchange_type, passive=True)
-    except (amqp.AMQPConnectionException, amqp.AMQPChannelException), e:
-        if e.amqp_reply_code == 404:
-            must_create = True
-            # amqplib kills the channel on error.... we dispose of it too
-            chan.close()
-            chan = conn.channel()
-        else:
-            raise
-    # now create the exchange if needed
-    if must_create:
-        chan.exchange_declare(exchange=conf.exchange_name + BRANCH_NICK,
-                              type=conf.exchange_type,
-                              durable=True, auto_delete=False,)
-        print "Created new exchange %s (%s)" % (
-            conf.exchange_name + BRANCH_NICK, conf.exchange_type)
-    else:
-        print "Exchange %s (%s) is already declared" % (
-            conf.exchange_name + BRANCH_NICK, conf.exchange_type)
-    chan.close()
-    conn.close()
-    return True
+# def setup_exchange(conf, port):
+#     """ create an exchange """
+#     # Not ported yet.
+#     conn = _get_connection(conf, port)
+#     # see if we already have the exchange
+#     must_create = False
+#     chan = conn.channel()
+#     try:
+#         chan.exchange_declare(exchange=conf.exchange_name + BRANCH_NICK,
+#                               type=conf.exchange_type, passive=True)
+#     except (amqp.AMQPConnectionException, amqp.AMQPChannelException), e:
+#         if e.amqp_reply_code == 404:
+#             must_create = True
+#             # amqplib kills the channel on error.... we dispose of it too
+#             chan.close()
+#             chan = conn.channel()
+#         else:
+#             raise
+#     # now create the exchange if needed
+#     if must_create:
+#         chan.exchange_declare(exchange=conf.exchange_name + BRANCH_NICK,
+#                               type=conf.exchange_type,
+#                               durable=True, auto_delete=False,)
+#         print "Created new exchange %s (%s)" % (
+#             conf.exchange_name + BRANCH_NICK, conf.exchange_type)
+#     else:
+#         print "Exchange %s (%s) is already declared" % (
+#             conf.exchange_name + BRANCH_NICK, conf.exchange_type)
+#     chan.close()
+#     conn.close()
+#     return True
 
 
 def os_exec(*args):
@@ -121,20 +121,20 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     os_exec(*args)
 
 
-def status():
-    """ provides status information about the RabbitMQ server """
-    # Not ported yet.
-    nodename = _get_nodename()
-    if not _check_running():
-        print "ERROR: RabbitMQ node %s is not running" % nodename
-        return
-    for act in ["list_exchanges", "list_queues"]:
-        outstr, errstr = _rabbitctl(act, strip=True)
-        if errstr:
-            print >> sys.stderr, errstr
-        if outstr:
-            print outstr
-    return
+# def status():
+#     """ provides status information about the RabbitMQ server """
+#     # Not ported yet.
+#     nodename = _get_nodename()
+#     if not _check_running():
+#         print "ERROR: RabbitMQ node %s is not running" % nodename
+#         return
+#     for act in ["list_exchanges", "list_queues"]:
+#         outstr, errstr = _rabbitctl(act, strip=True)
+#         if errstr:
+#             print >> sys.stderr, errstr
+#         if outstr:
+#             print outstr
+#     return
 
 
 def allocate_ports(n=1):
