@@ -173,7 +173,30 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertTrue('mute_subscription' in html)
                 # The template uses user_should_see_mute_link to decide
                 # whether or not to display the mute link.
-                soup = BeautifulSoup(html)
                 self.assertTrue(
                     self._hasCSSClass(html, 'mute-link-container', 'hidden'),
                     'No "hidden" CSS class in mute-link-container.')
+
+    def test_mute_subscription_link_shown_if_muted(self):
+        # If a person is muted but not otherwise subscribed, they should still
+        # see the (un)mute link.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            with FeatureFixture({self.feature_flag_1: 'on'}):
+                self.bug.mute(person, person)
+                # The user isn't subscribed already, but is muted.
+                self.assertFalse(self.bug.isSubscribed(person))
+                self.assertFalse(
+                    self.bug.personIsAlsoNotifiedSubscriber(
+                        person))
+                self.assertTrue(self.bug.isMuted(person))
+                view = create_initialized_view(
+                    self.bug, name="+portlet-subscribers")
+                self.assertTrue(view.user_should_see_mute_link,
+                                "User should see mute link.")
+                contents = view.render()
+                self.assertTrue('mute_subscription' in contents,
+                                "'mute_subscription' not in contents.")
+                self.assertFalse(
+                    self._hasCSSClass(
+                        contents, 'mute-link-container', 'hidden'))
