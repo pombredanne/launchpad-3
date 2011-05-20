@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import transaction
-
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -268,7 +266,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 update_term = subscription_widget.vocabulary.getTermByToken(
                     'update-subscription')
                 self.assertEqual(
-                    "unmute bug mail from this bug and restore my subscription",
+                    "unmute bug mail from this bug and restore my "
+                    "subscription",
                     update_term.title)
 
     def test_unmute_unmutes(self):
