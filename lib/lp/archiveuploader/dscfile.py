@@ -119,6 +119,11 @@ class SignableTagFile:
         if self.signingkey is not None:
             return self.signingkey.owner
 
+    @property
+    def raw_content(self):
+        """Return files section contents."""
+        return self._dict['filecontents']
+
     def processSignature(self):
         """Verify the signature on the filename.
 
@@ -613,6 +618,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
+        encoded_raw_content = guess_encoding(self.raw_content)
         encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
@@ -650,7 +656,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
             homepage=encoded.get('homepage'),
-            dsc=encoded['filecontents'],
+            dsc=encoded_raw_content,
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['Maintainer'],
             dsc_format=encoded['Format'],

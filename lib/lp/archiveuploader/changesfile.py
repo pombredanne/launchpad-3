@@ -355,11 +355,6 @@ class ChangesFile(SignableTagFile):
         return self._dict['Architecture']
 
     @property
-    def filecontents(self):
-        """Return files section contents."""
-        return self._dict['filecontents']
-
-    @property
     def simulated_changelog(self):
         """Build and return a changelog entry for this changesfile.
 
