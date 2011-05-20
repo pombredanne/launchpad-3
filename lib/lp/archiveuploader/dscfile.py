@@ -143,14 +143,11 @@ class SignableTagFile:
     def verifySignature(self, content, filename):
         """Verify the signature on the file content.
 
-        Stores the fingerprint, the IGPGKey used to sign, the owner of
-        the key and a dictionary containing
-
         Raise UploadError if the signing key cannot be found in launchpad
         or if the GPG verification failed for any other reason.
 
-        Returns the key owner (person object), the key (gpgkey object) and
-        the pyme signature as a three-tuple
+        Returns a tuple of the key (IGPGKey object) and the verified
+        cleartext data.
         """
         self.logger.debug("Verifying signature on %s" % filename)
 
