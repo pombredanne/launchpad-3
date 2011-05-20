@@ -464,5 +464,5 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(self.person))
             create_initialized_view(
                 self.bug.default_bugtask, name="+mute",
-                form={'field.actions.mute': 'Unmute bug mail'})
-            self.assertTrue(self.bug.isMuted(self.person))
+                form={'field.actions.unmute': 'Unmute bug mail'})
+            self.assertFalse(self.bug.isMuted(self.person))
