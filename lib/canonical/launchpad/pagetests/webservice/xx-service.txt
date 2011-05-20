@@ -155,19 +155,6 @@ isn't logged in as any particular user:
     ...
     You need to be logged in to view this URL.
 
-An empty or missing user agent results in an error.
-
-    >>> response = request_with_user_agent(' ')
-    >>> print response.getOutput()
-    HTTP/1.1 401 Unauthorized
-    ...
-    Anonymous requests must provide a User-Agent.
-
-    >>> response = request_with_user_agent(None)
-    >>> print response.getOutput()
-    HTTP/1.1 401 Unauthorized
-    ...
-    Anonymous requests must provide a User-Agent.
 
 API Requests to other hosts
 ===========================
@@ -222,7 +209,7 @@ anonymous request.
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Anonymous requests must provide a User-Agent.
+    You need to be logged in to view this URL.
 
 
 The 'Vary' Header
