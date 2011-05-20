@@ -3,8 +3,8 @@
 
 SET client_min_messages=ERROR;
 
--- Add a column to order DSP (will be used to control the build order
--- for overlays).
+-- Add a column to order DSP (this will allow controlling of the build
+-- order for overlays).
 ALTER TABLE DistroSeriesParent
     ADD COLUMN ordering INTEGER NOT NULL DEFAULT 1;
 
