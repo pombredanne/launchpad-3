@@ -149,11 +149,10 @@ def allocate_ports(n=1):
     try:
         for s in sockets:
             s.bind(('localhost', 0))
-        ports = map(lambda s: s.getsockname()[1], sockets)
+        return map(lambda s: s.getsockname()[1], sockets)
     finally:
         for s in sockets:
             s.close()
-    return ports
 
 
 class AllocateRabbitServer(Fixture):
