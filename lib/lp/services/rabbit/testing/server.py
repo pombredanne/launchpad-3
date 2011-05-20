@@ -4,7 +4,6 @@
 """Test server fixture for RabbitMQ."""
 
 import errno
-from operator import attrgetter
 import os
 import re
 import socket
@@ -374,8 +373,8 @@ class RunRabbitServer(Fixture):
             raise Exception(
                 "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
-    getConnection = property(
-        attrgetter("rabbit.getConnection"))
+    def getConnection(self):
+        return self.rabbit.getConnection()
 
 
 class RabbitServer(Fixture):
@@ -390,11 +389,10 @@ class RabbitServer(Fixture):
     def setUp(self):
         super(RabbitServer, self).setUp()
         self.config = self.useFixture(AllocateRabbitServer())
-        self.server = RunRabbitServer(self.config)
-        self.useFixture(self.server)
+        self.server = self.useFixture(RunRabbitServer(self.config))
 
-    getDetails = property(
-        attrgetter("server.getDetails"))
+    def getDetails(self):
+        return self.server.getDetails()
 
-    getConnection = property(
-        attrgetter("server.getConnection"))
+    def getConnection(self):
+        return self.server.getConnection()
