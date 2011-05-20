@@ -8,7 +8,7 @@ __all__ = [
     'TagStanza',
     'TagFileParseError',
     'parse_tagfile',
-    'parse_tagfile_lines'
+    'parse_tagfile_content'
     ]
 
 
@@ -80,15 +80,15 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^(\s.*)")
 
 
-def parse_tagfile_lines(lines, filename=None):
+def parse_tagfile_content(content, filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
-    list of lines.
+    string.
     """
 
     with tempfile.TemporaryFile() as f:
-        f.write("".join(lines))
+        f.write(content)
         f.seek(0)
         stanzas = list(apt_pkg.ParseTagFile(f))
     if len(stanzas) != 1:
@@ -112,14 +112,14 @@ def parse_tagfile(filename):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the filename of the tag file, and
-    the contents of that file is passed on to parse_tagfile_lines.
+    the contents of that file is passed on to parse_tagfile_content.
 
     This will also strip any OpenPGP cleartext signature that is present
     before handing the data over.
     """
     changes_in = open(filename, "r")
-    lines = strip_pgp_signature(changes_in.read()).splitlines(True)
+    content = strip_pgp_signature(changes_in.read())
     changes_in.close()
-    if not lines:
+    if not content:
         raise TagFileParseError("%s: empty file" % filename)
-    return parse_tagfile_lines(lines, filename=filename)
+    return parse_tagfile_content(content, filename=filename)

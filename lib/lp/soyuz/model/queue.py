@@ -62,7 +62,7 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
@@ -726,11 +726,10 @@ class PackageUpload(SQLBase):
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_lines = strip_pgp_signature(
-            "".join(changes_lines)).splitlines(True)
-        changes = parse_tagfile_lines(changes_lines)
+        changes_content = strip_pgp_signature("".join(changes_lines))
+        changes = parse_tagfile_content(changes_content)
 
-        return changes, changes_lines
+        return changes, changes_content.splitlines(True)
 
     def _buildUploadedFilesList(self):
         """Return a list of tuples of (filename, component, section).

@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -53,9 +53,8 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
-    contents = changes_file.read()
-    changes_lines = strip_pgp_signature(contents).splitlines(True)
-    tags = Deb822Dict(parse_tagfile_lines(changes_lines))
+    contents = strip_pgp_signature(changes_file.read())
+    tags = Deb822Dict(parse_tagfile_content(contents))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():

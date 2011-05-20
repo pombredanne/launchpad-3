@@ -42,7 +42,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile_lines,
+    parse_tagfile_content,
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
@@ -135,9 +135,8 @@ class SignableTagFile:
             self.logger.debug("%s can be unsigned." % self.filename)
             self.parsed_content = strip_pgp_signature(self.raw_content)
         try:
-            self._dict = parse_tagfile_lines(
-                self.parsed_content.splitlines(True),
-                filename=self.filepath)
+            self._dict = parse_tagfile_content(
+                self.parsed_content, filename=self.filepath)
         except TagFileParseError, error:
             raise UploadError(
                 "Unable to parse %s: %s" % (self.filename, error))
