@@ -32,10 +32,6 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadError,
     UploadWarning,
     )
-from lp.archiveuploader.tagfiles import (
-    parse_tagfile_lines,
-    TagFileParseError,
-    )
 from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
