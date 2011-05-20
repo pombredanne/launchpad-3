@@ -711,25 +711,21 @@ class PackageUpload(SQLBase):
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
-        changes_lines = None
         if changes_file_object is None:
             changes_file_object = self.changesfile
-            changes_lines = self.changesfile.read().splitlines(True)
-        else:
-            changes_lines = changes_file_object.readlines()
+        changes_content = changes_file_object.read()
 
         # Rewind the file so that the next read starts at offset zero. Please
         # note that a LibraryFileAlias does not support seek operations.
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
+        changes = parse_tagfile_content(changes_content)
+
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_content = strip_pgp_signature("".join(changes_lines))
-        changes = parse_tagfile_content(changes_content)
-
-        return changes, changes_content.splitlines(True)
+        return changes, strip_pgp_signature(changes_content).splitlines(True)
 
     def _buildUploadedFilesList(self):
         """Return a list of tuples of (filename, component, section).
