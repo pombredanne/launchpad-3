@@ -120,6 +120,15 @@ class SignableTagFile:
             return self.signingkey.owner
 
     def parse(self, verify_signature=True):
+        """Parse the tag file, optionally verifying the signature.
+
+        If verify_signature is True, signingkey will be set to the signing
+        `IGPGKey`, and only the verified content will be parsed. Otherwise,
+        any signature will be stripped and the contained content parsed.
+
+        Will raise an `UploadError` if the tag file was unparsable,
+        or if signature verification was requested but failed.
+        """
         try:
             with open(self.filepath, 'rb') as f:
                 self.raw_content = f.read()
@@ -146,7 +155,7 @@ class SignableTagFile:
         Raise UploadError if the signing key cannot be found in launchpad
         or if the GPG verification failed for any other reason.
 
-        Returns a tuple of the key (IGPGKey object) and the verified
+        Returns a tuple of the key (`IGPGKey` object) and the verified
         cleartext data.
         """
         self.logger.debug("Verifying signature on %s" % filename)
