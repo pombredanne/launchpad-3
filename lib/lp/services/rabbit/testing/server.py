@@ -300,10 +300,10 @@ class RunRabbitServer(Fixture):
 
     def setUp(self):
         super(RunRabbitServer, self).setUp()
-        self.rabbit = self.useFixture(ExportRabbitServer(self.config))
+        self.server = self.useFixture(ExportRabbitServer(self.config))
         # Workaround fixtures not adding details from used fixtures.
         self.addDetail('rabbitctl errors',
-            Content(UTF8_TEXT, self.rabbit._getErrors))
+            Content(UTF8_TEXT, self.server._getErrors))
         self.addDetail('rabbit log file',
             content_from_file(self.config.logfile))
         self.start()
@@ -317,7 +317,7 @@ class RunRabbitServer(Fixture):
         # Wait for the server to come up...
         timeout = time.time() + 5
         while time.time() < timeout:
-            if self.rabbit.checkRunning():
+            if self.server.checkRunning():
                 break
             time.sleep(0.3)
         else:
@@ -347,10 +347,10 @@ class RunRabbitServer(Fixture):
 
     def stop(self):
         """Stop the running server. Normally called by cleanups."""
-        if not self.rabbit.checkRunning():
+        if not self.server.checkRunning():
             # If someone has shut it down already, we're done.
             return
-        outstr, errstr = self.rabbit.rabbitctl("stop", strip=True)
+        outstr, errstr = self.server.rabbitctl("stop", strip=True)
         if outstr:
             self.addDetail('stop-out', Content(UTF8_TEXT, lambda: [outstr]))
         if errstr:
@@ -358,7 +358,7 @@ class RunRabbitServer(Fixture):
         # Wait for the server to go down...
         timeout = time.time() + 15
         while time.time() < timeout:
-            if not self.rabbit.checkRunning():
+            if not self.server.checkRunning():
                 break
             time.sleep(0.3)
         else:
@@ -379,7 +379,7 @@ class RunRabbitServer(Fixture):
                 "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
     def getConnection(self):
-        return self.rabbit.getConnection()
+        return self.server.getConnection()
 
 
 class RabbitServer(Fixture):
@@ -389,15 +389,16 @@ class RabbitServer(Fixture):
     variables needed to talk to it will be already configured.
 
     :ivar config: The `AllocateRabbitServer` used to start the server.
+    :ivar runner: The `RunRabbitServer` that bootstraps the server.
     """
 
     def setUp(self):
         super(RabbitServer, self).setUp()
         self.config = self.useFixture(AllocateRabbitServer())
-        self.server = self.useFixture(RunRabbitServer(self.config))
+        self.runner = self.useFixture(RunRabbitServer(self.config))
 
     def getDetails(self):
-        return self.server.getDetails()
+        return self.runner.getDetails()
 
     def getConnection(self):
-        return self.server.getConnection()
+        return self.runner.getConnection()
