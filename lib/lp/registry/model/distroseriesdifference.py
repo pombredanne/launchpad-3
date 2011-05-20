@@ -12,6 +12,7 @@ __all__ = [
 from itertools import chain
 from operator import itemgetter
 
+import apt_pkg
 from debian.changelog import (
     Changelog,
     Version,
@@ -22,9 +23,7 @@ from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
-    compile as storm_compile,
     Desc,
-    SQL,
     Table,
     )
 from storm.locals import (
@@ -676,11 +675,17 @@ class DistroSeriesDifference(StormBase):
         :param manual: Boolean, True if this is a user-requested change.
             This overrides auto-blacklisting.
         """
+        # XXX 2011-05-20 bigjools bug=785657
+        # This method needs updating to use some sort of state
+        # transition dictionary instead of this crazy mess of
+        # conditions.
+
         updated = False
         new_source_version = new_parent_source_version = None
         if self.source_pub:
             new_source_version = self.source_pub.source_package_version
-            if self.source_version != new_source_version:
+            if self.source_version is None or apt_pkg.VersionCompare(
+                    self.source_version, new_source_version) != 0:
                 self.source_version = new_source_version
                 updated = True
                 # If the derived version has change and the previous version
@@ -691,18 +696,28 @@ class DistroSeriesDifference(StormBase):
         if self.parent_source_pub:
             new_parent_source_version = (
                 self.parent_source_pub.source_package_version)
-            if self.parent_source_version != new_parent_source_version:
+            if self.parent_source_version is None or apt_pkg.VersionCompare(
+                    self.parent_source_version,
+                    new_parent_source_version) != 0:
                 self.parent_source_version = new_parent_source_version
                 updated = True
+
+        if not self.source_pub or not self.parent_source_pub:
+            # This is unlikely to happen in reality but return early so
+            # that bad data cannot make us OOPS.
+            return updated
 
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if self.source_version < self.parent_source_version:
+            if apt_pkg.VersionCompare(
+                self.source_version, self.parent_source_version) < 0:
+                # Higher parent version.
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
             elif (
-                self.source_version > self.parent_source_version
+                apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # The child was updated with a higher version so it's
                 # auto-blacklisted.
@@ -715,11 +730,13 @@ class DistroSeriesDifference(StormBase):
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
-            if self.source_version == self.parent_source_version:
+            if apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) == 0:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
-                self.source_version < self.parent_source_version
+                apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) < 0
                 and not manual):
                 # If the derived version is lower than the parent's, we
                 # ensure the diff status is blacklisted.
