@@ -341,7 +341,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         # also_notified_subscribers.
         assignee, supervisor, structural_subscriber = (
             self._create_also_notified_subscribers())
-        # As a control, we first show that the 
+        # As a control, we first show that the
         # the assignee, supervisor and structural subscriber do show up
         # when they are not muted.
         found_subscribers = self.getInfo().also_notified_subscribers
