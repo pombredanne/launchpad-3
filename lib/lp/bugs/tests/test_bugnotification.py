@@ -560,14 +560,23 @@ class TestBug778847(TestCaseWithFactory):
         team = self.factory.makeTeam(
             email="test@example.com", owner=team_owner)
         product = self.factory.makeProduct()
+        store = Store.of(product)
         with person_logged_in(team_owner):
             subscription = product.addBugSubscription(
                 team, team_owner)
             subscription_filter = subscription.bug_filters.one()
-            subscription_filter.mute(team_owner)
+            # We need to add this mute manually instead of calling
+            # subscription_filter.mute, since mute() prevents mutes from
+            # occurring on teams that have contact addresses. Since
+            # we're testing for regression here we cheerfully ignore
+            # that rule.
+            mute = BugSubscriptionFilterMute()
+            mute.person = team_owner
+            mute.filter = subscription_filter.id
+            store.add(mute)
+
         bug = self.factory.makeBug(product=product)
         transaction.commit()
-        store = Store.of(bug)
         # Ensure that the notification about the bug being created will
         # appear when we call getNotificationsToSend() by setting its
         # message's datecreated time to 1 hour in the past.
