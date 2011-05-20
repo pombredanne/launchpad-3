@@ -201,7 +201,6 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertTrue('mute_subscription' in html)
                 # The template uses user_should_see_mute_link to decide
                 # whether or not to display the mute link.
-                soup = BeautifulSoup(html)
                 self.assertTrue(
                     self._hasCSSClass(html, 'mute-link-container', 'hidden'),
                     'No "hidden" CSS class in mute-link-container.')

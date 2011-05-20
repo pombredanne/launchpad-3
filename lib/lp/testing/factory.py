@@ -419,7 +419,7 @@ class ObjectFactory:
         The string returned will always be a valid name that can be used in
         Launchpad URLs.
 
-        :param prefix: Used as a prefix for the unique string. If 
+        :param prefix: Used as a prefix for the unique string. If
             unspecified, generates a name starting with 'unique' and
             mentioning the calling source location.
         """
