@@ -211,9 +211,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_parent_update_re_opens_difference(self):
         # The status of a resolved difference will be updated to
         # NEEDS_ATTENTION with parent uploads.
-        parent_series = self.factory.makeDistroSeries()
         ds_diff = self.factory.makeDistroSeriesDifference(
-            parent_series=parent_series,
             source_package_name_str="foonew",
             versions={
                 'parent': '1.0',
