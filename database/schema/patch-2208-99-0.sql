@@ -8,12 +8,8 @@ SET client_min_messages=ERROR;
 ALTER TABLE DistroSeriesParent
     ADD COLUMN ordering INTEGER NOT NULL DEFAULT 1;
 
--- Update existing DSPs.
-UPDATE DistroSeriesParent
-    SET ordering = 1;
-
 -- Create index.
-CREATE INDEX distroseriesparent__ordering
-    ON DistroSeriesParent (ordering);
+CREATE INDEX distroseriesparent__ordering__derived_series
+    ON DistroSeriesParent (ordering, derived_series);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
