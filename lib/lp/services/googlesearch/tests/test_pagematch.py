@@ -24,3 +24,16 @@ class TestPageMatchURLHandling(TestCaseWithFactory):
                    "field.text=WUSB54GC++karmic&"
                    "field.actions.search=Search")
         self.assertEqual(expected, p.url)
+
+    def test_rewrite_url_handles_invalid_data_partial_escaped(self):
+        # Given a url with partial escaped values, pagematch does not error.
+        partial_encoded_url = (
+           "http://launchpad.dev/+search?"
+           "field.text=WUSB54GC+%2Bkarmic&"
+           "field.actions.search=Search")
+        p = PageMatch('Weird.', partial_encoded_url, 'Weird data')
+        expected = (
+            "http://launchpad.dev/+search?"
+            "field.text=WUSB54GC+%2Bkarmic&"
+            "field.actions.search=Search")
+        self.assertEqual(expected, p.url)
