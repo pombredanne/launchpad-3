@@ -249,6 +249,27 @@ class TestBug(TestCaseWithFactory):
             subscriber not in duplicate_subscribers,
             "Subscriber should not be in duplicate_subscribers.")
 
+    def test_subscribers_from_dupes_includes_structural_subscribers(self):
+        # getSubscribersFromDuplicates() also returns subscribers
+        # from structural subscriptions.
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug(product=product)
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+            # We unsubscribe the owner of the duplicate to avoid muddling
+            # the results retuned by getSubscribersFromDuplicates()
+            duplicate_bug.unsubscribe(
+                duplicate_bug.owner, duplicate_bug.owner)
+
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            product.addSubscription(subscriber, subscriber)
+
+        self.assertEqual(
+            (subscriber,),
+            bug.getSubscribersFromDuplicates())
+
     def test_getSubscriptionInfo(self):
         # getSubscriptionInfo() returns a BugSubscriptionInfo object.
         bug = self.factory.makeBug()
