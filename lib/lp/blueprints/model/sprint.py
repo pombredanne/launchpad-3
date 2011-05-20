@@ -314,7 +314,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # result set.  Listification should do.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 people, need_validity=True))
-        return sorted(result, key=lambda a: a.attendee.name)
+        return sorted(result, key=lambda a: a.attendee.displayname)
 
     # linking to specifications
     def linkSpecification(self, spec):
