@@ -4,70 +4,14 @@
 """Utility classes for parsing Debian tag files."""
 
 __all__ = [
-    'TagFile',
-    'TagStanza',
     'TagFileParseError',
     'parse_tagfile',
-    'parse_tagfile_lines'
+    'parse_tagfile_content'
     ]
 
 
-import apt_pkg
 import re
 
-
-class TagFile(object):
-    """Provide an iterable interface to the apt_pkg.TagFile object"""
-
-    def __init__(self, f):
-        """Initialise apt_pkg and parse the tagfile provided by f"""
-        if not isinstance(f, file):
-            raise ValueError()
-        apt_pkg.init()
-        self.stanzas = apt_pkg.ParseTagFile(f)
-
-    def __iter__(self):
-        """Iterate across the stanzas in the tagfile"""
-        self.stanzas.Jump(0)
-        yield TagStanza(self.stanzas.Section)
-        while self.stanzas.Step():
-            yield TagStanza(self.stanzas.Section)
-
-    def __getitem__(self, item):
-        """Implement the [] operator"""
-        self.stanzas.Jump(item)
-        return TagStanza(self.stanzas.Section)
-
-class TagStanza(object):
-    """Provide an iterable interface to apt_pkg.TagStanza"""
-
-    def __init__(self, stanza):
-        """Initialise given a stanza (usually from TagFile.__iter__)"""
-        self.stanza = stanza
-
-    def __getitem__(self, item):
-        """The [] operator"""
-        return self.stanza[item]
-
-    def __iter__(self):
-        """Iterate across keys"""
-        for k in self.stanza.keys():
-            yield k
-
-    def keys(self):
-        """Expose the .keys() method"""
-        return self.stanza.keys()
-
-    def has_key(self, key):
-        """Expose a dicty has_key"""
-        return key in self.stanza.keys()
-
-    # Enables (foo in bar) functionality.
-    __contains__ = has_key
-
-    def items(self):
-        """Allows for k,v in foo.items()"""
-        return [ (k, self.stanza[k]) for k in self.stanza.keys() ]
 
 class TagFileParseError(Exception):
     """This exception is raised if parse_changes encounters nastiness"""
@@ -77,11 +21,11 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^(\s.*)")
 
 
-def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
+def parse_tagfile_content(content, dsc_whitespace_rules=0, filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
-    list of lines.
+    string.
 
     dsc_whitespace_rules is an optional boolean argument which defaults
     to off.  If true, it turns on strict format checking to avoid
@@ -96,6 +40,8 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
     o The data section must end with a blank line and must be followed by
       '-----BEGIN PGP SIGNATURE-----'.
     """
+    lines = content.splitlines(True)
+
     error = ""
 
     changes = {}
@@ -218,17 +164,17 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the filename of the tag file, and
-    the contents of that file is passed on to parse_tagfile_lines.
+    the contents of that file is passed on to parse_tagfile_content.
 
-    See parse_tagfile_lines's docstring for description of the
+    See parse_tagfile_content's docstring for description of the
     dsc_whitespace_rules argument.
     """
     changes_in = open(filename, "r")
-    lines = changes_in.readlines()
+    content = changes_in.read()
     changes_in.close()
-    if not lines:
+    if not content:
         raise TagFileParseError( "%s: empty file" % filename )
-    return parse_tagfile_lines(
-        lines, dsc_whitespace_rules=dsc_whitespace_rules,
+    return parse_tagfile_content(
+        content, dsc_whitespace_rules=dsc_whitespace_rules,
         filename=filename)
 

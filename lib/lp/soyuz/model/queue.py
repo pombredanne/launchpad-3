@@ -63,7 +63,7 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
@@ -709,36 +709,33 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.is_ppa
 
-    def _stripPgpSignature(self, changes_lines):
+    def _stripPgpSignature(self, text):
         """Strip any PGP signature from the supplied changes lines."""
-        text = "".join(changes_lines)
         signed_message = signed_message_from_string(text)
         # For unsigned '.changes' files we'll get a None `signedContent`.
         if signed_message.signedContent is not None:
-            return signed_message.signedContent.splitlines(True)
+            return signed_message.signedContent
         else:
-            return changes_lines
+            return text
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
-        changes_lines = None
         if changes_file_object is None:
             changes_file_object = self.changesfile
-            changes_lines = self.changesfile.read().splitlines(True)
-        else:
-            changes_lines = changes_file_object.readlines()
+        changes_content = changes_file_object.read()
 
         # Rewind the file so that the next read starts at offset zero. Please
         # note that a LibraryFileAlias does not support seek operations.
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        changes = parse_tagfile_lines(changes_lines)
+        changes = parse_tagfile_content(changes_content)
 
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_lines = self._stripPgpSignature(changes_lines)
+        changes_lines = self._stripPgpSignature(
+            changes_content).splitlines(True)
 
         return changes, changes_lines
 

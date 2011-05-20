@@ -11,36 +11,12 @@ import apt_pkg
 
 from lp.archiveuploader.tagfiles import (
     parse_tagfile,
-    TagFile,
     TagFileParseError,
     )
 from lp.archiveuploader.tests import datadir
 
 
 class Testtagfiles(unittest.TestCase):
-
-    def testTagFileOnSingular(self):
-        """lp.archiveuploader.tagfiles.TagFile should parse a singular stanza
-        """
-        f = TagFile(file(datadir("singular-stanza"), "r"))
-        seenone = False
-        for stanza in f:
-            self.assertEquals(seenone, False)
-            seenone = True
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-
-    def testTagFileOnSeveral(self):
-        """TagFile should parse multiple stanzas."""
-        f = TagFile(file(datadir("multiple-stanzas"), "r"))
-        seen = 0
-        for stanza in f:
-            seen += 1
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-        self.assertEquals(seen > 1, True)
 
     def testCheckParseChangesOkay(self):
         """lp.archiveuploader.tagfiles.parse_tagfile should work on a good
