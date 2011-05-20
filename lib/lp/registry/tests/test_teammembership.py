@@ -9,6 +9,7 @@ from datetime import (
     )
 import re
 import subprocess
+import transaction
 from unittest import (
     TestCase,
     TestLoader,
@@ -18,6 +19,7 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.sqlbase import (
     cursor,
     flush_database_caches,
@@ -28,6 +30,7 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
     default_optionflags,
@@ -35,7 +38,10 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,
@@ -56,9 +62,51 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.storm import reload_object
+
+
+class TestTeamMembershipSetScripts(TestCaseWithFactory):
+    """Separate Testcase to separate out examples required dbuser switches.
+
+    This uses the LaunchpadZoplelessLayer to provide layer.switchDbUser
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test_handleMembershipsExpiringToday_permissions(self):
+        # Create two teams, a control team and and a team to be the control's
+        # administrator.
+        adminteam = self.factory.makeTeam()
+        adminteam.setContactAddress(None)
+        team = self.factory.makeTeam(owner=adminteam)
+        with person_logged_in(team.teamowner):
+            team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+            team.defaultrenewalperiod = 10
+
+        # Create a person to be in the control team.
+        person = self.factory.makePerson()
+        team.addMember(person, team.teamowner)
+        membershipset = getUtility(ITeamMembershipSet)
+        teammembership = membershipset.getByPersonAndTeam(person, team)
+
+        # Set expiration time to now
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(teammembership).dateexpires = now
+        transaction.commit()
+
+        # Switch dbuser to the user running the membership flagging
+        # cronscript. Reload the membership object so we can assert against
+        # it.
+        self.layer.switchDbUser(config.expiredmembershipsflagger.dbuser)
+        reload_object(teammembership)
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        membershipset.handleMembershipsExpiringToday(janitor)
+        self.assertEqual(
+            teammembership.status, TeamMembershipStatus.APPROVED)
 
 
 class TestTeamMembershipSet(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -155,7 +203,6 @@ class TestTeamMembershipSet(TestCaseWithFactory):
             sample_person_on_ubuntu_dev.status, TeamMembershipStatus.APPROVED)
         self.assertEqual(
             sample_person_on_motu.status, TeamMembershipStatus.APPROVED)
-
         self.membershipset.handleMembershipsExpiringToday(foobar)
         flush_database_caches()
 

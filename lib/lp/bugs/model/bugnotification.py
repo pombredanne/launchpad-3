@@ -262,7 +262,15 @@ class BugNotificationSet:
                 In(BugSubscriptionFilterMute.person_id, recipient_id_map.keys()),
                 In(BugSubscriptionFilterMute.filter_id, filter_ids))
             for person_id, filter_id in mute_data:
-                del recipient_id_map[person_id]['filters'][filter_id]
+                if filter_id in recipient_id_map[person_id]['filters']:
+                    del recipient_id_map[person_id]['filters'][filter_id]
+                # This may look odd, but it's here to prevent members of
+                # a team with a contact address still getting direct
+                # email about a bug after they've muted the
+                # subscription.
+                if no_filter_marker in recipient_id_map[person_id]['filters']:
+                    del recipient_id_map[
+                        person_id]['filters'][no_filter_marker]
         # Now recipient_id_map has all the information we need.  Let's
         # build the final result and return it.
         result = {}
