@@ -104,8 +104,7 @@ class ChangesFile(SignableTagFile):
         self.logger = logger
 
         try:
-            self._dict = parse_tagfile(
-                self.filepath, allow_unsigned=self.policy.unsigned_changes_ok)
+            self._dict = parse_tagfile(self.filepath)
         except (IOError, TagFileParseError), error:
             raise UploadError("Unable to parse the changes %s: %s" % (
                 self.filename, error))

@@ -440,7 +440,7 @@ class PackageUpload(SQLBase):
         # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, allow_unsigned=True)
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -475,7 +475,7 @@ class PackageUpload(SQLBase):
         # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, allow_unsigned=True)
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
     @property
@@ -679,7 +679,7 @@ class PackageUpload(SQLBase):
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
-                        allow_unsigned=True, logger=logger)
+                        logger=logger)
                     self.syncUpdate()
 
         self.setDone()
@@ -719,7 +719,7 @@ class PackageUpload(SQLBase):
         else:
             return changes_lines
 
-    def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
+    def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
         if changes_file_object is None:
@@ -733,15 +733,7 @@ class PackageUpload(SQLBase):
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        # When the 'changesfile' content comes from a different
-        # `PackageUpload` instance (e.g. when dealing with delayed copies)
-        # we need to be able to specify the "allow unsigned" flag explicitly.
-        # In that case the presence of the signing key is immaterial.
-        if allow_unsigned is None:
-            unsigned = not self.signing_key
-        else:
-            unsigned = allow_unsigned
-        changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
+        changes = parse_tagfile_lines(changes_lines)
 
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
@@ -1079,8 +1071,7 @@ class PackageUpload(SQLBase):
                     self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False,
-               allow_unsigned=None):
+               changes_file_object=None, logger=None, dry_run=False):
         """See `IPackageUpload`."""
 
         self.logger = logger
@@ -1102,8 +1093,7 @@ class PackageUpload(SQLBase):
         #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changes, changes_lines = self._getChangesDict(
-            changes_file_object, allow_unsigned=allow_unsigned)
+        changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
         # If files is empty, we don't need to send an email if this is not

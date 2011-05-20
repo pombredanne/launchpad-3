@@ -54,7 +54,7 @@ def get_bugs_from_changes_file(changes_file):
     """
     contents = changes_file.read()
     changes_lines = contents.splitlines(True)
-    tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
+    tags = Deb822Dict(parse_tagfile_lines(changes_lines))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():

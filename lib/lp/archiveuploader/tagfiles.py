@@ -77,8 +77,7 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^(\s.*)")
 
 
-def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
-                        filename=None):
+def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
@@ -153,10 +152,6 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
                     index += 1
                     line = indexed_lines[index]
             continue
-        # If we're not inside the signed data, don't process anything, unless
-        # we've decided to allow unsigned files.
-        if not (inside_signature or allow_unsigned):
-            continue
         slf = re_single_line_field.match(line)
         if slf:
             field = slf.groups()[0]
@@ -219,14 +214,14 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
     return changes
 
 
-def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
+def parse_tagfile(filename, dsc_whitespace_rules=0):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the filename of the tag file, and
     the contents of that file is passed on to parse_tagfile_lines.
 
     See parse_tagfile_lines's docstring for description of the
-    dsc_whitespace_rules and allow_unsigned arguments.
+    dsc_whitespace_rules argument.
     """
     changes_in = open(filename, "r")
     lines = changes_in.readlines()
@@ -235,5 +230,5 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
         raise TagFileParseError( "%s: empty file" % filename )
     return parse_tagfile_lines(
         lines, dsc_whitespace_rules=dsc_whitespace_rules,
-        allow_unsigned=allow_unsigned, filename=filename)
+        filename=filename)
 

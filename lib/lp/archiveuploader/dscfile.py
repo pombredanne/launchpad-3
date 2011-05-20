@@ -243,9 +243,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
         try:
-            self._dict = parse_tagfile(
-                self.filepath, dsc_whitespace_rules=1,
-                allow_unsigned=self.policy.unsigned_dsc_ok)
+            self._dict = parse_tagfile(self.filepath, dsc_whitespace_rules=1)
         except (IOError, TagFileParseError), error:
             raise UploadError(
                 "Unable to parse the dsc %s: %s" % (self.filename, error))
