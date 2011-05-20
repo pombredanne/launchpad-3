@@ -213,10 +213,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # NEEDS_ATTENTION with parent uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
-            versions={
-                'parent': '1.0',
-                'derived': '1.0',
-                },
+            versions=dict(parent='1.0', derived='1.0'),
             status=DistroSeriesDifferenceStatus.RESOLVED)
         new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
@@ -236,10 +233,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # BLACKLISTED_CURRENT with child uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
-            versions={
-                'parent': '1.0',
-                'derived': '1.0',
-                },
+            versions=dict(parent='1.0', derived='1.0'),
             status=DistroSeriesDifferenceStatus.RESOLVED)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
