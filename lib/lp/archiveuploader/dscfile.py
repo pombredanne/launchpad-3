@@ -65,7 +65,6 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.encoding import guess as guess_encoding
-from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -133,7 +132,7 @@ class SignableTagFile:
                 self.raw_content, self.filepath)
         else:
             self.logger.debug("%s can be unsigned." % self.filename)
-            self.parsed_content = strip_pgp_signature(self.raw_content)
+            self.parsed_content = self.raw_content
         try:
             self._dict = parse_tagfile_content(
                 self.parsed_content, filename=self.filepath)

@@ -85,10 +85,13 @@ def parse_tagfile_content(content, filename=None):
 
     The mandatory first argument is the contents of the tag file as a
     string.
+
+    An OpenPGP cleartext signature will be stripped before parsing if
+    one is present.
     """
 
     with tempfile.TemporaryFile() as f:
-        f.write(content)
+        f.write(strip_pgp_signature(content))
         f.seek(0)
         stanzas = list(apt_pkg.ParseTagFile(f))
     if len(stanzas) != 1:
@@ -113,13 +116,9 @@ def parse_tagfile(filename):
 
     The mandatory first argument is the filename of the tag file, and
     the contents of that file is passed on to parse_tagfile_content.
-
-    This will also strip any OpenPGP cleartext signature that is present
-    before handing the data over.
     """
-    changes_in = open(filename, "r")
-    content = strip_pgp_signature(changes_in.read())
-    changes_in.close()
+    with open(filename, "r") as changes_in:
+        content = changes_in.read()
     if not content:
         raise TagFileParseError("%s: empty file" % filename)
     return parse_tagfile_content(content, filename=filename)
