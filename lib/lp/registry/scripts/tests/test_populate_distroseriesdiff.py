@@ -131,7 +131,6 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
 
     def test_selects_sourcepackagename_sourcepackagerelease_version(self):
         spph = self.makeSPPH()
-        spr = spph.sourcepackagerelease
         query = compose_sql_find_latest_source_package_releases(
             spph.distroseries)
         self.assertContentEqual(
@@ -149,7 +148,6 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
             (purpose, self.makeSPPH(
                 distroseries=distroseries, archive_purpose=purpose))
             for purpose in ArchivePurpose.items)
-        primary_spr = spphs[ArchivePurpose.PRIMARY]
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual(
             [self.getExpectedResultFor(spphs[ArchivePurpose.PRIMARY])],
@@ -178,9 +176,8 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_find_inactive_publication(self):
         distroseries = self.factory.makeDistroSeries()
-        spphs = dict(
-            (status, self.makeSPPH(distroseries=distroseries, status=status))
-            for status in inactive_publishing_status)
+        for status in inactive_publishing_status:
+            self.makeSPPH(distroseries=distroseries, status=status)
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual([], Store.of(distroseries).execute(query))
 
@@ -263,9 +260,9 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
                 sourcepackagename=package, distroseries=derived_series,
                 version=version_string))
         self.makeSPPH(
-            distroseries=previous_series,
+            distroseries=parent_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                sourcepackagename=package, distroseries=previous_series,
+                sourcepackagename=package, distroseries=parent_series,
                 version=version_string))
         query = compose_sql_find_differences(derived_series, parent_series)
         self.assertContentEqual([], Store.of(derived_series).execute(query))
@@ -320,9 +317,9 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         parent_series = dsp.parent_series
         spn = self.factory.makeSourcePackageName()
         parent_spph = self.makeSPPH(
-            distroseries=previous_series,
+            distroseries=parent_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                distroseries=previous_series, sourcepackagename=spn))
+                distroseries=parent_series, sourcepackagename=spn))
         derived_spph = self.makeSPPH(
             distroseries=distroseries,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
@@ -342,11 +339,11 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         parent_series = dsp.parent_series
         spn = self.factory.makeSourcePackageName()
         shared_spr = self.factory.makeSourcePackageRelease(
-            distroseries=previous_series, sourcepackagename=spn)
+            distroseries=parent_series, sourcepackagename=spn)
         parent_spph = self.makeSPPH(
-            distroseries=previous_series,
+            distroseries=parent_series,
             sourcepackagerelease=shared_spr)
-        derived_spph = self.makeSPPH(
+        self.makeSPPH(
             distroseries=derived_series,
             sourcepackagerelease=shared_spr)
         newer_spr = self.factory.makeSourcePackageRelease(
@@ -449,7 +446,6 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
         spph = self.makeSPPH(distroseries=dsp.derived_series)
         populate_distroseriesdiff(
             DevNullLogger(), dsp.derived_series, dsp.parent_series)
-        store = Store.of(dsp.derived_series)
         dsd = self.getDistroSeriesDiff(dsp.derived_series).one()
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename, dsd.source_package_name)
@@ -586,7 +582,7 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
 
     def test_dry_run_goes_through_the_motions(self):
         dsp = self.makeDerivedDistroSeries()
-        spph = self.makeSPPH(distroseries=dsp.derived_series)
+        self.makeSPPH(distroseries=dsp.derived_series)
         script = self.makeScript(['--all', '--dry-run'])
         script.processDistroSeries = FakeMethod
         script.main()

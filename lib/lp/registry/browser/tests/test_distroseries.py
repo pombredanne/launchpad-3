@@ -1275,14 +1275,14 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                   difference_type=None, distribution=None):
         # Helper to create a derived series with fixed names and proper
         # source package format selection along with a DSD.
-        previous_series = self.factory.makeDistroSeries(name='warty')
+        parent_series = self.factory.makeDistroSeries(name='warty')
         if distribution == None:
             distribution = self.factory.makeDistribution('deribuntu')
         derived_series = self.factory.makeDistroSeries(
             distribution=distribution,
             name='derilucid')
         self.factory.makeDistroSeriesParent(
-            derived_series=derived_series, parent_series=previous_series)
+            derived_series=derived_series, parent_series=parent_series)
         self._set_source_selection(derived_series)
         diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str=src_name,
@@ -1292,7 +1292,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             src_name)
         set_derived_series_ui_feature_flag(self)
         return (
-            derived_series, previous_series,
+            derived_series, parent_series,
             sourcepackagename, str(diff.id))
 
     def test_canPerformSync_anon(self):
@@ -1442,7 +1442,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
     def test_sync_success_perm_component(self):
         # A user with upload rights on the destination component
         # can sync packages.
-        derived_series, previous_series, sp_name, diff_id = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name')
         person, _ = self.makePersonWithComponentPermission(
             derived_series.main_archive,
@@ -1456,7 +1456,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
     def test_sync_error_no_perm_component(self):
         # A user without upload rights on the destination component
         # will get an error when he syncs packages to this component.
-        derived_series, previous_series, unused, diff_id = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
@@ -1502,7 +1502,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             'derived': '1.0derived1',
             'parent': '1.0-1',
         }
-        derived_series, previous_series, sp_name, diff_id = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
 
         # Setup a user with upload rights.
@@ -1534,7 +1534,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             'parent': '1.0-1',
         }
         missing = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
-        derived_series, previous_series, unused, diff_id = self._setUpDSD(
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
@@ -1552,7 +1552,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         versions = {
             'parent': '1.0-1',
             }
-        derived_series, previous_series, sp_name, diff_id = self._setUpDSD(
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name', versions=versions)
         # Update destination series status to current and update
         # daterelease.
@@ -1566,9 +1566,9 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             person, sp_name)
         self._syncAndGetView(
             derived_series, person, [diff_id])
-        parent_pub = previous_series.main_archive.getPublishedSources(
+        parent_pub = parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
-            distroseries=previous_series).one()
+            distroseries=parent_series).one()
         pub = derived_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
             distroseries=derived_series).one()
