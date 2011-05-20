@@ -212,7 +212,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="parent_series"/>
+            set_attributes="previous_series"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>

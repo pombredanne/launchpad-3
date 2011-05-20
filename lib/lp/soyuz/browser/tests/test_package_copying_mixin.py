@@ -191,10 +191,11 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         return self.factory.makeDistribution(
             owner=self.person, registrant=self.person)
 
-    def makeDistroSeries(self, parent_series=None):
+    def makeDistroSeries(self, previous_series=None):
         """Create a `DistroSeries`, but quickly by reusing a single Person."""
         return self.factory.makeDistroSeries(
-            distribution=self.makeDistribution(), parent_series=parent_series,
+            distribution=self.makeDistribution(),
+            previous_series=previous_series,
             registrant=self.person)
 
     def makeSPPH(self):

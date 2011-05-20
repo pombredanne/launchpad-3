@@ -263,9 +263,9 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
                 sourcepackagename=package, distroseries=derived_series,
                 version=version_string))
         self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                sourcepackagename=package, distroseries=parent_series,
+                sourcepackagename=package, distroseries=previous_series,
                 version=version_string))
         query = compose_sql_find_differences(derived_series, parent_series)
         self.assertContentEqual([], Store.of(derived_series).execute(query))
@@ -320,9 +320,9 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         parent_series = dsp.parent_series
         spn = self.factory.makeSourcePackageName()
         parent_spph = self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
-                distroseries=parent_series, sourcepackagename=spn))
+                distroseries=previous_series, sourcepackagename=spn))
         derived_spph = self.makeSPPH(
             distroseries=distroseries,
             sourcepackagerelease=self.factory.makeSourcePackageRelease(
@@ -342,9 +342,9 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         parent_series = dsp.parent_series
         spn = self.factory.makeSourcePackageName()
         shared_spr = self.factory.makeSourcePackageRelease(
-            distroseries=parent_series, sourcepackagename=spn)
+            distroseries=previous_series, sourcepackagename=spn)
         parent_spph = self.makeSPPH(
-            distroseries=parent_series,
+            distroseries=previous_series,
             sourcepackagerelease=shared_spr)
         derived_spph = self.makeSPPH(
             distroseries=derived_series,
@@ -424,6 +424,13 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
     def test_finds_derived_distroseries(self):
         dsp = self.makeDerivedDistroSeries()
         self.assertIn(dsp.derived_series, find_derived_series())
+
+    def test_ignores_parent_within_same_distro(self):
+        previous_series = self.factory.makeDistroSeries()
+        derived_series = self.factory.makeDistroSeries(
+            distribution=previous_series.distribution,
+            previous_series=previous_series)
+        self.assertNotIn(derived_series, find_derived_series())
 
 
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
