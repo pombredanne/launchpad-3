@@ -596,6 +596,7 @@ COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries
 COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries';
 COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.';
 COMMENT ON COLUMN DistroSeriesParent.is_overlay is 'Whether or not the derived series is an overlay over the parent series.';
+COMMENT ON COLUMN DistroSeriesParent.ordering is 'The parent ordering. Parents are ordered in ascending order starting from 1.';
 COMMENT ON COLUMN DistroSeriesParent.pocket is 'The pocket for this overlay.';
 COMMENT ON COLUMN DistroSeriesParent.component is 'The component for this overlay.';
 
