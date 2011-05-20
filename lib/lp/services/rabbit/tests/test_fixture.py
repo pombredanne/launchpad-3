@@ -7,11 +7,10 @@ __metaclass__ = type
 
 import socket
 
-from amqplib import client_0_8 as amqp
 from fixtures import EnvironmentVariableFixture
 
-from lp.testing import TestCase
 from lp.services.rabbit.testing.server import RabbitServer
+from lp.testing import TestCase
 
 
 class TestRabbitFixture(TestCase):
@@ -28,10 +27,7 @@ class TestRabbitFixture(TestCase):
             self.addCleanup(self._gather_details, fixture.getDetails)
             fixture.setUp()
             # We can connect.
-            host = 'localhost:%s' % fixture.config.port
-            conn = amqp.Connection(host=host, userid="guest",
-                password="guest", virtual_host="/", insist=False)
-            conn.close()
+            fixture.getConnection().close()
             # And get a log file
             log = fixture.getDetails()['rabbit log file']
             # Which shouldn't blow up on iteration.
@@ -39,5 +35,4 @@ class TestRabbitFixture(TestCase):
         finally:
             fixture.cleanUp()
         # The daemon should be closed now.
-        self.assertRaises(socket.error, amqp.Connection, host=host,
-            userid="guest", password="guest", virtual_host="/", insist=False)
+        self.assertRaises(socket.error, fixture.getConnection)

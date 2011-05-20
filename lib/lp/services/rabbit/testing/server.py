@@ -4,6 +4,7 @@
 """Test server fixture for RabbitMQ."""
 
 import errno
+from operator import attrgetter
 import os
 import re
 import socket
@@ -270,7 +271,7 @@ class ExportRabbitServer(Fixture):
         found_node = match.group('nodename')
         return found_node == nodename
 
-    def get_connection(self):
+    def getConnection(self):
         """Get an AMQP connection to the RabbitMQ server.
 
         :raises socket.error: If the connection cannot be made.
@@ -328,7 +329,7 @@ class RunRabbitServer(Fixture):
             # rabbitctl can say a node is up before it is ready to
             # accept connections ... :-(
             try:
-                conn = self.rabbit.get_connection()
+                conn = self.getConnection()
             except socket.error:
                 time.sleep(0.1)
             else:
@@ -374,6 +375,9 @@ class RunRabbitServer(Fixture):
             raise Exception(
                 "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
+    getConnection = property(
+        attrgetter("rabbit.getConnection"))
+
 
 class RabbitServer(Fixture):
     """A RabbitMQ server fixture.
@@ -390,5 +394,8 @@ class RabbitServer(Fixture):
         self.server = RunRabbitServer(self.config)
         self.useFixture(self.server)
 
-    def getDetails(self):
-        return self.server.getDetails()
+    getDetails = property(
+        attrgetter("server.getDetails"))
+
+    getConnection = property(
+        attrgetter("server.getConnection"))
