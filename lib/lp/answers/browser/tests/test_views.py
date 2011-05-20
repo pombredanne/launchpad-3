@@ -40,7 +40,7 @@ class TestEmailObfuscated(BrowserTestCase):
         email_address = "mark@example.com"
         browser = self.getBrowserForQuestionWithEmail(
             email_address, no_login=False)
-        self.assertEqual(3, browser.contents.count(email_address))
+        self.assertEqual(4, browser.contents.count(email_address))
 
     def test_anonymous_sees_not_email_address(self):
         """The anonymous user cannot see the email address on the page."""
@@ -49,7 +49,7 @@ class TestEmailObfuscated(BrowserTestCase):
             email_address, no_login=True)
         # XXX: henninge 20110520 bug=740208: One occurrence is still found
         # in the LP.cache['context'] on the page.
-        self.assertEqual(1, browser.contents.count(email_address))
+        self.assertEqual(2, browser.contents.count(email_address))
 
 
 def test_suite():
