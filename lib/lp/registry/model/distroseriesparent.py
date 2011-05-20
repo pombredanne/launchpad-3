@@ -14,6 +14,7 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
+    SQL,
     Storm,
     )
 from zope.interface import implements
@@ -87,3 +88,29 @@ class DistroSeriesParentSet:
         return store.find(
             DistroSeriesParent,
             DistroSeriesParent.parent_series_id == parent_series.id)
+
+    def getFlattenedOverlayTree(self, derived_series):
+        """See `IDistroSeriesParentSet`."""
+        self.getByDerivedSeries(derived_series)
+        rec_overlay_query = '''
+            RECURSIVE t_parents(parent_series) AS (
+                SELECT parent_series
+                FROM DistroSeriesParent
+                WHERE derived_series=? AND
+                    is_overlay = True
+            UNION ALL
+                SELECT dsp.parent_series
+                FROM DistroSeriesParent dsp, t_parents p
+                WHERE dsp.derived_series = p.parent_series AND
+                    dsp.is_overlay = True
+        ) '''
+        store = IStore(DistroSeriesParent)
+        # XXX: rvb 2011-05-20 bug=785733: Order by DSD.id for now.
+        # Once the ordering is specified in the database, it should
+        # be used to sort the results.
+        return store.with_(
+            SQL(rec_overlay_query, (derived_series.id, ))).find(
+                DistroSeriesParent,
+                SQL('DistroSeriesParent.parent_series IN '
+                    '(SELECT parent_series FROM t_parents)')
+                ).order_by(DistroSeriesParent.id)

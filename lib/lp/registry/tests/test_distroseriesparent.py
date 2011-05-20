@@ -23,12 +23,12 @@ from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParentSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
-from lp.soyuz.interfaces.component import IComponentSet
 
 
 class TestDistroSeriesParent(TestCaseWithFactory):
@@ -66,13 +66,13 @@ class TestDistroSeriesParent(TestCaseWithFactory):
         # Test the model properties if the DSP represents an overlay.
         parent_series = self.factory.makeDistroSeries()
         derived_series = self.factory.makeDistroSeries()
-        main_component = getUtility(IComponentSet).ensure('main')
+        universe_component = getUtility(IComponentSet).ensure('universe')
         dsp = self.factory.makeDistroSeriesParent(
             derived_series=derived_series,
             parent_series=parent_series,
             initialized=True,
             is_overlay=True,
-            component=main_component,
+            component=universe_component,
             pocket=PackagePublishingPocket.SECURITY,
             )
 
@@ -83,7 +83,7 @@ class TestDistroSeriesParent(TestCaseWithFactory):
                 parent_series=Equals(parent_series),
                 initialized=Equals(True),
                 is_overlay=Equals(True),
-                component=Equals(main_component),
+                component=Equals(universe_component),
                 pocket=Equals(PackagePublishingPocket.SECURITY),
                 ))
 
@@ -159,3 +159,83 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
         dsp.derived_series.distribution.owner = person
         with person_logged_in(person):
             self.assertCanEdit(dsp)
+
+
+class TestOverlayTree(TestCaseWithFactory):
+    """Test the overlay tree."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getFlattenedOverlayTree(self):
+        #
+        #             series
+        #               |
+        #    ----------------------------------
+        #    |          |          |          |
+        #    o          o          |          o
+        #    |          |          |          |
+        # parent11   parent21   parent31   parent41
+        #    |          |
+        #    o          o
+        #    |          |             type of relation:
+        # parent12   parent22          |           |
+        #    |                         |           o
+        #    |                         |           |
+        #    |                       no overlay  overlay
+        # parent13
+        #
+        distroseries = self.factory.makeDistroSeries()
+        parent11 = self.factory.makeDistroSeries()
+        parent12 = self.factory.makeDistroSeries()
+        parent21 = self.factory.makeDistroSeries()
+        universe_component = getUtility(IComponentSet).ensure('universe')
+        # series -> parent11
+        dsp_series_parent11 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent11,
+            initialized=True, is_overlay=True,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=universe_component)
+        # parent11 -> parent12
+        dsp_parent11_parent12 = self.factory.makeDistroSeriesParent(
+            derived_series=parent11, parent_series=parent12,
+            initialized=True, is_overlay=True,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=universe_component)
+        # parent12 -> parent13
+        self.factory.makeDistroSeriesParent(derived_series=parent12,
+            initialized=True, is_overlay=False)
+        # series -> parent21
+        dsp_series_parent21 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent21,
+            initialized=True, is_overlay=True,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=universe_component)
+        # parent21 -> parent22
+        dsp_parent21_parent22 = self.factory.makeDistroSeriesParent(
+            derived_series=parent21, initialized=True, is_overlay=True,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=universe_component)
+        # series -> parent31
+        self.factory.makeDistroSeriesParent(derived_series=distroseries,
+            initialized=True, is_overlay=False)
+        # series -> parent41
+        dsp_series_parent41 = self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, initialized=True, is_overlay=True,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=universe_component)
+        overlays = getUtility(
+            IDistroSeriesParentSet).getFlattenedOverlayTree(distroseries)
+
+        self.assertContentEqual(
+            [dsp_series_parent11, dsp_parent11_parent12, dsp_series_parent21,
+             dsp_parent21_parent22, dsp_series_parent41],
+            overlays)
+
+    def test_getFlattenedOverlayTree_empty(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(derived_series=distroseries,
+            initialized=True, is_overlay=False)
+        overlays = getUtility(
+            IDistroSeriesParentSet).getFlattenedOverlayTree(distroseries)
+
+        self.assertTrue(overlays.is_empty())
