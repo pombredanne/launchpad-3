@@ -1291,9 +1291,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         sourcepackagename = self.factory.getOrMakeSourcePackageName(
             src_name)
         set_derived_series_ui_feature_flag(self)
-        return (
-            derived_series, parent_series,
-            sourcepackagename, str(diff.id))
+        return derived_series, parent_series, sourcepackagename, str(diff.id)
 
     def test_canPerformSync_anon(self):
         # Anonymous users cannot sync packages.
