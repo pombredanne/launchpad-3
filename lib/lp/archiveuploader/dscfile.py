@@ -148,7 +148,6 @@ class SignableTagFile:
             raise UploadError("File %s is signed with a deactivated key %s"
                               % (self.filename, key.keyid))
 
-        self.fingerprint = sig.fingerprint
         self.signingkey = key
         self.signer = key.owner
         self.signer_address = self.parseAddress("%s <%s>" % (
