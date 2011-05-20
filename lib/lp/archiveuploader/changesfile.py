@@ -103,7 +103,7 @@ class ChangesFile(SignableTagFile):
         self.policy = policy
         self.logger = logger
 
-        self.parse(allow_unsigned=policy.unsigned_changes_ok)
+        self.parse(verify_signature=not policy.unsigned_changes_ok)
 
         for field in self.mandatory_fields:
             if field not in self._dict:
