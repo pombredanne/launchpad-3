@@ -5,10 +5,12 @@ __metaclass__ = type
 
 __all__ = [
     'distribution_from_distributionsourcepackage',
+    'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
+    'DistributionSourcePackageHelpView',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
@@ -52,6 +54,7 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
+    QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
@@ -168,6 +171,17 @@ class DistributionSourcePackageBugsMenu(
         links = ['filebug']
         add_subscribe_link(links)
         return links
+
+
+class DistributionSourcePackageAnswersMenu(QuestionTargetAnswersMenu):
+
+    usedfor = IDistributionSourcePackage
+    facet = 'answers'
+
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -600,3 +614,9 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class DistributionSourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

@@ -10,32 +10,32 @@
 
     <!-- Message -->
     <class
-        class="canonical.launchpad.database.message.Message">
-        <allow interface="canonical.launchpad.interfaces.message.IMessage" />
+        class="lp.services.messages.model.message.Message">
+        <allow interface="lp.services.messages.interfaces.message.IMessage" />
         <require
             permission="launchpad.Admin"
             set_attributes="visible"/>
     </class>
 
-    <class class="canonical.launchpad.interfaces.message.IndexedMessage">
-      <allow interface="canonical.launchpad.interfaces.message.IMessage" />
-      <allow interface="canonical.launchpad.interfaces.message.IIndexedMessage" />
+    <class class="lp.services.messages.interfaces.message.IndexedMessage">
+      <allow interface="lp.services.messages.interfaces.message.IMessage" />
+      <allow interface="lp.services.messages.interfaces.message.IIndexedMessage" />
     </class>
 
     <!-- MessageChunk -->
-    <class class="canonical.launchpad.database.message.MessageChunk">
-        <allow interface="canonical.launchpad.interfaces.message.IMessageChunk" />
+    <class class="lp.services.messages.model.message.MessageChunk">
+        <allow interface="lp.services.messages.interfaces.message.IMessageChunk" />
     </class>
 
   <!-- MessageSet -->
   <securedutility
-      class="canonical.launchpad.database.message.MessageSet"
-      provides="canonical.launchpad.interfaces.message.IMessageSet">
-      <allow interface="canonical.launchpad.interfaces.message.IMessageSet" />
+      class="lp.services.messages.model.message.MessageSet"
+      provides="lp.services.messages.interfaces.message.IMessageSet">
+      <allow interface="lp.services.messages.interfaces.message.IMessageSet" />
   </securedutility>
 
   <!-- Some message have a canonical_url -->
-  <adapter for="canonical.launchpad.interfaces.message.IMessage"
+  <adapter for="lp.services.messages.interfaces.message.IMessage"
     provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
     factory="canonical.launchpad.browser.message.message_to_canonical_url_data"
     />
@@ -50,8 +50,8 @@
        person-to-person emails. -->
   <adapter
     for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.message.IDirectEmailAuthorization"
-    factory="canonical.launchpad.database.message.DirectEmailAuthorization"
+    provides="lp.services.messages.interfaces.message.IDirectEmailAuthorization"
+    factory="lp.services.messages.model.message.DirectEmailAuthorization"
     />
 
 
