@@ -50,7 +50,6 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     format_address,
     sendmail,
-    signed_message_from_string,
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import DownloadFailed
@@ -70,6 +69,7 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
@@ -709,15 +709,6 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.is_ppa
 
-    def _stripPgpSignature(self, text):
-        """Strip any PGP signature from the supplied changes lines."""
-        signed_message = signed_message_from_string(text)
-        # For unsigned '.changes' files we'll get a None `signedContent`.
-        if signed_message.signedContent is not None:
-            return signed_message.signedContent
-        else:
-            return text
-
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         if changes_file_object is None:
@@ -734,10 +725,7 @@ class PackageUpload(SQLBase):
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_lines = self._stripPgpSignature(
-            changes_content).splitlines(True)
-
-        return changes, changes_lines
+        return changes, strip_pgp_signature(changes_content).splitlines(True)
 
     def _buildUploadedFilesList(self):
         """Return a list of tuples of (filename, component, section).
