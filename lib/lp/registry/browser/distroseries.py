@@ -74,6 +74,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
+from lp.archivepublisher.debversion import Version
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -875,7 +876,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # ordered.  Two non-identical versions may compare as equal.
         # Only consider cases where the child's version is conclusively
         # newer, not where the relationship is in any way unclear.
-        return dsd.parent_source_version < dsd.source_version
+        return (
+            Version(dsd.parent_source_version) < Version(dsd.source_version))
 
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
