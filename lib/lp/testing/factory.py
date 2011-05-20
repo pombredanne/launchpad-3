@@ -2025,7 +2025,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     makeBlueprint = makeSpecification
 
-    def makeQuestion(self, target=None, title=None, owner=None):
+    def makeQuestion(self, target=None, title=None,
+                     owner=None, description=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2041,9 +2042,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = target.owner
+        if description is None:
+            description = self.getUniqueString('description')
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=owner, title=title, description='description')
+                owner=owner, title=title, description=description)
         return question
 
     def makeFAQ(self, target=None, title=None):
