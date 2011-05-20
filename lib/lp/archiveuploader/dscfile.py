@@ -158,7 +158,8 @@ class SignableTagFile:
         Returns a tuple of the key (`IGPGKey` object) and the verified
         cleartext data.
         """
-        self.logger.debug("Verifying signature on %s" % filename)
+        self.logger.debug(
+            "Verifying signature on %s" % os.path.basename(filename))
 
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
