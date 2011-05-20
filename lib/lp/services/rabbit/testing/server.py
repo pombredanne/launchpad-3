@@ -176,6 +176,7 @@ class AllocateRabbitServer(Fixture):
         self.pidfile = os.path.join(self.rabbitdir, 'rabbit.pid')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
 
+    @property
     def fq_nodename(self):
         """Get the node of the rabbit that is being exported."""
         # Note that socket.gethostname is recommended by the rabbitctl manpage
@@ -228,7 +229,7 @@ class ExportRabbitServer(Fixture):
     def rabbitctl(self, command, strip=False):
         """ executes a rabbitctl command and returns status """
         ctlbin = os.path.join(RABBITBIN, "rabbitmqctl")
-        nodename = self.config.fq_nodename()
+        nodename = self.config.fq_nodename
         env = dict(os.environ)
         env['HOME'] = self.config.rabbitdir
         ctl = subprocess.Popen(
@@ -241,7 +242,7 @@ class ExportRabbitServer(Fixture):
 
     def check_running(self):
         """ checks that the rabbitmq process is up and running """
-        nodename = self.config.fq_nodename()
+        nodename = self.config.fq_nodename
         outdata, errdata = self.rabbitctl("status")
         if errdata:
             self._errors.append(errdata)
