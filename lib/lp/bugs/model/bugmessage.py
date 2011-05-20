@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )

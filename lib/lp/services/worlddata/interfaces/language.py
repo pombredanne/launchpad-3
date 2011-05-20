@@ -31,6 +31,8 @@ from zope.interface import (
     Attribute,
     Interface,
     )
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.schema import (
     Bool,
     Choice,
@@ -163,6 +165,14 @@ class ILanguage(Interface):
                u' for use in HTML files.'),
         required=True,
         readonly=True)
+
+    @invariant
+    def validatePluralData(form_language):
+        pair = (form_language.pluralforms, form_language.pluralexpression)
+        if None in pair and pair != (None, None):
+            raise Invalid(
+                'The number of plural forms and the plural form expression '
+                'must be set together, or not at all.')
 
 
 class ILanguageSet(Interface):

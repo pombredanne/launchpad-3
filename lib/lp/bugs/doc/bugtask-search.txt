@@ -741,7 +741,7 @@ It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
     ...     IBugAttachmentSet,

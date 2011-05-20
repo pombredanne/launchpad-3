@@ -46,7 +46,8 @@
       </div>
       </div>
       <div id="none-subscribers"
-        tal:condition="not:direct_subscriptions">None</div>
+        tal:condition="not:direct_subscriptions">
+        No subscribers.</div>
   </div>
   <div id="subscribers-from-duplicates-container">
     <a id="subscribers-from-dupes-content-link"

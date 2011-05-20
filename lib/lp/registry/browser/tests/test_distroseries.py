@@ -31,7 +31,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
@@ -40,16 +39,15 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.browser.distroseries import (
-    BLACKLISTED,
+    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
-    NON_BLACKLISTED,
+    NON_IGNORED,
     RESOLVED,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import (
@@ -857,7 +855,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             '+localpackagediffs')
 
         radio_title = \
-            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+            "&nbsp;Ignored packages with a higher version than in 'Lucid'"
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -917,7 +915,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % NON_BLACKLISTED)
+            query_string='field.package_type=%s' % NON_IGNORED)
         filtered_view2 = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -941,7 +939,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % BLACKLISTED)
+            query_string='field.package_type=%s' % IGNORED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
