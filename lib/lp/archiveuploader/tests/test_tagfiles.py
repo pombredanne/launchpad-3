@@ -107,8 +107,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
         self.apt_pkg_parsed_version.Step()
 
-        self.parse_tagfile_version = parse_tagfile(
-            tagfile_path, allow_unsigned = True)
+        self.parse_tagfile_version = parse_tagfile(tagfile_path)
 
     def test_parse_tagfile_with_multiline_values(self):
         """parse_tagfile should not leave trailing '\n' on multiline values.

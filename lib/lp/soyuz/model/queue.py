@@ -728,7 +728,7 @@ class PackageUpload(SQLBase):
         # and uploading to any archive as the signer.
         changes_lines = strip_pgp_signature(
             "".join(changes_lines)).splitlines(True)
-        changes = parse_tagfile_lines(changes_lines, allow_unsigned=True)
+        changes = parse_tagfile_lines(changes_lines)
 
         return changes, changes_lines
 

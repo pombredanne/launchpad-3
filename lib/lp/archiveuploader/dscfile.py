@@ -138,7 +138,6 @@ class SignableTagFile:
             self._dict = parse_tagfile_lines(
                 self.parsed_content.splitlines(True),
                 dsc_whitespace_rules=dsc_whitespace_rules,
-                allow_unsigned=True,
                 filename=self.filepath)
         except TagFileParseError, error:
             raise UploadError(

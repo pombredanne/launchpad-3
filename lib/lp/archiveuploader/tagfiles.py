@@ -80,8 +80,7 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^(\s.*)")
 
 
-def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
-                        filename=None):
+def parse_tagfile_lines(lines, dsc_whitespace_rules=0, filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
@@ -100,7 +99,6 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
     o The data section must end with a blank line and must be followed by
       '-----BEGIN PGP SIGNATURE-----'.
     """
-    assert allow_unsigned
     # XXX: No dsc_whitespace_rules
 
     with tempfile.TemporaryFile() as f:
@@ -124,7 +122,7 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
     return trimmed_dict
 
 
-def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
+def parse_tagfile(filename, dsc_whitespace_rules=0):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the filename of the tag file, and
@@ -140,5 +138,5 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
         raise TagFileParseError( "%s: empty file" % filename )
     return parse_tagfile_lines(
         lines, dsc_whitespace_rules=dsc_whitespace_rules,
-        allow_unsigned=True, filename=filename)
+        filename=filename)
 
