@@ -9,7 +9,7 @@ ALTER TABLE DistroSeriesParent
     ADD COLUMN ordering INTEGER NOT NULL DEFAULT 1;
 
 -- Create index.
-CREATE INDEX distroseriesparent__ordering__derived_series__idx
-    ON DistroSeriesParent USING btree (ordering, derived_series);
+CREATE INDEX distroseriesparent__derived_series__ordering__idx
+    ON DistroSeriesParent USING btree (derived_series, ordering);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
