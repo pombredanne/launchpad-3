@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -10,12 +10,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
@@ -27,6 +29,17 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
     """Test case for PlainPackageCopyJob."""
 
     layer = LaunchpadZopelessLayer
+
+    def makeJob(self, dsd):
+        """Create a `PlainPackageCopyJob` that would resolve `dsd`."""
+        source_packages = [specify_dsd_package(dsd)]
+        source_archive = dsd.parent_series.main_archive
+        target_archive = dsd.derived_series.main_archive
+        target_distroseries = dsd.derived_series
+        target_pocket = self.factory.getAnyPocket()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            source_packages, source_archive, target_archive,
+            target_distroseries, target_pocket)
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
@@ -64,6 +77,21 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
+
+    def test_getActiveJobs_gets_oldest_first(self):
+        # getActiveJobs returns the oldest available job first.
+        dsd = self.factory.makeDistroSeriesDifference()
+        target_archive = dsd.derived_series.main_archive
+        jobs = [self.makeJob(dsd) for counter in xrange(2)]
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(jobs[0], source.getActiveJobs(target_archive)[0])
+
+    def test_getActiveJobs_only_returns_waiting_jobs(self):
+        # getActiveJobs ignores jobs that aren't in the WAITING state.
+        job = self.makeJob(self.factory.makeDistroSeriesDifference())
+        removeSecurityProxy(job).job._status = JobStatus.RUNNING
+        source = getUtility(IPlainPackageCopyJobSource)
+        self.assertContentEqual([], source.getActiveJobs(job.target_archive))
 
     def test_run_unknown_package(self):
         # A job properly records failure.
@@ -200,3 +228,75 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
                 distroseries=distroseries, archive1=archive1,
                 archive2=archive2),
             repr(job))
+
+    def test_getPendingJobsPerPackage_finds_jobs(self):
+        # getPendingJobsPerPackage finds jobs, and the packages they
+        # belong to.
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = self.makeJob(dsd)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            {specify_dsd_package(dsd): job},
+            job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_getPendingJobsPerPackage_ignores_other_distroseries(self):
+        # getPendingJobsPerPackage only looks for jobs on the indicated
+        # distroseries.
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.makeJob(dsd)
+        other_series = self.factory.makeDistroSeries()
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            {}, job_source.getPendingJobsPerPackage(other_series))
+
+    def test_getPendingJobsPerPackage_only_returns_pending_jobs(self):
+        # getPendingJobsPerPackage ignores jobs that have already been
+        # run.
+        dsd = self.factory.makeDistroSeriesDifference()
+        package = specify_dsd_package(dsd)
+        job = self.makeJob(dsd)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        found_by_state = {}
+        for status in JobStatus.items:
+            removeSecurityProxy(job).job._status = status
+            result = job_source.getPendingJobsPerPackage(dsd.derived_series)
+            if len(result) > 0:
+                found_by_state[status] = result[package]
+        expected = {
+            JobStatus.WAITING: job,
+            JobStatus.RUNNING: job,
+            JobStatus.SUSPENDED: job,
+        }
+        self.assertEqual(expected, found_by_state)
+
+    def test_getPendingJobsPerPackage_distinguishes_jobs(self):
+        # getPendingJobsPerPackage associates the right job with the
+        # right package.
+        derived_series = self.factory.makeDistroSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series)
+            for counter in xrange(2)]
+        jobs = map(self.makeJob, dsds)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            dict(zip(map(specify_dsd_package, dsds), jobs)),
+            job_source.getPendingJobsPerPackage(derived_series))
+
+    def test_getPendingJobsPerPackage_picks_oldest_job_for_dsd(self):
+        # If there are multiple jobs for one package,
+        # getPendingJobsPerPackage picks the oldest.
+        dsd = self.factory.makeDistroSeriesDifference()
+        jobs = [self.makeJob(dsd) for counter in xrange(2)]
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            {specify_dsd_package(dsd): jobs[0]},
+            job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_getPendingJobsPerPackage_ignores_dsds_without_jobs(self):
+        # getPendingJobsPerPackage produces no dict entry for packages
+        # that have no pending jobs, even if they do have DSDs.
+        dsd = self.factory.makeDistroSeriesDifference()
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertEqual(
+            {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
