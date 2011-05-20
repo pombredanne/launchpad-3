@@ -46,14 +46,23 @@ class Testtagfiles(unittest.TestCase):
         """lp.archiveuploader.tagfiles.parse_tagfile should work on a good
            changes file
         """
-        p = parse_tagfile(datadir("good-signed-changes"))
+        parse_tagfile(datadir("good-signed-changes"))
 
-    def testCheckParseBadChangesRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on failure
+    def testCheckParseBadChanges(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
         """
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("badformat-changes"), 1)
+        parse_tagfile(datadir("bad-multiline-changes"), 1)
+
+    def testCheckParseMalformedMultiline(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
+        """
+        parse_tagfile(datadir("bad-multiline-changes"), 1)
 
     def testCheckParseEmptyChangesRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
@@ -68,12 +77,6 @@ class Testtagfiles(unittest.TestCase):
         """
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("malformed-sig-changes"), 1)
-
-    def testCheckParseMalformedMultilineRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on malformed continuation lines"""
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("bad-multiline-changes"), 1)
 
     def testCheckParseUnterminatedSigRaises(self):
         """lp.archiveuploader.tagfiles.parse_changes should raise
