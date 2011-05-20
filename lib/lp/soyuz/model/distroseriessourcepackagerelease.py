@@ -18,18 +18,13 @@ from storm.expr import (
     Desc,
     Join,
     )
-from zope.component import getUtility
+from storm.store import Store
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
-    )
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.soyuz.enums import PackagePublishingStatus
@@ -144,7 +139,7 @@ class DistroSeriesSourcePackageRelease:
         """See `IDistroSeriesSourcePackageRelease`."""
         # Avoid circular imports.
         from lp.soyuz.model.distroarchseries import DistroArchSeries
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(self.distroseries)
         result_row = (
             BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
 
