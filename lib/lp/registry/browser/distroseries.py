@@ -866,10 +866,24 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """Is there a package-copying job pending to resolve `dsd`?"""
         return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
 
+    def isNewerThanParent(self, dsd):
+        """Is the child's version of this package newer than the parent's?
+
+        If it is, there's no point in offering to sync it.
+        """
+        # This is trickier than it looks: versions are not totally
+        # ordered.  Two non-identical versions may compare as equal.
+        # Only consider cases where the child's version is conclusively
+        # newer, not where the relationship is in any way unclear.
+        return dsd.parent_source_version < dsd.source_version
+
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
-        # XXX JeroenVermeulen bug=783435: Also compare versions.
-        return not self.hasPendingSync(dsd)
+        # There are two conditions for this: it doesn't make sense to
+        # sync if the child's version of the package is newer than the
+        # parent's version, or if there is already a sync pending.
+        return (
+            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
 
     @property
     def specified_name_filter(self):
