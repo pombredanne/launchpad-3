@@ -20,6 +20,8 @@ from canonical.launchpad.webapp import (
     canonical_url,
     urlparse,
     )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.feed import (
     FeedBase,
@@ -172,7 +174,14 @@ class BugFeed(BugsFeedBase):
         if self.context.private:
             self.request.response.addErrorNotification(
                 "Feeds do not serve private bugs.")
-            self.request.response.redirect(canonical_url(self.context))
+            if check_permission("launchpad.View", self.context):
+                self.request.response.redirect(canonical_url(self.context))
+            else:
+                # Bug cannot be seen so redirect to the bugs index page.
+                root = getUtility(ILaunchpadRoot)
+                self.request.response.redirect(
+                    canonical_url(root, rootsite='bugs'))
+
 
     @property
     def title(self):
