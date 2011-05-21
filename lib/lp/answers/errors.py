@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'AddAnswerContactError',
+    'NotQuestionOwnerError',
     ]
 
 import httplib
@@ -17,4 +18,14 @@ class AddAnswerContactError(ValueError):
     An answer contacts must be a valid user or team that has a preferred
     language.
     """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotAnswerContactError(ValueError):
+    """The person must be an answer contact."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotQuestionOwnerError(ValueError):
+    """The person be the the question owner."""
     webservice_error(httplib.BAD_REQUEST)
