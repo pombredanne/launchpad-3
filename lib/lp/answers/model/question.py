@@ -85,6 +85,7 @@ from lp.answers.errors import (
     NotAnswerContactError,
     NotMessageOwnerError,
     NotQuestionOwnerError,
+    QuestionTargetError,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
@@ -230,8 +231,9 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def _settarget(self, question_target):
         """See Question.target."""
-        assert IQuestionTarget.providedBy(question_target), (
-            "The target must be an IQuestionTarget")
+        if not IQuestionTarget.providedBy(question_target):
+            raise QuestionTargetError(
+                "The target must be an IQuestionTarget")
         if IProduct.providedBy(question_target):
             self.product = question_target
             self.distribution = None
