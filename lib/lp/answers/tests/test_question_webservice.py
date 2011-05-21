@@ -18,10 +18,12 @@ from canonical.testing.layers import (
     )
 from lp.answers.errors import (
     AddAnswerContactError,
+    FAQTargetError,
     InvalidQuestionStateError,
     NotAnswerContactError,
     NotMessageOwnerError,
     NotQuestionOwnerError,
+    QuestionTargetError,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
@@ -45,6 +47,10 @@ class ErrorsTestCase(TestCase):
         error_view = create_webservice_error_view(AddAnswerContactError())
         self.assertEqual(400, error_view.status)
 
+    def test_FAQTargetError(self):
+        error_view = create_webservice_error_view(FAQTargetError())
+        self.assertEqual(400, error_view.status)
+
     def test_InvalidQuestionStateError(self):
         error_view = create_webservice_error_view(InvalidQuestionStateError())
         self.assertEqual(400, error_view.status)
@@ -59,6 +65,10 @@ class ErrorsTestCase(TestCase):
 
     def test_NotQuestionOwnerError(self):
         error_view = create_webservice_error_view(NotQuestionOwnerError())
+        self.assertEqual(400, error_view.status)
+
+    def test_QuestionTargetError(self):
+        error_view = create_webservice_error_view(QuestionTargetError())
         self.assertEqual(400, error_view.status)
 
 

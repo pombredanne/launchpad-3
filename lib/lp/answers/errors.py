@@ -4,10 +4,12 @@
 __metaclass__ = type
 __all__ = [
     'AddAnswerContactError',
+    'FAQTargetError',
     'InvalidQuestionStateError',
     'NotAnswerContactError',
     'NotMessageOwnerError',
     'NotQuestionOwnerError',
+    'QuestionTargetError',
     ]
 
 import httplib
@@ -21,6 +23,11 @@ class AddAnswerContactError(ValueError):
     An answer contacts must be a valid user or team that has a preferred
     language.
     """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class FAQTargetError(ValueError):
+    """The target must be `IFAQTarget`."""
     webservice_error(httplib.BAD_REQUEST)
 
 
@@ -45,4 +52,9 @@ class NotMessageOwnerError(ValueError):
 
 class NotQuestionOwnerError(ValueError):
     """The person be the the question owner."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class QuestionTargetError(ValueError):
+    """The target must be a an `IQueastionTarget`."""
     webservice_error(httplib.BAD_REQUEST)
