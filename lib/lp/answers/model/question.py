@@ -68,10 +68,7 @@ from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.messages.interfaces.message import IMessage
 from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.question import (
-    InvalidQuestionStateError,
-    IQuestion,
-    )
+from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.enums import (
     QuestionAction,
@@ -83,6 +80,7 @@ from lp.answers.enums import (
     )
 from lp.answers.errors import (
     AddAnswerContactError,
+    InvalidQuestionStateError,
     NotAnswerContactError,
     NotQuestionOwnerError,
     )

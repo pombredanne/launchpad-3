@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'AddAnswerContactError',
+    'InvalidQuestionStateError',
     'NotAnswerContactError',
     'NotQuestionOwnerError',
     ]
@@ -30,3 +31,11 @@ class NotAnswerContactError(ValueError):
 class NotQuestionOwnerError(ValueError):
     """The person be the the question owner."""
     webservice_error(httplib.BAD_REQUEST)
+
+
+class InvalidQuestionStateError(Exception):
+    """Error raised when the question is in an invalid state.
+
+    Error raised when a workflow action cannot be executed because the
+    question would be in an invalid state.
+    """
