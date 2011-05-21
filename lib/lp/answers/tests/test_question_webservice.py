@@ -12,9 +12,18 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    NotAnswerContactError,
+    NotQuestionOwnerError,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
+    TestCase,
     TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
@@ -22,6 +31,25 @@ from lp.testing import (
     person_logged_in,
     ws_object,
     )
+from lp.testing.views import create_webservice_error_view
+
+
+class ErrorsTestCase(TestCase):
+    """Test answers errors are exported as HTTPErrors."""
+
+    layer = FunctionalLayer
+
+    def test_AddAnswerContactError(self):
+        error_view = create_webservice_error_view(AddAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotAnswerContactError(self):
+        error_view = create_webservice_error_view(NotAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotQuestionOwnerError(self):
+        error_view = create_webservice_error_view(NotQuestionOwnerError())
+        self.assertEqual(400, error_view.status)
 
 
 class TestQuestionRepresentation(TestCaseWithFactory):
