@@ -82,6 +82,7 @@ from lp.answers.errors import (
     AddAnswerContactError,
     InvalidQuestionStateError,
     NotAnswerContactError,
+    NotMessageOwnerError,
     NotQuestionOwnerError,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -607,8 +608,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         :update_question_dates: A bool.
         """
         if IMessage.providedBy(content):
-            assert owner == content.owner, (
-                'The IMessage has the wrong owner.')
+            if owner != content.owner:
+                raise NotMessageOwnerError(
+                    'The IMessage has the wrong owner.')
             msg = content
         else:
             if subject is None:

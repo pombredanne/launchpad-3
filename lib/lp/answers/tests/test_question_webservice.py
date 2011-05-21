@@ -20,6 +20,7 @@ from lp.answers.errors import (
     AddAnswerContactError,
     InvalidQuestionStateError,
     NotAnswerContactError,
+    NotMessageOwnerError,
     NotQuestionOwnerError,
     )
 from lp.registry.interfaces.person import IPersonSet
@@ -50,6 +51,10 @@ class ErrorsTestCase(TestCase):
 
     def test_NotAnswerContactError(self):
         error_view = create_webservice_error_view(NotAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotMessageOwnerError(self):
+        error_view = create_webservice_error_view(NotMessageOwnerError())
         self.assertEqual(400, error_view.status)
 
     def test_NotQuestionOwnerError(self):

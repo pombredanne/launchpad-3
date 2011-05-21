@@ -6,6 +6,7 @@ __all__ = [
     'AddAnswerContactError',
     'InvalidQuestionStateError',
     'NotAnswerContactError',
+    'NotMessageOwnerError',
     'NotQuestionOwnerError',
     ]
 
@@ -23,20 +24,25 @@ class AddAnswerContactError(ValueError):
     webservice_error(httplib.BAD_REQUEST)
 
 
-class NotAnswerContactError(ValueError):
-    """The person must be an answer contact."""
-    webservice_error(httplib.BAD_REQUEST)
-
-
-class NotQuestionOwnerError(ValueError):
-    """The person be the the question owner."""
-    webservice_error(httplib.BAD_REQUEST)
-
-
 class InvalidQuestionStateError(ValueError):
     """Error raised when the question is in an invalid state.
 
     Error raised when a workflow action cannot be executed because the
     question would be in an invalid state.
     """
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotAnswerContactError(ValueError):
+    """The person must be an answer contact."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotMessageOwnerError(ValueError):
+    """The person be the the message owner."""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class NotQuestionOwnerError(ValueError):
+    """The person be the the question owner."""
     webservice_error(httplib.BAD_REQUEST)
