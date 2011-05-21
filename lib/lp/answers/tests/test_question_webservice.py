@@ -18,6 +18,7 @@ from canonical.testing.layers import (
     )
 from lp.answers.errors import (
     AddAnswerContactError,
+    InvalidQuestionStateError,
     NotAnswerContactError,
     NotQuestionOwnerError,
     )
@@ -42,6 +43,11 @@ class ErrorsTestCase(TestCase):
     def test_AddAnswerContactError(self):
         error_view = create_webservice_error_view(AddAnswerContactError())
         self.assertEqual(400, error_view.status)
+
+    def test_InvalidQuestionStateError(self):
+        error_view = create_webservice_error_view(InvalidQuestionStateError())
+        self.assertEqual(400, error_view.status)
+
 
     def test_NotAnswerContactError(self):
         error_view = create_webservice_error_view(NotAnswerContactError())

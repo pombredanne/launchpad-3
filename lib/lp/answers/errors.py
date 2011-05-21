@@ -39,3 +39,4 @@ class InvalidQuestionStateError(Exception):
     Error raised when a workflow action cannot be executed because the
     question would be in an invalid state.
     """
+    webservice_error(httplib.BAD_REQUEST)
