@@ -48,7 +48,6 @@ class ErrorsTestCase(TestCase):
         error_view = create_webservice_error_view(InvalidQuestionStateError())
         self.assertEqual(400, error_view.status)
 
-
     def test_NotAnswerContactError(self):
         error_view = create_webservice_error_view(NotAnswerContactError())
         self.assertEqual(400, error_view.status)
