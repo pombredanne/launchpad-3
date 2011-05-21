@@ -47,6 +47,7 @@ from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
     )
+from lp.answers.errors import NotQuestionOwnerError
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
@@ -361,7 +362,7 @@ class RequestInfoTestCase(BaseAnswerTrackerWorkflowTestCase):
     def test_requestInfoFromOwnerIsInvalid(self):
         """Test that the question owner cannot use requestInfo."""
         self.assertRaises(
-            AssertionError, self.question.requestInfo,
+            NotQuestionOwnerError, self.question.requestInfo,
                 self.owner, 'Why should I care?', datecreated=self.nowPlus(1))
 
     def test_requestInfoFromInvalidStates(self):

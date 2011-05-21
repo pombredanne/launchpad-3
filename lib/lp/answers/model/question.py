@@ -83,6 +83,8 @@ from lp.answers.enums import (
     )
 from lp.answers.errors import (
     AddAnswerContactError,
+    NotAnswerContactError,
+    NotQuestionOwnerError,
     )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
@@ -315,7 +317,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
         """See `IQuestion`."""
-        assert user != self.owner, "Owner cannot use requestInfo()."
+        if user == self.owner:
+            raise NotQuestionOwnerError("Owner cannot use requestInfo().")
         if not self.can_request_info:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO, or ANSWERED")
@@ -415,8 +418,9 @@ class Question(SQLBase, BugLinkTargetMixin):
                 "There is no answer that can be confirmed")
         if answer:
             assert answer in self.messages
-            assert answer.owner != self.owner, (
-                'Use giveAnswer() when solving own question.')
+            if answer.owner == self.owner:
+                raise NotQuestionOwnerError(
+                    'Use giveAnswer() when solving own question.')
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
@@ -451,8 +455,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reject(self, user, comment, datecreated=None):
         """See `IQuestion`."""
-        assert self.canReject(user), (
-            'User "%s" cannot reject the question.' % user.displayname)
+        if not self.canReject(user):
+            raise NotAnswerContactError(
+                'User "%s" cannot reject the question.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
             raise InvalidQuestionStateError("Question is already rejected.")
         msg = self._newMessage(
