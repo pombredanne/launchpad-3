@@ -27,7 +27,7 @@ class AddAnswerContactError(ValueError):
 
 
 class FAQTargetError(ValueError):
-    """The target must be `IFAQTarget`."""
+    """The target must be an `IFAQTarget`."""
     webservice_error(httplib.BAD_REQUEST)
 
 
@@ -56,5 +56,5 @@ class NotQuestionOwnerError(ValueError):
 
 
 class QuestionTargetError(ValueError):
-    """The target must be a an `IQueastionTarget`."""
+    """The target must be an `IQueastionTarget`."""
     webservice_error(httplib.BAD_REQUEST)
