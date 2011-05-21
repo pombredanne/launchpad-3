@@ -33,7 +33,7 @@ class NotQuestionOwnerError(ValueError):
     webservice_error(httplib.BAD_REQUEST)
 
 
-class InvalidQuestionStateError(Exception):
+class InvalidQuestionStateError(ValueError):
     """Error raised when the question is in an invalid state.
 
     Error raised when a workflow action cannot be executed because the
