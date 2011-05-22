@@ -76,6 +76,7 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.bulk import load_referencing
 from lp.services.propertycache import cachedproperty
 
@@ -473,7 +474,7 @@ class SprintMeetingExportView(LaunchpadView):
         people = defaultdict(dict)
         # Attendees per specification
         for subscription in load_referencing(SpecificationSubscription,
-                model_specs, 'specificationID'):
+                model_specs, ['specificationID']):
             if subscription.personID not in attendee_set:
                 continue
             people[subscription.specificationID][subscription.personID] = \

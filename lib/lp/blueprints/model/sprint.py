@@ -309,7 +309,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         result = list(Store.of(self).find(
             SprintAttendance,
             SprintAttendance.sprint == self))
-        people = [a.attendee_id for a in result]
+        people = [a.attendeeID for a in result]
         # In order to populate the person cache we need to materialize the
         # result set.  Listification should do.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
