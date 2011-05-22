@@ -989,11 +989,6 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 self.getParentName(multiple_parent_default='parent series'),
                 ))
 
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
-
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
@@ -1089,11 +1084,6 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
                 self.context.displayname,
                 ))
 
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
-
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
@@ -1129,11 +1119,6 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
                 self.context.displayname,
                 self.getParentName(),
                 ))
-
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
 
     def canPerformSync(self, *args):
         return False
