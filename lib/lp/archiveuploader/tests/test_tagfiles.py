@@ -30,7 +30,8 @@ class Testtagfiles(unittest.TestCase):
         We let apt_pkg make of them what it can, and dpkg-source will
         reject them if it can't understand.
         """
-        parse_tagfile(datadir("bad-multiline-changes"))
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
 
     def testCheckParseMalformedMultiline(self):
         """Malformed but somewhat readable files do not raise an exception.
@@ -38,7 +39,9 @@ class Testtagfiles(unittest.TestCase):
         We let apt_pkg make of them what it can, and dpkg-source will
         reject them if it can't understand.
         """
-        parse_tagfile(datadir("bad-multiline-changes"))
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
+        self.assertRaises(KeyError, parsed.__getitem__, 'Fish')
 
     def testCheckParseEmptyChangesRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
