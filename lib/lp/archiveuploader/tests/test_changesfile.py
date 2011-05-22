@@ -211,6 +211,8 @@ class TestSignatureVerification(TestCase):
         import_public_test_keys()
 
     def test_valid_signature_accepted(self):
+        # A correctly signed changes file is excepted, and all its
+        # content is parsed.
         path = datadir('signatures/signed.changes')
         parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
         self.assertEqual(
@@ -222,12 +224,15 @@ class TestSignatureVerification(TestCase):
             parsed.parsed_content)
 
     def test_no_signature_rejected(self):
+        # An unsigned changes file is rejected.
         path = datadir('signatures/unsigned.changes')
         self.assertRaises(
             UploadError,
             ChangesFile, path, InsecureUploadPolicy(), BufferLogger())
 
     def test_prefix_ignored(self):
+        # A signed changes file with an unsigned prefix has only the
+        # signed part parsed.
         path = datadir('signatures/prefixed.changes')
         parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
         self.assertEqual(
