@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import (
     generate_nick,
     NicknameGenerationError,
@@ -30,15 +33,24 @@ class TestNicknameGeneration(TestCaseWithFactory):
         nick = generate_nick('bar@example.com')
         self.assertEqual('bar', nick)
 
-    def test_does_not_start_nick_with_symbols(self):
+    def test_handles_symbols(self):
         # If an email starts with symbols, generate_nick still creates a
         # valid nick that doesn't start with symbols.
-        nick = generate_nick('---bar@example.com')
-        self.assertEqual('bar', nick)
+        nicks = [generate_nick(email) for email in [
+                                            '---bar@example.com',
+                                            'foo.bar@example.com',
+                                            'foo-bar@example.com',
+                                            'foo+bar@example.com',
+                                            ]]
+        self.assertEqual(
+            ['bar', 'foo-bar', 'foo-bar', 'foo+bar'],
+            nicks)
 
     def test_enforces_minimum_length(self):
         # Nicks must be a minimum of four characters. generate_nick creates
         # nicks over a that length.
+        person = getUtility(IPersonSet).getByName('i')
+        self.assertIs(None, person)
         nick = generate_nick('i@example.com')
         self.assertEqual('i-5', nick)
 
@@ -50,7 +62,8 @@ class TestNicknameGeneration(TestCaseWithFactory):
         self.assertEqual('bar-c', nick)
 
         self._useNicknames(['bar-c'])
-        self.assertEqual('bar-c', nick)
+        nick = generate_nick('bar@example.com')
+        self.assertEqual('a-bar', nick)
 
     def _useNicknames(self, nicknames):
         # Helper method to consume a nickname
