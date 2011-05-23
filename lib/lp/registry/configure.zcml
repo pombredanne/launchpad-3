@@ -178,6 +178,22 @@
         <allow interface="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"/>
     </class>
 
+    <!-- DistroSeriesParent -->
+    <securedutility
+        class="lp.registry.model.distroseriesparent.DistroSeriesParentSet"
+        provides="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet">
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParentSet"/>
+    </securedutility>
+    <class
+        class="lp.registry.model.distroseriesparent.DistroSeriesParent">
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+        <allow
+            interface="lp.registry.interfaces.distroseriesparent.IDistroSeriesParent"/>
+    </class>
+
     <class
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
@@ -497,24 +513,11 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
+
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -977,7 +980,7 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasOfficialBugTags"/>
         <allow
-            interface="canonical.launchpad.webapp.interfaces.IAuthorization"/>
+            interface="lp.app.interfaces.security.IAuthorization"/>
         <require
             permission="launchpad.Edit"
             set_attributes="name code_name dateexpected summary active
@@ -1220,7 +1223,7 @@
             attributes="
                 reviewer_whiteboard
                 is_permitted
-                license_reviewed
+                project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
@@ -1237,24 +1240,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1518,25 +1507,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
-
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1612,27 +1586,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-
-        <!-- IQuestionTarget -->
-
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getSupportedLanguages
-                getAnswerContactRecipients"/>
-        <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                addAnswerContact
-                removeAnswerContact"/>
     </class>
     <securedutility
         component="lp.registry.model.sourcepackage.SourcePackage"

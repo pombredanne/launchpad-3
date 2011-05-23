@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver,
     IHasDrivers,
     )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -156,7 +157,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -641,7 +642,7 @@ class IDistributionPublic(
 
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
-    IRootContext, IStructuralSubscriptionTarget):
+    IQuestionTarget, IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution.
 
     Launchpadlib example: retrieving the current version of a package in a

@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -92,12 +93,14 @@ def may_require_job(distroseries, sourcepackagename):
     """
     if distroseries is None:
         return False
-    parent_series = distroseries.parent_series
-    if parent_series is None:
+    dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+        distroseries)
+    if dsp.count() == 0:
         return False
-    if parent_series.distribution == distroseries.distribution:
-        # Differences within a distribution are not tracked.
-        return False
+    for parent in dsp:
+        if parent.parent_series.distribution == distroseries.distribution:
+            # Differences within a distribution are not tracked.
+            return False
     return find_waiting_jobs(distroseries, sourcepackagename).is_empty()
 
 
@@ -148,7 +151,9 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         in a packageset that the derived series also has.
         """
         derived_series = self.distroseries
-        parent_series = derived_series.parent_series
+        dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+            derived_series)
+        parent_series = dsp[0].parent_series
         if has_package(derived_series, self.sourcepackagename):
             return True
         if not has_package(parent_series, self.sourcepackagename):

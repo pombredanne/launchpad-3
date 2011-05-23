@@ -91,6 +91,10 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -168,6 +172,7 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
+from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -427,7 +432,8 @@ _readonly_person_settings = readonly_settings(
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
+    QuestionsPersonMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -1558,6 +1564,10 @@ class Person(
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, comment=comment)
 
+    @cachedproperty
+    def administrated_teams(self):
+        return list(self.getAdministratedTeams())
+
     def getAdministratedTeams(self):
         """See `IPerson`."""
         owner_of_teams = Person.select('''
@@ -2419,7 +2429,8 @@ class Person(
             self._setPreferredEmail(email)
         # A team can have up to two addresses, the preferred one and one used
         # by the team mailing list.
-        if self.mailing_list is not None:
+        if (self.mailing_list is not None
+            and self.mailing_list.status != MailingListStatus.PURGED):
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
             if mailing_list_email is not None:
@@ -2757,7 +2768,7 @@ class Person(
         """See `IPerson`."""
         return IStore(self).find(
             StructuralSubscription,
-            StructuralSubscription.subscriberID==self.id).order_by(
+            StructuralSubscription.subscriberID == self.id).order_by(
                 Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
@@ -2804,6 +2815,14 @@ class Person(
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+
+    def canAccess(self, obj, attribute):
+        """See `IPerson.`"""
+        return canAccess(obj, attribute)
+
+    def canWrite(self, obj, attribute):
+        """See `IPerson.`"""
+        return canWrite(obj, attribute)
 
 
 class PersonSet:
@@ -2930,7 +2949,7 @@ class PersonSet:
 
             elif account.status in [AccountStatus.DEACTIVATED,
                                     AccountStatus.NOACCOUNT]:
-                password = '' # Needed just to please reactivate() below.
+                password = ''  # Needed just to please reactivate() below.
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
                 db_updated = True
@@ -3103,7 +3122,7 @@ class PersonSet:
         """See `IPersonSet`."""
         query = (Person.q.name == name)
         if ignore_merged:
-            query = AND(query, Person.q.mergedID==None)
+            query = AND(query, Person.q.mergedID == None)
         return Person.selectOne(query)
 
     def getByAccount(self, account):
@@ -3114,11 +3133,13 @@ class PersonSet:
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
         people_count = Person.select(
-            AND(Person.q.teamownerID==None, Person.q.mergedID==None)).count()
+            AND(Person.q.teamownerID == None,
+                Person.q.mergedID == None)).count()
         stats.update('people_count', people_count)
         ztm.commit()
         teams_count = Person.select(
-            AND(Person.q.teamownerID!=None, Person.q.mergedID==None)).count()
+            AND(Person.q.teamownerID != None,
+                Person.q.mergedID == None)).count()
         stats.update('teams_count', teams_count)
         ztm.commit()
 
@@ -3544,6 +3565,60 @@ class PersonSet:
             WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
+    def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
+        # Update StructuralSubscription entries that will not conflict.
+        # We separate this out from the parent query primarily to help
+        # keep within our line length constraints, though it might make
+        # things more readable otherwise as well.
+        exists_query = '''
+            SELECT StructuralSubscription.id
+            FROM StructuralSubscription
+            WHERE StructuralSubscription.subscriber=%(to_id)d AND (
+                StructuralSubscription.product=SSub.product
+                OR
+                StructuralSubscription.project=SSub.project
+                OR
+                StructuralSubscription.distroseries=SSub.distroseries
+                OR
+                StructuralSubscription.milestone=SSub.milestone
+                OR
+                StructuralSubscription.productseries=SSub.productseries
+                OR
+                (StructuralSubscription.distribution=SSub.distribution
+                 AND StructuralSubscription.sourcepackagename IS NULL
+                 AND SSub.sourcepackagename IS NULL)
+                OR
+                (StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename
+                 AND StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename)
+                )
+            '''
+        cur.execute(('''
+            UPDATE StructuralSubscription
+            SET subscriber=%(to_id)d
+            WHERE subscriber=%(from_id)d AND id NOT IN (
+                SELECT SSub.id
+                FROM StructuralSubscription AS SSub
+                WHERE
+                    SSub.subscriber=%(from_id)d
+                    AND EXISTS (''' + exists_query + ''')
+            )
+            ''') % vars())
+        # Delete the rest.  We have to explicitly delete the bug subscription
+        # filters first because there is not a cascade delete set up in the
+        # db.
+        cur.execute('''
+            DELETE FROM BugSubscriptionFilter
+            WHERE structuralsubscription IN (
+                SELECT id
+                FROM StructuralSubscription
+                WHERE subscriber=%(from_id)d)
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
+            ''' % vars())
+
     def _mergeSpecificationFeedback(self, cur, from_id, to_id):
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -3768,32 +3843,33 @@ class PersonSet:
     def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
         # Merge the karma total cache so the user does not think the karma
         # was lost.
+        params = dict(from_id=from_id, to_id=to_id)
         if from_karma > 0:
             cur.execute('''
                 SELECT karma_total FROM KarmaTotalCache
                 WHERE person = %(to_id)d
-                ''' % vars())
+                ''' % params)
             result = cur.fetchone()
             if result is not None:
                 # Add the karma to the remaining user.
-                karma_total = from_karma + result[0]
+                params['karma_total'] = from_karma + result[0]
                 cur.execute('''
                     UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
                     WHERE person = %(to_id)d
-                    ''' % vars())
+                    ''' % params)
             else:
                 # Make the existing karma belong to the remaining user.
                 cur.execute('''
                     UPDATE KarmaTotalCache SET person = %(to_id)d
                     WHERE person = %(from_id)d
-                    ''' % vars())
+                    ''' % params)
         # Delete the old caches; the daily job will build them later.
         cur.execute('''
             DELETE FROM KarmaTotalCache WHERE person = %(from_id)d
-            ''' % vars())
+            ''' % params)
         cur.execute('''
             DELETE FROM KarmaCache WHERE person = %(from_id)d
-            ''' % vars())
+            ''' % params)
 
     def _mergeDateCreated(self, cur, from_id, to_id):
         cur.execute('''
@@ -3967,8 +4043,14 @@ class PersonSet:
         # We ignore BugSubscriptionFilterMutes.
         skip.append(('bugsubscriptionfiltermute', 'person'))
 
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
+
+        self._mergeStructuralSubscriptions(cur, from_id, to_id)
+        skip.append(('structuralsubscription', 'subscriber'))
 
         self._mergeSpecificationFeedback(cur, from_id, to_id)
         skip.append(('specificationfeedback', 'reviewer'))
@@ -4511,7 +4593,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
                 return prefix + '-' + generated_nick
 
             # Or a mutated character
-            index = random.randint(0, len(mutated_nick)-1)
+            index = random.randint(0, len(mutated_nick) - 1)
             mutated_nick[index] = random.choice(chars)
             if _valid_nick(''.join(mutated_nick)):
                 return ''.join(mutated_nick)
@@ -4586,7 +4668,7 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team with a preferred email.
+        # Get transitive members of team without a preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
@@ -4600,22 +4682,27 @@ def _get_recipients_for_team(team):
     store = IStore(Person)
     source = store.using(TeamMembership,
                          Join(Person,
-                              TeamMembership.personID==Person.id),
+                              TeamMembership.personID == Person.id),
                          LeftJoin(EmailAddress,
-                                  EmailAddress.person == Person.id))
+                                  And(
+                                      EmailAddress.person == Person.id,
+                                      EmailAddress.status ==
+                                        EmailAddressStatus.PREFERRED)))
     pending_team_ids = [team.id]
     recipient_ids = set()
     seen = set()
     while pending_team_ids:
+        # Find Persons that have a preferred email address, or are a
+        # team, or both.
         intermediate_transitive_results = source.find(
             (TeamMembership.personID, EmailAddress.personID),
             In(TeamMembership.status,
                [TeamMembershipStatus.ADMIN.value,
                 TeamMembershipStatus.APPROVED.value]),
             In(TeamMembership.teamID, pending_team_ids),
-            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
-               And(Not(Person.teamownerID == None),
-                   EmailAddress.status == None))).config(distinct=True)
+            Or(
+                EmailAddress.personID != None,
+                Person.teamownerID != None)).config(distinct=True)
         next_ids = []
         for (person_id,
              preferred_email_marker) in intermediate_transitive_results:

@@ -164,6 +164,11 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing(set_upstream_branch=True)
         self.assertTrue(self.view.has_upstream_branch)
 
+    def test_branch_link_text(self):
+        self.configureSharing(set_upstream_branch=True)
+        expected_text = '>lp:%s</a>' % self.view.upstream_branch.unique_name
+        self.assertIn(expected_text, self.view.branch_link.escapedtext)
+
     def test_is_upstream_translations_enabled__no_packaging_link(self):
         # If the source package is not linked to an upstream series,
         # is_upstream_translations_enabled returns False.
@@ -335,6 +340,10 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def test_cache_contents_no_productseries(self):
         objects = self.getCacheObjects()
         self.assertIs(None, objects['productseries'])
+        self.assertIn('user_can_change_product_series', objects)
+        self.assertIn('user_can_change_branch', objects)
+        self.assertIn('user_can_change_translation_usage', objects)
+        self.assertIn('user_can_change_translations_autoimport_mode', objects)
 
     def test_cache_contents_no_branch(self):
         self.configureSharing()

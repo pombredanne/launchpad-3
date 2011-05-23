@@ -7,8 +7,8 @@
 
 __metaclass__ = type
 
+from base64 import urlsafe_b64encode
 import cgi
-import os
 
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
@@ -95,7 +95,14 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def suffix(self):
-        return self.name.replace('.', '-')
+        """This is used to uniquify the widget ID to avoid ID collisions."""
+        # Since this will be used in an HTML ID, the allowable set of
+        # characters is smaller than the set that can appear in self.name.
+        # Therefore we use the URL-safe base 64 encoding of the name.  However
+        # we also have to strip off any padding characters ("=") because
+        # Python's URL-safe base 64 encoding includes those and they aren't
+        # allowed in IDs either.
+        return urlsafe_b64encode(self.name).replace('=', '')
 
     @property
     def show_widget_id(self):
@@ -110,7 +117,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         :return: A string that will be passed to Y.Node.create()
                  so it needs to be contained in a single HTML element.
         """
-        return None
+        return simplejson.dumps(None)
 
     @property
     def vocabulary_name(self):
@@ -127,43 +134,26 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                 % (choice.context, choice.__name__))
         return choice.vocabularyName
 
-    def js_template_args(self):
-        """return a dict of args to configure the picker javascript."""
-        if self.header is None:
-            header = self.vocabulary.displayname
-        else:
-            header = self.header
+    @property
+    def header_text(self):
+        return simplejson.dumps(self.header or self.vocabulary.displayname)
 
-        if self.step_title is None:
-            step_title = self.vocabulary.step_title
-        else:
-            step_title = self.step_title
+    @property
+    def step_title_text(self):
+        return simplejson.dumps(self.step_title or self.vocabulary.step_title)
 
-        return dict(
-            vocabulary=self.vocabulary_name,
-            header=header,
-            step_title=step_title,
-            show_widget_id=self.show_widget_id,
-            input_id=self.name,
-            extra_no_results_message=self.extra_no_results_message)
+    @property
+    def input_id(self):
+        return self.name
 
     def chooseLink(self):
-        js_file = os.path.join(os.path.dirname(__file__),
-                               'templates/vocabulary-picker.js.template')
-        js_template = open(js_file).read()
-        args = self.js_template_args()
-        js = js_template % simplejson.dumps(args)
-        # If the YUI widget or javascript is not supported in the browser,
-        # it will degrade to being this "Find..." link instead of the
-        # "Choose..." link. This only works if a non-AJAX form is available
-        # for the field's vocabulary.
         if self.nonajax_uri is None:
             css = 'unseen'
         else:
             css = ''
-        return ('<span class="%s">(<a id="%s" href="/people/">'
-                'Find&hellip;</a>)</span>'
-                '\n<script>\n%s\n</script>') % (css, self.show_widget_id, js)
+        return ('<span class="%s">(<a id="%s" href="%s">'
+                'Find&hellip;</a>)</span>') % (
+            css, self.show_widget_id, self.nonajax_uri or '#')
 
     @property
     def nonajax_uri(self):
@@ -190,48 +180,18 @@ class PersonPickerWidget(VocabularyPickerWidget):
 
 
 class BugTrackerPickerWidget(VocabularyPickerWidget):
+
+    __call__ = ViewPageTemplateFile('templates/bugtracker-picker.pt')
+
     link_template = """
-        or (<a id="%(activator_id)s" href="/bugs/bugtrackers/+newbugtracker"
-                    >Register an external bug tracker&hellip;</a>)
-        <script>
-        LPS.use('lp.bugs.bugtracker_overlay', function(Y) {
-            if (Y.UA.ie) {
-                return;
-            }
-            Y.on('domready', function () {
-                // After the success handler finishes, it calls the
-                // next_step function.
-                var next_step = function(bug_tracker) {
-                    // Fill in the text field with either the name of
-                    // the newly created bug tracker or the name of an
-                    // existing bug tracker whose base_url matches.
-                    var bugtracker_text_box = Y.one(
-                        Y.DOM.byId('field.bugtracker.bugtracker'));
-                    if (bugtracker_text_box !== null) {
-                        bugtracker_text_box.set(
-                            'value', bug_tracker.get('name'));
-                        // It doesn't appear possible to use onChange
-                        // event, so the onKeyPress event is explicitely
-                        // fired here.
-                        if (bugtracker_text_box.get('onkeypress')) {
-                            bugtracker_text_box.get('onkeypress')();
-                        }
-                        bugtracker_text_box.scrollIntoView();
-                    }
-                }
-                Y.lp.bugs.bugtracker_overlay.attach_widget({
-                    activate_node: Y.one('#%(activator_id)s'),
-                    next_step: next_step
-                    });
-                });
-        });
-        </script>
+        or (<a id="create-bugtracker-link"
+        href="/bugs/bugtrackers/+newbugtracker"
+        >Register an external bug tracker&hellip;</a>)
         """
 
     def chooseLink(self):
         link = super(BugTrackerPickerWidget, self).chooseLink()
-        link += self.link_template % dict(
-            activator_id='create-bugtracker-link')
+        link += self.link_template
         return link
 
     @property
@@ -249,6 +209,7 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
 
     @property
     def extra_no_results_message(self):
-        return ("<strong>Didn't find the project you were looking for? "
+        return simplejson.dumps("<strong>Didn't find the project you were "
+                "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))

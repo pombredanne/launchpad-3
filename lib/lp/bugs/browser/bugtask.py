@@ -147,6 +147,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
+from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -325,7 +326,7 @@ def unique_title(title):
 
 
 def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
-    slice_info=None):
+    slice_info=None, show_spam_controls=False):
     """Return BugComments related to a bugtask.
 
     This code builds a sorted list of BugComments in one shot,
@@ -338,7 +339,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
         to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
-        slice_info=slice_info)
+        slice_info=slice_info, show_spam_controls=show_spam_controls)
     # TODO: further fat can be shaved off here by limiting the attachments we
     # query to those that slice_info would include.
     for attachment in bugtask.bug.attachments_unpopulated:
@@ -362,7 +363,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
             # this comment has a new title, so make that the rolling focus
             current_title = comment.title
             comment.display_title = True
-    if for_display and comments and comments[0].index==0:
+    if for_display and comments and comments[0].index == 0:
         # We show the text of the first comment as the bug description,
         # or via the special link "View original description", but we want
         # to display attachments filed together with the bug in the
@@ -371,7 +372,7 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
     return comments
 
 
-def get_visible_comments(comments):
+def get_visible_comments(comments, user=None):
     """Return comments, filtering out empty or duplicated ones."""
     visible_comments = []
     previous_comment = None
@@ -395,6 +396,15 @@ def get_visible_comments(comments):
     # getMessagesForView improvements.
     commenters = set(comment.owner for comment in visible_comments)
     getUtility(IPersonSet).getValidPersons(commenters)
+
+    # If a user is supplied, we can also strip out comments that the user
+    # cannot see, because they have been marked invisible.
+    strip_invisible = True
+    if user is not None:
+        role = PersonRoles(user)
+        strip_invisible = not (role.in_admin or role.in_registry_experts)
+    if strip_invisible:
+        visible_comments = [c for c in visible_comments if c.visible]
 
     return visible_comments
 
@@ -555,7 +565,8 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context.bug:
-                return redirection(canonical_url(attachment), status=301)
+                return self.redirectSubTree(
+                    canonical_url(attachment), status=301)
 
     @stepthrough('+attachment')
     def traverse_attachment(self, name):
@@ -724,8 +735,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
+        show_spam_controls = check_permission(
+            'launchpad.Admin', self.context.bug)
         return get_comments_for_bugtask(self.context, truncate=True,
-            for_display=True)
+            for_display=True, show_spam_controls=show_spam_controls)
 
     @cachedproperty
     def interesting_activity(self):
@@ -764,18 +777,23 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                < config.malone.comments_list_max_length)
 
         if not self.visible_comments_truncated_for_display:
-            comments=self.comments
+            comments = self.comments
         else:
             # the comment function takes 0-offset counts where comment 0 is
             # the initial description, so we need to add one to the limits
             # to adjust.
             oldest_count = 1 + self.visible_initial_comments
-            new_count = 1 + self.total_comments-self.visible_recent_comments
+            new_count = 1 + self.total_comments - self.visible_recent_comments
+            show_spam_controls = check_permission(
+                'launchpad.Admin', self.context.bug)
             comments = get_comments_for_bugtask(
                 self.context, truncate=True, for_display=True,
                 slice_info=[
-                    slice(None, oldest_count), slice(new_count, None)])
-        visible_comments = get_visible_comments(comments)
+                    slice(None, oldest_count), slice(new_count, None)],
+                show_spam_controls=show_spam_controls)
+
+        visible_comments = get_visible_comments(
+            comments, user=self.user)
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
@@ -2978,7 +2996,8 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = formlib.form.Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = formlib.form.Widgets(
+            widgets_list, len(self.prefix) + 1)
 
     @action('Save changes', name='submit', condition=canApproveNominations)
     def submit_action(self, action, data):
@@ -3138,7 +3157,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             self.milestones = list(
                 bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
         else:
-            self.milestones = []    
+            self.milestones = []
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
@@ -3544,6 +3563,14 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         return self.context.userCanEditImportance(self.user)
 
     @property
+    def user_can_edit_assignee(self):
+        """Can the user edit the Milestone field?
+
+        If yes, return True, otherwise return False.
+        """
+        return self.user is not None
+
+    @property
     def user_can_edit_milestone(self):
         """Can the user edit the Milestone field?
 
@@ -3594,6 +3621,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                                     request=IWebServiceClientRequest(
                                         self.request)) or
                                 None),
+            'user_can_edit_assignee': self.user_can_edit_assignee,
             'user_can_edit_milestone': self.user_can_edit_milestone,
             'user_can_edit_status': not self.context.bugwatch,
             'user_can_edit_importance': (
@@ -3884,17 +3912,22 @@ class BugActivityItem:
         elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
-            return self._formatted_tags_change.replace('\n', '<br />')
+            return cgi.escape(self._formatted_tags_change).replace(
+                '\n', '<br />')
 
         elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
+                else:
+                    return_dict[key] = cgi.escape(return_dict[key])
 
         else:
             # Our default state is to just return oldvalue and newvalue.

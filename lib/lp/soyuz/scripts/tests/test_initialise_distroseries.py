@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialise_distroseries script machinery."""
@@ -251,7 +251,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # When initialising a new series within a distro, the copied
         # packagesets have ownership preserved.
         ps_owner = self.factory.makePerson()
-        ps = getUtility(IPackagesetSet).new(
+        getUtility(IPackagesetSet).new(
             u'ps', u'packageset', ps_owner, distroseries=self.parent)
         child = self._full_initialise(distribution=self.parent.distribution)
         child_ps = getUtility(IPackagesetSet).getByName(
@@ -261,7 +261,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_packageset_owner_not_preserved_cross_distro(self):
         # In the case of a cross-distro initialisation, the new
         # packagesets are owned by the new distro owner.
-        ps = getUtility(IPackagesetSet).new(
+        getUtility(IPackagesetSet).new(
             u'ps', u'packageset', self.factory.makePerson(),
             distroseries=self.parent)
         child = self._full_initialise()
@@ -275,7 +275,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
+        getUtility(IPackagesetSet).new(
             u'test2', u'test 2 packageset', self.parent.owner,
             distroseries=self.parent)
         packages = ('udev', 'chromium', 'libc6')
@@ -314,7 +314,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
+        getUtility(IPackagesetSet).new(
             u'test2', u'test 2 packageset', self.parent.owner,
             distroseries=self.parent)
         packages = ('udev', 'chromium')

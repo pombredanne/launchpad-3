@@ -12,8 +12,8 @@ from testtools.matchers import Equals
 from zope.component import queryAdapter
 from zope.security.checker import getChecker
 
-from canonical.launchpad.webapp.interfaces import IAuthorization
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.security import IAuthorization
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import (
     BugSubscriberSet,
@@ -130,7 +130,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
 
     def getInfo(self):
         return BugSubscriptionInfo(
-            self.bug, BugNotificationLevel.NOTHING)
+            self.bug, BugNotificationLevel.LIFECYCLE)
 
     def test_direct(self):
         # The set of direct subscribers.
@@ -370,7 +370,7 @@ class TestBugSubscriptionInfoQueries(TestCaseWithFactory):
         self.target = self.factory.makeProduct()
         self.bug = self.factory.makeBug(product=self.target)
         self.info = BugSubscriptionInfo(
-            self.bug, BugNotificationLevel.NOTHING)
+            self.bug, BugNotificationLevel.LIFECYCLE)
         # Get the Storm cache into a known state.
         self.store = Store.of(self.bug)
         self.store.invalidate()

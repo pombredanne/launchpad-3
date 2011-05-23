@@ -62,6 +62,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 class UnauthorizedView(SystemErrorView):
@@ -195,8 +196,16 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         openid_vhost = config.launchpad.openid_provider_vhost
-        self.openid_request = consumer.begin(
-            allvhosts.configs[openid_vhost].rooturl)
+
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-begin",
+            allvhosts.configs[openid_vhost].rooturl,
+            allow_nested=True)
+        try:
+            self.openid_request = consumer.begin(
+                allvhosts.configs[openid_vhost].rooturl)
+        finally:
+            timeline_action.finish()
         self.openid_request.addExtension(
             sreg.SRegRequest(optional=['email', 'fullname']))
 
@@ -283,7 +292,12 @@ class OpenIDCallbackView(OpenIDLogin):
         params = self._gather_params(self.request)
         requested_url = self._get_requested_url(self.request)
         consumer = self._getConsumer()
-        self.openid_response = consumer.complete(params, requested_url)
+        timeline_action = get_request_timeline(self.request).start(
+            "openid-association-complete", '', allow_nested=True)
+        try:
+            self.openid_response = consumer.complete(params, requested_url)
+        finally:
+            timeline_action.finish()
 
     def login(self, account):
         loginsource = getUtility(IPlacelessLoginSource)

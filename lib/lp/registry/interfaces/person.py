@@ -15,7 +15,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
-    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
+    'IPersonPublic',  # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
@@ -105,6 +105,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
@@ -633,7 +634,7 @@ class IPersonSettings(Interface):
     """
 
     selfgenerated_bugnotifications = Bool(
-        title=_("Send me bug notifications for changes I make."),
+        title=_("Send me bug notifications for changes I make"),
         required=False, default=False)
 
 
@@ -641,7 +642,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings):
+                    IPersonSettings, IQuestionsPerson):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -731,7 +732,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     sshkeys = exported(
              CollectionField(
-                title= _('List of SSH keys'),
+                title=_('List of SSH keys'),
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
 
@@ -965,7 +966,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     hardware_submissions = exported(CollectionField(
             title=_("Hardware submissions"),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface))) # HWSubmission
+            value_type=Reference(schema=Interface)))  # HWSubmission
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. It is a summary of the team's visibility.
@@ -978,6 +979,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     is_merge_pending = exported(Bool(
         title=_("Is this person due to be merged with another?"),
         required=False, default=False))
+
+    administrated_teams = Attribute(
+        u"the teams that this person/team is an administrator of.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1027,7 +1031,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
     @operation_parameters(name=TextLine(required=True))
-    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @operation_returns_entry(Interface)  # Really ISourcePackageRecipe.
     @export_read_operation()
     @operation_for_version("beta")
     def getRecipe(name):
@@ -1049,7 +1053,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
-        archive=Reference(schema=Interface)) # Really IArchive
+        archive=Reference(schema=Interface))  # Really IArchive
     @export_write_operation()
     @operation_for_version("beta")
     def getArchiveSubscriptionURL(requester, archive):
@@ -1299,6 +1303,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     def getPathsToTeams():
         """Return the paths to all teams related to this person."""
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -1308,6 +1316,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         already, nothing will happen.
         """
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
@@ -1373,7 +1385,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface) # Really IArchive.
+    @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
     @operation_for_version("beta")
     def getPPAByName(name):
@@ -1389,7 +1401,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False))
-    @export_factory_operation(Interface, []) # Really IArchive.
+    @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None):
         """Create a PPA.
@@ -1561,7 +1573,7 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
-    @operation_returns_collection_of(Interface) # Really IPerson
+    @operation_returns_collection_of(Interface)  # Really IPerson
     @export_read_operation()
     @operation_for_version("beta")
     def getMembersByStatus(status, orderby=None):
@@ -1779,6 +1791,33 @@ class IPersonSpecialRestricted(Interface):
         :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
+        """
+
+    # XXX 2011-04-20, Abel Deuring, Bug=767293: The methods canAccess()
+    # and canWrite() are defined in this interface for two reasons:
+    # 1. The functions zope.security.checker.canWrite() and
+    #    zope.security.checker.canAccess() can at present check only
+    #    permissions for the current user, and this interface is
+    #    protected by the permission launchpad.Special, which
+    #    allows users only access to theirs own object.
+    # 2. Allowing users access to check permissions for other persons
+    #    than themselves might leak information.
+    def canAccess(obj, attribute):
+        """True if this person can access the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
+        """
+
+    def canWrite(obj, attribute):
+        """True if this person can write the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
         """
 
 

@@ -212,8 +212,8 @@ show up:
 And then we can actually retrieve the key:
 
     >>> pprint_entry(keys['entries'][0])
-    comment: u'generic-string...'
-    keytext: u'generic-string...'
+    comment: u'unique-...'
+    keytext: u'unique-...'
     keytype: u'RSA'
     resource_type_link: u'http://.../#ssh_key'
     self_link: u'http://.../~ssh-user/+ssh-keys/...'

@@ -3,31 +3,19 @@
 
 __metaclass__ = type
 __all__ = [
-    'QuestionsPerson',
+    'QuestionsPersonMixin',
     ]
 
 
-from zope.component import adapts
-from zope.interface import implements
-
 from canonical.database.sqlbase import sqlvalues
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.question import QuestionPersonSearch
-from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.model.language import Language
 
 
-class QuestionsPerson:
+class QuestionsPersonMixin:
     """See `IQuestionsPerson`."""
-    implements(IQuestionsPerson)
-    adapts(IPerson)
-
-    def __init__(self, person):
-        self.person = person
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -35,7 +23,7 @@ class QuestionsPerson:
                         needs_attention=None):
         """See `IQuestionsPerson`."""
         return QuestionPersonSearch(
-                person=self.person,
+                person=self,
                 search_text=search_text,
                 status=status, language=language, sort=sort,
                 participation=participation,
@@ -52,15 +40,15 @@ class QuestionsPerson:
             UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
             UNION SELECT question
-                  FROM QuestionMessage JOIN Message ON (message = Message.id)
+                  FROM QuestionMessage
                   WHERE owner = %(personID)s
-            )""" % sqlvalues(personID=self.person.id),
+            )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
 
     def getDirectAnswerQuestionTargets(self):
         """See `IQuestionsPerson`."""
         answer_contacts = AnswerContact.select(
-            'person = %s' % sqlvalues(self.person))
+            'person = %s' % sqlvalues(self))
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 
     def getTeamAnswerQuestionTargets(self):
@@ -69,7 +57,7 @@ class QuestionsPerson:
             '''AnswerContact.person = TeamParticipation.team
             AND TeamParticipation.person = %(personID)s
             AND AnswerContact.person != %(personID)s''' % sqlvalues(
-                personID=self.person.id),
+                personID=self.id),
             clauseTables=['TeamParticipation'], distinct=True)
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 

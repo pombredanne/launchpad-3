@@ -99,6 +99,9 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
     )
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -177,7 +180,7 @@ from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
     InitialiseDistroSeries,
     )
-from lp.translations.interfaces.languagepack import LanguagePackType
+from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
     copy_active_translations,
     )
@@ -468,8 +471,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) "
-                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
@@ -524,9 +525,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
 
         def decorator(row):
-            _, spn, score, bug_count, total_messages = row
+            spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -751,7 +753,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory']).count()
 
-
         # next update the binary count
         clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
@@ -788,9 +789,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def is_derived_series(self):
         """See `IDistroSeries`."""
-        # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
-        # the bug is fixed.
-        return self.parent_series is not None
+        return not self.getParentSeries() == []
 
     @property
     def is_initialising(self):
@@ -1952,11 +1951,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                            description=None, version=None,
                            architectures=(), packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
-        # XXX StevenK bug=643369 This should be in the security adapter
-        # This should be allowed if the user is a driver for self.parent
-        # or the child.parent's drivers.
-        if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
-            raise Unauthorized
         if distribution is None:
             distribution = self.distribution
         child = IStore(self).find(
@@ -2000,19 +1994,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         getUtility(IInitialiseDistroSeriesJobSource).create(
             self, child, architectures, packagesets, rebuild)
 
+    def getParentSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return [dsp.parent_series for dsp in dsps]
+
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        # XXX rvb 2011-04-08 bug=754750: The clause
-        # 'DistroSeries.distributionID!=self.distributionID' is only
-        # required because the parent_series attribute has been
-        # (mis-)used to denote other relations than proper derivation
-        # relashionships. We should be rid of this condition once
-        # the bug is fixed.
-        results = Store.of(self).find(
-            DistroSeries,
-            DistroSeries.parent_series==self.id,
-            DistroSeries.distributionID!=self.distributionID)
-        return results.order_by(Desc(DistroSeries.date_created))
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByParentSeries(self)
+        return [dsp.derived_series for dsp in dsps]
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.
@@ -2024,6 +2022,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         seriesID = self.id
         distributionID = self.distributionID
+
         def weight_function(bugtask):
             if bugtask.distroseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
@@ -2032,6 +2031,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def getDifferencesTo(self, parent_series=None, difference_type=None,
+                         source_package_name_filter=None, status=None,
+                         child_version_higher=False):
+        """See `IDistroSeries`."""
+        return getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self,
+                difference_type = difference_type,
+                source_package_name_filter=source_package_name_filter,
+                status=status,
+                child_version_higher=child_version_higher)
 
 
 class DistroSeriesSet:

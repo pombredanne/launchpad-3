@@ -22,7 +22,10 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -55,8 +58,14 @@ class IDistroSeriesDifferencePublic(Interface):
     derived_series = exported(Reference(
         IDistroSeries, title=_("Derived series"), required=True,
         readonly=True, description=_(
-            "The distribution series which, together with its parent, "
-            "identifies the two series with the difference.")))
+            "The distribution series which identifies the derived series "
+            "with the difference.")))
+
+    parent_series = exported(Reference(
+        IDistroSeries, title=_("Parent series"), required=True,
+        readonly=True, description=_(
+            "The distribution series which identifies the parent series "
+            "with the difference.")))
 
     source_package_name = Reference(
         ISourcePackageName,
@@ -177,6 +186,12 @@ class IDistroSeriesDifferencePublic(Interface):
         title=_("Title"), readonly=True, required=False, description=_(
             "A human-readable name describing this difference."))
 
+    packagesets = Attribute("The packagesets for this source package in the "
+                            "derived series.")
+
+    parent_packagesets = Attribute("The packagesets for this source package "
+                                   "in the parent series.")
+
     def update():
         """Checks that difference type and status matches current publishings.
 
@@ -188,18 +203,13 @@ class IDistroSeriesDifferencePublic(Interface):
         :return: True if the record was updated, False otherwise.
         """
 
+    latest_comment = Reference(
+        Interface,  # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
+
     def getComments():
         """Return a result set of the comments for this difference."""
-
-    def getPackageSets():
-        """Return a result set of the derived series packagesets for the
-        sourcepackagename of this difference.
-        """
-
-    def getParentPackageSets():
-        """Return a result set of the parent packagesets for the
-        sourcepackagename of this difference.
-        """
 
 
 class IDistroSeriesDifferenceEdit(Interface):
@@ -248,7 +258,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name):
+    def new(derived_series, source_package_name, parent_series=None):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -258,6 +268,10 @@ class IDistroSeriesDifferenceSource(Interface):
         :param source_package_name: A source package name identifying the
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
+        :param parent_series: The distribution series which has the derived
+            series as a child. If there is only one parent, it does not need
+            to be specified.
+        :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.
@@ -265,10 +279,11 @@ class IDistroSeriesDifferenceSource(Interface):
 
     def getForDistroSeries(
         distro_series,
-        difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        difference_type=None,
         source_package_name_filter=None,
         status=None,
-        child_version_higher=False):
+        child_version_higher=False,
+        parent_series=None):
         """Return differences for the derived distro series sorted by
         package name.
 
@@ -286,15 +301,45 @@ class IDistroSeriesDifferenceSource(Interface):
         :param child_version_higher: Only differences for which the child's
             version is higher than the parent's version will be included.
         :type child_version_higher: bool.
-        :return: A result set of differences.
+        :param parent_series: The parent series to consider. Consider all
+            parent series if this parameter is None.
+        :type distro_series: `IDistroSeries`.
+        :return: A result set of `IDistroSeriesDifference`.
         """
 
-    def getByDistroSeriesAndName(distro_series, source_package_name):
-        """Returns a single difference matching the series and name.
+    def getByDistroSeriesNameAndParentSeries(distro_series,
+                                             source_package_name,
+                                             parent_series):
+        """Returns a single difference matching the series, name and parent
+        series.
 
         :param distro_series: The derived distribution series which is to be
             searched for differences.
         :type distro_series: `IDistroSeries`.
         :param source_package_name: The name of the package difference.
         :type source_package_name: unicode.
+        :param parent_series: The parent distribution series of the package
+        difference.
+        :type distro_series: `IDistroSeries`.
+        """
+
+    def getSimpleUpgrades(distro_series):
+        """Find pending upgrades that can be performed mindlessly.
+
+        These are `DistroSeriesDifferences` where the parent has been
+        updated and the child still has the old version, unchanged.
+
+        Blacklisted items are excluded.
+        """
+
+    def collateDifferencesByParentArchive(differences):
+        """Collate the given differences by parent archive.
+
+        The given `IDistroSeriesDifference`s are returned in a `dict`, with
+        the parent `Archive` as keys.
+
+        :param differences: An iterable sequence of `IDistroSeriesDifference`.
+
+        :return: A `dict` of iterable sequences of `IDistroSeriesDifference`
+            keyed by their parent `IArchive`.
         """

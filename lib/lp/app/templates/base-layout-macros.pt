@@ -111,7 +111,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'lp', 'lp.app.links', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
@@ -171,13 +171,13 @@
     </script>
     <script tal:repeat="key objects"
       tal:content="string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
+                   ${objects/?key/webservice:json/fmt:obfuscate-email};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
     tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json};">
+                 ${context/webservice:json/fmt:obfuscate-email};">
   </script>
 </metal:lp-client-cache>
 

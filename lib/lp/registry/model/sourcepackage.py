@@ -31,10 +31,8 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
@@ -142,9 +140,11 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
         # Sourcepackages are supported by their distribtions too.
-        persons = self.distribution.getAnswerContactsForLanguage(language)
-        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
-            self, language))
+        persons = set(
+            self.distribution.getAnswerContactsForLanguage(language))
+        persons.update(
+            set(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language)))
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
 
@@ -186,10 +186,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin,
-                    HasBugHeatMixin, HasCodeImportsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -198,7 +197,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
@@ -543,6 +542,40 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def setPackagingReturnSharingDetailPermissions(self, productseries,
+                                                   owner):
+        """See `ISourcePackage`."""
+        self.setPackaging(productseries, owner)
+        return self.getSharingDetailPermissions()
+
+    def getSharingDetailPermissions(self):
+        user = getUtility(ILaunchBag).user
+        productseries = self.productseries
+        permissions = {
+                'user_can_change_product_series': False,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False}
+        if user is None:
+            pass
+        elif productseries is None:
+            permissions['user_can_change_product_series'] = user.canAccess(
+                self, 'setPackaging')
+        else:
+            permissions.update({
+                'user_can_change_product_series':
+                    self.direct_packaging.userCanDelete(),
+                'user_can_change_branch':
+                    user.canWrite(productseries, 'branch'),
+                'user_can_change_translation_usage':
+                    user.canWrite(
+                        productseries.product, 'translations_usage'),
+                'user_can_change_translations_autoimport_mode':
+                    user.canWrite(
+                        productseries, 'translations_autoimport_mode'),
+                })
+        return permissions
 
     def deletePackaging(self):
         """See `ISourcePackage`."""

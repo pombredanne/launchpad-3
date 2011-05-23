@@ -82,9 +82,9 @@ def test_cookie_scope():
         ; Path=/; Secure; Domain=.launchpad.net
 
     The domain parameter is omitted for domains that appear to be
-    separate from a Launchpad instance, such as shipit:
+    separate from a Launchpad instance:
 
-        >>> print cookie_scope('https://shipit.ubuntu.com/')
+        >>> print cookie_scope('https://example.com/')
         ; Path=/; Secure
     """
 

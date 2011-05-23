@@ -239,7 +239,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        browses_under_limit = BrowsesWithQueryLimit(35, self.owner)
+        browses_under_limit = BrowsesWithQueryLimit(36, self.owner)
         self.add_bug(3)
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
@@ -253,7 +253,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-        page_query_limit = 36
+        page_query_limit = 37
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -423,7 +423,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        browses_under_limit = BrowsesWithQueryLimit(34, self.owner)
+        browses_under_limit = BrowsesWithQueryLimit(35, self.owner)
         self.add_bug(4)
         self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)

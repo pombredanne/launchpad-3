@@ -102,22 +102,12 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    RECIPE_BETA_FLAG,
     )
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
-
-
-RECIPE_BETA_MESSAGE = structured(
-    'We\'re still working on source package recipes. '
-    'We would love for you to try them out, and if you have '
-    'any issues, please '
-    '<a href="http://bugs.launchpad.net/launchpad">'
-    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
 class IRecipesForPerson(Interface):
@@ -206,6 +196,8 @@ class SourcePackageRecipeContextMenu(ContextMenu):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             show_request_build = has_upload
 
+        show_request_build= (show_request_build and
+            check_permission('launchpad.Edit', recipe))
         return Link(
                 '+request-daily-build', 'Build now',
                 enabled=show_request_build)
@@ -216,8 +208,6 @@ class SourcePackageRecipeView(LaunchpadView):
 
     def initialize(self):
         super(SourcePackageRecipeView, self).initialize()
-        if getFeatureFlag(RECIPE_BETA_FLAG):
-            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
         if recipe.build_daily and recipe.daily_build_archive is None:
             self.request.response.addWarningNotification(
@@ -718,8 +708,6 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
-        if getFeatureFlag(RECIPE_BETA_FLAG):
-            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(

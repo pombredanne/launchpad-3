@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageTranslationsExportView',
     'SourcePackageTranslationsView',
-    'SourcePackageTranslationSharingStatus',
     ]
 
 
@@ -145,13 +144,14 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
             'upstream_branch': self.upstream_branch,
             'product': self.product,
         })
+        cache.objects.update(self.context.getSharingDetailPermissions())
 
     @property
     def branch_link(self):
         if self.has_upstream_branch:
             # Normally should use BranchFormatterAPI(branch).link(None), but
             # on this page, that information is redundant.
-            title = self.upstream_branch.unique_name
+            title = 'lp:' + self.upstream_branch.unique_name
             url = canonical_url(self.upstream_branch)
         else:
             title = ''

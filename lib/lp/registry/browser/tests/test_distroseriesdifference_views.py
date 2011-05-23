@@ -39,6 +39,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.testing import (
+    anonymous_logged_in,
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
@@ -73,6 +74,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Avoid circular import.
         from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         distro_series = distro_series_difference.derived_series
+        parent_series = distro_series_difference.parent_series
         source_package_name_str = (
             distro_series_difference.source_package_name.name)
         stp = SoyuzTestPublisher()
@@ -89,8 +91,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # updateDistroSeriesPackageCache reconnects the db, so the
         # objects need to be reloaded.
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = dsd_source.getByDistroSeriesAndName(
-            distro_series, source_package_name_str)
+        ds_diff = dsd_source.getByDistroSeriesNameAndParentSeries(
+            distro_series, source_package_name_str, parent_series)
         return ds_diff
 
     def test_binary_summaries_for_source_pub(self):
@@ -185,8 +187,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.1-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(2, len(tags))
 
@@ -205,8 +209,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.30-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
@@ -225,8 +231,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': parent_changelog_lfa})
 
         self.assertEqual('0.30-1', ds_diff.base_version)
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        soup = BeautifulSoup(view())
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
@@ -333,9 +341,12 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             set_base_version=True)
 
-        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')#, principal=user)
+            soup = BeautifulSoup(view())
         # Both diffs present simple text repr. of proposed diff.
-        self.assertEqual(2, self.number_of_request_diff_texts(view()))
+        self.assertEqual(2, self.number_of_request_diff_texts(soup))
 
     def test_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
@@ -527,6 +538,19 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             self.assertThat(view(), package_diff_request_matcher)
             self.assertTrue(view.show_package_diffs_request_link)
 
+    package_diff_header_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Tag(
+            'Package diffs header', 'dt',
+            text=re.compile(
+                '\s*Differences from last common version:')))
+
+    package_diff_info_matcher = soupmatchers.HTMLContains(
+        soupmatchers.Within(
+            soupmatchers.Tag('Package diff container', 'dd'),
+            soupmatchers.Tag(
+                'Package diffs info', 'ul',
+                attrs={'class': 'package-diff-status'})))
+
     def test_package_diff_label(self):
         # If base_version is not None the label for the section is
         # there.
@@ -540,11 +564,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             }, changelogs={
             'derived': changelog_lfa,
             'parent': parent_changelog_lfa})
-        package_diff_header_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Package diffs header', 'dt',
-                text=re.compile(
-                    '\s*Differences from last common version:')))
 
         with celebrity_logged_in('admin'):
             ds_diff.parent_package_diff = self.factory.makePackageDiff()
@@ -552,7 +571,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
             html = view()
-            self.assertThat(html, package_diff_header_matcher)
+            self.assertThat(html, self.package_diff_header_matcher)
 
     def test_package_diff_no_base_version(self):
         # If diff's base_version is None packages diffs are not displayed
@@ -573,12 +592,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 'Pending package diff', 'span',
                 attrs={'class': 'PENDING'}))
 
-        package_diff_header_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Package diffs header', 'dt',
-                text=re.compile(
-                    '\s*Differences from last common version:')))
-
         unknown_base_version = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Unknown base version', 'dd',
@@ -597,4 +610,18 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                     MatchesAny(
                         package_diff_request_matcher,
                         pending_package_diff_matcher,
-                        package_diff_header_matcher)))
+                        self.package_diff_header_matcher)))
+
+    def test_package_diffs_hidden_to_unprivileged_user_if_not_available(self):
+        # No diff information is shown if pacakge diffs are not available and
+        # the user does not have permission to request their creation.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={'base': '0.1', 'derived': '0.1-1derived1',
+                      'parent': '0.1-2'},
+            set_base_version=True)
+        with anonymous_logged_in():
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            html = view()
+            self.assertThat(html, Not(self.package_diff_header_matcher))
+            self.assertThat(html, Not(self.package_diff_info_matcher))

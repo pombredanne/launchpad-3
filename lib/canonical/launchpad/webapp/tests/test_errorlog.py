@@ -17,6 +17,7 @@ from textwrap import dedent
 import traceback
 import unittest
 
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import webservice_error
 import pytz
 import testtools
@@ -25,6 +26,7 @@ from zope.app.publication.tests.test_zopepublication import (
     )
 from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
@@ -41,7 +43,10 @@ from canonical.launchpad.webapp.errorlog import (
     )
 from canonical.launchpad.webapp.interfaces import NoReferrerError
 from canonical.testing import reset_logging
-from lp.app.errors import TranslationUnavailable
+from lp.app.errors import (
+    GoneError,
+    TranslationUnavailable,
+    )
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
@@ -304,7 +309,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         file_permission = stat.S_IMODE(st.st_mode)
         self.assertEqual(file_permission, wanted_permission)
         # Restore the umask to the original value.
-        ignored = os.umask(old_umask)
+        os.umask(old_umask)
 
         lines = open(errorfile, 'r').readlines()
 
@@ -315,7 +320,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -488,7 +493,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: https://launchpad.net/example\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -636,6 +641,84 @@ class TestErrorReportingUtility(testtools.TestCase):
         except TranslationUnavailable:
             utility.raising(sys.exc_info(), now=now)
 
+        self.assertTrue(
+            TranslationUnavailable.__name__ in utility._ignored_exceptions,
+            'TranslationUnavailable is not in _ignored_exceptions.')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_offsite_referer(self):
+        # Exceptions caused by bad URLs that may not be an Lp code issue.
+        utility = ErrorReportingUtility()
+        errors = set([
+            GoneError.__name__, InvalidBatchSizeError.__name__,
+            NotFound.__name__])
+        self.assertEqual(
+            errors, utility._ignored_exceptions_for_offsite_referer)
+
+    def test_ignored_exceptions_for_offsite_referer_reported(self):
+        # Oopses are reported when Launchpad is the referer for a URL
+        # that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_cross_vhost_referer_reported(self):
+        # Oopses are reported when a Launchpad  vhost is the referer for a URL
+        # that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://bazaar.launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_criss_cross_vhost_referer_reported(self):
+        # Oopses are reported when a Launchpad referer for a bad URL on a
+        # vhost that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://bazaar.launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_offsite_referer_not_reported(self):
+        # Oopses are not reported when Launchpad is not the referer.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        # There is no HTTP_REFERER header in this request
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://launchpad.dev/fnord'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
         errorfile = os.path.join(
             utility.log_namer.output_dir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
@@ -689,7 +772,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -727,7 +810,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -865,7 +948,7 @@ class TestOopsLoggingHandler(TestCase):
         # logged will have OOPS reports generated for them.
         error_message = self.factory.getUniqueString()
         try:
-            ignored = 1/0
+            1 / 0
         except ZeroDivisionError:
             self.logger.exception(error_message)
         oops_report = self.error_utility.getLastOopsReport()

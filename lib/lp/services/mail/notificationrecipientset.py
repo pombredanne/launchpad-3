@@ -131,6 +131,7 @@ class NotificationRecipientSet:
                     removed_person.preferredemail)
                 email = str(preferred_email.email)
                 self._receiving_people.discard((email, removed_person))
+                del self._emailToPerson[email]
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""
