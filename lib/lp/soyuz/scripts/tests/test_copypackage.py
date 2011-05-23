@@ -38,7 +38,6 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
@@ -1274,11 +1273,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         nobby = self.createNobby(('i386', 'hppa'))
         target_archive = self.test_publisher.ubuntutest.main_archive
 
-        generic_overrides = FeatureFixture(
-            {'soyuz.generic-overrides.enabled': 'on'})
-        with generic_overrides:
-            [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
-                source, target_archive, nobby, source.pocket, True)
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
         universe = getUtility(IComponentSet)['universe']
         self.assertEquals(universe, copied_source.component)
         self.assertComponentSectionAndPriority(
@@ -1314,11 +1310,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # upload.
         transaction.commit()
 
-        generic_overrides = FeatureFixture(
-            {'soyuz.generic-overrides.enabled': 'on'})
-        with generic_overrides:
-            [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
-                source, target_archive, nobby, source.pocket, True)
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
         self.assertEquals(copied_source.component, existing_source.component)
         self.assertComponentSectionAndPriority(
             ebin_i386.component, ebin_i386, copied_bin_i386)
@@ -1341,12 +1334,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             kind.component = component
         transaction.commit()
 
-        generic_overrides = FeatureFixture(
-            {'soyuz.generic-overrides.enabled': 'on'})
-        with generic_overrides:
-            [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
-                source, archive, nobby, PackagePublishingPocket.UPDATES,
-                True)
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, archive, nobby, PackagePublishingPocket.UPDATES, True)
         self.assertEquals(copied_source.component, source.component)
         self.assertComponentSectionAndPriority(
             bin_i386.component, bin_i386, copied_bin_i386)
@@ -1366,11 +1355,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             distribution=self.test_publisher.ubuntutest, virtualized=True)
         nobby = self.createNobby(('i386', 'hppa'))
 
-        generic_overrides = FeatureFixture(
-            {'soyuz.generic-overrides.enabled': 'on'})
-        with generic_overrides:
-            [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
-                source, target_archive, nobby, source.pocket, True)
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, target_archive, nobby, source.pocket, True)
         main = getUtility(IComponentSet)['main']
         self.assertEquals(main, copied_source.component)
         self.assertComponentSectionAndPriority(
