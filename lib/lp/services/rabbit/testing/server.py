@@ -306,9 +306,9 @@ class RunRabbitServer(Fixture):
             Content(UTF8_TEXT, self.server._getErrors))
         self.addDetail('rabbit log file',
             content_from_file(self.config.logfile))
-        self.start()
+        self._start()
 
-    def start(self):
+    def _start(self):
         cmd = os.path.join(RABBITBIN, 'rabbitmq-server')
         name = "RabbitMQ server node:%s on port:%d" % (
             self.config.nodename, self.config.port)
@@ -326,7 +326,7 @@ class RunRabbitServer(Fixture):
         # The erlang OTP is up, but RabbitMQ may not be usable. We need to
         # cleanup up the process from here on in even if the full service
         # fails to get together.
-        self.addCleanup(self.stop)
+        self.addCleanup(self._stop)
         # Wait until the server is ready...
         while time.time() < timeout:
             # rabbitctl can say a node is up before it is ready to
@@ -345,7 +345,7 @@ class RunRabbitServer(Fixture):
         with open(self.config.pidfile, "r") as f:
             self.pid = int(f.read().strip())
 
-    def stop(self):
+    def _stop(self):
         """Stop the running server. Normally called by cleanups."""
         if not self.server.checkRunning():
             # If someone has shut it down already, we're done.
