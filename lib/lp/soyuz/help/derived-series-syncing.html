@@ -14,7 +14,8 @@
     <p>
       Syncing software from a parent series will take the package that's
       currently published in it, and upload it to the derived series without
-      having to use command line tools like <i>dput</i> or <i>ftp</i>.
+      you having to use command line tools such as <em>dput</em> or 
+      <em>ftp</em>.
     </p>
 
     <p>
@@ -28,10 +29,10 @@
     <h2>Checking the differences</h2>
 
     <p>
-    Each row in the table shows a package that is different in its version
-    between the derived series and its parent(s).  Clicking the package name
-    will expand the row to show more details about the package and take some
-    actions:
+    Each row in the table shows a package that has different versions in
+    the derived series and the parent(s).  Clicking the package name
+    will expand the row to show more details about the package and allow 
+    you to take some actions:
       <ul>
         <li>Add a comment about this package.</li>
         <li>Request debdiffs</li>
@@ -49,7 +50,7 @@
     <p>
     Click the "Compute differences from last common version".  A request is
     sent to the server to initiate the debdiff calculation.  While you wait
-    for the calculation the icon will flash and then the page will update
+    for the calculation the icon will flash. The page will update
     automatically when the debdiff becomes available, giving you a link to
     download the debdiff file.
     </p>
@@ -57,28 +58,30 @@
     <h3>Ignoring differences</h3>
     <p>
     If you don't care about this package you have the option of setting it to
-    'ignored' which means that it won't appear in the list any more.  You
-    can choose to ignore just "These versions", which means if a new version
-    is uploaded it will re-appear, or "All Versions" which means you won't see
-    it again unless you search explicitly for ignored packages in the search
-    criteria at the top of the page.
+    <em>ignored</em>, which means that it will no longer appear in the list.   
+    You can choose to ignore just "These versions", which means if a new 
+    version is uploaded it will re-appear, or "All Versions" which means 
+    you won't see it again unless you search explicitly for ignored 
+    packages in the search criteria at the top of the page.
     </p>
 
     <h2>Requesting a sync</h2>
     <p>
-    There are 2 methods of syncing:
+    There are two methods of syncing:
       <ul>
-        <li>A mass-sync.  This grabs all packages in all parents that have a
-            higher version and uploads them to the derived series by clicking
-            the mass-sync button at the bottom of the page.  To do this
-            you need to have archive administrator permissions.</li>
-        <li>A selective sync.  You can check the box next to each package and
-            then click the sync button at the bottom of the page.  To do this
-            you need to have permissions to upload each package.</li>
+        <li><strong>A mass-sync:</strong>  This grabs all packages in all 
+            parents that have a higher version and uploads them to the 
+            derived series by clicking the mass-sync button at the bottom 
+            of the page.  To do this you need to have archive administrator 
+            permissions.</li>
+        <li><strong>A selective sync:</strong>  You can check the box next 
+            to each package and then click the sync button at the bottom of
+            the page. To do this you need to have permissions to upload 
+            each package.</li>
       </ul>
-    After the sync is requested, the operation will complete in the background
-    and the package(s) will flow into the distribution as a normal upload
-    would, including being held in the upload queue as appropriate.
+    After you request a sync the operation will complete in the background
+    and the package(s) will flow into the distribution just like a normal 
+    upload, including being held in the upload queue as appropriate.
     </p>
   </body>
 </html>
