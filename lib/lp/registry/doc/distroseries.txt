@@ -842,7 +842,7 @@ so that he can edit it.
     >>> yo_series = youbuntu.newSeries(
     ...     name='island', displayname='Island', title='YouBuntu Island',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, registrant=yo_driver)
+    ...     previous_series=warty, registrant=yo_driver)
     >>> print yo_series.name
     island
     >>> print yo_series.registrant.name
@@ -858,7 +858,7 @@ have permission to edit the series.
     >>> yo_series = youbuntu.newSeries(
     ...     name='forest', displayname='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, registrant=youbuntu.owner)
+    ...     previous_series=warty, registrant=youbuntu.owner)
     >>> print yo_series.name
     forest
     >>> print yo_series.driver
@@ -874,7 +874,7 @@ not create series.
     >>> ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, owner=ubuntu.driver)
+    ...     previous_series=warty, owner=ubuntu.driver)
     Traceback (most recent call last):
      ...
     Unauthorized: ...
@@ -886,7 +886,7 @@ series.
     >>> u_series = ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, registrant=ubuntu.owner)
+    ...     previous_series=warty, registrant=ubuntu.owner)
     >>> print u_series.name
     finch
     >>> print u_series.registrant.name

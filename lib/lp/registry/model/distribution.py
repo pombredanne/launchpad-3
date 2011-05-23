@@ -601,13 +601,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         ParentDistroSeries = ClassAlias(DistroSeries)
         # XXX rvb 2011-04-08 bug=754750: The clause
         # 'DistroSeries.distributionID!=self.id' is only required
-        # because the parent_series attribute has been (mis-)used
+        # because the previous_series attribute has been (mis-)used
         # to denote other relations than proper derivation
         # relashionships. We should be rid of this condition once
         # the bug is fixed.
         ret = Store.of(self).find(
             DistroSeries,
-            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            ParentDistroSeries.id == DistroSeries.previous_seriesID,
             ParentDistroSeries.distributionID == self.id,
             DistroSeries.distributionID != self.id)
         return ret.config(
@@ -1794,7 +1794,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return user.inTeam(self.owner) or user.inTeam(admins)
 
     def newSeries(self, name, displayname, title, summary,
-                  description, version, parent_series, registrant):
+                  description, version, previous_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
@@ -1805,7 +1805,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             description=description,
             version=version,
             status=SeriesStatus.EXPERIMENTAL,
-            parent_series=parent_series,
+            previous_series=previous_series,
             registrant=registrant)
         if (registrant.inTeam(self.driver)
             and not registrant.inTeam(self.owner)):
