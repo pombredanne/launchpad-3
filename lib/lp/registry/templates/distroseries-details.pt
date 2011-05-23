@@ -50,10 +50,10 @@
       <dt>Derives from:</dt>
       <dd>
         <a
-          tal:condition="context/parent_series"
-          tal:attributes="href context/parent_series/fmt:url"
-          tal:content="context/parent_series/named_version" />
-        <tal:none condition="not: context/parent_series">
+          tal:condition="context/previous_series"
+          tal:attributes="href context/previous_series/fmt:url"
+          tal:content="context/previous_series/named_version" />
+        <tal:none condition="not: context/previous_series">
           <tal:name replace="context/named_version"/> is not derived from
           another series.
         </tal:none>

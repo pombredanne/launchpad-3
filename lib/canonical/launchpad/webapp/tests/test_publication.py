@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import logging
 import sys
-import unittest
 
 from contrib.oauth import (
     OAuthRequest,
@@ -244,7 +243,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Create a lone account followed by an account-with-person just to
         # make sure in the second one the ID of the account and the person are
         # different.
-        dummy_account = self.factory.makeAccount('Personless account')
+        self.factory.makeAccount('Personless account')
         person = self.factory.makePerson()
         self.failIfEqual(person.id, person.account.id)
 
@@ -332,7 +331,7 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)
-        store.find(EmailAddress).first() # Confirms Store is working.
+        store.find(EmailAddress).first()  # Confirms Store is working.
 
     def test_is_browser(self):
         # No User-Agent: header.
@@ -428,7 +427,6 @@ class TestBlockingOffsitePosts(TestCase):
         self.assertRaises(
             OffsiteFormPostError, maybe_block_offsite_form_post, request)
 
-
     def test_openid_callback_with_query_string(self):
         # An OpenId provider (OP) may post to the +openid-callback URL with a
         # query string and without a referer.  These posts need to be allowed.
@@ -444,15 +442,15 @@ class TestEncodedReferer(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_not_found(self):
-        # The only oops should be a NotFound.
+        # No oopses are reported when accessing the referer while rendering
+        # the page.
         browser = self.getUserBrowser()
         browser.addHeader('Referer', '/whut\xe7foo')
         self.assertRaises(
             NotFound,
             browser.open,
             'http://launchpad.dev/missing')
-        self.assertEqual(1, len(self.oopses))
-        self.assertEqual('NotFound', self.oopses[0].type)
+        self.assertEqual(0, len(self.oopses))
 
 
 class TestUnicodePath(TestCaseWithFactory):
@@ -460,11 +458,11 @@ class TestUnicodePath(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_non_ascii_url(self):
-        # The only oops should be a NotFound.
+        # No oopses are reported when accessing the URL while rendering the
+        # page.
         browser = self.getUserBrowser()
         self.assertRaises(
             NotFound,
             browser.open,
             'http://launchpad.dev/%ED%B4%B5')
-        self.assertEqual(1, len(self.oopses))
-        self.assertEqual('NotFound', self.oopses[0].type)
+        self.assertEqual(0, len(self.oopses))

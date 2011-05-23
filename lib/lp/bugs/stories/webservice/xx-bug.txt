@@ -1195,14 +1195,16 @@ We can change various aspects of bug trackers.
   Location: http://.../bugs/bugtrackers/bob
   ...
 
-Note the 301 response. We changed the name, so the API URL at which
+Note the 301 response above. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
+
+Now notice that bug trackers (and bugs too) that are not found generate
+a 404 error, but do not generate an OOPS.
 
   >>> print webservice.get(bug_tracker['self_link'])
   HTTP/1.1 404 Not Found...
   Content-Length: ...
   ...
-  X-Lazr-Oopsid: OOPS-...
   <BLANKLINE>
   Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
 

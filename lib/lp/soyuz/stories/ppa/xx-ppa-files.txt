@@ -1,10 +1,13 @@
-= Personal Package Archives Files =
+Personal Package Archives Files
+===============================
 
 PPA files are proxied via +archive/+files or +builds/+files in a way
 we can decide between redirecting to the public librarian URL or
 stream the restricted content in inline.
 
-== Setup ==
+
+Setup
+-----
 
 Creating a complete source and binary publication on No Priv's private
 PPA.
@@ -91,7 +94,8 @@ Commit everything.
     >>> commit()
 
 
-== PPA file links ==
+PPA file links
+--------------
 
 Links to files accessible via +files/ proxy in the PPA page.
 
@@ -205,7 +209,8 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
-    i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person : No Privileges Person
+    i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person :
+    No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
@@ -300,7 +305,8 @@ The filename must be at the end of the URL. No further segments are permitted.
     NotFound: ...
 
 
-== Compatibility URL Redirection ==
+Compatibility URL Redirection
+-----------------------------
 
 If a script or otherwise is trying to access +archive/+files, we make
 sure that '+files' isn't understood as the PPA name, but instead
@@ -333,7 +339,8 @@ The same redirection happens for +archive/+build/blah urls:
     ...
 
 
-== Deleted library files ==
+Deleted library files
+---------------------
 
 Unused PPA files get expired and deleted after a configurable period,
 so Launchpad doesn't have to host them forever. They are also
@@ -384,22 +391,18 @@ LP proxy URL a proper NotFound error is raised.
     ... GET %s HTTP/1.1
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
 
-It results in a 404 response with a page pointing to a OOPS report and
-users instructions about the problem.
+It results in a 404 response.
 
     >>> print not_found_file
     HTTP/1.1 404 Not Found
     ...
 
-The OOPS itself, will contain the correct filename and the context
-archive in which the error occurred based on the traceback included in
-the page.
+Launchpad staff can see the correct filename and the context archive in which
+the error occurred based on the traceback included in the page.
 
     >>> main_content = find_main_content(str(not_found_file))
     >>> print extract_text(main_content)
     Lost something?
-    ...
-    Include the error ID OOPS-...
     ...
     NotFound:
     Object: &lt;Archive at ...&gt;, name: u'test-pkg_1.0.dsc'...

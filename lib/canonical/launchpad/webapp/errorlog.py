@@ -17,6 +17,7 @@ import re
 import rfc822
 import types
 import urllib
+import urlparse
 
 from lazr.restful.utils import get_current_browser_request
 import pytz
@@ -41,6 +42,7 @@ from canonical.launchpad.webapp.interfaces import (
     IErrorReportRequest,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -238,7 +240,7 @@ class ErrorReport:
                 "Unable to interpret oops line: %s" % line)
             start, end, db_id, statement = match.groups()
             if db_id is not None:
-                db_id = intern(db_id) # This string is repeated lots.
+                db_id = intern(db_id)  # This string is repeated lots.
             statements.append(
                 (int(start), int(end), db_id, statement))
 
@@ -257,6 +259,8 @@ class ErrorReportingUtility:
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
         'TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
+    _ignored_exceptions_for_offsite_referer = set([
+        'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
 
     def __init__(self):
@@ -368,6 +372,19 @@ class ErrorReportingUtility:
         notify(ErrorReportEvent(entry))
         return entry
 
+    def _isIgnoredException(self, strtype, request=None):
+        if strtype in self._ignored_exceptions:
+            return True
+        if strtype in self._ignored_exceptions_for_offsite_referer:
+            if request is not None:
+                referer = request.get('HTTP_REFERER', '')
+                referer_parts = urlparse.urlparse(referer)
+                root_parts = urlparse.urlparse(
+                    allvhosts.configs['mainsite'].rooturl)
+                if root_parts.netloc not in referer_parts.netloc:
+                    return True
+        return False
+
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
         """Return an ErrorReport for the supplied data.
@@ -387,7 +404,7 @@ class ErrorReportingUtility:
         tb_text = None
 
         strtype = str(getattr(info[0], '__name__', info[0]))
-        if strtype in self._ignored_exceptions:
+        if self._isIgnoredException(strtype, request):
             return
 
         if not isinstance(info[2], basestring):
@@ -410,7 +427,7 @@ class ErrorReportingUtility:
 
             if WebServiceLayer.providedBy(request):
                 webservice_error = getattr(
-                    info[0], '__lazr_webservice_error__', 500)
+                    info[1], '__lazr_webservice_error__', 500)
                 if webservice_error / 100 != 5:
                     request.oopsid = None
                     # Return so the OOPS is not generated.
@@ -498,8 +515,8 @@ class ErrorReportingUtility:
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
         when = _rate_restrict_pool.get(strtype, distant_past)
         if now > when:
-            next_when = max(when,
-                            now - _rate_restrict_burst*_rate_restrict_period)
+            next_when = max(
+                when, now - _rate_restrict_burst * _rate_restrict_period)
             next_when += _rate_restrict_period
             _rate_restrict_pool[strtype] = next_when
             # Sometimes traceback information can be passed in as a string. In

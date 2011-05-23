@@ -39,10 +39,12 @@ class DistroSeriesBinaryPackage:
 
     implements(IDistroSeriesBinaryPackage)
 
-    def __init__(self, distroseries, binarypackagename, cache=None):
+    default = object()
+
+    def __init__(self, distroseries, binarypackagename, cache=default):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
-        if cache is not None:
+        if cache is not self.default:
             get_property_cache(self).cache = cache
 
     @property
@@ -69,9 +71,9 @@ class DistroSeriesBinaryPackage:
             self.distroseries.distribution.all_distro_archive_ids)
         result = store.find(
             DistroSeriesPackageCache,
-            DistroSeriesPackageCache.distroseries==self.distroseries,
+            DistroSeriesPackageCache.distroseries == self.distroseries,
             DistroSeriesPackageCache.archiveID.is_in(archive_ids),
-            (DistroSeriesPackageCache.binarypackagename==
+            (DistroSeriesPackageCache.binarypackagename ==
                 self.binarypackagename))
         return result.any()
 
