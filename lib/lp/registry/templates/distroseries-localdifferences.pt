@@ -94,10 +94,11 @@
                    class="js-action toggle-extra"
                    tal:content="src_name">Foo</a>
 
-                <tal:synchronizing
-                    condition="python: view.hasPendingSync(difference)">
-                  <i>(Synchronizing)</i>
-                </tal:synchronizing>
+                <span
+                    style="color:grey"
+                    tal:condition="python: view.hasPendingSync(difference)">
+                    &nbsp;&nbsp;synchronizing&hellip;
+                </span>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
                 <a tal:attributes="href difference/parent_series/fmt:url"
