@@ -153,11 +153,11 @@ def allocate_ports(n=1):
             s.close()
 
 
-class AllocateRabbitServer(Fixture):
+class RabbitServerResources(Fixture):
     """Allocate the resources a RabbitMQ server needs.
 
     :ivar hostname: The host the RabbitMQ is on (always localhost for
-        `AllocateRabbitServer`).
+        `RabbitServerResources`).
     :ivar port: A port that was free at the time setUp() was called.
     :ivar rabbitdir: A directory to put the RabbitMQ logs in.
     :ivar mnesiadir: A directory for the RabbitMQ db.
@@ -166,7 +166,7 @@ class AllocateRabbitServer(Fixture):
     :ivar nodename: The name of the node.
     """
     def setUp(self):
-        super(AllocateRabbitServer, self).setUp()
+        super(RabbitServerResources, self).setUp()
         self.hostname = 'localhost'
         self.port = allocate_ports()[0]
         self.rabbitdir = self.useFixture(TempDir()).path
@@ -184,7 +184,7 @@ class AllocateRabbitServer(Fixture):
         return "%s@%s" % (self.nodename, socket.gethostname())
 
 
-class ExportRabbitServer(Fixture):
+class RabbitServerEnvironment(Fixture):
     """Export the environment variables needed to talk to a RabbitMQ instance.
 
     When setup this exports the key RabbitMQ variables:
@@ -197,16 +197,16 @@ class ExportRabbitServer(Fixture):
     """
 
     def __init__(self, config):
-        """Create a `ExportRabbitServer` instance.
+        """Create a `RabbitServerEnvironment` instance.
 
         :param config: An object exporting the variables
-            `AllocateRabbitServer` exports.
+            `RabbitServerResources` exports.
         """
-        super(ExportRabbitServer, self).__init__()
+        super(RabbitServerEnvironment, self).__init__()
         self.config = config
 
     def setUp(self):
-        super(ExportRabbitServer, self).setUp()
+        super(RabbitServerEnvironment, self).setUp()
         self.useFixture(EnvironmentVariableFixture(
             "RABBITMQ_MNESIA_BASE", self.config.mnesiadir))
         self.useFixture(EnvironmentVariableFixture(
@@ -283,24 +283,24 @@ class ExportRabbitServer(Fixture):
             password="guest", virtual_host="/", insist=False)
 
 
-class RunRabbitServer(Fixture):
+class RabbitServerRunner(Fixture):
     """Run a RabbitMQ server.
 
     :ivar pid: The pid of the server.
     """
 
     def __init__(self, config):
-        """Create a `RunRabbitServer` instance.
+        """Create a `RabbitServerRunner` instance.
 
         :param config: An object exporting the variables
-            `AllocateRabbitServer` exports.
+            `RabbitServerResources` exports.
         """
-        super(RunRabbitServer, self).__init__()
+        super(RabbitServerRunner, self).__init__()
         self.config = config
 
     def setUp(self):
-        super(RunRabbitServer, self).setUp()
-        self.server = self.useFixture(ExportRabbitServer(self.config))
+        super(RabbitServerRunner, self).setUp()
+        self.server = self.useFixture(RabbitServerEnvironment(self.config))
         # Workaround fixtures not adding details from used fixtures.
         self.addDetail('rabbitctl errors',
             Content(UTF8_TEXT, self.server._getErrors))
@@ -385,11 +385,11 @@ class RabbitServer(Fixture):
     When setup a RabbitMQ instance will be running and the environment
     variables needed to talk to it will be already configured.
 
-    :ivar config: The `AllocateRabbitServer` used to start the server.
-    :ivar runner: The `RunRabbitServer` that bootstraps the server.
+    :ivar config: The `RabbitServerResources` used to start the server.
+    :ivar runner: The `RabbitServerRunner` that bootstraps the server.
     """
 
     def setUp(self):
         super(RabbitServer, self).setUp()
-        self.config = self.useFixture(AllocateRabbitServer())
-        self.runner = self.useFixture(RunRabbitServer(self.config))
+        self.config = self.useFixture(RabbitServerResources())
+        self.runner = self.useFixture(RabbitServerRunner(self.config))
