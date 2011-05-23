@@ -332,7 +332,7 @@ class RunRabbitServer(Fixture):
             # rabbitctl can say a node is up before it is ready to
             # accept connections ... :-(
             try:
-                conn = self.getConnection()
+                conn = self.server.getConnection()
             except socket.error:
                 time.sleep(0.1)
             else:
@@ -378,9 +378,6 @@ class RunRabbitServer(Fixture):
             raise Exception(
                 "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
-    def getConnection(self):
-        return self.server.getConnection()
-
 
 class RabbitServer(Fixture):
     """A RabbitMQ server fixture.
@@ -396,9 +393,3 @@ class RabbitServer(Fixture):
         super(RabbitServer, self).setUp()
         self.config = self.useFixture(AllocateRabbitServer())
         self.runner = self.useFixture(RunRabbitServer(self.config))
-
-    def getDetails(self):
-        return self.runner.getDetails()
-
-    def getConnection(self):
-        return self.runner.getConnection()
