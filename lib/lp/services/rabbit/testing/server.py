@@ -1,7 +1,13 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test server fixture for RabbitMQ."""
+"""Test server fixtures for RabbitMQ."""
+
+__metaclass__ = type
+
+__all__ = [
+    "RabbitServer",
+    ]
 
 import errno
 import itertools
