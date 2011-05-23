@@ -47,8 +47,9 @@ class TestNicknameGeneration(TestCaseWithFactory):
             nicks)
 
     def test_enforces_minimum_length(self):
-        # Nicks must be a minimum of four characters. generate_nick creates
-        # nicks over a that length.
+        # Nicks must be a minimum length. generate_nick enforces this by 
+        # adding random suffixes to the required length.
+        # The nick 'i' isn't used, so we know any additional prefi
         person = getUtility(IPersonSet).getByName('i')
         self.assertIs(None, person)
         nick = generate_nick('i@example.com')
@@ -61,6 +62,8 @@ class TestNicknameGeneration(TestCaseWithFactory):
         nick = generate_nick('bar@example.com')
         self.assertEqual('bar-c', nick)
 
+        # If we used the previously created nick and get another bar@ email
+        # address, another new nick is generated.
         self._useNicknames(['bar-c'])
         nick = generate_nick('bar@example.com')
         self.assertEqual('a-bar', nick)
@@ -69,4 +72,3 @@ class TestNicknameGeneration(TestCaseWithFactory):
         # Helper method to consume a nickname
         for nick in nicknames:
             self.factory.makePerson(name=nick)
-        #flush_database_updates()
