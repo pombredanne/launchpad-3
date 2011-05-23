@@ -638,6 +638,7 @@ class TestBug778847(TestCaseWithFactory):
                 'filter descriptions': [],
                 'sources': [notification.recipients[1]]}},
             BugNotificationSet().getRecipientFilterData(
+            bug,
             {team.teamowner: [notification.recipients[0]],
              team: [notification.recipients[1]]},
             [notification]))
