@@ -100,6 +100,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.helpers import (
     ensure_unicode,
@@ -167,7 +170,7 @@ from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
 from lp.registry.model.milestone import Milestone
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, IrcID
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
@@ -175,6 +178,7 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database import bulk
 from lp.services.propertycache import cachedproperty
 
 
@@ -644,7 +648,14 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        return result
+
+        # We will be displaying the person's irc nic(s) in the description
+        # so we need to bulk load them in one query for performance.
+        def pre_iter_hook(rows):
+            persons = set(obj for obj in rows)
+            bulk.load_referencing(IrcID, persons, ['personID'])
+
+        return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""

@@ -862,6 +862,14 @@
             factory="lp.registry.browser.person.TeamBreadcrumb"
             permission="zope.Public"/>
 
+        <adapter
+            factory="lp.registry.model.pillaraffiliation.BugTaskPillarAffiliation"
+            />
+
+        <adapter
+            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
+
         <!-- Using
 
     permission="Public" here causes some tests to fail

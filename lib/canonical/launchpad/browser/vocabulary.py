@@ -14,8 +14,10 @@ __all__ = [
     'sourcepackagename_to_vocabularyjson',
     ]
 
-from lazr.restful.interfaces import IWebServiceClientRequest
+import re
 import simplejson
+
+from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.app.form.interfaces import MissingInputError
 from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.component import (
@@ -40,6 +42,7 @@ from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
@@ -55,7 +58,10 @@ class IPickerEntry(Interface):
     These fields are needed by the Picker Ajax widget."""
     description = Attribute('Description')
     image = Attribute('Image URL')
-    css = Attribute('CSS Class')
+    # An item's icon indicates its type (eg person, team).
+    css = Attribute('Icon CSS Class')
+    # An item can also have a badge which is displayed after the title.
+    css_badge = Attribute('Badge CSS Class')
 
 
 class PickerEntry:
@@ -68,51 +74,101 @@ class PickerEntry:
         self.css = css
 
 
-@implementer(IPickerEntry)
 @adapter(Interface)
-def default_pickerentry_adapter(obj):
+class DefaultPickerEntryAdapter(object):
     """Adapts Interface to IPickerEntry."""
-    extra = PickerEntry()
-    if hasattr(obj, 'summary'):
-        extra.description = obj.summary
-    display_api = ObjectImageDisplayAPI(obj)
-    extra.css = display_api.sprite_css()
-    if extra.css is None:
-        extra.css = 'sprite bullet'
-    return extra
+
+    implements(IPickerEntry)
+    
+    def __init__(self, context):
+        self.context = context
+
+    def getPickerEntry(self, associated_object):
+        """ Construct a PickerEntry for the context of this adaptor.
+
+        The associated_object represents the context for which the picker is
+        being rendered. eg a picker used to select a bug task assignee will
+        have associated_object set to the bug task.
+        """
+        extra = PickerEntry()
+        if hasattr(self.context, 'summary'):
+            extra.description = self.context.summary
+        display_api = ObjectImageDisplayAPI(self.context)
+        extra.css = display_api.sprite_css()
+        if extra.css is None:
+            extra.css = 'sprite bullet'
+        return extra
 
 
-@implementer(IPickerEntry)
 @adapter(IPerson)
-def person_to_pickerentry(person):
+class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
     """Adapts IPerson to IPickerEntry."""
-    extra = default_pickerentry_adapter(person)
-    if person.preferredemail is not None:
-        try:
-            extra.description = person.preferredemail.email
-        except Unauthorized:
-            extra.description = '<email address hidden>'
-    return extra
+
+    def getPickerEntry(self, associated_object):
+        person = self.context
+        extra = super(PersonPickerEntryAdapter, self).getPickerEntry(
+            associated_object)
+        # Display the person's Launchpad id next to their name.
+        extra.title = "%s (~%s)" % (person.displayname, person.name)
+
+        # If the person is affiliated with the associated_object then we can
+        # display a badge.
+        badge_name = IHasAffiliation(
+            associated_object).getAffiliationBadge(person)
+        if badge_name is not None:
+            extra.image = "/@@/%s" % badge_name
+        if person.preferredemail is not None:
+            try:
+                extra.description = person.preferredemail.email
+            except Unauthorized:
+                extra.description = '<email address hidden>'
+    
+        def ircnick_display_text(ircid):
+            # First we shorten the full irc network to just the core network
+            # name. eg irc.freenode.net -> freenode
+            network = ircid.network
+            irc_match = re.search(r'irc\.(.*)\..*', network)
+            if irc_match:
+                network = irc_match.group(1)
+            # Then we return something like nic@network
+            return "%s@%s" % (ircid.nickname, network)
+    
+        # We will display the person's irc nic(s) after their email address in
+        # the description text.
+        irc_nicks = None
+        if person.ircnicknames:
+            irc_nicks = ", ".join(
+                [ircnick_display_text(ircid)for ircid in person.ircnicknames])
+        if irc_nicks:
+            extra.description = "%s (%s)" % (extra.description, irc_nicks)
+        return extra
 
 
-@implementer(IPickerEntry)
 @adapter(IBranch)
-def branch_to_pickerentry(branch):
+class BranchPickerEntryAdapter(DefaultPickerEntryAdapter):
     """Adapts IBranch to IPickerEntry."""
-    extra = default_pickerentry_adapter(branch)
-    extra.description = branch.bzr_identity
-    return extra
+    
+    def getPickerEntry(self, associated_object):
+        branch = self.context
+        extra = super(BranchPickerEntryAdapter, self).getPickerEntry(
+            associated_object)
+        extra.description = branch.bzr_identity
+        return extra
 
 
-@implementer(IPickerEntry)
 @adapter(ISourcePackageName)
-def sourcepackagename_to_pickerentry(sourcepackagename):
+class SourcePackageNamePickerEntryAdapter(DefaultPickerEntryAdapter):
     """Adapts ISourcePackageName to IPickerEntry."""
-    extra = default_pickerentry_adapter(sourcepackagename)
-    descriptions = getSourcePackageDescriptions([sourcepackagename])
-    extra.description = descriptions.get(
-        sourcepackagename.name, "Not yet built")
-    return extra
+
+    def getPickerEntry(self, associated_object):
+        sourcepackagename = self.context
+        extra = super(
+            SourcePackageNamePickerEntryAdapter, self).getPickerEntry(
+                associated_object)
+        descriptions = getSourcePackageDescriptions([sourcepackagename])
+        extra.description = descriptions.get(
+            sourcepackagename.name, "Not yet built")
+        return extra
 
 
 class HugeVocabularyJSONView:
@@ -168,7 +224,12 @@ class HugeVocabularyJSONView:
                 # needed for inplace editing via a REST call. The
                 # form picker doesn't need the api_url.
                 entry['api_uri'] = 'Could not find canonical url.'
-            picker_entry = IPickerEntry(term.value)
+            picker_entry = IPickerEntry(term.value).getPickerEntry(
+                self.context)
+            # The PickEntry adaptor may override the default title.
+            if (hasattr(picker_entry, 'title') and
+                picker_entry.title is not None):
+                entry['title'] = picker_entry.title
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (

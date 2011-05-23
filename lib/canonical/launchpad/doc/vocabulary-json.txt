@@ -52,7 +52,7 @@ A successful search.
             {
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
-                "title": "GuadaMen",
+                "title": "GuadaMen (~guadamen)",
                 "value": "guadamen"
             }
         ],
@@ -80,7 +80,7 @@ Size and offset parameters can be passed in to switch between batches.
             {
                 "api_uri": "/~commercial-admins",
                 "css": "sprite team",
-                "title": "Commercial Subscription Admins",
+                "title": "Commercial Subscription Admins (~commercial-admins)",
                 "value": "commercial-admins"
             }
         ],
@@ -97,7 +97,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "api_uri": "/~name16",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Foo Bar",
+                "title": "Foo Bar (~name16)",
                 "value": "name16"
             }
         ],
@@ -135,8 +135,27 @@ retrieved through vocabularies.
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Sample Person",
+                "title": "Sample Person (~name12)",
                 "value": "name12"
+            }
+        ],
+        "total_size": 1
+    }
+
+IRC nicknames should be displayed after any email address.
+
+    >>> form = dict(name='ValidPersonOrTeam', search_text='mark',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "api_uri": "/~mark",
+                "css": "sprite person",
+                "description": "<email address hidden> (mark@freenode)",
+                "title": "Mark Shuttleworth (~mark)",
+                "value": "mark"
             }
         ],
         "total_size": 1
