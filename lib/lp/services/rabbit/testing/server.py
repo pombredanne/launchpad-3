@@ -340,8 +340,6 @@ class RabbitServerRunner(RabbitFixture):
         super(RabbitServerRunner, self).setUp()
         self.environment = self.useFixture(
             RabbitServerEnvironment(self.config))
-        self.addDetail('rabbit log file',
-            content_from_file(self.config.logfile))
         self._start()
 
     def _start(self):
@@ -350,6 +348,9 @@ class RabbitServerRunner(RabbitFixture):
             self.config.nodename, self.config.port)
         daemon(name, self.config.logfile, self.config.pidfile, command=cmd,
             homedir=self.config.rabbitdir)
+        self.addDetail(
+            os.path.basename(self.config.logfile),
+            content_from_file(self.config.logfile))
         # Wait for the server to come up...
         timeout = time.time() + 5
         while time.time() < timeout:
