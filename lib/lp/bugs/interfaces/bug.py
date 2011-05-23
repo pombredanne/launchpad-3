@@ -509,7 +509,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     @operation_for_version('devel')
     def unmute(person, unmuted_by):
-        """Remove a muted subscription for `person`."""
+        """Remove a muted subscription for `person`.
+
+        Returns previously muted direct subscription, if any."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
@@ -779,9 +781,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
             schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
-            value_type=Reference(schema=Interface), # IBugNomination
+            value_type=Reference(schema=Interface),  # IBugNomination
             required=False))
-    @operation_returns_collection_of(Interface) # IBugNomination
+    @operation_returns_collection_of(Interface)  # IBugNomination
     @export_read_operation()
     def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
