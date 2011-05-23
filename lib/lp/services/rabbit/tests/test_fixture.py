@@ -24,24 +24,9 @@ class TestRabbitFixture(TestCase):
 
         fixture = RabbitServer()
 
-        def get_fixture_details():
-            fixture_getters = (
-                lambda: fixture,
-                lambda: fixture.config,
-                lambda: fixture.runner,
-                lambda: fixture.runner.server)
-            for get_fixture in fixture_getters:
-                try:
-                    fx = get_fixture()
-                except AttributeError:
-                    continue
-                else:
-                    self._gather_details(fx.getDetails)
-
-        # Work around two issues: (1) failures in setup don't attach details
-        # (if they did we could use self.useFixture), and (2) failures in
-        # sub-fixtures don't propagate up.
-        self.addCleanup(get_fixture_details)
+        # Work around failures-in-setup-not-attaching-details (if they did we
+        # could use self.useFixture).
+        self.addCleanup(self._gather_details, fixture.getDetails)
 
         with fixture:
             # We can connect.
