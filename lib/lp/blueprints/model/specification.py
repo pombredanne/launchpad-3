@@ -551,6 +551,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
+        subscription = get_property_cache(self).subscriptions
+        subscription.append(sub)
+        get_property_cache(self).subscriptions = sorted(subscription, key=lambda sub: sub.person.displayname)
         notify(ObjectCreatedEvent(sub, user=user))
         return sub
 
