@@ -75,7 +75,7 @@ class IOverridePolicy(Interface):
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
         :param binaries: A tuple of `IBinaryPackageName`, architecturetag
-            pairs. Architecturetag can be None for architecture-independant
+            pairs. Architecturetag can be None for architecture-independent
             publications.
 
         :return: A list of tuples containing `IBinaryPackageName`,

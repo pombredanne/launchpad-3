@@ -1822,7 +1822,7 @@ class Archive(SQLBase):
             return None
         # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
         # a PPA that overrides the component/pocket to main/RELEASE.
-        if self.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+        if self.purpose in MAIN_ARCHIVE_PURPOSES:
             return UbuntuOverridePolicy()
         return None
 
