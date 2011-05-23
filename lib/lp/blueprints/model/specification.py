@@ -52,6 +52,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     )
+from lp.services.propertycache import cachedproperty
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -182,7 +183,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = SQLMultipleJoin('SpecificationSubscription',
+    _subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
@@ -213,6 +214,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
 
+    @cachedproperty
+    def subscriptions(self):
+        """Sort the subscriptions"""
+        return sorted(self._subscriptions, key=lambda sub: sub.person.displayname)
+    
     @property
     def target(self):
         """See ISpecification."""

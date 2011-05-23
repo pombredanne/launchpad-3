@@ -63,11 +63,11 @@ notifications were sent.
 
     >>> for subscription in svg_support.subscriptions:
     ...     print subscription.person.preferredemail.email
+    andrew.bennetts@ubuntulinux.com
+    daf@canonical.com
     foo.bar@canonical.com
     robertc@robertcollins.net
-    andrew.bennetts@ubuntulinux.com
     stuart.bishop@canonical.com
-    daf@canonical.com
 
 Let's set a different approver and add a subscriber.
 
