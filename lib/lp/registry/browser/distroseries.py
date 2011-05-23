@@ -21,6 +21,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+import apt_pkg
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
@@ -74,7 +75,6 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,
     )
-from lp.archivepublisher.debversion import Version
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -886,8 +886,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The child doesn't have this package.  Treat that as the
             # parent being newer.
             return False
-        return (
-            Version(dsd.parent_source_version) < Version(dsd.source_version))
+        comparison = apt_pkg.VersionCompare(
+            dsd.parent_source_version, dsd.source_version)
+        return comparison < 0
 
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
