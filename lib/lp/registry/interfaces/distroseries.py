@@ -233,12 +233,15 @@ class IDistroSeriesPublic(
         description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
-    parent_series = exported(
+    previous_series = exported(
         ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'),
+        ("devel", dict(exported_as="previous_series")),
+        ("1.0", dict(exported_as="parent_series")),
+        ("beta", dict(exported_as="parent_series")),
         readonly=True)
     registrant = exported(
         PublicPersonChoice(
@@ -351,8 +354,8 @@ class IDistroSeriesPublic(
             """))
 
     # other properties
-    previous_series = Attribute("Previous series from the same "
-        "distribution.")
+    prior_series = Attribute(
+        "Prior series *by date* from the same distribution.")
 
     main_archive = exported(
         Reference(

@@ -11,7 +11,10 @@ __all__ = [
     'ISpecificationSubscription',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Int,
@@ -33,8 +36,10 @@ class ISpecificationSubscription(Interface):
             'The person you would like to subscribe to this blueprint. '
             'They will be notified of the subscription by e-mail.')
             )
+    personID = Attribute('db person value')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
+    specificationID = Attribute('db specification value')
     essential = Bool(title=_('Participation essential'), required=True,
         description=_('Check this if participation in the design and '
         'discussion of the feature is essential. This will '

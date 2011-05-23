@@ -578,7 +578,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            parent_series=None,
+            previous_series=None,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -734,7 +734,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return form.Fields(Choice(
             __name__='package_type',
             vocabulary=make_package_type_vocabulary(
-                self.context.parent_series.displayname,
+                self.context.previous_series.displayname,
                 self.search_higher_parent_option),
             default=DEFAULT_PACKAGE_TYPE,
             required=True))
@@ -903,7 +903,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         # Update the label for sync action.
         self.initialize_sync_label(
             "Sync Selected %s Versions into %s" % (
-                self.context.parent_series.displayname,
+                self.context.previous_series.displayname,
                 self.context.displayname,
                 ))
         super(DistroSeriesLocalDifferencesView, self).initialize()
@@ -919,8 +919,8 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             'target="help">Read more about syncing from the parent series'
             '</a>).',
             self.context.displayname,
-            self.context.parent_series.fullseriesname,
-            self.context.parent_series.displayname)
+            self.context.previous_series.fullseriesname,
+            self.context.previous_series.displayname)
 
     @property
     def label(self):
@@ -928,7 +928,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             "Source package differences between '%s' and "
             "parent series '%s'" % (
                 self.context.displayname,
-                self.context.parent_series.displayname,
+                self.context.previous_series.displayname,
                 ))
 
     @action(_("Update"), name="update")
@@ -967,7 +967,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
             "Packages that are listed here are those that have been added to "
             "the specific packages %s that were used to create %s. They are "
             "listed here so you can consider including them in %s.",
-            self.context.parent_series.displayname,
+            self.context.previous_series.displayname,
             self.context.displayname,
             self.context.displayname)
 
@@ -975,7 +975,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def label(self):
         return (
             "Packages in parent series '%s' but not in '%s'" % (
-                self.context.parent_series.displayname,
+                self.context.previous_series.displayname,
                 self.context.displayname,
                 ))
 
@@ -1010,14 +1010,14 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
             "Packages that are listed here are those that have been added to "
             "%s but are not yet part of the parent series %s.",
             self.context.displayname,
-            self.context.parent_series.displayname)
+            self.context.previous_series.displayname)
 
     @property
     def label(self):
         return (
             "Packages in '%s' but not in parent series '%s'" % (
                 self.context.displayname,
-                self.context.parent_series.displayname,
+                self.context.previous_series.displayname,
                 ))
 
     @action(_("Update"), name="update")
