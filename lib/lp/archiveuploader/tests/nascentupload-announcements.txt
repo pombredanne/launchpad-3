@@ -652,7 +652,7 @@ the INFO level what it /would/ have sent.
     ...
     INFO bar (1.0-6) breezy; urgency=low
     ...
-    INFO No announcement sent
+    INFO Announcing to hoary-announce@lists.ubuntu.com
     ...
     INFO You are receiving this email because you are the uploader, maintainer
     or
@@ -814,9 +814,6 @@ And then try to upload using the changes file with the malformed name.
 
     >>> bar_src.logger = FakeLogger()
     >>> result = bar_src.do_accept()
-    DEBUG Building recipients list.
-    ...
-    DEBUG Sending rejection email.
     DEBUG Sent a mail:
     ...
     DEBUG Rejected:
