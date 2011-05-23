@@ -41,6 +41,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
     IGNORED,
     HIGHER_VERSION_THAN_PARENT,
@@ -1362,11 +1363,63 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         view.pending_syncs = {specify_dsd_package(dsd): object()}
         self.assertTrue(view.hasPendingSync(dsd))
 
+    def test_isNewerThanParent_compares_versions_not_strings(self):
+        # isNewerThanParent compares Debian-style version numbers, not
+        # raw version strings.  So it's possible for a child version to
+        # be considered newer than the corresponding parent version even
+        # though a string comparison goes the other way.
+        versions = dict(base='1.0', parent='1.1c', derived='1.10')
+        dsd = self.factory.makeDistroSeriesDifference(versions=versions)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+
+        # Assumption for the test: the child version is greater than the
+        # parent version, but a string comparison puts them the other
+        # way around.
+        self.assertFalse(versions['parent'] < versions['derived'])
+        self.assertTrue(
+            Version(versions['parent']) < Version(versions['derived']))
+
+        # isNewerThanParent is not fooled by the misleading string
+        # comparison.
+        self.assertTrue(view.isNewerThanParent(dsd))
+
+    def test_isNewerThanParent_is_False_for_parent_update(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.1', derived='1.0'))
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.isNewerThanParent(dsd))
+
+    def test_isNewerThanParent_is_False_for_equivalent_updates(self):
+        # Some non-identical version numbers compare as "equal."  If the
+        # child and parent versions compare as equal, the child version
+        # is not considered newer.
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.1', derived='1.1'))
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.isNewerThanParent(dsd))
+
+    def test_isNewerThanParent_is_True_for_child_update(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.0', derived='1.1'))
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.isNewerThanParent(dsd))
+
     def test_canRequestSync_returns_False_if_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.pending_syncs = {specify_dsd_package(dsd): object()}
+        self.assertFalse(view.canRequestSync(dsd))
+
+    def test_canRequestSync_returns_False_if_child_is_newer(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.0', derived='1.1'))
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
         self.assertFalse(view.canRequestSync(dsd))
 
     def test_canRequestSync_returns_True_if_sync_makes_sense(self):
@@ -1639,6 +1692,15 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [], view.cached_differences.batch)
 
+    def test_isNewerThanParent_is_False_if_missing_from_child(self):
+        # If a package is missing from the child series,
+        # isNewerThanParent returns False.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+        view = create_initialized_view(dsd.derived_series, '+missingpackages')
+        self.assertFalse(view.isNewerThanParent(dsd))
+
 
 class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
                                               DistroSeriesDifferenceMixin):
@@ -1723,6 +1785,14 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
 
         self.assertContentEqual(
             [], view.cached_differences.batch)
+
+    def test_isNewerThanParent_is_True_if_unique_to_child(self):
+        unique_to_child = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=unique_to_child)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.isNewerThanParent(dsd))
 
 
 class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,
