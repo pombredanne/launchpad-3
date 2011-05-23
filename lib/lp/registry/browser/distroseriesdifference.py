@@ -166,13 +166,8 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         Only show the options if an editor requests via JS and the user
         is an archive admin.
         """
-        if not self.request.is_ajax:
-            return False
-
-        # Archive admin is done by component, so here we just see if the
-        # user has that permission on any components at all.
-        archive = self.context.derived_series.main_archive
-        return bool(archive.getComponentsForQueueAdmin(self.user))
+        return self.request.is_ajax and check_permission(
+            'launchpad.Admin', self.context)
 
     @property
     def display_diffs(self):
