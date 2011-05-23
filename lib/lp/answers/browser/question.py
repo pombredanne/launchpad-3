@@ -924,7 +924,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
+    @action(_('Propose Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
         """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])

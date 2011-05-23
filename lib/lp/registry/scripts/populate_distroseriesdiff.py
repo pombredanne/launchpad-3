@@ -84,7 +84,7 @@ def compose_sql_find_latest_source_package_releases(distroseries):
 def compose_sql_find_differences(derived_series, parent_series):
     """Produce SQL that finds differences for a `DistroSeries`.
 
-    The query compares `derived_distroseries` and its `parent_series`
+    The query compares `derived_distroseries` and its `previous_series`
     and for each package whose latest `SourcePackageRelease`s in the
     respective series differ, produces a tuple of:
      * `SourcePackageName` id: sourcepackagename
@@ -218,8 +218,7 @@ def populate_distroseriesdiff(logger, derived_series, parent_series):
 
 
 def find_derived_series():
-    """Find all derived `DistroSeries`.
-    """
+    """Find all derived `DistroSeries`."""
     Child = ClassAlias(DistroSeries, "Child")
     Parent = ClassAlias(DistroSeries, "Parent")
     relations = IStore(DistroSeries).find(

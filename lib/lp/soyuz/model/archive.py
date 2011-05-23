@@ -911,13 +911,12 @@ class Archive(SQLBase):
                           source_package_name, dep_name):
         """See `IArchive`."""
         deps = expand_dependencies(
-            self, distro_arch_series.distroseries, pocket, component,
-            source_package_name)
+            self, distro_arch_series, pocket, component, source_package_name)
         archive_clause = Or([And(
             BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             Component.name.is_in(components))
-            for (archive, pocket, components) in deps])
+            for (archive, not_used, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         return store.find(

@@ -11,6 +11,7 @@ __all__ = [
     'Bug',
     'BugAffectsPerson',
     'BugBecameQuestionEvent',
+    'BugMute',
     'BugSet',
     'BugTag',
     'FileBugData',
@@ -29,6 +30,7 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
+import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -52,6 +54,7 @@ from storm.expr import (
     Count,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Max,
@@ -63,6 +66,11 @@ from storm.expr import (
     Union,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -138,6 +146,7 @@ from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
+    IBugMute,
     IBugSet,
     IFileBugData,
     )
@@ -188,6 +197,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
@@ -201,6 +211,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.stormbase import StormBase
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
@@ -521,7 +532,7 @@ class Bug(SQLBase):
                     parent = message_by_id.get(parent.id, parent)
             else:
                 message, bugmessage = row
-                parent = None # parent attribute is not going to be accessed.
+                parent = None  # parent attribute is not going to be accessed.
             index = bugmessage.index
             result = IndexedMessage(message, inside, index, parent)
             if include_parents:
@@ -843,40 +854,45 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    def _getMutes(self, person):
+        store = Store.of(self)
+        mutes = store.find(
+            BugMute,
+            BugMute.bug == self,
+            BugMute.person == person)
+        return mutes
+
     def isMuted(self, person):
         """See `IBug`."""
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person,
-            BugSubscription.bug_notification_level ==
-                BugNotificationLevel.NOTHING)
-        return not subscriptions.is_empty()
+        mutes = self._getMutes(person)
+        return not mutes.is_empty()
 
     def mute(self, person, muted_by):
         """See `IBug`."""
         if person is None:
             # This may be a webservice request.
             person = muted_by
-        # If there's an existing subscription, update it.
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person)
-        if subscriptions.is_empty():
-            return self.subscribe(
-                person, muted_by, level=BugNotificationLevel.NOTHING)
+        assert not person.is_team, (
+            "Muting a subscription for entire team is not allowed.")
+
+        # If it's already muted, ignore the request.
+        mutes = self._getMutes(person)
+        if mutes.is_empty():
+            mute = BugMute(person, self)
+            Store.of(mute).flush()
         else:
-            subscription = subscriptions.one()
-            subscription.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
-            return subscription
+            # It's already muted, pass.
+            pass
 
     def unmute(self, person, unmuted_by):
         """See `IBug`."""
-        self.unsubscribe(person, unmuted_by)
+        store = Store.of(self)
+        if person is None:
+            # This may be a webservice request.
+            person = unmuted_by
+        mutes = self._getMutes(person)
+        store.remove(mutes.one())
+        return self.getSubscriptionForPerson(person)
 
     @property
     def subscriptions(self):
@@ -888,7 +904,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
         """See `IBug`."""
         return BugSubscriptionInfo(self, level)
 
@@ -905,7 +921,7 @@ BugMessage""" % sqlvalues(self.id))
         it.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
@@ -953,30 +969,18 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            # We short-circuit for private bugs, since actually
-            # returning something non-empty here causes things to break
-            # in fun and interesting ways (see bug 780248).
-            return []
-
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
-            # Pre-load duplicates
+            # Pre-load duplicate bugs.
             list(self.duplicates)
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-            for subscription in info.structural_subscriptions_from_duplicates:
-                recipients.addDupeSubscriber(
-                    subscription.subscriber)
 
-        unified_subscribers = (
-            info.duplicate_only_subscriptions.subscribers.union(
-                info.structural_subscriptions_from_duplicates.subscribers))
-        return unified_subscribers.sorted
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -1041,16 +1045,12 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        # Call getDirectSubscribers to update the recipients list with direct
-        # subscribers.  The results of the method call are not used.
         self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
-            # Call getIndirectSubscribers to update the recipients list with direct
-            # subscribers.  The results of the method call are not used.
             self.getIndirectSubscribers(recipients, level=level)
             if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
@@ -1917,22 +1917,6 @@ BugMessage""" % sqlvalues(self.id))
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
-        # This is here to avoid circular imports.
-        from lp.bugs.mail.bugnotificationrecipients import (
-            BugNotificationRecipients,
-            )
-
-        def check_person_in_team(person, list_of_people):
-            """Is the person in one of the teams?
-
-            Given a person and a list of people/teams, see if the person
-            belongs to one of the teams.
-            """
-            for subscriber in list_of_people:
-                if subscriber.is_team and person.inTeam(subscriber):
-                    return True
-            return False
-
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
         # actually a composite of bug contacts, structural subscribers
@@ -1943,16 +1927,9 @@ BugMessage""" % sqlvalues(self.id))
             return True
         # Otherwise check to see if the person is a member of any of the
         # subscribed teams.
-        if check_person_in_team(person, also_notified_subscribers):
-            return True
-
-        direct_subscribers = self.getDirectSubscribers()
-        if check_person_in_team(person, direct_subscribers):
-            return True
-        duplicate_subscribers = self.getSubscribersFromDuplicates(
-            recipients=BugNotificationRecipients())
-        if check_person_in_team(person, duplicate_subscribers):
-            return True
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
         return False
 
     def personIsSubscribedToDuplicate(self, person):
@@ -2274,7 +2251,9 @@ class BugSubscriptionInfo:
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug)
+            BugSubscription.bug == self.bug,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id==self.bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2287,12 +2266,14 @@ class BugSubscriptionInfo:
                 BugSubscription,
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self.bug)
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id==Bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscripitions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug.
 
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
@@ -2310,24 +2291,6 @@ class BugSubscriptionInfo:
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
         return get_structural_subscriptions_for_bug(self.bug)
-
-    @cachedproperty
-    @freeze(StructuralSubscriptionSet)
-    def structural_subscriptions_from_duplicates(self):
-        """Structural subscriptions from the bug's duplicates."""
-        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
-        higher_precedence = (
-            self.direct_subscriptions.subscribers.union(
-                self.also_notified_subscribers))
-        all_duplicate_structural_subscriptions = list()
-        for duplicate in self.bug.duplicates:
-            duplicate_struct_subs = get_structural_subscriptions_for_bug(
-                duplicate)
-            all_duplicate_structural_subscriptions += duplicate_struct_subs
-        return (
-            subscription for subscription in
-                all_duplicate_structural_subscriptions
-                if subscription.subscriber not in higher_precedence)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
@@ -2351,11 +2314,15 @@ class BugSubscriptionInfo:
         if self.bug.private:
             return BugSubscriberSet()
         else:
+            muted = IStore(BugMute).find(
+                Person,
+                BugMute.person_id==Person.id,
+                BugMute.bug==self.bug)
             return BugSubscriberSet().union(
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscriptions.subscribers)
+                self.direct_subscriptions.subscribers).difference(muted)
 
     @cachedproperty
     def indirect_subscribers(self):
@@ -2694,3 +2661,29 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
+
+
+class BugMute(StormBase):
+    """Contains bugs a person has decided to block notifications from."""
+
+    implements(IBugMute)
+
+    __storm_table__ = "BugMute"
+
+    def __init__(self, person=None, bug=None):
+        if person is not None:
+            self.person = person
+        if bug is not None:
+            self.bug_id = bug.id
+
+    person_id = Int("person", allow_none=False, validator=validate_person)
+    person = Reference(person_id, "Person.id")
+
+    bug_id = Int("bug", allow_none=False)
+    bug = Reference(bug_id, "Bug.id")
+
+    __storm_primary__ = 'person_id', 'bug_id'
+
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)
