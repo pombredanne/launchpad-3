@@ -208,15 +208,32 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.package_diff)
         self.assertIs(None, ds_diff.parent_package_diff)
 
-    def test_update_re_opens_difference(self):
-        # The status of a resolved difference will updated with new
-        # uploads.
+    def test_parent_update_re_opens_difference(self):
+        # The status of a resolved difference will be updated to
+        # NEEDS_ATTENTION with parent uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
-            versions={
-                'parent': '1.0',
-                'derived': '1.0',
-                },
+            versions=dict(parent='1.0', derived='1.0'),
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+
+        was_updated = ds_diff.update()
+
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_child_update_re_opens_difference(self):
+        # The status of a resolved difference will updated to
+        # BLACKLISTED_CURRENT with child uploads.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions=dict(parent='1.0', derived='1.0'),
             status=DistroSeriesDifferenceStatus.RESOLVED)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
@@ -228,7 +245,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertTrue(was_updated)
         self.assertEqual(
-            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
 
     def test_update_new_version_doesnt_change_status(self):
