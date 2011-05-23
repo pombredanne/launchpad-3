@@ -40,17 +40,17 @@ class TestNicknameGeneration(TestCaseWithFactory):
         # Nicks must be a minimum of four characters. generate_nick creates
         # nicks over a that length.
         nick = generate_nick('i@example.com')
-        self.assertEqual('i-example', nick)
+        self.assertEqual('i-5', nick)
 
     def test_can_create_noncolliding_nicknames(self):
         # Given the same email address, generate_nick doesn't recreate the
         # same nick once that nick is used.
         self._useNicknames(['bar'])
         nick = generate_nick('bar@example.com')
-        self.assertEqual('bar-example', nick)
+        self.assertEqual('bar-c', nick)
 
-        self._useNicknames(['bar-example', 'bar-example-com'])
-        self.assertNotIn(nick, ['bar', 'bar-example', 'bar-example-com'])
+        self._useNicknames(['bar-c'])
+        self.assertEqual('bar-c', nick)
 
     def _useNicknames(self, nicknames):
         # Helper method to consume a nickname
