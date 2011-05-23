@@ -4541,7 +4541,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
-    user = re.match("^(\S+)@(\S+)$", email_addr).groups()[0]
+    user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
 
     person_set = PersonSet()
