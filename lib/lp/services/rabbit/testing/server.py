@@ -300,10 +300,11 @@ class RabbitServerRunner(Fixture):
 
     def setUp(self):
         super(RabbitServerRunner, self).setUp()
-        self.server = self.useFixture(RabbitServerEnvironment(self.config))
+        self.environment = self.useFixture(
+            RabbitServerEnvironment(self.config))
         # Workaround fixtures not adding details from used fixtures.
         self.addDetail('rabbitctl errors',
-            Content(UTF8_TEXT, self.server._getErrors))
+            Content(UTF8_TEXT, self.environment._getErrors))
         self.addDetail('rabbit log file',
             content_from_file(self.config.logfile))
         self._start()
@@ -317,7 +318,7 @@ class RabbitServerRunner(Fixture):
         # Wait for the server to come up...
         timeout = time.time() + 5
         while time.time() < timeout:
-            if self.server.checkRunning():
+            if self.environment.checkRunning():
                 break
             time.sleep(0.3)
         else:
@@ -332,7 +333,7 @@ class RabbitServerRunner(Fixture):
             # rabbitctl can say a node is up before it is ready to
             # accept connections ... :-(
             try:
-                conn = self.server.getConnection()
+                conn = self.environment.getConnection()
             except socket.error:
                 time.sleep(0.1)
             else:
@@ -347,10 +348,10 @@ class RabbitServerRunner(Fixture):
 
     def _stop(self):
         """Stop the running server. Normally called by cleanups."""
-        if not self.server.checkRunning():
+        if not self.environment.checkRunning():
             # If someone has shut it down already, we're done.
             return
-        outstr, errstr = self.server.rabbitctl("stop", strip=True)
+        outstr, errstr = self.environment.rabbitctl("stop", strip=True)
         if outstr:
             self.addDetail('stop-out', Content(UTF8_TEXT, lambda: [outstr]))
         if errstr:
@@ -358,7 +359,7 @@ class RabbitServerRunner(Fixture):
         # Wait for the server to go down...
         timeout = time.time() + 15
         while time.time() < timeout:
-            if not self.server.checkRunning():
+            if not self.environment.checkRunning():
                 break
             time.sleep(0.3)
         else:
