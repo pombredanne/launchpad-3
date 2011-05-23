@@ -34,7 +34,6 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
@@ -170,10 +169,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # To see the blacklist options the the user needs to be an
         # archive admin.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        archive_admin = self.factory.makePerson()
-        permission_set = getUtility(IArchivePermissionSet)
-        permission_set.newQueueAdmin(
-            ds_diff.derived_series.main_archive, archive_admin, 'main')
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         with person_logged_in(archive_admin):
@@ -491,10 +488,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         # Blacklist options are presented to the users who are archive
         # admins.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        archive_admin = self.factory.makePerson()
-        permission_set = getUtility(IArchivePermissionSet)
-        permission_set.newQueueAdmin(
-            ds_diff.derived_series.main_archive, archive_admin, 'main')
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
 
         with person_logged_in(archive_admin):
             request = LaunchpadTestRequest(
