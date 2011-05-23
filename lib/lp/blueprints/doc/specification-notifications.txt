@@ -72,12 +72,18 @@ notifications were sent.
 Let's set a different approver and add a subscriber.
 
     >>> from lp.registry.interfaces.person import IPersonSet
+    
+    >>> stub.test_emails = []
     >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> svg_support.approver = mark
     >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
+    >>> transaction.commit()
+    >>> for fromaddr, toaddrs, message in stub.test_emails:
+    ...     print toaddrs
+    ['test@canonical.com']
 
 Now if we edit the status, a notification will be sent to all the
 previous people, and to the approver and the added subscriber:
