@@ -172,15 +172,18 @@ class BugFeed(BugsFeedBase):
         # For a `BugFeed` we must ensure that the bug is not private.
         super(BugFeed, self).initialize()
         if self.context.private:
-            self.request.response.addErrorNotification(
-                "Feeds do not serve private bugs.")
             if check_permission("launchpad.View", self.context):
-                self.request.response.redirect(canonical_url(self.context))
+                message_prefix = "This bug is private."
+                redirect_url = canonical_url(self.context)
             else:
                 # Bug cannot be seen so redirect to the bugs index page.
+                message_prefix = "The requested bug is private."
                 root = getUtility(ILaunchpadRoot)
-                self.request.response.redirect(
-                    canonical_url(root, rootsite='bugs'))
+                redirect_url = canonical_url(root, rootsite='bugs')
+
+            self.request.response.addErrorNotification(
+                message_prefix + " Feeds do not serve private bugs.")
+            self.request.response.redirect(redirect_url)
 
     @property
     def title(self):

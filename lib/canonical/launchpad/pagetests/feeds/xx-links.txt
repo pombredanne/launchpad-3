@@ -56,23 +56,14 @@ But if the bug is private, there should be no link.
     >>> soup.head.findAll('link', type='application/atom+xml')
     []
 
-But if they somehow manage to hack the url or use inline ajax editing of the
-bug status and attempt to subscribe, they are redirected to the bug page:
-
-    >>> def print_notifications(browser):
-    ...     tags = find_tags_by_class(
-    ...         browser.contents, 'error message')
-    ...     if len(tags) == 0:
-    ...         print 'No messages.'
-    ...     else:
-    ...         for tag in tags:
-    ...             print extract_text(tag)
+Even so, if they somehow manage to hack the url or use inline ajax editing of
+the bug status and attempt to subscribe, they are redirected to the bug page:
 
     >>> auth_browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
     >>> print auth_browser.url
-    http://bugs.launchpad.dev/jokosher/+bug/14
-    >>> print_notifications(auth_browser)
-    Feeds do not serve private bugs.
+    http://bugs.launchpad.dev/
+    >>> print get_feedback_messages(auth_browser.contents)
+    [u'The requested bug is private. Feeds do not serve private bugs.']
 
 == Latest Bugs and Branches for a Person ==
 
@@ -363,11 +354,11 @@ But if the branch is private, there should be no link.
     >>> soup.head.findAll('link', type='application/atom+xml')
     []
 
-But if they somehow manage to hack the url, they are redirected to a page with
-an error notification:
+Even so, if they somehow manage to hack the url, they are redirected to a page
+with an error notification:
 
     >>> browser.open('http://feeds.launchpad.dev/~name12/landscape/feature-x/branch.atom')
     >>> print browser.url
     http://code.launchpad.dev/
-    >>> print_notifications(browser)
-    Feeds do not serve private branches.
+    >>> print get_feedback_messages(browser.contents)
+    [u'The requested branch is private. Feeds do not serve private branches.']

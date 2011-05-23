@@ -407,16 +407,19 @@ class BranchFeed(BranchFeedBase):
             if not feed_allowed:
                 # We are logged in and can see the branch so redirect to the
                 # branch index page.
+                message_prefix = "This branch is private."
                 redirect_url = canonical_url(self.context)
         except Unauthorized:
             # Branch cannot be seen so redirect to the code index page.
             feed_allowed = False
+            message_prefix = "The requested branch is private."
             root = getUtility(ILaunchpadRoot)
             redirect_url = canonical_url(root, rootsite='code')
 
         if not feed_allowed:
             self.request.response.addErrorNotification(
-                "Feeds do not serve private branches.")
+                message_prefix +
+                " Feeds do not serve private branches.")
             self.request.response.redirect(redirect_url)
 
     @property
