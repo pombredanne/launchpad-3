@@ -1692,6 +1692,15 @@ class DistroSeriesMissingPackageDiffsTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [], view.cached_differences.batch)
 
+    def test_isNewerThanParent_is_False_if_missing_from_child(self):
+        # If a package is missing from the child series,
+        # isNewerThanParent returns False.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+        view = create_initialized_view(dsd.derived_series, '+missingpackages')
+        self.assertFalse(view.isNewerThanParent(dsd))
+
 
 class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
                                               DistroSeriesDifferenceMixin):
@@ -1776,6 +1785,14 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
 
         self.assertContentEqual(
             [], view.cached_differences.batch)
+
+    def test_isNewerThanParent_is_True_if_unique_to_child(self):
+        unique_to_child = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=unique_to_child)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.isNewerThanParent(dsd))
 
 
 class DistroSeriesUniquePackagesPageTestCase(TestCaseWithFactory,

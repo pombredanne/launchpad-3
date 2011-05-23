@@ -871,11 +871,21 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """Is the child's version of this package newer than the parent's?
 
         If it is, there's no point in offering to sync it.
+
+        Any version is considered "newer" than a missing version.
         """
         # This is trickier than it looks: versions are not totally
         # ordered.  Two non-identical versions may compare as equal.
         # Only consider cases where the child's version is conclusively
         # newer, not where the relationship is in any way unclear.
+        if dsd.parent_source_version is None:
+            # There is nothing to sync; the child is up to date and if
+            # anything needs updating, it's the parent.
+            return True
+        if dsd.source_version is None:
+            # The child doesn't have this package.  Treat that as the
+            # parent being newer.
+            return False
         return (
             Version(dsd.parent_source_version) < Version(dsd.source_version))
 
