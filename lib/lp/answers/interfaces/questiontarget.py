@@ -195,8 +195,8 @@ class IQuestionTargetView(Interface):
         :param subscribed_by: The user making the change.
         :return: True if the person was added, False if the person already is
             an answer contact.
-        :raises ValueError: When the person or team does no have a preferred
-            language.
+        :raises AddAnswerContactError: When the person or team does no have a
+            preferred language.
         """
 
     @operation_parameters(
