@@ -255,9 +255,9 @@ class RabbitServerEnvironment(RabbitFixture):
             "RABBITMQ_NODENAME", self.config.nodename))
         self._errors = []
         self.addDetail('rabbit-errors',
-            Content(UTF8_TEXT, self._getErrors))
+            Content(UTF8_TEXT, self._get_errors))
 
-    def _getErrors(self):
+    def _get_errors(self):
         """Yield all errors as UTF-8 encoded text."""
         for error in self._errors:
             if type(error) is unicode:
@@ -280,7 +280,7 @@ class RabbitServerEnvironment(RabbitFixture):
             return outstr.strip(), errstr.strip()
         return outstr, errstr
 
-    def checkRunning(self):
+    def check_running(self):
         """Checks that RabbitMQ is up and running."""
         nodename = self.config.fq_nodename
         outdata, errdata = self.rabbitctl("status")
@@ -310,7 +310,7 @@ class RabbitServerEnvironment(RabbitFixture):
         found_node = match.group('nodename')
         return found_node == nodename
 
-    def getConnection(self):
+    def get_connection(self):
         """Get an AMQP connection to the RabbitMQ server.
 
         :raises socket.error: If the connection cannot be made.
@@ -354,7 +354,7 @@ class RabbitServerRunner(RabbitFixture):
         # Wait for the server to come up...
         timeout = time.time() + 5
         while time.time() < timeout:
-            if self.environment.checkRunning():
+            if self.environment.check_running():
                 break
             time.sleep(0.3)
         else:
@@ -369,7 +369,7 @@ class RabbitServerRunner(RabbitFixture):
             # rabbitctl can say a node is up before it is ready to
             # accept connections ... :-(
             try:
-                conn = self.environment.getConnection()
+                conn = self.environment.get_connection()
             except socket.error:
                 time.sleep(0.1)
             else:
@@ -384,7 +384,7 @@ class RabbitServerRunner(RabbitFixture):
 
     def _stop(self):
         """Stop the running server. Normally called by cleanups."""
-        if not self.environment.checkRunning():
+        if not self.environment.check_running():
             # If someone has shut it down already, we're done.
             return
         outstr, errstr = self.environment.rabbitctl("stop", strip=True)
@@ -395,7 +395,7 @@ class RabbitServerRunner(RabbitFixture):
         # Wait for the server to go down...
         timeout = time.time() + 15
         while time.time() < timeout:
-            if not self.environment.checkRunning():
+            if not self.environment.check_running():
                 break
             time.sleep(0.3)
         else:
