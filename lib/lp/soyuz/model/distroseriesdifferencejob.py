@@ -92,10 +92,10 @@ def may_require_job(distroseries, sourcepackagename):
     """
     if distroseries is None:
         return False
-    parent_series = distroseries.parent_series
-    if parent_series is None:
+    previous_series = distroseries.previous_series
+    if previous_series is None:
         return False
-    if parent_series.distribution == distroseries.distribution:
+    if previous_series.distribution == distroseries.distribution:
         # Differences within a distribution are not tracked.
         return False
     return find_waiting_jobs(distroseries, sourcepackagename).is_empty()
@@ -148,18 +148,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         in a packageset that the derived series also has.
         """
         derived_series = self.distroseries
-        parent_series = derived_series.parent_series
+        previous_series = derived_series.previous_series
         if has_package(derived_series, self.sourcepackagename):
             return True
-        if not has_package(parent_series, self.sourcepackagename):
+        if not has_package(previous_series, self.sourcepackagename):
             return True
         packagesetset = getUtility(IPackagesetSet)
-        if packagesetset.getBySeries(parent_series).is_empty():
+        if packagesetset.getBySeries(previous_series).is_empty():
             # Parent series does not have packagesets, as would be the
             # case for e.g. Debian.  In that case, don't filter.
             return True
         parent_sets = packagesetset.setsIncludingSource(
-            self.sourcepackagename, distroseries=parent_series)
+            self.sourcepackagename, distroseries=previous_series)
         for parent_set in parent_sets:
             for related_set in parent_set.relatedSets():
                 if related_set.distroseries == derived_series:

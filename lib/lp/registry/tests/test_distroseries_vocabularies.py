@@ -77,7 +77,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution)
         distroseries = self.factory.makeDistroSeries(
-            parent_series=parent_distroseries)
+            previous_series=parent_distroseries)
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = set(parent_distroseries.distribution.series)
         observed_distroseries = set(term.value for term in vocabulary)
@@ -91,7 +91,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution,
-            parent_series=parent_distroseries)
+            previous_series=parent_distroseries)
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
             set(self.all_distroseries).difference(
@@ -171,7 +171,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries(
-            parent_series=parent_distroseries,
+            previous_series=parent_distroseries,
             distribution=distribution)
         flush_database_caches()
         # Reload distroseries and distribution; these will reasonably already

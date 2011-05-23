@@ -119,7 +119,7 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         ParentDistroSeries = ClassAlias(DistroSeries)
         conditions = And(
             conditions,
-            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            ParentDistroSeries.id == DistroSeries.previous_seriesID,
             Archive.distributionID == ParentDistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
             )
@@ -327,7 +327,7 @@ class DistroSeriesDifference(StormBase):
                     spph = parent_source_pubs_for_release[spn_id]
                     cache.parent_source_package_release = (
                         DistroSeriesSourcePackageRelease(
-                            dsd.derived_series.parent_series,
+                            dsd.derived_series.previous_series,
                             spph.sourcepackagerelease))
                 else:
                     cache.parent_source_package_release = None
@@ -384,7 +384,7 @@ class DistroSeriesDifference(StormBase):
         """Helper to keep source_pub/parent_source_pub DRY."""
         distro_series = self.derived_series
         if for_parent:
-            distro_series = self.derived_series.parent_series
+            distro_series = self.derived_series.previous_series
 
         pubs = distro_series.getPublishedSources(
             self.source_package_name, include_pending=True)
@@ -399,7 +399,7 @@ class DistroSeriesDifference(StormBase):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            parent = self.derived_series.parent_series
+            parent = self.derived_series.previous_series
             result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
                 version=self.base_version).first()
@@ -421,7 +421,7 @@ class DistroSeriesDifference(StormBase):
     @property
     def title(self):
         """See `IDistroSeriesDifference`."""
-        parent_name = self.derived_series.parent_series.displayname
+        parent_name = self.derived_series.previous_series.displayname
         return ("Difference between distroseries '%(parent_name)s' and "
                 "'%(derived_name)s' for package '%(pkg_name)s' "
                 "(%(parent_version)s/%(source_version)s)" % {
@@ -476,12 +476,12 @@ class DistroSeriesDifference(StormBase):
 
     def getParentPackageSets(self):
         """See `IDistroSeriesDifference`."""
-        has_parent_series = self.derived_series is not None and (
-            self.derived_series.parent_series is not None)
-        if has_parent_series:
+        has_previous_series = self.derived_series is not None and (
+            self.derived_series.previous_series is not None)
+        if has_previous_series:
             return getUtility(IPackagesetSet).setsIncludingSource(
                 self.source_package_name,
-                self.derived_series.parent_series)
+                self.derived_series.previous_series)
         else:
             return []
 
@@ -504,7 +504,7 @@ class DistroSeriesDifference(StormBase):
     @cachedproperty
     def parent_source_package_release(self):
         return self._package_release(
-            self.derived_series.parent_series,
+            self.derived_series.previous_series,
             self.parent_source_version)
 
     @cachedproperty
