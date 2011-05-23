@@ -40,7 +40,7 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -100,11 +100,7 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
     """
-    distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
-        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
-        # does not seem to be possible to express DISTINCT ON with Storm.
-        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
@@ -123,7 +119,7 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         ParentDistroSeries = ClassAlias(DistroSeries)
         conditions = And(
             conditions,
-            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            ParentDistroSeries.id == DistroSeries.previous_seriesID,
             Archive.distributionID == ParentDistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
             )
@@ -149,9 +145,12 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         DistroSeriesDifference.source_package_name_id,
         Desc(SourcePackagePublishingHistory.id),
         )
+    distinct_on = (
+        DistroSeriesDifference.source_package_name_id,
+        )
     store = IStore(SourcePackagePublishingHistory)
-    results = store.find(columns, conditions).order_by(*order_by)
-    return DecoratedResultSet(results, itemgetter(1, 2))
+    return store.find(
+        columns, conditions).order_by(*order_by).config(distinct=distinct_on)
 
 
 def most_recent_comments(dsds):
@@ -162,13 +161,7 @@ def most_recent_comments(dsds):
 
     :param dsds: An iterable of `DistroSeriesDifference` instances.
     """
-    distinct_on = storm_compile(
-        DistroSeriesDifferenceComment.distro_series_difference_id)
     columns = (
-        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a
-        # hack; it does not seem to be possible to express DISTINCT ON
-        # with Storm.
-        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
         DistroSeriesDifferenceComment,
         Message,
         )
@@ -180,9 +173,13 @@ def most_recent_comments(dsds):
         DistroSeriesDifferenceComment.distro_series_difference_id,
         Desc(DistroSeriesDifferenceComment.id),
         )
+    distinct_on = (
+        DistroSeriesDifferenceComment.distro_series_difference_id,
+        )
     store = IStore(DistroSeriesDifferenceComment)
-    comments = store.find(columns, conditions).order_by(*order_by)
-    return DecoratedResultSet(comments, itemgetter(1))
+    comments = store.find(
+        columns, conditions).order_by(*order_by).config(distinct=distinct_on)
+    return DecoratedResultSet(comments, itemgetter(0))
 
 
 class DistroSeriesDifference(StormBase):
@@ -330,7 +327,7 @@ class DistroSeriesDifference(StormBase):
                     spph = parent_source_pubs_for_release[spn_id]
                     cache.parent_source_package_release = (
                         DistroSeriesSourcePackageRelease(
-                            dsd.derived_series.parent_series,
+                            dsd.derived_series.previous_series,
                             spph.sourcepackagerelease))
                 else:
                     cache.parent_source_package_release = None
@@ -387,7 +384,7 @@ class DistroSeriesDifference(StormBase):
         """Helper to keep source_pub/parent_source_pub DRY."""
         distro_series = self.derived_series
         if for_parent:
-            distro_series = self.derived_series.parent_series
+            distro_series = self.derived_series.previous_series
 
         pubs = distro_series.getPublishedSources(
             self.source_package_name, include_pending=True)
@@ -402,7 +399,7 @@ class DistroSeriesDifference(StormBase):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            parent = self.derived_series.parent_series
+            parent = self.derived_series.previous_series
             result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
                 version=self.base_version).first()
@@ -424,7 +421,7 @@ class DistroSeriesDifference(StormBase):
     @property
     def title(self):
         """See `IDistroSeriesDifference`."""
-        parent_name = self.derived_series.parent_series.displayname
+        parent_name = self.derived_series.previous_series.displayname
         return ("Difference between distroseries '%(parent_name)s' and "
                 "'%(derived_name)s' for package '%(pkg_name)s' "
                 "(%(parent_version)s/%(source_version)s)" % {
@@ -479,12 +476,12 @@ class DistroSeriesDifference(StormBase):
 
     def getParentPackageSets(self):
         """See `IDistroSeriesDifference`."""
-        has_parent_series = self.derived_series is not None and (
-            self.derived_series.parent_series is not None)
-        if has_parent_series:
+        has_previous_series = self.derived_series is not None and (
+            self.derived_series.previous_series is not None)
+        if has_previous_series:
             return getUtility(IPackagesetSet).setsIncludingSource(
                 self.source_package_name,
-                self.derived_series.parent_series)
+                self.derived_series.previous_series)
         else:
             return []
 
@@ -507,7 +504,7 @@ class DistroSeriesDifference(StormBase):
     @cachedproperty
     def parent_source_package_release(self):
         return self._package_release(
-            self.derived_series.parent_series,
+            self.derived_series.previous_series,
             self.parent_source_version)
 
     @cachedproperty

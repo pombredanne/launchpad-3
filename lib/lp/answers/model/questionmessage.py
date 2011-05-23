@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.answers.enums import (
     QuestionAction,
     QuestionStatus,
@@ -52,8 +52,12 @@ class QuestionMessage(SQLBase):
 
     @cachedproperty
     def index(self):
+        return list(self.question.messages).index(self)
+
+    @cachedproperty
+    def display_index(self):
         # Return the index + 1 so that messages appear 1-indexed in the UI.
-        return list(self.question.messages).index(self) + 1
+        return self.index + 1
 
     @property
     def visible(self):

@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IMailHandler,
     )
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.mail.commands import (
     EmailCommand,
     EmailCommandCollection,

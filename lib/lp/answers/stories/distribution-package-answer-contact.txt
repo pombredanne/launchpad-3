@@ -115,26 +115,3 @@ portlet for the source package is updated.
     ...     'Answer contacts for evolution in Ubuntu').fetch('a'):
     ...     print answer_contact.renderContents()
     Landscape Developers
-
-
-Distribution Release Source Package Answer Contacts
----------------------------------------------------
-
-The 'Set answer contacts' action is also available on distribution
-release source package. Altough in this case, it's exactly like working
-with the distribution source package.
-
-For example, the answer contacts registered on the evolution package
-in Ubuntu are shown on the evolution package in Hoary:
-
-    >>> browser.open(
-    ...     "http://answers.launchpad.dev/ubuntu/hoary/+source/evolution")
-    >>> browser.getLink('Set answer contact').click()
-    >>> print browser.url
-    http://.../ubuntu/hoary/+source/evolution/+answer-contact
-
-The Landscape developers team is selected as answer contact, like for
-the distribution source package.
-
-    >>> browser.getControl('Landscape Developers').selected
-    True

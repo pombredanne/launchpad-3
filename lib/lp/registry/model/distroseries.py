@@ -223,7 +223,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series = ForeignKey(
+    previous_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -468,8 +468,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) "
-                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
@@ -524,9 +522,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
 
         def decorator(row):
-            _, spn, score, bug_count, total_messages = row
+            spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -675,7 +674,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return result
 
     @cachedproperty
-    def previous_series(self):
+    def prior_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
@@ -790,7 +789,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
         # the bug is fixed.
-        return self.parent_series is not None
+        return self.previous_series is not None
 
     @property
     def is_initialising(self):
@@ -1979,10 +1978,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=None, registrant=user)
+                version=version, previous_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not None:
+            if child.previous_series is not None:
                 raise DerivationError(
                     "DistroSeries %s parent series is %s, "
                     "but it must not be set" % (
@@ -1999,13 +1998,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeriesPublic`."""
         # XXX rvb 2011-04-08 bug=754750: The clause
         # 'DistroSeries.distributionID!=self.distributionID' is only
-        # required because the parent_series attribute has been
+        # required because the previous_series attribute has been
         # (mis-)used to denote other relations than proper derivation
         # relashionships. We should be rid of this condition once
         # the bug is fixed.
         results = Store.of(self).find(
             DistroSeries,
-            DistroSeries.parent_series==self.id,
+            DistroSeries.previous_series==self.id,
             DistroSeries.distributionID!=self.distributionID)
         return results.order_by(Desc(DistroSeries.date_created))
 

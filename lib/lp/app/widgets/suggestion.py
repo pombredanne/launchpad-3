@@ -227,7 +227,7 @@ class TargetBranchWidget(SuggestionWidget):
         """
         default_target = branch.target.default_merge_target
         logged_in_user = getUtility(ILaunchBag).user
-        since = datetime.now(utc) - timedelta(days=1)
+        since = datetime.now(utc) - timedelta(days=90)
         collection = branch.target.collection.targetedBy(logged_in_user,
             since)
         collection = collection.visibleByUser(logged_in_user)

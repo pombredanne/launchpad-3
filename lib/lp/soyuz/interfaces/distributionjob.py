@@ -103,16 +103,16 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
 class IPackageCopyJobSource(IJobSource):
     """An interface for acquiring IIPackageCopyJobs."""
 
-    def create(cls, source_archive, source_packages,
+    def create(cls, source_packages, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False):
         """Create a new sync package job.
 
-        :param source_archive: The `IArchive` in which `source_packages` are
-            found.
         :param source_packages: This is an iterable of `(source_package_name,
             version)` tuples, where both `source_package_name` and `version`
             are strings.
+        :param source_archive: The `IArchive` in which `source_packages` are
+            found.
         :param target_archive: The `IArchive` to which to copy the packages.
         :param target_distroseries: The `IDistroSeries` to which to copy the
             packages.
