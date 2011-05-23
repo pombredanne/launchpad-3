@@ -52,7 +52,10 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     )
-from lp.services.propertycache import cachedproperty, get_property_cache
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -217,8 +220,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
     @cachedproperty
     def subscriptions(self):
         """Sort the subscriptions"""
-        return sorted(self._subscriptions, key=lambda sub: sub.person.displayname)
-    
+        return sorted(
+            self._subscriptions, key=lambda sub: sub.person.displayname)
+
     @property
     def target(self):
         """See ISpecification."""
@@ -551,9 +555,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
-        subscription = get_property_cache(self).subscriptions
-        subscription.append(sub)
-        get_property_cache(self).subscriptions = sorted(subscription, key=lambda sub: sub.person.displayname)
+        property_cache = get_property_cache(self)
+        if 'subscription' in property_cache:
+            property_cache.subscriptions.append(sub)
+            property_cache.subscriptions.sort(
+                key=lambda sub: sub.person.displayname)
         notify(ObjectCreatedEvent(sub, user=user))
         return sub
 
@@ -702,7 +708,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
-
 
 
 class HasSpecificationsMixin:

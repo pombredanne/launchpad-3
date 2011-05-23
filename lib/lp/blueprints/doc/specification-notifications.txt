@@ -72,7 +72,7 @@ notifications were sent.
 Let's set a different approver and add a subscriber.
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    
+
     >>> stub.test_emails = []
     >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail(
