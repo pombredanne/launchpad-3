@@ -77,21 +77,27 @@
                 tal:attributes="class src_name">
 
               <td>
-                <tal:checkbox tal:condition="python: view.canRequestSync(difference)">
-                  <input tal:condition="can_perform_sync"
+                <tal:checkbox
+                    condition="can_perform_sync"
+                    define="can_request python:view.canRequestSync(difference)">
+                  <input tal:condition="can_request"
                     name="field.selected_differences" type="checkbox"
                     tal:attributes="
                       value diff_id;
                       id string:field.selected_differences.${diff_id}"/>
-
-                  <a tal:attributes="href difference/fmt:url"
-                     class="js-action toggle-extra"
-                     tal:content="src_name">Foo</a>
+                  <input
+                    tal:condition="not: can_request"
+                    type="checkbox" disabled="disabled" />
                 </tal:checkbox>
-                <tal:clockface condition="python: view.hasPendingSync(difference)">
-                  <span class="sprite build_depwait"></span>
+
+                <a tal:attributes="href difference/fmt:url"
+                   class="js-action toggle-extra"
+                   tal:content="src_name">Foo</a>
+
+                <tal:synchronizing
+                    condition="python: view.hasPendingSync(difference)">
                   <i>(Synchronizing)</i>
-                </tal:clockface>
+                </tal:synchronizing>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
                 <a tal:attributes="href difference/parent_series/fmt:url"
