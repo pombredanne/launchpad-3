@@ -34,6 +34,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
@@ -142,34 +143,53 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, view.binary_summaries)
 
     def test_show_edit_options_non_ajax(self):
-        # Blacklist options are not shown for non-ajax requests.
+        # Blacklist options and "Add comment" are not shown for non-ajax
+        # requests.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         # Without JS, even editors don't see blacklist options.
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
-        self.assertFalse(view.show_edit_options)
+        self.assertFalse(view.show_add_comment)
+        self.assertFalse(view.show_blacklist_options)
 
     def test_show_edit_options_editor(self):
-        # Blacklist options are shown if requested by an editor via
-        # ajax.
+        # Blacklist options and "Add comment" are shown if requested by
+        # an editor via ajax.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
-            self.assertTrue(view.show_edit_options)
+            self.assertTrue(view.show_add_comment)
+            self.assertFalse(view.show_blacklist_options)
 
-    def test_show_edit_options_non_editor(self):
-        # Even with a JS request, non-editors do not see the options.
+    def test_show_blacklist_options_for_archive_admin(self):
+        # To see the blacklist options the the user needs to be an
+        # archive admin.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makePerson()
+        permission_set = getUtility(IArchivePermissionSet)
+        permission_set.newQueueAdmin(
+            ds_diff.derived_series.main_archive, archive_admin, 'main')
+
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        with person_logged_in(archive_admin):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            self.assertTrue(view.show_blacklist_options)
+
+    def test_show_add_comment_non_editor(self):
+        # Even with a JS request, non-editors do not see the 'add
+        # comment' option.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         view = create_initialized_view(
             ds_diff, '+listing-distroseries-extra', request=request)
-        self.assertFalse(view.show_edit_options)
+        self.assertFalse(view.show_add_comment)
 
     def test_does_display_child_diff(self):
         # If the child's latest published version is not the same as the base
@@ -468,17 +488,15 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             1, len(soup.findAll('pre', text="Here's another comment.")))
 
     def test_blacklist_options(self):
-        # blacklist options are presented to the users with
-        # lp.View on the distroseries.
+        # Blacklist options are presented to the users who are archive
+        # admins.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makePerson()
+        permission_set = getUtility(IArchivePermissionSet)
+        permission_set.newQueueAdmin(
+            ds_diff.derived_series.main_archive, archive_admin, 'main')
 
-        with person_logged_in(self.factory.makePerson()):
-            self.assertTrue(
-                check_permission('launchpad.Edit', ds_diff))
-            self.assertTrue(
-                check_permission(
-                    'launchpad.View',
-                    ds_diff.derived_series.parent))
+        with person_logged_in(archive_admin):
             request = LaunchpadTestRequest(
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             view = create_initialized_view(
