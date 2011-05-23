@@ -749,7 +749,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             else:
                 bug.subscribe(self.user, self.user)
                 self.request.response.addNotification(
-                    "You have been subscribed to this bug.")
+                    "You have subscribed to this bug report.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 

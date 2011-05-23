@@ -1452,7 +1452,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if self.request.form.get('subscribe', False):
             bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
-                "You have been subscribed to this bug.")
+                "You have subscribed to this bug report.")
 
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
