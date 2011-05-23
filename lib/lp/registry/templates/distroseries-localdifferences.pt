@@ -95,7 +95,7 @@
                    tal:content="src_name">Foo</a>
 
                 <span
-                    style="color:grey"
+                    class="lowlight"
                     tal:condition="python: view.hasPendingSync(difference)">
                     &nbsp;&nbsp;synchronizing&hellip;
                 </span>
