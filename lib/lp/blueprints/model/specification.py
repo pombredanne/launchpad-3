@@ -52,7 +52,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import cachedproperty, get_property_cache
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -559,6 +559,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # see if a relevant subscription exists, and if so, delete it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
                 return
 

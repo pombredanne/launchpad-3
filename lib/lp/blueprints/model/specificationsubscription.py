@@ -33,3 +33,4 @@ class SpecificationSubscription(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
+

@@ -107,7 +107,6 @@ are now subscribed.
     ['robertc@robertcollins.net']
     ['stuart.bishop@canonical.com']
     ['test@canonical.com']
-    ['test@canonical.com']
 
 Now let's take a look at what the notification looks like:
 
