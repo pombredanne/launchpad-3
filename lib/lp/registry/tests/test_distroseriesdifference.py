@@ -9,6 +9,7 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -427,6 +428,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.packagesets])
+
+    def test_blacklist_unauthorised(self):
+        # If you're not an archive admin, you don't get to blacklist or
+        # unblacklist.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        random_joe = self.factory.makePerson()
+        with person_logged_in(random_joe):
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'blacklist')
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'unblacklist')
 
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
