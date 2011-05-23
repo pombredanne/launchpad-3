@@ -72,6 +72,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
@@ -365,7 +366,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
     def test_submit(self):
         # When creating a new DistroSeries via DistroSeriesAddView, the title
         # is set to the same as the displayname (title is, in any case,
-        # deprecated), the description is left empty, and parent_series is
+        # deprecated), the description is left empty, and previous_series is
         # None (DistroSeriesInitializeView takes care of setting that).
         user = self.factory.makePerson()
         distribution = self.factory.makeDistribution(owner=user)
@@ -385,7 +386,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
-        self.assertIs(None, distroseries.parent_series)
+        self.assertIs(None, distroseries.previous_series)
         self.assertEqual(user, distroseries.owner)
 
 
@@ -1347,6 +1348,32 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                 derived_series, '+localpackagediffs')
 
             self.assertFalse(view.canPerformSync())
+
+    def test_hasPendingSync_returns_False_if_no_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.hasPendingSync(dsd))
+
+    def test_hasPendingSync_returns_True_if_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        self.assertTrue(view.hasPendingSync(dsd))
+
+    def test_canRequestSync_returns_False_if_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        self.assertFalse(view.canRequestSync(dsd))
+
+    def test_canRequestSync_returns_True_if_sync_makes_sense(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.canRequestSync(dsd))
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs'):

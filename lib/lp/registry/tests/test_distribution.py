@@ -108,7 +108,7 @@ class TestDistributionCurrentSourceReleases(
         # Cache cleared.
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
-            description='', version='1', parent_series=None,
+            description='', version='1', previous_series=None,
             registrant=self.factory.makePerson())
         self.assertNotIn("series", cache)
 
@@ -169,11 +169,11 @@ class SeriesTests(TestCaseWithFactory):
     def test_derivatives(self):
         distro1 = self.factory.makeDistribution()
         distro2 = self.factory.makeDistribution()
-        parent_series = self.factory.makeDistroRelease(
+        previous_series = self.factory.makeDistroRelease(
             distribution=distro1)
         series = self.factory.makeDistroRelease(
             distribution=distro2,
-            parent_series=parent_series)
+            previous_series=previous_series)
         self.assertContentEqual(
             [series], distro1.derivatives)
 

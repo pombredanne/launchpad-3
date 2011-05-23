@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import BugAffectsPerson
+from lp.code.model.branchsubscription import BranchSubscription
 from lp.registry.model.person import Person
 from lp.services.database import bulk
 from lp.soyuz.model.component import Component
@@ -202,4 +203,14 @@ class TestLoaders(TestCaseWithFactory):
         self.assertEqual(expected,
             set(bulk.load_related(Person, owning_objects, ['ownerID'])))
 
-
+    def test_load_referencing(self):
+        owned_objects = [
+            self.factory.makeBranch(),
+            self.factory.makeBranch(),
+            ]
+        expected = set(list(owned_objects[0].subscriptions) + 
+            list(owned_objects[1].subscriptions))
+        self.assertNotEqual(0, len(expected))
+        self.assertEqual(expected,
+            set(bulk.load_referencing(BranchSubscription, owned_objects,
+                ['branchID'])))

@@ -47,14 +47,17 @@
               </th>
               <th tal:condition="view/show_parent_version">
                 <tal:one_parent condition="view/has_unique_parent">
-                  <tal:replace replace="view/unique_parent/displayname" /> version
+                  <a tal:attributes="href view/unique_parent/fmt:url"
+                     tal:content="view/unique_parent/displayname">Warty</a> version
                 </tal:one_parent>
                 <tal:multiple_parents condition="not: view/has_unique_parent">
                   Parent version
                 </tal:multiple_parents>
               </th>
               <th tal:condition="view/show_derived_version">
-                <tal:replace replace="series_name" /> version</th>
+                <a tal:attributes="href context/fmt:url"
+                   tal:content="series_name">Deriwarty</a> version
+              </th>
               <th tal:condition="view/show_parent_packagesets">
                 Parent package-sets
               </th>
@@ -74,14 +77,21 @@
                 tal:attributes="class src_name">
 
               <td>
-                <input tal:condition="can_perform_sync"
-                  name="field.selected_differences" type="checkbox"
-                  tal:attributes="
-                    value diff_id;
-                    id string:field.selected_differences.${diff_id}"/>
+                <tal:checkbox tal:condition="python: view.canRequestSync(difference)">
+                  <input tal:condition="can_perform_sync"
+                    name="field.selected_differences" type="checkbox"
+                    tal:attributes="
+                      value diff_id;
+                      id string:field.selected_differences.${diff_id}"/>
 
-                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
-                   tal:content="src_name">Foo</a>
+                  <a tal:attributes="href difference/fmt:url"
+                     class="js-action toggle-extra"
+                     tal:content="src_name">Foo</a>
+                </tal:checkbox>
+                <tal:clockface condition="python: view.hasPendingSync(difference)">
+                  <span class="sprite build_depwait"></span>
+                  <i>(Synchronizing)</i>
+                </tal:clockface>
               </td>
               <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
                 <a tal:attributes="href difference/parent_series/fmt:url"
@@ -170,7 +180,9 @@
             </tal:difference>
           </tbody>
         </table>
-        <tal:selectable_differences_end
+        <tal:navigation_bottom
+          replace="structure differences/@@+navigation-links-lower" />
+         <tal:selectable_differences_end
                define="widget nocall:view/widgets/selected_differences;
                        field_name widget/context/__name__;
                        error python:view.getFieldError(field_name);">

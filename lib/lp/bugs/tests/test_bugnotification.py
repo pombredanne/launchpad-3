@@ -13,6 +13,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import Not
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
@@ -36,7 +37,10 @@ from lp.bugs.model.bugnotification import (
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    person_logged_in,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import Contains
 
@@ -167,13 +171,15 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
                           notification, person,
                           u'reason header', u'reason body'))
 
-    def addNotification(self, person):
+    def addNotification(self, person, bug=None):
         # Add a notification along with recipient data.
         # This is generally done with BugTaskSet.addNotification()
         # but that requires a more complex set-up.
+        if bug is None:
+            bug = self.bug
         message = self.factory.makeMessage()
         notification = BugNotification(
-            message=message, activity=None, bug=self.bug,
+            message=message, activity=None, bug=bug,
             is_comment=False, date_emailed=None)
         self.addNotificationRecipient(notification, person)
         return notification
@@ -191,7 +197,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             bug_filter = subscription.bug_filters.one()
         if description is not None:
             bug_filter.description = description
-        BugNotificationFilter(
+        return BugNotificationFilter(
             bug_notification=notification,
             bug_subscription_filter=bug_filter)
 
@@ -581,3 +587,58 @@ class TestNotificationsForRegistrantsForProducts(
         return self.factory.makeBug(
             product=self.pillar,
             owner=self.bug_owner)
+
+
+class TestBug778847(TestCaseWithFactory):
+    """Regression tests for bug 778847."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_muted_filters_for_teams_with_contact_addresses_dont_oops(self):
+        # If a user holds a mute on a Team subscription,
+        # getRecipientFilterData() will handle the mute correctly.
+        # This is a regression test for bug 778847.
+        team_owner = self.factory.makePerson(name="team-owner")
+        team = self.factory.makeTeam(
+            email="test@example.com", owner=team_owner)
+        product = self.factory.makeProduct()
+        store = Store.of(product)
+        with person_logged_in(team_owner):
+            subscription = product.addBugSubscription(
+                team, team_owner)
+            subscription_filter = subscription.bug_filters.one()
+            # We need to add this mute manually instead of calling
+            # subscription_filter.mute, since mute() prevents mutes from
+            # occurring on teams that have contact addresses. Since
+            # we're testing for regression here we cheerfully ignore
+            # that rule.
+            mute = BugSubscriptionFilterMute()
+            mute.person = team_owner
+            mute.filter = subscription_filter.id
+            store.add(mute)
+
+        bug = self.factory.makeBug(product=product)
+        transaction.commit()
+        # Ensure that the notification about the bug being created will
+        # appear when we call getNotificationsToSend() by setting its
+        # message's datecreated time to 1 hour in the past.
+        store.execute("""
+            UPDATE Message SET
+                datecreated = now() at time zone 'utc' - interval '1 hour'
+            WHERE id IN (
+                SELECT message FROM BugNotification WHERE bug = %s);
+            """ % bug.id)
+        [notification] = BugNotificationSet().getNotificationsToSend()
+        # In this situation, only the team's subscription should be
+        # returned, since the Person has muted the subscription (whether
+        # or not they'll get email from the team contact address is not
+        # covered by this code).
+        self.assertEqual(
+            {team: {
+                'filter descriptions': [],
+                'sources': [notification.recipients[1]]}},
+            BugNotificationSet().getRecipientFilterData(
+            bug,
+            {team.teamowner: [notification.recipients[0]],
+             team: [notification.recipients[1]]},
+            [notification]))
