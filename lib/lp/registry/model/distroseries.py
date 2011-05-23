@@ -38,7 +38,6 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import (
@@ -226,7 +225,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series = ForeignKey(
+    previous_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -677,7 +676,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return result
 
     @cachedproperty
-    def previous_series(self):
+    def prior_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
@@ -1978,10 +1977,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=None, registrant=user)
+                version=version, previous_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not None:
+            if child.previous_series is not None:
                 raise DerivationError(
                     "DistroSeries %s parent series is %s, "
                     "but it must not be set" % (

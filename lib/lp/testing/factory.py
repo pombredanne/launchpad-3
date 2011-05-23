@@ -2337,7 +2337,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None, displayname=None,
+                          previous_series=None, name=None, displayname=None,
                           registrant=None):
         """Make a new distro release."""
         if distribution is None:
@@ -2360,19 +2360,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, registrant=registrant)
+            previous_series=previous_series, registrant=registrant)
         series.status = status
 
         return ProxyFactory(series)
 
     def makeUbuntuDistroRelease(self, version=None,
                                 status=SeriesStatus.DEVELOPMENT,
-                                parent_series=None, name=None,
+                                previous_series=None, name=None,
                                 displayname=None):
         """Short cut to use the celebrity 'ubuntu' as the distribution."""
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return self.makeDistroRelease(
-            ubuntu, version, status, parent_series, name, displayname)
+            ubuntu, version, status, previous_series, name, displayname)
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease

@@ -22,9 +22,7 @@ from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
-    compile as storm_compile,
     Desc,
-    SQL,
     Table,
     )
 from storm.locals import (
