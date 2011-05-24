@@ -190,7 +190,9 @@ class BasePersonVocabulary:
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            return SimpleTerm(obj, obj.name, obj.displayname)
+            # Display the person's Launchpad id next to their name.
+            title = "%s (~%s)" % (obj.displayname, obj.name)
+            return SimpleTerm(obj, obj.name, title)
         except Unauthorized:
             return None
 

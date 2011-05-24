@@ -5,7 +5,10 @@
 
 from lxml import html
 
-from zope.component import getAdapter
+from zope.component import (
+    getAdapter,
+    getUtility
+    )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
@@ -19,6 +22,7 @@ from lp.app.browser.tales import (
     format_link,
     PersonFormatterAPI,
     )
+from lp.registry.interfaces.irc import IIrcIDSet
 from lp.testing import (
     test_tales,
     TestCaseWithFactory,
@@ -264,3 +268,18 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         extra = ['1', '2']
         self.assertEqual('', traverse('shorten', extra))
         self.assertEqual(['1'], extra)
+
+
+class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
+    """Tests for IRCNicknameFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_format_nick(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        ircID = ircset.new(person, "irc.canonical.com", "fred")
+        self.assertEqual(
+            'fred@canonical',
+            test_tales('nick/fmt:displayname', nick=ircID))
+

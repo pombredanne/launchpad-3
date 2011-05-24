@@ -12,6 +12,7 @@ import cgi
 from email.Utils import formatdate
 import math
 import os.path
+import re
 import rfc822
 import sys
 import urllib
@@ -2655,3 +2656,26 @@ class CSSFormatter:
             return getattr(self, name)(furtherPath)
         except AttributeError:
             raise TraversalError(name)
+
+
+class IRCNicknameFormatterAPI(ObjectFormatterAPI):
+    """Adapter from IrcID objects to a formatted string."""
+
+    implements(ITraversable)
+
+    traversable_names = {
+        'displayname': 'displayname',
+    }
+
+    def __init__(self, context):
+        self.context = context
+
+    def displayname(self, view_name=None):
+        # We shorten the full irc network to just the core network
+        # name. eg irc.freenode.net -> freenode
+        network = self.context.network
+        irc_match = re.search(r'irc\.(.*)\..*', network)
+        if irc_match:
+            network = irc_match.group(1)
+        # Then we return something like nick@network
+        return "%s@%s" % (self.context.nickname, network)

@@ -14,7 +14,6 @@ __all__ = [
     'sourcepackagename_to_vocabularyjson',
     ]
 
-import re
 import simplejson
 
 from lazr.restful.interfaces import IWebServiceClientRequest
@@ -27,7 +26,6 @@ from zope.component import (
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import (
     Attribute,
-    implementer,
     implements,
     Interface,
     )
@@ -36,7 +34,10 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.app.browser.tales import (
+    IRCNicknameFormatterAPI,
+    ObjectImageDisplayAPI,
+    )
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
@@ -58,10 +59,7 @@ class IPickerEntry(Interface):
     These fields are needed by the Picker Ajax widget."""
     description = Attribute('Description')
     image = Attribute('Image URL')
-    # An item's icon indicates its type (eg person, team).
-    css = Attribute('Icon CSS Class')
-    # An item can also have a badge which is displayed after the title.
-    css_badge = Attribute('Badge CSS Class')
+    css = Attribute('CSS Class')
 
 
 class PickerEntry:
@@ -108,8 +106,6 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         person = self.context
         extra = super(PersonPickerEntryAdapter, self).getPickerEntry(
             associated_object)
-        # Display the person's Launchpad id next to their name.
-        extra.title = "%s (~%s)" % (person.displayname, person.name)
 
         # If the person is affiliated with the associated_object then we can
         # display a badge.
@@ -123,22 +119,13 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
             except Unauthorized:
                 extra.description = '<email address hidden>'
     
-        def ircnick_display_text(ircid):
-            # First we shorten the full irc network to just the core network
-            # name. eg irc.freenode.net -> freenode
-            network = ircid.network
-            irc_match = re.search(r'irc\.(.*)\..*', network)
-            if irc_match:
-                network = irc_match.group(1)
-            # Then we return something like nic@network
-            return "%s@%s" % (ircid.nickname, network)
-    
-        # We will display the person's irc nic(s) after their email address in
-        # the description text.
+        # We will display the person's irc nick(s) after their email address
+        # in the description text.
         irc_nicks = None
         if person.ircnicknames:
             irc_nicks = ", ".join(
-                [ircnick_display_text(ircid)for ircid in person.ircnicknames])
+                [IRCNicknameFormatterAPI(ircid).displayname()
+                for ircid in person.ircnicknames])
         if irc_nicks:
             extra.description = "%s (%s)" % (extra.description, irc_nicks)
         return extra
@@ -226,10 +213,6 @@ class HugeVocabularyJSONView:
                 entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value).getPickerEntry(
                 self.context)
-            # The PickEntry adaptor may override the default title.
-            if (hasattr(picker_entry, 'title') and
-                picker_entry.title is not None):
-                entry['title'] = picker_entry.title
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (
