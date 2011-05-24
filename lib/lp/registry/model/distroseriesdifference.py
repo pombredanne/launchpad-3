@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from collections import defaultdict
 from itertools import chain
 from operator import itemgetter
 
@@ -41,7 +42,6 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -73,6 +73,10 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -219,13 +223,26 @@ def packagesets(dsds, in_parent):
         Column("sourcepackagename", PackagesetSources),
         Packageset.name)
 
-    grouped = {}
+    grouped = defaultdict(list)
     for dsd_id, packageset in results:
-        if dsd_id in grouped:
-            grouped[dsd_id].append(packageset)
-        else:
-            grouped[dsd_id] = [packageset]
+        grouped[dsd_id].append(packageset)
+    return grouped
 
+
+def message_chunks(messages):
+    """Return the message chunks for the given messages.
+
+    Returns a dict with the list of `MessageChunk` for each message id.
+
+    :param messages: An iterable of `Message` instances.
+    """
+    store = IStore(MessageChunk)
+    chunks = store.find(MessageChunk,
+        MessageChunk.messageID.is_in(m.id for m in messages))
+
+    grouped = defaultdict(list)
+    for chunk in chunks:
+        grouped[chunk.messageID].append(chunk)
     return grouped
 
 
@@ -381,6 +398,15 @@ class DistroSeriesDifference(StormBase):
             # Get packagesets and parent_packagesets for each DSD.
             dsd_packagesets = packagesets(dsds, in_parent=False)
             dsd_parent_packagesets = packagesets(dsds, in_parent=True)
+
+            # Cache latest messages contents (MessageChunk).
+            messages = bulk.load_related(
+                Message, latest_comments, ['message_id'])
+            chunks = message_chunks(messages)
+            for msg in messages:
+                cache = get_property_cache(msg)
+                cache.text_contents = Message.chunks_text(
+                    chunks.get(msg.id, []))
 
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id

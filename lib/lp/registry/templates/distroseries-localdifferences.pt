@@ -166,11 +166,6 @@
                 </tal:derived>
               </td>
 
-              <tal:comment replace="nothing">
-                XXX: GavinPanella 2011-04-14 bug=760733: In
-                TestDistroSeriesLocalDifferences.test_queries, this
-                cell needs 1 QUERY per row: MessageChunk
-              </tal:comment>
               <td>
                 <tal:comment tal:define="comment difference/latest_comment"
                              tal:condition="comment">
