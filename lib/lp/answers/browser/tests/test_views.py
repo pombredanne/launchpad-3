@@ -47,9 +47,7 @@ class TestEmailObfuscated(BrowserTestCase):
         email_address = "mark@example.com"
         browser = self.getBrowserForQuestionWithEmail(
             email_address, no_login=True)
-        # XXX: henninge 20110520 bug=740208: One occurrence is still found
-        # in the LP.cache['context'] on the page.
-        self.assertEqual(2, browser.contents.count(email_address))
+        self.assertEqual(0, browser.contents.count(email_address))
 
 
 def test_suite():
