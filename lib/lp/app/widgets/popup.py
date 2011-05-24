@@ -80,7 +80,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def inputField(self):
         d = {
             'formToken': cgi.escape(self.formToken, quote=True),
-            'name': self.name,
+            'name': self.input_id,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
             'onKeyPress': self.onKeyPress,
@@ -94,17 +94,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
-    def suffix(self):
-        # Since this will be used in an HTML ID, the allowable set of
-        # characters is smaller than the set that can appear in self.name.
-        # So we strip out the ones which are disallowed but which might be
-        # part of a Launchpad identifier..
-        suffix = self.name.replace('.', '-')
-        return re.sub(r'[+<>=#]', '', suffix)
-
-    @property
     def show_widget_id(self):
-        return 'show-widget-%s' % self.suffix
+        return 'show-widget-%s' % self.input_id.replace('.', '-')
 
     @property
     def extra_no_results_message(self):
@@ -142,7 +133,11 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def input_id(self):
-        return self.name
+        # Since this will be used in an HTML ID, the allowable set of
+        # characters is smaller than the set that can appear in self.name.
+        # So we strip out the ones which are disallowed but which might be
+        # part of a Launchpad identifier..
+        return re.sub(r'[+<>=#]', '', self.name)
 
     def chooseLink(self):
         if self.nonajax_uri is None:

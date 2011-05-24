@@ -58,6 +58,6 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertEqual(
             'show-widget-field-test_field', picker_widget.show_widget_id)
         self.assertEqual(
-            'field.test_field+', picker_widget.input_id)
+            'field.test_field', picker_widget.input_id)
         self.assertEqual(
             simplejson.dumps(None), picker_widget.extra_no_results_message)
