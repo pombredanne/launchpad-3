@@ -52,7 +52,8 @@ At the moment the "Also notified" area is blank.  That will change when bug
 
 He subscribes David Allouche to the bug using his Launchpad username.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> user_browser.getControl("Person").value = 'ddaa'
     >>> user_browser.getControl("Subscribe user").click()
     >>> user_browser.url
@@ -88,7 +89,7 @@ David got a notification, saying that he was subscribed to the bug.
     ...
     X-Launchpad-Message-Rationale: Subscriber
     ...
-    You have been subscribed to a public bug by No Privileges Person (no-priv):
+    You have been subscribed to a public bug by No Privileges Person...
     ...
     http://bugs.launchpad.dev/bugs/...
 
