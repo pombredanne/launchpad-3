@@ -1,4 +1,5 @@
-== The Product Bugs Page ==
+The Product Bugs Page
+---------------------
 
 The front page for a product on the bugs domain presents some basic
 information the bugs in it. It doesn't display the list of bugs.
@@ -25,7 +26,8 @@ JavaScript so it doesn't actually go anywhere).
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+subscribe'
 
-== CVE Bugs ==
+CVE Bugs
+--------
 
 It also displays the number of open bugs associated with a CVE.
 
@@ -46,7 +48,8 @@ The link takes you to the list of bugs with CVEs linked to them.
       Low New
 
 
-== Bugs Fixed Elsewhere ==
+Bugs Fixed Elsewhere
+--------------------
 
 The Bugs front page includes the number of bugs that are fixed in some
 other context. For example, users can see all bugs raised against
@@ -67,7 +70,8 @@ The link takes you to the list of the bugs fixed elsewhere:
     ...
 
 
-== Expirable Bugs ==
+Expirable Bugs
+--------------
 
 The bugs page displays the number of Incomplete, unattended bugs that
 can expire when the project has enabled bug expiration. Jokosher
@@ -102,7 +106,8 @@ cannot see any link reporting that bugs can expire.
     LinkNotFoundError
 
 
-== Tags and Filters ==
+Tags and Filters
+----------------
 
 There's also portlets for easy searching by tags and filters. Its content is
 loaded using Javascript in a separate request.
@@ -130,7 +135,8 @@ tag...
       Critical New
 
 
-== Hot Bugs ==
+Hot Bugs
+--------
 
 A listing of the 10 'hottest' bugs is displayed to allow a quick
 overview of the project.

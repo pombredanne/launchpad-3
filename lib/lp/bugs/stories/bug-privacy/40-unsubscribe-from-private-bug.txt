@@ -5,7 +5,9 @@ Ubuntu evolution is, so we can avoid hardcoding its ID here:
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login("foo.bar@canonical.com")

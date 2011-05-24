@@ -30,33 +30,34 @@ At the moment the "Also notified" area is blank.  That will change when bug
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
-  >>> browser.open(
-  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-  ...     "+bug/2/+secrecy")
-  >>> browser.getControl("This bug report should be private").selected = True
-  >>> browser.getControl("Change").click()
-  >>> print browser.url
-  http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl(
+    ...     "This bug report should be private").selected = True
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
 
 
 All the implicit subscribers have been made explicit.
 
-  >>> browser.open(
-  ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
-  >>> print_direct_subscribers(browser.contents)
-  Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
-  Sample Person (Subscribed by Foo Bar)
-  Steve Alexander (Subscribed by Launchpad Janitor)
+    >>> browser.open(
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
+    >>> print_direct_subscribers(browser.contents)
+    Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
+    Sample Person (Subscribed by Foo Bar)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
-  >>> print_subscribers_from_duplicates(browser.contents)
-  From duplicates:
-  >>> print_also_notified(browser.contents)
-  Also notified:
+    >>> print_subscribers_from_duplicates(browser.contents)
+    From duplicates:
+    >>> print_also_notified(browser.contents)
+    Also notified:
 
 When we go back to the secrecy form, the previously set value is pre-selected.
 
-  >>> browser.open(
-  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
-  ...     "+bug/2/+secrecy")
-  >>> browser.getControl("This bug report should be private").selected
-  True
+    >>> browser.open(
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "+bug/2/+secrecy")
+    >>> browser.getControl("This bug report should be private").selected
+    True
