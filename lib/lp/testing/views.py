@@ -23,6 +23,7 @@ from zope.security.management import (
 
 from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     IPlacelessAuthUtility,
@@ -106,3 +107,9 @@ class YUITestFileView(ExportedFolder):
 
     folder = os.path.join(config.root, 'lib/')
     export_subdirectories = True
+
+
+def create_webservice_error_view(error):
+    """Return a view of the error with a webservice request."""
+    request = WebServiceTestRequest()
+    return getMultiAdapter((error, request), name='index.html')

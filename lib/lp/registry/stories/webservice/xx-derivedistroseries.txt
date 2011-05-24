@@ -16,11 +16,11 @@ Set Up
     >>> login(ADMIN_EMAIL)
 
     >>> soyuz_team = factory.makeTeam(name='soyuz-team')
-    >>> parent_series = factory.makeDistroSeries(name="parentseries")
-    >>> parent_series.driver = soyuz_team
+    >>> previous_series = factory.makeDistroSeries(name="parentseries")
+    >>> previous_series.driver = soyuz_team
     >>> child_series = factory.makeDistroSeries(name='child1')
     >>> child_series_with_parent = factory.makeDistroSeries(
-    ...     name='child-with-parent', parent_series=parent_series)
+    ...     name='child-with-parent', previous_series=previous_series)
     >>> other_series = factory.makeDistroSeries(name="otherseries")
     >>> other_series.driver = soyuz_team
 
@@ -65,11 +65,11 @@ has a parent series.
 
 If we call it correctly, it works.
 
-    >>> ws_parent_series = ws_object(soyuz_team_webservice, parent_series)
+    >>> ws_previous_series = ws_object(soyuz_team_webservice, previous_series)
     >>> ws_child_series = ws_object(soyuz_team_webservice, child_series)
 
     >>> print soyuz_team_webservice.named_post(
-    ...     ws_parent_series['self_link'], 'deriveDistroSeries', {},
+    ...     ws_previous_series['self_link'], 'deriveDistroSeries', {},
     ...     name=ws_child_series['name'],
     ...     distribution=ws_child_series['distribution_link'],
     ...     rebuild=False)
@@ -80,7 +80,7 @@ If we call it with all of the arguments, it also works.
 
     >>> text = 'The Second Child'
     >>> print soyuz_team_webservice.named_post(
-    ...     ws_parent_series['self_link'], 'deriveDistroSeries', {},
+    ...     ws_previous_series['self_link'], 'deriveDistroSeries', {},
     ...     name='child2', distribution=ws_distribution['self_link'],
     ...     displayname=text, title=text, summary=text,
     ...     description=text, version=version,

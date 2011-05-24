@@ -582,17 +582,17 @@ class PullingImportWorker(ImportWorker):
                     pass
             else:
                 raise NotBranchError(self.source_details.url)
-            foreign_branch = format.open(transport).open_branch()
-            foreign_branch_tip = foreign_branch.last_revision()
-            inter_branch = InterBranch.get(foreign_branch, bazaar_branch)
-            self._logger.info("Importing foreign branch.")
+            remote_branch = format.open(transport).open_branch()
+            remote_branch_tip = remote_branch.last_revision()
+            inter_branch = InterBranch.get(remote_branch, bazaar_branch)
+            self._logger.info("Importing branch.")
             pull_result = inter_branch.pull(
                 overwrite=True, **self.getExtraPullArgs())
-            self._logger.info("Pushing foreign branch to central store.")
+            self._logger.info("Pushing local import branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
             last_imported_revison = bazaar_branch.last_revision()
             self._logger.info("Job complete.")
-            if last_imported_revison == foreign_branch_tip:
+            if last_imported_revison == remote_branch_tip:
                 if pull_result.old_revid != pull_result.new_revid:
                     return CodeImportWorkerExitCode.SUCCESS
                 else:

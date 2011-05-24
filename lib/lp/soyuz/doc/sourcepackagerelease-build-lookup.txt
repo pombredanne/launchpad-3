@@ -81,7 +81,7 @@ was inherited in the initialization.
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
-    >>> print breezy_autotest.parent_series.title
+    >>> print breezy_autotest.previous_series.title
     The Hoary Hedgehog Release
 
     >>> hoary_evo_release = hoary_evo_source['1.0']

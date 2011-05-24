@@ -422,16 +422,16 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.previous_series
+            ubuntuseries = self.distroseries.prior_series
             if ubuntuseries:
                 previous_ubuntu_series = ubuntuseries[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
         # if we have a parent distroseries, try that
-        if self.distroseries.parent_series is not None:
+        if self.distroseries.previous_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distroseries=self.distroseries.parent_series)
+                               distroseries=self.distroseries.previous_series)
             return sp.packaging
         # capitulate
         return None
