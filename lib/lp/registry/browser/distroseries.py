@@ -655,7 +655,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     @property
     def is_derived_series_feature_enabled(self):
-        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
+        return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
     def next_url(self):
@@ -753,7 +753,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
-        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
+        if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
 
@@ -1061,7 +1061,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
-        if getFeatureFlag("soyuz.derived-series-sync.enabled") is None:
+        if getFeatureFlag("soyuz.derived_series_sync.enabled") is None:
             return False
         elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.

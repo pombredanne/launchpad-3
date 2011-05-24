@@ -91,14 +91,14 @@ from lp.testing.views import create_initialized_view
 
 def set_derived_series_ui_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
-        u'soyuz.derived-series-ui.enabled': u'on',
+        u'soyuz.derived_series_ui.enabled': u'on',
         }))
 
 
 def set_derived_series_sync_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
         u'soyuz.derived_series_sync.enabled': u'on',
-        u'soyuz.derived-series-ui.enabled': u'on',
+        u'soyuz.derived_series_ui.enabled': u'on',
         }))
 
 
@@ -197,7 +197,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             html_content = view()
 
         self.assertEqual(
-            None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+            None, getFeatureFlag('soyuz.derived_series_ui.enabled'))
         self.assertThat(html_content, Not(portlet_header))
 
     def test_differences_portlet_all_differences(self):
@@ -403,13 +403,13 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 
     def test_is_derived_series_feature_enabled(self):
         # The feature is disabled by default, but can be enabled by setting
-        # the soyuz.derived-series-ui.enabled flag.
+        # the soyuz.derived_series_ui.enabled flag.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
         with feature_flags():
             self.assertFalse(view.is_derived_series_feature_enabled)
         with feature_flags():
-            set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
+            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
             self.assertTrue(view.is_derived_series_feature_enabled)
 
     def test_form_hidden_when_derived_series_feature_disabled(self):
@@ -431,7 +431,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
         with feature_flags():
-            set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
+            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
             root = html.fromstring(view())
             self.assertNotEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -729,12 +729,12 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
             current_request=True)
 
     def test_view_redirects_without_feature_flag(self):
-        # If the feature flag soyuz.derived-series-ui.enabled is not set the
+        # If the feature flag soyuz.derived_series_ui.enabled is not set the
         # view simply redirects to the derived series.
         derived_series, parent_series = self._createChildAndParent()
 
         self.assertIs(
-            None, getFeatureFlag('soyuz.derived-series-ui.enabled'))
+            None, getFeatureFlag('soyuz.derived_series_ui.enabled'))
         view = self.makeView(derived_series)
 
         response = view.request.response
@@ -981,7 +981,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
     def enableDerivedSeriesSyncFeature(self):
         self.useFixture(
             FeatureFixture(
-                {u'soyuz.derived-series-sync.enabled': u'on'}))
+                {u'soyuz.derived_series_sync.enabled': u'on'}))
 
     @with_celebrity_logged_in("admin")
     def test_upgrades_offered_only_with_feature_flag(self):
