@@ -6,12 +6,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'branch_to_vocabularyjson',
-    'default_vocabularyjson_adapter',
     'HugeVocabularyJSONView',
     'IPickerEntry',
-    'person_to_vocabularyjson',
-    'sourcepackagename_to_vocabularyjson',
     ]
 
 import simplejson
@@ -77,7 +73,7 @@ class DefaultPickerEntryAdapter(object):
     """Adapts Interface to IPickerEntry."""
 
     implements(IPickerEntry)
-    
+
     def __init__(self, context):
         self.context = context
 
@@ -118,7 +114,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 extra.description = person.preferredemail.email
             except Unauthorized:
                 extra.description = '<email address hidden>'
-    
+
         # We will display the person's irc nick(s) after their email address
         # in the description text.
         irc_nicks = None
@@ -134,7 +130,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
 @adapter(IBranch)
 class BranchPickerEntryAdapter(DefaultPickerEntryAdapter):
     """Adapts IBranch to IPickerEntry."""
-    
+
     def getPickerEntry(self, associated_object):
         branch = self.context
         extra = super(BranchPickerEntryAdapter, self).getPickerEntry(
@@ -216,7 +212,7 @@ class HugeVocabularyJSONView:
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (
-                        picker_entry.description[:MAX_DESCRIPTION_LENGTH-3]
+                        picker_entry.description[:MAX_DESCRIPTION_LENGTH - 3]
                         + '...')
                 else:
                     entry['description'] = picker_entry.description

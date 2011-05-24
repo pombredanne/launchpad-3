@@ -145,7 +145,8 @@ class TestObjectFormatterAPI(TestCaseWithFactory):
         # The rendering of an object's link ignores any specified default
         # value which would be used in the case where the object were None.
         person = self.factory.makePerson()
-        person_link = test_tales('person/fmt:link::default value', person=person)
+        person_link = test_tales(
+            'person/fmt:link::default value', person=person)
         self.assertEqual(PersonFormatterAPI(person).link(None), person_link)
         person_link = test_tales(
             'person/fmt:link:bugs:default value', person=person)
@@ -282,4 +283,3 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
         self.assertEqual(
             'fred@canonical',
             test_tales('nick/fmt:displayname', nick=ircID))
-

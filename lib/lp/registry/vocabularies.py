@@ -50,7 +50,6 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'UserTeamsParticipationVocabulary',
-    'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
@@ -585,7 +584,6 @@ class ValidPersonOrTeamVocabulary(
                       EmailAddressStatus.VALIDATED.value,
                       EmailAddressStatus.PREFERRED.value,
                       self.LIMIT))
-
 
             public_result = self.store.using(*public_tables).find(
                 Person,
@@ -1446,7 +1444,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         series = self._table.select(
-            DistroSeries.q.distributionID==Distribution.q.id,
+            DistroSeries.q.distributionID == Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
         for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)

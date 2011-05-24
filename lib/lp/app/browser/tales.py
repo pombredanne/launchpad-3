@@ -498,7 +498,7 @@ class NoneFormatter:
         # We are interested in the default value (param2).
         result = ''
         for nm in self.allowed_names:
-            if name.startswith(nm+":"):
+            if name.startswith(nm + ":"):
                 name_parts = name.split(":")
                 name = name_parts[0]
                 if len(name_parts) > 2:
@@ -2052,7 +2052,7 @@ class DateTimeFormatterAPI:
         delta = abs(delta)
         days = delta.days
         hours = delta.seconds / 3600
-        minutes = (delta.seconds - (3600*hours)) / 60
+        minutes = (delta.seconds - (3600 * hours)) / 60
         seconds = delta.seconds % 60
         result = ''
         if future:
@@ -2130,7 +2130,7 @@ class DurationFormatterAPI:
         parts = []
         minutes, seconds = divmod(self._duration.seconds, 60)
         hours, minutes = divmod(minutes, 60)
-        seconds = seconds + (float(self._duration.microseconds) / 10**6)
+        seconds = seconds + (float(self._duration.microseconds) / 10 ** 6)
         if self._duration.days > 0:
             if self._duration.days == 1:
                 parts.append('%d day' % self._duration.days)
@@ -2176,7 +2176,7 @@ class DurationFormatterAPI:
         # including the decimal part.
         seconds = self._duration.days * (3600 * 24)
         seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10**6)
+        seconds += (float(self._duration.microseconds) / 10 ** 6)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
