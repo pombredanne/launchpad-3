@@ -10,8 +10,15 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.enums import SourcePackageFormat
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -131,14 +138,22 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
 
     def test_run(self):
         # A proper test run synchronizes packages.
+
+        # Turn on DSD jobs.
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
+
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         distroseries = publisher.breezy_autotest
 
-        # Synchronise from breezy-autotest to a branch new distro.
-        breezy_archive = self.factory.makeArchive(distroseries.distribution)
-        target_series = self.factory.makeDistroSeries()
-        target_archive = target_series.main_archive
+        # Synchronise from breezy-autotest to a brand new distro derived
+        # from breezy.
+        breezy_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        dsp = self.factory.makeDistroSeriesParent(parent_series=distroseries)
+        target_series = dsp.derived_series
+        target_archive = self.factory.makeArchive(
+            target_series.distribution, purpose=ArchivePurpose.PRIMARY)
         getUtility(ISourcePackageFormatSelectionSet).add(
             target_series, SourcePackageFormat.FORMAT_1_0)
 
@@ -168,6 +183,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         spr = published_sources.one().sourcepackagerelease
         self.assertEquals("libc", spr.name)
         self.assertEquals("2.8-1", spr.version)
+
+        # Switch back to a db user that has permission to clean up
+        # featureflag.
+        self.layer.switchDbUser('launchpad_main')
 
     def test_getOopsVars(self):
         distroseries = self.factory.makeDistroSeries()
