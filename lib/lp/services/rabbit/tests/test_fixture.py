@@ -11,8 +11,8 @@ from textwrap import dedent
 from amqplib import client_0_8 as amqp
 from fixtures import EnvironmentVariableFixture
 
-from lp.testing import TestCase
 from lp.services.rabbit.testing.server import RabbitServer
+from lp.testing import TestCase
 
 
 class TestRabbitFixture(TestCase):
@@ -22,34 +22,36 @@ class TestRabbitFixture(TestCase):
         # .erlange.cookie has to be ignored, and ditto bogus HOME if other
         # tests fail to cleanup.
         self.useFixture(EnvironmentVariableFixture('HOME', '/nonsense/value'))
+
         fixture = RabbitServer()
-        try:
-            # Workaround failures-in-setup-not-attaching-details (if they did
-            # we could use self.useFixture).
-            self.addCleanup(self._gather_details, fixture.getDetails)
-            fixture.setUp()
+
+        # Work around failures-in-setup-not-attaching-details (if they did we
+        # could use self.useFixture).
+        self.addCleanup(self._gather_details, fixture.getDetails)
+
+        with fixture:
             # We can connect.
-            host = fixture.host
-            conn = amqp.Connection(host=host, userid="guest",
-            password="guest", virtual_host="/", insist=False)
-            conn.close()
-            # And get a log file
-            log = fixture.getDetails()['rabbit log file']
+            connect_arguments = {
+                "host": 'localhost:%s' % fixture.config.port,
+                "userid": "guest", "password": "guest",
+                "virtual_host": "/", "insist": False,
+                }
+            amqp.Connection(**connect_arguments).close()
+            # And get a log file.
+            log = fixture.runner.getDetails()["rabbit.log"]
             # Which shouldn't blow up on iteration.
             list(log.iter_text())
+
             # There is a (launchpad specific) config fixture. (This could be a
             # separate class if we make the fixture external in the future).
             expected = dedent("""\
                 [rabbitmq]
-                host: %s
+                host: localhost:%d
                 userid: guest
                 password: guest
                 virtual_host: /
-                """ % host)
+                """ % fixture.config.port)
             self.assertEqual(expected, fixture.config.service_config)
 
-        finally:
-            fixture.cleanUp()
         # The daemon should be closed now.
-        self.assertRaises(socket.error, amqp.Connection, host=host,
-            userid="guest", password="guest", virtual_host="/", insist=False)
+        self.assertRaises(socket.error, amqp.Connection, **connect_arguments)

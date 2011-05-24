@@ -106,6 +106,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
@@ -831,7 +832,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
 
     @property
     def label(self):
-        return self.context.title
+        return FormattersAPI(self.context.title).obfuscate_email()
 
     @property
     def page_title(self):
