@@ -71,14 +71,14 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             request = LaunchpadTestRequest()
             request.features = get_relevant_feature_controller()
             view = create_initialized_view(
-                self.bug, name="+portlet-subscribers", request=request)
+                self.bug, name="+portlet-subscription", request=request)
             html = view.render()
         self.assertTrue('menu-link-editsubscriptions' in html)
         self.assertTrue('/+subscriptions' in html)
 
     def test_edit_subscriptions_link_not_shown_when_feature_disabled(self):
         view = create_initialized_view(
-            self.bug, name="+portlet-subscribers")
+            self.bug, name="+portlet-subscription")
         html = view.render()
         self.assertTrue('menu-link-editsubscriptions' not in html)
         self.assertTrue('/+subscriptions' not in html)
@@ -89,7 +89,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         with person_logged_in(person):
             with FeatureFixture({self.feature_flag_1: None}):
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
+                    self.bug, name="+portlet-subscription")
                 self.assertFalse(view.user_should_see_mute_link)
                 html = view.render()
                 self.assertFalse('mute_subscription' in html)
@@ -110,7 +110,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.target.addBugSubscription(person, person)
                 self.assertFalse(self.bug.isMuted(person))
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
+                    self.bug, name="+portlet-subscription")
                 self.assertTrue(view.user_should_see_mute_link,
                                 "User should see mute link.")
                 contents = view.render()
@@ -140,7 +140,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                     self.bug.personIsAlsoNotifiedSubscriber(
                         person), "Person should be a notified subscriber")
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
+                    self.bug, name="+portlet-subscription")
                 self.assertTrue(view.user_should_see_mute_link,
                                 "User should see mute link.")
                 contents = view.render()
@@ -167,7 +167,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                     self.bug.personIsAlsoNotifiedSubscriber(
                         person))
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
+                    self.bug, name="+portlet-subscription")
                 self.assertFalse(view.user_should_see_mute_link)
                 html = view.render()
                 self.assertTrue('mute_subscription' in html)
@@ -191,7 +191,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                         person))
                 self.assertTrue(self.bug.isMuted(person))
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers")
+                    self.bug, name="+portlet-subscription")
                 self.assertTrue(view.user_should_see_mute_link,
                                 "User should see mute link.")
                 contents = view.render()
