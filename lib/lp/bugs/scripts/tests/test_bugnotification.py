@@ -929,7 +929,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
 
     def setUp(self):
         super(TestEmailNotificationsWithFilters, self).setUp()
-        self.bug=self.factory.makeBug()
+        self.bug = self.factory.makeBug()
         subscriber = self.factory.makePerson()
         self.subscription = self.bug.default_bugtask.target.addSubscription(
             subscriber, subscriber)
@@ -1130,7 +1130,7 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
         bug = self.product.createBug(params)
         notification = IStore(BugNotification).find(
             BugNotification,
-            BugNotification.id==BugNotificationRecipient.bug_notificationID,
+            BugNotification.id == BugNotificationRecipient.bug_notificationID,
             BugNotificationRecipient.personID == self.subscriber.id,
             BugNotification.bug == bug).one()
         self.assertEqual(notification.message.text_contents, message)
@@ -1145,7 +1145,42 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
         bug = self.product.createBug(params)
         notifications = IStore(BugNotification).find(
             BugNotification,
-            BugNotification.id==BugNotificationRecipient.bug_notificationID,
+            BugNotification.id == BugNotificationRecipient.bug_notificationID,
             BugNotificationRecipient.personID == self.subscriber.id,
             BugNotification.bug == bug)
         self.assertTrue(notifications.is_empty())
+
+
+class TestManageNotificationsMessage(TestCaseWithFactory):
+    # See bug 784575.
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestManageNotificationsMessage, self).setUp()
+        self.subscriber = self.factory.makePerson()
+        self.submitter = self.factory.makePerson()
+        self.product = self.factory.makeProduct(
+            bug_supervisor=self.submitter)
+        self.subscription = self.product.addSubscription(
+            self.subscriber, self.subscriber)
+        self.filter = self.subscription.bug_filters[0]
+        self.filter.description = u'Needs triage'
+        self.filter.statuses = [BugTaskStatus.NEW, BugTaskStatus.INCOMPLETE]
+
+    def test_manage_notifications_message_is_included(self):
+        message = u"this is a comment"
+        params = CreateBugParams(
+            title=u"crashes all the time",
+            comment=message, owner=self.submitter,
+            status=BugTaskStatus.NEW)
+        bug = self.product.createBug(params)
+        notification = IStore(BugNotification).find(
+            BugNotification,
+            BugNotification.id == BugNotificationRecipient.bug_notificationID,
+            BugNotificationRecipient.personID == self.subscriber.id,
+            BugNotification.bug == bug).one()
+        (message,) = construct_email_notifications([notification])[2]
+        payload = message.get_payload()
+        self.assertThat(payload, Contains(
+            'To manage notifications about this bug go to:\nhttp://'))
