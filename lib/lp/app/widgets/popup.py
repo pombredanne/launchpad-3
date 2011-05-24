@@ -7,9 +7,9 @@
 
 __metaclass__ = type
 
-from base64 import urlsafe_b64encode
 import cgi
 
+import re
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -95,14 +95,12 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def suffix(self):
-        """This is used to uniquify the widget ID to avoid ID collisions."""
         # Since this will be used in an HTML ID, the allowable set of
         # characters is smaller than the set that can appear in self.name.
-        # Therefore we use the URL-safe base 64 encoding of the name.  However
-        # we also have to strip off any padding characters ("=") because
-        # Python's URL-safe base 64 encoding includes those and they aren't
-        # allowed in IDs either.
-        return urlsafe_b64encode(self.name).replace('=', '')
+        # So we strip out the ones which are disallowed but which might be
+        # part of a Launchpad identifier..
+        suffix = self.name.replace('.', '-')
+        return re.sub(r'[+<>=#]', '', suffix)
 
     @property
     def show_widget_id(self):
