@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferenceAdmin',
     'IDistroSeriesDifferencePublic',
     'IDistroSeriesDifferenceEdit',
     'IDistroSeriesDifferenceSource',
@@ -224,6 +225,18 @@ class IDistroSeriesDifferenceEdit(Interface):
     def addComment(commenter, comment):
         """Add a comment on this difference."""
 
+    @call_with(requestor=REQUEST_USER)
+    @export_write_operation()
+    def requestPackageDiffs(requestor):
+        """Requests IPackageDiffs for the derived and parent version.
+
+        :raises DistroSeriesDifferenceError: When package diffs
+            cannot be requested.
+        """
+
+class IDistroSeriesDifferenceAdmin(Interface):
+    """Difference attributes requiring launchpad.Admin."""
+
     @operation_parameters(
         all=Bool(title=_("All"), required=False))
     @export_write_operation()
@@ -241,18 +254,10 @@ class IDistroSeriesDifferenceEdit(Interface):
         The status will be updated based on the versions.
         """
 
-    @call_with(requestor=REQUEST_USER)
-    @export_write_operation()
-    def requestPackageDiffs(requestor):
-        """Requests IPackageDiffs for the derived and parent version.
-
-        :raises DistroSeriesDifferenceError: When package diffs
-            cannot be requested.
-        """
-
 
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
-                              IDistroSeriesDifferenceEdit):
+                              IDistroSeriesDifferenceEdit,
+                              IDistroSeriesDifferenceAdmin):
     """An interface for a package difference between two distroseries."""
     export_as_webservice_entry()
 

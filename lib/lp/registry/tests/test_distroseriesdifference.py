@@ -9,6 +9,7 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -35,6 +36,7 @@ from lp.registry.model.distroseriesdifference import (
     most_recent_publications,
     )
 from lp.services.propertycache import get_property_cache
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
@@ -444,11 +446,22 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.packagesets])
 
+    def test_blacklist_unauthorised(self):
+        # If you're not an archive admin, you don't get to blacklist or
+        # unblacklist.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        random_joe = self.factory.makePerson()
+        with person_logged_in(random_joe):
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'blacklist')
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'unblacklist')
+
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.blacklist()
 
         self.assertEqual(
@@ -458,8 +471,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_blacklist_all(self):
         # All versions are blacklisted with the all=True param.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.blacklist(all=True)
 
         self.assertEqual(
@@ -470,8 +485,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Unblacklisting will return to NEEDS_ATTENTION by default.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -492,7 +509,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        with person_logged_in(self.factory.makePerson()):
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
             ds_diff.unblacklist()
 
         self.assertEqual(
