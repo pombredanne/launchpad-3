@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
+import re
 import unittest
 
 import pytz
@@ -20,7 +21,10 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.ftests import login
-from canonical.launchpad.helpers import get_contact_email_addresses
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -1184,3 +1188,16 @@ class TestManageNotificationsMessage(TestCaseWithFactory):
         payload = message.get_payload()
         self.assertThat(payload, Contains(
             'To manage notifications about this bug go to:\nhttp://'))
+
+
+class TestNotificationSignatureSeparator(TestCase):
+
+    def test_signature_separator(self):
+        # Email signatures are often separated from the body of a message by a
+        # special separator so user agents can identify the signature for
+        # special treatment (hiding, stripping when replying, colorizing,
+        # etc.).  The bug notification messages follow the convention.
+        names = ['bug-notification-verbose.txt', 'bug-notification.txt']
+        for name in names:
+            template = get_email_template(name, 'bugs')
+            self.assertTrue(re.search('^-- $', template, re.MULTILINE))

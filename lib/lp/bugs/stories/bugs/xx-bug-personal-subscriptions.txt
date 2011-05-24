@@ -40,7 +40,7 @@ There's also now a link to unsubscribe the user next to the name. It's a
 relative URL to +subscribe, so it will only work when the portlet is
 in the context of the bug page.
 
-    >>> bug_1 = 'http://bugs.launchpad.dev/firefox/+bug/1/'
+    >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
     >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(browser.contents)
     Foo Bar (Self-subscribed) (Unsubscribe Foo Bar)
@@ -69,7 +69,7 @@ the user this time, and inform the user.
     >>> submit.click()
 
     >>> browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/'
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
     >>> tags = find_tags_by_class(browser.contents, 'informational message')
     >>> for tag in tags:
@@ -145,7 +145,7 @@ the browser to the bug page.
     ['name16']
     >>> browser.getLink('Cancel').click()
     >>> browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/'
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
 Foo Bar wasn't subscribed to the bug.
 
@@ -160,7 +160,8 @@ Subscribers which the current user may unsubscribe (the current user and teams
 they are a member of) display first in the list, before all other
 subscriptions.
 
-    >>> browser.open(bug_1 + '+addsubscriber')
+    >>> browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> browser.getControl('Person').value = 'testing-spanish-team'
     >>> browser.getControl('Subscribe user').click()
     >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
@@ -242,7 +243,8 @@ Let's repeat this example, with Steve subscribed to two different dupes,
 to see how the unsubscribe notification changes slightly, because he
 gets unsubscribed from more than one duplicate.
 
-    >>> stevea_browser.open(bug_1 + "+duplicate")
+    >>> stevea_browser.open(
+    ...     "http://launchpad.dev/firefox/+bug/1/+duplicate")
     >>> stevea_browser.getControl("Duplicate Of").value = "3"
     >>> stevea_browser.getControl("Change").click()
 
@@ -350,9 +352,10 @@ icon.
     ...     name='abuser',
     ...     displayname='<script>javascript:alert("YO")</script>')
     >>> logout()
-    >>> browser.open(bug_1 + '+addsubscriber')
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> browser.getControl('Person').value = 'abuser'
     >>> browser.getControl('Subscribe user').click()
+    >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
     >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
     >>> subscriber_list = find_tag_by_id(
     ...     browser.contents, 'subscribers-direct')
@@ -360,3 +363,4 @@ icon.
     ...     if '~abuser' in subscriber.a['href']:
     ...         print subscriber.a.contents[2].strip()
     &lt;script&gt;javascrip...
+
