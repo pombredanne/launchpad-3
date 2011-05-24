@@ -92,7 +92,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         parent = self.factory.makeDistroSeries()
         child = self.factory.makeDistroSeries(
-            distribution=parent.distribution, parent_series=parent)
+            distribution=parent.distribution, previous_series=parent)
         self.assertFalse(may_require_job(child, package))
 
     def test_may_require_job_only_considers_waiting_jobs_for_redundancy(self):
@@ -163,9 +163,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertEqual(package.id, jobs[0].metadata['sourcepackagename'])
         self.assertEqual(package.id, jobs[1].metadata['sourcepackagename'])
         # Lastly, a job was not created for the grandparent.
-        jobs = list(
-            find_waiting_jobs(parent_dsp.parent_series,
-                package))
+        jobs = list(find_waiting_jobs(parent_dsp.parent_series, package))
         self.assertEqual(0, len(jobs))
 
     def test_createForPackagePublication_creates_job_for_derived_series(self):
@@ -398,7 +396,7 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
 
     def test_child_gets_newer(self):
         # When a new source is uploaded to the child distroseries, the DSD is
-        # updated.
+        # updated and auto-blacklisted.
         dsp = self.makeDerivedDistroSeries()
         derived_series = dsp.derived_series
         source_package_name = self.factory.makeSourcePackageName()
@@ -416,7 +414,7 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
         self.assertEqual(
-            DistroSeriesDifferenceStatus.NEEDS_ATTENTION, ds_diff[0].status)
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT, ds_diff[0].status)
         self.assertEqual('1.0-1', ds_diff[0].base_version)
 
     def test_child_is_synced(self):
@@ -583,7 +581,7 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
             'uploader',
             ]
         derived_series = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+            previous_series=self.factory.makeDistroSeries())
         packages = dict(
             (user, self.factory.makeSourcePackageName())
             for user in script_users)

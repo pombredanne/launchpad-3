@@ -929,6 +929,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
+    def getOverridePolicy():
+        """Returns an instantiated `IOverridePolicy` for the archive."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""

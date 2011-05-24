@@ -112,6 +112,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceAdmin,
     IDistroSeriesDifferenceEdit,
     )
 from lp.registry.interfaces.entitlement import IEntitlement
@@ -985,6 +986,20 @@ class EditDistroSeriesParent(AuthorizationBase):
 class ViewCountry(AnonymousAuthorization):
     """Anyone can view a Country."""
     usedfor = ICountry
+
+
+class AdminDistroSeriesDifference(AuthorizationBase):
+    """You need to be an archive admin or LP admin to get lp.Admin."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroSeriesDifferenceAdmin
+
+    def checkAuthenticated(self, user):
+        # Archive admin is done by component, so here we just
+        # see if the user has that permission on any components
+        # at all.
+        archive = self.obj.derived_series.main_archive
+        return bool(
+            archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
 
 
 class EditDistroSeriesDifference(AuthorizationBase):
