@@ -15,8 +15,8 @@ import os
 import re
 import socket
 import subprocess
-from textwrap import dedent
 import sys
+from textwrap import dedent
 import time
 
 from amqplib import client_0_8 as amqp
@@ -204,6 +204,7 @@ class RabbitServerResources(RabbitFixture):
     :ivar pidfile: The file the pid should be written to.
     :ivar nodename: The name of the node.
     """
+
     def setUp(self):
         super(RabbitServerResources, self).setUp()
         self.hostname = 'localhost'
