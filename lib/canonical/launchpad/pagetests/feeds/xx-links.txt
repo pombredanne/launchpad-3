@@ -44,6 +44,7 @@ atom feed for that one bug.
 
 But if the bug is private, there should be no link.
 
+    # Set up an authenticated browser.
     >>> from canonical.launchpad.testing.pages import setupBrowserForUser
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -51,7 +52,12 @@ But if the bug is private, there should be no link.
     >>> user = getUtility(IPersonSet).getByEmail('daf@canonical.com')
     >>> logout()
     >>> auth_browser = setupBrowserForUser(user, 'daf')
-    >>> auth_browser.open('http://bugs.launchpad.dev/jokosher/+bug/14')
+
+    # First check that the bug exists.
+    >>> auth_browser.open('http://launchpad.dev/bugs/14')
+    >>> print auth_browser.url
+    http://bugs.launchpad.dev/jokosher/+bug/14
+
     >>> soup = BeautifulSoup(auth_browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     []
