@@ -8,7 +8,11 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import CannotCopy
@@ -23,6 +27,21 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
+
+
+def get_dsd_comments(dsd):
+    """Retrieve `DistroSeriesDifferenceComment`s for `dsd`."""
+    return IStore(dsd).find(
+        DistroSeriesDifferenceComment,
+        DistroSeriesDifferenceComment.distro_series_difference == dsd)
+
+
+def strip_error_handling_transactionality(job):
+    """Stop `job`'s error handling from committing or aborting."""
+    naked_job = removeSecurityProxy(job)
+    naked_job.commit = FakeMethod()
+    naked_job.abort = FakeMethod()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory):
@@ -93,18 +112,52 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertContentEqual([], source.getActiveJobs(job.target_archive))
 
-    def test_run_unknown_package(self):
-        # A job properly records failure.
+    def test_run_raises_errors(self):
+        # A job reports unexpected errors as exceptions.
+        class Boom(Exception):
+            pass
+
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = self.makeJob(dsd)
+        removeSecurityProxy(job).attemptCopy = FakeMethod(failure=Boom())
+
+        self.assertRaises(Boom, job.run)
+
+    def test_run_posts_copy_failure_as_comment(self):
+        # If the job fails with a CannotCopy exception, it swallows the
+        # exception and posts a DistroSeriesDifferenceComment with the
+        # failure message.
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.factory.makeArchive(distribution=dsd.derived_series.distribution)
+        job = self.makeJob(dsd)
+        removeSecurityProxy(job).attemptCopy = FakeMethod(
+            failure=CannotCopy("Server meltdown"))
+        strip_error_handling_transactionality(job)
+
+        job.run()
+
+        messages = list(get_dsd_comments(dsd))
+        self.assertEqual(1, len(messages))
+        self.assertEqual("Server meltdown", messages[0].message.content)
+
+    def test_run_cannot_copy_unknown_package(self):
+        # Attempting to copy an unknown package is reported as a
+        # failure.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPlainPackageCopyJobSource)
-        job = source.create(
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job = job_source.create(
             source_packages=[("foo", "1.0-1")], source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
-        self.assertRaises(CannotCopy, job.run)
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+
+        job.run()
+
+        self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_target_ppa_non_release_pocket(self):
         # When copying to a PPA archive the target must be the release pocket.
@@ -117,7 +170,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.UPDATES,
             include_binaries=False)
-        self.assertRaises(CannotCopy, job.run)
+
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+
+        job.run()
+
+        self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_run(self):
         # A proper test run synchronizes packages.
@@ -300,3 +359,45 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_findMatchingDSDs_without_package_matches_all_DSDs_for_job(self):
+        # If given no package name, findMatchingDSDs will find all
+        # matching DSDs for any of the packages in the job.
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual(
+            [dsd], job.findMatchingDSDs(package_name=None))
+
+    def test_findMatchingDSDs_finds_matching_DSD_for_package(self):
+        # If given a package name, findMatchingDSDs will find all
+        # matching DSDs for the job that are for that package name.
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = removeSecurityProxy(self.makeJob(dsd))
+        package_name = dsd.source_package_name.name
+        self.assertContentEqual(
+            [dsd], job.findMatchingDSDs(package_name=package_name))
+
+    def test_findMatchingDSDs_ignores_other_packages(self):
+        # If given a package name, findMatchingDSDs will ignore DSDs
+        # that would otherwise match the job but are for different
+        # packages.
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = removeSecurityProxy(self.makeJob(dsd))
+        other_package = self.factory.makeSourcePackageName()
+        self.assertContentEqual(
+            [], job.findMatchingDSDs(package_name=other_package.name))
+
+    def test_findMatchingDSDs_ignores_other_source_series(self):
+        # findMatchingDSDs tries to ignore DSDs that are for different
+        # parent series than the job's source series.  (This can't be
+        # done with perfect precision because the job doesn't keep track
+        # of source distroseries, but in practice it should be good
+        # enough).
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        package = spph.sourcepackagerelease.sourcepackagename
+        dsd = self.factory.makeDistroSeriesDifference(
+            source_package_name_str=package.name,
+            parent_series=spph.distroseries)
+        job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual(
+            [], job.findMatchingDSDs(package_name=package.name))

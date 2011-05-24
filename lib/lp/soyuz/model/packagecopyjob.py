@@ -17,6 +17,8 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+import transaction
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -31,8 +33,14 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -232,6 +240,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        try:
+            self.attemptCopy()
+        except CannotCopy, e:
+            self.abort()
+            self.reportFailure(e)
+            self.commit()
+
+    def attemptCopy(self):
+        """Attempt to perform the copy.
+
+        :raise CannotCopy: If the copy fails for a reason that the user
+            can deal with.
+        """
         if self.target_archive.is_ppa:
             if self.target_pocket != PackagePublishingPocket.RELEASE:
                 raise CannotCopy(
@@ -249,6 +270,39 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             sources=source_packages, archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=False)
+
+    def abort(self):
+        """Abort work."""
+        transaction.abort()
+
+    def commit(self):
+        """Commit work."""
+        transaction.commit()
+
+    def findMatchingDSDs(self, package_name=None):
+        """Find any `DistroSeriesDifference`s that this job would resolve."""
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        candidates = dsd_source.getForDistroSeries(
+            distro_series=self.target_distroseries,
+            source_package_name_filter=package_name)
+        # The job doesn't know what distroseries a given package is
+        # coming from, and the version number in the DSD may have
+        # changed.  We can however filter out DSDs that are for
+        # different distributions, based on the job's target archive.
+        target_distro = self.target_archive.distribution
+        return [
+            dsd
+            for dsd in candidates
+                if dsd.parent_series.distribution == target_distro]
+
+    def reportFailure(self, cannotcopy_exception):
+        """Attempt to report failure to the user."""
+# XXX: Add package_name to CannotCopy (and raise statements)
+        message = unicode(cannotcopy_exception)
+        dsds = self.findMatchingDSDs(cannotcopy_exception.package_name)
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        for dsd in dsds:
+            comment_source.new(dsd, error_persona, message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

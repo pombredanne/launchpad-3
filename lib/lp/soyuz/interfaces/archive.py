@@ -113,8 +113,14 @@ class ArchiveDependencyError(Exception):
 # picked up therein.
 
 class CannotCopy(Exception):
-    """Exception raised when a copy cannot be performed."""
+    """Exception raised when a copy cannot be performed.
+
+    :ivar package_name: Name of the source package that can't be copied, or
+        None if it is not known exactly.
+    """
     webservice_error(400) #Bad request.
+
+    package_name = None
 
 
 class CannotSwitchPrivacy(Exception):
