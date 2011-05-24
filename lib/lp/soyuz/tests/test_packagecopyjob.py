@@ -11,12 +11,16 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -40,6 +44,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         return getUtility(IPlainPackageCopyJobSource).create(
             source_packages, source_archive, target_archive,
             target_distroseries, target_pocket)
+
+    def runJob(self, job):
+        """Helper to switch to the right DB user and run the job."""
+        self.layer.txn.commit()
+        self.layer.switchDbUser('sync_packages')
+        job.run()
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
@@ -104,7 +114,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
-        self.assertRaises(CannotCopy, job.run)
+        self.assertRaises(CannotCopy, self.runJob, job)
 
     def test_target_ppa_non_release_pocket(self):
         # When copying to a PPA archive the target must be the release pocket.
@@ -117,7 +127,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.UPDATES,
             include_binaries=False)
-        self.assertRaises(CannotCopy, job.run)
+        self.assertRaises(CannotCopy, self.runJob, job)
 
     def test_run(self):
         # A proper test run synchronizes packages.
@@ -125,18 +135,22 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         publisher.prepareBreezyAutotest()
         distroseries = publisher.breezy_autotest
 
-        archive1 = self.factory.makeArchive(distroseries.distribution)
-        archive2 = self.factory.makeArchive(distroseries.distribution)
+        # Synchronise from breezy-autotest to a branch new distro.
+        breezy_archive = self.factory.makeArchive(distroseries.distribution)
+        target_series = self.factory.makeDistroSeries()
+        target_archive = target_series.main_archive
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            target_series, SourcePackageFormat.FORMAT_1_0)
 
         source_package = publisher.getPubSource(
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
-            archive=archive1)
+            archive=breezy_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("libc", "2.8-1")], source_archive=archive1,
-            target_archive=archive2, target_distroseries=distroseries,
+            source_packages=[("libc", "2.8-1")], source_archive=breezy_archive,
+            target_archive=target_archive, target_distroseries=target_series,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
         self.assertContentEqual(
@@ -150,7 +164,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.layer.switchDbUser('sync_packages')
         job.run()
 
-        published_sources = archive2.getPublishedSources()
+        published_sources = target_archive.getPublishedSources()
         spr = published_sources.one().sourcepackagerelease
         self.assertEquals("libc", spr.name)
         self.assertEquals("2.8-1", spr.version)
