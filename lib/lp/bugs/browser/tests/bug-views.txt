@@ -166,7 +166,7 @@ grab a new view to actually see them:
     3
     >>> [ (c.index, c.owner.name, c.text_contents)
     ...  for c in ubuntu_bugview.comments ]
-    [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
+    [(0, u'name16', u'Binary package hint: linux-2.6.12...'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
@@ -208,7 +208,7 @@ If we go ahead and modify the description, however:
 The displayable comments for a bug can be obtained from the view
 property activity_and_comments.
 
-    >>> comments = [event.get('comment') for event in 
+    >>> comments = [event.get('comment') for event in
     ...     ubuntu_bugview.activity_and_comments if event.get('comment')]
 
 Because we omit the first comment, and because the third comment is
@@ -346,10 +346,10 @@ If we subscribe Foo Bar, 'Unsubscribe' is shown.
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
 still say 'Unsubscribe':
@@ -361,10 +361,10 @@ still say 'Unsubscribe':
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
 unsubsription is handled by the remove icon next the the team in the
@@ -414,7 +414,7 @@ can't know if the user is subscribed or not.
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
-        'Unsubscribe'
+    'Edit subscription'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
     time where the subscription from the duplicate is of a /team/ of which

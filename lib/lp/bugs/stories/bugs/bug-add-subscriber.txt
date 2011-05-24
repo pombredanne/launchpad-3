@@ -43,11 +43,12 @@ currently subscribed to the bug:
     Steve Alexander (Subscribed by Launchpad Janitor)
     >>> print_subscribers_from_duplicates(user_browser.contents)
     From duplicates:
+
+At the moment the "Also notified" area is blank.  That will change when bug
+772754 is fixed.
+
     >>> print_also_notified(user_browser.contents)
     Also notified:
-    Foo Bar
-    Mark Shuttleworth
-    Ubuntu Team
 
 He subscribes David Allouche to the bug using his Launchpad username.
 

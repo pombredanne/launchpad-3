@@ -20,10 +20,12 @@ explicit. There are two implicit subscribers.
 
     >>> print_subscribers_from_duplicates(browser.contents)
     From duplicates:
+
+At the moment the "Also notified" area is blank.  That will change when bug
+772754 is fixed.
+
     >>> print_also_notified(browser.contents)
     Also notified:
-    Sample Person
-    Ubuntu Team
 
 Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.

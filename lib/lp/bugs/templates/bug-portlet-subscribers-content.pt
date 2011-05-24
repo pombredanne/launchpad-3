@@ -57,18 +57,4 @@
       <img src="/@@/spinner" />
     </div>
   </div>
-  <tal:also_notified condition="not: request/features/malone.advanced-subscriptions.enabled">
-    <div
-      tal:define="also_notified_subscribers bug/getAlsoNotifiedSubscribers"
-      tal:condition="also_notified_subscribers"
-      id="subscribers-indirect"
-      class="Section"
-    >
-      <h2>Also notified</h2>
-      <div
-        tal:repeat="subscriber also_notified_subscribers"
-        tal:content="structure subscriber/fmt:link"
-      />
-    </div>
-  </tal:also_notified>
 </div>

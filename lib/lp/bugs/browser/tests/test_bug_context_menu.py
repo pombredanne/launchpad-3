@@ -17,7 +17,6 @@ from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
     feature_flags,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -37,8 +36,6 @@ class TestBugContextMenu(TestCaseWithFactory):
         launchbag.add(self.bug)
         launchbag.add(self.bug.default_bugtask)
         self.context_menu = BugContextMenu(self.bug)
-        with feature_flags():
-            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
 
     def test_text_for_muted_subscriptions(self):
         # If a user has a mute on a bug it's recorded internally as a

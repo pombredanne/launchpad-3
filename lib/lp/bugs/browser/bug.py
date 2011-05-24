@@ -102,7 +102,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
-from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -210,11 +209,6 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     @cachedproperty
-    def _use_advanced_features(self):
-        """Return True if advanced subscriptions features are enabled."""
-        return features.getFeatureFlag(
-            'malone.advanced-subscriptions.enabled')
-
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
         text = 'Update description / tags'
@@ -248,16 +242,12 @@ class BugContextMenu(ContextMenu):
         elif user is not None and (
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
-            if self._use_advanced_features:
-                if self.context.bug.isMuted(user):
-                    text = 'Subscribe'
-                    icon = 'add'
-                else:
-                    text = 'Edit subscription'
-                    icon = 'edit'
+            if self.context.bug.isMuted(user):
+                text = 'Subscribe'
+                icon = 'add'
             else:
-                text = 'Unsubscribe'
-                icon = 'remove'
+                text = 'Edit subscription'
+                icon = 'edit'
         else:
             text = 'Subscribe'
             icon = 'add'
@@ -536,17 +526,14 @@ class BugViewMixin:
     @cachedproperty
     def user_should_see_mute_link(self):
         """Return True if the user should see the Mute link."""
-        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
-            user_is_subscribed = (
-                # Note that we don't have to check for isMuted(), since
-                # if isMuted() is True isSubscribed() will also be
-                # True.
-                self.context.isSubscribed(self.user) or
-                self.context.isSubscribedToDupes(self.user) or
-                self.context.personIsAlsoNotifiedSubscriber(self.user))
-            return user_is_subscribed
-        else:
-            return False
+        return (
+            # Note that we don't have to check for isMuted(), since
+            # if isMuted() is True isSubscribed() will also be
+            # True.
+            self.user is not None and
+            (self.context.isSubscribed(self.user) or
+             self.context.isSubscribedToDupes(self.user) or
+             self.context.personIsAlsoNotifiedSubscriber(self.user)))
 
     @cachedproperty
     def _bug_attachments(self):

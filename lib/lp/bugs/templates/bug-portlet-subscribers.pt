@@ -13,19 +13,15 @@
       tal:content="structure context_menu/subscription/render" />
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
-    <div tal:condition="request/features/malone.advanced-structural-subscriptions.enabled"
-        tal:content="structure context_menu/editsubscriptions/render" />
-    <tal:show-mute condition="
-        request/features/malone.advanced-subscriptions.enabled">
-      <div tal:attributes="class view/current_user_mute_class"
-           id="mute-link-container">
-        <span tal:replace="structure context_menu/mute_subscription/render"/>
-        <a target="help" class="sprite maybe mute-help"
-            href="/+help/subscription-mute.html"
-          >&nbsp;<span class="invisible-link">Mute help</span></a>
-        <div style="float: left" id="mute-unmute-spinner">Unmuting...</div>
-      </div>
-    </tal:show-mute>
+    <div tal:content="structure context_menu/editsubscriptions/render" />
+    <div tal:attributes="class view/current_user_mute_class"
+          id="mute-link-container">
+      <span tal:replace="structure context_menu/mute_subscription/render"/>
+      <a target="help" class="sprite maybe mute-help"
+          href="/+help/subscription-mute.html"
+        >&nbsp;<span class="invisible-link">Mute help</span></a>
+      <div style="float: left" id="mute-unmute-spinner">Unmuting...</div>
+    </div>
   </div>
   <a id="subscribers-ids-link"
      tal:define="bug context/bug|context"
