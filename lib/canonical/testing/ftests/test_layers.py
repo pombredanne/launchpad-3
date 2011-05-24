@@ -16,7 +16,6 @@ from cStringIO import StringIO
 import os
 import signal
 import smtplib
-from cStringIO import StringIO
 from urllib import urlopen
 
 from amqplib import client_0_8 as amqp
@@ -25,7 +24,6 @@ from fixtures import (
     EnvironmentVariableFixture,
     TestWithFixtures,
     )
-import psycopg2
 import testtools
 from zope.component import getUtility, ComponentLookupError
 
@@ -58,7 +56,7 @@ from lp.services.memcache.client import memcache_client_factory
 class BaseLayerIsolator(Fixture):
     """A fixture for isolating BaseLayer.
 
-    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
+    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES
     which makes tests within layers unable to test that easily.
     """
 
@@ -221,7 +219,7 @@ class BaseTestCase(testtools.TestCase):
         client = LibrarianClient()
         data = 'Whatever'
         try:
-            file_alias_id = client.addFile(
+            client.addFile(
                     'foo.txt', len(data), StringIO(data), 'text/plain'
                     )
         except UploadFailed:
@@ -268,8 +266,11 @@ class BaseTestCase(testtools.TestCase):
             self.assertEqual(None, rabbitmq.host)
         else:
             self.assertNotEqual(None, rabbitmq.host)
-            conn = amqp.Connection(host=rabbitmq.host, userid=rabbitmq.userid,
-                password=rabbitmq.password, virtual_host=rabbitmq.virtual_host,
+            conn = amqp.Connection(
+                host=rabbitmq.host,
+                userid=rabbitmq.userid,
+                password=rabbitmq.password,
+                virtual_host=rabbitmq.virtual_host,
                 insist=False)
             conn.close()
 
@@ -603,6 +604,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
 
 class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
+
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,
