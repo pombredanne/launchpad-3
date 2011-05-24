@@ -151,6 +151,10 @@ class TestBugSnapshotting(TestCaseWithFactory):
                 [token for token in sql_tokens
                  if token.startswith('message')],
                 [])
+            self.assertEqual(
+                [token for token in sql_tokens
+                 if token.startswith('bugactivity')],
+                [])
 
 
 class TestBugCreation(TestCaseWithFactory):

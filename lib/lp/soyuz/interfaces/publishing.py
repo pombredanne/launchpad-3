@@ -589,8 +589,14 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive):
+    def copyTo(distroseries, pocket, archive, policy=None):
         """Copy this publication to another location.
+
+        :param distroseries: The `IDistroSeries` to copy the source
+            publication into.
+        :param pocket: The `PackagePublishingPocket` to copy into.
+        :param archive: The `IArchive` to copy the source publication into.
+        :param policy: The `IOverridePolicy` to apply to the copy.
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -867,7 +873,7 @@ class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def copyBinariesTo(binaries, distroseries, pocket, archive):
+    def copyBinariesTo(binaries, distroseries, pocket, archive, policy=None):
         """Copy multiple binaries to a given destination.
 
         Processing multiple binaries in a batch allows certain
@@ -879,6 +885,7 @@ class IPublishingSet(Interface):
         :param distroseries: The target distroseries.
         :param pocket: The target pocket.
         :param archive: The target archive.
+        :param policy: The `IOverridePolicy` to apply to the copy.
 
         :return: A result set of the created binary package
             publishing histories.

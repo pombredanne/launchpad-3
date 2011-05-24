@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvalidQuestionStateError',
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
@@ -56,14 +55,6 @@ from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
 from lp.services.worlddata.interfaces.language import ILanguage
-
-
-class InvalidQuestionStateError(Exception):
-    """Error raised when the question is in an invalid state.
-
-    Error raised when a workflow action cannot be executed because the
-    question is in an invalid state.
-    """
 
 
 class IQuestion(IHasOwner):
