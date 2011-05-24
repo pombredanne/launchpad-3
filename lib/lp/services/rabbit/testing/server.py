@@ -352,7 +352,7 @@ class RabbitServerRunner(RabbitFixture):
             os.path.basename(self.config.logfile),
             content_from_file(self.config.logfile))
         # Wait for the server to come up...
-        timeout = time.time() + 5
+        timeout = time.time() + 15
         while time.time() < timeout:
             if self.environment.check_running():
                 break
