@@ -32,6 +32,7 @@ __all__ = [
     'NoSuchBranch',
     'PrivateBranchRecipe',
     'ReviewNotPending',
+    'StaleLastMirrored',
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
@@ -214,6 +215,24 @@ class NoSuchBranch(NameLookupFailed):
     webservice_error(400)
 
     _message_prefix = "No such branch"
+
+
+class StaleLastMirrored(Exception):
+    """Raised when last_mirrored_id is out of date with on-disk value."""
+
+    def __init__(self, db_branch, info):
+        """Constructor.
+
+        :param db_branch: The database branch.
+        :param info: A dict of information about the branch, as produced by
+            lp.codehosting.bzrutils.get_branch_info
+        """
+        self.db_branch = db_branch
+        self.info = info
+        Exception.__init__(
+            self,
+            'Database last_mirrored_id %s does not match on-disk value %s' %
+            (db_branch.last_mirrored_id, self.info['last_revision_id']))
 
 
 class PrivateBranchRecipe(Exception):

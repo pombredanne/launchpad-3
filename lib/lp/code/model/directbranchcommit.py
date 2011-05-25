@@ -21,7 +21,11 @@ from bzrlib.transform import (
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.code.errors import StaleLastMirrored
+from lp.codehosting.bzrutils import (
+    get_branch_info,
+    get_stacked_on_url,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.osutils import override_environ
 
@@ -99,12 +103,16 @@ class DirectBranchCommit:
 
         self.bzrbranch.lock_write()
         self.is_locked = True
-
         try:
             self.revision_tree = self.bzrbranch.basis_tree()
             self.transform_preview = TransformPreview(self.revision_tree)
             assert self.transform_preview.find_conflicts() == [], (
                 "TransformPreview is not in a consistent state.")
+            if not no_race_check:
+                last_revision = self.bzrbranch.last_revision()
+                if last_revision != db_branch.last_mirrored_id:
+                    raise StaleLastMirrored(
+                        db_branch, get_branch_info(self.bzrbranch))
 
             self.is_open = True
         except:

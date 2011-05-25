@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 
+from testtools.testcase import ExpectedException
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.code.errors import StaleLastMirrored
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
     DirectBranchCommit,
@@ -323,3 +325,20 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
         committer = DirectBranchCommit(branch)
         self.addCleanup(committer.unlock)
         self.assertIn('noreply', committer.getBzrCommitterID())
+
+
+class TestStaleLastMirroredID(TestCaseWithFactory):
+
+   layer = DatabaseFunctionalLayer
+
+   def test_raises_StaleLastMirrored(self):
+        """Raise if the on-disk revision doesn't match last-mirrored."""
+        self.useBzrBranches(direct_database=True)
+        bzr_id = self.factory.getUniqueString()
+        db_branch, tree = self.create_branch_and_tree()
+        tree.commit('unchanged', committer='jrandom@example.com')
+        with ExpectedException(StaleLastMirrored, '.*'):
+            committer = DirectBranchCommit(
+                db_branch, committer_id=bzr_id)
+            self.addCleanup(committer.unlock)
+            committer.commit('')
