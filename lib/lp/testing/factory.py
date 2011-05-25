@@ -419,7 +419,7 @@ class ObjectFactory:
         The string returned will always be a valid name that can be used in
         Launchpad URLs.
 
-        :param prefix: Used as a prefix for the unique string. If 
+        :param prefix: Used as a prefix for the unique string. If
             unspecified, generates a name starting with 'unique' and
             mentioning the calling source location.
         """
@@ -2043,7 +2043,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     makeBlueprint = makeSpecification
 
-    def makeQuestion(self, target=None, title=None, owner=None):
+    def makeQuestion(self, target=None, title=None,
+                     owner=None, description=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2059,9 +2060,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = target.owner
+        if description is None:
+            description = self.getUniqueString('description')
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=owner, title=title, description='description')
+                owner=owner, title=title, description=description)
         return question
 
     def makeFAQ(self, target=None, title=None):

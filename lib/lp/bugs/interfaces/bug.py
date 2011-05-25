@@ -248,10 +248,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(
-        CollectionField(
+        doNotSnapshot(CollectionField(
             title=_('Log of activity that has occurred on this bug.'),
             value_type=Reference(schema=IBugActivity),
-            readonly=True))
+            readonly=True)))
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = exported(
