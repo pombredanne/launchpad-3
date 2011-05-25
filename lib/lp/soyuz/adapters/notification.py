@@ -147,7 +147,7 @@ def notify(packageupload, announce_list=None, summary_text=None,
 
     spr = packageupload.sourcepackagerelease
 
-    if spr == None:
+    if spr is None:
         # The sourcepackagerelease object that PackageUpload has fed us is
         # fake.
         notify_spr_less(
