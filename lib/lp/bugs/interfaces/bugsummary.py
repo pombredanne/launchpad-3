@@ -7,10 +7,7 @@ __metaclass__ = type
 __all__ = ['IBugSummary']
 
 
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Choice,
     Int,
@@ -21,6 +18,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
@@ -46,6 +44,9 @@ class IBugSummary(Interface):
 
     distribution_id = Int(readonly=True)
     distribution = Object(IDistribution, readonly=True)
+
+    distroseries_id = Int(readonly=True)
+    distroseries = Object(IDistroSeries, readonly=True)
 
     sourcepackagename_id = Int(readonly=True)
     sourcepackagename = Object(ISourcePackageName, readonly=True)

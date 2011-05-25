@@ -41,6 +41,9 @@ class BugSummary(Storm):
     distribution_id = Int(name='distribution')
     distribution = Reference(distribution_id, Distribution.id)
 
+    distroseries_id = Int(name='distroseries')
+    distroseries = Reference(distroseries_id, DistroSeries.id)
+
     sourcepackagename_id = Int(name='sourcepackagename')
     sourcepackagename = Reference(sourcepackagename_id, SourcePackageName.id)
 
