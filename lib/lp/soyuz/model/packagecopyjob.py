@@ -28,6 +28,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -280,29 +281,37 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         transaction.commit()
 
     def findMatchingDSDs(self, package_name=None):
-        """Find any `DistroSeriesDifference`s that this job would resolve."""
+        """Find any `DistroSeriesDifference`s that this job might resolve."""
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=self.target_distroseries,
+            distro_series=target_series,
             source_package_name_filter=package_name)
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have
-        # changed.  We can however filter out DSDs that are for
+        # changed.  We can however filter out DSDs that are from
         # different distributions, based on the job's target archive.
-        target_distro = self.target_archive.distribution
+        source_distro = self.source_archive.distribution
         return [
             dsd
             for dsd in candidates
-                if dsd.parent_series.distribution == target_distro]
+                if dsd.parent_series.distribution == source_distro]
 
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
-# XXX: Add package_name to CannotCopy (and raise statements)
         message = unicode(cannotcopy_exception)
         dsds = self.findMatchingDSDs(cannotcopy_exception.package_name)
         comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+
+        # Register the error comment in the name of the Janitor.  Not a
+        # great choice, but we have no user identity to represent
+        # Launchpad; it's far too costly to create one; and
+        # impersonating the requester can be misleading and would also
+        # involve extra bookkeeping.
+        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+
         for dsd in dsds:
-            comment_source.new(dsd, error_persona, message)
+            comment_source.new(dsd, reporting_persona, message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

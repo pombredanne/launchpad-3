@@ -8,6 +8,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.model.distroseriesdifferencecomment import (
@@ -44,13 +45,13 @@ def strip_error_handling_transactionality(job):
     naked_job.abort = FakeMethod()
 
 
-class PlainPackageCopyJobTests(TestCaseWithFactory):
-    """Test case for PlainPackageCopyJob."""
+class LocalTestHelper:
+    """Put test helpers that want to be in the test classes here."""
 
-    layer = LaunchpadZopelessLayer
-
-    def makeJob(self, dsd):
+    def makeJob(self, dsd=None):
         """Create a `PlainPackageCopyJob` that would resolve `dsd`."""
+        if dsd is None:
+            dsd = self.factory.makeDistroSeriesDifference()
         source_packages = [specify_dsd_package(dsd)]
         source_archive = dsd.parent_series.main_archive
         target_archive = dsd.derived_series.main_archive
@@ -59,6 +60,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         return getUtility(IPlainPackageCopyJobSource).create(
             source_packages, source_archive, target_archive,
             target_distroseries, target_pocket)
+
+
+class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
+    """Test case for PlainPackageCopyJob."""
+
+    layer = LaunchpadZopelessLayer
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
@@ -107,7 +114,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
 
     def test_getActiveJobs_only_returns_waiting_jobs(self):
         # getActiveJobs ignores jobs that aren't in the WAITING state.
-        job = self.makeJob(self.factory.makeDistroSeriesDifference())
+        job = self.makeJob()
         removeSecurityProxy(job).job._status = JobStatus.RUNNING
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertContentEqual([], source.getActiveJobs(job.target_archive))
@@ -117,8 +124,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         class Boom(Exception):
             pass
 
-        dsd = self.factory.makeDistroSeriesDifference()
-        job = self.makeJob(dsd)
+        job = self.makeJob()
         removeSecurityProxy(job).attemptCopy = FakeMethod(failure=Boom())
 
         self.assertRaises(Boom, job.run)
@@ -132,13 +138,16 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         job = self.makeJob(dsd)
         removeSecurityProxy(job).attemptCopy = FakeMethod(
             failure=CannotCopy("Server meltdown"))
-        strip_error_handling_transactionality(job)
+
+        # The job's error handling will abort, so commit the objects we
+        # created as would have happened in real life.
+        transaction.commit()
 
         job.run()
 
-        messages = list(get_dsd_comments(dsd))
-        self.assertEqual(1, len(messages))
-        self.assertEqual("Server meltdown", messages[0].message.content)
+        self.assertEqual(
+            ["Server meltdown"],
+            [comment.body_text for comment in get_dsd_comments(dsd)])
 
     def test_run_cannot_copy_unknown_package(self):
         # Attempting to copy an unknown package is reported as a
@@ -301,8 +310,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
     def test_getPendingJobsPerPackage_ignores_other_distroseries(self):
         # getPendingJobsPerPackage only looks for jobs on the indicated
         # distroseries.
-        dsd = self.factory.makeDistroSeriesDifference()
-        self.makeJob(dsd)
+        self.makeJob()
         other_series = self.factory.makeDistroSeries()
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
@@ -381,8 +389,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         # If given a package name, findMatchingDSDs will ignore DSDs
         # that would otherwise match the job but are for different
         # packages.
-        dsd = self.factory.makeDistroSeriesDifference()
-        job = removeSecurityProxy(self.makeJob(dsd))
+        job = removeSecurityProxy(self.makeJob())
         other_package = self.factory.makeSourcePackageName()
         self.assertContentEqual(
             [], job.findMatchingDSDs(package_name=other_package.name))
@@ -393,11 +400,36 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         # done with perfect precision because the job doesn't keep track
         # of source distroseries, but in practice it should be good
         # enough).
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        package = spph.sourcepackagerelease.sourcepackagename
-        dsd = self.factory.makeDistroSeriesDifference(
-            source_package_name_str=package.name,
-            parent_series=spph.distroseries)
+        dsd = self.factory.makeDistroSeriesDifference()
         job = removeSecurityProxy(self.makeJob(dsd))
+
+        # If the dsd differs only in parent series, that's enough to
+        # make it a non-match.
+        removeSecurityProxy(dsd).parent_series = (
+            self.factory.makeDistroSeries())
+
         self.assertContentEqual(
-            [], job.findMatchingDSDs(package_name=package.name))
+            [],
+            job.findMatchingDSDs(package_name=dsd.source_package_name.name))
+
+
+class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
+    """Test that `PlainPackageCopyJob` has the privileges it needs.
+
+    This test looks for errors, not failures.  It's here only to see that
+    these operations don't run into any privilege limitations.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test_findMatchingDSDs(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.IPlainPackageCopyJobSource.dbuser)
+        removeSecurityProxy(job).findMatchingDSDs()
+
+    def test_reportFailure(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.IPlainPackageCopyJobSource.dbuser)
+        removeSecurityProxy(job).reportFailure(CannotCopy("Mommy it hurts"))
