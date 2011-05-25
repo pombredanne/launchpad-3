@@ -12,7 +12,6 @@ import cgi
 from email.Utils import formatdate
 import math
 import os.path
-import re
 import rfc822
 import sys
 import urllib
