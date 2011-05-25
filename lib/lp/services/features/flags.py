@@ -102,13 +102,10 @@ flag_info = sorted([
      'boolean',
      'Changes the appearance of notifications on private bugs.',
      ''),
-    ('disclosure.feature_level',
-     'int',
-     ('A value representing the feature set delivered for the disclosure '
-      'work. As each new feature set is approved, this value is incremented '
-      'allowing the approved functionality to become visible and hiding the '
-      'next iteration of work.'),
-     '0'),
+    ('disclosure.picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display of extra picker info and irc nick formatting.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.
