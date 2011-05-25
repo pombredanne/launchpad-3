@@ -12,8 +12,10 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
+from lp.bugs.interfaces.bugsummary import IBugSummary
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -26,6 +28,8 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 
 class BugSummary(Storm):
     """BugSummary Storm database class."""
+
+    implements(IBugSummary)
 
     __storm_table__ = 'bugsummary'
 
