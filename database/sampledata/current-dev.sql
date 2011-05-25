@@ -846,6 +846,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3829,6 +3832,77 @@ ALTER TABLE bugsubscriptionfiltertag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfiltertag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsummary DISABLE TRIGGER ALL;
+
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (2, 1, NULL, NULL, 3, NULL, 1, NULL, NULL, 30, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (3, 1, NULL, NULL, NULL, 7, NULL, NULL, NULL, 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (4, 1, NULL, 2, NULL, NULL, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (5, 1, NULL, NULL, 3, NULL, 1, NULL, 'pebcak', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (6, 1, NULL, NULL, 1, NULL, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (7, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (8, 1, NULL, NULL, 1, NULL, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (9, 1, 20, NULL, NULL, NULL, NULL, 14, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (10, 1, 17, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (11, 1, NULL, NULL, NULL, 6, 1, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (12, 1, NULL, NULL, NULL, 6, 1, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (13, 1, NULL, NULL, 1, NULL, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (14, 2, NULL, NULL, 3, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (15, 1, 20, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (16, 1, NULL, NULL, NULL, 6, 1, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (17, 1, 20, NULL, NULL, NULL, NULL, 63, 'lunch-money', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (18, 1, 8, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (19, 1, NULL, NULL, 3, NULL, 1, NULL, 'dataloss', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (20, 2, NULL, NULL, NULL, 6, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (21, 3, 4, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (22, 1, NULL, NULL, NULL, 7, 1, NULL, 'layout-test', 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (23, 1, NULL, NULL, 3, NULL, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (24, 1, NULL, NULL, NULL, 3, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (25, 1, NULL, NULL, 1, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (26, 1, NULL, NULL, 3, NULL, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (27, 1, NULL, NULL, NULL, 3, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (28, 1, NULL, NULL, 1, NULL, NULL, NULL, 'crash', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (29, 1, NULL, NULL, NULL, 1, 1, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (30, 1, NULL, NULL, NULL, 1, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (31, 2, NULL, NULL, 3, NULL, 1, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (32, 1, 4, NULL, NULL, NULL, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (33, 1, 22, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (34, 1, NULL, NULL, NULL, 6, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (35, 1, NULL, NULL, 3, NULL, NULL, NULL, 'dataloss', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (36, 1, NULL, NULL, 1, NULL, NULL, NULL, 'crash', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (37, 1, NULL, NULL, 1, NULL, 18, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (38, 1, NULL, NULL, 3, NULL, 9, NULL, NULL, 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (39, 2, NULL, NULL, NULL, 6, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (40, 1, 20, NULL, NULL, NULL, NULL, 63, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (41, 1, 1, NULL, NULL, NULL, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (42, 1, NULL, NULL, NULL, 7, NULL, NULL, 'layout-test', 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (43, 1, 20, NULL, NULL, NULL, NULL, 14, 'lunch-money', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (44, 1, 4, NULL, NULL, NULL, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (45, 1, NULL, NULL, NULL, 7, 1, NULL, NULL, 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (46, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 30, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (47, 1, 1, NULL, NULL, NULL, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (48, 3, NULL, NULL, 1, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (49, 1, NULL, NULL, 3, NULL, NULL, NULL, 'pebcak', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (50, 1, NULL, NULL, 1, NULL, 18, NULL, 'crash', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (51, 1, NULL, 2, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (52, 1, NULL, NULL, NULL, 6, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (53, 1, NULL, NULL, NULL, 6, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (54, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (55, 1, NULL, NULL, NULL, 3, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (56, 1, 20, NULL, NULL, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (57, 1, 8, NULL, NULL, NULL, NULL, NULL, 'crash', 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (58, 1, NULL, NULL, NULL, 1, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (59, 1, NULL, NULL, 1, NULL, 22, NULL, 'crash', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (60, 1, NULL, NULL, NULL, 1, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (61, 1, NULL, NULL, 1, NULL, 22, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (62, 1, NULL, NULL, 3, NULL, 1, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (63, 1, 5, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (64, 1, 8, NULL, NULL, NULL, NULL, NULL, NULL, 999, NULL);
+
+
+ALTER TABLE bugsummary ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugtag DISABLE TRIGGER ALL;
