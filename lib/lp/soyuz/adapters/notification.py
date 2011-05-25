@@ -199,30 +199,25 @@ def notify(packageupload, announce_list=None, summary_text=None,
         summarystring, dry_run, changesfile_content, logger)
 
 
-def getFieldFromChanges(changes, field):
-    if changes.get(field):
-        return guess_encoding(changes.get(field))
-    else:
-        return ''
-
-
-def assembleBody(spr, archive, distroseries, summary, changes, action):
+def assemble_body(spr, archive, distroseries, summary, changes, action):
     information = {
         'STATUS': get_status(action),
         'SUMMARY': summary,
         'DATE': 'Date: %s' % changes['Date'],
         'CHANGESFILE': ChangesFile.formatChangesComment(
-            getFieldFromChanges(changes, 'Changes')),
+            guess_encoding(changes.get('Changes'))),
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
-        'CHANGEDBY': '\nChanged-By: %s' % (
-            getFieldFromChanges(changes, 'Changed-By')),
+        'CHANGEDBY': '',
         'ORIGIN': '',
         'SIGNER': '',
         'SPR_URL': canonical_url(spr),
         'USERS_ADDRESS': config.launchpad.users_address,
         }
-    origin = getFieldFromChanges(changes, 'Origin')
+    changedby = guess_encoding(changes.get('Changed-By'))
+    if changedby:
+        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
+    origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
     if action == 'unapproved':
@@ -238,8 +233,8 @@ def assembleBody(spr, archive, distroseries, summary, changes, action):
         if signer_signature != information['CHANGEDBY']:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    maintainer = getFieldFromChanges(changes, 'Maintainer')
-    if maintainer != information['CHANGEDBY']:
+    maintainer = guess_encoding(changes.get('Maintainer'))
+    if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
 
@@ -254,7 +249,7 @@ def sendMail(packageupload, summary_text, changes, recipients, dry_run,
     attach_changes = not archive.is_ppa
 
     subject = calculate_subject(spr, archive, distroseries, pocket, action)
-    body = assembleBody(
+    body = assemble_body(
         spr, archive, distroseries, summary_text, changes, action)
 
     _sendMail(
