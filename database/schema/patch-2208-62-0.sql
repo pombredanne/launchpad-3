@@ -29,5 +29,8 @@ ALTER TABLE BranchRevision
     DROP COLUMN id,
     DROP CONSTRAINT revision__branch__revision__key;
 
+-- Rename our new primary key index to the old name to keep Slony-I happy.
+ALTER INDEX revision__revision__branch__key RENAME TO revisionnumber_pkey;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 62, 0);
 
