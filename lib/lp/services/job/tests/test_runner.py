@@ -322,17 +322,28 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(0, len(self.oopses))
 
-    def test_runJob_retry_error(self):
+    def test_runJob_raising_retry_error(self):
+        """If a job raises a retry_error, it should be re-queued."""
         job = RaisingRetryJob('completion')
         runner = JobRunner([job])
         with self.expectedLog('Scheduling retry due to RetryError'):
             runner.runJob(job)
-        self.assertEqual(0, len(self.oopses))
         self.assertEqual(JobStatus.WAITING, job.status)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
-        with ExpectedException(RetryError, ''):
-            runner.runJob(job)
+
+    def test_runJob_exceeding_max_retries(self):
+        """If a job exceeds maximum retries, it should raise normally."""
+        job = RaisingRetryJob('completion')
+        JobRunner([job]).runJob(job)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        runner = JobRunner([job])
+        with self.expectedLog('Job execution raised an exception.'):
+            with ExpectedException(RetryError, ''):
+                runner.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
 
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""
