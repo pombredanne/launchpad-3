@@ -104,7 +104,7 @@ flag_info = sorted([
      ''),
     ('disclosure.picker_enhancements.enabled',
      'boolean',
-     ('Enables the display of extra picker info and irc nick formatting.'),
+     ('Enables the display of extra details in the person picker.'),
      ''),
     ])
 
