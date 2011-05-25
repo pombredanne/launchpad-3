@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Adaptors to figure out affiliations between people and pillars/bugs etc.
+"""Adapters to figure out affiliations between people and pillars/bugs etc.
 
 When using a person in a given context, for example as a selection item in a
 picker used to choose a bug task assignee, it is important to provide an
@@ -9,7 +9,7 @@ indication as to how that person may be affiliated with the context. Amongst
 other reasons, this provides a visual cue that the correct person is being
 selected for example.
 
-The adaptors herein are provided for various contexts so that for a given
+The adapters herein are provided for various contexts so that for a given
 person, the relevant affiliation details may be determined.
 
 """
@@ -41,7 +41,7 @@ class IHasAffiliation(Interface):
 
 @adapter(Interface)
 class PillarAffiliation(object):
-    """Default affiliation adaptor.
+    """Default affiliation adapter.
 
     No affiliation is returned.
     """
@@ -60,7 +60,7 @@ class PillarAffiliation(object):
 
 @adapter(IBugTask)
 class BugTaskPillarAffiliation(PillarAffiliation):
-    """An affiliation adaptor for bug tasks."""
+    """An affiliation adapter for bug tasks."""
 
     def getAffiliationBadge(self, person):
         return None

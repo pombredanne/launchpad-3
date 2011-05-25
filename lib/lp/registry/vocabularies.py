@@ -178,6 +178,7 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -186,11 +187,18 @@ class BasePersonVocabulary:
 
     _table = Person
 
+    def __init__(self, context):
+        self.enhanced_picker_enabled = bool(
+            getFeatureFlag('disclosure.picker_enhancements.enabled'))
+
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            # Display the person's Launchpad id next to their name.
-            title = "%s (~%s)" % (obj.displayname, obj.name)
+            if self.enhanced_picker_enabled:
+                # Display the person's Launchpad id next to their name.
+                title = "%s (~%s)" % (obj.displayname, obj.name)
+            else:
+                title = obj.displayname
             return SimpleTerm(obj, obj.name, title)
         except Unauthorized:
             return None

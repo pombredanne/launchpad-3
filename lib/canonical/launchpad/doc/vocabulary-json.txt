@@ -42,6 +42,12 @@ The name must be a valid vocabulary.
     ...
     UnexpectedFormData: Unknown vocabulary 'invalid-vocabulary'
 
+To use the new disclosure functionality, we need to turn on the feature flag.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 A successful search.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='guadamen')
@@ -153,10 +159,13 @@ IRC nicknames should be displayed after any email address.
             {
                 "api_uri": "/~mark",
                 "css": "sprite person",
-                "description": "<email address hidden> (mark@freenode)",
+                "description": "<email address hidden> (mark on irc.freenode.net)",
                 "title": "Mark Shuttleworth (~mark)",
                 "value": "mark"
             }
         ],
         "total_size": 1
     }
+
+Clean up the feature flag.
+    >>> flags.cleanUp()
