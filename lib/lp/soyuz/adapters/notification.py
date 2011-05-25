@@ -61,6 +61,7 @@ def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
         config.uploader.default_sender_name,
         config.uploader.default_sender_address)
     changedby = changes.get('Changed-By')
+    logger.debug("Building recipients list.")
     recipients = ''
     if changedby is not None:
         changedby_person = _emailToPerson(changedby)
@@ -74,6 +75,7 @@ def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
             config.uploader.default_recipient_name,
             config.uploader.default_recipient_address)
     extra_headers = {'X-Katie': 'Launchpad actually'}
+    logger.debug("Sending rejection email.")
     sendMessage(
         subject, from_addr, recipients, extra_headers, body,
         attach_changes=False, logger=logger)
