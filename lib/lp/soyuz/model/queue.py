@@ -52,7 +52,6 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
-from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -718,19 +717,6 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         notify(self, announce_list, summary_text, changes_file_object,
             logger, dry_run, allow_unsigned)
-
-    # XXX julian 2007-05-21:
-    # This method should really be IPersonSet.getByUploader but requires
-    # some extra work to port safe_fix_maintainer to emailaddress.py and
-    # then get nascent upload to use that.
-    def _emailToPerson(self, fullemail):
-        """Return an IPerson given an RFC2047 email address."""
-        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-        # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
-        person = getUtility(IPersonSet).getByEmail(email)
-        return person
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""

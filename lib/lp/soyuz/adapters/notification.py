@@ -179,14 +179,18 @@ def notify(packageupload, announce_list=None, summary_text=None,
 
     if packageupload.status == PackageUploadStatus.NEW:
         action = 'new'
+    elif packageupload.status == PackageUploadStatus.UNAPPROVED:
+        action = 'unapproved'
     else:
         action = 'accepted'
+
     summary = _buildSummary(spr, files, action)
     if summary_text:
         summary.append(summary_text)
     summarystring = "\n".join(summary)
 
-    recipients = _getRecipients(packageupload, changes, logger)
+    recipients = _getRecipients(
+        packageupload.signing_key, archive, distroseries, changes, logger)
 
     # There can be no recipients if none of the emails are registered
     # in LP.
@@ -208,12 +212,6 @@ def notify(packageupload, announce_list=None, summary_text=None,
             recipients, changes_lines, changes, summary_text, dry_run,
             changesfile_content, logger)
         return
-
-    action = 'accepted'
-    if packageupload.status == PackageUploadStatus.NEW:
-        action = 'new'
-    elif packageupload.status == PackageUploadStatus.UNAPPROVED:
-        action = 'unapproved'
 
     _sendSuccessNotification(
         spr, bprs, customfiles, archive, distroseries, pocket, recipients,
@@ -496,41 +494,39 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-def _getRecipients(packageupload, changes, logger):
+def _getRecipients(blamer, archive, distroseries, changes, logger):
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
     changer = _emailToPerson(changes['Changed-By'])
 
-    if packageupload.signing_key:
+    if blamer:
         # This is a signed upload.
-        signer = packageupload.signing_key.owner
-        candidate_recipients.append(signer)
+        candidate_recipients.append(blamer.owner)
     else:
         debug(logger,
             "Changes file is unsigned, adding changer as recipient")
         candidate_recipients.append(changer)
 
-    if packageupload.isPPA():
+    if archive.is_ppa:
         # For PPAs, any person or team mentioned explicitly in the
         # ArchivePermissions as uploaders for the archive will also
         # get emailed.
         uploaders = [
             permission.person for permission in
-                packageupload.archive.getUploadersForComponent()]
+                archive.getUploadersForComponent()]
         candidate_recipients.extend(uploaders)
 
     # If this is not a PPA, we also consider maintainer and changed-by.
-    if packageupload.signing_key and not packageupload.isPPA():
+    if blamer and not archive.is_ppa:
         maintainer = _emailToPerson(changes['Maintainer'])
-        if (maintainer and maintainer != signer and
-                maintainer.isUploader(
-                    packageupload.distroseries.distribution)):
+        if (maintainer and maintainer != blamer.owner and
+                maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
             candidate_recipients.append(maintainer)
 
-        if (changer and changer != signer and
-                changer.isUploader(packageupload.distroseries.distribution)):
+        if (changer and changer != blamer.owner and
+                changer.isUploader(distroseries.distribution)):
             debug(logger, "Adding changed-by to recipients")
             candidate_recipients.append(changer)
 
