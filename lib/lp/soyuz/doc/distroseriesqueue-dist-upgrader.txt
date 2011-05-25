@@ -26,7 +26,7 @@ First, test the rejection of a missapplied changesfile name:
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
   ...     sync_policy, FakeLogger())
-  DEBUG Changes file can be unsigned.
+  DEBUG dist-upgrader_20060302.0120.changes can be unsigned.
   >>> upload.process()
   Traceback (most recent call last):
   ...

@@ -4541,9 +4541,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
-    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
-    domain_parts = domain.split(".")
 
     person_set = PersonSet()
 
@@ -4560,11 +4559,6 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     generated_nick = sanitize_name(user)
     if _valid_nick(generated_nick):
         return generated_nick
-
-    for domain_part in domain_parts:
-        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
-        if _valid_nick(generated_nick):
-            return generated_nick
 
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
