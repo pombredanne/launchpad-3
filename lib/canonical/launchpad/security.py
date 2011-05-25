@@ -7,21 +7,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'AnonymousAuthorization',
-    'AuthorizationBase',
     ]
 
 from zope.component import (
     getAdapter,
     getUtility,
     )
-from zope.interface import (
-    implements,
-    Interface,
-    )
-from zope.security.permission import (
-    checkPermission as check_permission_is_registered,
-    )
+from zope.interface import Interface
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
@@ -34,20 +26,23 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization,
-    ILaunchpadRoot,
-    )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import(
+    AnonymousAuthorization,
+    AuthorizationBase,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -117,6 +112,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceAdmin,
     IDistroSeriesDifferenceEdit,
     )
 from lp.registry.interfaces.entitlement import IEntitlement
@@ -216,69 +212,6 @@ from lp.translations.interfaces.translator import (
     )
 
 
-class AuthorizationBase:
-    implements(IAuthorization)
-    permission = None
-    usedfor = None
-
-    def __init__(self, obj):
-        self.obj = obj
-
-    def checkUnauthenticated(self):
-        """See `IAuthorization.checkUnauthenticated`.
-
-        :return: True or False.
-        """
-        return False
-
-    def checkAuthenticated(self, user):
-        """Return True if the given person has the given permission.
-
-        This method is implemented by security adapters that have not
-        been updated to work in terms of IAccount.
-
-        :return: True or False.
-        """
-        return False
-
-    def forwardCheckAuthenticated(self, user,
-                                  obj=None, permission=None):
-        """Forward request to another security adapter.
-
-        Find a matching adapter and call checkAuthenticated on it. Intended
-        to be used in checkAuthenticated.
-
-        :param user: The IRolesPerson object that was passed in.
-        :param obj: The object to check the permission for. If None, use
-            the same object as this adapter.
-        :param permission: The permission to check. If None, use the same
-            permission as this adapter.
-        :return: True or False.
-        """
-        if obj is None:
-            obj = self.obj
-        if permission is None:
-            permission = self.permission
-        else:
-            # This will raise ValueError if the permission doesn't exist.
-            check_permission_is_registered(obj, permission)
-        next_adapter = getAdapter(obj, IAuthorization, permission)
-        return next_adapter.checkAuthenticated(user)
-
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        :return: True or False.
-        """
-        # For backward compatibility, delegate to one of
-        # checkAuthenticated() or checkUnauthenticated().
-        person = IPerson(account, None)
-        if person is None:
-            return self.checkUnauthenticated()
-        else:
-            return self.checkAuthenticated(IPersonRoles(person))
-
-
 class ViewByLoggedInUser(AuthorizationBase):
     """The default ruleset for the launchpad.View permission.
 
@@ -290,19 +223,6 @@ class ViewByLoggedInUser(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Any authenticated user can see this object."""
-        return True
-
-
-class AnonymousAuthorization(AuthorizationBase):
-    """Allow any authenticated and unauthenticated user access."""
-    permission = 'launchpad.View'
-
-    def checkUnauthenticated(self):
-        """Any unauthorized user can see this object."""
-        return True
-
-    def checkAuthenticated(self, user):
-        """Any authorized user can see this object."""
         return True
 
 
@@ -962,6 +882,7 @@ class BugSuperviseDistributionSourcePackage(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.in_admin)
 
+
 class EditDistributionSourcePackage(AuthorizationBase):
     """DistributionSourcePackage is not editable.
 
@@ -1065,6 +986,20 @@ class EditDistroSeriesParent(AuthorizationBase):
 class ViewCountry(AnonymousAuthorization):
     """Anyone can view a Country."""
     usedfor = ICountry
+
+
+class AdminDistroSeriesDifference(AuthorizationBase):
+    """You need to be an archive admin or LP admin to get lp.Admin."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroSeriesDifferenceAdmin
+
+    def checkAuthenticated(self, user):
+        # Archive admin is done by component, so here we just
+        # see if the user has that permission on any components
+        # at all.
+        archive = self.obj.derived_series.main_archive
+        return bool(
+            archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
 
 
 class EditDistroSeriesDifference(AuthorizationBase):
@@ -1744,12 +1679,16 @@ class AppendQuestion(AdminQuestion):
         if AdminQuestion.checkAuthenticated(self, user):
             return True
         question_target = self.obj.target
+        if IDistributionSourcePackage.providedBy(question_target):
+            question_targets = (question_target, question_target.distribution)
+        else:
+            question_targets = (question_target, )
         questions_person = IQuestionsPerson(user.person)
         for target in questions_person.getDirectAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         for target in questions_person.getTeamAnswerQuestionTargets():
-            if target == question_target:
+            if target in question_targets:
                 return True
         return False
 
@@ -1761,6 +1700,14 @@ class QuestionOwner(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
+
+
+class ViewQuestion(AnonymousAuthorization):
+    usedfor = IQuestion
+
+
+class ViewQuestionMessage(AnonymousAuthorization):
+    usedfor = IQuestionMessage
 
 
 class AppendFAQTarget(EditByOwnersOrAdmins):
@@ -1970,24 +1917,31 @@ class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
 
+    @property
+    def branches(self):
+        required = [self.obj.source_branch, self.obj.target_branch]
+        if self.obj.prerequisite_branch:
+            required.append(self.obj.prerequisite_branch)
+        return required
+
     def checkAuthenticated(self, user):
         """Is the user able to view the branch merge proposal?
 
-        The user can see a merge proposal between two branches
-        that the user can see.
+        The user can see a merge proposal if they can see the source, target
+        and prerequisite branches.
         """
-        return (AccessBranch(self.obj.source_branch).checkAuthenticated(user)
-                and
-                AccessBranch(self.obj.target_branch).checkAuthenticated(user))
+        return all(map(
+            lambda b: AccessBranch(b).checkAuthenticated(user),
+            self.branches))
 
     def checkUnauthenticated(self):
         """Is anyone able to view the branch merge proposal?
 
         Anyone can see a merge proposal between two public branches.
         """
-        return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
-                and
-                AccessBranch(self.obj.target_branch).checkUnauthenticated())
+        return all(map(
+            lambda b: AccessBranch(b).checkUnauthenticated(),
+            self.branches))
 
 
 class PreviewDiffView(AuthorizationBase):

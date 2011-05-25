@@ -105,8 +105,8 @@ Checkboxes have their label to the right. Let's look at one example.
     <tr>
       <td colspan="2">
        <div>
-          <input ... name="field.license_reviewed" type="checkbox" ...  />
-          <label for="field.license_reviewed">Project reviewed</label>...
+          <input ... name="field.project_reviewed" type="checkbox" ...  />
+          <label for="field.project_reviewed">Project reviewed</label>...
       </td>
     </tr>
     ...

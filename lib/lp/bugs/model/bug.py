@@ -11,6 +11,7 @@ __all__ = [
     'Bug',
     'BugAffectsPerson',
     'BugBecameQuestionEvent',
+    'BugMute',
     'BugSet',
     'BugTag',
     'FileBugData',
@@ -29,6 +30,7 @@ from email.Utils import make_msgid
 from functools import wraps
 from itertools import chain
 import operator
+import pytz
 import re
 
 from lazr.lifecycle.event import (
@@ -52,6 +54,7 @@ from storm.expr import (
     Count,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Max,
@@ -63,6 +66,11 @@ from storm.expr import (
     Union,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -94,7 +102,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     MessageSet,
@@ -107,7 +115,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
@@ -138,6 +146,7 @@ from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugBecameQuestionEvent,
+    IBugMute,
     IBugSet,
     IFileBugData,
     )
@@ -188,6 +197,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
+    validate_person,
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
@@ -201,6 +211,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.stormbase import StormBase
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import (
     cachedproperty,
@@ -222,7 +233,8 @@ def snapshot_bug_params(bug_params):
             "datecreated", "security_related", "private",
             "distribution", "sourcepackagename", "binarypackagename",
             "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
+            "subscribe_owner", "filed_by", "importance",
+            "milestone", "assignee"])
 
 
 class BugTag(SQLBase):
@@ -520,7 +532,7 @@ class Bug(SQLBase):
                     parent = message_by_id.get(parent.id, parent)
             else:
                 message, bugmessage = row
-                parent = None # parent attribute is not going to be accessed.
+                parent = None  # parent attribute is not going to be accessed.
             index = bugmessage.index
             result = IndexedMessage(message, inside, index, parent)
             if include_parents:
@@ -761,13 +773,18 @@ BugMessage""" % sqlvalues(self.id))
     def subscribe(self, person, subscribed_by, suppress_notify=True,
                   level=None):
         """See `IBug`."""
-        if level is None:
-            level = BugNotificationLevel.COMMENTS
 
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if level is not None:
+                    sub.bug_notification_level = level
+                    # Should subscribed_by be changed in this case?  Until
+                    # proven otherwise, we will answer with "no."
                 return sub
+
+        if level is None:
+            level = BugNotificationLevel.COMMENTS
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by,
@@ -837,40 +854,45 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    def _getMutes(self, person):
+        store = Store.of(self)
+        mutes = store.find(
+            BugMute,
+            BugMute.bug == self,
+            BugMute.person == person)
+        return mutes
+
     def isMuted(self, person):
         """See `IBug`."""
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person,
-            BugSubscription.bug_notification_level ==
-                BugNotificationLevel.NOTHING)
-        return not subscriptions.is_empty()
+        mutes = self._getMutes(person)
+        return not mutes.is_empty()
 
     def mute(self, person, muted_by):
         """See `IBug`."""
         if person is None:
             # This may be a webservice request.
             person = muted_by
-        # If there's an existing subscription, update it.
-        store = Store.of(self)
-        subscriptions = store.find(
-            BugSubscription,
-            BugSubscription.bug == self,
-            BugSubscription.person == person)
-        if subscriptions.is_empty():
-            return self.subscribe(
-                person, muted_by, level=BugNotificationLevel.NOTHING)
+        assert not person.is_team, (
+            "Muting a subscription for entire team is not allowed.")
+
+        # If it's already muted, ignore the request.
+        mutes = self._getMutes(person)
+        if mutes.is_empty():
+            mute = BugMute(person, self)
+            Store.of(mute).flush()
         else:
-            subscription = subscriptions.one()
-            subscription.bug_notification_level = (
-                BugNotificationLevel.NOTHING)
-            return subscription
+            # It's already muted, pass.
+            pass
 
     def unmute(self, person, unmuted_by):
         """See `IBug`."""
-        self.unsubscribe(person, unmuted_by)
+        store = Store.of(self)
+        if person is None:
+            # This may be a webservice request.
+            person = unmuted_by
+        mutes = self._getMutes(person)
+        store.remove(mutes.one())
+        return self.getSubscriptionForPerson(person)
 
     @property
     def subscriptions(self):
@@ -882,7 +904,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_id == self.id).order_by(BugSubscription.id)
         return DecoratedResultSet(results, operator.itemgetter(1))
 
-    def getSubscriptionInfo(self, level=BugNotificationLevel.NOTHING):
+    def getSubscriptionInfo(self, level=BugNotificationLevel.LIFECYCLE):
         """See `IBug`."""
         return BugSubscriptionInfo(self, level)
 
@@ -899,7 +921,7 @@ BugMessage""" % sqlvalues(self.id))
         it.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
         if recipients is not None:
             for subscriber in subscriptions.subscribers:
@@ -933,16 +955,13 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers.
         return DecoratedResultSet(
             IStore(BugSubscription).find(
-                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
-                # hack; it does not seem to be possible to express DISTINCT ON
-                # with Storm.
-                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
-                 Person, BugSubscription),
+                (Person, BugSubscription),
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id),
-            operator.itemgetter(2))
+                BugSubscription.person_id).config(
+                    distinct=(BugSubscription.person_id,)),
+            operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -951,7 +970,7 @@ BugMessage""" % sqlvalues(self.id))
         recipients argument.
         """
         if level is None:
-            level = BugNotificationLevel.NOTHING
+            level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
@@ -973,20 +992,15 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
 
         def cache_subscriber(row):
-            _, subscriber, subscription = row
+            subscriber, subscription = row
             if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
         return DecoratedResultSet(Store.of(self).find(
-            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
-            # hack; it does not seem to be possible to express DISTINCT ON
-            # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
-                 "0 AS ignore"),
              # Return people and subscriptions
-             Person, BugSubscription),
+            (Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -1006,7 +1020,8 @@ BugMessage""" % sqlvalues(self.id))
             # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name),
+            ).order_by(Person.name).config(
+                distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
@@ -1756,8 +1771,18 @@ BugMessage""" % sqlvalues(self.id))
 
         self.updateHeat()
 
-    def markAsDuplicate(self, duplicate_of):
-        """See `IBug`."""
+    def _markAsDuplicate(self, duplicate_of):
+        """Mark this bug as a duplicate of another.
+
+        Marking a bug as a duplicate requires a recalculation
+        of the heat of this bug and of the master bug, and it
+        requires a recalulation of the heat cache of the
+        affected bug targets. None of this is done here in order
+        to avoid unnecessary repetitions in recursive calls
+        for duplicates of this bug, which also become duplicates
+        of the new master bug.
+        """
+        affected_targets = set()
         field = DuplicateBug()
         field.context = self
         current_duplicateof = self.duplicateof
@@ -1771,7 +1796,8 @@ BugMessage""" % sqlvalues(self.id))
                     # event.
                     dupe_before = Snapshot(
                         duplicate, providing=providedBy(duplicate))
-                    duplicate.markAsDuplicate(duplicate_of)
+                    affected_targets.update(
+                        duplicate._markAsDuplicate(duplicate_of))
                     notify(ObjectModifiedEvent(
                             duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
@@ -1782,14 +1808,22 @@ BugMessage""" % sqlvalues(self.id))
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
-            self.setHeat(0)
-            duplicate_of.updateHeat()
+            self.setHeat(0, affected_targets=affected_targets)
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
-            self.updateHeat()
-            current_duplicateof.updateHeat()
+            self.updateHeat(affected_targets)
+            current_duplicateof.updateHeat(affected_targets)
+        return affected_targets
+
+    def markAsDuplicate(self, duplicate_of):
+        """See `IBug`."""
+        affected_targets = self._markAsDuplicate(duplicate_of)
+        if duplicate_of is not None:
+            duplicate_of.updateHeat(affected_targets)
+        for target in affected_targets:
+            target.recalculateBugHeatCache()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1889,8 +1923,14 @@ BugMessage""" % sqlvalues(self.id))
         # and assignees. As such, it's not possible to get them all with
         # one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
-
-        return person in also_notified_subscribers
+        if person in also_notified_subscribers:
+            return True
+        # Otherwise check to see if the person is a member of any of the
+        # subscribed teams.
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
+        return False
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
@@ -1909,7 +1949,8 @@ BugMessage""" % sqlvalues(self.id))
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None):
+    def setHeat(self, heat, timestamp=None, affected_targets=None):
+        """See `IBug`."""
         """See `IBug`."""
         if timestamp is None:
             timestamp = UTC_NOW
@@ -1919,10 +1960,13 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = heat
         self.heat_last_updated = timestamp
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
 
-    def updateHeat(self):
+    def updateHeat(self, affected_targets=None):
         """See `IBug`."""
         if self.duplicateof is not None:
             # If this bug is a duplicate we don't try to calculate its
@@ -1936,8 +1980,11 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
 
     def _attachments_query(self):
@@ -2204,7 +2251,9 @@ class BugSubscriptionInfo:
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug)
+            BugSubscription.bug == self.bug,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id==self.bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2217,12 +2266,14 @@ class BugSubscriptionInfo:
                 BugSubscription,
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self.bug)
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id==Bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscripitions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug.
 
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
@@ -2263,11 +2314,15 @@ class BugSubscriptionInfo:
         if self.bug.private:
             return BugSubscriberSet()
         else:
+            muted = IStore(BugMute).find(
+                Person,
+                BugMute.person_id==Person.id,
+                BugMute.bug==self.bug)
             return BugSubscriberSet().union(
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscriptions.subscribers)
+                self.direct_subscriptions.subscribers).difference(muted)
 
     @cachedproperty
     def indirect_subscribers(self):
@@ -2414,6 +2469,14 @@ class BugSet:
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
+
+        bug_task = bug.default_bugtask
+        if params.assignee:
+            bug_task.transitionToAssignee(params.assignee)
+        if params.importance:
+            bug_task.transitionToImportance(params.importance, params.owner)
+        if params.milestone:
+            bug_task.transitionToMilestone(params.milestone, params.owner)
 
         # Tell everyone.
         notify(event)
@@ -2598,3 +2661,29 @@ class FileBugData:
     def asDict(self):
         """Return the FileBugData instance as a dict."""
         return self.__dict__.copy()
+
+
+class BugMute(StormBase):
+    """Contains bugs a person has decided to block notifications from."""
+
+    implements(IBugMute)
+
+    __storm_table__ = "BugMute"
+
+    def __init__(self, person=None, bug=None):
+        if person is not None:
+            self.person = person
+        if bug is not None:
+            self.bug_id = bug.id
+
+    person_id = Int("person", allow_none=False, validator=validate_person)
+    person = Reference(person_id, "Person.id")
+
+    bug_id = Int("bug", allow_none=False)
+    bug = Reference(bug_id, "Bug.id")
+
+    __storm_primary__ = 'person_id', 'bug_id'
+
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)

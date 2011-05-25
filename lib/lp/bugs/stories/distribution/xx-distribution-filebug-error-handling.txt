@@ -4,7 +4,7 @@ package name that doesn't exist in the distribution.
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-    >>> browser.getControl(name="field.title").value = "test"
+    >>> browser.getControl(name="field.title", index=0).value = "test"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "test"
@@ -21,7 +21,7 @@ package name, but don't specify a package.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-    >>> browser.getControl(name="field.title").value = "test"
+    >>> browser.getControl(name="field.title", index=0).value = "test"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "test"

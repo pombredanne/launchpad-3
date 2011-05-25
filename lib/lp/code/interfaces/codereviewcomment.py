@@ -26,7 +26,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.code.enums import CodeReviewVote
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.registry.interfaces.person import IPerson

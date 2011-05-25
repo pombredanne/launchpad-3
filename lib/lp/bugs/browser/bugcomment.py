@@ -43,21 +43,18 @@ from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugmessage import (
-    IBugComment,
-    IBugMessageSet,
-    )
+from lp.bugs.interfaces.bugmessage import IBugComment
 
 
 COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
-def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
+def build_comments_from_chunks(
+        bugtask, truncate=False, slice_info=None, show_spam_controls=False):
     """Build BugComments from MessageChunks.
-    
+
     :param truncate: Perform truncation of large messages.
     :param slice_info: If not None, an iterable of slices to retrieve.
     """
@@ -67,11 +64,12 @@ def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
     for bugmessage, message, chunk in chunks:
         bug_comment = comments.get(message.id)
         if bug_comment is None:
-            bug_comment = BugComment(bugmessage.index, message, bugtask,
-                visible=message.visible)
+            bug_comment = BugComment(
+                bugmessage.index, message, bugtask, visible=message.visible,
+                show_spam_controls=show_spam_controls)
             comments[message.id] = bug_comment
-            # This code path is currently only used from BugTask view which
-            # have already loaded all the bug watches. If we start lazy loading
+            # This code path is currently only used from a BugTask view which
+            # has already loaded all the bug watches. If we start lazy loading
             # those, or not needing them we will need to batch lookup watches
             # here.
             if bugmessage.bugwatchID is not None:
@@ -105,11 +103,13 @@ def group_comments_with_activity(comments, activities):
     else:
         max_index = 0
     comments = (
-        (comment.datecreated, comment.index, comment.owner, comment_kind, comment)
+        (comment.datecreated, comment.index,
+            comment.owner, comment_kind, comment)
         for comment in comments)
     activity_kind = "activity"
     activity = (
-        (activity.datechanged, max_index, activity.person, activity_kind, activity)
+        (activity.datechanged, max_index,
+            activity.person, activity_kind, activity)
         for activity in activities)
     # when an action and a comment happen at the same time, the action comes
     # second, when two events are tied the comment index is used to
@@ -174,7 +174,10 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, activity=None, visible=True):
+    def __init__(
+            self, index, message, bugtask, activity=None,
+            visible=True, show_spam_controls=False):
+
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -196,6 +199,7 @@ class BugComment:
 
         self.synchronized = False
         self.visible = visible
+        self.show_spam_controls = show_spam_controls
 
     @property
     def show_for_admin(self):
@@ -203,14 +207,11 @@ class BugComment:
 
         This is used in templates to add a class to hidden
         comments to enable display for admins, so the admin
-        can see the comment even after it is hidden.
+        can see the comment even after it is hidden. Since comments
+        aren't published unless the user is registry or admin, this
+        can just check if the comment is visible.
         """
-        user = getUtility(ILaunchBag).user
-        is_admin = check_permission('launchpad.Admin', user)
-        if is_admin and not self.visible:
-            return True
-        else:
-            return False
+        return not self.visible
 
     def setupText(self, truncate=False):
         """Set the text for display and truncate it if necessary.
@@ -268,10 +269,10 @@ class BugComment:
     @property
     def show_footer(self):
         """Return True if the footer should be shown for this comment."""
-        if len(self.activity) > 0 or self.bugwatch:
-            return True
-        else:
-            return False
+        return bool(
+            len(self.activity) > 0 or
+            self.bugwatch or
+            self.show_spam_controls)
 
     @property
     def rendered_cache_time(self):
@@ -324,6 +325,10 @@ class BugCommentView(LaunchpadView):
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
 
+    @property
+    def show_spam_controls(self):
+        return self.comment.show_spam_controls
+    
     def page_title(self):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
@@ -331,6 +336,16 @@ class BugCommentView(LaunchpadView):
 
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""
+
+    @property
+    def show_spam_controls(self):
+        if hasattr(self.context, 'show_spam_controls'):
+           return self.context.show_spam_controls
+        elif (hasattr(self, 'comment') and
+           hasattr(self.comment, 'show_spam_controls')):
+           return self.comment.show_spam_controls
+        else:
+           return False
 
     def proxiedUrlOfLibraryFileAlias(self, attachment):
         """Return the proxied URL for the Librarian file of the attachment."""

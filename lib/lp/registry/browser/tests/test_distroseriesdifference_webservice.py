@@ -37,34 +37,40 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             ws_diff.self_link.endswith(ds_diff_path))
 
     def test_blacklist(self):
-        # The blacklist method can be called by people with edit access.
+        # The blacklist method can be called by people with admin access.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            self.factory.makePerson()), ds_diff)
+            archive_admin), ds_diff)
 
         result = ws_diff.blacklist()
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
 
     def test_unblacklist(self):
-        # The unblacklist method can be called by people with edit access.
+        # The unblacklist method can be called by people with admin access.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            self.factory.makePerson()), ds_diff)
+            archive_admin), ds_diff)
 
         result = ws_diff.unblacklist()
         transaction.commit()
 
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
@@ -106,8 +112,9 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         # Reload and check that the package diffs are there.
         utility = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = utility.getByDistroSeriesAndName(
-            ds_diff.derived_series, ds_diff.source_package_name.name)
+        ds_diff = utility.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, ds_diff.source_package_name.name,
+            ds_diff.parent_series)
         self.assertIsNot(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
 
@@ -123,6 +130,35 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             BadRequest, ws_diff.requestPackageDiffs)
+
+    def _createWSForDSDWithRequestedPackageDiff(self, versions):
+        # Helper to create and return a webservice for a
+        # DistroSeriesDifference with requested package diff(s).
+        ds_diff = self.factory.makeDistroSeriesDifference(versions=versions,
+            set_base_version=True)
+        ws_diff = ws_object(self.factory.makeLaunchpadService(
+            self.factory.makePerson()), ds_diff)
+        ws_diff.requestPackageDiffs()
+        transaction.commit()
+        return ws_diff
+
+    def test_requestPackageDiffs_exception_already_requested_derived(self):
+        # When a package diff between the derived version and the base version
+        # has already been requested, a call to request it again triggers a
+        # BadRequest exception.
+        ws_diff = self._createWSForDSDWithRequestedPackageDiff(versions={
+            'derived': '1.2',
+            'base': '1.2'})
+        self.assertRaises(BadRequest, ws_diff.requestPackageDiffs)
+
+    def test_requestPackageDiffs_exception_already_requested_parent(self):
+        # When a package diff between the parent version and the base version
+        # has already been requested, a call to request it again triggers a
+        # BadRequest exception.
+        ws_diff = self._createWSForDSDWithRequestedPackageDiff(versions={
+            'parent': '1.3',
+            'base': '1.2'})
+        self.assertRaises(BadRequest, ws_diff.requestPackageDiffs)
 
     def test_package_diffs(self):
         # The package diff urls exposed.

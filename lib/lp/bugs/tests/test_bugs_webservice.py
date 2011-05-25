@@ -305,7 +305,8 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         # bug subscriptions and (un)affected users.
         for field_name in (
             'subscriptions', 'users_affected', 'users_unaffected',
-            'users_affected_with_dupes', 'messages'):
+            'users_affected_with_dupes', 'messages', 'attachments',
+            'activity'):
             self.failUnless(
                 IDoNotSnapshot.providedBy(IBug[field_name]),
                 'IBug.%s should not be included in snapshots, see bug 507642.'

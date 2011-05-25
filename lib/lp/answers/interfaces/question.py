@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'InvalidQuestionStateError',
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
@@ -25,6 +24,12 @@ from lazr.restful.declarations import (
     operation_parameters,
     REQUEST_USER,
     )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+
 from zope.interface import (
     Attribute,
     Interface,
@@ -34,7 +39,6 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
-    List,
     Object,
     Text,
     TextLine,
@@ -42,7 +46,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.questionenums import (
+from lp.answers.enums import (
     QuestionPriority,
     QuestionStatus,
     )
@@ -50,14 +54,7 @@ from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
-
-
-class InvalidQuestionStateError(Exception):
-    """Error raised when the question is in an invalid state.
-
-    Error raised when a workflow action cannot be executed because the
-    question is in an invalid state.
-    """
+from lp.services.worlddata.interfaces.language import ILanguage
 
 
 class IQuestion(IHasOwner):
@@ -73,11 +70,12 @@ class IQuestion(IHasOwner):
         title=_('Summary'), required=True, description=_(
         "A one-line summary of the issue or problem.")),
         as_of="devel")
-    description = Text(
+    description = exported(Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead."))
+        "you take, what happens, and what you think should happen instead.")),
+        as_of="devel")
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True),
@@ -87,9 +85,10 @@ class IQuestion(IHasOwner):
         default=QuestionPriority.NORMAL)
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
-    language = Choice(
-        title=_('Language'), vocabulary='Language',
-        description=_('The language in which this question is written.'))
+    language = exported(ReferenceChoice(
+        title=_('Language'), vocabulary='Language', schema=ILanguage,
+        description=_('The language in which this question is written.')),
+        as_of="devel")
     owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam'),
@@ -107,31 +106,37 @@ class IQuestion(IHasOwner):
         vocabulary='ValidPersonOrTeam'),
         as_of="devel",
         readonly=True)
-    answer = Object(
+    answer = exported(Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
-            schema=IQuestionMessage)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    datedue = Datetime(
+        schema=IQuestionMessage),
+        readonly=True, as_of="devel")
+    datecreated = exported(Datetime(
+        title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created', readonly=True, as_of="devel")
+    datedue = exported(Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_(
-            "The date by which we should have resolved this question."))
-    datelastquery = Datetime(
+            "The date by which we should have resolved this question.")),
+        exported_as='date_due', readonly=True, as_of="devel")
+    datelastquery = exported(Datetime(
         title=_("Date Last Queried"), required=True,
         description=_("The date on which we last heard from the "
-        "customer (owner)."))
-    datelastresponse = Datetime(
+        "customer (owner).")),
+       exported_as='date_last_query',  readonly=True, as_of="devel")
+    datelastresponse = exported(Datetime(
         title=_("Date last Responded"),
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
-        "datelastresponse tells us in whose court the ball is."))
-    date_solved = Datetime(title=_("Date Answered"), required=False,
+        "datelastresponse tells us in whose court the ball is.")),
+        exported_as='date_last_response', readonly=True, as_of="devel")
+    date_solved = exported(Datetime(title=_("Date Answered"), required=False,
         description=_(
             "The date on which the question owner confirmed that the "
-            "question is Solved."))
+            "question is Solved.")),
+        exported_as='date_solved', readonly=True, as_of="devel")
     product = Choice(
         title=_('Upstream Project'), required=False,
         vocabulary='Product',
@@ -150,10 +155,11 @@ class IQuestion(IHasOwner):
         title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
-    target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
+    target = exported(Reference(
+        title=_('Project'), required=True, schema=IQuestionTarget,
         description=_('The distribution, source package, or product the '
-                      'question pertains to.'))
-
+                      'question pertains to.')),
+        as_of="devel")
     faq = Object(
         title=_('Linked FAQ'),
         description=_('The FAQ document containing the long answer to this '
@@ -165,13 +171,14 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = List(
+    messages = exported(CollectionField(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
-        value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True)
+        value_type=Reference(schema=IQuestionMessage),
+        required=True, default=[], readonly=True),
+        as_of='devel')
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
@@ -458,22 +465,13 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
-    def getDirectRecipients():
-        """Return the set of persons who are subscribed to this question.
+    direct_recipients = Attribute(
+        "Return An `INotificationRecipientSet` containing the persons to "
+        "notify along the rationale for doing so.")
 
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
-        """
-
-    def getIndirectRecipients():
-        """Return the set of persons implicitly subscribed to this question.
-
-        That includes  the answer contacts for the question's target as well
-        as the question's assignee.
-
-        :return: An `INotificationRecipientSet` containing the persons to
-            notify along the rationale for doing so.
-        """
+    indirect_recipients = Attribute(
+        "Return the INotificationRecipientSet of answer contacts for the "
+        "question's target as well as the question's assignee.")
 
     @operation_parameters(
         comment_number=Int(

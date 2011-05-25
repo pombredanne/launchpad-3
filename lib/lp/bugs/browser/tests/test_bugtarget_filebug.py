@@ -10,7 +10,10 @@ from zope.schema.interfaces import (
     )
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtarget import (
@@ -280,8 +283,16 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
             product, name='+filebug', principal=user)
         html = view.render()
         self.assertIsNot(None, find_tag_by_id(html, 'filebug-search-form'))
-        # The main bug filing form is not shown.
-        self.assertIs(None, find_tag_by_id(html, 'filebug-form'))
+        # The main bug filing form is rendered but hidden inside an invisible
+        # filebug-container.
+        main_content = find_main_content(html)
+        filebug_form = main_content.find(id='filebug-form')
+        self.assertIsNot(None, filebug_form)
+        filebug_form_container = filebug_form.findParents(
+            id='filebug-form-container')[0]
+        style_attrs = [item.strip()
+                       for item in filebug_form_container['style'].split(";")]
+        self.assertTrue('display: none' in style_attrs)
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for
@@ -367,3 +378,19 @@ class TestFileBugViewBase(TestCaseWithFactory):
         view = self.create_initialized_view(form=form)
         self.assertEqual(0, len(view.errors))
         self.assertTrue(view.added_bug is not None)
+
+
+class TestFileBugReportingGuidelines(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_filebug_reporting_details(self):
+        product = self.factory.makeProduct()
+        login_person(product.owner)
+        product.bug_reporting_guidelines = "Include bug details"
+        view = create_initialized_view(
+            product, '+filebug-reporting-guidelines')
+        expected_guidelines = [{
+            "source": product.displayname, "content": u"Include bug details",
+            }]
+        self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)

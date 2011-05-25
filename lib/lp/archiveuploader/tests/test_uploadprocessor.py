@@ -778,11 +778,15 @@ class TestUploadProcessor(TestUploadProcessorBase):
         breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.layer.txn.commit()
 
-        # Copy 'bar-1.0-1' source from breezy to breezy-autotest.
+        # Copy 'bar-1.0-1' source from breezy to breezy-autotest and
+        # create a build there (this would never happen in reality, it
+        # just suits the purposes of this test).
         bar_copied_source = bar_source_pub.copyTo(
             breezy_autotest, PackagePublishingPocket.RELEASE,
             self.ubuntu.main_archive)
-        [bar_copied_build] = bar_copied_source.createMissingBuilds()
+        bar_copied_build = bar_copied_source.sourcepackagerelease.createBuild(
+            breezy_autotest_i386, PackagePublishingPocket.RELEASE,
+            self.ubuntu.main_archive)
 
         # Re-upload the same 'bar-1.0-1' binary as if it was rebuilt
         # in breezy-autotest context.
@@ -1865,7 +1869,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             CannotGetBuild,
             BuildUploadHandler, self.uploadprocessor, upload_dir, cookie)
         self.assertIn(
-            "Unable to find package build job with id 42. Skipping.", str(e))
+            "Unable to find PACKAGEBUILD with id 42. Skipping.", str(e))
 
     def testBinaryPackageBuild_fail(self):
         # If the upload directory is empty, the upload
@@ -1992,12 +1996,12 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_success_mail(self):
-        # When a source package recipe build succeeds, it sends a build-style
-        # email, not user-upload-style one.
+        """Source package recipe build success does not cause mail.
+        
+        See bug 778437.
+        """
         self.doSuccessRecipeBuild()
-        (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
-        self.assertIn('Successfully built', subject)
+        self.assertEquals(len(pop_notifications()), 0, pop_notifications)
 
     def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.
@@ -2144,7 +2148,8 @@ class ParseBuildUploadLeafNameTests(TestCase):
 
     def test_valid(self):
         self.assertEquals(
-            60, parse_build_upload_leaf_name("20100812-42-PACKAGEBUILD-60"))
+            ('PACKAGEBUILD', 60),
+            parse_build_upload_leaf_name("20100812-PACKAGEBUILD-60"))
 
     def test_invalid_jobid(self):
         self.assertRaises(

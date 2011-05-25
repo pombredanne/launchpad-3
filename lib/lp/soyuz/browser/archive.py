@@ -108,6 +108,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.database.bulk import load
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -144,6 +145,7 @@ from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -158,7 +160,16 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.packagecopier import do_copy
+from lp.soyuz.scripts.packagecopier import (
+    check_copy_permissions,
+    do_copy,
+    )
+
+# Feature flag: up to how many package sync requests (inclusive) are to be
+# processed synchronously within the web request?
+# Set to -1 to disable synchronous syncs.
+FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS = (
+    'soyuz.derived_series.max_synchronous_syncs')
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -1214,13 +1225,162 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def preload_binary_package_names(copies):
+    """Preload `BinaryPackageName`s to speed up display-name construction."""
+    bpn_ids = [
+        copy.binarypackagerelease.binarypackagenameID for copy in copies
+        if isinstance(copy, BinaryPackagePublishingHistory)]
+    load(BinaryPackageName, bpn_ids)
+
+
+def compose_synchronous_copy_feedback(copies, dest_archive, dest_url=None,
+                                      dest_display_name=None):
+    """Compose human-readable feedback after a synchronous copy."""
+    if dest_url is None:
+        dest_url = escape(
+            canonical_url(dest_archive) + '/+packages', quote=True)
+
+    if dest_display_name is None:
+        dest_display_name = escape(dest_archive.displayname)
+
+    if len(copies) == 0:
+        return structured(
+            '<p>All packages already copied to <a href="%s">%s</a>.</p>'
+            % (dest_url, dest_display_name))
+    else:
+        messages = []
+        messages.append(
+            '<p>Packages copied to <a href="%s">%s</a>:</p>'
+            % (dest_url, dest_display_name))
+        messages.append('<ul>')
+        messages.append("\n".join([
+            '<li>%s</li>' % escape(copy) for copy in copies]))
+        messages.append('</ul>')
+        return structured("\n".join(messages))
+
+
+def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                       include_binaries, dest_url=None,
+                       dest_display_name=None, person=None,
+                       check_permissions=True):
+    """Copy packages right now.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
+    copies = do_copy(
+        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
+        allow_delayed_copies=True, person=person,
+        check_permissions=check_permissions)
+
+    preload_binary_package_names(copies)
+
+    return compose_synchronous_copy_feedback(
+        [copy.displayname for copy in copies], dest_archive, dest_url,
+        dest_display_name)
+
+
+def partition_pubs_by_archive(source_pubs):
+    """Group `source_pubs` by archive.
+
+    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
+    :return: A dict mapping `Archive`s to the list of entries from
+        `source_pubs` that are in that archive.
+    """
+    by_source_archive = {}
+    for spph in source_pubs:
+        by_source_archive.setdefault(spph.archive, []).append(spph)
+    return by_source_archive
+
+
+def name_pubs_with_versions(source_pubs):
+    """Annotate each entry from `source_pubs` with its version.
+
+    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
+    :return: A list of tuples (name, version), one for each respective
+        entry in `source_pubs`.
+    """
+    sprs = [spph.sourcepackagerelease for spph in source_pubs]
+    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
+
+
+def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                        include_binaries, dest_url=None,
+                        dest_display_name=None, person=None,
+                        check_permissions=True):
+    """Schedule jobs to copy packages later.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
+    if check_permissions:
+        spns = [
+            spph.sourcepackagerelease.sourcepackagename
+            for spph in source_pubs]
+        check_copy_permissions(
+            person, dest_archive, dest_series, dest_pocket, spns)
+
+    job_source = getUtility(IPlainPackageCopyJobSource)
+    archive_pubs = partition_pubs_by_archive(source_pubs)
+    for source_archive, spphs in archive_pubs.iteritems():
+        job_source.create(
+            name_pubs_with_versions(spphs), source_archive, dest_archive,
+            dest_series, dest_pocket, include_binaries=include_binaries)
+    return structured("""
+        <p>Requested sync of %s packages.</p>
+        <p>Please allow some time for these to be processed.</p>
+        """, len(source_pubs))
+
+
+def render_cannotcopy_as_html(cannotcopy_exception):
+    """Render `CannotCopy` exception as HTML for display in the page."""
+    error_lines = str(cannotcopy_exception).splitlines()
+
+    if len(error_lines) == 1:
+        intro = "The following source cannot be copied:"
+    else:
+        intro = "The following sources cannot be copied:"
+
+    # Produce structured HTML.  Include <li>%s</li> placeholders for
+    # each error line, but have "structured" interpolate the actual
+    # package names.  It will escape them as needed.
+    html_text = """
+        <p>%s</p>
+        <ul>
+        %s
+        </ul>
+        """ % (intro, "<li>%s</li>" * len(error_lines))
+    return structured(html_text, *error_lines)
+
+
 class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
 
+    def canCopySynchronously(self, source_pubs):
+        """Can we afford to copy `source_pubs` synchronously?"""
+        # Fixed estimate: up to 100 packages can be copied in acceptable
+        # time.  Anything more than that and we go async.
+        limit = getFeatureFlag(FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS)
+        try:
+            limit = int(limit)
+        except:
+            limit = 100
+
+        return len(source_pubs) <= limit
+
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
-                dest_url=None, dest_display_name=None):
+                dest_url=None, dest_display_name=None, person=None,
+                check_permissions=True):
         """Copy packages and add appropriate feedback to the browser page.
+
+        This may either copy synchronously, if there are few enough
+        requests to process right now; or asynchronously in which case
+        it will schedule jobs that will be processed by a script.
 
         :param sources_field_name: The name of the form field to set errors
             on when the copy fails
@@ -1236,64 +1396,31 @@ class PackageCopyingMixin:
         :param dest_display_name: The text to use for the dest_url link.
             Defaults to the target archive's display name and will be
             automatically escaped for inclusion in the output.
+        :param person: The person requesting the copy.
+        :param: check_permissions: boolean indicating whether or not the
+            requester's permissions to copy should be checked.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            copies = do_copy(
-                source_pubs, dest_archive, dest_series,
-                dest_pocket, include_binaries)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
+            if self.canCopySynchronously(source_pubs):
+                notification = copy_synchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
             else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % escape(line)
-                    for line in error_lines))
-            messages.append('</ul>')
-
+                notification = copy_asynchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
+        except CannotCopy, error:
             self.setFieldError(
-                sources_field_name, structured('\n'.join(messages)))
+                sources_field_name, render_cannotcopy_as_html(error))
             return False
 
-        # Preload BPNs to save queries when calculating display names.
-        load(BinaryPackageName, (
-            copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory)))
-
-        # Present a page notification describing the action.
-        messages = []
-        if dest_url is None:
-            dest_url = escape(
-                canonical_url(dest_archive) + '/+packages',
-                quote=True)
-        if dest_display_name is None:
-            dest_display_name = escape(dest_archive.displayname)
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    dest_url,
-                    dest_display_name))
-        else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    dest_url,
-                    dest_display_name))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % escape(copy.displayname)
-                           for copy in copies]))
-            messages.append('</ul>')
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
         return True
 
 
@@ -1462,7 +1589,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
         # setting up on-page notifications.
         if self.do_copy(
             'selected_sources', selected_sources, destination_archive,
-            destination_series, destination_pocket, include_binaries):
+            destination_series, destination_pocket, include_binaries,
+            person=self.user):
             # The copy worked so we can redirect back to the page to
             # show the result.
             self.setNextURL()

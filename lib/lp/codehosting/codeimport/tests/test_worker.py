@@ -407,7 +407,7 @@ class TestImportDataStore(WorkerTest):
         transport = self.get_transport()
         transport.put_bytes(remote_name, content)
         store = ImportDataStore(transport, source_details)
-        local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
+        local_name = '%s.tar.gz' % (self.factory.getUniqueString('tarball'),)
         store.fetch(local_name)
         self.assertEquals(content, open(local_name).read())
 

@@ -1288,6 +1288,17 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIs(None, build_button)
 
+    def test_request_daily_builds_button_no_recipe_permission(self):
+        # Recipes do not have a build now link if the user does not have edit
+        # permission on the recipe.
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, is_stale=True, build_daily=True)
+        person = self.factory.makePerson()
+        browser = self.getViewBrowser(recipe, user=person)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
     def test_request_daily_builds_button_ppa_with_no_permissions(self):
         # Recipes that have a daily build ppa without upload permissions
         # do not have a build now link

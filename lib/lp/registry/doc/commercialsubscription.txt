@@ -7,7 +7,8 @@ which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
+    >>> from lp.registry.interfaces.commercialsubscription import (
+    ...     ICommercialSubscription)
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('no-priv@canonical.com')
@@ -268,22 +269,22 @@ can only be set on a product that does not have OTHER_PROPRIETARY
 included as one of the licenses.
 
     >>> bzr.license_info = 'bar'
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
 
     >>> bzr.license_info
     u'bar'
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
     >>> bzr.license_approved
     True
 
 Setting license_approved implies that the license has been reviewed,
-so license_reviewed is set automatically.
+so project_reviewed is set automatically.
 
-    >>> bzr.license_reviewed = False
+    >>> bzr.project_reviewed = False
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     True
 
 Set the bzr license to Other/Open Source and Other/Proprietary.  It
@@ -291,37 +292,38 @@ may not be approved because Other/Proprietary requires a commercial
 subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE, License.OTHER_PROPRIETARY]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_approved = True
     Traceback (most recent call last):
     ...
-    AssertionError: Projects with 'Other/Proprietary' licenses may not be...
+    ValueError: Projects without a license or have 'Other/Proprietary'
+    may not be approved.
 
 A project with an Other/Open Source license or additional license info that
 is reviewed, but not approved requires a commercial subscription.
 
     >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting
     False
 
 If the licenses or license_info attributes are changed, the
-license_reviewed and license_approved attributes are reset to false.
+project_reviewed and license_approved attributes are reset to false.
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.license_info = 'foo'
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
     >>> bzr.license_approved = True
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.licenses = [License.BSD]
     >>> bzr.license_approved
     False
-    >>> bzr.license_reviewed
+    >>> bzr.project_reviewed
     False
 
 When the products license is OTHER_OPEN_SOURCE or the license_info
@@ -331,7 +333,7 @@ attribute is false for products that have licenses that required
 approval, but were not approved.
 
 However, qualifies_for_free_hosting remains true until
-it has been reviewed (license_reviewed is set to true). The
+it has been reviewed (project_reviewed is set to true). The
 OTHER_PROPRIETARY license does not need to be reviewed as do the
 OTHER_OPEN_SOURCE license or an unknown license in license_info.
 
@@ -341,7 +343,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -350,7 +352,7 @@ OTHER_OPEN_SOURCE license or an unknown license in license_info.
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
 
-    >>> bzr.license_reviewed = True
+    >>> bzr.project_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
 
@@ -391,7 +393,7 @@ You can search for whether the product is active or not.
 
 You can search for whether the product is marked reviewed or not.
 
-    >>> for product in product_set.forReview(license_reviewed=True):
+    >>> for product in product_set.forReview(project_reviewed=True):
     ...     print product.name
     python-gnome2-dev
     unassigned
@@ -451,7 +453,7 @@ It is possible to search for problem project that have been reviewed, but
 not approved
 
     >>> for product in product_set.forReview(
-    ...     license_reviewed=True, license_approved=False):
+    ...     project_reviewed=True, license_approved=False):
     ...     print product.name
     python-gnome2-dev
     unassigned

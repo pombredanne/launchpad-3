@@ -9,8 +9,8 @@ script once after the release series is created.
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
     >>> barty = factory.makeDistroRelease(foobuntu, '99.0', name='barty')
-    >>> carty = factory.makeDistroRelease(foobuntu, '99.1',
-    ...                                   name='carty', parent_series=barty)
+    >>> carty = factory.makeDistroRelease(
+    ...     foobuntu, '99.1', name='carty', previous_series=barty)
 
 Functions to create source packages, templates and and translations.
 
@@ -174,8 +174,8 @@ copyTranslationsFromParent. For that we create a new child series to receive
 those translations. For testing purposes this series has translation imports
 enabled.
 
-    >>> darty = factory.makeDistroRelease(foobuntu, '99.2',
-    ...                                   name='darty', parent_series=barty)
+    >>> darty = factory.makeDistroRelease(
+    ...     foobuntu, '99.2', name='darty', previous_series=barty)
     >>> darty_id = darty.id
     >>> darty.defer_translation_imports = False
 
@@ -226,22 +226,22 @@ sets the defer_translation_imports flag itself before copying.
       /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
     INFO    Populating blank distroseries darty with translations from barty.
-    INFO    Extracting from POTemplate into
-            "temp_POTemplate_holding_foobuntu_darty"...
-    INFO    Extracting from TranslationTemplateItem into
-            "temp_TranslationTemplateItem_holding_foobuntu_darty"...
-    INFO    Extracting from POFile into
-            "temp_POFile_holding_foobuntu_darty"...
-    INFO    Extracting from POFileTranslator into
-            "temp_POFileTranslator_holding_foobuntu_darty"...
-    INFO    Pouring "temp_POTemplate_holding_foobuntu_darty"
-            back into POTemplate...
-    INFO    Pouring "temp_TranslationTemplateItem_holding_foobuntu_darty"
-            back into TranslationTemplateItem...
-    INFO    Pouring "temp_POFile_holding_foobuntu_darty"
-            back into POFile...
-    INFO    Pouring "temp_POFileTranslator_holding_foobuntu_darty"
-            back into POFileTranslator...
+    INFO    Extracting from potemplate into
+            "temp_potemplate_holding_foobuntu_darty"...
+    INFO    Extracting from translationtemplateitem into
+            "temp_translationtemplateitem_holding_foobuntu_darty"...
+    INFO    Extracting from pofile into
+            "temp_pofile_holding_foobuntu_darty"...
+    INFO    Extracting from pofiletranslator into
+            "temp_pofiletranslator_holding_foobuntu_darty"...
+    INFO    Pouring "temp_potemplate_holding_foobuntu_darty"
+            back into potemplate...
+    INFO    Pouring "temp_translationtemplateitem_holding_foobuntu_darty"
+            back into translationtemplateitem...
+    INFO    Pouring "temp_pofile_holding_foobuntu_darty"
+            back into pofile...
+    INFO    Pouring "temp_pofiletranslator_holding_foobuntu_darty"
+            back into pofiletranslator...
     INFO    Done.
     <BLANKLINE>
 
