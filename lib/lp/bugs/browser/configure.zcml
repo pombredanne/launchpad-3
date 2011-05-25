@@ -535,6 +535,12 @@
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
+            name="+portlet-subscription"
+            template="../templates/bug-portlet-subscription.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugView"
+            permission="launchpad.View"
             name="+portlet-subscribers"
             template="../templates/bug-portlet-subscribers.pt"/>
         <browser:page

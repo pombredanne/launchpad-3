@@ -355,7 +355,7 @@ class HasSpecificationsView(LaunchpadView):
 
         # include text for filtering if it was given
         if self.searchtext is not None and len(self.searchtext) > 0:
-            filter.append(self.searchtext)
+            filter.append(self.searchtext.replace('%', '%%'))
 
         # filter on completeness
         if show == 'all':

@@ -162,6 +162,9 @@
         class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
         <require
+            permission="launchpad.Admin"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceAdmin"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"
             set_attributes="package_diff parent_package_diff"/>
@@ -212,7 +215,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="parent_series"/>
+            set_attributes="previous_series"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>

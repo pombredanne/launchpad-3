@@ -4,6 +4,7 @@
 """Test generic override policy classes."""
 
 from testtools.matchers import Equals
+from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_caches
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -14,6 +15,7 @@ from lp.soyuz.adapters.overrides import (
     UnknownOverridePolicy,
     )
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -149,7 +151,8 @@ class TestOverrides(TestCaseWithFactory):
         overrides = policy.calculateSourceOverrides(
             spph.distroseries.main_archive, spph.distroseries, spph.pocket,
             (spph.sourcepackagerelease.sourcepackagename,))
-        expected = [(spph.sourcepackagerelease.sourcepackagename, 'universe',
+        universe = getUtility(IComponentSet)['universe']
+        expected = [(spph.sourcepackagerelease.sourcepackagename, universe,
             None)]
         self.assertEqual(expected, overrides)
 
@@ -163,15 +166,17 @@ class TestOverrides(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, bpph.pocket,
             ((bpph.binarypackagerelease.binarypackagename, None),))
+        universe = getUtility(IComponentSet)['universe']
         expected = [(bpph.binarypackagerelease.binarypackagename,
-            bpph.distroarchseries, 'universe', None, None)]
+            bpph.distroarchseries, universe, None, None)]
         self.assertEqual(expected, overrides)
 
     def test_ubuntu_override_policy_sources(self):
         # The Ubuntu policy incorporates both the existing and the unknown
         # policy.
+        universe = getUtility(IComponentSet)['universe']
         spns = [self.factory.makeSourcePackageName()]
-        expected = [(spns[0], 'universe', None)]
+        expected = [(spns[0], universe, None)]
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         for i in xrange(8):
@@ -183,7 +188,7 @@ class TestOverrides(TestCaseWithFactory):
                 spph.sourcepackagerelease.sourcepackagename, spph.component,
                 spph.section))
         spns.append(self.factory.makeSourcePackageName())
-        expected.append((spns[-1], 'universe', None))
+        expected.append((spns[-1], universe, None))
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             distroseries.main_archive, distroseries, pocket, spns)
@@ -193,6 +198,7 @@ class TestOverrides(TestCaseWithFactory):
     def test_ubuntu_override_policy_binaries(self):
         # The Ubuntu policy incorporates both the existing and the unknown
         # policy.
+        universe = getUtility(IComponentSet)['universe']
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         bpn = self.factory.makeBinaryPackageName()
@@ -214,7 +220,7 @@ class TestOverrides(TestCaseWithFactory):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpns.append((bpn, distroarchseries.architecturetag))
-            expected.append((bpn, distroarchseries, 'universe', None, None))
+            expected.append((bpn, distroarchseries, universe, None, None))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateBinaryOverrides(

@@ -54,6 +54,7 @@ from storm.expr import (
     Count,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Max,
@@ -531,7 +532,7 @@ class Bug(SQLBase):
                     parent = message_by_id.get(parent.id, parent)
             else:
                 message, bugmessage = row
-                parent = None # parent attribute is not going to be accessed.
+                parent = None  # parent attribute is not going to be accessed.
             index = bugmessage.index
             result = IndexedMessage(message, inside, index, parent)
             if include_parents:
@@ -891,6 +892,7 @@ BugMessage""" % sqlvalues(self.id))
             person = unmuted_by
         mutes = self._getMutes(person)
         store.remove(mutes.one())
+        return self.getSubscriptionForPerson(person)
 
     @property
     def subscriptions(self):
@@ -2249,7 +2251,9 @@ class BugSubscriptionInfo:
         return IStore(BugSubscription).find(
             BugSubscription,
             BugSubscription.bug_notification_level >= self.level,
-            BugSubscription.bug == self.bug)
+            BugSubscription.bug == self.bug,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id==self.bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2262,12 +2266,14 @@ class BugSubscriptionInfo:
                 BugSubscription,
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
-                Bug.duplicateof == self.bug)
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id==Bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
     def duplicate_only_subscriptions(self):
-        """Subscripitions to duplicates of the bug.
+        """Subscriptions to duplicates of the bug.
 
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
@@ -2308,11 +2314,15 @@ class BugSubscriptionInfo:
         if self.bug.private:
             return BugSubscriberSet()
         else:
+            muted = IStore(BugMute).find(
+                Person,
+                BugMute.person_id==Person.id,
+                BugMute.bug==self.bug)
             return BugSubscriberSet().union(
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscriptions.subscribers)
+                self.direct_subscriptions.subscribers).difference(muted)
 
     @cachedproperty
     def indirect_subscribers(self):

@@ -85,7 +85,8 @@ def main():
         # specified on the child, so we must unset it and pass it in. This is
         # a temporary hack until confidence in InitialiseDistroSeriesJob is
         # good, at which point this script will be obsolete.
-        parent, distroseries.parent_series = distroseries.parent_series, None
+        parent, distroseries.previous_series = (
+            distroseries.previous_series, None)
         ids = InitialiseDistroSeries(parent, distroseries, arches)
         ids.check()
         log.debug('initialising from parent, copying publishing records.')

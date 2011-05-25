@@ -21,6 +21,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+import apt_pkg
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
@@ -105,6 +106,7 @@ from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -611,7 +613,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            parent_series=None,
+            previous_series=None,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -634,7 +636,7 @@ class DistroSeriesInitializeView(LaunchpadView):
 
     @property
     def is_derived_series_feature_enabled(self):
-        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
+        return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
     def next_url(self):
@@ -732,7 +734,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
-        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
+        if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
 
@@ -831,6 +833,51 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                         check_permission('launchpad.Append', archive)))
         return (has_perm and
                 self.cached_differences.batch.total() > 0)
+
+    @cachedproperty
+    def pending_syncs(self):
+        """Pending synchronization jobs for this distroseries.
+
+        :return: A dict mapping (name, version) package specifications to
+            pending sync jobs.
+        """
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        return job_source.getPendingJobsPerPackage(self.context)
+
+    def hasPendingSync(self, dsd):
+        """Is there a package-copying job pending to resolve `dsd`?"""
+        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+
+    def isNewerThanParent(self, dsd):
+        """Is the child's version of this package newer than the parent's?
+
+        If it is, there's no point in offering to sync it.
+
+        Any version is considered "newer" than a missing version.
+        """
+        # This is trickier than it looks: versions are not totally
+        # ordered.  Two non-identical versions may compare as equal.
+        # Only consider cases where the child's version is conclusively
+        # newer, not where the relationship is in any way unclear.
+        if dsd.parent_source_version is None:
+            # There is nothing to sync; the child is up to date and if
+            # anything needs updating, it's the parent.
+            return True
+        if dsd.source_version is None:
+            # The child doesn't have this package.  Treat that as the
+            # parent being newer.
+            return False
+        comparison = apt_pkg.VersionCompare(
+            dsd.parent_source_version, dsd.source_version)
+        return comparison < 0
+
+    def canRequestSync(self, dsd):
+        """Does it make sense to request a sync for this difference?"""
+        # There are two conditions for this: it doesn't make sense to
+        # sync if the child's version of the package is newer than the
+        # parent's version, or if there is already a sync pending.
+        return (
+            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
 
     @property
     def specified_name_filter(self):
@@ -950,11 +997,6 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 self.getParentName(multiple_parent_default='parent series'),
                 ))
 
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
-
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
@@ -1000,7 +1042,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
-        if getFeatureFlag("soyuz.derived-series-sync.enabled") is None:
+        if getFeatureFlag("soyuz.derived_series_sync.enabled") is None:
             return False
         elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
@@ -1050,11 +1092,6 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
                 self.context.displayname,
                 ))
 
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
-
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
@@ -1090,11 +1127,6 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
                 self.context.displayname,
                 self.getParentName(),
                 ))
-
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
 
     def canPerformSync(self, *args):
         return False

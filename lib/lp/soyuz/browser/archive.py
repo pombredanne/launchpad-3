@@ -1322,7 +1322,7 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             spph.sourcepackagerelease.sourcepackagename
             for spph in source_pubs]
         check_copy_permissions(
-            person, dest_archive, dest_series, dest_pocket, [spns])
+            person, dest_archive, dest_series, dest_pocket, spns)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
     archive_pubs = partition_pubs_by_archive(source_pubs)

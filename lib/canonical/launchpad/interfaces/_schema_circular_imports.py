@@ -485,7 +485,7 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
-patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(

@@ -9,9 +9,11 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from collections import defaultdict
 from itertools import chain
 from operator import itemgetter
 
+import apt_pkg
 from debian.changelog import (
     Changelog,
     Version,
@@ -22,9 +24,7 @@ from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
-    compile as storm_compile,
     Desc,
-    SQL,
     Table,
     )
 from storm.locals import (
@@ -42,7 +42,6 @@ from canonical.database.enumcol import DBEnum
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -74,6 +73,10 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
@@ -220,13 +223,26 @@ def packagesets(dsds, in_parent):
         Column("sourcepackagename", PackagesetSources),
         Packageset.name)
 
-    grouped = {}
+    grouped = defaultdict(list)
     for dsd_id, packageset in results:
-        if dsd_id in grouped:
-            grouped[dsd_id].append(packageset)
-        else:
-            grouped[dsd_id] = [packageset]
+        grouped[dsd_id].append(packageset)
+    return grouped
 
+
+def message_chunks(messages):
+    """Return the message chunks for the given messages.
+
+    Returns a dict with the list of `MessageChunk` for each message id.
+
+    :param messages: An iterable of `Message` instances.
+    """
+    store = IStore(MessageChunk)
+    chunks = store.find(MessageChunk,
+        MessageChunk.messageID.is_in(m.id for m in messages))
+
+    grouped = defaultdict(list)
+    for chunk in chunks:
+        grouped[chunk.messageID].append(chunk)
     return grouped
 
 
@@ -382,6 +398,15 @@ class DistroSeriesDifference(StormBase):
             # Get packagesets and parent_packagesets for each DSD.
             dsd_packagesets = packagesets(dsds, in_parent=False)
             dsd_parent_packagesets = packagesets(dsds, in_parent=True)
+
+            # Cache latest messages contents (MessageChunk).
+            messages = bulk.load_related(
+                Message, latest_comments, ['message_id'])
+            chunks = message_chunks(messages)
+            for msg in messages:
+                cache = get_property_cache(msg)
+                cache.text_contents = Message.chunks_text(
+                    chunks.get(msg.id, []))
 
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
@@ -637,7 +662,7 @@ class DistroSeriesDifference(StormBase):
             return DistroSeriesSourcePackageRelease(
                 distro_series, pub.sourcepackagerelease)
 
-    def update(self):
+    def update(self, manual=False):
         """See `IDistroSeriesDifference`."""
         # Updating is expected to be a heavy operation (not called
         # during requests). We clear the cache beforehand - even though
@@ -647,7 +672,7 @@ class DistroSeriesDifference(StormBase):
         # update() (like the tests for this method do).
         clear_property_cache(self)
         self._updateType()
-        updated = self._updateVersionsAndStatus()
+        updated = self._updateVersionsAndStatus(manual=manual)
         if updated is True:
             self._setPackageDiffs()
         return updated
@@ -668,16 +693,25 @@ class DistroSeriesDifference(StormBase):
         if new_type != self.difference_type:
             self.difference_type = new_type
 
-    def _updateVersionsAndStatus(self):
+    def _updateVersionsAndStatus(self, manual):
         """Helper for the update() interface method.
 
         Check whether the status of this difference should be updated.
+
+        :param manual: Boolean, True if this is a user-requested change.
+            This overrides auto-blacklisting.
         """
+        # XXX 2011-05-20 bigjools bug=785657
+        # This method needs updating to use some sort of state
+        # transition dictionary instead of this crazy mess of
+        # conditions.
+
         updated = False
         new_source_version = new_parent_source_version = None
         if self.source_pub:
             new_source_version = self.source_pub.source_package_version
-            if self.source_version != new_source_version:
+            if self.source_version is None or apt_pkg.VersionCompare(
+                    self.source_version, new_source_version) != 0:
                 self.source_version = new_source_version
                 updated = True
                 # If the derived version has change and the previous version
@@ -688,16 +722,33 @@ class DistroSeriesDifference(StormBase):
         if self.parent_source_pub:
             new_parent_source_version = (
                 self.parent_source_pub.source_package_version)
-            if self.parent_source_version != new_parent_source_version:
+            if self.parent_source_version is None or apt_pkg.VersionCompare(
+                    self.parent_source_version,
+                    new_parent_source_version) != 0:
                 self.parent_source_version = new_parent_source_version
                 updated = True
+
+        if not self.source_pub or not self.parent_source_pub:
+            # This is unlikely to happen in reality but return early so
+            # that bad data cannot make us OOPS.
+            return updated
 
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if self.source_version != self.parent_source_version:
+            if apt_pkg.VersionCompare(
+                self.source_version, self.parent_source_version) < 0:
+                # Higher parent version.
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+            elif (
+                apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) > 0
+                and not manual):
+                # The child was updated with a higher version so it's
+                # auto-blacklisted.
+                updated = True
+                self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
         # If this difference was needing attention, or the current version
         # was blacklisted and the versions now match we resolve it. Note:
         # we don't resolve it if this difference was blacklisted for all
@@ -705,9 +756,17 @@ class DistroSeriesDifference(StormBase):
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
-            if self.source_version == self.parent_source_version:
+            if apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) == 0:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
+            elif (
+                apt_pkg.VersionCompare(
+                    self.source_version, self.parent_source_version) < 0
+                and not manual):
+                # If the derived version is lower than the parent's, we
+                # ensure the diff status is blacklisted.
+                self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
 
         if self._updateBaseVersion():
             updated = True
@@ -785,7 +844,7 @@ class DistroSeriesDifference(StormBase):
     def unblacklist(self):
         """See `IDistroSeriesDifference`."""
         self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        self.update()
+        self.update(manual=True)
 
     def requestPackageDiffs(self, requestor):
         """See `IDistroSeriesDifference`."""

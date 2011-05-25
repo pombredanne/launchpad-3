@@ -52,7 +52,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
     def test_parent_is_not_set(self):
         # When parent_series is set it means that the distroseries has already
         # been derived, and it is forbidden to derive more than once.
-        removeSecurityProxy(self.child).parent_series = self.parent
+        removeSecurityProxy(self.child).previous_series = self.parent
         self.assertRaisesWithContent(
             DerivationError,
             ("DistroSeries {self.child.name} parent series is "

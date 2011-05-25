@@ -185,6 +185,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "The person responsible for implementing the feature."),
             vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    assigneeID = Attribute('db assignee value')
     drafter = exported(
         PublicPersonChoice(
             title=_('Drafter'), required=False,
@@ -192,6 +193,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                     "The person responsible for drafting the specification."),
                 vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    drafterID = Attribute('db drafter value')
     approver = exported(
         PublicPersonChoice(
             title=_('Approver'), required=False,
@@ -200,6 +202,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "and for reviewing the code when it's ready to be landed."),
             vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    approverID = Attribute('db approver value')
 
     priority = exported(
         Choice(

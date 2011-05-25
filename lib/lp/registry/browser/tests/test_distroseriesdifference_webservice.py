@@ -37,10 +37,12 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             ws_diff.self_link.endswith(ds_diff_path))
 
     def test_blacklist(self):
-        # The blacklist method can be called by people with edit access.
+        # The blacklist method can be called by people with admin access.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            self.factory.makePerson()), ds_diff)
+            archive_admin), ds_diff)
 
         result = ws_diff.blacklist()
         transaction.commit()
@@ -54,11 +56,13 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
             ds_diff.status)
 
     def test_unblacklist(self):
-        # The unblacklist method can be called by people with edit access.
+        # The unblacklist method can be called by people with admin access.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
         ws_diff = ws_object(self.factory.makeLaunchpadService(
-            self.factory.makePerson()), ds_diff)
+            archive_admin), ds_diff)
 
         result = ws_diff.unblacklist()
         transaction.commit()

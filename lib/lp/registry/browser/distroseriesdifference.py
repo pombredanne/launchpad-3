@@ -52,6 +52,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.propertycache import cachedproperty
 
 
 class DistroSeriesDifferenceNavigation(Navigation):
@@ -148,15 +149,25 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             DistroSeriesDifferenceDisplayComment(comment) for
                 comment in comments]
 
-    @property
+    @cachedproperty
     def can_request_diffs(self):
         """Does the user have permission to request diff calculation?"""
         return check_permission('launchpad.Edit', self.context)
 
-    @property
-    def show_edit_options(self):
-        """Only show the options if an editor requests via JS."""
+    @cachedproperty
+    def show_add_comment(self):
+        """Only show the 'Add comment' if an editor requests via JS."""
         return self.request.is_ajax and self.can_request_diffs
+
+    @cachedproperty
+    def show_blacklist_options(self):
+        """Should we show the blacklisting (ignore) radio widget options.
+
+        Only show the options if an editor requests via JS and the user
+        is an archive admin.
+        """
+        return self.request.is_ajax and check_permission(
+            'launchpad.Admin', self.context)
 
     @property
     def display_diffs(self):

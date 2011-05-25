@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.expr import SQL
 from storm.store import (
     EmptyResultSet,
     ResultSet,
@@ -23,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
+from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterMute,
@@ -33,6 +35,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
     get_structural_subscription_targets,
     )
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.testing import (
     anonymous_logged_in,
     login_person,

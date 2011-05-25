@@ -1570,7 +1570,7 @@ class DistroSeriesDerivationVocabulary:
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
-                child.parent_seriesID == parent.id))
+                child.previous_seriesID == parent.id))
         where.append(
             DistroSeries.distributionID.is_in(parent_distributions))
         terms = self.find_terms(where)
