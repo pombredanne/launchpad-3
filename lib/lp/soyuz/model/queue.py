@@ -39,7 +39,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.mail import (
     signed_message_from_string,
@@ -476,15 +475,6 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def from_build(self):
         return bool(self.builds) or self.getSourceBuild()
-
-    def isAutoSyncUpload(self, changed_by_email):
-        """See `IPackageUpload`."""
-        katie = getUtility(ILaunchpadCelebrities).katie
-        changed_by = self._emailToPerson(changed_by_email)
-        return (not self.signing_key
-                and self.contains_source and not self.contains_build
-                and changed_by == katie
-                and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
     def _customFormats(self):
