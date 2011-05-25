@@ -1384,3 +1384,50 @@ class TestBugTaskContributor(TestCaseWithFactory):
         self.assertEqual(person.displayname, result['person_name'])
         self.assertEqual(
             bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+
+class TestConjoinedBugTasks(TestCaseWithFactory):
+    """Tests for conjoined bug task functionality."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_editing_generic_task_reflects_upon_conjoined_master(self):
+        # If a change is made to conjoined slave (generic) task, that
+        # change is reflected upon the conjoined master.
+        owner = self.factory.makePerson()
+        distro = self.factory.makeDistribution(
+            name="eggs", owner=owner, bug_supervisor=owner)
+        distro_release = self.factory.makeDistroRelease(
+            distribution=distro, registrant=owner)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=distro_release)
+        bug = self.factory.makeBug(
+            distribution=distro,
+            sourcepackagename=source_package.sourcepackagename,
+            owner=owner)
+        with person_logged_in(owner):
+            nomination = bug.addNomination(owner, distro_release)
+            nomination.approve(owner)
+            generic_task, series_task = bug.bugtasks
+            self.assertEqual(generic_task, series_task.conjoined_slave)
+            generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, series_task.status)
+
+##The generic tasks are not directly editable.
+##
+##    >>> generic_netapplet_task.transitionToStatus(
+##    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+##    Traceback (most recent call last):
+##      ...
+##    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+##                               should be edited through its conjoined_master.
+##
+##    >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
+##    Traceback (most recent call last):
+##      ...
+##    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+##                               should be edited through its conjoined_master.
+##
+##
