@@ -287,6 +287,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"]))
 
+    @cachedproperty
+    def component_names(self):
+        """See `IDistroSeries`."""
+        return [component.name for component in self.components]
+
+    @cachedproperty
+    def suite_names(self):
+        """See `IDistroSeries`."""
+        return [unicode(pocket) for pocket in PackagePublishingPocket.items]
+
     @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
