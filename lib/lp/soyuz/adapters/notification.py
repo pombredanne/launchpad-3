@@ -76,7 +76,7 @@ def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
             config.uploader.default_recipient_address)
     extra_headers = {'X-Katie': 'Launchpad actually'}
     logger.debug("Sending rejection email.")
-    sendMessage(
+    send_message(
         subject, from_addr, recipients, extra_headers, body,
         attach_changes=False, logger=logger)
 
@@ -107,12 +107,18 @@ def get_status(action):
     return action_descriptions[action]
 
 
-def calculate_subject(spr, archive, distroseries, pocket, action):
+def calculate_subject(spr, builds, customfiles, archive, distroseries,
+                      pocket, action):
     """Return the e-mail subject for the notification."""
     suite = distroseries.getSuite(pocket)
-    names = ', '.join(set(spr.package_upload.displayname.split(', ')))
+    names = set([spr.name])
+    for build in builds:
+        names.add(build.build.source_package_release.name)
+    for custom in customfiles:
+        names.add(custom.libraryfilealias.filename)
+    name_str = ', '.join(names)
     subject = '[%s/%s] %s %s (%s)' % (
-        distroseries.distribution.name, suite, names, spr.version,
+        distroseries.distribution.name, suite, name_str, spr.version,
         get_status(action))
     if archive.is_ppa:
         subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
@@ -159,7 +165,8 @@ def notify(packageupload, announce_list=None, summary_text=None,
     # If files is empty, we don't need to send an email if this is not
     # a rejection.
     try:
-        files = _buildUploadedFilesList(spr, logger)
+        files = _buildUploadedFilesList(
+            spr, packageupload.builds, packageupload.customfiles, logger)
     except LanguagePackEncountered:
         # Don't send emails for language packs.
         return
@@ -167,7 +174,11 @@ def notify(packageupload, announce_list=None, summary_text=None,
     if not files and packageupload.status != PackageUploadStatus.REJECTED:
         return
 
-    summary = _buildSummary(spr, files)
+    if packageupload.status == PackageUploadStatus.NEW:
+        action = 'new'
+    else:
+        action = 'accepted'
+    summary = _buildSummary(spr, files, action)
     if summary_text:
         summary.append(summary_text)
     summarystring = "\n".join(summary)
@@ -226,12 +237,13 @@ def assemble_body(spr, archive, distroseries, summary, changes, action):
     if distroseries.changeslist:
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
-    if spr.package_upload.signing_key is not None:
-        signer = spr.package_upload.signing_key.owner
-        signer_signature = '%s <%s>' % (
-            signer.displayname, signer.preferredemail.email)
-        if signer_signature != information['CHANGEDBY']:
-            information['SIGNER'] = '\nSigned-By: %s' % signer_signature
+    if spr.package_upload is not None:
+        if spr.package_upload.signing_key is not None:
+            signer = spr.package_upload.signing_key.owner
+            signer_signature = '%s <%s>' % (
+                signer.displayname, signer.preferredemail.email)
+            if signer_signature != changedby:
+                information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
     maintainer = guess_encoding(changes.get('Maintainer'))
     if maintainer and maintainer != changedby:
@@ -254,12 +266,15 @@ def send_mail(packageupload, summary_text, changes, recipients, dry_run,
     # announce_list: Which list to announce the upload to.
     # logger: A logger object.
     spr = packageupload.sourcepackagerelease
+    builds = packageupload.builds
+    customfiles = packageupload.customfiles
     archive = packageupload.archive
     distroseries = packageupload.distroseries
     pocket = packageupload.pocket
     attach_changes = not archive.is_ppa
 
-    subject = calculate_subject(spr, archive, distroseries, pocket, action)
+    subject = calculate_subject(
+        spr, builds, customfiles, archive, distroseries, pocket, action)
     body = assemble_body(
         spr, archive, distroseries, summary_text, changes, action)
 
@@ -528,7 +543,7 @@ def _getRecipients(packageupload, changes, logger):
     return recipients
 
 
-def _buildUploadedFilesList(spr, logger):
+def _buildUploadedFilesList(spr, builds, customfiles, logger):
     """Return a list of tuples of (filename, component, section).
 
     Component and section are only set where the file is a source upload.
@@ -552,26 +567,24 @@ def _buildUploadedFilesList(spr, logger):
     # Component and section don't get set for builds and custom, since
     # this information is only used in the summary string for source
     # uploads.
-    packageupload = spr.package_upload
-    for build in packageupload.builds:
+    for build in builds:
         for bpr in build.build.binarypackages:
             files.extend([
             (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
 
-    if packageupload.customfiles:
+    if customfiles:
         files.extend(
             [(file.libraryfilealias.filename, '', '')
-            for file in packageupload.customfiles])
+            for file in customfiles])
 
     return files
 
 
-def _buildSummary(spr, files):
+def _buildSummary(spr, files, action):
     """Build a summary string based on the files present in the upload."""
-    packageupload = spr.package_upload
     summary = []
     for filename, component, section in files:
-        if packageupload.status == PackageUploadStatus.NEW:
+        if action == 'new':
             summary.append("NEW: %s" % filename)
         else:
             summary.append(" OK: %s" % filename)
