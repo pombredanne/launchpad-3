@@ -545,6 +545,20 @@ def _buildUploadedFilesList(spr, logger):
             (sprfile.libraryfile.filename, spr.component.name,
              spr.section.name))
 
+    # Component and section don't get set for builds and custom, since
+    # this information is only used in the summary string for source
+    # uploads.
+    packageupload = spr.package_upload
+    for build in packageupload.builds:
+        for bpr in build.build.binarypackages:
+            files.extend([
+            (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
+
+    if packageupload.customfiles:
+        files.extend(
+            [(file.libraryfilealias.filename, '', '')
+            for file in packageupload.customfiles])
+
     return files
 
 
