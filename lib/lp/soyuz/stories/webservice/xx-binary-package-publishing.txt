@@ -65,6 +65,7 @@ Each binary publication exposes a number of properties:
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
+    architecture_specific: True
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'

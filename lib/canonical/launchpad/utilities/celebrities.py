@@ -151,7 +151,6 @@ class LaunchpadCelebrities:
     registry_experts = PersonCelebrityDescriptor('registry')
     rosetta_experts = PersonCelebrityDescriptor('rosetta-admins')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
-    shipit_admin = PersonCelebrityDescriptor('shipit-admins')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     ubuntu_branches = PersonCelebrityDescriptor('ubuntu-branches')

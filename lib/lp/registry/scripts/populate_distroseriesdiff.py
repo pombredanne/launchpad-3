@@ -16,11 +16,12 @@ __all__ = [
     'PopulateDistroSeriesDiff',
     ]
 
+from collections import defaultdict
 from optparse import (
     Option,
     OptionValueError,
     )
-from storm.info import ClassAlias
+from storm.locals import ClassAlias
 import transaction
 from zope.component import getUtility
 
@@ -35,9 +36,11 @@ from lp.registry.enum import (
     )
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import active_publishing_status
 
@@ -78,10 +81,10 @@ def compose_sql_find_latest_source_package_releases(distroseries):
         """ % parameters
 
 
-def compose_sql_find_differences(derived_distroseries):
+def compose_sql_find_differences(derived_series, parent_series):
     """Produce SQL that finds differences for a `DistroSeries`.
 
-    The query compares `derived_distroseries` and its `parent_series`
+    The query compares `derived_distroseries` and its `previous_series`
     and for each package whose latest `SourcePackageRelease`s in the
     respective series differ, produces a tuple of:
      * `SourcePackageName` id: sourcepackagename
@@ -92,9 +95,9 @@ def compose_sql_find_differences(derived_distroseries):
     """
     parameters = {
         'derived_query': compose_sql_find_latest_source_package_releases(
-            derived_distroseries),
+            derived_series),
         'parent_query': compose_sql_find_latest_source_package_releases(
-            derived_distroseries.parent_series),
+            parent_series),
     }
     return """
         SELECT DISTINCT
@@ -137,7 +140,8 @@ def compose_sql_difference_type():
         """ % parameters
 
 
-def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
+def compose_sql_populate_distroseriesdiff(derived_series, parent_series,
+                                          temp_table):
     """Create `DistroSeriesDifference` rows based on found differences.
 
     Uses field values that describe the difference, as produced by the
@@ -154,7 +158,8 @@ def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
     :return: SQL query, as a string.
     """
     parameters = {
-        'derived_series': quote(derived_distroseries),
+        'derived_series': quote(derived_series),
+        'parent_series': quote(parent_series),
         'difference_type_expression': compose_sql_difference_type(),
         'needs_attention': quote(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION),
@@ -163,6 +168,7 @@ def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
     return """
         INSERT INTO DistroSeriesDifference (
             derived_series,
+            parent_series,
             source_package_name,
             status,
             difference_type,
@@ -170,6 +176,7 @@ def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
             parent_source_version)
         SELECT
             %(derived_series)s,
+            %(parent_series)s,
             sourcepackagename,
             %(needs_attention)s,
             %(difference_type_expression)s,
@@ -188,7 +195,7 @@ def drop_table(store, table):
     store.execute("DROP TABLE IF EXISTS %s" % quote_identifier(table))
 
 
-def populate_distroseriesdiff(logger, derived_distroseries):
+def populate_distroseriesdiff(logger, derived_series, parent_series):
     """Compare `derived_distroseries` to parent, and register differences.
 
     The differences are registered by creating `DistroSeriesDifference`
@@ -196,40 +203,39 @@ def populate_distroseriesdiff(logger, derived_distroseries):
     """
     temp_table = "temp_potentialdistroseriesdiff"
 
-    store = IStore(derived_distroseries)
+    store = IStore(derived_series)
     drop_table(store, temp_table)
     store.execute("CREATE TEMP TABLE %s AS %s" % (
         quote_identifier(temp_table),
-        compose_sql_find_differences(derived_distroseries)))
+        compose_sql_find_differences(derived_series, parent_series)))
     logger.info(
         "Found %d potential difference(s).",
         store.execute("SELECT count(*) FROM %s" % temp_table).get_one()[0])
     store.execute(
         compose_sql_populate_distroseriesdiff(
-            derived_distroseries, temp_table))
+            derived_series, parent_series, temp_table))
     drop_table(store, temp_table)
 
 
 def find_derived_series():
-    """Find all derived `DistroSeries`.
-
-    Derived `DistroSeries` are ones that have a `parent_series`, but
-    where the `parent_series` is not in the same distribution.
-    """
+    """Find all derived `DistroSeries`."""
+    Child = ClassAlias(DistroSeries, "Child")
     Parent = ClassAlias(DistroSeries, "Parent")
-    return IStore(DistroSeries).find(
-        DistroSeries,
-        Parent.id == DistroSeries.parent_seriesID,
-        Parent.distributionID != DistroSeries.distributionID).order_by(
-            (DistroSeries.parent_seriesID, DistroSeries.id))
+    relations = IStore(DistroSeries).find(
+        (Child, Parent),
+        DistroSeriesParent.derived_series_id == Child.id,
+        DistroSeriesParent.parent_series_id == Parent.id)
+    collated = defaultdict(list)
+    for child, parent in relations:
+        collated[child].append(parent)
+    return collated
 
 
-class BaseVersionFixer(TunableLoop):
-    """Fix up `DistroSeriesDifference.base_version` in the database.
+class DSDUpdater(TunableLoop):
+    """Call `DistroSeriesDifference.update()` where appropriate.
 
-    The code that creates `DistroSeriesDifference`s does not set the
-    `base_version`.  In cases where there may actually be a real base
-    version, this needs to be fixed up.
+    The `DistroSeriesDifference` records we create don't have their
+    details filled out, such as base version or their diffs.
 
     Since this is likely to be much, much slower than the rest of the
     work of creating and initializing `DistroSeriesDifference`s, it is
@@ -244,7 +250,7 @@ class BaseVersionFixer(TunableLoop):
         :param commit: A commit function to call after each batch.
         :param ids: Sequence of `DistroSeriesDifference` ids to fix.
         """
-        super(BaseVersionFixer, self).__init__(log)
+        super(DSDUpdater, self).__init__(log)
         self.minimum_chunk_size = 2
         self.maximum_chunk_size = 1000
         self.store = store
@@ -273,7 +279,7 @@ class BaseVersionFixer(TunableLoop):
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         for dsd in self._getBatch(self._cutChunk(int(chunk_size))):
-            dsd._updateBaseVersion()
+            dsd.update()
         self.commit()
 
 
@@ -302,28 +308,36 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
     def getDistroSeries(self):
         """Return the `DistroSeries` that are to be processed."""
         if self.options.all:
-            return list(find_derived_series())
+            return find_derived_series()
         else:
             distro = getUtility(IDistributionSet).getByName(
                 self.options.distribution)
             series = distro.getSeries(self.options.series)
+            augmented_series = defaultdict(list)
             if series is None:
                 raise OptionValueError(
                     "Could not find %s series %s." % (
                         self.options.distribution, self.options.series))
-            if series.parent_series is None:
+            dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                series)
+            for rel in dsp:
+                augmented_series[rel.derived_series].append(
+                    rel.parent_series)
+            if len(augmented_series) == 0:
                 raise OptionValueError(
                     "%s series %s is not derived." % (
                         self.options.distribution, self.options.series))
-            return [series]
+            return augmented_series
 
-    def processDistroSeries(self, distroseries):
+    def processDistroSeries(self, distroseries, parent):
         """Generate `DistroSeriesDifference`s for `distroseries`."""
-        self.logger.info("Looking for differences in %s.", distroseries)
-        populate_distroseriesdiff(self.logger, distroseries)
+        self.logger.info(
+            "Looking for differences in %s with regards to %s.",
+            distroseries, parent)
+        populate_distroseriesdiff(self.logger, distroseries, parent)
         self.commit()
         self.logger.info("Updating base_versions.")
-        self.fixBaseVersions(distroseries)
+        self.update(distroseries)
         self.commit()
         self.logger.info("Done with %s.", distroseries)
 
@@ -336,8 +350,12 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
 
     def listDerivedSeries(self):
         """Log all `DistroSeries` that the --all option would cover."""
-        for series in self.getDistroSeries():
-            self.logger.info("%s %s", series.distribution.name, series.name)
+        relationships = self.getDistroSeries()
+        for child in relationships:
+            for parent in relationships[child]:
+               self.logger.info(
+                    "%s %s with a parent of %s %s", child.distribution.name,
+                    child.name, parent.distribution.name, parent.name)
 
     def checkOptions(self):
         """Verify command-line options."""
@@ -364,21 +382,22 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         if self.options.dry_run:
             self.logger.info("Dry run requested.  Not committing changes.")
 
-        for series in self.getDistroSeries():
-            self.processDistroSeries(series)
+        relationships = self.getDistroSeries()
+        for child in relationships.keys():
+            for parent in relationships[child]:
+                self.processDistroSeries(child, parent)
 
-    def fixBaseVersions(self, distroseries):
-        """Fix up `DistroSeriesDifference.base_version` where appropriate.
+    def update(self, distroseries):
+        """Call `DistroSeriesDifference.update()` where appropriate.
 
         The `DistroSeriesDifference` records we create don't have their
-        `base_version` fields set yet.  This is a shame because it's the
-        only thing we need to figure out python-side.
+        details filled out, such as base version or their diffs.
 
         Only instances where the source package is published in both the
         parent series and the derived series need to have this done.
         """
         self.logger.info(
-            "Fixing up base_versions for %s.", distroseries.title)
+            "Updating DSDs for %s.", distroseries.title)
         store = IStore(distroseries)
         dsd_ids = store.find(
             DistroSeriesDifference.id,
@@ -388,4 +407,4 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             DistroSeriesDifference.difference_type ==
                 DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
             DistroSeriesDifference.base_version == None)
-        BaseVersionFixer(self.logger, store, self.commit, dsd_ids).run()
+        DSDUpdater(self.logger, store, self.commit, dsd_ids).run()

@@ -11,9 +11,8 @@ from storm.store import Store
 from zope.interface import implements
 from zope.proxy import sameProxiedObjects
 
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.bug import Bug
+from lp.bugs.model.bug import Bug, BugMute
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IAbstractSubscriptionInfoCollection,
     IRealSubscriptionInfoCollection,
@@ -116,7 +115,8 @@ class RealSubscriptionInfoCollection(
             person, administrated_teams)
         self._principal_bug_to_infos = {}
 
-    def _add_item_to_collection(self, collection, principal, bug, subscription):
+    def _add_item_to_collection(self, collection, principal,
+                                bug, subscription):
         info = RealSubscriptionInfo(principal, bug, subscription)
         key = (principal, bug)
         infos = self._principal_bug_to_infos.get(key)
@@ -180,8 +180,6 @@ class PersonSubscriptions(object):
         # membership) in a single query.
         store = Store.of(person)
         bug_id_options = [Bug.id == bug.id, Bug.duplicateofID == bug.id]
-        if bug.duplicateof is not None:
-            bug_id_options.append(Bug.id == bug.duplicateof.id)
         info = store.find(
             (BugSubscription, Bug, Person),
             BugSubscription.bug == Bug.id,
@@ -220,6 +218,18 @@ class PersonSubscriptions(object):
                     pillar.security_contact, pillar.bug_supervisor)
         return (direct, duplicates)
 
+    def _isMuted(self, person, bug):
+        store = Store.of(person)
+        mutes = store.find(
+            BugMute,
+            BugMute.bug == bug,
+            BugMute.person == person)
+        is_muted = mutes.one()
+        if is_muted is None:
+            return False
+        else:
+            return True
+
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
         self.administrated_teams = person.getAdministratedTeams()
@@ -228,6 +238,9 @@ class PersonSubscriptions(object):
         # First get direct and duplicate real subscriptions.
         direct, from_duplicate = (
             self._getDirectAndDuplicateSubscriptions(person, bug))
+
+        # Then get the 'muted' flag.
+        self.muted = self._isMuted(person, bug)
 
         # Then get owner and assignee virtual subscriptions.
         as_owner = VirtualSubscriptionInfoCollection(
@@ -242,10 +255,6 @@ class PersonSubscriptions(object):
             assignee = bugtask.assignee
             if person.inTeam(assignee):
                 as_assignee.add(assignee, bug, pillar, bugtask)
-        self.muted = bool(
-            direct.personal and
-            direct.personal[0].subscription.bug_notification_level
-                == BugNotificationLevel.NOTHING)
         self.count = 0
         for name, collection in (
             ('direct', direct), ('from_duplicate', from_duplicate),
@@ -256,6 +265,7 @@ class PersonSubscriptions(object):
     def getDataForClient(self):
         reference_map = {}
         dest = {}
+
         def get_id(obj):
             "Get an id for the object so it can be shared."
             # We could leverage .id for most objects, but not pillars.
@@ -266,6 +276,7 @@ class PersonSubscriptions(object):
                 reference_map[obj] = identifier
                 dest[identifier] = obj
             return identifier
+
         def virtual_sub_data(info):
             return {
                 'principal': get_id(info.principal),
@@ -273,6 +284,7 @@ class PersonSubscriptions(object):
                 'pillar': get_id(info.pillar),
                 # We won't add bugtasks yet unless we need them.
                 }
+
         def real_sub_data(info):
             return {
                 'principal': get_id(info.principal),
@@ -302,18 +314,18 @@ class PersonSubscriptions(object):
             }
         for category, collection in ((as_owner, self.as_owner),
                                  (as_assignee, self.as_assignee)):
-            for name, inner in (('personal', collection.personal),
-                                ('as_team_admin', collection.as_team_admin),
-                                ('as_team_member', collection.as_team_member)
-                                ):
+            for name, inner in (
+                ('personal', collection.personal),
+                ('as_team_admin', collection.as_team_admin),
+                ('as_team_member', collection.as_team_member)):
                 category[name] = [virtual_sub_data(info) for info in inner]
             category['count'] = collection.count
         for category, collection in ((direct, self.direct),
                                      (from_duplicate, self.from_duplicate)):
-            for name, inner in (('personal', collection.personal),
-                                ('as_team_admin', collection.as_team_admin),
-                                ('as_team_member', collection.as_team_member)
-                                ):
+            for name, inner in (
+                ('personal', collection.personal),
+                ('as_team_admin', collection.as_team_admin),
+                ('as_team_member', collection.as_team_member)):
                 category[name] = [real_sub_data(info) for info in inner]
             category['count'] = collection.count
         return subscription_data, dest

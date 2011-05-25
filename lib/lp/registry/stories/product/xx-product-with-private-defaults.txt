@@ -44,7 +44,7 @@ The file-a-bug page uses Launchpad's standard "private" style.
 
 If we file a new bug in redfish:
 
-    >>> user_browser.getControl(name="field.title").value = "a test summary"
+    >>> user_browser.getControl(name="field.title", index=0).value = "a test summary"
     >>> user_browser.getControl('Continue').click()
 
     >>> user_browser.getControl(name="field.comment").value = (

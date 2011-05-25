@@ -40,6 +40,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
@@ -74,6 +77,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
@@ -202,11 +206,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
+
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it. The decorated resultset returns just the ProductRelease.
+        def decorate(row):
+            product_release, milestone = row
+            return product_release
+
         result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
+            (ProductRelease, Milestone),
+            Milestone.productseries == self,
+            ProductRelease.milestone == Milestone.id)
+        result = result.order_by(Desc('datereleased'))
+        return DecoratedResultSet(result, decorate)
 
     @property
     def release_files(self):
@@ -458,10 +470,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""

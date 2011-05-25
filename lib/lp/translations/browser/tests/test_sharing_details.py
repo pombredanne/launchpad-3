@@ -340,6 +340,10 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
     def test_cache_contents_no_productseries(self):
         objects = self.getCacheObjects()
         self.assertIs(None, objects['productseries'])
+        self.assertIn('user_can_change_product_series', objects)
+        self.assertIn('user_can_change_branch', objects)
+        self.assertIn('user_can_change_translation_usage', objects)
+        self.assertIn('user_can_change_translations_autoimport_mode', objects)
 
     def test_cache_contents_no_branch(self):
         self.configureSharing()

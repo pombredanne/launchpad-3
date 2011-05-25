@@ -14,13 +14,13 @@
 
     <metal:macro-parent metal:define-macro="base-to-parent">
       <span tal:replace="context/base_version">1.1.1</span> to
-      <span tal:replace="context/derived_series/parent_series/displayname">
+      <span tal:replace="context/parent_series/displayname">
         Lucid</span> version:
       <span tal:replace="context/parent_source_version">1.2.4</span>
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_edit_options">
+  <tal:show_options condition="view/show_blacklist_options">
     <div class="blacklist-options" style="float:right">
       <dl>
         <dt>Blacklisted:</dt>
@@ -120,9 +120,9 @@
     </tal:package-diffs>
   </dl>
 
-  <h2>Comments:</h2>
+  <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
-  <tal:show_options condition="view/show_edit_options"
+  <tal:show_options condition="view/show_add_comment"
                     define="src_name context/source_package_name/name">
   <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
   </tal:show_options>

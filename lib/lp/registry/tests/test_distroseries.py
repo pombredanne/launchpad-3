@@ -209,10 +209,9 @@ class TestDistroSeries(TestCaseWithFactory):
                 processorfamily.processors[0]))
 
     def test_getDerivedSeries(self):
-        distroseries = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
-        self.assertContentEqual(
-            [distroseries], distroseries.parent_series.getDerivedSeries())
+        dsp = self.factory.makeDistroSeriesParent()
+        self.assertEquals(
+            [dsp.derived_series], dsp.parent_series.getDerivedSeries())
 
     def test_registrant_owner_differ(self):
         # The registrant is the creator whereas the owner is the
@@ -222,14 +221,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(distroseries.distribution.owner, distroseries.owner)
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
-
-    def test_is_derived(self):
-        # The series is a derived series if it has a parent_series set.
-        derived_distroseries = self.factory.makeDistroRelease(
-            parent_series=self.factory.makeDistroRelease())
-        distroseries = self.factory.makeDistroRelease()
-        self.assertFalse(distroseries.is_derived_series)
-        self.assertTrue(derived_distroseries.is_derived_series)
 
     def test_is_initialising(self):
         # The series is_initialising only if there is an initialisation

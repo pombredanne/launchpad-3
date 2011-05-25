@@ -24,7 +24,7 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
             Name              Owner       Registered
-            generic-string.*  Person-name""", text)
+            spr-name.*        Person-name""", text)
 
     def test_package_branch_recipe_listing(self):
         # We can see recipes for the package. We need to create two, since
@@ -36,4 +36,4 @@ class TestSourcePackageRecipeListing(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Source Package Recipes for lp:.*
             Name             Owner       Registered
-            generic-string.* Person-name""", text)
+            spr-name.*       Person-name""", text)

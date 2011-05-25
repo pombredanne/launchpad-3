@@ -5,34 +5,23 @@
 
 __metaclass__ = type
 
-from storm.store import Store
-from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory, removeSecurityProxy
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad import searchbuilder
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing import DatabaseFunctionalLayer
-from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
-    BugTaskStatus,
-    )
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IRealSubscriptionInfo,
     IRealSubscriptionInfoCollection,
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
-    anonymous_logged_in,
-    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
+
 
 class TestPersonSubscriptionInfo(TestCaseWithFactory):
 
@@ -312,20 +301,18 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
 
     def test_duplicate_direct_reverse(self):
         # Subscribed directly to the primary bug, and a duplicate bug changes.
-        duplicate = self.factory.makeBug()
+        primary = self.factory.makeBug()
         with person_logged_in(self.subscriber):
-            self.bug.markAsDuplicate(duplicate)
-            duplicate.subscribe(self.subscriber, self.subscriber)
+            self.bug.markAsDuplicate(primary)
+            primary.subscribe(self.subscriber, self.subscriber)
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreEmpty(except_='from_duplicate')
+        # This means no subscriptions on the duplicate bug.
+        self.assertCollectionsAreEmpty()
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
-            self.subscriptions.from_duplicate, personal=1)
-        self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.from_duplicate.personal[0],
-            duplicate, self.subscriber, False, [], [])
+            self.subscriptions.from_duplicate, personal=0)
 
     def test_duplicate_multiple(self):
         # Subscribed directly to more than one duplicate bug.
@@ -494,8 +481,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_is_muted(self):
         # Subscribed directly to the bug, muted.
         with person_logged_in(self.subscriber):
-            self.bug.subscribe(self.subscriber, self.subscriber,
-                               level=BugNotificationLevel.NOTHING)
+            self.bug.mute(self.subscriber, self.subscriber)
 
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()

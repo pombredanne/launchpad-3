@@ -1235,8 +1235,7 @@ class WebServicePublication(WebServicePublicationMixin,
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
             if consumer_key == '':
-                raise Unauthorized(
-                    'Anonymous requests must provide a User-Agent.')
+                consumer_key = 'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:

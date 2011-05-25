@@ -12,9 +12,21 @@ from datetime import (
 from itertools import count
 
 from pytz import utc
+from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
-from lp.testing import TestCase
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,
+    TestMessageVisibilityMixin,
+    )
+from lp.testing import (
+    BrowserTestCase,
+    person_logged_in,
+    celebrity_logged_in,
+    TestCase,
+    )
 
 
 class BugActivityStub:
@@ -42,7 +54,7 @@ class BugCommentStub:
 
     def __repr__(self):
         return "BugCommentStub(%r, %d, %r)" % (
-            self.datecreated.strftime('%Y-%m-%d--%H%M'), 
+            self.datecreated.strftime('%Y-%m-%d--%H%M'),
             self.index, self.owner)
 
 
@@ -178,3 +190,48 @@ class TestGroupCommentsWithActivities(TestCase):
         self.assertEqual([comment1, comment2], grouped)
         self.assertEqual([activity1, activity2], comment1.activity)
         self.assertEqual([activity3], comment2.activity)
+
+
+class TestBugCommentVisibility(
+        BrowserTestCase, TestMessageVisibilityMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeHiddenMessage(self):
+        """Required by the mixin."""
+        with celebrity_logged_in('admin'):
+            bug = self.factory.makeBug()
+            comment = self.factory.makeBugComment(
+                    bug=bug, body=self.comment_text)
+            comment.visible = False
+        return bug
+
+    def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
+        view = self.getViewBrowser(
+            context=context.default_bugtask,
+            user=user,
+            no_login=no_login)
+        return view
+
+
+class TestBugHideCommentControls(
+        BrowserTestCase, TestHideMessageControlMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def getContext(self):
+        """Required by the mixin."""
+        administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
+        bug = self.factory.makeBug()
+        with person_logged_in(administrator):
+            self.factory.makeBugComment(bug=bug)
+        return bug
+
+    def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
+        view = self.getViewBrowser(
+            context=context.default_bugtask,
+            user=user,
+            no_login=no_login)
+        return view
