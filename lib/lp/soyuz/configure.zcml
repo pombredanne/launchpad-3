@@ -919,6 +919,11 @@
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
     </class>
 
+   <!-- OverridePolicy -->
+   <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
+        <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
+   </class>
+
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

@@ -19,6 +19,11 @@ from storm.expr import (
     Or,
     SQL,
     )
+from zope.component import getUtility
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
@@ -26,6 +31,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -39,7 +45,49 @@ from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
+class IOverridePolicy(Interface):
+    """Override policy.
+
+    An override policy returns overrides suitable for the given archive,
+    distroseries, pocket for source or binary publications.
+
+    For example, an implementation might allow existing publications to
+    keep the same component and section as their ancestor publications.
+    """
+
+    def calculateSourceOverrides(archive, distroseries, pocket, sources):
+        """Calculate source overrides.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param sources: A tuple of `ISourcePackageName`s.
+
+        :return: A list of tuples containing `ISourcePackageName`,
+            `IComponent` and `ISection`.
+        """
+        pass
+
+    def calculateBinaryOverrides(archive, distroseries, pocket, binaries):
+        """Calculate binary overrides.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A tuple of `IBinaryPackageName`, architecturetag
+            pairs. Architecturetag can be None for architecture-independent
+            publications.
+
+        :return: A list of tuples containing `IBinaryPackageName`,
+            `IDistroArchSeries`, `IComponent`, `ISection` and
+            `PackagePublishingPriority`.
+        """
+        pass
+
+
 class BaseOverridePolicy:
+
+    implements(IOverridePolicy)
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
@@ -69,7 +117,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 (SourcePackageRelease.sourcepackagenameID,
                  SourcePackagePublishingHistory.componentID,
                  SourcePackagePublishingHistory.sectionID),
-                SourcePackagePublishingHistory.pocket == pocket,
                 SourcePackagePublishingHistory.archiveID == archive.id,
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
@@ -105,7 +152,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.componentID,
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority),
-                BinaryPackagePublishingHistory.pocket == pocket,
                 BinaryPackagePublishingHistory.status.is_in(
                     active_publishing_status),
                 BinaryPackageRelease.id ==
@@ -136,12 +182,14 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
-        default_component = archive.default_component or 'universe'
+        default_component = archive.default_component or getUtility(
+            IComponentSet)['universe']
         return [(source, default_component, None) for source in sources]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        default_component = archive.default_component or 'universe'
+        default_component = archive.default_component or getUtility(
+            IComponentSet)['universe']
         return [
             (binary, das, default_component, None, None)
             for binary, das in calculate_target_das(distroseries, binaries)]

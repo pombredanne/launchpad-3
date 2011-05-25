@@ -396,7 +396,7 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
 
     def test_child_gets_newer(self):
         # When a new source is uploaded to the child distroseries, the DSD is
-        # updated.
+        # updated and auto-blacklisted.
         dsp = self.makeDerivedDistroSeries()
         derived_series = dsp.derived_series
         source_package_name = self.factory.makeSourcePackageName()
@@ -414,7 +414,7 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
         self.assertEqual(
-            DistroSeriesDifferenceStatus.NEEDS_ATTENTION, ds_diff[0].status)
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT, ds_diff[0].status)
         self.assertEqual('1.0-1', ds_diff[0].base_version)
 
     def test_child_is_synced(self):
