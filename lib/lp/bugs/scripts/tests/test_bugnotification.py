@@ -1160,10 +1160,13 @@ class TestManageNotificationsMessage(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_manage_notifications_message_is_included(self):
+        # Set up a subscription to a product.
         subscriber = self.factory.makePerson()
         submitter = self.factory.makePerson()
         product = self.factory.makeProduct(
             bug_supervisor=submitter)
+        product.addSubscription(subscriber, subscriber)
+        # Create a bug that will match the subscription.
         bug = product.createBug(CreateBugParams(
             title=self.factory.getUniqueString(),
             comment=self.factory.getUniqueString(),
