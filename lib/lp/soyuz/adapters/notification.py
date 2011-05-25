@@ -239,9 +239,20 @@ def assemble_body(spr, archive, distroseries, summary, changes, action):
     return get_template(archive, action) % information
 
 
-def sendMail(packageupload, summary_text, changes, recipients, dry_run,
+def send_mail(packageupload, summary_text, changes, recipients, dry_run,
         action, changesfile_content=None, from_addr=None, bcc=None,
         announce_list=None, logger=None):
+    # Packageupload:
+    # Summary_text: The body of the message.
+    # Changes: A dictionary of the parsed changes file.
+    # recipients: Who to send the mail to.
+    # dry_run: Should we send the mail?
+    # action: A string, documenting what sort of mail we are sending.
+    # changesfile_content: A file-like object of the changes file.
+    # from_addr: Which address to send the mail from.
+    # bcc: Which addresses to BCC.
+    # announce_list: Which list to announce the upload to.
+    # logger: A logger object.
     spr = packageupload.sourcepackagerelease
     archive = packageupload.archive
     distroseries = packageupload.distroseries
@@ -264,36 +275,32 @@ def _sendSuccessNotification(
     summarystring, dry_run, changesfile_content, logger):
     """Send a success email."""
 
+    def do_send_mail(action=None):
+        send_mail(packageupload, summarystring, changes, recipients, dry_run,
+            action, changesfile_content=changesfile_content, logger=logger)
+
     if packageupload.status == PackageUploadStatus.NEW:
         # This is an unknown upload.
-        sendMail(packageupload, summarystring, changes, recipients, dry_run,
-            'new', changesfile_content=changesfile_content, logger=logger)
+        do_send_mail(action='new')
         return
 
     # Unapproved uploads coming from an insecure policy only send
     # an acceptance message.
     if packageupload.status == PackageUploadStatus.UNAPPROVED:
         # Only send an acceptance message.
-        sendMail(packageupload, summarystring, changes, recipients, dry_run,
-            'unapproved', changesfile_content=changesfile_content,
-            logger=logger)
+        do_send_mail(action='unapproved')
         return
 
     if packageupload.isPPA():
         # PPA uploads receive an acceptance message.
-        sendMail(packageupload, summarystring, changes, recipients, dry_run,
-            'accepted', changesfile_content=changesfile_content,
-            logger=logger)
+        do_send_mail(action='accepted')
         return
 
     # Auto-approved uploads to backports skips the announcement,
     # they are usually processed with the sync policy.
     if packageupload.pocket == PackagePublishingPocket.BACKPORTS:
         debug(logger, "Skipping announcement, it is a BACKPORT.")
-
-        sendMail(packageupload, summarystring, changes, recipients, dry_run,
-            'accepted', changesfile_content=changesfile_content,
-            logger=logger)
+        do_send_mail(action='accepted')
         return
 
     # Auto-approved binary-only uploads to security skip the
@@ -304,15 +311,12 @@ def _sendSuccessNotification(
         debug(
             logger,
             "Skipping announcement, it is a binary upload to SECURITY.")
-        sendMail(packageupload, summarystring, changes, recipients, dry_run,
-            'accepted', changesfile_content=changesfile_content,
-            logger=logger)
+        do_send_mail(action='accepted')
         return
 
     # Fallback, all the rest coming from insecure, secure and sync
     # policies should send an acceptance and an announcement message.
-    sendMail(packageupload, summarystring, changes, recipients, dry_run,
-        'accepted', changesfile_content=changesfile_content, logger=logger)
+    do_send_mail(action='accepted')
 
     # Don't send announcements for Debian auto sync uploads.
     if packageupload.isAutoSyncUpload(changed_by_email=changes['Changed-By']):
@@ -324,9 +328,9 @@ def _sendSuccessNotification(
         else:
             from_addr = guess_encoding(changes['Changed-By'])
 
-        sendMail(packageupload, summarystring, changes, [str(announce_list)],
-            dry_run, 'announcement', changesfile_content=changesfile_content,
-            from_addr=from_addr,
+        send_mail(packageupload, summarystring, changes,
+            [str(announce_list)], dry_run, 'announcement',
+            changesfile_content=changesfile_content, from_addr=from_addr,
             bcc="%s_derivatives@packages.qa.debian.org" % (
                 packageupload.displayname), logger=logger)
 
@@ -343,7 +347,7 @@ def _sendRejectionNotification(
         recipients = [default_recipient]
 
     debug(logger, "Sending rejection email.")
-    sendMail(packageupload, summary_text, changes, recipients, dry_run,
+    send_mail(packageupload, summary_text, changes, recipients, dry_run,
         'rejected', changesfile_content=changesfile_content, logger=logger)
 
 
@@ -407,13 +411,13 @@ def _sendMail(
     else:
         from_addr.encode('ascii')
 
-    sendMessage(
+    send_message(
         subject, from_addr, recipients, extra_headers, mail_text,
         dry_run=dry_run, attach_changes=attach_changes,
         changesfile_content=changesfile_content, logger=logger)
 
 
-def sendMessage(subject, from_addr, recipients, extra_headers, mail_text,
+def send_message(subject, from_addr, recipients, extra_headers, mail_text,
                 dry_run=None, attach_changes=None, changesfile_content=None,
                 logger=None):
     if dry_run and logger is not None:
