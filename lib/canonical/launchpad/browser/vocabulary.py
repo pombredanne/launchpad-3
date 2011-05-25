@@ -106,8 +106,8 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
 
         enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
         if enhanced_picker_enabled:
-            # If the person is affiliated with the associated_object then we can
-            # display a badge.
+            # If the person is affiliated with the associated_object then we
+            # can display a badge.
             badge_name = IHasAffiliation(
                 associated_object).getAffiliationBadge(person)
             if badge_name is not None:
