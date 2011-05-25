@@ -1365,6 +1365,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             main, bin_hppa, copied_bin_hppa)
 
     def test_copy_into_derived_series(self):
+        # We are able to successfully copy into a derived series.
         archive = self.test_publisher.ubuntutest.main_archive
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='any')
