@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import errno
-import itertools
 import os
 import re
 import socket
@@ -160,38 +159,7 @@ def allocate_ports(n=1):
             s.close()
 
 
-class RabbitFixture(Fixture):
-    """Common fixture stuff for dealing with RabbitMQ servers.
-
-    In particular this adopts detail handling code from `testtools` so that
-    details from sub-fixtures are propagated up to the test case.
-    """
-
-    def useFixture(self, fixture):
-        super(RabbitFixture, self).useFixture(fixture)
-        self.addCleanup(self._gather_details, fixture.getDetails)
-        return fixture
-
-    def _gather_details(self, getDetails):
-        """Merge the details from getDetails() into self.getDetails().
-
-        Shamelessly adapted from `testtools.TestCase._gather_details`.
-        """
-        details = getDetails()
-        my_details = self.getDetails()
-        for name, content_object in details.items():
-            new_name = name
-            disambiguator = itertools.count(1)
-            while new_name in my_details:
-                new_name = '%s-%d' % (name, next(disambiguator))
-            name = new_name
-            content_bytes = list(content_object.iter_bytes())
-            content_callback = lambda: content_bytes
-            self.addDetail(name,
-                Content(content_object.content_type, content_callback))
-
-
-class RabbitServerResources(RabbitFixture):
+class RabbitServerResources(Fixture):
     """Allocate the resources a RabbitMQ server needs.
 
     :ivar hostname: The host the RabbitMQ is on (always localhost for
@@ -222,7 +190,7 @@ class RabbitServerResources(RabbitFixture):
         return "%s@%s" % (self.nodename, socket.gethostname())
 
 
-class RabbitServerEnvironment(RabbitFixture):
+class RabbitServerEnvironment(Fixture):
     """Export the environment variables needed to talk to a RabbitMQ instance.
 
     When setup this exports the key RabbitMQ variables:
@@ -321,7 +289,7 @@ class RabbitServerEnvironment(RabbitFixture):
             password="guest", virtual_host="/", insist=False)
 
 
-class RabbitServerRunner(RabbitFixture):
+class RabbitServerRunner(Fixture):
     """Run a RabbitMQ server.
 
     :ivar pid: The pid of the server.
@@ -416,7 +384,7 @@ class RabbitServerRunner(RabbitFixture):
                 "RabbitMQ (pid=%d) did not quit." % (self.pid,))
 
 
-class RabbitServer(RabbitFixture):
+class RabbitServer(Fixture):
     """A RabbitMQ server fixture.
 
     When setup a RabbitMQ instance will be running and the environment
@@ -428,5 +396,7 @@ class RabbitServer(RabbitFixture):
 
     def setUp(self):
         super(RabbitServer, self).setUp()
-        self.config = self.useFixture(RabbitServerResources())
-        self.runner = self.useFixture(RabbitServerRunner(self.config))
+        self.config = RabbitServerResources()
+        self.useFixture(self.config)
+        self.runner = RabbitServerRunner(self.config)
+        self.useFixture(self.runner)
