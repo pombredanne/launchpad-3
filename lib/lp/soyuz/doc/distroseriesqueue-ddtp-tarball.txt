@@ -85,7 +85,9 @@ It was not rejected.
   DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
   DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>
   DEBUG     Body:
+  DEBUG .
   DEBUG * Duhh
+  DEBUG
   DEBUG
   DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
@@ -105,7 +107,9 @@ It was not rejected.
   DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
   DEBUG     Recipients: test@example.com
   DEBUG     Body:
+  DEBUG .
   DEBUG * Duhh
+  DEBUG
   DEBUG
   DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
