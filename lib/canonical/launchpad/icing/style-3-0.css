@@ -1366,8 +1366,12 @@ div.watermark-apps-portlet span img {
     background: #fbfbfb;
     }
 .side h2 {
-    font-size: 16px; /* BAD: the markup should be h3? */
+    font-size: 16px;
     line-height: 20px;
+    }
+.side h3 {
+    font-size: 14px;
+    line-height: 18px;
     }
 .side ul {
     background: #fbfbfb;
