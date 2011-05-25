@@ -1159,21 +1159,20 @@ class TestManageNotificationsMessage(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-
     def test_manage_notifications_message_is_included(self):
+        # Set up a subscription to a product.
         subscriber = self.factory.makePerson()
         submitter = self.factory.makePerson()
         product = self.factory.makeProduct(
             bug_supervisor=submitter)
-        subscription = product.addSubscription(
-            subscriber, subscriber)
+        product.addSubscription(subscriber, subscriber)
+        # Create a bug that will match the subscription.
         bug = product.createBug(CreateBugParams(
             title=self.factory.getUniqueString(),
             comment=self.factory.getUniqueString(),
             owner=submitter))
         notification = fetch_notifications(subscriber, bug).one()
-        filtered, omitted, (message,) = construct_email_notifications(
-            [notification])
+        _, _, (message,) = construct_email_notifications([notification])
         payload = message.get_payload()
         self.assertThat(payload, Contains(
             'To manage notifications about this bug go to:\nhttp://'))
