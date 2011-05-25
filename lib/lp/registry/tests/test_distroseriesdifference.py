@@ -1093,24 +1093,6 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [], dsd_source.getSimpleUpgrades(dsd.derived_series))
 
-    def test_collateDifferencesByParentArchive(self):
-        dsp1 = self.factory.makeDistroSeriesParent()
-        dsp2 = self.factory.makeDistroSeriesParent()
-        differences = [
-            self.factory.makeDistroSeriesDifference(dsp1.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp2.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp1.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp2.derived_series),
-            ]
-        dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        observed = (
-            dsd_source.collateDifferencesByParentArchive(differences))
-        expected = {
-            dsp1.parent_series.main_archive: differences[0::2],
-            dsp2.parent_series.main_archive: differences[1::2],
-            }
-        self.assertEqual(observed, expected)
-
 
 class TestMostRecentComments(TestCaseWithFactory):
 

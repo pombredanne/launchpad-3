@@ -1016,17 +1016,14 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         """Request sync of packages that can be easily upgraded."""
         target_distroseries = self.context
         target_archive = target_distroseries.main_archive
-        differences_by_archive = (
-            getUtility(IDistroSeriesDifferenceSource)
-                .collateDifferencesByParentArchive(self.getUpgrades()))
-        for source_archive, differences in differences_by_archive.iteritems():
-            source_package_info = [
-                (difference.source_package_name.name,
-                 difference.parent_source_version)
-                for difference in differences]
-            getUtility(IPlainPackageCopyJobSource).create(
-                source_package_info, source_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.UPDATES)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+
+        for dsd in self.getUpgrades():
+            job_source.create(
+                [specify_dsd_package(dsd)], dsd.parent_series.main_archive,
+                target_archive, target_distroseries,
+                PackagePublishingPocket.UPDATES)
+
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
              u"requested. Please give Launchpad some time to complete "
