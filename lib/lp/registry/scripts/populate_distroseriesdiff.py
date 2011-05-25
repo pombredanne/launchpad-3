@@ -81,7 +81,7 @@ def compose_sql_find_latest_source_package_releases(distroseries):
 def compose_sql_find_differences(derived_distroseries):
     """Produce SQL that finds differences for a `DistroSeries`.
 
-    The query compares `derived_distroseries` and its `parent_series`
+    The query compares `derived_distroseries` and its `previous_series`
     and for each package whose latest `SourcePackageRelease`s in the
     respective series differ, produces a tuple of:
      * `SourcePackageName` id: sourcepackagename
@@ -94,7 +94,7 @@ def compose_sql_find_differences(derived_distroseries):
         'derived_query': compose_sql_find_latest_source_package_releases(
             derived_distroseries),
         'parent_query': compose_sql_find_latest_source_package_releases(
-            derived_distroseries.parent_series),
+            derived_distroseries.previous_series),
     }
     return """
         SELECT DISTINCT
@@ -213,15 +213,15 @@ def populate_distroseriesdiff(logger, derived_distroseries):
 def find_derived_series():
     """Find all derived `DistroSeries`.
 
-    Derived `DistroSeries` are ones that have a `parent_series`, but
-    where the `parent_series` is not in the same distribution.
+    Derived `DistroSeries` are ones that have a `previous_series`, but
+    where the `previous_series` is not in the same distribution.
     """
     Parent = ClassAlias(DistroSeries, "Parent")
     return IStore(DistroSeries).find(
         DistroSeries,
-        Parent.id == DistroSeries.parent_seriesID,
+        Parent.id == DistroSeries.previous_seriesID,
         Parent.distributionID != DistroSeries.distributionID).order_by(
-            (DistroSeries.parent_seriesID, DistroSeries.id))
+            (DistroSeries.previous_seriesID, DistroSeries.id))
 
 
 class DSDUpdater(TunableLoop):
@@ -310,7 +310,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
                 raise OptionValueError(
                     "Could not find %s series %s." % (
                         self.options.distribution, self.options.series))
-            if series.parent_series is None:
+            if series.previous_series is None:
                 raise OptionValueError(
                     "%s series %s is not derived." % (
                         self.options.distribution, self.options.series))

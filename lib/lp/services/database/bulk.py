@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'load',
+    'load_referencing',
     'load_related',
     'reload',
     ]
@@ -13,7 +14,9 @@ __all__ = [
 
 from collections import defaultdict
 from functools import partial
+from operator import attrgetter
 
+from storm.expr import Or
 from storm.info import get_cls_info
 from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
@@ -64,14 +67,23 @@ def reload(objects):
         list(query)
 
 
-def load(object_type, primary_keys, store=None):
-    """Load a large number of objects efficiently."""
+def _primary_key(object_type):
+    """Get a primary key our helpers can use.
+    
+    :raises AssertionError if the key is missing or unusable.
+    """
     primary_key = get_cls_info(object_type).primary_key
     if len(primary_key) != 1:
         raise AssertionError(
             "Compound primary keys are not supported: %s." %
             object_type.__name__)
-    primary_key_column = primary_key[0]
+    return primary_key[0]
+
+
+def load(object_type, primary_keys, store=None):
+    """Load a large number of objects efficiently."""
+    primary_key = _primary_key(object_type)
+    primary_key_column = primary_key
     primary_keys = set(primary_keys)
     primary_keys.discard(None)
     if not primary_keys:
@@ -80,6 +92,39 @@ def load(object_type, primary_keys, store=None):
     if store is None:
         store = IStore(object_type)
     return list(store.find(object_type, condition))
+
+
+def load_referencing(object_type, owning_objects, reference_keys):
+    """Load objects of object_type that reference owning_objects.
+    
+    Note that complex types like Person are best loaded through dedicated
+    helpers that can eager load other related things (e.g. validity for
+    Person).
+
+    :param object_type: The object type to load - e.g. BranchSubscription.
+    :param owning_objects: The objects which are referenced. E.g. [Branch()]
+        At this point, all the objects should be of the same type, but that
+        constraint could be lifted in future.
+    :param reference_keys: A list of attributes that should be used to select
+        object_type keys. e.g. ['branchID']
+    :return: A list of object_type where any of reference_keys refered to the
+        primary key of any of owning_objects.
+    """
+    store = IStore(object_type)
+    if type(owning_objects) not in (list, tuple):
+        owning_objects = tuple(owning_objects)
+    if not owning_objects:
+        return []
+    exemplar = owning_objects[0]
+    primary_key = _primary_key(get_type(exemplar))
+    attribute = primary_key.name
+    ids = set(map(attrgetter(attribute), owning_objects))
+    conditions = []
+    # Note to future self doing perf tuning: may want to make ids a WITH
+    # clause.
+    for column in map(partial(getattr, object_type), reference_keys):
+        conditions.append(column.is_in(ids))
+    return list(store.find(object_type, Or(conditions)))
 
 
 def load_related(object_type, owning_objects, foreign_keys):

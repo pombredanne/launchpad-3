@@ -147,7 +147,7 @@ def notify(packageupload, announce_list=None, summary_text=None,
     # For now, it's just easier to re-read the original file if the caller
     # requires us to do that instead of using the librarian's copy.
     changes, changes_lines = packageupload._getChangesDict(
-        changes_file_object, allow_unsigned=allow_unsigned)
+        changes_file_object)
 
     spr = packageupload.sourcepackagerelease
 

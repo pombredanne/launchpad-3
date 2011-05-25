@@ -606,13 +606,14 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     copies = []
 
     # Copy source if it's not yet copied.
+    policy = archive.getOverridePolicy()
     source_in_destination = archive.getPublishedSources(
         name=source.sourcepackagerelease.name, exact_match=True,
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
     if source_in_destination.is_empty():
-        source_copy = source.copyTo(series, pocket, archive)
+        source_copy = source.copyTo(series, pocket, archive, policy=policy)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
@@ -628,7 +629,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
     binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-        source.getBuiltBinaries(), series, pocket, archive)
+        source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
     copies.extend(binary_copies)
 
