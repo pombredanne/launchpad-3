@@ -4,7 +4,7 @@
 """BugSummary Storm database classes."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['BugSummary']
 
 from storm.locals import (
     Int,
