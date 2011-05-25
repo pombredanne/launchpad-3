@@ -352,7 +352,8 @@ icon.
     ...     name='abuser',
     ...     displayname='<script>javascript:alert("YO")</script>')
     >>> logout()
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> browser.getControl('Person').value = 'abuser'
     >>> browser.getControl('Subscribe user').click()
     >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
