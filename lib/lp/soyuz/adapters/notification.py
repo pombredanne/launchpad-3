@@ -13,6 +13,7 @@ __all__ = [
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
+
 from zope.component import getUtility
 
 from canonical.config import config
