@@ -4,7 +4,6 @@
 # pylint: disable-msg=C0103,W0613,R0911,F0401
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
-from textwrap import dedent
 
 __metaclass__ = type
 
@@ -17,6 +16,7 @@ import re
 import rfc822
 import sys
 import urllib
+from textwrap import dedent
 
 ##import warnings
 
