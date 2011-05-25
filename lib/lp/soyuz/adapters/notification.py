@@ -97,23 +97,25 @@ def get_template(archive, action):
 
 
 def get_status(action):
-    status = {
-        'new': 'New', 'unapproved': 'Waiting for approval',
-        'rejected': 'Rejected', 'accepted': 'Accepted',
-        'announcement': 'Accepted'}
-    return status[action]
+    action_descriptions = {
+        'new': 'New',
+        'unapproved': 'Waiting for approval',
+        'rejected': 'Rejected',
+        'accepted': 'Accepted',
+        'announcement': 'Accepted'
+        }
+    return action_descriptions[action]
 
 
 def calculate_subject(spr, archive, distroseries, pocket, action):
     """Return the e-mail subject for the notification."""
-    suite = distroseries.name
-    if pocket != PackagePublishingPocket.RELEASE:
-        suite += pocketsuffix[pocket]
+    suite = distroseries.getSuite(pocket)
+    names = ', '.join(set(spr.package_upload.displayname.split(', ')))
     subject = '[%s/%s] %s %s (%s)' % (
-        distroseries.distribution.name, suite, spr.sourcepackagename.name,
-        spr.version, get_status(action))
+        distroseries.distribution.name, suite, names, spr.version,
+        get_status(action))
     if archive.is_ppa:
-        subject = '[%s] %s' % (get_ppa_reference(archive), subject)
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     return subject
 
 
