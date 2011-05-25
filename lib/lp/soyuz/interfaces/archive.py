@@ -120,8 +120,6 @@ class CannotCopy(Exception):
     """
     webservice_error(400) #Bad request.
 
-    package_name = None
-
 
 class CannotSwitchPrivacy(Exception):
     """Raised when switching the privacy of an archive that has
