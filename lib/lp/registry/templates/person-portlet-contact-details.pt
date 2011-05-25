@@ -134,9 +134,7 @@
         <a tal:replace="structure overview_menu/editircnicknames/fmt:icon" />
       </dt>
       <dd tal:repeat="ircnick context/ircnicknames">
-        <strong tal:content="ircnick/nickname"/>
-        <span class="discreet">on network</span>
-        <strong tal:content="ircnick/network" />
+        <span tal:replace="structure ircnick/fmt:formatted_displayname"/>
       </dd>
       <dd tal:condition="not: context/ircnicknames">
         No IRC nicknames registered.

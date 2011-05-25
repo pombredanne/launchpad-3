@@ -276,10 +276,22 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_format_nick(self):
+    def test_nick_displayname(self):
         person = self.factory.makePerson(name='fred')
         ircset = getUtility(IIrcIDSet)
         ircID = ircset.new(person, "irc.canonical.com", "fred")
         self.assertEqual(
-            'fred@canonical',
+            'fred on irc.canonical.com',
             test_tales('nick/fmt:displayname', nick=ircID))
+
+    def test_nick_formatted_displayname(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        ircID = ircset.new(person, "irc.canonical.com", "fred")
+        expected_html = test_tales(
+            'nick/fmt:formatted_displayname', nick=ircID)
+        self.assertEquals(
+            u'<strong>fred</strong>\n'
+            '<span class="discreet"> on </span>\n'
+            '<strong>irc.canonical.com</strong>\n',
+            expected_html)

@@ -4,6 +4,7 @@
 # pylint: disable-msg=C0103,W0613,R0911,F0401
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
+from textwrap import dedent
 
 __metaclass__ = type
 
@@ -2665,17 +2666,15 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'displayname': 'displayname',
+        'formatted_displayname': 'formatted_displayname',
     }
 
-    def __init__(self, context):
-        self.context = context
-
     def displayname(self, view_name=None):
-        # We shorten the full irc network to just the core network
-        # name. eg irc.freenode.net -> freenode
-        network = self.context.network
-        irc_match = re.search(r'irc\.(.*)\..*', network)
-        if irc_match:
-            network = irc_match.group(1)
-        # Then we return something like nick@network
-        return "%s@%s" % (self.context.nickname, network)
+        return "%s on %s" % (self._context.nickname, self._context.network)
+
+    def formatted_displayname(self, view_name=None):
+        return dedent("""\
+            <strong>%s</strong>
+            <span class="discreet"> on </span>
+            <strong>%s</strong>
+        """ % (self._context.nickname, self._context.network))
