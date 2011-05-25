@@ -1151,7 +1151,7 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
             status=BugTaskStatus.TRIAGED,
             importance=BugTaskImportance.HIGH)
         bug = self.product.createBug(params)
-        notification = fetch_notifications(self.subscriber, bug)
+        notifications = fetch_notifications(self.subscriber, bug)
         self.assertTrue(notifications.is_empty())
 
 
