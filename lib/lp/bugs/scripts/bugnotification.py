@@ -200,8 +200,9 @@ def construct_email_notifications(bug_notifications):
         if len(bug.bugtasks):
             bug_url = canonical_url(bug.bugtasks[0])
             notification_url = bug_url + '/+subscriptions'
-            subscriptions_message = ('To manage notifications about this bug '
-                'go to:\n%s' % notification_url)
+            subscriptions_message = (
+                "To manage notifications about this bug go to:\n%s"
+                % notification_url)
         else:
             subscriptions_message = ''
 
