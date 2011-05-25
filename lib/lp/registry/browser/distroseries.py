@@ -622,27 +622,8 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class IDistroSeriesInitializeForm(Interface):
-
-    derived_from_series = Choice(
-        title=_('Derived from distribution series'),
-        default=None,
-        vocabulary="DistroSeriesDerivation",
-        description=_(
-            "Select the distribution series you "
-            "want to derive from."),
-        required=True)
-
-
-class DistroSeriesInitializeView(LaunchpadFormView):
+class DistroSeriesInitializeView(LaunchpadView):
     """A view to initialize an `IDistroSeries`."""
-
-    schema = IDistroSeriesInitializeForm
-    field_names = [
-        "derived_from_series",
-        ]
-
-    custom_widget('derived_from_series', LaunchpadDropdownWidget)
 
     label = 'Initialize series'
     page_title = label

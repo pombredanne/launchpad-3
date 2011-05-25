@@ -580,7 +580,6 @@ class ValidPersonOrTeamVocabulary(
                       EmailAddressStatus.PREFERRED.value,
                       self.LIMIT))
 
-
             public_result = self.store.using(*public_tables).find(
                 Person,
                 And(
@@ -1530,20 +1529,10 @@ class DistroSeriesDerivationVocabulary:
             raise LookupError(value)
         return self.toTerm(value)
 
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        try:
-            series_id = int(token)
-        except ValueError:
-            raise LookupError(token)
-        faq = self.context.getFAQ(token)
-        if faq is None:
-            raise LookupError(token)
-        return self.toTerm(faq)
-
     def toTerm(self, series):
         """Return the term for a parent series."""
-        return DistroSeriesVocabulary.toTerm(series)
+        title = "%s: %s" % (series.distribution.displayname, series.title)
+        return SimpleTerm(series, series.id, title)
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""

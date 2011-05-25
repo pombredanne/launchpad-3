@@ -27,7 +27,11 @@
         web service.
       </p>
       <div class="unseen" id="initseries-form-container">
-        <metal:form use-macro="context/@@launchpad_form/form" />
+        <form>
+          <table class="form">
+            <tbody></tbody>
+          </table>
+        </form>
       </div>
       <script type="text/javascript">
         LPS.use('lp.registry.distroseries.initseries', function(Y) {
