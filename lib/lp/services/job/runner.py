@@ -73,6 +73,8 @@ class BaseRunnableJob:
 
     user_error_types = ()
 
+    retry_error_types = ()
+
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
@@ -170,9 +172,16 @@ class BaseJobRunner(object):
             'Running job in status %s' % (job.status.title,))
         job.start()
         transaction.commit()
-
+        do_retry = False
         try:
-            job.run()
+            try:
+                job.run()
+            except job.retry_error_types, e:
+                if job.attempt_count > job.max_retries:
+                    raise
+                self.logger.exception(
+                    "Scheduling retry due to %s.", e.__class__.__name__)
+                do_retry = True
         except Exception:
             self.logger.exception("Job execution raised an exception.")
             transaction.abort()
@@ -184,8 +193,12 @@ class BaseJobRunner(object):
         else:
             # Commit transaction to update the DB time.
             transaction.commit()
-            job.complete()
-            self.completed_jobs.append(job)
+            if do_retry:
+                job.queue()
+                self.incomplete_jobs.append(job)
+            else:
+                job.complete()
+                self.completed_jobs.append(job)
         # Commit transaction to update job status.
         transaction.commit()
 
