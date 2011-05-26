@@ -111,7 +111,7 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
     """Return the e-mail subject for the notification."""
     suite = distroseries.getSuite(pocket)
     names = set()
-    version = ''
+    version = '-'
     if spr:
         names.add(spr.name)
         version = spr.version
@@ -188,7 +188,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
 
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
-                  action):
+                  action, announce_list):
     information = {
         'STATUS': get_status(action),
         'SUMMARY': summary,
@@ -215,9 +215,8 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
     if action == 'unapproved':
         information['SUMMARY'] += (
             "\nThis upload awaits approval by a distro manager\n")
-    if distroseries.changeslist:
-        information['ANNOUNCE'] = "Announcing to %s" % (
-            distroseries.changeslist)
+    if announce_list:
+        information['ANNOUNCE'] = "Announcing to %s" % announce_list
     if blamer is not None:
         signer_signature = '%s <%s>' % (
             blamer.displayname, blamer.preferredemail.email)
@@ -250,7 +249,8 @@ def send_mail(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     subject = calculate_subject(
         spr, bprs, customfiles, archive, distroseries, pocket, action)
     body = assemble_body(
-        blamer, spr, archive, distroseries, summary_text, changes, action)
+        blamer, spr, archive, distroseries, summary_text, changes, action,
+        announce_list)
 
     _sendMail(
         spr, archive, recipients, subject, body, dry_run,
@@ -260,15 +260,16 @@ def send_mail(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
 
 def _sendNotification(blamer, spr, bprs, customfiles, archive,
-                             distroseries, pocket, recipients, announce_list,
-                             changes, summarystring, action, dry_run,
-                             changesfile_content, logger):
+                      distroseries, pocket, recipients, announce_list,
+                      changes, summarystring, action, dry_run,
+                      changesfile_content, logger):
     """Send a email."""
 
     def do_send_mail(action=None):
         send_mail(
             blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             summarystring, changes, recipients, dry_run, action,
+            announce_list=announce_list, 
             changesfile_content=changesfile_content, logger=logger)
 
     if action == 'rejected':
@@ -278,6 +279,8 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
         if not recipients:
             recipients = [default_recipient]
         debug(logger, "Sending rejection email.")
+        if summarystring is None:
+            summarystring = 'Rejected by archive administrator.'
         do_send_mail(action=action)
         return
 
@@ -307,7 +310,7 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
 
     # Auto-approved binary-only uploads to security skip the
     # announcement, they are usually processed with the security policy.
-    if pocket == PackagePublishingPocket.SECURITY and spr is not None:
+    if pocket == PackagePublishingPocket.SECURITY and spr is None:
         # We only send announcements if there is any source in the upload.
         debug(
             logger,
@@ -331,7 +334,7 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
                 spr.name)
         if bprs:
             bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
-                bprs[0].build.sourcepackagerelease.name)
+                bprs[0].build.source_package_release.name)
 
         send_mail(
             blamer, spr, bprs, customfiles, archive, distroseries, pocket,

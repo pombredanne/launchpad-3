@@ -242,7 +242,7 @@ the summary.  Rejections don't currently auto-generate anything.
   ...
   DEBUG Sending rejection email.
   ...
-  DEBUG     Subject: netapplet-1.0.0.tar.gz rejected
+  DEBUG     Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
   DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG     Body:
   DEBUG Rejected:
