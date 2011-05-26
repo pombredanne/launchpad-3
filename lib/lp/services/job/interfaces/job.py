@@ -99,6 +99,9 @@ class IJob(Interface):
     attempt_count = Int(title=_(
         'The number of attempts to perform this job that have been made.'))
 
+    max_retries = Int(title=_(
+        'The number of retries permitted before this job permanently fails.'))
+
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
@@ -148,6 +151,9 @@ class IRunnableJob(IJob):
 
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
+
+    retry_error_types = Attribute(
+        'A tuple of exception classes which should cause a retry.')
 
     def notifyUserError(e):
         """Notify interested parties that this job encountered a user error.
