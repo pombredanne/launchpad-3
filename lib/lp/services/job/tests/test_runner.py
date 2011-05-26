@@ -22,6 +22,7 @@ from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
+    SuspendJobError,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
