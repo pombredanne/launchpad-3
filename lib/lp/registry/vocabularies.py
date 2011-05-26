@@ -1561,11 +1561,11 @@ class DistroSeriesDerivationVocabulary:
         where = []
         if query is not None:
             term = '%' + query.lower() + '%'
-            where.append(
-                Or(
+            search = Or(
                     DistroSeries.title.lower().like(term),
                     DistroSeries.description.lower().like(term),
-                    DistroSeries.summary.lower().like(term)))
+                    DistroSeries.summary.lower().like(term))
+            where.append(search)
         parent_distributions = Select(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
@@ -1575,6 +1575,7 @@ class DistroSeriesDerivationVocabulary:
             DistroSeries.distributionID.is_in(parent_distributions))
         terms = self.find_terms(where)
         if len(terms) == 0:
+            where = [search]
             where.append(DistroSeries.distribution != self.distribution)
             terms = self.find_terms(where)
         return terms
