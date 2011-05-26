@@ -52,13 +52,14 @@
             </tr>
             <tr tal:define="
               target_widget nocall:view/widgets/scope/target_widget">
-              <td tal:attributes="class view/scope_css_class"
-                  style="text-align: right;">
+              <td colspan="2" style="text-align: right;"
+                tal:attributes="class view/scope_css_class"
+                >
 
                 <tal:scope
                   replace="structure view/widgets/scope/renderScopeOptions" />
 
-                <tal:input replace="structure target_widget/inputField" />
+                <tal:input replace="structure target_widget" />
 
                 <div class="message"
                   tal:condition="view/scope_error"
@@ -66,7 +67,6 @@
                   Error message
                 </div>
               </td>
-              <td tal:content="structure target_widget/chooseLink" />
             </tr>
           </tbody>
         </table>
