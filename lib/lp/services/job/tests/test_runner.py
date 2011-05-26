@@ -370,6 +370,14 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
 
+    def test_runJob_with_SuspendJobError(self):
+        # A job that raises SuspendJobError should end up suspended.
+        job = SuspendingJob('suspended')
+        runner = JobRunner([job])
+        runner.runJob(job)
+
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+
 
 class StuckJob(BaseRunnableJob):
     """Simulation of a job that stalls."""
