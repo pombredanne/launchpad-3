@@ -16,7 +16,7 @@
          tal:content="view/error_message">
         Error message.
       </p>
-      <form class="central" action="/bugs/+bugs" method="get">
+      <form id="search-all-bugs" class="central" action="/bugs/+bugs" method="get">
         <table>
           <tbody>
             <tr>
@@ -24,7 +24,8 @@
                 <input tal:replace="structure view/widgets/searchtext" />
               </td>
               <td>
-                <input type="submit" name="search" value="Search Bug Reports" />
+                <input id="field.actions.search" type="submit"
+                  name="search" value="Search Bug Reports" />
               </td>
             </tr>
             <tr>
