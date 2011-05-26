@@ -22,7 +22,7 @@ from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
-    SuspendJobError,
+    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -365,10 +365,10 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
 
-    def test_runJob_with_SuspendJobError(self):
+    def test_runJob_with_SuspendJobException(self):
         # A job that raises SuspendJobError should end up suspended.
         job = NullJob('suspended')
-        job.run = FakeMethod(failure=SuspendJobError())
+        job.run = FakeMethod(failure=SuspendJobException())
         runner = JobRunner([job])
         runner.runJob(job)
 
