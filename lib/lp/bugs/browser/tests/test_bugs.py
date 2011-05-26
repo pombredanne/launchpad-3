@@ -69,7 +69,7 @@ class TestMaloneView(TestCaseWithFactory):
             "Bug ['fnord', 'pting'] is not registered.", view.error_message)
         self.assertEqual(None, view.request.response.getHeader('Location'))
 
-    def test_search_specifications_form_rendering(self):
+    def test_search_bugs_form_rendering(self):
         # The view's template directly renders the form widgets.
         view = create_initialized_view(self.application, '+index')
         content = find_tag_by_id(view.render(), 'search-all-bugs')
