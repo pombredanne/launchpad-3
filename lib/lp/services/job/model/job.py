@@ -68,6 +68,8 @@ class Job(SQLBase):
 
     attempt_count = IntCol(default=0)
 
+    max_retries = IntCol(default=0)
+
     # Mapping of valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:

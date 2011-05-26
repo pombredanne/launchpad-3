@@ -6,13 +6,14 @@
 
 from textwrap import dedent
 
+from testtools.matchers import MatchesRegex
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.translations.model.translationpackagingjob import (
     TranslationSplitJob)
-from lp.testing import RegexMatcher, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.translations.tests.test_translationpackagingjob import (
     make_translation_merge_job,
     )
@@ -30,7 +31,7 @@ class TestMergeTranslations(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/run_jobs.py', ['packaging_translations'],
             expect_returncode=0)
-        matcher = RegexMatcher(dedent("""\
+        matcher = MatchesRegex(dedent("""\
             INFO    Creating lockfile: /var/lock/launchpad-jobcronscript.lock
             INFO    Running synchronously.
             INFO    Merging .* and .* in Ubuntu Distroseries.*
