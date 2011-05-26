@@ -112,7 +112,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,

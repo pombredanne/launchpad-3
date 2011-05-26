@@ -1027,7 +1027,8 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
         with person_logged_in(blueprint2.owner):
             blueprint2.linkBug(bug2)
         self.factory.makeBug()
-        params = BugTaskSearchParams(user=None, linked_blueprints=blueprint1.id)
+        params = BugTaskSearchParams(
+            user=None, linked_blueprints=blueprint1.id)
         tasks = set(getUtility(IBugTaskSet).search(params))
         self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
