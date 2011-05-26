@@ -2672,7 +2672,7 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
         return "%s on %s" % (self._context.nickname, self._context.network)
 
     def formatted_displayname(self, view_name=None):
-        return dedent("""
+        return dedent("""\
             <strong>%s</strong>
             <span class="discreet"> on </span>
             <strong>%s</strong>
