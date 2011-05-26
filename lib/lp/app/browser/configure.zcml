@@ -273,6 +273,13 @@
       />
 
   <adapter
+      for="lp.registry.interfaces.irc.IIrcID"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.IRCNicknameFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
       for="datetime.timedelta"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.DurationFormatterAPI"
