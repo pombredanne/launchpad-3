@@ -58,9 +58,9 @@ subscribed.
     >>> 'subscriber-essential' in browser.contents
     True
 
-Now the link should say "Unsubscribe" in the actions menu.
+Now the link should say "Edit Subscription" in the actions menu.
 
-    >>> submod_link = browser.getLink('Unsubscribe')
+    >>> submod_link = browser.getLink('Edit Subscription')
     >>> submod_link is not None
     True
 
