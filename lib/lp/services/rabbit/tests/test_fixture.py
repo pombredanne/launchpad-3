@@ -58,6 +58,10 @@ def gather_details(source, target):
 class TestRabbitFixture(TestCase):
 
     def test_start_check_shutdown(self):
+        # XXX: GavinPanella 2011-05-26 bug=788557 : Disabled due to spurious
+        # failures (cannot create cookie file).
+        self.skip("Disabled (bug 788557)")
+
         # Rabbit needs to fully isolate itself: an existing per user
         # .erlange.cookie has to be ignored, and ditto bogus HOME if other
         # tests fail to cleanup.
