@@ -358,26 +358,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             'bug-notification-level-field', widget_class)
 
 
-class BugSubscriptionAdvancedFeaturesPortletTestCase(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(BugSubscriptionAdvancedFeaturesPortletTestCase, self).setUp()
-        self.bug = self.factory.makeBug()
-        self.person = self.factory.makePerson()
-        self.target = self.bug.default_bugtask.target
-        subscriber = self.factory.makePerson()
-        with person_logged_in(self.person):
-            self.target.addBugSubscription(subscriber, subscriber)
-
-    def get_contents(self):
-        with person_logged_in(self.person):
-            bug_view = create_initialized_view(
-                self.bug, name="+bug-portlet-subscribers-content")
-            return bug_view.render()
-
-
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer

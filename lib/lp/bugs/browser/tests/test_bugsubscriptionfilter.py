@@ -502,38 +502,37 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
 
     def test_filter_uses_bug_notification_level(self):
         # A user can specify a bug_notification_level on the +filter form.
-        with feature_flags():
-            # We don't display BugNotificationLevel.NOTHING as an option.
-            displayed_levels = [
-                level for level in BugNotificationLevel.items
-                if level != BugNotificationLevel.NOTHING]
-            for level in displayed_levels:
-                person = self.factory.makePerson()
-                with person_logged_in(person):
-                    subscription = self.target.addBugSubscription(
-                        person, person)
-                    initial_filter = subscription.bug_filters.one()
-                    form = {
-                        "field.description": "New description",
-                        "field.statuses": ["NEW", "INCOMPLETE"],
-                        "field.importances": ["LOW", "MEDIUM"],
-                        "field.tags": u"foo bar",
-                        "field.find_all_tags": "on",
-                        'field.bug_notification_level': level.title,
-                        "field.actions.create": "Create",
-                        }
-                    create_initialized_view(
-                        subscription, name="+new-filter", form=form)
+        # We don't display BugNotificationLevel.NOTHING as an option.
+        displayed_levels = [
+            level for level in BugNotificationLevel.items
+            if level != BugNotificationLevel.NOTHING]
+        for level in displayed_levels:
+            person = self.factory.makePerson()
+            with person_logged_in(person):
+                subscription = self.target.addBugSubscription(
+                    person, person)
+                initial_filter = subscription.bug_filters.one()
+                form = {
+                    "field.description": "New description",
+                    "field.statuses": ["NEW", "INCOMPLETE"],
+                    "field.importances": ["LOW", "MEDIUM"],
+                    "field.tags": u"foo bar",
+                    "field.find_all_tags": "on",
+                    'field.bug_notification_level': level.title,
+                    "field.actions.create": "Create",
+                    }
+                create_initialized_view(
+                    subscription, name="+new-filter", form=form)
 
-                filters = subscription.bug_filters
-                new_filter = [filter for filter in filters
-                              if filter != initial_filter][0]
-                self.assertEqual(filters.count(), 2)
-                self.assertEqual(
-                    level, new_filter.bug_notification_level,
-                    "Bug notification level of filter should be %s, "
-                    "is actually %s." % (
-                        level.name, new_filter.bug_notification_level.name))
+            filters = subscription.bug_filters
+            new_filter = [filter for filter in filters
+                            if filter != initial_filter][0]
+            self.assertEqual(filters.count(), 2)
+            self.assertEqual(
+                level, new_filter.bug_notification_level,
+                "Bug notification level of filter should be %s, "
+                "is actually %s." % (
+                    level.name, new_filter.bug_notification_level.name))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when a
@@ -550,10 +549,9 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                 'field.bug_notification_level': BugNotificationLevel.NOTHING,
                 "field.actions.create": "Create",
                 }
-            with feature_flags():
-                view = create_initialized_view(
-                    subscription, name="+new-filter", form=form)
-                self.assertTrue(view.errors)
+            view = create_initialized_view(
+                subscription, name="+new-filter", form=form)
+            self.assertTrue(view.errors)
 
 
 class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):

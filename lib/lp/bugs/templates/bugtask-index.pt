@@ -10,9 +10,6 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript" id="use-advanced-subscriptions">
-        use_advanced_subscriptions = true;
-      </script>
       <tal:if condition="context/bug/private">
         <script type="text/javascript">
           var bug_private = true;
@@ -23,16 +20,21 @@
           var bug_private = false;
         </script>
       </tal:if>
-      <script type="text/javascript">
-        var bugs_private_notification_enabled = true;
-      </script>
+      <tal:if condition="request/features/bugs.private_notification.enabled">
+        <script type="text/javascript">
+          var bugs_private_notification_enabled = true;
+        </script>
+      </tal:if>
+      <tal:if condition="not:request/features/bugs.private_notification.enabled">
+        <script type="text/javascript">
+          var bugs_private_notification_enabled = false;
+        </script>
+      </tal:if>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.bugtask_index.portlets',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
-            Y.lp.bugs.bugtask_index.portlets.use_advanced_subscriptions =
-                use_advanced_subscriptions;
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
@@ -87,14 +89,16 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <div tal:attributes="class string: global-notification ${view/privacy_notice_classes}">
-        <span class="sprite notification-private"></span>
-        This bug is private
-        <a href="#" class="global-notification-close">
-          <span class="sprite notification-close"></span>
-          Hide
-        </a>
-      </div>
+      <tal:if condition="request/features/bugs.private_notification.enabled">
+        <div tal:attributes="class string: global-notification ${view/privacy_notice_classes}">
+          <span class="sprite notification-private"></span>
+          This bug is private
+          <a href="#" class="global-notification-close">
+            <span class="sprite notification-close"></span>
+            Hide
+          </a>
+        </div>
+      </tal:if>
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>

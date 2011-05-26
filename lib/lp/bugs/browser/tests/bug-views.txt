@@ -340,7 +340,7 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
     >>> bug_menu.subscription().icon
     'add'
 
-If we subscribe Foo Bar, 'Unsubscribe' is shown.
+If we subscribe Foo Bar, 'Edit subscription' is shown.
 
     >>> bug_one.subscribe(foo_bar, foo_bar)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
@@ -352,7 +352,7 @@ If we subscribe Foo Bar, 'Unsubscribe' is shown.
     'edit'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
-still say 'Unsubscribe':
+still say 'Edit subscription':
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
@@ -406,7 +406,7 @@ can't know if the user is subscribed or not.
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-    is presented with the Unsubscribe link.
+    is presented with the "Edit subscription" link.
 
     >>> from canonical.launchpad.ftests import syncUpdate
 

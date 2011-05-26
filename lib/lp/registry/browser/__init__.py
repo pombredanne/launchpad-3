@@ -72,8 +72,7 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
 
 def add_subscribe_link(links):
     """Add the subscription-related links."""
-    links.append('subscribe_to_bug_mail')
-    links.append('edit_bug_mail')
+    links.extend(['subscribe_to_bug_mail', 'edit_bug_mail'])
 
 
 class MilestoneOverlayMixin:
