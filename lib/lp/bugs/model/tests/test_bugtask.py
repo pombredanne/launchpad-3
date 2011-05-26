@@ -1409,8 +1409,6 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             nomination = bug.addNomination(self.owner, distro_release)
             nomination.approve(self.owner)
             self.generic_task, self.series_task = bug.bugtasks
-            self.assertEqual(
-                self.generic_task, self.series_task.conjoined_slave)
 
     def test_editing_generic_status_reflects_upon_conjoined_master(self):
         # If a change is made to the status of a conjoined slave

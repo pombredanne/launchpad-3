@@ -435,8 +435,10 @@ def validate_conjoined_attribute(self, attr, value):
     # actually make the change to the master (which will then be passed
     # down to the slave, of course). This helps to prevent OOPSes when
     # people try to update the conjoined slave via the API.
-    if self._isConjoinedBugTask():
+    conjoined_master = self.conjoined_master
+    if conjoined_master is not None:
         setattr(self.conjoined_master, attr, value)
+        return value
 
     # The conjoined slave is updated before the master one because,
     # for distro tasks, conjoined_slave does a comparison on
@@ -741,10 +743,6 @@ class BugTask(SQLBase, BugTaskMixin):
             self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
-
-    def _isConjoinedBugTask(self):
-        """Return True when conjoined_master is not None, otherwise False."""
-        return self.conjoined_master is not None
 
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
