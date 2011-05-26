@@ -1575,7 +1575,9 @@ class DistroSeriesDerivationVocabulary:
             DistroSeries.distributionID.is_in(parent_distributions))
         terms = self.find_terms(where)
         if len(terms) == 0:
-            where = [search]
+            where = []
+            if query is not None:
+                where.append(search)
             where.append(DistroSeries.distribution != self.distribution)
             terms = self.find_terms(where)
         return terms
