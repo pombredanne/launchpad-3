@@ -51,6 +51,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
+    SuspendJobError,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
@@ -182,6 +183,10 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Scheduling retry due to %s.", e.__class__.__name__)
                 do_retry = True
+        except SuspendJobError:
+            self.logger.debug("Job suspended itself")
+            job.suspend()
+            self.incomplete_jobs.append(job)
         except Exception:
             self.logger.exception("Job execution raised an exception.")
             transaction.abort()
