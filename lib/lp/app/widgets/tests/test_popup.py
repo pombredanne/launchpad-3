@@ -84,9 +84,9 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # contain valid HTML characters.
         self.assertEqual(
             ('show-widget-field-test-field-invalid-chars-'
-             'ZmllbGQudGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw'),
+             'ZmllbGQudGVzdC1maWVsZC1pbnZhbGlkLWNoYXJzKw'),
             picker_widget.show_widget_id)
         self.assertEqual(
             ('field.test-field-invalid-chars-'
-             'ZmllbGQudGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw'),
+             'ZmllbGQudGVzdC1maWVsZC1pbnZhbGlkLWNoYXJzKw'),
             picker_widget.input_id)

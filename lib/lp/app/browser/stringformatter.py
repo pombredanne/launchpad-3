@@ -884,7 +884,10 @@ class FormattersAPI:
             # Python's URL-safe base 64 encoding includes those and they
             # aren't allowed in IDs either.
             unique_suffix = urlsafe_b64encode(raw_text)
-            id_ = "%s-%s" % (id_, unique_suffix.replace('=', ''))
+            # Ensure we put a '-' between the id and base 64 encoding.
+            if id_[-1] != '-':
+                id_ += '-'
+            id_ += unique_suffix.replace('=', '')
 
         if id_[0] in '-0123456789':
             # 'j' is least common starting character in technical usage;

@@ -273,11 +273,11 @@ class TestLastParagraphClass(TestCase):
 
 class TestCssIdGeneration(TestCase):
 
-    layer = DatabaseFunctionalLayer
-
     def test_valid_id(self):
         id = FormattersAPI('field.abc').css_id()
         self.assertEqual('field.abc', id)
+        id = FormattersAPI('field_abc').css_id()
+        self.assertEqual('field-abc', id)
 
     def test_id_with_invalid_prefix(self):
         for prefix in '-0123456789':
@@ -285,8 +285,8 @@ class TestCssIdGeneration(TestCase):
             self.assertEqual('j%sabc' % prefix, id)
 
     def test_id_with_invalid_character(self):
-        id = FormattersAPI('abc+def').css_id()
-        self.assertEqual('abc-def-YWJjK2RlZg', id)
+        id = FormattersAPI('abc+def+').css_id()
+        self.assertEqual('abc-def-YWJjK2RlZis', id)
 
     def test_id_with_underscore(self):
         id = FormattersAPI('abc_def').css_id()
