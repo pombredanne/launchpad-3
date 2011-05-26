@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
+from base64 import urlsafe_b64encode
 
 __metaclass__ = type
 __all__ = [
@@ -119,7 +120,7 @@ def next_word_chunk(word, pos, minlen, maxlen):
         if nchars >= maxlen:
             # stop if we've reached the maximum chunk size
             break
-        if nchars >= minlen and not word[endpos-1].isalnum():
+        if nchars >= minlen and not word[endpos - 1].isalnum():
             # stop if we've reached the minimum chunk size and the last
             # character wasn't alphanumeric.
             break
@@ -216,7 +217,7 @@ class FormattersAPI:
         If there are opening parens in the url that are matched by closing
         parens at the start of the trailer, those closing parens should be
         part of the url."""
-        assert trailers != '', ( "Trailers must not be an empty string.")
+        assert trailers != '', ("Trailers must not be an empty string.")
         opencount = url.count('(')
         closedcount = url.count(')')
         missing = opencount - closedcount
@@ -791,7 +792,7 @@ class FormattersAPI:
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
-            return '%s...' % self._stringtoformat[:maxlength-3]
+            return '%s...' % self._stringtoformat[:maxlength - 3]
         else:
             return self._stringtoformat
 
@@ -817,7 +818,7 @@ class FormattersAPI:
         header_next = False
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
-            result.append('<td class="line-no">%s</td>' % (row+1))
+            result.append('<td class="line-no">%s</td>' % (row + 1))
             if line.startswith('==='):
                 css_class = 'diff-file text'
                 header_next = True
@@ -850,12 +851,12 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
-    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-\.]+')
 
     def css_id(self, prefix=None):
         """Return a CSS compliant id.
 
-        The id may contain letters, numbers, and hyphens. The first
+        The id may contain letters, numbers, periods, and hyphens. The first
         character must be a letter. Unsupported characters are converted
         to hyphens. Multiple characters are replaced by a single hyphen. The
         letter 'j' will start the id if the string's first character is not a
@@ -868,7 +869,23 @@ class FormattersAPI:
             raw_text = prefix + self._stringtoformat
         else:
             raw_text = self._stringtoformat
-        id_ = self._css_id_strip_pattern.sub('-', raw_text)
+
+        # First get rid of '_' and replace with '-'. We don't want to trigger
+        # the need to append the id with the base64 encoding based on an '_'
+        # match.
+        raw_text = raw_text.replace('_', '-')
+        id_ = raw_text
+
+        if self._css_id_strip_pattern.search(raw_text):
+            id_ = self._css_id_strip_pattern.sub('-', raw_text)
+            # We need to ensure that the id is always guaranteed to be unique,
+            # hence we append URL-safe base 64 encoding of the name. However
+            # we also have to strip off any padding characters ("=") because
+            # Python's URL-safe base 64 encoding includes those and they
+            # aren't allowed in IDs either.
+            unique_suffix = urlsafe_b64encode(raw_text)
+            id_ = "%s-%s" % (id_, unique_suffix.replace('=', ''))
+
         if id_[0] in '-0123456789':
             # 'j' is least common starting character in technical usage;
             # engineers love 'z', 'q', and 'y'.

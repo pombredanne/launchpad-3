@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-from doctest import DocTestSuite
 from textwrap import dedent
-import unittest
 
 from zope.component import getUtility
 
@@ -194,7 +192,7 @@ class TestLinkifyingProtocols(TestCase):
             ('<p><a rel="nofollow" '
              'href="http://example.com/path_(with_parens">'
              'http://<wbr></wbr>example.<wbr></wbr>com'
-             '/path_<wbr></wbr>(with_parens</a></p>'),           
+             '/path_<wbr></wbr>(with_parens</a></p>'),
             ]
 
         self.assertEqual(
@@ -271,6 +269,32 @@ class TestLastParagraphClass(TestCase):
             '<p>Foo</p>\n<p class="last">Bar</p>',
             FormattersAPI("Foo\n\nBar").text_to_html(
                 last_paragraph_class="last"))
+
+
+class TestCssIdGeneration(TestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_valid_id(self):
+        id = FormattersAPI('field.abc').css_id()
+        self.assertEqual('field.abc', id)
+
+    def test_id_with_invalid_prefix(self):
+        for prefix in '-0123456789':
+            id = FormattersAPI(prefix + 'abc').css_id()
+            self.assertEqual('j%sabc' % prefix, id)
+
+    def test_id_with_invalid_character(self):
+        id = FormattersAPI('abc+def').css_id()
+        self.assertEqual('abc-def-YWJjK2RlZg', id)
+
+    def test_id_with_underscore(self):
+        id = FormattersAPI('abc_def').css_id()
+        self.assertEqual('abc-def', id)
+
+    def test_id_with_user_prefix(self):
+        id = FormattersAPI('abc').css_id('prefix')
+        self.assertEqual('prefixabc', id)
 
 
 class TestDiffFormatter(TestCase):
@@ -387,10 +411,3 @@ class TestOOPSFormatter(TestCase):
             expected_string, formatted_string,
             "Formatted string should be '%s', was '%s'" % (
                 expected_string, formatted_string))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite())
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite

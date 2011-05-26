@@ -7,10 +7,8 @@
 
 __metaclass__ = type
 
-from base64 import urlsafe_b64encode
 import cgi
 
-import re
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -20,6 +18,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.propertycache import cachedproperty
 
 
@@ -134,28 +133,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def input_id(self):
-        """This is used to uniquify the widget ID to avoid ID collisions."""
-
-        # Since this will be used in an HTML ID, the allowable set of
-        # characters is smaller than the set that can appear in self.name.
-        # If the widget name contains any forbidden characters, we use the
-        # URL-safe base 64 encoding of the name.  However we also have to
-        # strip off any padding characters ("=") because Python's URL-safe
-        # base 64 encoding includes those and they aren't allowed in IDs
-        # either.
-
-        if re.search(r'[^A-Za-z0-9_:\.-]', self.name):
-            # If the name is of the form 'field.xxx' then we will retain the
-            # 'field.' portion and encode the remainder. This ensures that the
-            # naming of the fields is consistent.
-            match = re.match('field\.(.*)', self.name)
-            if match:
-                return 'field.' + urlsafe_b64encode(
-                    match.group(1)).replace('=', '')
-            else:
-                return urlsafe_b64encode(self.name).replace('=', '')
-        else:
-            return self.name
+        """This is used to ensure the widget id contains only valid chars."""
+        return FormattersAPI(self.name).css_id()
 
     def chooseLink(self):
         if self.nonajax_uri is None:

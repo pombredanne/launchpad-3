@@ -83,8 +83,10 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # The widget name is encoded to get the widget's ID. It must only
         # contain valid HTML characters.
         self.assertEqual(
-            'show-widget-field-dGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw',
+            ('show-widget-field-test-field-invalid-chars-'
+             'ZmllbGQudGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw'),
             picker_widget.show_widget_id)
         self.assertEqual(
-            'field.dGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw',
+            ('field.test-field-invalid-chars-'
+             'ZmllbGQudGVzdF9maWVsZF9pbnZhbGlkX2NoYXJzKw'),
             picker_widget.input_id)

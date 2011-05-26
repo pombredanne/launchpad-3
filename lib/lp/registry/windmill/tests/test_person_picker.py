@@ -19,7 +19,7 @@ VISIBLE_PICKER_OVERLAY = (
      'not(contains(@class, "yui3-picker-hidden"))]')
 
 
-class TesPersonPickerWidget(WindmillTestCase):
+class TestPersonPickerWidget(WindmillTestCase):
 
     layer = RegistryWindmillLayer
     suite_name = 'PersonPickerWidget'
@@ -28,12 +28,12 @@ class TesPersonPickerWidget(WindmillTestCase):
 
         client, start_url = self.getClientFor(
             '/people/+requestmerge', user=lpuser.SAMPLE_PERSON)
-        client.waits.forElement(id=u'show-widget-field-dupe_person',
+        client.waits.forElement(id=u'show-widget-field-dupe-person',
                                 timeout=constants.FOR_ELEMENT)
 
-        client.type(text=u'guilherme', name=u'field.dupe_person')
+        client.type(text=u'guilherme', name=u'field.dupe-person')
 
-        client.click(id=u'show-widget-field-dupe_person')
+        client.click(id=u'show-widget-field-dupe-person')
         client.waits.forElement(xpath=VISIBLE_PICKER_OVERLAY,
                                 timeout=constants.FOR_ELEMENT)
 
@@ -46,5 +46,5 @@ class TesPersonPickerWidget(WindmillTestCase):
 
         client.click(xpath=u'//ul[@class="yui3-picker-results"]/li[1]')
         client.asserts.assertProperty(
-            xpath=u'//input[@name="field.dupe_person"]',
+            xpath=u'//input[@name="field.dupe-person"]',
             validator='value|salgado')
