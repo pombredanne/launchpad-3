@@ -431,10 +431,10 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
+    # If this is a conjoined slave then call setattr on the master.
     if self._isConjoinedBugTask():
-        raise ConjoinedBugTaskEditError(
-            "This task cannot be edited directly, it should be"
-            " edited through its conjoined_master.")
+        setattr(self.conjoined_master, attr, value)
+
     # The conjoined slave is updated before the master one because,
     # for distro tasks, conjoined_slave does a comparison on
     # sourcepackagename, and the sourcepackagenames will not match
