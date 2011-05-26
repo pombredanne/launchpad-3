@@ -432,6 +432,10 @@ def validate_conjoined_attribute(self, attr, value):
         return value
 
     # If this is a conjoined slave then call setattr on the master.
+    # Effectively this means that making a change to the slave will
+    # actually make the change to the master (which will then be passed
+    # down to the slave, of course). This helps to prevent OOPSes when
+    # people try to update the conjoined slave via the API.
     if self._isConjoinedBugTask():
         setattr(self.conjoined_master, attr, value)
 

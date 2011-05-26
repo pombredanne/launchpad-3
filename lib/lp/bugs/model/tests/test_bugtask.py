@@ -1391,43 +1391,61 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_editing_generic_task_reflects_upon_conjoined_master(self):
-        # If a change is made to conjoined slave (generic) task, that
-        # change is reflected upon the conjoined master.
-        owner = self.factory.makePerson()
-        distro = self.factory.makeDistribution(
-            name="eggs", owner=owner, bug_supervisor=owner)
+    def setUp(self):
+        super(TestConjoinedBugTasks, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.distro = self.factory.makeDistribution(
+            name="eggs", owner=self.owner, bug_supervisor=self.owner)
         distro_release = self.factory.makeDistroRelease(
-            distribution=distro, registrant=owner)
+            distribution=self.distro, registrant=self.owner)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename="spam", distroseries=distro_release)
         bug = self.factory.makeBug(
-            distribution=distro,
+            distribution=self.distro,
             sourcepackagename=source_package.sourcepackagename,
-            owner=owner)
-        with person_logged_in(owner):
-            nomination = bug.addNomination(owner, distro_release)
-            nomination.approve(owner)
-            generic_task, series_task = bug.bugtasks
-            self.assertEqual(generic_task, series_task.conjoined_slave)
-            generic_task.transitionToStatus(
-                BugTaskStatus.CONFIRMED, owner)
+            owner=self.owner)
+        with person_logged_in(self.owner):
+            nomination = bug.addNomination(self.owner, distro_release)
+            nomination.approve(self.owner)
+            self.generic_task, self.series_task = bug.bugtasks
             self.assertEqual(
-                BugTaskStatus.CONFIRMED, series_task.status)
+                self.generic_task, self.series_task.conjoined_slave)
 
-##The generic tasks are not directly editable.
-##
-##    >>> generic_netapplet_task.transitionToStatus(
-##    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-##    Traceback (most recent call last):
-##      ...
-##    ConjoinedBugTaskEditError: This task cannot be edited directly, it
-##                               should be edited through its conjoined_master.
-##
-##    >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
-##    Traceback (most recent call last):
-##      ...
-##    ConjoinedBugTaskEditError: This task cannot be edited directly, it
-##                               should be edited through its conjoined_master.
-##
-##
+    def test_editing_generic_status_reflects_upon_conjoined_master(self):
+        # If a change is made to the status of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, self.series_task.status)
+
+    def test_editing_generic_importance_reflects_upon_conjoined_master(self):
+        # If a change is made to the importance of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, self.owner)
+            self.assertEqual(
+                BugTaskImportance.HIGH, self.series_task.importance)
+
+    def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
+        # If a change is made to the assignee of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToAssignee(self.owner)
+            self.assertEqual(
+                self.owner, self.series_task.assignee)
+
+    def test_editing_generic_package_reflects_upon_conjoined_master(self):
+        # If a change is made to the source package of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        source_package_name = self.factory.makeSourcePackageName("ham")
+        with person_logged_in(self.owner):
+            self.generic_task.sourcepackagename = source_package_name
+            self.assertEqual(
+                source_package_name, self.series_task.sourcepackagename)
