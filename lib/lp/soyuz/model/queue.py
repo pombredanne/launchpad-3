@@ -154,10 +154,8 @@ class PackageUpload(SQLBase):
     signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
                              notNull=False)
 
-    # TODO:  fucking storm and sqlobject.
-    #package_copy_job_id = Int(name='package_copy_job', allow_none=True)
-    #package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
-    package_copy_job = ForeignKey(dbName='package_copy_job', foreignKey='PackageCopyJob', notNull=False)
+    package_copy_job_id = Int(name='package_copy_job', allow_none=True)
+    package_copy_job = Reference(package_copy_job_id, 'PackageCopyJob.id')
 
     # XXX julian 2007-05-06:
     # Sources should not be SQLMultipleJoin, there is only ever one

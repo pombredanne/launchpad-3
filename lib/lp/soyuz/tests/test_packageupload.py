@@ -10,6 +10,7 @@ import shutil
 from storm.store import Store
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -361,7 +362,8 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     def test_package_copy_job_property(self):
         # Test that we can set and get package_copy_job.
         pcj = self.factory.makePackageCopyJob()
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        naked_pcj = removeSecurityProxy(pcj)
+        pu = self.factory.makePackageUpload(package_copy_job=naked_pcj)
         Store.of(pu).flush()
 
         self.assertEqual(pcj, pu.package_copy_job)
