@@ -58,6 +58,10 @@
                   tal:content="view/widgets/scope/error">
                   Error message
                 </div>
+                <script type="text/javascript"
+                  tal:define="script view/focusedElementScript"
+                  tal:condition="script"
+                  tal:content="structure script" ></script>
               </td>
             </tr>
             </tbody>
