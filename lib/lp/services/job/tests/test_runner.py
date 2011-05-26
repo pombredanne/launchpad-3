@@ -373,6 +373,8 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJob(job)
 
         self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
 
 
 class StuckJob(BaseRunnableJob):
