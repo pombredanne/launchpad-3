@@ -265,6 +265,7 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
@@ -4075,6 +4076,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             copy_base_url = self.getUniqueUnicode()
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
+
+    def makePackageCopyJob(
+        self, package_name, package_version, source_archive, target_archive,
+        target_distroseries, target_pocket):
+        """Create a new `PackageCopyJob`."""
+        if package_name is None and package_version is None:
+            package_name = self.makeSourcePackageName()
+            package_version = unicode(self.getUniqueInteger()) + 'version'
+        package_tuple = (package_name, package_version)
+        if source_archive is None:
+            source_archive = self.makeArchive()
+        if target_archive is None:
+            target_archive = self.makeArchive()
+        if target_distroseries is None:
+            target_distroseries = self.makeDistroSeries()
+        if target_pocket is None:
+            target_pocket = self.getAnyPocket()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            package_tuple, source_archive, target_archive,
+            target_distroseries, target_pocket)
 
 
 # Some factory methods return simple Python types. We don't add
