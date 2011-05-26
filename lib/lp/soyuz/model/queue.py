@@ -152,6 +152,9 @@ class PackageUpload(SQLBase):
     signing_key = ForeignKey(foreignKey='GPGKey', dbName='signing_key',
                              notNull=False)
 
+    package_copy_job = ForeignKey(
+        dbName='package_copy_job', foreignKey='PackageCopyJob', notNull=False)
+
     # XXX julian 2007-05-06:
     # Sources should not be SQLMultipleJoin, there is only ever one
     # of each at most.
