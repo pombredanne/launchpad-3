@@ -60,7 +60,7 @@ subscribed.
 
 Now the link should say "Edit Subscription" in the actions menu.
 
-    >>> submod_link = browser.getLink('Edit Subscription')
+    >>> submod_link = browser.getLink('Update Subscription')
     >>> submod_link is not None
     True
 
