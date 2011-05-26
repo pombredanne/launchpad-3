@@ -54,18 +54,25 @@ def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
         config.uploader.default_sender_address)
     changedby = changes.get('Changed-By')
     logger.debug("Building recipients list.")
-    recipients = ''
+    to_addrs = []
+    if blamer is not None:
+        if blamer.preferredemail is not None:
+            to_addrs.append(
+                format_address(blamer.displayname,
+                    blamer.preferredemail.email))
     if changedby is not None:
         changedby_person = _emailToPerson(changedby)
         if (
             changedby_person is not None and
             changedby_person.preferredemail is not None):
-                recipients = format_address(changedby_person.displayname,
-                    changedby_person.preferredemail.email)
-    if recipients == '':
-        recipients = "%s <%s>" % (
+                to_addrs.append(
+                    format_address(changedby_person.displayname,
+                        changedby_person.preferredemail.email))
+    if not to_addrs:
+        to_addrs.append("%s <%s>" % (
             config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address)
+            config.uploader.default_recipient_address))
+    recipients = ascii_smash(", ".join(to_addrs))
     extra_headers = {'X-Katie': 'Launchpad actually'}
     logger.debug("Sending rejection email.")
     send_message(
@@ -137,7 +144,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if spr is None and not bool(bprs) and not customfiles:
         # We do not have enough context to do a normal notification.
         notify_spr_less(
-            None, changes['_filename'], changes, summary_text, logger=logger)
+            blamer, changes['_filename'], changes, summary_text,
+            logger=logger)
         return
 
     # "files" will contain a list of tuples of filename,component,section.
@@ -316,14 +324,19 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
 
     if announce_list:
         from_addr = guess_encoding(changes['Changed-By'])
+        bcc_addr = None
+        if spr:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
+                spr.name)
+        if bprs:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
+                bprs[0].build.sourcepackagerelease.name)
 
         send_mail(
             blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             summarystring, changes, [str(announce_list)], dry_run,
             'announcement', changesfile_content=changesfile_content,
-            from_addr=from_addr,
-            bcc="%s_derivatives@packages.qa.debian.org" % spr.name,
-            logger=logger)
+            from_addr=from_addr, bcc=bcc_addr, logger=logger)
 
 
 def _sendMail(
