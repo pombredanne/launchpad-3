@@ -49,26 +49,17 @@
                   />
                 </td>
               </tr>
-              <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
-                <td colspan="2" style="text-align: right;"
-                  tal:attributes="class view/scope_css_class">
-
-                  <tal:scope
-                    replace="structure view/widgets/scope/renderScopeOptions" />
-
-                    <tal:link content="structure target_widget" />
-
-                  <tal:sort
-                    replace="structure view/widgets/sort/hidden" />
-                  <tal:status
-                    replace="structure view/widgets/status/hidden" />
-                  <div class="message"
-                    tal:condition="view/scope_error"
-                    tal:content="structure view/scope_error">
-                    Error message
-                  </div>
-                </td>
-              </tr>
+            <tr>
+              <td colspan="2"
+                tal:attributes="class view/scope_css_class">
+                <input tal:replace="structure view/widgets/scope" />
+                <div class="message"
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="view/widgets/scope/error">
+                  Error message
+                </div>
+              </td>
+            </tr>
             </tbody>
           </table>
         </form>

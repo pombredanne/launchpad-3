@@ -27,22 +27,15 @@
                 <input type="submit" name="search" value="Search Bug Reports" />
               </td>
             </tr>
-            <tr tal:define="options nocall:view/widgets/scope/options;
-                            target_widget nocall:view/widgets/scope/target_widget">
-              <td colspan="2" style="text-align: right;"
+            <tr>
+              <td colspan="2"
                 tal:attributes="class view/target_css_class">
-               <div>
-                  <input tal:replace="structure options/all" />
-                  All projects
-                  <input tal:replace="structure options/project" />
-                  One project:
-                  <tal:input replace="structure target_widget" />
-               </div>
-               <div class="message"
-                    tal:condition="view/target_error"
-                    tal:content="structure view/target_error">
+                <input tal:replace="structure view/widgets/scope" />
+                <div class="message"
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="view/widgets/scope/error">
                   Error message
-               </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -50,7 +43,7 @@
         <script type="text/javascript"
                 tal:define="script view/focusedElementScript"
                 tal:condition="script"
-                tal:content="structure script" />
+                tal:content="structure script" ></script>
       </form>
       <p id="application-summary">
         Launchpad&rsquo;s bug tracker helps software teams to

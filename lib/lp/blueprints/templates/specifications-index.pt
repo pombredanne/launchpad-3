@@ -50,20 +50,13 @@
                 />
               </td>
             </tr>
-            <tr tal:define="
-              target_widget nocall:view/widgets/scope/target_widget">
-              <td colspan="2" style="text-align: right;"
-                tal:attributes="class view/scope_css_class"
-                >
-
-                <tal:scope
-                  replace="structure view/widgets/scope/renderScopeOptions" />
-
-                <tal:input replace="structure target_widget" />
-
+            <tr>
+              <td colspan="2"
+                tal:attributes="class view/scope_css_class">
+                <input tal:replace="structure view/widgets/scope" />
                 <div class="message"
-                  tal:condition="view/scope_error"
-                  tal:content="structure view/scope_error">
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="view/widgets/scope/error">
                   Error message
                 </div>
               </td>
