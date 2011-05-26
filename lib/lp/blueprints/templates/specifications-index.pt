@@ -28,7 +28,7 @@
         </li>
       </ul>
 
-      <form class="central" action="" method="get"
+      <form id="search-all-specifications" class="central" action="" method="get"
             tal:attributes="action request/URL">
         <table>
           <tbody>
@@ -43,11 +43,7 @@
                 />
               </td>
               <td>
-                <input
-                  type="submit"
-                  name="field.actions.search"
-                  value="Find Blueprints"
-                />
+                <input tal:replace="structure view/search_action/render"/>
               </td>
             </tr>
             <tr>

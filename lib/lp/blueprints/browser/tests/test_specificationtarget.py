@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -16,6 +17,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     )
 from lp.app.enums import ServiceUsage
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
     login_person,
@@ -274,3 +276,33 @@ class TestSpecificationsRobots(TestCaseWithFactory):
 
     def test_LAUNCHPAD_does_not_block_robots(self):
         self._verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)
+
+
+class SpecificationSetViewTestCase(TestCaseWithFactory):
+    """Test the specification application root view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_specifications_form_rendering(self):
+        # The view's template directly renders the form widgets.
+        specification_set = getUtility(ISpecificationSet)
+        view = create_initialized_view(specification_set, '+index')
+        content = find_tag_by_id(view.render(), 'search-all-specifications')
+        self.assertEqual('form', content.name)
+        self.assertTrue(
+            content.find(True, id='text') is not None)
+        self.assertTrue(
+            content.find(True, id='field.actions.search') is not None)
+        self.assertTrue(
+            content.find(True, id='field.scope.option.all') is not None)
+        self.assertTrue(
+            content.find(True, id='field.scope.option.project') is not None)
+        target_widget = view.widgets['scope'].target_widget
+        self.assertTrue(
+            content.find(True, id=target_widget.show_widget_id) is not None)
+        text = str(content)
+        picker_script = (
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+        self.assertTrue(picker_script in text)
+        focus_script = "setFocusByName('field.search_text')"
+        self.assertTrue(focus_script in text)
