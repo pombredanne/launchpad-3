@@ -27,7 +27,7 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
         super(TestDistroSeriesDifferenceExtraJS, self).setUp()
         # First just ensure that the feature is enabled.
         getFeatureStore().add(FeatureFlag(
-            scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
+            scope=u'default', flag=u'soyuz.derived_series_ui.enabled',
             value=u'on', priority=1))
 
         # Setup the difference record.

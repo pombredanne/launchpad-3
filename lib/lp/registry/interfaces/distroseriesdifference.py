@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroSeriesDifference',
+    'IDistroSeriesDifferenceAdmin',
     'IDistroSeriesDifferencePublic',
     'IDistroSeriesDifferenceEdit',
     'IDistroSeriesDifferenceSource',
@@ -192,7 +193,7 @@ class IDistroSeriesDifferencePublic(Interface):
     parent_packagesets = Attribute("The packagesets for this source package "
                                    "in the parent series.")
 
-    def update():
+    def update(manual=False):
         """Checks that difference type and status matches current publishings.
 
         If the record is updated, a relevant comment is added.
@@ -200,6 +201,8 @@ class IDistroSeriesDifferencePublic(Interface):
         If there is no longer a difference (ie. the versions are
         the same) then the status is updated to RESOLVED.
 
+        :param manual: Boolean, True if this is a user-requested change.
+            This overrides auto-blacklisting.
         :return: True if the record was updated, False otherwise.
         """
 
@@ -222,6 +225,18 @@ class IDistroSeriesDifferenceEdit(Interface):
     def addComment(commenter, comment):
         """Add a comment on this difference."""
 
+    @call_with(requestor=REQUEST_USER)
+    @export_write_operation()
+    def requestPackageDiffs(requestor):
+        """Requests IPackageDiffs for the derived and parent version.
+
+        :raises DistroSeriesDifferenceError: When package diffs
+            cannot be requested.
+        """
+
+class IDistroSeriesDifferenceAdmin(Interface):
+    """Difference attributes requiring launchpad.Admin."""
+
     @operation_parameters(
         all=Bool(title=_("All"), required=False))
     @export_write_operation()
@@ -239,18 +254,10 @@ class IDistroSeriesDifferenceEdit(Interface):
         The status will be updated based on the versions.
         """
 
-    @call_with(requestor=REQUEST_USER)
-    @export_write_operation()
-    def requestPackageDiffs(requestor):
-        """Requests IPackageDiffs for the derived and parent version.
-
-        :raises DistroSeriesDifferenceError: When package diffs
-            cannot be requested.
-        """
-
 
 class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
-                              IDistroSeriesDifferenceEdit):
+                              IDistroSeriesDifferenceEdit,
+                              IDistroSeriesDifferenceAdmin):
     """An interface for a package difference between two distroseries."""
     export_as_webservice_entry()
 

@@ -784,8 +784,8 @@ from breezy-autotest and test if the build algorithm copes with it.
 This simulates a rebuild in of the same source in a more recent
 distroseries, like rebuilding SRUs for constant sources.
 
-    >>> breezy_autotest.parent_series = None
-    >>> hoary_test.parent_series = breezy_autotest
+    >>> breezy_autotest.previous_series = None
+    >>> hoary_test.previous_series = breezy_autotest
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -796,8 +796,8 @@ distroseries, like rebuilding SRUs for constant sources.
 Now, let's check the opposite, as if the copy was from a more recent
 distroseries to a older one, like a backport rebuild.
 
-    >>> breezy_autotest.parent_series = hoary_test
-    >>> hoary_test.parent_series = None
+    >>> breezy_autotest.previous_series = hoary_test
+    >>> hoary_test.previous_series = None
 
     >>> ppa_source.createMissingBuilds()
     []

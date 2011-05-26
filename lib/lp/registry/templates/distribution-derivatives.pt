@@ -15,8 +15,8 @@
             &#8220;<tal:codename replace="derivative/displayname" />&#8221; series
           </a>
           </strong>
-          (from <a tal:attributes="href derivative/parent_series/fmt:url"
-                    tal:content="derivative/parent_series/displayname" />)
+          (from <a tal:attributes="href derivative/previous_series/fmt:url"
+                    tal:content="derivative/previous_series/displayname" />)
         <br/>
         </li>
       </tal:per_series>

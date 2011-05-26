@@ -50,17 +50,17 @@
       <dt>Derives from:</dt>
       <dd>
         <a
-          tal:condition="context/parent_series"
-          tal:attributes="href context/parent_series/fmt:url"
-          tal:content="context/parent_series/named_version" />
-        <tal:none condition="not: context/parent_series">
+          tal:condition="context/previous_series"
+          tal:attributes="href context/previous_series/fmt:url"
+          tal:content="context/previous_series/named_version" />
+        <tal:none condition="not: context/previous_series">
           <tal:name replace="context/named_version"/> is not derived from
           another series.
         </tal:none>
       </dd>
     </dl>
 
-    <dl tal:condition="request/features/soyuz.derived-series-ui.enabled"
+    <dl tal:condition="request/features/soyuz.derived_series_ui.enabled"
         tal:define="all_child_series context/getDerivedSeries">
       <dt>Derived series:</dt>
       <dd>

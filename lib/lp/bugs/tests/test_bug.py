@@ -105,6 +105,22 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.bug.unmute(self.person, self.person)
             self.assertFalse(self.bug.isMuted(self.person))
 
+    def test_unmute_returns_direct_subscription(self):
+        # Bug.unmute() returns the previously muted direct subscription, if
+        # any.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertEqual(True, self.bug.isMuted(self.person))
+            self.assertEqual(None, self.bug.unmute(self.person, self.person))
+            self.assertEqual(False, self.bug.isMuted(self.person))
+            subscription = self.bug.subscribe(
+                self.person, self.person,
+                level=BugNotificationLevel.METADATA)
+            self.bug.mute(self.person, self.person)
+            self.assertEqual(True, self.bug.isMuted(self.person))
+            self.assertEqual(
+                subscription, self.bug.unmute(self.person, self.person))
+
     def test_unmute_mutes_unmuter(self):
         # When exposed in the web API, the unmute method regards the
         # first, `person` argument as optional, and the second
@@ -156,6 +172,10 @@ class TestBugSnapshotting(TestCaseWithFactory):
             self.assertEqual(
                 [token for token in sql_tokens
                  if token.startswith('message')],
+                [])
+            self.assertEqual(
+                [token for token in sql_tokens
+                 if token.startswith('bugactivity')],
                 [])
 
 

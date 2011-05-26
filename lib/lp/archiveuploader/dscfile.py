@@ -42,7 +42,7 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
-    parse_tagfile,
+    parse_tagfile_content,
     TagFileParseError,
     )
 from lp.archiveuploader.utils import (
@@ -111,33 +111,63 @@ def cleanup_unpacked_dir(unpacked_dir):
 class SignableTagFile:
     """Base class for signed file verification."""
 
-    fingerprint = None
     signingkey = None
-    signer = None
+    parsed_content = None
 
-    def processSignature(self):
-        """Verify the signature on the filename.
+    @property
+    def signer(self):
+        if self.signingkey is not None:
+            return self.signingkey.owner
 
-        Stores the fingerprint, the IGPGKey used to sign, the owner of
-        the key and a dictionary containing
+    def parse(self, verify_signature=True):
+        """Parse the tag file, optionally verifying the signature.
+
+        If verify_signature is True, signingkey will be set to the signing
+        `IGPGKey`, and only the verified content will be parsed. Otherwise,
+        any signature will be stripped and the contained content parsed.
+
+        Will raise an `UploadError` if the tag file was unparsable,
+        or if signature verification was requested but failed.
+        """
+        try:
+            with open(self.filepath, 'rb') as f:
+                self.raw_content = f.read()
+        except IOError, error:
+            raise UploadError(
+                "Unable to read %s: %s" % (self.filename, error))
+
+        if verify_signature:
+            self.signingkey, self.parsed_content = self.verifySignature(
+                self.raw_content, self.filepath)
+        else:
+            self.logger.debug("%s can be unsigned." % self.filename)
+            self.parsed_content = self.raw_content
+        try:
+            self._dict = parse_tagfile_content(
+                self.parsed_content, filename=self.filepath)
+        except TagFileParseError, error:
+            raise UploadError(
+                "Unable to parse %s: %s" % (self.filename, error))
+
+    def verifySignature(self, content, filename):
+        """Verify the signature on the file content.
 
         Raise UploadError if the signing key cannot be found in launchpad
         or if the GPG verification failed for any other reason.
 
-        Returns the key owner (person object), the key (gpgkey object) and
-        the pyme signature as a three-tuple
+        Returns a tuple of the key (`IGPGKey` object) and the verified
+        cleartext data.
         """
-        self.logger.debug("Verifying signature on %s" % self.filename)
-        assert os.path.exists(self.filepath), (
-            "File not found: %s" % self.filepath)
+        self.logger.debug(
+            "Verifying signature on %s" % os.path.basename(filename))
 
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
-                file(self.filepath, "rb").read())
+                content)
         except GPGVerificationError, error:
             raise UploadError(
                 "GPG verification of %s failed: %s" % (
-                self.filename, str(error)))
+                filename, str(error)))
 
         key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
         if key is None:
@@ -146,13 +176,9 @@ class SignableTagFile:
 
         if key.active == False:
             raise UploadError("File %s is signed with a deactivated key %s"
-                              % (self.filename, key.keyid))
+                              % (filename, key.keyid))
 
-        self.fingerprint = sig.fingerprint
-        self.signingkey = key
-        self.signer = key.owner
-        self.signer_address = self.parseAddress("%s <%s>" % (
-            self.signer.displayname, self.signer.preferredemail.email))
+        return (key, sig.plain_data)
 
     def parseAddress(self, addr, fieldname="Maintainer"):
         """Parse an address, using the policy to decide if we should add a
@@ -217,7 +243,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Build-Conflicts-Indep",
         "Format",
         "Standards-Version",
-        "filecontents",
         "homepage",
         ]))
 
@@ -242,13 +267,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
-        try:
-            self._dict = parse_tagfile(
-                self.filepath, dsc_whitespace_rules=1,
-                allow_unsigned=self.policy.unsigned_dsc_ok)
-        except (IOError, TagFileParseError), error:
-            raise UploadError(
-                "Unable to parse the dsc %s: %s" % (self.filename, error))
+        self.parse(verify_signature=not policy.unsigned_dsc_ok)
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
@@ -269,10 +288,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
 
-        if self.policy.unsigned_dsc_ok:
-            self.logger.debug("DSC file can be unsigned.")
-        else:
-            self.processSignature()
 
     #
     # Useful properties.
@@ -305,7 +320,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     def binary(self):
         """Return the DSC claimed binary line."""
         return self._dict['Binary']
-
 
     #
     # DSC file checks.
@@ -615,6 +629,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # We have no way of knowing what encoding the original copyright
         # file is in, unfortunately, and there is no standard, so guess.
+        encoded_raw_content = guess_encoding(self.raw_content)
         encoded = Deb822Dict()
         for key, value in pending.items():
             if value is not None:
@@ -652,7 +667,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
             homepage=encoded.get('homepage'),
-            dsc=encoded['filecontents'],
+            dsc=encoded_raw_content,
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['Maintainer'],
             dsc_format=encoded['Format'],

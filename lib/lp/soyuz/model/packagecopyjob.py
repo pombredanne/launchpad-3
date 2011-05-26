@@ -280,13 +280,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         """Commit work."""
         transaction.commit()
 
-    def findMatchingDSDs(self, package_name=None):
+    def findMatchingDSDs(self):
         """Find any `DistroSeriesDifference`s that this job might resolve."""
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series,
-            source_package_name_filter=package_name)
+            distro_series=target_series)
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have
         # changed.  We can however filter out DSDs that are from
@@ -300,7 +299,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
         message = unicode(cannotcopy_exception)
-        dsds = self.findMatchingDSDs(cannotcopy_exception.package_name)
+        dsds = self.findMatchingDSDs()
         comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
 
         # Register the error comment in the name of the Janitor.  Not a

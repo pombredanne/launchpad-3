@@ -8,7 +8,7 @@
     direct_subscriptions view/sorted_direct_subscriptions;
   ">
   <div class="section" id="subscribers-direct">
-    <h2>Subscribers</h2>
+    <h3>Directly subscribed</h3>
       <div id="subscribers-links">
       <div
         tal:condition="direct_subscriptions"
@@ -64,7 +64,7 @@
       id="subscribers-indirect"
       class="Section"
     >
-      <h2>Also notified</h2>
+      <h3>Also notified</h3>
       <div
         tal:repeat="subscriber also_notified_subscribers"
         tal:content="structure subscriber/fmt:link"
