@@ -624,9 +624,14 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class DistroSeriesInitializeView(LaunchpadView):
+class EmptySchema(Interface):
+    pass
+
+
+class DistroSeriesInitializeView(LaunchpadFormView):
     """A view to initialize an `IDistroSeries`."""
 
+    schema = EmptySchema
     label = 'Initialize series'
     page_title = label
 
