@@ -1434,7 +1434,7 @@ receives these notifications.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a subscribed to the bug
+    You received this bug notification because you are subscribed to the bug
     report.
     ...
     ----------------------------------------------------------------------
