@@ -210,9 +210,8 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
     if blamer is not None:
-        signer = blamer.owner
         signer_signature = '%s <%s>' % (
-            signer.displayname, signer.preferredemail.email)
+            blamer.displayname, blamer.preferredemail.email)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
@@ -459,7 +458,7 @@ def _getRecipients(blamer, archive, distroseries, changes, logger):
 
     if blamer:
         # This is a signed upload.
-        candidate_recipients.append(blamer.owner)
+        candidate_recipients.append(blamer)
     else:
         debug(logger,
             "Changes file is unsigned, adding changer as recipient")
@@ -477,12 +476,12 @@ def _getRecipients(blamer, archive, distroseries, changes, logger):
     # If this is not a PPA, we also consider maintainer and changed-by.
     if blamer and not archive.is_ppa:
         maintainer = _emailToPerson(changes['Maintainer'])
-        if (maintainer and maintainer != blamer.owner and
+        if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
             candidate_recipients.append(maintainer)
 
-        if (changer and changer != blamer.owner and
+        if (changer and changer != blamer and
                 changer.isUploader(distroseries.distribution)):
             debug(logger, "Adding changed-by to recipients")
             candidate_recipients.append(changer)

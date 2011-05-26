@@ -702,11 +702,14 @@ class PackageUpload(SQLBase):
                 changes['_filename'] = changes_file_object.name
         else:
             changesfile_content = 'No changes file content available.'
+        signer = None
+        if self.signing_key is not None:
+            signer = self.signing_key.owner
         notify(
-            self.signing_key, self.sourcepackagerelease, self.builds,
-            self.customfiles, self.archive, self.distroseries, self.pocket,
-            announce_list, summary_text, changes, changesfile_content,
-            action, dry_run, logger)
+            signer, self.sourcepackagerelease, self.builds, self.customfiles,
+            self.archive, self.distroseries, self.pocket, announce_list,
+            summary_text, changes, changesfile_content, action, dry_run,
+            logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
