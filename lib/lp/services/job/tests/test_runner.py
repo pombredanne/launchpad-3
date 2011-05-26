@@ -131,6 +131,12 @@ class RaisingRetryJob(NullJob):
         raise RetryError()
 
 
+class SuspendingJob(NullJob):
+
+    def run(self):
+        raise SuspendJobError()
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
