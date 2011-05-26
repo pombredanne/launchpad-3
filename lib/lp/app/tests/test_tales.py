@@ -287,11 +287,12 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
     def test_nick_formatted_displayname(self):
         person = self.factory.makePerson(name='fred')
         ircset = getUtility(IIrcIDSet)
-        ircID = ircset.new(person, "irc.canonical.com", "fred")
+        # Include some bogus markup to check escaping works.
+        ircID = ircset.new(person, "<b>irc.canonical.com</b>", "fred")
         expected_html = test_tales(
             'nick/fmt:formatted_displayname', nick=ircID)
         self.assertEquals(
             u'<strong>fred</strong>\n'
             '<span class="discreet"> on </span>\n'
-            '<strong>irc.canonical.com</strong>\n',
+            '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
             expected_html)
