@@ -361,9 +361,8 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
     def test_package_copy_job_property(self):
         # Test that we can set and get package_copy_job.
-        pcj = self.factory.makePackageCopyJob()
-        naked_pcj = removeSecurityProxy(pcj)
-        pu = self.factory.makePackageUpload(package_copy_job=naked_pcj)
+        pcj = removeSecurityProxy(self.factory.makePackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
         Store.of(pu).flush()
 
         self.assertEqual(pcj, pu.package_copy_job)
