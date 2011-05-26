@@ -74,7 +74,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
 from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
@@ -1596,6 +1599,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
             self.setNextURL()
 
 
+def get_escapedtext(message):
+    """Return escapedtext if message is an `IStructuredString`."""
+    if IStructuredString.providedBy(message):
+        return message.escapedtext
+    else:
+        return message
+
+
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
 
@@ -1792,7 +1803,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def messages(self):
-        return '\n'.join(self._messages)
+        return '\n'.join(map(get_escapedtext, self._messages))
 
     def _remove_dependencies(self, data):
         """Perform the removal of the selected dependencies."""
@@ -1808,7 +1819,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.displayname)
+            self._messages.append(
+                structured('<br/>%s', dependency.displayname))
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1821,8 +1833,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
 
-        self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
+        self._messages.append(structured(
+            '<p>Dependency added: %s</p>', dependency_candidate.displayname))
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
@@ -1867,8 +1879,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket,
             dependency_component)
-        self._messages.append(
-            '<p>Primary dependency added: %s</p>' % primary_dependency.title)
+        self._messages.append(structured(
+            '<p>Primary dependency added: %s</p>', primary_dependency.title))
 
     def validate(self, data):
         """Validate dependency configuration changes.
