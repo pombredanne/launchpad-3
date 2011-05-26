@@ -49,11 +49,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
@@ -690,8 +686,27 @@ class PackageUpload(SQLBase):
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        notify(self, announce_list, summary_text, changes_file_object,
-            logger, dry_run)
+        if self.status == PackageUploadStatus.NEW:
+            action = 'new'
+        elif self.status == PackageUploadStatus.UNAPPROVED:
+            action = 'unapproved'
+        elif self.status == PackageUploadStatus.REJECTED:
+            action = 'rejected'
+        else:
+            action = 'accepted'
+        changes, changes_lines = self._getChangesDict(changes_file_object)
+        changes['_filename'] = ''
+        if changes_file_object is not None:
+            changesfile_content = changes_file_object.read()
+            if hasattr(changes_file_object, 'name'):
+                changes['_filename'] = changes_file_object.name
+        else:
+            changesfile_content = 'No changes file content available.'
+        notify(
+            self.signing_key, self.sourcepackagerelease, self.builds,
+            self.customfiles, self.archive, self.distroseries, self.pocket,
+            announce_list, summary_text, changes, changesfile_content,
+            action, dry_run, logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
@@ -1040,15 +1055,13 @@ class PackageUploadCustom(SQLBase):
         supplied action method.
         """
         temp_filename = self.temp_filename()
-        full_suite_name = "%s%s" % (
-            self.packageupload.distroseries.name,
-            pocketsuffix[self.packageupload.pocket])
+        suite = self.packageupload.distroseries.getSuite(
+            self.packageupload.pocket)
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
             action_method(
-                archive_config.archiveroot, temp_filename,
-                full_suite_name)
+                archive_config.archiveroot, temp_filename, suite)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
