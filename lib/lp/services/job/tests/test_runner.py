@@ -39,6 +39,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -130,12 +131,6 @@ class RaisingRetryJob(NullJob):
 
     def run(self):
         raise RetryError()
-
-
-class SuspendingJob(NullJob):
-
-    def run(self):
-        raise SuspendJobError()
 
 
 class TestJobRunner(TestCaseWithFactory):
@@ -372,7 +367,8 @@ class TestJobRunner(TestCaseWithFactory):
 
     def test_runJob_with_SuspendJobError(self):
         # A job that raises SuspendJobError should end up suspended.
-        job = SuspendingJob('suspended')
+        job = NullJob('suspended')
+        job.run = FakeMethod(failure=SuspendJobError())
         runner = JobRunner([job])
         runner.runJob(job)
 
