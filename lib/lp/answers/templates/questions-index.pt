@@ -28,7 +28,7 @@
       </div>
 
       <div class="yui-g">
-        <form class="central" action="" method="get"
+        <form id="search-all-questions" class="central" action="" method="get"
               tal:attributes="action request/URL">
           <table>
             <tbody>

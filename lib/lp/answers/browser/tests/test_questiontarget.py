@@ -12,6 +12,7 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
@@ -193,3 +194,33 @@ class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
         self.assertCommonPageElements(content)
         self.assertTrue(
             content.find(True, id='configure-support') is not None)
+
+
+class QuestionSetViewTestCase(TestCaseWithFactory):
+    """Test the answers application root view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_questions_form_rendering(self):
+        # The view's template directly renders the form widgets.
+        question_set = getUtility(IQuestionSet)
+        view = create_initialized_view(question_set, '+index')
+        content = find_tag_by_id(view.render(), 'search-all-questions')
+        self.assertEqual('form', content.name)
+        self.assertTrue(
+            content.find(True, id='text') is not None)
+        self.assertTrue(
+            content.find(True, id='field.actions.search') is not None)
+        self.assertTrue(
+            content.find(True, id='field.scope.option.all') is not None)
+        self.assertTrue(
+            content.find(True, id='field.scope.option.project') is not None)
+        target_widget = view.widgets['scope'].target_widget
+        self.assertTrue(
+            content.find(True, id=target_widget.show_widget_id) is not None)
+        text = str(content)
+        picker_script = (
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+        self.assertTrue(picker_script in text)
+        focus_script = "setFocusByName('field.search_text')"
+        self.assertTrue(focus_script in text)
