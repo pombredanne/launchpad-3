@@ -45,7 +45,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 
-from lp.soyuz.database.packagecopyjob import PackageCopyJob
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
 
 
@@ -142,7 +142,7 @@ class IPackageUpload(Interface):
     signing_key = Attribute("Changesfile Signing Key.")
 
     package_copy_job = Reference(
-        schema=PackageCopyJob,
+        schema=IPackageCopyJob,
         description=_("The PackageCopyJob for this upload, if it has one."),
         title=_("Package Copy Job"), required=False, readonly=True)
 

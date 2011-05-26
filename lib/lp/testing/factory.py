@@ -3375,8 +3375,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changes_file_content = self.getUniqueString("changesfilecontent")
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
-        if package_copy_job is None:
-            package_copy_job = self.makePackageCopyJob()
         package_upload = distroseries.createQueueEntry(
             pocket, changes_filename, changes_file_content, archive,
             signing_key=signing_key, package_copy_job=package_copy_job)
@@ -4081,11 +4079,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution, root_dir, base_url, copy_base_url)
 
     def makePackageCopyJob(
-        self, package_name, package_version, source_archive, target_archive,
-        target_distroseries, target_pocket):
+        self, package_name=None, package_version=None, source_archive=None,
+        target_archive=None, target_distroseries=None, target_pocket=None):
         """Create a new `PackageCopyJob`."""
         if package_name is None and package_version is None:
-            package_name = self.makeSourcePackageName()
+            package_name = self.makeSourcePackageName().name
             package_version = unicode(self.getUniqueInteger()) + 'version'
         package_tuple = (package_name, package_version)
         if source_archive is None:

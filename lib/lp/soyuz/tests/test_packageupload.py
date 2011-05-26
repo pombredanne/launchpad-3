@@ -7,6 +7,8 @@ from email import message_from_string
 import os
 import shutil
 
+from storm.store import Store
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -345,3 +347,22 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
+
+
+class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def setUp(self):
+        super(TestPackageUploadWithPackageCopyJob, self).setUp()
+        #self.test_publisher = SoyuzTestPublisher()
+
+    def test_package_copy_job_property(self):
+        # Test that we can set and get package_copy_job.
+        pcj = self.factory.makePackageCopyJob()
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        Store.of(pu).flush()
+
+        self.assertEqual(pcj, pu.package_copy_job)
+
