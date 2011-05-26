@@ -187,7 +187,7 @@ class InvalidBranchMergeProposal(Exception):
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class InvalidNamespace(Exception):

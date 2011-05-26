@@ -121,7 +121,7 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         committer.last_scanned_id = (
             committer.bzrbranch.last_revision())
         committer.writeFile('file.txt', 'contents')
-        revision_id = committer.commit('')
+        committer.commit('')
         branch_revision_id = committer.bzrbranch.last_revision()
         branch_revision = committer.bzrbranch.repository.get_revision(
             branch_revision_id)
@@ -271,7 +271,7 @@ class TestGetDir(DirectBranchCommitTestCase, TestCaseWithFactory):
     def test_getDir_creates_dir_in_existing_dir(self):
         # _getDir creates directories inside ones that already existed
         # in a previously committed version of the branch.
-        existing_id = self.committer._getDir('po')
+        self.committer._getDir('po')
         self._setUpCommitter()
         new_dir_id = self.committer._getDir('po/main/files')
         self.assertTrue('po/main' in self.committer.path_ids)
@@ -329,9 +329,9 @@ class TestGetBzrCommitterID(TestCaseWithFactory):
 
 class TestStaleLastMirroredID(TestCaseWithFactory):
 
-   layer = DatabaseFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
-   def test_raises_StaleLastMirrored(self):
+    def test_raises_StaleLastMirrored(self):
         """Raise if the on-disk revision doesn't match last-mirrored."""
         self.useBzrBranches(direct_database=True)
         bzr_id = self.factory.getUniqueString()
