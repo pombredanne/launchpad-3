@@ -192,7 +192,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         try:
             committer = self._prepareBranchCommit(source.translations_branch)
-        except StaleLastMirrored, e:
+        except StaleLastMirrored as e:
             source.translations_branch.branchChanged(
                 **get_db_branch_info(**e.info))
             self.logger.warning(
