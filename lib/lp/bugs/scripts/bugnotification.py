@@ -198,7 +198,7 @@ def construct_email_notifications(bug_notifications):
         # code where we build `reason`.  However, this will
         # require some extra work, and this small change now
         # will ease pain for a lot of unhappy users.
-        if 'direct subscriber' in reason and 'member of' not in reason:
+        if 'subscribed to the bug' in reason and 'member of' not in reason:
             unsubscribe_notice = ('To unsubscribe from this bug, go to:\n'
                 '%s/+subscribe' % canonical_url(bug.bugtasks[0]))
         else:
