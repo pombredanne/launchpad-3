@@ -1023,7 +1023,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
 
 
 http = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1037,7 +1037,7 @@ pmhttp = wsgi.ServerType(
     True)
 
 debughttp = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8082,
@@ -1045,7 +1045,7 @@ debughttp = wsgi.ServerType(
     requestFactory=DebugLayerRequestFactory)
 
 privatexmlrpc = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1532,7 +1532,8 @@ def register_launchpad_request_publication_factories():
     # len(factories)+1.
     for priority, factory in enumerate(factories):
         publisher_factory_registry.register(
-            "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
+            "*", "*", factory.vhost_name, len(factories) - priority + 1,
+            factory)
 
     # Register a catch-all "not found" handler at the lowest priority.
     publisher_factory_registry.register(

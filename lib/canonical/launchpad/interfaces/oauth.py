@@ -312,14 +312,18 @@ class _TokenException(Exception):
     """Base class for token, nonce, and timestamp exceptions."""
     webservice_error(httplib.UNAUTHORIZED)
 
+
 class NonceAlreadyUsed(_TokenException):
     """Nonce has been used together with same token but another timestamp."""
+
 
 class TimestampOrderingError(_TokenException):
     """Timestamp is too old, compared to the last request."""
 
+
 class ClockSkew(_TokenException):
     """Timestamp is too far off from server's clock."""
+
 
 class TokenException(_TokenException):
     """Token has expired."""
