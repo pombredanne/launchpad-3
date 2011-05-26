@@ -14,8 +14,8 @@ import math
 import os.path
 import rfc822
 import sys
-import urllib
 from textwrap import dedent
+import urllib
 
 ##import warnings
 
@@ -2672,8 +2672,8 @@ class IRCNicknameFormatterAPI(ObjectFormatterAPI):
         return "%s on %s" % (self._context.nickname, self._context.network)
 
     def formatted_displayname(self, view_name=None):
-        return dedent("""\
+        return dedent("""
             <strong>%s</strong>
             <span class="discreet"> on </span>
             <strong>%s</strong>
-        """ % (self._context.nickname, self._context.network))
+        """ % (escape(self._context.nickname), escape(self._context.network)))
