@@ -196,7 +196,7 @@ class BasePersonVocabulary:
         try:
             if self.enhanced_picker_enabled:
                 # Display the person's Launchpad id next to their name.
-                title = "%s (~%s)" % (obj.displayname, obj.name)
+                title = "%s (%s)" % (obj.displayname, obj.name)
             else:
                 title = obj.displayname
             return SimpleTerm(obj, obj.name, title)
