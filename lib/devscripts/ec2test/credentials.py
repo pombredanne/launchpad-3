@@ -19,13 +19,12 @@ from devscripts.ec2test.account import EC2Account
 class CredentialsError(BzrCommandError):
     """Raised when AWS credentials could not be loaded."""
 
+    _fmt = (
+        "Please put your aws access key identifier and secret access "
+        "key identifier in %(filename)s. (On two lines).  %(extra)s" )
+
     def __init__(self, filename, extra=None):
-        message = (
-            "Please put your aws access key identifier and secret access "
-            "key identifier in %s. (On two lines)." % (filename,))
-        if extra:
-            message += extra
-        Exception.__init__(self, message)
+        super(CredentialsError, self).__init__(filename=filename, extra=extra)
 
 
 class EC2Credentials:
