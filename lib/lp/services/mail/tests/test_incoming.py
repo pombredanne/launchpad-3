@@ -24,7 +24,6 @@ from canonical.launchpad.mail import (
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
-from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
@@ -137,8 +136,6 @@ class TestIncoming(TestCaseWithFactory):
         # An incoming mail with the message-id of an already-processed mail is
         # skipped.
         orig_message = self.factory.makeMessage()
-        signing_context = GPGSigningContext(
-            import_secret_test_key().fingerprint, password='test')
         handler_calls = []
         self.assertEqual([], handler_calls)
         duplicate_mail = self.factory.makeSignedMessage(

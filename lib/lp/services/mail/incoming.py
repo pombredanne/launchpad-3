@@ -437,7 +437,6 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
             mail['message-id'])
         return None
 
-
     # If the Return-Path header is '<>', it probably means
     # that it's a bounce from a message we sent.
     if mail['Return-Path'] == '<>':
