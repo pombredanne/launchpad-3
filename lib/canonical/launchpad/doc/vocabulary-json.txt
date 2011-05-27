@@ -58,7 +58,7 @@ A successful search.
             {
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
-                "title": "GuadaMen (~guadamen)",
+                "title": "GuadaMen (guadamen)",
                 "value": "guadamen"
             }
         ],
@@ -86,7 +86,7 @@ Size and offset parameters can be passed in to switch between batches.
             {
                 "api_uri": "/~commercial-admins",
                 "css": "sprite team",
-                "title": "Commercial Subscription Admins (~commercial-admins)",
+                "title": "Commercial Subscription Admins (commercial-admins)",
                 "value": "commercial-admins"
             }
         ],
@@ -103,7 +103,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "api_uri": "/~name16",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Foo Bar (~name16)",
+                "title": "Foo Bar (name16)",
                 "value": "name16"
             }
         ],
@@ -141,7 +141,7 @@ retrieved through vocabularies.
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Sample Person (~name12)",
+                "title": "Sample Person (name12)",
                 "value": "name12"
             }
         ],
@@ -160,7 +160,7 @@ IRC nicknames should be displayed after any email address.
                 "api_uri": "/~mark",
                 "css": "sprite person",
                 "description": "<email address hidden> (mark on irc.freenode.net)",
-                "title": "Mark Shuttleworth (~mark)",
+                "title": "Mark Shuttleworth (mark)",
                 "value": "mark"
             }
         ],

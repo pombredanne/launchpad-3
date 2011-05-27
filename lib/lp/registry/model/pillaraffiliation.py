@@ -63,4 +63,11 @@ class BugTaskPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for bug tasks."""
 
     def getAffiliationBadge(self, person):
-        return None
+        pillar = self.context.pillar
+        affiliated = person.inTeam(pillar.owner)
+        if not affiliated:
+            return None
+        if self.context.distribution or self.context.distroseries:
+            return "distribution-badge"
+        if self.context.product or self.context.productseries:
+            return "product-badge"
