@@ -187,7 +187,7 @@ class BasePersonVocabulary:
 
     _table = Person
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         self.enhanced_picker_enabled = bool(
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
 
