@@ -9,7 +9,6 @@ __all__ = [
     "RabbitServer",
     ]
 
-import errno
 import os
 import re
 import socket
@@ -166,7 +165,6 @@ class RabbitServerResources(Fixture):
     :ivar homedir: A directory to put the RabbitMQ logs in.
     :ivar mnesiadir: A directory for the RabbitMQ db.
     :ivar logfile: The logfile allocated for the server.
-    :ivar pidfile: The file the pid should be written to.
     :ivar nodename: The name of the node.
     """
     def setUp(self):
@@ -176,7 +174,6 @@ class RabbitServerResources(Fixture):
         self.homedir = self.useFixture(TempDir()).path
         self.mnesiadir = os.path.join(self.homedir, "mnesia")
         self.logfile = os.path.join(self.homedir, 'server.log')
-        self.pidfile = os.path.join(self.homedir, 'server.pid')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
 
     @property
@@ -245,8 +242,8 @@ class RabbitServerEnvironment(Fixture):
             return outstr.strip(), errstr.strip()
         return outstr, errstr
 
-    def check_running(self):
-        """Checks that RabbitMQ is up and running."""
+    def is_node_running(self):
+        """Checks that our RabbitMQ node is up and running."""
         nodename = self.config.fq_nodename
         outdata, errdata = self.rabbitctl("status")
         if errdata:
@@ -287,10 +284,7 @@ class RabbitServerEnvironment(Fixture):
 
 
 class RabbitServerRunner(Fixture):
-    """Run a RabbitMQ server.
-
-    :ivar pid: The pid of the server.
-    """
+    """Run a RabbitMQ server."""
 
     def __init__(self, config):
         """Create a `RabbitServerRunner` instance.
@@ -300,6 +294,7 @@ class RabbitServerRunner(Fixture):
         """
         super(RabbitServerRunner, self).__init__()
         self.config = config
+        self.process = None
 
     def setUp(self):
         super(RabbitServerRunner, self).setUp()
@@ -307,78 +302,99 @@ class RabbitServerRunner(Fixture):
             RabbitServerEnvironment(self.config))
         self._start()
 
-    def _start(self):
+    def is_running(self):
+        """Is the RabbitMQ server process still running?"""
+        if self.process is None:
+            return False
+        else:
+            return self.process.poll() is None
+
+    def check_running(self):
+        """Checks that the RabbitMQ server process is still running.
+
+        :raises Exception: If it not running.
+        :return: True if it is running.
+        """
+        if self.is_running():
+            return True
+        else:
+            raise Exception("RabbitMQ server is not running.")
+
+    def _spawn(self):
+        """Spawn the RabbitMQ server process."""
         cmd = os.path.join(RABBITBIN, 'rabbitmq-server')
-        name = "RabbitMQ server node:%s on port:%d" % (
-            self.config.nodename, self.config.port)
-        daemon(name, self.config.logfile, self.config.pidfile, command=cmd,
-            homedir=self.config.homedir)
+        env = dict(os.environ, HOME=self.config.homedir)
+        with open(self.config.logfile, "wb") as logfile:
+            with open(os.devnull, "rb") as devnull:
+                self.process = subprocess.Popen(
+                    [cmd], stdin=devnull, stdout=logfile, stderr=logfile,
+                    close_fds=True, cwd=self.config.homedir, env=env)
         self.addDetail(
             os.path.basename(self.config.logfile),
             content_from_file(self.config.logfile))
+
+    def _start(self):
+        """Start the RabbitMQ server."""
+        self._spawn()
         # Wait for the server to come up...
         timeout = time.time() + 15
-        while time.time() < timeout:
-            if self.environment.check_running():
+        while time.time() < timeout and self.check_running():
+            if self.environment.is_node_running():
                 break
             time.sleep(0.3)
         else:
             raise Exception(
-                "Timeout waiting for RabbitMQ OTP server to start.")
-        # The erlang OTP is up, but RabbitMQ may not be usable. We need to
+                "Timeout waiting for RabbitMQ server to start.")
+        # The Erlang OTP is up, but RabbitMQ may not be usable. We need to
         # cleanup up the process from here on in even if the full service
         # fails to get together.
         self.addCleanup(self._stop)
-        # Wait until the server is ready...
-        while time.time() < timeout:
-            # rabbitctl can say a node is up before it is ready to
-            # accept connections ... :-(
+        # `rabbitctl status` can say a node is up before it is ready to accept
+        # connections. Wait at least 5 more seconds for the node to come up...
+        timeout = max(timeout, time.time() + 5)
+        while time.time() < timeout and self.check_running():
             try:
-                conn = self.environment.get_connection()
+                self.environment.get_connection().close()
             except socket.error:
                 time.sleep(0.1)
             else:
-                conn.close()
                 break
         else:
             raise Exception(
-                "Timeout waiting for RabbitMQ to start listening.")
-        # All should be well here.
-        with open(self.config.pidfile, "r") as f:
-            self.pid = int(f.read().strip())
+                "Timeout waiting for RabbitMQ to node to come up.")
 
-    def _stop(self):
-        """Stop the running server. Normally called by cleanups."""
-        if not self.environment.check_running():
-            # If someone has shut it down already, we're done.
-            return
+    def _request_stop(self):
         outstr, errstr = self.environment.rabbitctl("stop", strip=True)
         if outstr:
             self.addDetail('stop-out', Content(UTF8_TEXT, lambda: [outstr]))
         if errstr:
             self.addDetail('stop-err', Content(UTF8_TEXT, lambda: [errstr]))
-        # Wait for the server to go down...
+
+    def _stop(self):
+        """Stop the running server. Normally called by cleanups."""
+        self._request_stop()
+        # Wait for the node to go down...
         timeout = time.time() + 15
         while time.time() < timeout:
-            if not self.environment.check_running():
+            if not self.environment.is_node_running():
                 break
             time.sleep(0.3)
         else:
             raise Exception(
-                "Timeout waiting for RabbitMQ shutdown.")
-        # Wait for the process to end...
+                "Timeout waiting for RabbitMQ node to go down.")
+        # Wait at least 5 more seconds for the process to end...
+        timeout = max(timeout, time.time() + 5)
         while time.time() < timeout:
-            try:
-                os.kill(self.pid, 0)
-            except OSError, e:
-                if e.errno == errno.ESRCH:
-                    break
-                raise
-            else:
-                time.sleep(0.1)
+            if not self.is_running():
+                break
+            self.process.terminate()
+            time.sleep(0.1)
         else:
-            raise Exception(
-                "RabbitMQ (pid=%d) did not quit." % (self.pid,))
+            # Die!!!
+            self.process.kill()
+            time.sleep(0.5)
+            if self.is_running():
+                raise Exception("RabbitMQ server just won't die.")
 
 
 class RabbitServer(Fixture):
