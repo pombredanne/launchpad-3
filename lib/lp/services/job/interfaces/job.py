@@ -14,6 +14,7 @@ __all__ = [
     'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
+    'SuspendJobException',
     ]
 
 
@@ -33,6 +34,11 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+
+
+class SuspendJobException(Exception):
+    """Raised when a running job wants to suspend itself."""
+    pass
 
 
 class LeaseHeld(Exception):
