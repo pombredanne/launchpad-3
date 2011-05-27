@@ -38,6 +38,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import FromExistingOverridePolicy
+from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -239,27 +240,31 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                     "Destination pocket must be 'release' for a PPA.")
 
         source_packages = set()
+        source_names = set()
         for name, version, source_package in self.source_packages:
             if source_package is None:
                 raise CannotCopy(
                     "Package %r %r not found." % (name, version))
             else:
                 source_packages.add(source_package)
+                source_names.add(
+                    source_package.sourcepackagerelease.sourcepackagename)
 
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
             self.target_archive, self.target_distroseries,
-            self.target_pocket, source_packages)
+            self.target_pocket, source_names)
 
         # The assumption here is that we are currently using one package
         # per job right now to make it easier to show feedback to users
-        # in the UI.  If/when that changes, this code needs to also
+        # in the UI.  If/when that changes, this code also needs to
         # change.
-        if len(ancestry) == 0:
-            # There's no existing package with the same name so we poke
-            # it in the NEW queue.
-            # TODO We need to use InsecureCopyPolicy here but it needs
-            # fixing so it doesn't require a PackageUpload.
+        copy_policy = InsecureCopyPolicy()
+        approve_new = copy_policy.autoApproveNew(
+            self.target_archive, self.target_distroseries, self.target_pocket)
+        if len(ancestry) == 0 and not approve_new:
+            # There's no existing package with the same name and the
+            # policy says unapproved, so we poke it in the NEW queue.
             self.suspend()
             pu = self.target_distroseries.createQueueEntry(
                 pocket=self.target_pocket, changesfilename="changes",
@@ -269,6 +274,20 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # when it has a package_copy_job.
             return
 
+        # The package is not new (it has ancestry) so check the copy
+        # policy for existing packages.
+        approve_existing = copy_policy.autoApprove(
+            self.target_archive, self.target_distroseries, self.target_pocket)
+        if not approve_existing:
+            pu = self.target_distroseries.createQueueEntry(
+                pocket=self.target_pocket, changesfilename="changes",
+                changesfilecontent="changes", archive=self.target_archive,
+                package_copy_job=self.context)
+            pu.setUnapproved()
+            self.suspend()
+            return
+
+        # The package is free to go right in, so just copy it now.
         do_copy(
             sources=source_packages, archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
@@ -281,9 +300,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if len(source_packages) == 0:
             parts.append(" no packages (!)")
         else:
-            # source_packages is 2-tuples so divide by 2 to get true
-            # length.
-            parts.append(" %d package(s)" % (len(source_packages)/2))
+            parts.append(" %d package(s)" % len(source_packages))
         parts.append(
             " from %s/%s" % (
                 self.source_archive.distribution.name,
