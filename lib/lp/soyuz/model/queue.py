@@ -694,7 +694,6 @@ class PackageUpload(SQLBase):
             PackageUploadStatus.DONE: 'accepted',
             }
         changes, changes_lines = self._getChangesDict(changes_file_object)
-        changes['_filename'] = ''
         if changes_file_object is not None:
             changesfile_content = changes_file_object.read()
         else:
