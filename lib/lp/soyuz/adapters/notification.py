@@ -35,7 +35,7 @@ from lp.services.encoding import (
     )
 
 
-def reject_changes_files(blamer, changes_file_path, changes, archive,
+def reject_changes_file(blamer, changes_file_path, changes, archive,
                          distroseries, reason, logger=None):
     ignored, filename = os.path.split(changes_file_path)
     subject = '%s rejected' % filename
@@ -107,8 +107,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            announce_list=None, summary_text=None, changes=None,
-           changesfile_content=None, action=None, dry_run=False,
-           logger=None):
+           changesfile_content=None, changesfile_object=None, action=None,
+           dry_run=False, logger=None):
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
     if (
@@ -124,8 +124,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if spr is None and not bprs and not customfiles:
         # We do not have enough context to do a normal notification, so
         # reject what we do have.
-        reject_changes_files(
-            blamer, changes['_filename'], changes, archive, distroseries,
+        reject_changes_file(
+            blamer, changesfile_object.name, changes, archive, distroseries,
             summary_text, logger=logger)
         return
 

@@ -697,8 +697,6 @@ class PackageUpload(SQLBase):
         changes['_filename'] = ''
         if changes_file_object is not None:
             changesfile_content = changes_file_object.read()
-            if hasattr(changes_file_object, 'name'):
-                changes['_filename'] = changes_file_object.name
         else:
             changesfile_content = 'No changes file content available.'
         if self.signing_key is not None:
@@ -708,7 +706,7 @@ class PackageUpload(SQLBase):
         notify(
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, announce_list,
-            summary_text, changes, changesfile_content,
+            summary_text, changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run, logger)
 
     def _isPersonUploader(self, person):
