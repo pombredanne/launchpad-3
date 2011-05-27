@@ -99,7 +99,7 @@ class RabbitServerResources(Fixture):
         self.hostname = 'localhost'
         self.port = allocate_ports()[0]
         self.homedir = self.useFixture(TempDir()).path
-        self.mnesiadir = os.path.join(self.homedir, "mnesia")
+        self.mnesiadir = self.useFixture(TempDir()).path
         self.logfile = os.path.join(self.homedir, 'server.log')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
 
