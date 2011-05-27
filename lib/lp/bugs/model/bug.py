@@ -94,7 +94,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     MessageSet,
@@ -107,7 +107,7 @@ from canonical.launchpad.interfaces.launchpad import (
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
@@ -222,7 +222,8 @@ def snapshot_bug_params(bug_params):
             "datecreated", "security_related", "private",
             "distribution", "sourcepackagename", "binarypackagename",
             "product", "status", "subscribers", "tags",
-            "subscribe_owner", "filed_by"])
+            "subscribe_owner", "filed_by", "importance",
+            "milestone", "assignee"])
 
 
 class BugTag(SQLBase):
@@ -938,16 +939,13 @@ BugMessage""" % sqlvalues(self.id))
         # subscribers.
         return DecoratedResultSet(
             IStore(BugSubscription).find(
-                # XXX: GavinPanella 2010-09-17 bug=374777: This SQL(...) is a
-                # hack; it does not seem to be possible to express DISTINCT ON
-                # with Storm.
-                (SQL("DISTINCT ON (BugSubscription.person) 0 AS ignore"),
-                 Person, BugSubscription),
+                (Person, BugSubscription),
                 Bug.duplicateof == self,
                 BugSubscription.bug_id == Bug.id,
                 BugSubscription.person_id == Person.id).order_by(
-                BugSubscription.person_id),
-            operator.itemgetter(2))
+                BugSubscription.person_id).config(
+                    distinct=(BugSubscription.person_id,)),
+            operator.itemgetter(1))
 
     def getSubscribersFromDuplicates(self, recipients=None, level=None):
         """See `IBug`.
@@ -978,20 +976,15 @@ BugMessage""" % sqlvalues(self.id))
                 self._unsubscribed_cache.add(person)
 
         def cache_subscriber(row):
-            _, subscriber, subscription = row
+            subscriber, subscription = row
             if subscription.bug_id == self.id:
                 self._subscriber_cache.add(subscriber)
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
         return DecoratedResultSet(Store.of(self).find(
-            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
-            # hack; it does not seem to be possible to express DISTINCT ON
-            # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
-                 "0 AS ignore"),
              # Return people and subscriptions
-             Person, BugSubscription),
+            (Person, BugSubscription),
             # For this bug or its duplicates
             Or(
                 Bug.id == self.id,
@@ -1011,7 +1004,8 @@ BugMessage""" % sqlvalues(self.id))
             # bug=https://bugs.launchpad.net/storm/+bug/627137
             # RBC 20100831
             SQL("""Person.id = TeamParticipation.team"""),
-            ).order_by(Person.name),
+            ).order_by(Person.name).config(
+                distinct=(Person.name, BugSubscription.person_id)),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
     def getSubscriptionForPerson(self, person):
@@ -1761,8 +1755,18 @@ BugMessage""" % sqlvalues(self.id))
 
         self.updateHeat()
 
-    def markAsDuplicate(self, duplicate_of):
-        """See `IBug`."""
+    def _markAsDuplicate(self, duplicate_of):
+        """Mark this bug as a duplicate of another.
+
+        Marking a bug as a duplicate requires a recalculation
+        of the heat of this bug and of the master bug, and it
+        requires a recalulation of the heat cache of the
+        affected bug targets. None of this is done here in order
+        to avoid unnecessary repetitions in recursive calls
+        for duplicates of this bug, which also become duplicates
+        of the new master bug.
+        """
+        affected_targets = set()
         field = DuplicateBug()
         field.context = self
         current_duplicateof = self.duplicateof
@@ -1776,7 +1780,8 @@ BugMessage""" % sqlvalues(self.id))
                     # event.
                     dupe_before = Snapshot(
                         duplicate, providing=providedBy(duplicate))
-                    duplicate.markAsDuplicate(duplicate_of)
+                    affected_targets.update(
+                        duplicate._markAsDuplicate(duplicate_of))
                     notify(ObjectModifiedEvent(
                             duplicate, dupe_before, 'duplicateof'))
             self.duplicateof = duplicate_of
@@ -1787,14 +1792,22 @@ BugMessage""" % sqlvalues(self.id))
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
-            self.setHeat(0)
-            duplicate_of.updateHeat()
+            self.setHeat(0, affected_targets=affected_targets)
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
-            self.updateHeat()
-            current_duplicateof.updateHeat()
+            self.updateHeat(affected_targets)
+            current_duplicateof.updateHeat(affected_targets)
+        return affected_targets
+
+    def markAsDuplicate(self, duplicate_of):
+        """See `IBug`."""
+        affected_targets = self._markAsDuplicate(duplicate_of)
+        if duplicate_of is not None:
+            duplicate_of.updateHeat(affected_targets)
+        for target in affected_targets:
+            target.recalculateBugHeatCache()
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
@@ -1894,8 +1907,14 @@ BugMessage""" % sqlvalues(self.id))
         # and assignees. As such, it's not possible to get them all with
         # one query.
         also_notified_subscribers = self.getAlsoNotifiedSubscribers()
-
-        return person in also_notified_subscribers
+        if person in also_notified_subscribers:
+            return True
+        # Otherwise check to see if the person is a member of any of the
+        # subscribed teams.
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
+        return False
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
@@ -1914,7 +1933,8 @@ BugMessage""" % sqlvalues(self.id))
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHeat(self, heat, timestamp=None):
+    def setHeat(self, heat, timestamp=None, affected_targets=None):
+        """See `IBug`."""
         """See `IBug`."""
         if timestamp is None:
             timestamp = UTC_NOW
@@ -1924,10 +1944,13 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = heat
         self.heat_last_updated = timestamp
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
 
-    def updateHeat(self):
+    def updateHeat(self, affected_targets=None):
         """See `IBug`."""
         if self.duplicateof is not None:
             # If this bug is a duplicate we don't try to calculate its
@@ -1941,8 +1964,11 @@ BugMessage""" % sqlvalues(self.id))
 
         self.heat = SQL("calculate_bug_heat(%s)" % sqlvalues(self))
         self.heat_last_updated = UTC_NOW
-        for task in self.bugtasks:
-            task.target.recalculateBugHeatCache()
+        if affected_targets is None:
+            for task in self.bugtasks:
+                task.target.recalculateBugHeatCache()
+        else:
+            affected_targets.update(task.target for task in self.bugtasks)
         store.flush()
 
     def _attachments_query(self):
@@ -2419,6 +2445,14 @@ class BugSet:
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
                 owner=params.owner, status=params.status)
+
+        bug_task = bug.default_bugtask
+        if params.assignee:
+            bug_task.transitionToAssignee(params.assignee)
+        if params.importance:
+            bug_task.transitionToImportance(params.importance, params.owner)
+        if params.milestone:
+            bug_task.transitionToMilestone(params.milestone, params.owner)
 
         # Tell everyone.
         notify(event)

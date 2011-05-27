@@ -6,16 +6,21 @@
 __metaclass__ = type
 
 import os
+from urllib import quote
 
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
-from lp.testing import login_person, person_logged_in, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -23,20 +28,29 @@ class TestSearchQuestionsView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def linkPackage(self, product, name):
-        # A helper to setup a legitimate Packaging link between a product
-        # and an Ubuntu source package.
-        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
-        sourcepackagename = self.factory.makeSourcePackageName(name)
-        sourcepackage = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=sourcepackagename, distroseries=hoary)
-        product.development_focus.setPackaging(
-            hoary, sourcepackagename, product.owner)
+    def test_matching_faqs_url__handles_non_ascii(self):
+        product = self.factory.makeProduct()
+        # Avoid non-ascii character in unicode literal to not upset
+        # pocket-lint. Bug #776389.
+        non_ascii_string = u'portugu\xeas'
+        with person_logged_in(product.owner):
+            self.factory.makeFAQ(product, non_ascii_string)
+        form = {
+            'field.search_text': non_ascii_string,
+            'field.status': 'OPEN',
+            'field.actions.search': 'Search',
+            }
+        view = create_initialized_view(
+            product, '+questions', form=form, method='GET')
+
+        encoded_string = quote(non_ascii_string.encode('utf-8'))
+        # This must not raise UnicodeEncodeError.
+        self.assertIn(encoded_string, view.matching_faqs_url)
 
 
-class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
+class TestSearchQuestionsViewCanConfigureAnswers(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_cannot_configure_answers_product_no_edit_permission(self):
         product = self.factory.makeProduct()
@@ -75,8 +89,10 @@ class TestSearchQuestionsViewCanConfigureAnswers(TestSearchQuestionsView):
         self.assertEqual(False, view.can_configure_answers)
 
 
-class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView.template"""
+class TestSearchQuestionsViewTemplate(TestCaseWithFactory):
+    """Test the behavior of SearchQuestionsView.template"""
+
+    layer = DatabaseFunctionalLayer
 
     def assertViewTemplate(self, context, file_name):
         view = create_initialized_view(context, '+questions')
@@ -89,21 +105,21 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
 
     def test_template_product_answers_usage_launchpad(self):
         product = self.factory.makeProduct()
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(product, 'question-listing.pt')
 
     def test_template_projectgroup_answers_usage_unknown(self):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.project = project_group
         self.assertViewTemplate(project_group, 'unknown-support.pt')
 
     def test_template_projectgroup_answers_usage_launchpad(self):
         product = self.factory.makeProduct()
         project_group = self.factory.makeProject(owner=product.owner)
-        with person_logged_in(product.owner) as owner:
+        with person_logged_in(product.owner):
             product.project = project_group
             product.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(project_group, 'question-listing.pt')
@@ -114,7 +130,7 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
 
     def test_template_distribution_answers_usage_launchpad(self):
         distribution = self.factory.makeDistribution()
-        with person_logged_in(distribution.owner) as owner:
+        with person_logged_in(distribution.owner):
             distribution.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(distribution, 'question-listing.pt')
 
@@ -124,7 +140,7 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
 
     def test_template_DSP_answers_usage_launchpad(self):
         dsp = self.factory.makeDistributionSourcePackage()
-        with person_logged_in(dsp.distribution.owner) as owner:
+        with person_logged_in(dsp.distribution.owner):
             dsp.distribution.answers_usage = ServiceUsage.LAUNCHPAD
         self.assertViewTemplate(dsp, 'question-listing.pt')
 
@@ -133,8 +149,22 @@ class TestSearchQuestionsViewTemplate(TestSearchQuestionsView):
         self.assertViewTemplate(question_set, 'question-listing.pt')
 
 
-class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
-    """Test the behaviour of SearchQuestionsView unknown support."""
+class TestSearchQuestionsViewUnknown(TestCaseWithFactory):
+    """Test the behavior of SearchQuestionsView unknown support."""
+
+    layer = DatabaseFunctionalLayer
+
+    def linkPackage(self, product, name):
+        # A helper to setup a legitimate Packaging link between a product
+        # and an Ubuntu source package.
+        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
+        sourcepackagename = self.factory.makeSourcePackageName(name)
+        self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=hoary)
+        product.development_focus.setPackaging(
+            hoary, sourcepackagename, product.owner)
 
     def setUp(self):
         super(TestSearchQuestionsViewUnknown, self).setUp()
@@ -164,3 +194,32 @@ class TestSearchQuestionsViewUnknown(TestSearchQuestionsView):
         self.assertCommonPageElements(content)
         self.assertTrue(
             content.find(True, id='configure-support') is not None)
+
+
+class QuestionSetViewTestCase(TestCaseWithFactory):
+    """Test the answers application root view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_questions_form_rendering(self):
+        # The view's template directly renders the form widgets.
+        question_set = getUtility(IQuestionSet)
+        view = create_initialized_view(question_set, '+index')
+        content = find_tag_by_id(view.render(), 'search-all-questions')
+        self.assertEqual('form', content.name)
+        self.assertIsNot(None, content.find(True, id='text'))
+        self.assertIsNot(
+            None, content.find(True, id='field.actions.search'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.all'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.project'))
+        target_widget = view.widgets['scope'].target_widget
+        self.assertIsNot(
+            None, content.find(True, id=target_widget.show_widget_id))
+        text = str(content)
+        picker_script = (
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+        self.assertIn(picker_script, text)
+        focus_script = "setFocusByName('field.search_text')"
+        self.assertIn(focus_script, text)

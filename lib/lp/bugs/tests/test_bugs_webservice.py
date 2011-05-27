@@ -305,7 +305,8 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
         # bug subscriptions and (un)affected users.
         for field_name in (
             'subscriptions', 'users_affected', 'users_unaffected',
-            'users_affected_with_dupes', 'messages'):
+            'users_affected_with_dupes', 'messages', 'attachments',
+            'activity'):
             self.failUnless(
                 IDoNotSnapshot.providedBy(IBug[field_name]),
                 'IBug.%s should not be included in snapshots, see bug 507642.'
@@ -348,21 +349,3 @@ class TestErrorHandling(TestCaseWithFactory):
         lp_bug = launchpad.load(api_url(bug))
         exception = self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
-
-    def test_edit_conjoined_bugtask_gives_bad_request_error(self):
-        # Create a product bugtask conjoined with the task on its
-        # development focus.
-        product = self.factory.makeProduct()
-        slave_bugtask = self.factory.makeBugTask(target=product)
-        master_bugtask = self.factory.makeBugTask(
-            bug=slave_bugtask.bug, target=product.development_focus)
-        self.assertNotEquals(None, slave_bugtask.conjoined_master)
-
-        # Try to edit the slave bugtask through the web service.
-        launchpad = launchpadlib_for('test', slave_bugtask.bug.owner)
-        lp_task = launchpad.load(api_url(slave_bugtask))
-        lp_task.status = 'Invalid'
-        exception = self.assertRaises(BadRequest, lp_task.lp_save)
-        self.assertTrue(
-            ("This task cannot be edited directly, it should be edited "
-             "through its conjoined_master.") in str(exception))

@@ -25,12 +25,15 @@ from canonical.launchpad.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -49,9 +52,7 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
-    contents = changes_file.read()
-    changes_lines = contents.splitlines(True)
-    tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
+    tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():
@@ -241,6 +242,9 @@ class ProcessAccepted(LaunchpadScript):
         try:
             self.logger.debug("Finding distribution %s." % distro_name)
             distribution = getUtility(IDistributionSet).getByName(distro_name)
+            if distribution is None:
+                raise LaunchpadScriptFailure(
+                    "Distribution '%s' not found." % distro_name)
 
             # target_archives is a tuple of (archive, description).
             if self.options.ppa:
@@ -268,6 +272,8 @@ class ProcessAccepted(LaunchpadScript):
                     queue_items = distroseries.getQueueItems(
                         PackageUploadStatus.ACCEPTED, archive=archive)
                     for queue_item in queue_items:
+                        self.logger.debug(
+                            "Processing queue item %d" % queue_item.id)
                         try:
                             queue_item.realiseUpload(self.logger)
                         except Exception:
@@ -280,7 +286,14 @@ class ProcessAccepted(LaunchpadScript):
                             self.logger.error('%s (%s)' % (message,
                                 request.oopsid))
                         else:
+                            self.logger.debug(
+                                "Successfully processed queue item %d" %
+                                queue_item.id)
                             processed_queue_ids.append(queue_item.id)
+                        # Commit even on error; we may have altered the
+                        # on-disk archive, so the partial state must
+                        # make it to the DB.
+                        self.txn.commit()
 
             if not self.options.dryrun:
                 self.txn.commit()

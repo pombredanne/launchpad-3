@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.component import ComponentSelection
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import (
@@ -399,6 +400,28 @@ class TestFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.assertThat(distroseries.displayname, StartsWith("Distroseries"))
 
+    # makeComponentSelection
+    def test_makeComponentSelection_makes_ComponentSelection(self):
+        selection = self.factory.makeComponentSelection()
+        self.assertIsInstance(selection, ComponentSelection)
+
+    def test_makeComponentSelection_uses_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        selection = self.factory.makeComponentSelection(
+            distroseries=distroseries)
+        self.assertEqual(distroseries, selection.distroseries)
+
+    def test_makeComponentSelection_uses_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(component=component)
+        self.assertEqual(component, selection.component)
+
+    def test_makeComponentSelection_finds_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(
+            component=component.name)
+        self.assertEqual(component, selection.component)
+
     # makeLanguage
     def test_makeLanguage(self):
         # Without parameters, makeLanguage creates a language with code
@@ -619,6 +642,16 @@ class TestFactory(TestCaseWithFactory):
             dir(self.factory._factory),
             dir(self.factory))
 
+    def test_getUniqueString_with_prefix(self):
+        s = self.factory.getUniqueString("with-my-prefix")
+        self.assertTrue(s.startswith("with-my-prefix"))
+
+    def test_getUniqueString_with_default_prefix(self):
+        # With no name given, the default prefix gives a clue as to the
+        # source location that called it.
+        s = self.factory.getUniqueString()
+        self.assertTrue(s.startswith("unique-from-test-factory-py-line"),
+            s)
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
 

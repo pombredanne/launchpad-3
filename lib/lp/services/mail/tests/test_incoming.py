@@ -101,6 +101,7 @@ class TestIncoming(TestCaseWithFactory):
         # let's just treat everything as invalid, and trust that the regular
         # implementation of extraction and checking of timestamps is correct,
         # or at least tested.
+
         def fail_all_timestamps(timestamp, context):
             raise helpers.IncomingEmailError("fail!")
         self.assertRaises(

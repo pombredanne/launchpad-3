@@ -52,11 +52,8 @@
 
         <label for="essential">Participation essential</label>
 
-        <span class="fieldRequired"
-              title="Required">(Required)</span>
-
         <p class="formHelp">
-          Check this box if you want to be included in all discussions about
+          Check this box only if you are required to be included in all discussions about
           this feature when you are attending sprints or meetings with this
           feature on the agenda.
         </p>

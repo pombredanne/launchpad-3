@@ -34,11 +34,6 @@ from lp.app.errors import (
     NotFoundError,
     )
 from lp.app.validators import LaunchpadValidationError
-from lp.code.bzr import (
-    BranchFormat,
-    ControlFormat,
-    RepositoryFormat,
-    )
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationException,
@@ -47,6 +42,7 @@ from lp.code.errors import (
     NoLinkedBranch,
     UnknownBranchTypeError,
     )
+from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces import branchpuller
 from lp.code.interfaces.branchlookup import (
     IBranchLookup,
@@ -194,6 +190,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 target = IBranchTarget(context)
                 namespace = target.getNamespace(requester)
                 branch_name = namespace.findUnusedName('trunk')
+
                 def link_func(new_branch):
                     link = ICanHasLinkedBranch(context)
                     link.setBranch(new_branch, requester)
@@ -274,16 +271,13 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             if branch is None:
                 return faults.NoBranchWithID(branch_id)
 
-            control_format = ControlFormat.get_enum(control_string)
-            branch_format = BranchFormat.get_enum(branch_string)
-            repository_format = RepositoryFormat.get_enum(repository_string)
-
             if requester == LAUNCHPAD_SERVICES:
                 branch = removeSecurityProxy(branch)
 
-            branch.branchChanged(
-                stacked_on_location, last_revision_id, control_format,
-                branch_format, repository_format)
+            info = get_db_branch_info(
+                stacked_on_location, last_revision_id, control_string,
+                branch_string, repository_string)
+            branch.branchChanged(**info)
 
             return True
 

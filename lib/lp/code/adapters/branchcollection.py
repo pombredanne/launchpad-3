@@ -35,6 +35,13 @@ def branch_collection_for_person(person):
     return getUtility(IAllBranches).ownedBy(person)
 
 
+def branch_collection_for_person_product(person_product):
+    """Adapt a PersonProduct to a branch collection."""
+    collection = getUtility(IAllBranches).ownedBy(person_product.person)
+    collection = collection.inProduct(person_product.product)
+    return collection
+
+
 def branch_collection_for_distribution(distribution):
     """Adapt a distribution to a branch collection."""
     return getUtility(IAllBranches).inDistribution(distribution)

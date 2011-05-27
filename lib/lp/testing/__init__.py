@@ -51,6 +51,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from cStringIO import StringIO
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -91,6 +92,7 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import MatchesRegex
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -519,6 +521,29 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
 
+    def assertVectorEqual(self, *args):
+        """Apply assertEqual to all given pairs in one go.
+
+        Takes any number of (expected, observed) tuples and asserts each
+        equality in one operation, thus making sure all tests are performed.
+        If any of the tuples mismatches, AssertionError is raised.
+        """
+        expected_vector, observed_vector = zip(*args)
+        return self.assertEqual(expected_vector, observed_vector)
+
+    @contextmanager
+    def expectedLog(self, regex):
+        """Expect a log to be written that matches the regex."""
+        output = StringIO()
+        handler = logging.StreamHandler(output)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+        try:
+            yield
+        finally:
+            logger.removeHandler(handler)
+        self.assertThat(output.getvalue(), MatchesRegex(regex))
+
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
 
@@ -830,7 +855,7 @@ class WindmillTestCase(TestCaseWithFactory):
             person.displayname, naked_person.preferredemail.email, password)
         return self.getClientFor(url, user=user)
 
-    def getClientForAnomymous(self, obj, view_name=None):
+    def getClientForAnonymous(self, obj, view_name=None):
         """Return a new client, and the url that it has loaded."""
         client = WindmillTestClient(self.suite_name)
         if isinstance(obj, basestring):
@@ -1112,17 +1137,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line):
+def run_script(cmd_line, env=None):
     """Run the given command line as a subprocess.
 
-    Return a 3-tuple containing stdout, stderr and the process' return code.
-
-    The environment given to the subprocess is the same as the one in the
-    parent process except for the PYTHONPATH, which is removed so that the
-    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
-    up properly.
+    :param cmd_line: A command line suitable for passing to
+        `subprocess.Popen`.
+    :param env: An optional environment dict.  If none is given, the
+        script will get a copy of your present environment.  Either way,
+        PYTHONPATH will be removed from it because it will break the
+        script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
     """
-    env = os.environ.copy()
+    if env is None:
+        env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,

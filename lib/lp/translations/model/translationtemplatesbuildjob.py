@@ -112,7 +112,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         if build_id is None:
             return None
         else:
-            return getUtility(ITranslationTemplatesBuildSource).get(
+            return getUtility(ITranslationTemplatesBuildSource).getByID(
                 int(build_id))
 
     @classmethod

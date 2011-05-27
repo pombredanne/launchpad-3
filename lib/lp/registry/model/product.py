@@ -80,10 +80,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.lazr.utils import safe_hasattr
 from lp.answers.interfaces.faqtarget import IFAQTarget
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -190,7 +187,7 @@ from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
-def get_license_status(license_approved, license_reviewed, licenses):
+def get_license_status(license_approved, project_reviewed, licenses):
     """Decide the license status for an `IProduct`.
 
     :return: A LicenseStatus enum value.
@@ -208,7 +205,7 @@ def get_license_status(license_approved, license_reviewed, licenses):
         # Notice the difference between the License and LicenseStatus.
         return LicenseStatus.PROPRIETARY
     elif License.OTHER_OPEN_SOURCE in licenses:
-        if license_reviewed:
+        if project_reviewed:
             # The OTHER_OPEN_SOURCE license was not manually approved
             # by setting license_approved to true.
             return LicenseStatus.PROPRIETARY
@@ -256,7 +253,7 @@ class ProductWithLicenses:
         """
         naked_product = removeSecurityProxy(self.product)
         return get_license_status(
-            naked_product.license_approved, naked_product.license_reviewed,
+            naked_product.license_approved, naked_product.project_reviewed,
             self.licenses)
 
     @classmethod
@@ -311,7 +308,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
-        IQuestionTarget, IServiceUsage)
+        IServiceUsage)
 
     _table = 'Product'
 
@@ -449,7 +446,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
-    license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    project_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
@@ -480,7 +477,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed and license_approved flags
+            # Clear the project_reviewed and license_approved flags
             # if the license changes.
             self._resetLicenseReview()
         return value
@@ -491,14 +488,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _validate_license_approved(self, attr, value):
         """Ensure license approved is only applied to the correct licenses."""
         if not self._SO_creating:
-            licenses = self.licenses
+            licenses = list(self.licenses)
             if value:
-                assert License.OTHER_PROPRIETARY not in licenses, (
-                    "Projects with 'Other/Proprietary' licenses may not be "
-                    "marked as license_approved.")
+                if (License.OTHER_PROPRIETARY in licenses
+                    or [License.DONT_KNOW] == licenses):
+                    raise ValueError(
+                        "Projects without a license or have "
+                        "'Other/Proprietary' may not be approved.")
                 # Approving a license implies it has been reviewed.  Force
-                # `license_reviewed` to be True.
-                self.license_reviewed = True
+                # `project_reviewed` to be True.
+                self.project_reviewed = True
         return value
 
     license_approved = BoolCol(dbName='license_approved',
@@ -579,7 +578,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # Proprietary licenses need a subscription without
             # waiting for a review.
             return False
-        elif (self.license_reviewed and
+        elif (self.project_reviewed and
               (License.OTHER_OPEN_SOURCE in self.licenses or
                self.license_info not in ('', None))):
             # We only know that an unknown open source license
@@ -637,11 +636,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         :return: A LicenseStatus enum value.
         """
         return get_license_status(
-            self.license_approved, self.license_reviewed, self.licenses)
+            self.license_approved, self.project_reviewed, self.licenses)
 
     def _resetLicenseReview(self):
         """When the license is modified, it must be reviewed again."""
-        self.license_reviewed = False
+        self.project_reviewed = False
         self.license_approved = False
 
     def _get_answers_usage(self):
@@ -716,7 +715,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def _getLicenses(self):
         return self._cached_licenses
 
-    def _setLicenses(self, licenses, reset_license_reviewed=True):
+    def _setLicenses(self, licenses, reset_project_reviewed=True):
         """Set the licenses from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
@@ -725,12 +724,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
-        # Clear the license_reviewed and license_approved flags
+        # Clear the project_reviewed and license_approved flags
         # if the license changes.
-        # ProductSet.createProduct() passes in reset_license_reviewed=False
+        # ProductSet.createProduct() passes in reset_project_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
-        # license_reviewed & licenses at the same time.
-        if reset_license_reviewed:
+        # project_reviewed & licenses at the same time.
+        if reset_project_reviewed:
             self._resetLicenseReview()
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
@@ -1343,10 +1342,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         any other.
         """
         productID = self.id
+
         def weight_function(bugtask):
             if bugtask.productID == productID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
             return OrderedBugTask(2, bugtask.id, bugtask)
+
         return weight_function
 
 
@@ -1386,11 +1387,13 @@ class ProductSet:
             ).order_by(Desc(Product.datecreated))
         if not eager_load:
             return result
+
         def do_eager_load(rows):
             owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
             # +detailed-listing renders the person with team branding.
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 owner_ids, need_validity=True, need_icon=True))
+
         return DecoratedResultSet(result, pre_iter_hook=do_eager_load)
 
     def get(self, productid):
@@ -1426,7 +1429,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      license_reviewed=False, mugshot=None, logo=None,
+                      project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None):
         """See `IProductSet`."""
@@ -1442,11 +1445,11 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang,
-            license_reviewed=license_reviewed,
+            project_reviewed=project_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:
-            product._setLicenses(licenses, reset_license_reviewed=False)
+            product._setLicenses(licenses, reset_project_reviewed=False)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
@@ -1459,7 +1462,7 @@ class ProductSet:
         return product
 
     def forReview(self, search_text=None, active=None,
-                  license_reviewed=None, license_approved=None, licenses=None,
+                  project_reviewed=None, license_approved=None, licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
                   created_after=None, created_before=None,
@@ -1471,8 +1474,8 @@ class ProductSet:
 
         conditions = []
 
-        if license_reviewed is not None:
-            conditions.append(Product.license_reviewed == license_reviewed)
+        if project_reviewed is not None:
+            conditions.append(Product.project_reviewed == project_reviewed)
 
         if license_approved is not None:
             conditions.append(Product.license_approved == license_approved)
@@ -1651,7 +1654,6 @@ class ProductSet:
 
     def search_sqlobject(self, text):
         """See `IProductSet`"""
-        clauseTables = ['Product']
         queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
         queries.append('Product.active IS TRUE')
         query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
@@ -1672,7 +1674,6 @@ class ProductSet:
             Product._translations_usage == ServiceUsage.LAUNCHPAD,
             Person.id == Product._ownerID).config(
                 distinct=True).order_by(Product.title)
-
 
         # We only want Product - the other tables are just to populate
         # the cache.

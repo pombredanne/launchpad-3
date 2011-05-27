@@ -247,7 +247,7 @@ class MultiScopeHandler():
 
         This method iterates over the configured scope handlers until it
         either finds one that claims the requested scope name matches,
-        or the handlers are exhuasted, in which case the
+        or the handlers are exhausted, in which case the
         scope name is not a match.
         """
         matching_handlers = self._findMatchingHandlers(scope_name)

@@ -210,9 +210,9 @@ class TestDistroSeries(TestCaseWithFactory):
 
     def test_getDerivedSeries(self):
         distroseries = self.factory.makeDistroSeries(
-            parent_series=self.factory.makeDistroSeries())
+            previous_series=self.factory.makeDistroSeries())
         self.assertContentEqual(
-            [distroseries], distroseries.parent_series.getDerivedSeries())
+            [distroseries], distroseries.previous_series.getDerivedSeries())
 
     def test_registrant_owner_differ(self):
         # The registrant is the creator whereas the owner is the
@@ -224,9 +224,9 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
     def test_is_derived(self):
-        # The series is a derived series if it has a parent_series set.
+        # The series is a derived series if it has a previous_series set.
         derived_distroseries = self.factory.makeDistroRelease(
-            parent_series=self.factory.makeDistroRelease())
+            previous_series=self.factory.makeDistroRelease())
         distroseries = self.factory.makeDistroRelease()
         self.assertFalse(distroseries.is_derived_series)
         self.assertTrue(derived_distroseries.is_derived_series)

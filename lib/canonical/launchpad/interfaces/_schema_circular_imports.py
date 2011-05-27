@@ -31,7 +31,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_reference_property,
     )
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
     IUserToUserEmail,
@@ -481,7 +481,7 @@ patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
-patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
+patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(

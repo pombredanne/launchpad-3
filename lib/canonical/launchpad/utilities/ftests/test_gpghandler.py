@@ -1,10 +1,20 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from calendar import timegm
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from math import floor
+import os
+from time import time
 import unittest
 
 import gpgme
+from pytz import UTC
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
     ANONYMOUS,
@@ -175,12 +185,26 @@ class TestImportKeyRing(unittest.TestCase):
             self.gpg_handler.importKeyringFile(ring)
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
+    def testHomeDirectoryJob(self):
+        """Does the job to touch the home work."""
+        gpghandler = getUtility(IGPGHandler)
+        naked_gpghandler = removeSecurityProxy(gpghandler)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        # Get a list of all the files in the home directory.
+        files_to_check = [os.path.join(naked_gpghandler.home, f)
+            for f in os.listdir(naked_gpghandler.home)]
+        files_to_check.append(naked_gpghandler.home)
+        self.assertTrue(len(files_to_check) > 1)
 
+        # Set the last modified times to 12 hours ago
+        nowless12 = (datetime.now(UTC) - timedelta(hours=12)).utctimetuple()
+        lm_time = timegm(nowless12)
+        for fname in files_to_check:
+            os.utime(fname, (lm_time, lm_time))
 
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
-
-
+        # Touch the files and re-check the last modified times have been
+        # updated to "now".
+        now = floor(time())
+        gpghandler.touchConfigurationDirectory()
+        for fname in files_to_check:
+            self.assertTrue(now <= floor(os.path.getmtime(fname)))

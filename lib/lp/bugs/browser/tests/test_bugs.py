@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.publisher import BugsLayer
@@ -67,3 +68,26 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertEqual(
             "Bug ['fnord', 'pting'] is not registered.", view.error_message)
         self.assertEqual(None, view.request.response.getHeader('Location'))
+
+    def test_search_bugs_form_rendering(self):
+        # The view's template directly renders the form widgets.
+        view = create_initialized_view(self.application, '+index')
+        content = find_tag_by_id(view.render(), 'search-all-bugs')
+        self.assertEqual('form', content.name)
+        self.assertIsNot(
+            None, content.find(True, id='field.searchtext'))
+        self.assertIsNot(
+            None, content.find(True, id='field.actions.search'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.all'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.project'))
+        target_widget = view.widgets['scope'].target_widget
+        self.assertIsNot(
+            None, content.find(True, id=target_widget.show_widget_id))
+        text = str(content)
+        picker_script = (
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+        self.assertIn(picker_script, text)
+        focus_script = "setFocusByName('field.searchtext')"
+        self.assertIn(focus_script, text)

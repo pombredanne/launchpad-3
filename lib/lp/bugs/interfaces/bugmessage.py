@@ -27,10 +27,11 @@ from zope.schema import (
     )
 
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.registry.interfaces.person import IPerson
 from lp.services.fields import Title
 
 
@@ -52,6 +53,9 @@ class IBugMessage(IHasBug):
     bugwatchID = Int(title=u'The bugwatch id.', readonly=True)
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
+    ownerID = Attribute("The ID of the owner mirrored from the message")
+    owner = Object(schema=IPerson,
+        title=u"The Message owner mirrored from the message.", readonly=True)
 
 
 class IBugMessageSet(Interface):

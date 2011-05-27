@@ -51,6 +51,7 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
+from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
@@ -121,6 +122,11 @@ def _authenticateDkim(signed_message):
 
     log = logging.getLogger('mail-authenticate-dkim')
     log.setLevel(logging.DEBUG)
+
+    if getFeatureFlag('mail.dkim_authentication.disabled'):
+        log.info('dkim authentication feature disabled')
+        return False
+
     # uncomment this for easier test debugging
     # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
 
@@ -348,7 +354,7 @@ def handleMail(trans=transaction,
                 continue
             try:
                 mail = signed_message_from_string(raw_mail)
-            except email.Errors.MessageError, error:
+            except email.Errors.MessageError:
                 # If we can't parse the message, we can't send a reply back to
                 # the user, but logging an exception will let us investigate.
                 log.exception(

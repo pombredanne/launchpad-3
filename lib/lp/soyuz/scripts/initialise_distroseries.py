@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialise a distroseries from its parent distroseries."""
@@ -75,11 +75,11 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.parent_series is not None:
+        if self.distroseries.previous_series is not None:
             raise InitialisationError(
                 ("DistroSeries {child.name} has been initialized; it already "
-                 "derives from {child.parent_series.distribution.name}/"
-                 "{child.parent_series.name}.").format(
+                 "derives from {child.previous_series.distribution.name}/"
+                 "{child.previous_series.name}.").format(
                     child=self.distroseries))
         if self.distroseries.distribution.id == self.parent.distribution.id:
             self._checkBuilds()
@@ -140,7 +140,7 @@ class InitialiseDistroSeries:
         transaction.commit()
 
     def _set_parent(self):
-        self.distroseries.parent_series = self.parent
+        self.distroseries.previous_series = self.parent
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = \

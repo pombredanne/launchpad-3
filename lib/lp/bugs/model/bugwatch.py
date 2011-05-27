@@ -50,7 +50,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -151,7 +151,7 @@ class BugWatch(SQLBase):
         for bugtask in self.bugtasks:
             # We don't update conjoined bug tasks; they must be
             # updated through their conjoined masters.
-            if bugtask._isConjoinedBugTask():
+            if bugtask.conjoined_master is not None:
                 continue
             # We don't update tasks of duplicate bugs.
             if bugtask.bug.duplicateof is not None:

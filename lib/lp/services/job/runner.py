@@ -26,6 +26,7 @@ from signal import (
     signal,
     )
 import sys
+from textwrap import dedent
 
 from ampoule import (
     child,
@@ -50,6 +51,7 @@ from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
+    SuspendJobException,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
@@ -71,6 +73,8 @@ class BaseRunnableJob:
     delegates(IJob, 'job')
 
     user_error_types = ()
+
+    retry_error_types = ()
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -169,9 +173,20 @@ class BaseJobRunner(object):
             'Running job in status %s' % (job.status.title,))
         job.start()
         transaction.commit()
-
+        do_retry = False
         try:
-            job.run()
+            try:
+                job.run()
+            except job.retry_error_types, e:
+                if job.attempt_count > job.max_retries:
+                    raise
+                self.logger.exception(
+                    "Scheduling retry due to %s.", e.__class__.__name__)
+                do_retry = True
+        except SuspendJobException:
+            self.logger.debug("Job suspended itself")
+            job.suspend()
+            self.incomplete_jobs.append(job)
         except Exception:
             self.logger.exception("Job execution raised an exception.")
             transaction.abort()
@@ -183,8 +198,12 @@ class BaseJobRunner(object):
         else:
             # Commit transaction to update the DB time.
             transaction.commit()
-            job.complete()
-            self.completed_jobs.append(job)
+            if do_retry:
+                job.queue()
+                self.incomplete_jobs.append(job)
+            else:
+                job.complete()
+                self.completed_jobs.append(job)
         # Commit transaction to update job status.
         transaction.commit()
 
@@ -481,12 +500,49 @@ class TwistedJobRunner(BaseJobRunner):
 
 
 class JobCronScript(LaunchpadCronScript):
-    """Base class for scripts that run jobs."""
+    """Generic job runner.
+
+    :ivar config_name: Optional name of a configuration section that specifies
+        the jobs to run.  Alternatively, may be taken from the command line.
+    :ivar source_interface: `IJobSource`-derived utility to iterate pending
+        jobs of the type that is to be run.
+    """
 
     config_name = None
 
+    usage = dedent("""\
+        run_jobs.py [options] [lazr-configuration-section]
+
+        Run Launchpad Jobs of one particular type.
+
+        The lazr configuration section specifies what jobs to run, and how.
+        It should provide at least:
+
+         * source_interface, the name of the IJobSource-derived utility
+           interface for the job type that you want to run.
+
+         * dbuser, the name of the database role to run the job under.
+        """).rstrip()
+
+    description = (
+        "Takes pending jobs of the given type off the queue and runs them.")
+
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
                  commandline_config=False):
+        """Initialize a `JobCronScript`.
+
+        :param runner_class: The runner class to use.  Defaults to
+            `JobRunner`, which runs synchronously, but could also be
+            `TwistedJobRunner` which is asynchronous.
+        :param test_args: For tests: pretend that this list of arguments has
+            been passed on the command line.
+        :param name: Identifying name for this type of job.  Is also used to
+            compose a lock file name.
+        :param commandline_config: If True, take configuration from the
+            command line (in the form of a config section name).  Otherwise,
+            rely on the subclass providing `config_name` and
+            `source_interface`.
+        """
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
