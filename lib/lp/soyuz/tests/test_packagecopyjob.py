@@ -12,10 +12,12 @@ from storm.store import Store
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageUploadStatus,
     SourcePackageFormat,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
@@ -167,6 +169,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=breezy_archive)
+        # The target archive needs ancestry so the package is
+        # auto-accepted.
+        ancestry = publisher.getPubSource(
+            distroseries=target_series, sourcename="libc",
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
@@ -183,10 +191,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.layer.switchDbUser(self.dbuser)
         job.run()
 
-        published_sources = target_archive.getPublishedSources()
-        spr = published_sources.one().sourcepackagerelease
-        self.assertEquals("libc", spr.name)
-        self.assertEquals("2.8-1", spr.version)
+        published_sources = target_archive.getPublishedSources(
+            name="libc", version="2.8-1")
+        self.assertIsNot(None, published_sources.any())
 
         # Switch back to a db user that has permission to clean up
         # featureflag.
@@ -432,3 +439,51 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             PackageUpload.package_copy_job_id == job.id).one()
         pcj = removeSecurityProxy(job).context
         self.assertEqual(pcj, pu.package_copy_job)
+
+    def test_copying_to_main_archive_unapproved(self):
+        # Uploading to a series that is in a state that precludes auto
+        # approval will cause the job to suspend and a packageupload
+        # created in the UNAPPROVED state.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+        # The series is frozen so it won't auto-approve new packages.
+        distroseries.status = SeriesStatus.FROZEN
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive.
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="copyme",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now put the same named package in the target archive so it has
+        # ancestry.
+        ancestry_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="copyme",
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("copyme", "2.8-1")],
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+        self.runJob(job)
+
+        # The job should be suspended and there's a PackageUpload with
+        # its package_copy_job set in the UNAPPROVED queue.
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        pu = Store.of(target_archive).find(
+            PackageUpload,
+            PackageUpload.package_copy_job_id == job.id).one()
+        pcj = removeSecurityProxy(job).context
+        self.assertEqual(pcj, pu.package_copy_job)
+        self.assertEqual(PackageUploadStatus.UNAPPROVED, pu.status)
