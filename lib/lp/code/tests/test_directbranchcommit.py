@@ -116,6 +116,7 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         # Merge parents cannot be specified for initial commit, so do an
         # empty commit.
         self.tree.commit('foo', committer='foo@bar', rev_id='foo')
+        self.db_branch.last_mirrored_id = 'foo'
         committer = DirectBranchCommit(
             self.db_branch, merge_parents=['parent-1', 'parent-2'])
         committer.last_scanned_id = (

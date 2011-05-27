@@ -110,7 +110,7 @@ class DirectBranchCommit:
                 "TransformPreview is not in a consistent state.")
             if not no_race_check:
                 last_revision = self.bzrbranch.last_revision()
-                if last_revision != db_branch.last_mirrored_id:
+                if not self._matchingLastMirrored(last_revision):
                     raise StaleLastMirrored(
                         db_branch, get_branch_info(self.bzrbranch))
 
@@ -121,6 +121,12 @@ class DirectBranchCommit:
 
         self.files = set()
         self.merge_parents = merge_parents
+
+    def _matchingLastMirrored(self, revision_id):
+        if (self.db_branch.last_mirrored_id is None
+            and revision_id == NULL_REVISION):
+            return True
+        return revision_id == self.db_branch.last_mirrored_id
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
