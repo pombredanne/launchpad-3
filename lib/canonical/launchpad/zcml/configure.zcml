@@ -21,8 +21,6 @@
     <include file="logintoken.zcml" />
     <include file="oauth.zcml" />
     <include file="openidconsumer.zcml" />
-    <include file="packagecopyrequest.zcml" />
-    <include file="packagerelationship.zcml" />
     <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />
 

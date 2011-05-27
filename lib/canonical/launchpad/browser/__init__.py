@@ -16,7 +16,7 @@ from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.oauth import *
-from canonical.launchpad.browser.packagerelationship import *
+from lp.soyuz.browser.packagerelationship import *
 from canonical.launchpad.browser.temporaryblobstorage import *
 from lp.answers.browser.faq import *
 from lp.answers.browser.faqcollection import *
