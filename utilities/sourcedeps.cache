@@ -1,8 +1,4 @@
 {
-    "bzr-builder": [
-        68, 
-        "launchpad@pqm.canonical.com-20101123183213-777lz46xgagn1deg"
-    ], 
     "testresources": [
         16, 
         "robertc@robertcollins.net-20050911111209-ee5da49011cf936a"
@@ -31,13 +27,17 @@
         24, 
         "launchpad@pqm.canonical.com-20100601182722-wo7h2fh0fvyw3aaq"
     ], 
-    "lpreview": [
-        23, 
-        "launchpad@pqm.canonical.com-20090720061538-euyh68ifavhy0pi8"
-    ], 
     "bzr-git": [
         258, 
         "launchpad@pqm.canonical.com-20100812210320-i61pvvvo9mjo2wp7"
+    ], 
+    "loggerhead": [
+        445, 
+        "john@arbash-meinel.com-20110325141442-536j4be3x0c464zy"
+    ], 
+    "bzr-builder": [
+        68, 
+        "launchpad@pqm.canonical.com-20101123183213-777lz46xgagn1deg"
     ], 
     "bzr-loom": [
         48, 
@@ -47,9 +47,9 @@
         4, 
         "sinzui-20090526164636-1swugzupwvjgomo4"
     ], 
-    "loggerhead": [
-        445, 
-        "john@arbash-meinel.com-20110325141442-536j4be3x0c464zy"
+    "lpreview": [
+        23, 
+        "launchpad@pqm.canonical.com-20090720061538-euyh68ifavhy0pi8"
     ], 
     "difftacular": [
         6, 
@@ -60,8 +60,8 @@
         "launchpad@pqm.canonical.com-20100830004921-6c4hehto20axdkn6"
     ], 
     "bzr-hg": [
-        283, 
-        "launchpad@pqm.canonical.com-20100814010415-lzqc5jufq5u1hd44"
+        284, 
+        "launchpad@pqm.canonical.com-20110527213814-u4pi67ffqi9b722y"
     ], 
     "dulwich": [
         424, 
