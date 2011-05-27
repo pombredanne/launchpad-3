@@ -167,11 +167,21 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         else:
             summarystring = summary_text
 
-    send_mail(
-        blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-        summarystring, changes, recipients, dry_run, action,
-        announce_list=announce_list, changesfile_content=changesfile_content,
-        logger=logger)
+    attach_changes = not archive.is_ppa
+
+    def build_and_send_mail(action, recipients, from_addr=None, bcc=None):
+        subject = calculate_subject(
+            spr, bprs, customfiles, archive, distroseries, pocket, action)
+        body = assemble_body(
+            blamer, spr, archive, distroseries, summarystring, changes,
+            action, announce_list)
+        _sendMail(
+            spr, archive, recipients, subject, body, dry_run,
+            changesfile_content=changesfile_content,
+            attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
+            logger=logger)
+
+    build_and_send_mail(action, recipients)
 
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
@@ -189,11 +199,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
                 bprs[0].build.source_package_release.name)
 
-        send_mail(
-            blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-            summarystring, changes, [str(announce_list)], dry_run,
-            'announcement', changesfile_content=changesfile_content,
-            from_addr=from_addr, bcc=bcc_addr, logger=logger)
+        build_and_send_mail(
+            'announcement', [str(announce_list)], from_addr, bcc_addr)
 
 
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
@@ -236,25 +243,6 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
     if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
-
-
-def send_mail(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-              summary_text, changes, recipients, dry_run, action,
-              changesfile_content=None, from_addr=None, bcc=None,
-              announce_list=None, logger=None):
-    attach_changes = not archive.is_ppa
-
-    subject = calculate_subject(
-        spr, bprs, customfiles, archive, distroseries, pocket, action)
-    body = assemble_body(
-        blamer, spr, archive, distroseries, summary_text, changes, action,
-        announce_list)
-
-    _sendMail(
-        spr, archive, recipients, subject, body, dry_run,
-        changesfile_content=changesfile_content,
-        attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
-        logger=logger)
 
 
 def _sendMail(
