@@ -12,8 +12,12 @@ __all__ = [
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import os
+
+from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import (
     format_address,
@@ -22,373 +26,289 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.webapp import canonical_url
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.archiveuploader.utils import safe_fix_maintainer
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
-from lp.soyuz.enums import PackageUploadStatus
 
 
-def notification(blamer, changesfile, archive, distroseries, pocket, action,
-                 actor=None, reason=None):
-    pass
+def reject_changes_file(blamer, changes_file_path, changes, archive,
+                        distroseries, reason, logger=None):
+    """Notify about a rejection where all of the details are not known.
+
+    :param blamer: The `IPerson` that is to blame for this notification.
+    :param changes_file_path: The path to the changes file.
+    :param changes: A dictionary of the parsed changes file.
+    :param archive: The `IArchive` the notification is regarding.
+    :param distroseries: The `IDistroSeries` the notification is regarding.
+    :param reason: The reason for the rejection.
+    """
+    ignored, filename = os.path.split(changes_file_path)
+    subject = '%s rejected' % filename
+    if archive and archive.is_ppa:
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+    information = {
+        'SUMMARY': reason,
+        'CHANGESFILE': '',
+        'DATE': '',
+        'CHANGEDBY': '',
+        'MAINTAINER': '',
+        'SIGNER': '',
+        'ORIGIN': '',
+        'USERS_ADDRESS': config.launchpad.users_address,
+    }
+    template = get_template(archive, 'rejected')
+    body = template % information
+    to_addrs = get_recipients(blamer, archive, distroseries, changes, logger)
+    logger.debug("Sending rejection email.")
+    send_mail(None, archive, to_addrs, subject, body, False, logger=logger)
 
 
-def notify_spr_less(blamer, upload_path, changesfiles, reason):
-    pass
+def get_template(archive, action):
+    """Return the appropriate e-mail template."""
+    template_name = 'upload-'
+    if action in ('new', 'accepted', 'announcement'):
+        template_name += action
+    elif action == 'unapproved':
+        template_name += 'accepted'
+    elif action == 'rejected':
+        template_name += 'rejection'
+    if archive.is_ppa:
+        template_name = 'ppa-%s' % template_name
+    template_name += '.txt'
+    return get_email_template(template_name)
 
 
-def notify(packageupload, announce_list=None, summary_text=None,
-       changes_file_object=None, logger=None, dry_run=False,
-       allow_unsigned=None):
-    """See `IPackageUpload`."""
+ACTION_DESCRIPTIONS = {
+    'new': 'New',
+    'unapproved': 'Waiting for approval',
+    'rejected': 'Rejected',
+    'accepted': 'Accepted',
+    'announcement': 'Accepted'
+    }
 
-    packageupload.logger = logger
 
+def calculate_subject(spr, bprs, customfiles, archive, distroseries,
+                      pocket, action):
+    """Return the e-mail subject for the notification."""
+    suite = distroseries.getSuite(pocket)
+    names = set()
+    version = '-'
+    if spr:
+        names.add(spr.name)
+        version = spr.version
+    elif bprs:
+        names.add(bprs[0].build.source_package_release.name)
+        version = bprs[0].build.source_package_release.version
+    for custom in customfiles:
+        names.add(custom.libraryfilealias.filename)
+    name_str = ', '.join(names)
+    subject = '[%s/%s] %s %s (%s)' % (
+        distroseries.distribution.name, suite, name_str, version,
+        ACTION_DESCRIPTIONS[action])
+    if archive.is_ppa:
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
+    return subject
+
+
+def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
+           announce_list=None, summary_text=None, changes=None,
+           changesfile_content=None, changesfile_object=None, action=None,
+           dry_run=False, logger=None):
+    """Notify about 
+
+    :param blamer: The `IPerson` who is to blame for this notification.
+    :param spr: The `ISourcePackageRelease` that was created.
+    :param bprs: A list of `IBinaryPackageRelease` that were created.
+    :param customfiles: An `ILibraryFileAlias` that was created.
+    :param archive: The target `IArchive`.
+    :param distroseries: The target `IDistroSeries`.
+    :param pocket: The target `PackagePublishingPocket`.
+    :param announce_list: Where to announce the upload.
+    :param summary_text: The summary of the notification.
+    :param changes: A dictionary of the parsed changes file.
+    :param changesfile_content: The raw content of the changes file, so it
+        can be attached to the mail if desired.
+    :param changesfile_object: The raw object of the changes file. Only used
+        to work out the filename for `reject_changes_file`.
+    :param action: A string of what action to notify for, such as 'new',
+        'accepted'.
+    :param dry_run: If True, only log the mail.
+    """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
-    if(packageupload.from_build and
-       packageupload.status != PackageUploadStatus.REJECTED and
-       packageupload.pocket != PackagePublishingPocket.SECURITY):
-        debug(
-            packageupload.logger,
-            "Not sending email; upload is from a build.")
+    if (
+        bprs and action != 'rejected' and
+        pocket != PackagePublishingPocket.SECURITY):
+        debug(logger, "Not sending email; upload is from a build.")
         return
 
-    # XXX julian 2007-05-11:
-    # Requiring an open changesfile object is a bit ugly but it is
-    # required because of several problems:
-    # a) We don't know if the librarian has the file committed or not yet
-    # b) Passing a ChangesFile object instead means that we get an
-    #    unordered dictionary which can't be translated back exactly for
-    #    the email's summary section.
-    # For now, it's just easier to re-read the original file if the caller
-    # requires us to do that instead of using the librarian's copy.
-    changes, changes_lines = packageupload._getChangesDict(
-        changes_file_object)
+    if spr and spr.source_package_recipe_build and action == 'accepted':
+        debug(logger, "Not sending email; upload is from a recipe.")
+        return
+
+    if spr is None and not bprs and not customfiles:
+        # We do not have enough context to do a normal notification, so
+        # reject what we do have.
+        reject_changes_file(
+            blamer, changesfile_object.name, changes, archive, distroseries,
+            summary_text, logger=logger)
+        return
 
     # "files" will contain a list of tuples of filename,component,section.
     # If files is empty, we don't need to send an email if this is not
     # a rejection.
     try:
-        files = _buildUploadedFilesList(packageupload)
+        files = build_uploaded_files_list(spr, bprs, customfiles, logger)
     except LanguagePackEncountered:
         # Don't send emails for language packs.
         return
 
-    if not files and packageupload.status != PackageUploadStatus.REJECTED:
+    if not files and action != 'rejected':
         return
 
-    summary = _buildSummary(packageupload, files)
-    if summary_text:
-        summary.append(summary_text)
-    summarystring = "\n".join(summary)
-
-    recipients = _getRecipients(packageupload, changes)
+    recipients = get_recipients(
+        blamer, archive, distroseries, changes, logger)
 
     # There can be no recipients if none of the emails are registered
     # in LP.
     if not recipients:
-        debug(packageupload.logger, "No recipients on email, not sending.")
+        debug(logger, "No recipients on email, not sending.")
         return
 
-    # Make the content of the actual changes file available to the
-    # various email generating/sending functions.
-    if changes_file_object is not None:
-        changesfile_content = changes_file_object.read()
+    if action == 'rejected':
+        default_recipient = "%s <%s>" % (
+            config.uploader.default_recipient_name,
+            config.uploader.default_recipient_address)
+        if not recipients:
+            recipients = [default_recipient]
+        debug(logger, "Sending rejection email.")
+        if summary_text is None:
+            summarystring = 'Rejected by archive administrator.'
+        else:
+            summarystring = summary_text
     else:
-        changesfile_content = 'No changes file content available'
+        summary = build_summary(spr, files, action)
+        if summary_text:
+            summary.append(summary_text)
+        summarystring = "\n".join(summary)
 
-    # If we need to send a rejection, do it now and return early.
-    if packageupload.status == PackageUploadStatus.REJECTED:
-        _sendRejectionNotification(
-            packageupload, recipients, changes_lines, changes, summary_text,
-            dry_run, changesfile_content)
-        return
+    attach_changes = not archive.is_ppa
 
-    _sendSuccessNotification(
-        packageupload, recipients, announce_list, changes_lines, changes,
-        summarystring, dry_run, changesfile_content)
-
-
-def _sendSuccessNotification(
-    packageupload, recipients, announce_list, changes_lines, changes,
-    summarystring, dry_run, changesfile_content):
-    """Send a success email."""
-
-    def do_sendmail(message, recipients=recipients, from_addr=None,
-                    bcc=None):
-        """Perform substitutions on a template and send the email."""
-        _handleCommonBodyContent(packageupload, message, changes)
-        body = message.template % message.__dict__
-
-        # Weed out duplicate name entries.
-        names = ', '.join(set(packageupload.displayname.split(', ')))
-
-        # Construct the suite name according to Launchpad/Soyuz
-        # convention.
-        pocket_suffix = pocketsuffix[packageupload.pocket]
-        if pocket_suffix:
-            suite = '%s%s' % (packageupload.distroseries.name, pocket_suffix)
-        else:
-            suite = packageupload.distroseries.name
-
-        subject = '[%s/%s] %s %s (%s)' % (
-            packageupload.distroseries.distribution.name, suite, names,
-            packageupload.displayversion, message.STATUS)
-
-        if packageupload.isPPA():
-            subject = "[PPA %s] %s" % (
-                get_ppa_reference(packageupload.archive), subject)
-            attach_changes = False
-        else:
-            attach_changes = True
-
-        _sendMail(
-            packageupload, recipients, subject, body, dry_run,
-            from_addr=from_addr, bcc=bcc,
+    def build_and_send_mail(action, recipients, from_addr=None, bcc=None):
+        subject = calculate_subject(
+            spr, bprs, customfiles, archive, distroseries, pocket, action)
+        body = assemble_body(
+            blamer, spr, archive, distroseries, summarystring, changes,
+            action, announce_list)
+        send_mail(
+            spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
-            attach_changes=attach_changes)
+            attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
+            logger=logger)
 
-    class NewMessage:
-        """New message."""
-        template = get_email_template('upload-new.txt')
+    build_and_send_mail(action, recipients)
 
-        STATUS = "New"
-        SUMMARY = summarystring
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment(changes['Changes']))
-        DISTRO = packageupload.distroseries.distribution.title
-        if announce_list:
-            ANNOUNCE = 'Announcing to %s' % announce_list
-        else:
-            ANNOUNCE = 'No announcement sent'
+    # If we're sending an acceptance notification for a non-PPA upload,
+    # announce if possible. Avoid announcing backports, binary-only
+    # security uploads, or autosync uploads.
+    if (action == 'accepted' and announce_list and not archive.is_ppa and
+        pocket != PackagePublishingPocket.BACKPORTS and
+        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
+        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
+        from_addr = sanitize_string(changes['Changed-By'])
+        name = None
+        bcc_addr = None
+        if spr:
+            name = spr.name
+        elif bprs:
+            name = bprs[0].build.source_package_release.name
+        if name:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
 
-    class UnapprovedMessage:
-        """Unapproved message."""
-        template = get_email_template('upload-accepted.txt')
+        build_and_send_mail(
+            'announcement', [str(announce_list)], from_addr, bcc_addr)
 
-        STATUS = "Waiting for approval"
-        SUMMARY = summarystring + (
-                "\nThis upload awaits approval by a distro manager\n")
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment(changes['Changes']))
-        DISTRO = packageupload.distroseries.distribution.title
-        if announce_list:
-            ANNOUNCE = 'Announcing to %s' % announce_list
-        else:
-            ANNOUNCE = 'No announcement sent'
-        CHANGEDBY = ''
-        ORIGIN = ''
-        SIGNER = ''
-        MAINTAINER = ''
-        SPR_URL = ''
 
-    class AcceptedMessage:
-        """Accepted message."""
-        template = get_email_template('upload-accepted.txt')
-
-        STATUS = "Accepted"
-        SUMMARY = summarystring
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment(changes['Changes']))
-        DISTRO = packageupload.distroseries.distribution.title
-        if announce_list:
-            ANNOUNCE = 'Announcing to %s' % announce_list
-        else:
-            ANNOUNCE = 'No announcement sent'
-        CHANGEDBY = ''
-        ORIGIN = ''
-        SIGNER = ''
-        MAINTAINER = ''
-        SPR_URL = ''
-
-    class PPAAcceptedMessage:
-        """PPA accepted message."""
-        template = get_email_template('ppa-upload-accepted.txt')
-
-        STATUS = "Accepted"
-        SUMMARY = summarystring
-        CHANGESFILE = guess_encoding(
-            ChangesFile.formatChangesComment("".join(changes_lines)))
-
-    class AnnouncementMessage:
-        template = get_email_template('upload-announcement.txt')
-
-        STATUS = "Accepted"
-        SUMMARY = summarystring
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment(changes['Changes']))
-        CHANGEDBY = ''
-        ORIGIN = ''
-        SIGNER = ''
-        MAINTAINER = ''
-        SPR_URL = ''
-
-    # The template is ready.  The remainder of this function deals with
-    # whether to send a 'new' message, an acceptance message and/or an
-    # announcement message.
-
-    if packageupload.status == PackageUploadStatus.NEW:
-        # This is an unknown upload.
-        do_sendmail(NewMessage)
-        return
-
-    # Unapproved uploads coming from an insecure policy only send
-    # an acceptance message.
-    if packageupload.status == PackageUploadStatus.UNAPPROVED:
-        # Only send an acceptance message.
-        do_sendmail(UnapprovedMessage)
-        return
-
-    if packageupload.isPPA():
-        # PPA uploads receive an acceptance message.
-        do_sendmail(PPAAcceptedMessage)
-        return
-
-    # Auto-approved uploads to backports skips the announcement,
-    # they are usually processed with the sync policy.
-    if packageupload.pocket == PackagePublishingPocket.BACKPORTS:
-        debug(
-            packageupload.logger, "Skipping announcement, it is a BACKPORT.")
-
-        do_sendmail(AcceptedMessage)
-        return
-
-    # Auto-approved binary-only uploads to security skip the
-    # announcement, they are usually processed with the security policy.
-    if (packageupload.pocket == PackagePublishingPocket.SECURITY
-        and not packageupload.contains_source):
-        # We only send announcements if there is any source in the upload.
-        debug(packageupload.logger,
-            "Skipping announcement, it is a binary upload to SECURITY.")
-        do_sendmail(AcceptedMessage)
-        return
-
-    # Fallback, all the rest coming from insecure, secure and sync
-    # policies should send an acceptance and an announcement message.
-    do_sendmail(AcceptedMessage)
-
-    # Don't send announcements for Debian auto sync uploads.
-    if packageupload.isAutoSyncUpload(changed_by_email=changes['Changed-By']):
-        return
-
+def assemble_body(blamer, spr, archive, distroseries, summary, changes,
+                  action, announce_list):
+    """Assemble the e-mail notification body."""
+    information = {
+        'STATUS': ACTION_DESCRIPTIONS[action],
+        'SUMMARY': summary,
+        'DATE': 'Date: %s' % changes['Date'],
+        'CHANGESFILE': ChangesFile.formatChangesComment(
+            sanitize_string(changes.get('Changes'))),
+        'DISTRO': distroseries.distribution.title,
+        'ANNOUNCE': 'No announcement sent',
+        'CHANGEDBY': '',
+        'MAINTAINER': '',
+        'ORIGIN': '',
+        'SIGNER': '',
+        'SPR_URL': '',
+        'USERS_ADDRESS': config.launchpad.users_address,
+        }
+    if spr:
+        information['SPR_URL'] = canonical_url(spr)
+    changedby = sanitize_string(changes.get('Changed-By'))
+    if changedby:
+        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
+    origin = changes.get('Origin')
+    if origin:
+        information['ORIGIN'] = '\nOrigin: %s' % origin
+    if action == 'unapproved':
+        information['SUMMARY'] += (
+            "\nThis upload awaits approval by a distro manager\n")
     if announce_list:
-        if not packageupload.signing_key:
-            from_addr = None
-        else:
-            from_addr = guess_encoding(changes['Changed-By'])
-
-        do_sendmail(
-            AnnouncementMessage,
-            recipients=[str(announce_list)],
-            from_addr=from_addr,
-            bcc="%s_derivatives@packages.qa.debian.org" %
-                packageupload.displayname)
-
-
-def _sendRejectionNotification(
-    packageupload, recipients, changes_lines, changes, summary_text, dry_run,
-    changesfile_content):
-    """Send a rejection email."""
-
-    class PPARejectedMessage:
-        """PPA rejected message."""
-        template = get_email_template('ppa-upload-rejection.txt')
-        SUMMARY = sanitize_string(summary_text)
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment("".join(changes_lines)))
-        USERS_ADDRESS = config.launchpad.users_address
-
-    class RejectedMessage:
-        """Rejected message."""
-        template = get_email_template('upload-rejection.txt')
-        SUMMARY = sanitize_string(summary_text)
-        CHANGESFILE = sanitize_string(
-            ChangesFile.formatChangesComment(changes['Changes']))
-        CHANGEDBY = ''
-        ORIGIN = ''
-        SIGNER = ''
-        MAINTAINER = ''
-        SPR_URL = ''
-        USERS_ADDRESS = config.launchpad.users_address,
-
-    default_recipient = "%s <%s>" % (
-        config.uploader.default_recipient_name,
-        config.uploader.default_recipient_address)
-    if not recipients:
-        recipients = [default_recipient]
-
-    debug(packageupload.logger, "Sending rejection email.")
-    if packageupload.isPPA():
-        message = PPARejectedMessage
-        attach_changes = False
-    else:
-        message = RejectedMessage
-        attach_changes = True
-
-    _handleCommonBodyContent(packageupload, message, changes)
-    if summary_text is None:
-        message.SUMMARY = 'Rejected by archive administrator.'
-
-    body = message.template % message.__dict__
-
-    subject = "%s rejected" % packageupload.changesfile.filename
-    if packageupload.isPPA():
-        subject = "[PPA %s] %s" % (
-            get_ppa_reference(packageupload.archive), subject)
-
-    _sendMail(
-        packageupload, recipients, subject, body, dry_run,
-        changesfile_content=changesfile_content,
-        attach_changes=attach_changes)
+        information['ANNOUNCE'] = "Announcing to %s" % announce_list
+    if blamer is not None:
+        signer_signature = '%s <%s>' % (
+            blamer.displayname, blamer.preferredemail.email)
+        if signer_signature != changedby:
+            information['SIGNER'] = '\nSigned-By: %s' % signer_signature
+    # Add maintainer if present and different from changed-by.
+    maintainer = sanitize_string(changes.get('Maintainer'))
+    if maintainer and maintainer != changedby:
+        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
+    return get_template(archive, action) % information
 
 
-def _sendMail(
-    packageupload, to_addrs, subject, mail_text, dry_run, from_addr=None,
-    bcc=None, changesfile_content=None, attach_changes=False):
+def send_mail(
+    spr, archive, to_addrs, subject, mail_text, dry_run, from_addr=None,
+    bcc=None, changesfile_content=None, attach_changes=False, logger=None):
     """Send an email to to_addrs with the given text and subject.
 
-    :to_addrs: A list of email addresses to be used as recipients. Each
-        email must be a valid ASCII str instance or a unicode one.
-    :subject: The email's subject.
-    :mail_text: The text body of the email. Unicode is preserved in the
+    :param spr: The `ISourcePackageRelease` to be notified about.
+    :param archive: The target `IArchive`.
+    :param to_addrs: A list of email addresses to be used as recipients.
+        Each email must be a valid ASCII str instance or a unicode one.
+    :param subject: The email's subject.
+    :param mail_text: The text body of the email. Unicode is preserved in the
         email.
-    :dry_run: Whether or not an email should actually be sent. But
+    :param dry_run: Whether or not an email should actually be sent. But
         please note that this flag is (largely) ignored.
-    :from_addr: The email address to be used as the sender. Must be a
+    :param from_addr: The email address to be used as the sender. Must be a
         valid ASCII str instance or a unicode one.  Defaults to the email
         for config.uploader.
-    :bcc: Optional email Blind Carbon Copy address(es).
-    :changesfile_content: The content of the actual changesfile.
-    :attach_changes: A flag governing whether the original changesfile
+    :param bcc: Optional email Blind Carbon Copy address(es).
+    :param param changesfile_content: The content of the actual changesfile.
+    :param attach_changes: A flag governing whether the original changesfile
         content shall be attached to the email.
     """
     extra_headers = {'X-Katie': 'Launchpad actually'}
 
-    # XXX cprov 20071212: ideally we only need to check archive.purpose,
-    # however the current code in uploadprocessor.py (around line 259)
-    # temporarily transforms the primary-archive into a PPA one (w/o
-    # setting a proper owner) in order to allow processing of a upload
-    # to unknown PPA and subsequent rejection notification.
-
     # Include the 'X-Launchpad-PPA' header for PPA upload notfications
     # containing the PPA owner name.
-    if (
-        packageupload.archive.is_ppa and
-        packageupload.archive.owner is not None):
-        extra_headers['X-Launchpad-PPA'] = get_ppa_reference(
-            packageupload.archive)
+    if archive.is_ppa:
+        extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
 
     # Include a 'X-Launchpad-Component' header with the component and
     # the section of the source package uploaded in order to facilitate
     # filtering on the part of the email recipients.
-    if packageupload.sources:
-        spr = packageupload.my_source_package_release
+    if spr:
         xlp_component_header = 'component=%s, section=%s' % (
             spr.component.name, spr.section.name)
         extra_headers['X-Launchpad-Component'] = xlp_component_header
@@ -417,23 +337,20 @@ def _sendMail(
     else:
         from_addr.encode('ascii')
 
-    if dry_run and packageupload.logger is not None:
-        packageupload.logger.info("Would have sent a mail:")
-        packageupload.logger.info("  Subject: %s" % subject)
-        packageupload.logger.info("  Sender: %s" % from_addr)
-        packageupload.logger.info("  Recipients: %s" % recipients)
-        packageupload.logger.info("  Bcc: %s" % extra_headers['Bcc'])
-        packageupload.logger.info("  Body:")
-        for line in mail_text.splitlines():
-            packageupload.logger.info(line)
+    if dry_run and logger is not None:
+        debug(logger, "Would have sent a mail:")
     else:
-        debug(packageupload.logger, "Sent a mail:")
-        debug(packageupload.logger, "    Subject: %s" % subject)
-        debug(packageupload.logger, "    Recipients: %s" % recipients)
-        debug(packageupload.logger, "    Body:")
-        for line in mail_text.splitlines():
-            debug(packageupload.logger, line)
+        debug(logger, "Sent a mail:")
+    debug(logger, "  Subject: %s" % subject)
+    debug(logger, "  Sender: %s" % from_addr)
+    debug(logger, "  Recipients: %s" % recipients)
+    if extra_headers.has_key('Bcc'):
+       debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
+    debug(logger, "  Body:")
+    for line in mail_text.splitlines():
+        debug(logger, line)
 
+    if not dry_run:
         # Since we need to send the original changesfile as an
         # attachment the sendmail() method will be used as opposed to
         # simple_sendmail().
@@ -447,8 +364,9 @@ def _sendMail(
             message.add_header(key, value)
 
         # Add the email body.
-        message.attach(MIMEText(
-           sanitize_string(mail_text).encode('utf-8'), 'plain', 'utf-8'))
+        message.attach(
+            MIMEText(sanitize_string(mail_text).encode('utf-8'),
+                'plain', 'utf-8'))
 
         if attach_changes:
             # Add the original changesfile as an attachment.
@@ -466,55 +384,6 @@ def _sendMail(
 
         # And finally send the message.
         sendmail(message)
-
-
-def _handleCommonBodyContent(packageupload, message, changes):
-    """Put together pieces of the body common to all emails.
-
-    Sets the date, changed-by, maintainer, signer and origin properties on
-    the message as appropriate.
-
-    :message: An object containing the various pieces of the notification
-        email.
-    :changes: A dictionary with the changes file content.
-    """
-    # Add the date field.
-    message.DATE = 'Date: %s' % changes['Date']
-
-    # Add the debian 'Changed-By:' field.
-    changed_by = changes.get('Changed-By')
-    if changed_by is not None:
-        changed_by = sanitize_string(changed_by)
-        message.CHANGEDBY = '\nChanged-By: %s' % changed_by
-
-    # Add maintainer if present and different from changed-by.
-    maintainer = changes.get('Maintainer')
-    if maintainer is not None:
-        maintainer = sanitize_string(maintainer)
-        if maintainer != changed_by:
-            message.MAINTAINER = '\nMaintainer: %s' % maintainer
-
-    # Add a 'Signed-By:' line if this is a signed upload and the
-    # signer/sponsor differs from the changed-by.
-    if packageupload.signing_key is not None:
-        # This is a signed upload.
-        signer = packageupload.signing_key.owner
-
-        signer_name = sanitize_string(signer.displayname)
-        signer_email = sanitize_string(signer.preferredemail.email)
-
-        signer_signature = '%s <%s>' % (signer_name, signer_email)
-
-        if changed_by != signer_signature:
-            message.SIGNER = '\nSigned-By: %s' % signer_signature
-
-    # Add the debian 'Origin:' field if present.
-    if changes.get('Origin') is not None:
-        message.ORIGIN = '\nOrigin: %s' % changes['Origin']
-
-    if packageupload.sources or packageupload.builds:
-        message.SPR_URL = canonical_url(
-            packageupload.my_source_package_release)
 
 
 def sanitize_string(s):
@@ -538,42 +407,40 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-def _getRecipients(packageupload, changes):
+def get_recipients(blamer, archive, distroseries, changes, logger):
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
-    debug(packageupload.logger, "Building recipients list.")
-    changer = packageupload._emailToPerson(changes['Changed-By'])
+    debug(logger, "Building recipients list.")
+    changer = email_to_person(changes['Changed-By'])
 
-    if packageupload.signing_key:
+    if blamer:
         # This is a signed upload.
-        signer = packageupload.signing_key.owner
-        candidate_recipients.append(signer)
+        candidate_recipients.append(blamer)
     else:
-        debug(packageupload.logger,
+        debug(logger,
             "Changes file is unsigned, adding changer as recipient")
         candidate_recipients.append(changer)
 
-    if packageupload.isPPA():
+    if archive.is_ppa:
         # For PPAs, any person or team mentioned explicitly in the
         # ArchivePermissions as uploaders for the archive will also
         # get emailed.
         uploaders = [
             permission.person for permission in
-                packageupload.archive.getUploadersForComponent()]
+                archive.getUploadersForComponent()]
         candidate_recipients.extend(uploaders)
 
     # If this is not a PPA, we also consider maintainer and changed-by.
-    if packageupload.signing_key and not packageupload.isPPA():
-        maintainer = packageupload._emailToPerson(changes['Maintainer'])
-        if (maintainer and maintainer != signer and
-                maintainer.isUploader(
-                    packageupload.distroseries.distribution)):
-            debug(packageupload.logger, "Adding maintainer to recipients")
+    if blamer and not archive.is_ppa:
+        maintainer = email_to_person(changes['Maintainer'])
+        if (maintainer and maintainer != blamer and
+                maintainer.isUploader(distroseries.distribution)):
+            debug(logger, "Adding maintainer to recipients")
             candidate_recipients.append(maintainer)
 
-        if (changer and changer != signer and
-                changer.isUploader(packageupload.distroseries.distribution)):
-            debug(packageupload.logger, "Adding changed-by to recipients")
+        if (changer and changer != blamer and
+                changer.isUploader(distroseries.distribution)):
+            debug(logger, "Adding changed-by to recipients")
             candidate_recipients.append(changer)
 
     # Now filter list of recipients for persons only registered in
@@ -584,13 +451,13 @@ def _getRecipients(packageupload, changes):
             continue
         recipient = format_address(person.displayname,
             person.preferredemail.email)
-        debug(packageupload.logger, "Adding recipient: '%s'" % recipient)
+        debug(logger, "Adding recipient: '%s'" % recipient)
         recipients.append(recipient)
 
     return recipients
 
 
-def _buildUploadedFilesList(packageupload):
+def build_uploaded_files_list(spr, builds, customfiles, logger):
     """Return a list of tuples of (filename, component, section).
 
     Component and section are only set where the file is a source upload.
@@ -599,42 +466,40 @@ def _buildUploadedFilesList(packageupload):
     No emails should be sent for language packs.
     """
     files = []
-    if packageupload.contains_source:
-        [source] = packageupload.sources
-        spr = source.sourcepackagerelease
-        # Bail out early if this is an upload for the translations
-        # section.
+    # Bail out early if this is an upload for the translations
+    # section.
+    if spr:
         if spr.section.name == 'translations':
-            debug(packageupload.logger,
+            debug(logger,
                 "Skipping acceptance and announcement, it is a "
                 "language-package upload.")
             raise LanguagePackEncountered
         for sprfile in spr.files:
             files.append(
                 (sprfile.libraryfile.filename, spr.component.name,
-                 spr.section.name))
+                spr.section.name))
 
     # Component and section don't get set for builds and custom, since
     # this information is only used in the summary string for source
     # uploads.
-    for build in packageupload.builds:
+    for build in builds:
         for bpr in build.build.binarypackages:
             files.extend([
                 (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
 
-    if packageupload.customfiles:
+    if customfiles:
         files.extend(
             [(file.libraryfilealias.filename, '', '')
-            for file in packageupload.customfiles])
+            for file in customfiles])
 
     return files
 
 
-def _buildSummary(packageupload, files):
+def build_summary(spr, files, action):
     """Build a summary string based on the files present in the upload."""
     summary = []
     for filename, component, section in files:
-        if packageupload.status == PackageUploadStatus.NEW:
+        if action == 'new':
             summary.append("NEW: %s" % filename)
         else:
             summary.append(" OK: %s" % filename)
@@ -642,6 +507,29 @@ def _buildSummary(packageupload, files):
                 summary.append("     -> Component: %s Section: %s" % (
                     component, section))
     return summary
+
+
+def email_to_person(fullemail):
+    """Return an IPerson given an RFC2047 email address."""
+    # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
+    # thing will have already parsed at this point.
+    (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+        fullemail, "email")
+    return getUtility(IPersonSet).getByEmail(email)
+
+
+def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
+    """Return True if this is a (Debian) auto sync upload.
+
+    Sync uploads are source-only, unsigned and not targeted to
+    the security pocket. The Changed-By field is also the Katie
+    user (archive@ubuntu.com).
+    """
+    katie = getUtility(ILaunchpadCelebrities).katie
+    changed_by = email_to_person(changed_by_email)
+    return (
+        spr and not bprs and changed_by == katie and
+        pocket != PackagePublishingPocket.SECURITY)
 
 
 class LanguagePackEncountered(Exception):
