@@ -564,13 +564,12 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
     def test_no_job_for_PPA(self):
         # If a source package is uploaded to a PPA, a job is not created.
         dsp = self.makeDerivedDistroSeries()
-        derived_series = dsp.derived_series
         source_package_name = self.factory.makeSourcePackageName()
         ppa = self.factory.makeArchive()
         self.createPublication(
-            source_package_name, ['1.0-1'], derived_series, ppa)
-        jobs = find_waiting_jobs(derived_series, source_package_name)
-        self.assertEqual(0, jobs.count())
+            source_package_name, ['1.0-1'], dsp.derived_series, ppa)
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, source_package_name))
 
     def test_no_job_for_PPA_with_deleted_source(self):
         # If a source package is deleted from a PPA, no job is created.
@@ -581,8 +580,8 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         spph = self.createPublication(
             source_package_name, ['1.0-1'], derived_series, ppa)
         spph.requestDeletion(ppa.owner)
-        jobs = find_waiting_jobs(derived_series, source_package_name)
-        self.assertEqual(0, jobs.count())
+        self.assertContentEqual(
+            [], find_waiting_jobs(derived_series, source_package_name))
 
     def test_update_deletes_diffs(self):
         # When a DSD is updated, the diffs are invalidated.
@@ -630,14 +629,21 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
             'uploader',
             ]
         dsp = self.factory.makeDistroSeriesParent()
+        parent = dsp.parent_series
+        derived = dsp.derived_series
         packages = dict(
             (user, self.factory.makeSourcePackageName())
             for user in script_users)
         transaction.commit()
         for user in script_users:
             self.layer.switchDbUser(user)
-            create_job(
-                dsp.derived_series, packages[user], dsp.parent_series)
+            try:
+                create_job(derived, packages[user], parent)
+            except ProgrammingError, e:
+                self.assertTrue(
+                    False,
+                    "Database role %s was unable to create a job.  "
+                    "Error was: %s" % (user, e))
 
         # The test is that we get here without exceptions.
         pass
