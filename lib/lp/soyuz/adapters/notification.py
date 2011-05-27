@@ -245,13 +245,6 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
                       changesfile_content, logger):
     """Send a email."""
 
-    def do_send_mail(action=None):
-        send_mail(
-            blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-            summarystring, changes, recipients, dry_run, action,
-            announce_list=announce_list, 
-            changesfile_content=changesfile_content, logger=logger)
-
     if action == 'rejected':
         default_recipient = "%s <%s>" % (
             config.uploader.default_recipient_name,
@@ -261,52 +254,20 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
         debug(logger, "Sending rejection email.")
         if summarystring is None:
             summarystring = 'Rejected by archive administrator.'
-        do_send_mail(action=action)
-        return
 
-    if action == 'new':
-        # This is an unknown upload.
-        do_send_mail(action=action)
-        return
+    send_mail(
+        blamer, spr, bprs, customfiles, archive, distroseries, pocket,
+        summarystring, changes, recipients, dry_run, action,
+        announce_list=announce_list, changesfile_content=changesfile_content,
+        logger=logger)
 
-    # Unapproved uploads coming from an insecure policy only send
-    # an acceptance message.
-    if action == 'unapproved':
-        # Only send an acceptance message.
-        do_send_mail(action=action)
-        return
-
-    if archive.is_ppa:
-        # PPA uploads receive an acceptance message.
-        do_send_mail(action='accepted')
-        return
-
-    # Auto-approved uploads to backports skips the announcement,
-    # they are usually processed with the sync policy.
-    if pocket == PackagePublishingPocket.BACKPORTS:
-        debug(logger, "Skipping announcement, it is a BACKPORT.")
-        do_send_mail(action='accepted')
-        return
-
-    # Auto-approved binary-only uploads to security skip the
-    # announcement, they are usually processed with the security policy.
-    if pocket == PackagePublishingPocket.SECURITY and spr is None:
-        # We only send announcements if there is any source in the upload.
-        debug(
-            logger,
-            "Skipping announcement, it is a binary upload to SECURITY.")
-        do_send_mail(action='accepted')
-        return
-
-    # Fallback, all the rest coming from insecure, secure and sync
-    # policies should send an acceptance and an announcement message.
-    do_send_mail(action='accepted')
-
-    # Don't send announcements for Debian auto sync uploads.
-    if is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By']):
-        return
-
-    if announce_list:
+    # If we're sending an acceptance notification for a non-PPA upload,
+    # announce if possible. Avoid announcing backports, binary-only
+    # security uploads, or autosync uploads.
+    if (action == 'accepted' and announce_list and not archive.is_ppa and
+        pocket != PackagePublishingPocket.BACKPORTS and
+        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
+        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
         from_addr = sanitize_string(changes['Changed-By'])
         bcc_addr = None
         if spr:
