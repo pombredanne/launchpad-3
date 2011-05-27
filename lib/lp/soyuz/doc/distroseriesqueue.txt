@@ -367,11 +367,15 @@ Look for every queue entry which package name is like 'mo'
   >>> items.count()
   2
 
-  >>> for item in items:
+XXX bug 537335, getQueueItems() fails to order properly so do it here
+to avoid spurious test failures:
+
+  >>> from operator import attrgetter
+  >>> for item in sorted(list(items), key=attrgetter('displayname')):
   ...     a_binary = item.builds[0].build.binarypackages[0]
   ...     print item.displayname
-  pmount
   mozilla-firefox
+  pmount
 
 Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
@@ -689,7 +693,6 @@ As mentioned above, values returned by 'getQueueItems' matching a given
 
 Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
 
-  >>> from operator import attrgetter
   >>> def print_queue_items(queue_items):
   ...     # XXX StuartBishop 20100311 bug=537335
   ...     # Sort items here as getQueueItems fails to do this.
