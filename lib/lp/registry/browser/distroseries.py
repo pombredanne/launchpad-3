@@ -875,7 +875,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """
         job_source = getUtility(IDistroSeriesDifferenceJobSource)
         return job_source.getPendingJobsForDifferences(
-            self.cached_differences.batch)
+            self.context, self.cached_differences.batch)
 
     def hasPendingDSDUpdate(self, dsd):
         """Have there been changes that `dsd` is still being updated for?"""
