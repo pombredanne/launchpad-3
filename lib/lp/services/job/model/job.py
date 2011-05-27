@@ -78,6 +78,7 @@ class Job(SQLBase):
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
+             JobStatus.SUSPENDED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
