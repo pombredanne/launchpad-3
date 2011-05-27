@@ -102,7 +102,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series=None):
     # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
     # mandatory as part of multi-parent support.
     if parent_series is None:
-        return candidates
+        return list(candidates)
 
     return [
         job
@@ -110,7 +110,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series=None):
             if job.metadata["parent_series"] == parent_series.id]
 
 
-def may_require_job(distroseries, sourcepackagename):
+def may_require_job(derived_series, sourcepackagename, parent_series=None):
     """Might publishing this package require a new job?
 
     Use this to determine whether to create a new
@@ -119,17 +119,21 @@ def may_require_job(distroseries, sourcepackagename):
     runner some unnecessary work, but we don't expect a bit of
     unnecessary work to be a big problem.
     """
-    if distroseries is None:
+    # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
+    # mandatory as part of multi-parent support.
+    if derived_series is None:
         return False
     dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
-        distroseries)
+        derived_series)
     if dsp.count() == 0:
         return False
     for parent in dsp:
-        if parent.parent_series.distribution == distroseries.distribution:
+        if parent.parent_series.distribution == derived_series.distribution:
             # Differences within a distribution are not tracked.
             return False
-    return find_waiting_jobs(distroseries, sourcepackagename).is_empty()
+    existing_jobs = find_waiting_jobs(
+        derived_series, sourcepackagename, parent_series)
+    return len(existing_jobs) == 0
 
 
 def has_package(distroseries, sourcepackagename):
@@ -165,7 +169,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         jobs = []
         children = list(derived_series.getDerivedSeries())
         for relative in children + [derived_series]:
-            if may_require_job(relative, sourcepackagename):
+            if may_require_job(relative, sourcepackagename, parent_series):
                 jobs.append(create_job(
                     relative, sourcepackagename, parent_series))
         return jobs
