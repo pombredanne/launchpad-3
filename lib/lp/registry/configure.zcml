@@ -1366,10 +1366,10 @@
             interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </securedutility>
     <subscriber
-        for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
+        for="lp.registry.interfaces.teammembership.IJoinTeamEvent"
         handler="lp.registry.mail.notification.notify_team_join"/>
     <subscriber
-        for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
+        for="lp.registry.interfaces.teammembership.ITeamInvitationEvent"
         handler="lp.registry.mail.notification.notify_invitation_to_join_team"/>
 
     <!-- This is class ProductSeries -->

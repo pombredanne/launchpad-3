@@ -129,10 +129,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent,
-    ITeamInvitationEvent,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -255,6 +251,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
