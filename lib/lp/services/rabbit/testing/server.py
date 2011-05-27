@@ -13,7 +13,6 @@ import os
 import re
 import socket
 import subprocess
-import sys
 import time
 
 from amqplib import client_0_8 as amqp
@@ -65,78 +64,6 @@ RABBITBIN = "/usr/lib/rabbitmq/bin"
 #     chan.close()
 #     conn.close()
 #     return True
-
-
-def os_exec(*args):
-    """Wrapper for `os.execve()` that catches execution errors."""
-    try:
-        os.execv(args[0], args)
-        os._exit(1)
-    except OSError:
-        sys.stderr.write("\nERROR:\nCould not exec: %s\n" % (args,))
-    # if we reach here, it's an error anyway
-    os._exit(-1)
-
-
-def daemon(name, logfilename, pidfilename, *args, **kwargs):
-    """Execute a double fork to start up a daemon."""
-    # fork 1 - close fds and start new process group
-    pid = os.fork()
-    if pid:
-        # parent process - we collect the first child to avoid ghosts.
-        os.waitpid(pid, 0)
-        return
-    # start a new process group and detach ttys
-    # print '## Starting', name, '##'
-    os.setsid()
-    # fork 2 - now detach once more free and clear
-    pid = os.fork()
-    if pid:
-        # this is the first fork - its job is done
-        os._exit(0)
-    # make attempts to read from stdin fail.
-    fnullr = os.open(os.devnull, os.O_RDONLY)
-    os.dup2(fnullr, 0)
-    if fnullr:
-        os.close(fnullr)
-    # open up the logfile and start up the process
-    f = os.open(logfilename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
-    os.dup2(f, 1)
-    os.dup2(f, 2)
-    if f > 2:
-        os.close(f)
-    # With output setup to log we can start running code again.
-    if 'command' in kwargs:
-        args = (kwargs['command'],) + args
-    else:
-        args = ('/usr/bin/env', 'python', '-u',) + args
-    if 'homedir' in kwargs:
-        os.environ['HOME'] = kwargs['homedir']
-    print os.environ['HOME']
-    print os.stat(os.environ['HOME'])
-    # this should get logged
-    print '## Starting %s as %s' % (name, args)
-    # write the pidfile file
-    with open(pidfilename, "w") as pidfile:
-        pidfile.write("%d" % os.getpid())
-        pidfile.flush()
-    os_exec(*args)
-
-
-# def status():
-#     """ provides status information about the RabbitMQ server """
-#     # Not ported yet.
-#     nodename = _get_nodename()
-#     if not _check_running():
-#         print "ERROR: RabbitMQ node %s is not running" % nodename
-#         return
-#     for act in ["list_exchanges", "list_queues"]:
-#         outstr, errstr = _rabbitctl(act, strip=True)
-#         if errstr:
-#             print >> sys.stderr, errstr
-#         if outstr:
-#             print outstr
-#     return
 
 
 def allocate_ports(n=1):
