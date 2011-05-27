@@ -502,9 +502,9 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     ...
     DEBUG Sent a mail:
     DEBUG   Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
-    ...
+    DEBUG   Sender: Root <root@localhost>
     DEBUG   Recipients: Celso Providelo <celso.providelo@canonical.com>
-    ...
+    DEBUG   Bcc: Root <root@localhost>
     DEBUG   Body:
     DEBUG bar (1.0-4) breezy; urgency=low
     DEBUG
@@ -649,9 +649,10 @@ the INFO level what it /would/ have sent.
     ...
     DEBUG Would have sent a mail:
     DEBUG   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
-    ...
+    DEBUG   Sender: Root <root@localhost>
     DEBUG   Recipients: Celso Providelo <celso.providelo@canonical.com>
-    ...
+    DEBUG   Bcc: Root <root@localhost>
+    DEBUG   Body:
     DEBUG bar (1.0-6) breezy; urgency=low
     ...
     DEBUG No announcement sent

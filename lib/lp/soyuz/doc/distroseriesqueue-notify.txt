@@ -242,9 +242,11 @@ the summary.  Rejections don't currently auto-generate anything.
   ...
   DEBUG Sending rejection email.
   ...
-  DEBUG     Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
-  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG     Body:
+  DEBUG   Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
+  DEBUG   Sender: Root <root@localhost>
+  DEBUG   Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG   Bcc: Root <root@localhost>
+  DEBUG   Body:
   DEBUG Rejected:
   DEBUG Testing rejection message
   ...
