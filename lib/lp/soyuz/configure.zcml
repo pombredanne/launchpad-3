@@ -177,6 +177,7 @@
                 displayversion
                 is_delayed_copy
                 isPPA
+                package_copy_job
                 components
                 isAutoSyncUpload"/>
         <require

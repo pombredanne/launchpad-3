@@ -265,6 +265,7 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
@@ -3361,7 +3362,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePackageUpload(self, distroseries=None, archive=None,
                           pocket=None, changes_filename=None,
                           changes_file_content=None,
-                          signing_key=None, status=None):
+                          signing_key=None, status=None,
+                          package_copy_job=None):
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
@@ -3375,7 +3377,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.RELEASE
         package_upload = distroseries.createQueueEntry(
             pocket, changes_filename, changes_file_content, archive,
-            signing_key=signing_key)
+            signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
             naked_package_upload = removeSecurityProxy(package_upload)
             status_changers = {
@@ -4075,6 +4077,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             copy_base_url = self.getUniqueUnicode()
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
+
+    def makePlainPackageCopyJob(
+        self, package_name=None, package_version=None, source_archive=None,
+        target_archive=None, target_distroseries=None, target_pocket=None):
+        """Create a new `PlainPackageCopyJob`."""
+        if package_name is None and package_version is None:
+            package_name = self.makeSourcePackageName().name
+            package_version = unicode(self.getUniqueInteger()) + 'version'
+        package_tuple = (package_name, package_version)
+        if source_archive is None:
+            source_archive = self.makeArchive()
+        if target_archive is None:
+            target_archive = self.makeArchive()
+        if target_distroseries is None:
+            target_distroseries = self.makeDistroSeries()
+        if target_pocket is None:
+            target_pocket = self.getAnyPocket()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            package_tuple, source_archive, target_archive,
+            target_distroseries, target_pocket)
 
 
 # Some factory methods return simple Python types. We don't add
