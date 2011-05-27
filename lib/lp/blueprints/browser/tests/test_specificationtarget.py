@@ -125,8 +125,8 @@ class TestAssignments(TestCaseWithFactory):
 
     def test_assignments_are_batched(self):
         product = self.factory.makeProduct()
-        spec1 = self.factory.makeSpecification(product=product)
-        spec2 = self.factory.makeSpecification(product=product)
+        self.factory.makeSpecification(product=product)
+        self.factory.makeSpecification(product=product)
         view = create_initialized_view(product, name='+assignments',
             query_string="batch=1")
         content = view.render()
@@ -199,7 +199,7 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
     def test_projectgroup(self):
         project = self.factory.makeProject()
         product1 = self.factory.makeProduct(project=project)
-        product2 = self.factory.makeProduct(project=project)
+        self.factory.makeProduct(project=project)
         self._test_templates_for_configuration(
             target=product1,
             context=project)
