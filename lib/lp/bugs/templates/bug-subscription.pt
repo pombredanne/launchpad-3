@@ -60,6 +60,14 @@
           duplicates.
         </p>
 
+        <p tal:condition="view/direct_and_other_subscription_notifications"
+           class="warning message">
+          You have other subscriptions that may send you notifications from
+          this bug, so removing your direct subscription may not stop all
+          email about this bug.  Mute this bug to make sure you do not receive
+          email about it (except potentially from team mailing lists).
+        </p>
+
         <div metal:use-macro="context/@@launchpad_form/form">
         </div>
 

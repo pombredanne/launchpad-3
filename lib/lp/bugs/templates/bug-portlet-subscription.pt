@@ -8,27 +8,52 @@
 >
   <div class="section" tal:define="context_menu context/menu:context"
        metal:define-slot="heading">
-    <div
-      tal:attributes="class view/current_user_subscription_class"
-      tal:content="structure context_menu/subscription/render" />
+    <div id="current_user_subscription"
+         tal:attributes="class python:view.other_subscription_notifications
+                         and 'has_other_subscriptions'">
+      <tal:block condition="not:view/muted">
+        <span tal:condition="not:view/only_other_subscription_notifications"
+              tal:content="view/notifications_text/not_only_other_subscription">
+        You are
+        </span>
+        <span tal:condition="view/only_other_subscription_notifications"
+              tal:content="view/notifications_text/only_other_subscription" />
+        <a tal:attributes="href string:${view/current_bugtask/fmt:url}/+subscribe"
+           class="menu-link-subscription sprite modify edit">
+           <tal:text condition="view/direct_all_notifications"
+                     replace="view/notifications_text/direct_all">
+           subscribed to all notifications for this bug.
+           </tal:text>
+           <tal:text condition="view/direct_metadata_notifications"
+                     replace="view/notifications_text/direct_metadata" />
+           <tal:text condition="view/direct_lifecycle_notifications"
+                     replace="view/notifications_text/direct_lifecycle" />
+           <tal:text condition="not:view/direct_notifications"
+                     replace="view/notifications_text/not_direct" />
+        </a>
+      </tal:block>
+      <span tal:condition="view/muted"
+            tal:content="view/notifications_text/muted" />
+    </div>
     <div id="sub-unsub-spinner">Subscribing...</div>
-    <div tal:condition="request/features/malone.advanced-structural-subscriptions.enabled"
-        tal:content="structure context_menu/editsubscriptions/render" />
     <tal:show-mute condition="
         request/features/malone.advanced-subscriptions.enabled">
-      <div tal:attributes="class view/current_user_mute_class"
+      <div tal:attributes="class python:
+                'hidden' if not view.user_should_see_mute_link else None"
            id="mute-link-container">
         <span tal:replace="structure context_menu/mute_subscription/render"
         />&nbsp;<a target="help" class="sprite maybe mute-help"
             href="/+help/subscription-mute.html"
           >&nbsp;<span class="invisible-link">Mute help</span></a>
-        <div style="float: left" id="mute-unmute-spinner">Unmuting...</div>
       </div>
     </tal:show-mute>
+    <div tal:condition="request/features/malone.advanced-structural-subscriptions.enabled"
+        tal:content="structure context_menu/editsubscriptions/render" />
   </div>
   <script type="text/javascript">
     LPS.use('io-base', 'node',
-            'lp.bugs.bugtask_index.portlets', function(Y) {
+            'lp.bugs.bugtask_index.portlets',
+            'lp.bugs.bugtask_index.portlets.subscription', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.
         var subscription_link = Y.one('.menu-link-subscription');
@@ -39,10 +64,11 @@
         }
 
         Y.on('domready', function() {
-            if (Y.lp.bugs.bugtask_index.portlets) {
-                Y.lp.bugs.bugtask_index.portlets.load_subscribers_portlet(
-                    subscription_link, subscription_link_handler);
-            }
+            lp.bugs.bugtask_index.portlets.subscription.initialize();
+            Y.lp.bugs.bugtask_index.portlets.load_subscription_portlet(
+                subscription_link, subscription_link_handler);
+            Y.lp.bugs.bugtask_index.portlets.load_subscribers_portlet(
+                subscription_link, subscription_link_handler);
         });
     });
   </script>
