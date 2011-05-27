@@ -83,7 +83,7 @@ for the ubuntutest distribution.
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', None,
   ...     breezy_autotest.owner)
-  >>> ids = InitialiseDistroSeries(breezy_autotest, breezy)
+  >>> ids = InitialiseDistroSeries(breezy, [breezy_autotest])
   >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> fake_chroot = LibraryFileAlias.get(1)

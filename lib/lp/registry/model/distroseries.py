@@ -1986,13 +1986,24 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     "DistroSeries %s parent series is %s, "
                     "but it must not be set" % (
                         child.name, self.name))
-        initialise_series = InitialiseDistroSeries(self, child)
+        initialise_series = InitialiseDistroSeries(child, [self])
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            self, child, architectures, packagesets, rebuild)
+            child, [self], architectures, packagesets, rebuild)
+
+    def initDerivedDistroSeries(self, user, parents, architectures,
+                                packagesets, rebuild):
+        """See `IDistroSeries`."""
+        initialise_series = InitialiseDistroSeries(self, parents)
+        try:
+            initialise_series.check()
+        except InitialisationError, e:
+            raise DerivationError(e)
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            self, parents, architectures, packagesets, rebuild)
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""

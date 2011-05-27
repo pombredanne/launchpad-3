@@ -91,7 +91,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # error.
         child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent])
         self.assertRaisesWithContent(
             InitialisationError,
             "Can not copy distroarchseries from parent, there are already "
@@ -107,7 +107,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         source.createMissingBuilds()
         child = self.factory.makeDistroSeries(
             distribution=self.parent.parent)
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series has pending builds.",
             ids.check)
@@ -129,7 +129,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE,
             'foo.changes', 'bar', self.parent.main_archive)
         child = self.factory.makeDistroSeries()
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series queues are not empty.",
             ids.check)
@@ -174,7 +174,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
                          distribution=None):
         child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitialiseDistroSeries(
-            self.parent, child, arches, packagesets, rebuild)
+            child, [self.parent], arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
         return child

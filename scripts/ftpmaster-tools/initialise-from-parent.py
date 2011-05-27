@@ -76,7 +76,7 @@ def main():
     try:
         log.debug('Check empty mutable queues in parentseries')
         log.debug('Check for no pending builds in parentseries')
-        log.debug('Copying distroarchseries from parent '
+        log.debug('Copying distroarchseries from parent(s) '
                       'and setting nominatedarchindep.')
         arches = ()
         if options.arches is not None:
@@ -87,9 +87,9 @@ def main():
         # good, at which point this script will be obsolete.
         parent, distroseries.previous_series = (
             distroseries.previous_series, None)
-        ids = InitialiseDistroSeries(parent, distroseries, arches)
+        ids = InitialiseDistroSeries(distroseries, [parent], arches)
         ids.check()
-        log.debug('initialising from parent, copying publishing records.')
+        log.debug('initialising from parent(s), copying publishing records.')
         ids.initialise()
     except InitialisationError, e:
         log.error(e)

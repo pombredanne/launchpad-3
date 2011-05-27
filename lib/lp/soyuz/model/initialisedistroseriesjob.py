@@ -27,6 +27,7 @@ from lp.soyuz.model.distributionjob import (
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from lp.services.job.model.job import Job
+from lp.services.database import bulk
 
 
 class InitialiseDistroSeriesJob(DistributionJobDerived):
@@ -37,10 +38,10 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitialiseDistroSeriesJobSource)
 
     @classmethod
-    def create(cls, parent, child, arches=(), packagesets=(), rebuild=False):
+    def create(cls, child, parents, arches=(), packagesets=(), rebuild=False):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
-            'parent': parent.id,
+            'parents': [parent.id for parent in parents],
             'arches': arches,
             'packagesets': packagesets,
             'rebuild': rebuild,
@@ -63,9 +64,8 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
             Job._status.is_in(Job.PENDING_STATUSES))
 
     @property
-    def parent(self):
-        return IStore(DistroSeries).get(
-            DistroSeries, self.metadata["parent"])
+    def parents(self):
+        return bulk.load(DistroSeries, self.metadata['parents'])
 
     @property
     def arches(self):
@@ -82,7 +82,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def run(self):
         """See `IRunnableJob`."""
         ids = InitialiseDistroSeries(
-            self.parent, self.distroseries, self.arches,
+            self.distroseries, self.parents, self.arches,
             self.packagesets, self.rebuild)
         ids.check()
         ids.initialise()
@@ -90,5 +90,5 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = super(InitialiseDistroSeriesJob, self).getOopsVars()
-        vars.append(('parent_distroseries_id', self.metadata.get("parent")))
+        vars.append(('parent_distroseries_ids', self.metadata.get("parents")))
         return vars
