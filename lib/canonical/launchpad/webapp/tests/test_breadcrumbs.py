@@ -8,7 +8,7 @@ import unittest
 from zope.i18nmessageid import Message
 from zope.interface import implements
 
-from canonical.launchpad.browser.launchpad import Hierarchy
+from lp.app.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url

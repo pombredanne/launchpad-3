@@ -37,14 +37,14 @@
     <browser:page
         for="*"
         name="+related-pages"
-        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        class="lp.app.browser.launchpad.NavigationMenuTabs"
         template="../templates/navigationmenu-related-pages.pt"
         permission="zope.Public"
         />
     <browser:page
         for="*"
         name="+global-actions"
-        class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
+        class="lp.app.browser.launchpad.NavigationMenuTabs"
         template="../templates/navigationmenu-actions.pt"
         permission="zope.Public"
         />
@@ -53,7 +53,7 @@
     <browser:page
         for="zope.interface.Interface"
         name="+hierarchy"
-        class="canonical.launchpad.browser.launchpad.Hierarchy"
+        class="lp.app.browser.launchpad.Hierarchy"
         template="../templates/launchpad-hierarchy.pt"
         permission="zope.Public"
         />

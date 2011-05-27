@@ -240,7 +240,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+graphics"
-      class="canonical.launchpad.browser.launchpad.LaunchpadGraphics"
+      class="lp.app.browser.launchpad.LaunchpadGraphics"
       template="../templates/launchpad-graphics.pt"
       permission="zope.Public"
       />
@@ -267,7 +267,7 @@
 
   <!-- Common menus -->
   <browser:menus
-      module="canonical.launchpad.browser.launchpad"
+      module="lp.app.browser.launchpad"
       classes="LaunchpadRootFacets"
       />
 
@@ -279,7 +279,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
-      class="canonical.launchpad.browser.launchpad.LinkView"
+      class="lp.app.browser.launchpad.LinkView"
       template="../templates/launchpad-link.pt"
       permission="zope.Public"
       />
@@ -287,7 +287,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+inline"
-      class="canonical.launchpad.browser.launchpad.LinkView"
+      class="lp.app.browser.launchpad.LinkView"
       template="../templates/launchpad-inline-link.pt"
       permission="zope.Public"
       />
@@ -295,7 +295,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+inline-icon"
-      class="canonical.launchpad.browser.launchpad.LinkView"
+      class="lp.app.browser.launchpad.LinkView"
       template="../templates/launchpad-inline-icon-link.pt"
       permission="zope.Public"
       />
@@ -306,7 +306,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       name="+soft-timeout"
-      class="canonical.launchpad.browser.launchpad.SoftTimeoutView"
+      class="lp.app.browser.launchpad.SoftTimeoutView"
       attribute="__call__"
       permission="zope.Public"
       />
@@ -375,14 +375,14 @@ these URLs in Apache.
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing"
-  class="canonical.launchpad.browser.launchpad.IcingFolder"
+  class="lp.app.browser.launchpad.IcingFolder"
   attribute="__call__"
   permission="zope.Public"
   />
 <browser:page
   for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
   name="+icing-contrib"
-  class="canonical.launchpad.browser.launchpad.IcingContribFolder"
+  class="lp.app.browser.launchpad.IcingContribFolder"
   attribute="__call__"
   permission="zope.Public"
   />

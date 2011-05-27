@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
+from lp.app.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url

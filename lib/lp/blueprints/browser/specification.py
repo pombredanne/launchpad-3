@@ -75,7 +75,7 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from lp.app.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

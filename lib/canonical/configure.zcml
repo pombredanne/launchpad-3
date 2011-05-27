@@ -71,7 +71,7 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.blueprints.publisher.BlueprintsLayer"
         />
@@ -85,7 +85,7 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.code.publisher.CodeLayer"
         />
@@ -99,7 +99,7 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.translations.publisher.TranslationsLayer"
         />
@@ -113,7 +113,7 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.bugs.publisher.BugsLayer"
         />
@@ -127,7 +127,7 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="lp.answers.publisher.AnswersLayer"
         />

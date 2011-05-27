@@ -58,7 +58,7 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import Hierarchy
+from lp.app.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

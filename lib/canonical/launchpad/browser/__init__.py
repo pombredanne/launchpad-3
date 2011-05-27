@@ -11,7 +11,7 @@ files in this directory.
 """
 
 from canonical.launchpad.browser.feeds import *
-from canonical.launchpad.browser.launchpad import *
+from lp.app.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *

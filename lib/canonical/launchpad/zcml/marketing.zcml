@@ -12,7 +12,7 @@
     <browser:page
         name="+tour"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadTourFolder"
+        class="lp.app.browser.launchpad.LaunchpadTourFolder"
         attribute="__call__"
         permission="zope.Public"
         />

@@ -260,13 +260,13 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
 
