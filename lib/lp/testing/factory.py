@@ -4078,10 +4078,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
 
-    def makePackageCopyJob(
+    def makePlainPackageCopyJob(
         self, package_name=None, package_version=None, source_archive=None,
         target_archive=None, target_distroseries=None, target_pocket=None):
-        """Create a new `PackageCopyJob`."""
+        """Create a new `PlainPackageCopyJob`."""
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
             package_version = unicode(self.getUniqueInteger()) + 'version'

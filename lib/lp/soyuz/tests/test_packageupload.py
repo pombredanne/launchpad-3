@@ -355,13 +355,10 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
-    def setUp(self):
-        super(TestPackageUploadWithPackageCopyJob, self).setUp()
-        #self.test_publisher = SoyuzTestPublisher()
-
     def test_package_copy_job_property(self):
         # Test that we can set and get package_copy_job.
-        pcj = removeSecurityProxy(self.factory.makePackageCopyJob()).context
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
         pu = self.factory.makePackageUpload(package_copy_job=pcj)
         Store.of(pu).flush()
 
