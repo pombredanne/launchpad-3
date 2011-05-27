@@ -165,6 +165,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
+
     include_create_team_link = False
 
     def chooseLink(self):
@@ -177,6 +178,8 @@ class PersonPickerWidget(VocabularyPickerWidget):
     @property
     def nonajax_uri(self):
         return '/people/'
+
+        
 
 
 class BugTrackerPickerWidget(VocabularyPickerWidget):
