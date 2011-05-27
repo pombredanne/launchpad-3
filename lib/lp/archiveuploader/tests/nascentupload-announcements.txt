@@ -815,6 +815,7 @@ And then try to upload using the changes file with the malformed name.
     >>> bar_src.logger = FakeLogger()
     >>> result = bar_src.do_accept()
     DEBUG Building recipients list.
+    ...
     DEBUG Sending rejection email.
     DEBUG Sent a mail:
     ...

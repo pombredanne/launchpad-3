@@ -35,9 +35,12 @@ from lp.services.encoding import (
     )
 
 
-def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
+def notify_spr_less(blamer, changes_file_path, changes, archive,
+                    distroseries, reason, logger=None):
     ignored, filename = os.path.split(changes_file_path)
     subject = '%s rejected' % filename
+    if archive.is_ppa:
+        subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     information = {
         'SUMMARY': reason,
         'CHANGESFILE': '',
@@ -46,34 +49,19 @@ def notify_spr_less(blamer, changes_file_path, changes, reason, logger=None):
         'MAINTAINER': '',
         'SIGNER': '',
         'ORIGIN': '',
+        'USERS_ADDRESS': config.launchpad.users_address,
     }
-    template = get_email_template('upload-rejection.txt')
+    template = get_template(archive, 'rejected')
     body = template % information
     from_addr = format_address(
         config.uploader.default_sender_name,
         config.uploader.default_sender_address)
-    changedby = changes.get('Changed-By')
     logger.debug("Building recipients list.")
-    to_addrs = []
-    if blamer is not None:
-        if blamer.preferredemail is not None:
-            to_addrs.append(
-                format_address(blamer.displayname,
-                    blamer.preferredemail.email))
-    if changedby is not None:
-        changedby_person = _emailToPerson(changedby)
-        if (
-            changedby_person is not None and
-            changedby_person.preferredemail is not None):
-                to_addrs.append(
-                    format_address(changedby_person.displayname,
-                        changedby_person.preferredemail.email))
-    if not to_addrs:
-        to_addrs.append("%s <%s>" % (
-            config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address))
+    to_addrs = _getRecipients(blamer, archive, distroseries, changes, logger)
     recipients = ascii_smash(", ".join(to_addrs))
     extra_headers = {'X-Katie': 'Launchpad actually'}
+    if archive.is_ppa:
+        extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
     logger.debug("Sending rejection email.")
     send_message(
         subject, from_addr, recipients, extra_headers, body,
@@ -144,8 +132,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if spr is None and not bool(bprs) and not customfiles:
         # We do not have enough context to do a normal notification.
         notify_spr_less(
-            blamer, changes['_filename'], changes, summary_text,
-            logger=logger)
+            blamer, changes['_filename'], changes, archive, distroseries,
+            summary_text, logger=logger)
         return
 
     # "files" will contain a list of tuples of filename,component,section.
@@ -194,7 +182,7 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         'SUMMARY': summary,
         'DATE': 'Date: %s' % changes['Date'],
         'CHANGESFILE': ChangesFile.formatChangesComment(
-            guess_encoding(changes.get('Changes'))),
+            sanitize_string(changes.get('Changes'))),
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -206,7 +194,7 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         }
     if spr:
         information['SPR_URL'] = canonical_url(spr)
-    changedby = guess_encoding(changes.get('Changed-By'))
+    changedby = sanitize_string(changes.get('Changed-By'))
     if changedby:
         information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
     origin = changes.get('Origin')
@@ -223,7 +211,7 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    maintainer = guess_encoding(changes.get('Maintainer'))
+    maintainer = sanitize_string(changes.get('Maintainer'))
     if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
@@ -327,7 +315,7 @@ def _sendNotification(blamer, spr, bprs, customfiles, archive,
         return
 
     if announce_list:
-        from_addr = guess_encoding(changes['Changed-By'])
+        from_addr = sanitize_string(changes['Changed-By'])
         bcc_addr = None
         if spr:
             bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
@@ -441,12 +429,14 @@ def send_message(subject, from_addr, recipients, extra_headers, mail_text,
             message.add_header(key, value)
 
         # Add the email body.
-        message.attach(MIMEText(mail_text.encode('utf-8'), 'plain', 'utf-8'))
+        message.attach(
+            MIMEText(sanitize_string(mail_text).encode('utf-8'),
+            'plain', 'utf-8'))
 
         if attach_changes:
             # Add the original changesfile as an attachment.
             if changesfile_content is not None:
-                changesfile_text = guess_encoding(changesfile_content)
+                changesfile_text = sanitize_string(changesfile_content)
             else:
                 changesfile_text = ("Sorry, changesfile not available.")
 
@@ -459,6 +449,21 @@ def send_message(subject, from_addr, recipients, extra_headers, mail_text,
 
         # And finally send the message.
         sendmail(message)
+
+
+def sanitize_string(s):
+    """Make sure string does not trigger 'ascii' codec errors.
+
+    Convert string to unicode if needed so that characters outside
+    the (7-bit) ASCII range do not cause errors like these:
+
+        'ascii' codec can't decode byte 0xc4 in position 21: ordinal
+        not in range(128)
+    """
+    if isinstance(s, unicode):
+        return s
+    else:
+        return guess_encoding(s)
 
 
 def debug(logger, msg):
