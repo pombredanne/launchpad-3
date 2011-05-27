@@ -37,6 +37,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.soyuz.adapters.overrides import FromExistingOverridePolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -244,6 +245,29 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                     "Package %r %r not found." % (name, version))
             else:
                 source_packages.add(source_package)
+
+        override_policy = FromExistingOverridePolicy()
+        ancestry = override_policy.calculateSourceOverrides(
+            self.target_archive, self.target_distroseries,
+            self.target_pocket, source_packages)
+
+        # The assumption here is that we are currently using one package
+        # per job right now to make it easier to show feedback to users
+        # in the UI.  If/when that changes, this code needs to also
+        # change.
+        if len(ancestry) == 0:
+            # There's no existing package with the same name so we poke
+            # it in the NEW queue.
+            # TODO We need to use InsecureCopyPolicy here but it needs
+            # fixing so it doesn't require a PackageUpload.
+            self.suspend()
+            pu = self.target_distroseries.createQueueEntry(
+                pocket=self.target_pocket, changesfilename="changes",
+                changesfilecontent="changes", archive=self.target_archive,
+                package_copy_job=self.context)
+            # TODO: Fix PackageUpload to cope with a lack of changesfile
+            # when it has a package_copy_job.
+            return
 
         do_copy(
             sources=source_packages, archive=self.target_archive,

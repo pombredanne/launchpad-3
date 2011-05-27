@@ -399,21 +399,21 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         # Publish a package in the source archive with some overridable
         # properties set to known values.
         source_package = publisher.getPubSource(
-            distroseries=distroseries, sourcename="libc",
+            distroseries=distroseries, sourcename="copyme",
             component='universe', section='web',
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
 
         # There is no package of the same name already in the target
         # archive.
-        existing_sources = target_archive.getPublishedSources(name='libc')
+        existing_sources = target_archive.getPublishedSources(name='copyme')
         self.assertEqual(None, existing_sources.any())
 
         # Now, run the copy job.
 
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("libc", "2.8-1")],
+            source_packages=[("copyme", "2.8-1")],
             source_archive=source_archive,
             target_archive=target_archive,
             target_distroseries=distroseries,
@@ -423,7 +423,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.runJob(job)
 
         self.assertEqual(JobStatus.SUSPENDED, job.status)
-        pu = Store.of(job).find(
+        pu = Store.of(job.context).find(
             PackageUpload,
-            PackageUpload.package_copy_job == job).one()
+            job.id == PackageUpload.package_copy_job_id).one()
         self.assertEqual(job, pu)
