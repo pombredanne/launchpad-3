@@ -20,7 +20,6 @@ __all__ = [
     ]
 
 import commands
-from debian.deb822 import Changes
 import hashlib
 import os
 import stat
@@ -29,10 +28,10 @@ import tempfile
 import time
 
 import apt_pkg
+from debian.deb822 import Changes
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import filenameToContentType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
     ILibrarianClient,
@@ -40,6 +39,7 @@ from canonical.librarian.interfaces import (
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     re_extract_src_version,
@@ -60,8 +60,8 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,
     )
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,

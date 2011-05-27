@@ -15,12 +15,12 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
     )
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeImportEventDataType,

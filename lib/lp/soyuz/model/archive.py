@@ -64,7 +64,6 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
@@ -76,6 +75,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -107,11 +107,11 @@ from lp.services.propertycache import (
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
+    archive_suffixes,
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
-    archive_suffixes,
     PackagePublishingStatus,
     PackageUploadStatus,
     )

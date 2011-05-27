@@ -6,19 +6,18 @@
 __metaclass__ = type
 __all__ = []
 
-import transaction
-
-from zope.component import getUtility
 from storm.store import Store
+import transaction
+from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     )
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
-from lp.code.windmill.testing import CodeWindmillLayer
 
 
 class TestRecipeEdit(WindmillTestCase):

@@ -106,7 +106,6 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -124,6 +123,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import (
     IBugTask,

@@ -15,13 +15,13 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.codeimporthelpers import make_running_import
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,

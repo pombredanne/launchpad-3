@@ -7,12 +7,12 @@ __metaclass__ = type
 
 import unittest
 
-from storm.locals import Store
-import transaction
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
     )
+from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -21,8 +21,8 @@ from canonical.launchpad.ftests import (
     login_person,
     logout,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks,
     )

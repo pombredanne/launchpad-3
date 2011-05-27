@@ -14,8 +14,8 @@ from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.enums import RosettaImportStatus

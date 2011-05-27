@@ -78,8 +78,8 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.lazr.utils import safe_hasattr
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,

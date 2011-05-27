@@ -28,12 +28,12 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
-from storm.store import Store
 from storm.expr import (
     And,
     Desc,
     Func,
     )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -50,7 +50,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import (
     format_address,
@@ -65,6 +64,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.diskpool import poolify
 from lp.registry.errors import (
     CannotTransitionToCountryMirror,
@@ -94,8 +94,8 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.worlddata.model.country import Country
 from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     PackagePublishingStatus,

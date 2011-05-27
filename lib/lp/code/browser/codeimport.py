@@ -30,7 +30,6 @@ from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -46,6 +45,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
     LaunchpadRadioWidget,

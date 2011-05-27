@@ -8,7 +8,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -16,6 +15,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
 from lp.testing import (
@@ -25,7 +25,6 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 

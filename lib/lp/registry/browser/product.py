@@ -89,7 +89,6 @@ from canonical.launchpad.browser.multistep import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.mail import (
     format_address,
@@ -138,6 +137,7 @@ from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -157,6 +157,11 @@ from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
     get_buglisting_search_filter_url,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
@@ -175,11 +180,6 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     IProduct,

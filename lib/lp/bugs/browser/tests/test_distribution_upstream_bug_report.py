@@ -18,10 +18,10 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.systemdocs import create_view
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.distribution_upstream_bug_report import (
     DistributionUpstreamBugReport,
     )

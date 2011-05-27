@@ -11,7 +11,6 @@ files in this directory.
 """
 
 from canonical.launchpad.browser.feeds import *
-from lp.app.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *
@@ -22,6 +21,7 @@ from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *
 from lp.answers.browser.question import *
 from lp.answers.browser.questiontarget import *
+from lp.app.browser.launchpad import *
 from lp.blueprints.browser.specificationbranch import *
 from lp.blueprints.browser.specificationdependency import *
 from lp.blueprints.browser.specificationfeedback import *

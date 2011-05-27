@@ -15,7 +15,6 @@ import os
 import tempfile
 
 from twisted.internet import defer
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy

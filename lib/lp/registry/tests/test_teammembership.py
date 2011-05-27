@@ -9,13 +9,13 @@ from datetime import (
     )
 import re
 import subprocess
-import transaction
 from unittest import (
     TestCase,
     TestLoader,
     )
 
 import pytz
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -30,7 +30,6 @@ from canonical.launchpad.ftests import (
     login,
     login_person,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.testing.systemdocs import (
     default_optionflags,
@@ -42,6 +41,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipRenewalPolicy,

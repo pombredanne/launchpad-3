@@ -58,7 +58,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.helpers import shortlist
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -66,6 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import sanitize_name
 from lp.bugs.interfaces.bugtracker import (

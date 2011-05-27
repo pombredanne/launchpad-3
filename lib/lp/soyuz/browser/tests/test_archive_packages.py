@@ -11,18 +11,17 @@ __all__ = [
     'TestPPAPackages',
     ]
 
-from zope.component import getUtility
-
 from testtools.matchers import (
     Equals,
     LessThan,
     )
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
@@ -32,10 +31,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
-from lp.testing._webservice import QueryCollector
 
 
 class TestP3APackages(TestCaseWithFactory):

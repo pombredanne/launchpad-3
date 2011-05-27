@@ -48,9 +48,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from itertools import (
-    groupby,
-    )
+from itertools import groupby
 from math import (
     floor,
     log,
@@ -133,9 +131,7 @@ from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    )
+from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_distrotask,
@@ -146,7 +142,6 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from lp.registry.model.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -199,12 +194,12 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.browser.widgets.bugtask import (
@@ -278,11 +273,10 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import (
-    cachedproperty,
-    )
+from lp.services.propertycache import cachedproperty
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {

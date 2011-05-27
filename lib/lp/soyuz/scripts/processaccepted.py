@@ -13,18 +13,18 @@ __all__ = [
     'ProcessAccepted',
     ]
 
-from debian.deb822 import Deb822Dict
 import sys
 
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -38,12 +38,8 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 def get_bugs_from_changes_file(changes_file):

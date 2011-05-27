@@ -16,19 +16,13 @@ import feedparser
 from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import (
-    TextLine,
-    )
+from zope.schema import TextLine
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
-    )
-from lp.services.googlesearch.interfaces import (
-    GoogleResponseError,
-    ISearchService,
     )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -52,6 +46,10 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.googlesearch.interfaces import (
+    GoogleResponseError,
+    ISearchService,
+    )
 from lp.services.propertycache import cachedproperty
 
 

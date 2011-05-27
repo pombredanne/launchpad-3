@@ -63,9 +63,6 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from lp.soyuz.browser.packagerelationship import (
-    relationship_builder,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -101,6 +98,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 

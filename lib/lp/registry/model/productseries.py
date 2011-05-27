@@ -43,13 +43,14 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.app.enums import (
-    service_uses_launchpad)
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,

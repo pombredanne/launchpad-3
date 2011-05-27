@@ -11,8 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet,
@@ -25,7 +25,6 @@ from lp.services.mail import stub
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.testing import login_as
 from lp.testing.factory import LaunchpadObjectFactory
-
 
 # XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
 # TestCaseWithFactory.

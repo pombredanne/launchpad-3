@@ -17,13 +17,13 @@ import os
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import (
     format_address,
     sendmail,
     )
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import safe_fix_maintainer

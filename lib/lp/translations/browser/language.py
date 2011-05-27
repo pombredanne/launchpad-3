@@ -21,7 +21,6 @@ from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -39,6 +38,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.browser.tales import LanguageFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import (

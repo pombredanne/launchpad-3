@@ -18,15 +18,13 @@ from storm.locals import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.lpstorm import (
-    IStore,
-    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.scripts.logger import (
     DEBUG2,
     log,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
@@ -38,10 +36,12 @@ from lp.services.scripts.base import (
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.model.potemplate import POTemplateSubset
+from lp.translations.model.potemplate import (
+    POTemplate,
+    POTemplateSubset,
+    )
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
-from lp.translations.model.potemplate import POTemplate
 
 
 def get_potmsgset_key(potmsgset):

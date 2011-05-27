@@ -29,8 +29,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.adapters.bugchange import BugTaskAdded
 from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,

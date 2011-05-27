@@ -28,7 +28,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -39,6 +38,7 @@ from canonical.testing.layers import (
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug

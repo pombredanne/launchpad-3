@@ -17,12 +17,12 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     endInteraction,
     setupInteraction,
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,

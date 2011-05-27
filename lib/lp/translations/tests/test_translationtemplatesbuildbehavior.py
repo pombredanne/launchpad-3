@@ -6,34 +6,26 @@
 import logging
 import os
 
-from testtools.deferredruntest import (
-    AsynchronousDeferredRunTest,
-    )
-
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from twisted.internet import defer
-
 from canonical.config import config
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
-from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
-    )
-from lp.buildmaster.tests.mock_slaves import (
-    SlaveTestHelpers,
-    WaitingSlave,
-    )
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.testing import (
-    TestCaseWithFactory,
+from lp.buildmaster.tests.mock_slaves import (
+    SlaveTestHelpers,
+    WaitingSlave,
     )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (

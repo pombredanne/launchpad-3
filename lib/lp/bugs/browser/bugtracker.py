@@ -35,9 +35,7 @@ from canonical.launchpad.helpers import (
     english_list,
     shortlist,
     )
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,

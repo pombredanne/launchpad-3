@@ -20,8 +20,8 @@ from canonical.launchpad.ftests import (
     login_person,
     logout,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     IMakeOfficialBranchLinks,

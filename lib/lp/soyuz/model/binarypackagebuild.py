@@ -51,7 +51,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     ISlaveStore,
@@ -69,6 +68,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
     BuildFarmJobType,
