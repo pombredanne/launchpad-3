@@ -58,7 +58,6 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
     IBazaarApplication,
-    ILaunchpadCelebrities,
     IRosettaApplication,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -114,6 +113,7 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet

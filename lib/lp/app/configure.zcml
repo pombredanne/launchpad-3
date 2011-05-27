@@ -14,7 +14,7 @@
     <include package="lp.app.widgets" />
 
     <utility
-        factory="lp.app.utilities.LaunchpadCelebrities"
+        factory="lp.app.utilities.celebrities.LaunchpadCelebrities"
         provides="lp.app.interfaces.launchpad.ILaunchpadCelebrities">
     </utility>
 </configure>

@@ -70,10 +70,10 @@ class UnauthorizedView(SystemErrorView):
     response_code = None
 
     forbidden_page = ViewPageTemplateFile(
-        '../templates/launchpad-forbidden.pt')
+        '../../../lp/app/templates/launchpad-forbidden.pt')
 
     read_only_page = ViewPageTemplateFile(
-        '../templates/launchpad-readonlyfailure.pt')
+        '../../../lp/app/templates/launchpad-readonlyfailure.pt')
 
     def __call__(self):
         # In read only mode, Unauthorized exceptions get raised by the
