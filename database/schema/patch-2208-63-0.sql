@@ -113,13 +113,19 @@ WITH
 -- XXX: Is there a reason why the distribution, distroseries, product
 -- and productseries indexes are not partial?
 -- Need indices for FK CASCADE DELETE to find any FK easily
-CREATE INDEX bugsummary_distribution on bugsummary using btree(distribution);
-CREATE INDEX bugsummary_distroseries on bugsummary using btree(distroseries);
-CREATE INDEX bugsummary_privates on bugsummary using btree(viewed_by) where viewed_by is not null;
-CREATE INDEX bugsummary_product on bugsummary using btree(product);
-CREATE INDEX bugsummary_productseries on bugsummary using btree(productseries);
+CREATE INDEX bugsummary_distribution ON BugSummary (distribution);
+
+CREATE INDEX bugsummary_distroseries ON BugSummary (distroseries);
+
+CREATE INDEX bugsummary_privates ON BugSummary (viewed_by)
+WHERE viewed_by IS NOT NULL;
+
+CREATE INDEX bugsummary_product ON BugSummary (product);
+
+CREATE INDEX bugsummary_productseries ON BugSummary (productseries);
+
 -- can only have one fact row per set of dimensions
-CREATE UNIQUE INDEX bugsummary_dimensions_unique_idx ON bugsummary USING btree (
+CREATE UNIQUE INDEX bugsummary_dimensions_unique_idx ON bugsummary (
     COALESCE(product, (-1)),
     COALESCE(productseries, (-1)),
     COALESCE(distribution, (-1)),
@@ -129,20 +135,30 @@ CREATE UNIQUE INDEX bugsummary_dimensions_unique_idx ON bugsummary USING btree (
     COALESCE(tag, ('')),
     status,
     COALESCE(milestone, (-1)));
--- While querying is tolerably fast with the base dimension indices, we want snappy:
+
+-- While querying is tolerably fast with the base dimension indices,
+-- we want snappy:
 -- Distribution bug counts
-CREATE INDEX bugsummary_distribution_count_idx on bugsummary using btree(distribution) where sourcepackagename is null and tag is null;
+CREATE INDEX bugsummary_distribution_count_idx
+ON BugSummary (distribution)
+WHERE sourcepackagename IS NULL AND tag IS NULL;
+
 -- Distribution wide tag counts
-CREATE INDEX bugsummary_distribution_tag_count_idx on bugsummary using btree(distribution) where sourcepackagename is null and tag is not null;
+CREATE INDEX bugsummary_distribution_tag_count_idx
+ON BugSummary (distribution)
+WHERE sourcepackagename IS NULL AND tag IS NOT NULL;
+
 -- Everything (counts)
 -- XXX: What is this index used for? Looks like counts of bugs with a given
 -- status
-CREATE INDEX bugsummary_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is null;
+CREATE INDEX bugsummary_count_idx
+ON BugSummary (status)
+WHERE sourcepackagename IS NULL AND tag IS NULL;
+
 -- Everything (tags)
-CREATE INDEX bugsummary_tag_count_idx on bugsummary using btree(status) where sourcepackagename is null and tag is not null;
-
-
-
+CREATE INDEX bugsummary_tag_count_idx
+ON BugSummary (status)
+WHERE sourcepackagename IS NULL AND tag IS NOT NULL;
 
 
 --
@@ -372,7 +388,7 @@ COMMENT ON FUNCTION unsummarise_bug(bug) IS
 
 
 CREATE OR REPLACE FUNCTION bug_maintain_bug_summary() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- There is no INSERT logic, as a bug will not have any summary
@@ -397,7 +413,7 @@ COMMENT ON FUNCTION bug_maintain_bug_summary() IS
 
 
 CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- Unlike bug_maintain_bug_summary, this trigger does not have access
@@ -446,7 +462,8 @@ COMMENT ON FUNCTION bugtask_maintain_bug_summary() IS
 
 
 CREATE OR REPLACE FUNCTION bugsubscription_maintain_bug_summary()
-RETURNS TRIGGER LANGUAGE plpgsql VOLATILE AS
+RETURNS TRIGGER LANGUAGE plpgsql VOLATILE
+SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -483,7 +500,7 @@ COMMENT ON FUNCTION bugsubscription_maintain_bug_summary() IS
 
 
 CREATE OR REPLACE FUNCTION bugtag_maintain_bug_summary() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
