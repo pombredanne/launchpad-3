@@ -7,7 +7,7 @@ from zope.component import getUtility
 
 from lazr.restfulclient.errors import BadRequest
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch

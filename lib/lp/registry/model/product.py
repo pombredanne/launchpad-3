@@ -67,7 +67,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -95,6 +94,7 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )

@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (

@@ -23,7 +23,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,

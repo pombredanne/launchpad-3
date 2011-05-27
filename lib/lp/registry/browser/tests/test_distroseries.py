@@ -29,7 +29,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url

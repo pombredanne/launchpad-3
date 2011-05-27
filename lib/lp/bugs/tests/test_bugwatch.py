@@ -25,7 +25,7 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing.layers import (

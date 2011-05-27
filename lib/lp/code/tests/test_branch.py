@@ -6,7 +6,7 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (

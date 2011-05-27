@@ -100,11 +100,7 @@ from lp.services.messages.model.message import (
     MessageSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
+from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.services.messages.interfaces.message import (
@@ -123,6 +119,7 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -192,6 +189,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (

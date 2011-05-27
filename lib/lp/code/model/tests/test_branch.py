@@ -26,7 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (

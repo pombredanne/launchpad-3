@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from twisted.internet import defer
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from canonical.testing.layers import (

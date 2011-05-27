@@ -43,7 +43,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError

@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
     CannotHaveLinkedBranch,

@@ -10,7 +10,7 @@ import unittest
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer

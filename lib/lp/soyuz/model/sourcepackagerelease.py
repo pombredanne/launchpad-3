@@ -49,7 +49,7 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus

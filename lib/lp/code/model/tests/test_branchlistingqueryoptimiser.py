@@ -11,7 +11,7 @@ from unittest import TestLoader
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser

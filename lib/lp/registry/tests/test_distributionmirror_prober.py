@@ -28,7 +28,7 @@ from zope.security.proxy import removeSecurityProxy
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,

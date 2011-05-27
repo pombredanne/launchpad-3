@@ -56,7 +56,7 @@ from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only

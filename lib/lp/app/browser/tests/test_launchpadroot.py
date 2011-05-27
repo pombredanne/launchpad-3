@@ -13,7 +13,7 @@ from BeautifulSoup import (
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer

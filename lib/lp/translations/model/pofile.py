@@ -56,7 +56,7 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (

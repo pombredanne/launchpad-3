@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,

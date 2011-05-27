@@ -80,7 +80,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
     validate_new_distrotask,

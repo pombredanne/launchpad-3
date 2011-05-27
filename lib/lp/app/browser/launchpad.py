@@ -759,7 +759,7 @@ class SoftTimeoutView(LaunchpadView):
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
-        time.sleep(soft_timeout/1000.0)
+        time.sleep(soft_timeout / 1000.0)
         time_to_generate_page = (time.time() - start_time) * 1000
         # In case we didn't sleep enogh time, sleep a while longer to
         # pass the soft timeout threshold.

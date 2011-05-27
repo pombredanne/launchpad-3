@@ -65,7 +65,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,

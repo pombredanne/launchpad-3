@@ -44,7 +44,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,

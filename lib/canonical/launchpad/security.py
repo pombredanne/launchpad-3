@@ -18,11 +18,6 @@ from zope.interface import Interface
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.launchpad import (
-    IHasDrivers,
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
@@ -38,6 +33,7 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import(
     AnonymousAuthorization,
@@ -155,7 +151,11 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName

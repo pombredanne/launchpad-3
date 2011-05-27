@@ -14,7 +14,7 @@ from itertools import count
 from pytz import utc
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugcomment import group_comments_with_activity
 from lp.coop.answersbugs.visibility import (

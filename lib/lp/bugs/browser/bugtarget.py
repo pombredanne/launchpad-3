@@ -60,7 +60,7 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,

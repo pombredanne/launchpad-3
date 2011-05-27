@@ -18,7 +18,7 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.systemdocs import create_view
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.enums import ServiceUsage

@@ -37,7 +37,6 @@ from canonical.launchpad.helpers import (
     )
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -65,6 +64,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.bugs.interfaces.bugtracker import (

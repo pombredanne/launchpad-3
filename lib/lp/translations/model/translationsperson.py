@@ -23,7 +23,7 @@ from zope.component import (
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.person import IPerson
 from lp.registry.model.distribution import Distribution

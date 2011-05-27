@@ -11,7 +11,7 @@ import transaction
 from zope.component import getUtility
 from storm.store import Store
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import WindmillTestCase
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,

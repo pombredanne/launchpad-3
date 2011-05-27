@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import UserCannotEditBugTaskStatus
 from lp.bugs.model.bugtask import BugTaskStatus

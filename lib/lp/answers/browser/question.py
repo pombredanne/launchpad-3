@@ -60,11 +60,11 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.utilities.personroles import PersonRoles
+from lp.registry.model.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,

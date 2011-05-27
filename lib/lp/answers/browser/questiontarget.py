@@ -49,7 +49,7 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     Link,

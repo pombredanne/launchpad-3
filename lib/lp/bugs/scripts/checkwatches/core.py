@@ -38,7 +38,7 @@ from twisted.python.threadpool import ThreadPool
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts.logger import log as default_log
 from lp.bugs import externalbugtracker
 from lp.bugs.externalbugtracker import (

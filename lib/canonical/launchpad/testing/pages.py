@@ -45,7 +45,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import (
     IOAuthConsumerSet,
     OAUTH_REALM,

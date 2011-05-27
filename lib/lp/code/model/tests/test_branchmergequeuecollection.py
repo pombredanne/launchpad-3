@@ -8,7 +8,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branchmergequeuecollection import (

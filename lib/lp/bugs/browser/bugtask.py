@@ -135,7 +135,6 @@ from canonical.launchpad.browser.feeds import (
     )
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
@@ -147,7 +146,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.utilities.personroles import PersonRoles
+from lp.registry.model.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -188,7 +187,10 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget

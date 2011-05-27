@@ -165,7 +165,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
     INotificationRecipientSet,
     UnknownRecipientError,
     )
@@ -223,6 +222,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (

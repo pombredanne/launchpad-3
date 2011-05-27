@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.tests.helpers import (

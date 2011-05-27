@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,

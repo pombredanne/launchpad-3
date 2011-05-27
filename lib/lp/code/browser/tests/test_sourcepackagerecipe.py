@@ -23,7 +23,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import (
     extract_text,

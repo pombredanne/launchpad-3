@@ -7,7 +7,7 @@ import os.path
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,

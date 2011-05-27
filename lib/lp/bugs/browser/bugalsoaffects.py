@@ -34,7 +34,7 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_new_distrotask,

@@ -65,7 +65,7 @@ from lp.services.messages.model.message import (
     MessageChunk,
     )
 from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.messages.interfaces.message import IMessage
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import IQuestion

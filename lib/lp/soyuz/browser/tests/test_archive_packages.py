@@ -24,7 +24,7 @@ from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,

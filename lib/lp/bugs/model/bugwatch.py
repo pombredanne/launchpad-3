@@ -52,7 +52,7 @@ from canonical.database.sqlbase import (
     )
 from lp.services.messages.model.message import Message
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     urlappend,

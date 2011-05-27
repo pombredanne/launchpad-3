@@ -24,7 +24,7 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (

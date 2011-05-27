@@ -20,7 +20,7 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,

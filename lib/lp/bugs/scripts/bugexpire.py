@@ -17,7 +17,7 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     endInteraction,
     setupInteraction,

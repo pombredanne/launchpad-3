@@ -14,7 +14,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bugtask import IBugTaskSet

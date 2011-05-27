@@ -28,7 +28,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchLifecycleStatus,

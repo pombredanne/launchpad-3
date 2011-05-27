@@ -50,7 +50,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     shortlist,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import (
     format_address,

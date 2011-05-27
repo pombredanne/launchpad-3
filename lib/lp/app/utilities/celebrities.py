@@ -9,7 +9,7 @@ __all__ = ['LaunchpadCelebrities']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.registry.interfaces.distribution import IDistributionSet

@@ -25,7 +25,7 @@ from canonical.launchpad.scripts.logger import (
     DEBUG2,
     log,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet

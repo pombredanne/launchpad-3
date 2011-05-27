@@ -32,7 +32,7 @@ import apt_pkg
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
     ILibrarianClient,

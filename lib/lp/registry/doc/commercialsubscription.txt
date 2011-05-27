@@ -60,8 +60,7 @@ regular users, and the project owner all are denied.
 
 A member of the commercial admins team does have modification privileges.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> commercial_admin = celebs.commercial_admin
     >>> login('commercial-member@canonical.com')

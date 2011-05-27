@@ -11,7 +11,7 @@ from urllib import quote
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet

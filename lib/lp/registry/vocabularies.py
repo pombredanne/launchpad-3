@@ -106,7 +106,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (

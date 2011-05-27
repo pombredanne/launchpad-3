@@ -9,7 +9,7 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet

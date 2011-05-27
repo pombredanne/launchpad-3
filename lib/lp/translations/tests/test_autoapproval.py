@@ -17,7 +17,7 @@ from datetime import (
 from pytz import UTC
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer

@@ -47,7 +47,7 @@ from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask

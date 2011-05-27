@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

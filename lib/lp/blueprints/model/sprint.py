@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -415,4 +415,3 @@ class HasSprintsMixin:
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts',
             distinct=True)
-

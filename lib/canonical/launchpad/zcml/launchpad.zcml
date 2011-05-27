@@ -153,10 +153,6 @@
 
 <facet facet="overview">
 
-  <utility
-      factory="canonical.launchpad.utilities.LaunchpadCelebrities"
-      provides="canonical.launchpad.interfaces.launchpad.ILaunchpadCelebrities">
-  </utility>
 
   <browser:page
       for="*"
@@ -257,16 +253,6 @@
       permission="zope.Public" />
 
 </facet>
-
-<class
-    class="canonical.launchpad.utilities.personroles.PersonRoles">
-    <allow
-        interface="canonical.launchpad.interfaces.launchpad.IPersonRoles"/>
-</class>
-<adapter
-    for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.launchpad.IPersonRoles"
-    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
 <adapter

@@ -17,7 +17,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (

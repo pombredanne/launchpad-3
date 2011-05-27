@@ -15,14 +15,14 @@ import time
 import feedparser
 from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import (
+    TextLine,
+    )
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    ILaunchpadSearch,
-    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
@@ -43,6 +43,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
@@ -62,7 +63,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     featured_projects = []
     featured_projects_top = None
-
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
@@ -229,6 +229,13 @@ class LaunchpadPrimarySearchFormView(LaunchpadSearchFormView):
         if self.error:
             return 'error'
         return None
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class LaunchpadSearchView(LaunchpadFormView):

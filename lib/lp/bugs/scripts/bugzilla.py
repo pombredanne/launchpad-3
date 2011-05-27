@@ -31,7 +31,7 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import canonical_url

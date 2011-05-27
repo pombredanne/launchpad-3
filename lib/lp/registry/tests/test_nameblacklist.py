@@ -9,7 +9,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import (
