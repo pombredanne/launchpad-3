@@ -81,7 +81,6 @@ def os_exec(*args):
 
 def daemon(name, logfilename, pidfilename, *args, **kwargs):
     """Execute a double fork to start up a daemon."""
-
     # fork 1 - close fds and start new process group
     pid = os.fork()
     if pid:
@@ -91,7 +90,6 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     # start a new process group and detach ttys
     # print '## Starting', name, '##'
     os.setsid()
-
     # fork 2 - now detach once more free and clear
     pid = os.fork()
     if pid:
@@ -165,7 +163,7 @@ class RabbitServerResources(Fixture):
     :ivar hostname: The host the RabbitMQ is on (always localhost for
         `RabbitServerResources`).
     :ivar port: A port that was free at the time setUp() was called.
-    :ivar rabbitdir: A directory to put the RabbitMQ logs in.
+    :ivar homedir: A directory to put the RabbitMQ logs in.
     :ivar mnesiadir: A directory for the RabbitMQ db.
     :ivar logfile: The logfile allocated for the server.
     :ivar pidfile: The file the pid should be written to.
@@ -175,10 +173,10 @@ class RabbitServerResources(Fixture):
         super(RabbitServerResources, self).setUp()
         self.hostname = 'localhost'
         self.port = allocate_ports()[0]
-        self.rabbitdir = self.useFixture(TempDir()).path
-        self.mnesiadir = self.useFixture(TempDir()).path
-        self.logfile = os.path.join(self.rabbitdir, 'rabbit.log')
-        self.pidfile = os.path.join(self.rabbitdir, 'rabbit.pid')
+        self.homedir = self.useFixture(TempDir()).path
+        self.mnesiadir = os.path.join(self.homedir, "mnesia")
+        self.logfile = os.path.join(self.homedir, 'server.log')
+        self.pidfile = os.path.join(self.homedir, 'server.pid')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
 
     @property
@@ -216,7 +214,7 @@ class RabbitServerEnvironment(Fixture):
         self.useFixture(EnvironmentVariableFixture(
             "RABBITMQ_MNESIA_BASE", self.config.mnesiadir))
         self.useFixture(EnvironmentVariableFixture(
-            "RABBITMQ_LOG_BASE", self.config.rabbitdir))
+            "RABBITMQ_LOG_BASE", self.config.homedir))
         self.useFixture(EnvironmentVariableFixture(
             "RABBITMQ_NODE_PORT", str(self.config.port)))
         self.useFixture(EnvironmentVariableFixture(
@@ -238,8 +236,7 @@ class RabbitServerEnvironment(Fixture):
         """Executes a ``rabbitctl`` command and returns status."""
         ctlbin = os.path.join(RABBITBIN, "rabbitmqctl")
         nodename = self.config.fq_nodename
-        env = dict(os.environ)
-        env['HOME'] = self.config.rabbitdir
+        env = dict(os.environ, HOME=self.config.homedir)
         ctl = subprocess.Popen(
             (ctlbin, "-n", nodename, command), env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -315,7 +312,7 @@ class RabbitServerRunner(Fixture):
         name = "RabbitMQ server node:%s on port:%d" % (
             self.config.nodename, self.config.port)
         daemon(name, self.config.logfile, self.config.pidfile, command=cmd,
-            homedir=self.config.rabbitdir)
+            homedir=self.config.homedir)
         self.addDetail(
             os.path.basename(self.config.logfile),
             content_from_file(self.config.logfile))
