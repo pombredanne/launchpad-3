@@ -162,6 +162,11 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies packages between archives."""
+    # This job type serves in different places: it supports copying
+    # packages between archives, but also the syncing of packages from
+    # parents into a derived distroseries.  We may split these into
+    # separate types at some point, but for now we (allenap, bigjools,
+    # jtv) chose to keep it as one.
 
     implements(IPlainPackageCopyJob)
 
