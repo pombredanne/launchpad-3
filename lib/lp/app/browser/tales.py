@@ -1146,7 +1146,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
-                         'name_link': 'nameLink',
+                         'link-display-name-id': 'link_display_name_id',
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
@@ -1208,9 +1208,14 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         else:
             return '<img src="%s" width="14" height="14" />' % custom_icon
 
-    def nameLink(self, view_name):
-        """Return the Launchpad id of the person, linked to their profile."""
-        return self._makeLink(view_name, 'mainsite', self._context.name)
+    def link_display_name_id(self, view_name):
+        """Return a link to the user's profile page.
+
+        The link text uses both the display name and Launchpad id to clearly
+        indicate which user profile is linked.
+        """
+        text = '%s (%s)' % (self._context.displayname, self._context.name)
+        return self._makeLink(view_name, 'mainsite', text)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
