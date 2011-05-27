@@ -269,7 +269,7 @@ class OpenIDCallbackView(OpenIDLogin):
     """
 
     suspended_account_template = ViewPageTemplateFile(
-        '../templates/login-suspended-account.pt')
+        'templates/login-suspended-account.pt')
 
     def _gather_params(self, request):
         params = dict(request.form)
@@ -414,7 +414,7 @@ class OpenIDCallbackView(OpenIDLogin):
 class OpenIDLoginErrorView(LaunchpadView):
 
     page_title = 'Error logging in'
-    template = ViewPageTemplateFile("../templates/login-error.pt")
+    template = ViewPageTemplateFile("templates/login-error.pt")
 
     def __init__(self, context, request, openid_response):
         super(OpenIDLoginErrorView, self).__init__(context, request)
@@ -431,7 +431,7 @@ class OpenIDLoginErrorView(LaunchpadView):
 class AlreadyLoggedInView(LaunchpadView):
 
     page_title = 'Already logged in'
-    template = ViewPageTemplateFile("../templates/login-already.pt")
+    template = ViewPageTemplateFile("templates/login-already.pt")
 
 
 def logInPrincipal(request, principal, email):

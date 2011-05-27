@@ -381,7 +381,7 @@
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
     <browser:page
         name="+register-a-blueprint-button"
@@ -1195,7 +1195,7 @@
             permission="launchpad.Owner"
             class="lp.registry.browser.person.TeamReassignmentView"
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
@@ -1991,7 +1991,7 @@
         class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
 
     <!-- DistroSeries create and initialize. -->
@@ -2283,7 +2283,7 @@
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
         facet="overview"
         name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt">
+        template="../../app/templates/object-reassignment.pt">
     </browser:page>
     <browser:page
         name="+prober-logs"

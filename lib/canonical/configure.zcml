@@ -48,7 +48,7 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadProtocolError"
         class="canonical.launchpad.webapp.error.ProtocolErrorView"
-        template="launchpad/templates/protocol-error.pt"
+        template="launchpad/webapp/templates/protocol-error.pt"
         name="index.html"
         permission="zope.Public"
         />
