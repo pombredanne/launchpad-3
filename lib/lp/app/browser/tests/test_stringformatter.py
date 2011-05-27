@@ -275,7 +275,7 @@ class TestCssIdGeneration(TestCase):
 
     def test_valid_id(self):
         id = FormattersAPI('field.abc').css_id()
-        self.assertEqual('field.abc', id)
+        self.assertEqual('field-abc', id)
         id = FormattersAPI('field_abc').css_id()
         self.assertEqual('field-abc', id)
 

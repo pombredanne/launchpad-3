@@ -9,6 +9,7 @@ __metaclass__ = type
 
 import cgi
 
+import re
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -134,7 +135,17 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     @property
     def input_id(self):
         """This is used to ensure the widget id contains only valid chars."""
-        return FormattersAPI(self.name).css_id()
+
+        # If our name is a standard zope widget name, then we don't want to do
+        # any messing with the prefix 'field.' so strip it off.
+        match = re.match('field\.(.*)', self.name)
+        prefix = ''
+        if match:
+            name = match.group(1)
+            prefix = 'field.'
+        else:
+            name = self.name
+        return prefix + FormattersAPI(name).css_id()
 
     def chooseLink(self):
         if self.nonajax_uri is None:

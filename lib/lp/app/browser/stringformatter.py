@@ -851,12 +851,12 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
-    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-\.]+')
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
 
     def css_id(self, prefix=None):
         """Return a CSS compliant id.
 
-        The id may contain letters, numbers, periods, and hyphens. The first
+        The id may contain letters, numbers, and hyphens. The first
         character must be a letter. Unsupported characters are converted
         to hyphens. Multiple characters are replaced by a single hyphen. The
         letter 'j' will start the id if the string's first character is not a
@@ -870,10 +870,15 @@ class FormattersAPI:
         else:
             raw_text = self._stringtoformat
 
-        # First get rid of '_' and replace with '-'. We don't want to trigger
-        # the need to append the id with the base64 encoding based on an '_'
-        # match.
-        raw_text = raw_text.replace('_', '-')
+        # If we have to strip out any invalid characters and replace with a
+        # hyphen, we need to append a unique string to the end of the id to
+        # ensure it is guaranteed to be unique on the page. We use a base64
+        # encoding of the id.
+
+        # First get rid of '_' and '.' and replace with '-'. We don't want to
+        # trigger the need to append the id with the base64 encoding based on
+        # an '_' or '.' match.
+        raw_text = raw_text.replace('_', '-').replace('.', '-')
         id_ = raw_text
 
         if self._css_id_strip_pattern.search(raw_text):
