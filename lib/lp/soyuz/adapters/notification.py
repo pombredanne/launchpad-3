@@ -53,9 +53,9 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    to_addrs = _getRecipients(blamer, archive, distroseries, changes, logger)
+    to_addrs = get_recipients(blamer, archive, distroseries, changes, logger)
     logger.debug("Sending rejection email.")
-    _sendMail(None, archive, to_addrs, subject, body, False, logger=logger)
+    send_mail(None, archive, to_addrs, subject, body, False, logger=logger)
 
 
 def get_template(archive, action):
@@ -133,7 +133,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     # If files is empty, we don't need to send an email if this is not
     # a rejection.
     try:
-        files = _buildUploadedFilesList(spr, bprs, customfiles, logger)
+        files = build_uploaded_files_list(spr, bprs, customfiles, logger)
     except LanguagePackEncountered:
         # Don't send emails for language packs.
         return
@@ -141,12 +141,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if not files and action != 'rejected':
         return
 
-    summary = _buildSummary(spr, files, action)
-    if summary_text:
-        summary.append(summary_text)
-    summarystring = "\n".join(summary)
-
-    recipients = _getRecipients(
+    recipients = get_recipients(
         blamer, archive, distroseries, changes, logger)
 
     # There can be no recipients if none of the emails are registered
@@ -166,6 +161,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             summarystring = 'Rejected by archive administrator.'
         else:
             summarystring = summary_text
+    else:
+        summary = build_summary(spr, files, action)
+        if summary_text:
+            summary.append(summary_text)
+        summarystring = "\n".join(summary)
 
     attach_changes = not archive.is_ppa
 
@@ -175,7 +175,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         body = assemble_body(
             blamer, spr, archive, distroseries, summarystring, changes,
             action, announce_list)
-        _sendMail(
+        send_mail(
             spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
             attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
@@ -246,7 +246,7 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
     return get_template(archive, action) % information
 
 
-def _sendMail(
+def send_mail(
     spr, archive, to_addrs, subject, mail_text, dry_run, from_addr=None,
     bcc=None, changesfile_content=None, attach_changes=False, logger=None):
     """Send an email to to_addrs with the given text and subject.
@@ -375,11 +375,11 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-def _getRecipients(blamer, archive, distroseries, changes, logger):
+def get_recipients(blamer, archive, distroseries, changes, logger):
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    changer = _emailToPerson(changes['Changed-By'])
+    changer = email_to_person(changes['Changed-By'])
 
     if blamer:
         # This is a signed upload.
@@ -400,7 +400,7 @@ def _getRecipients(blamer, archive, distroseries, changes, logger):
 
     # If this is not a PPA, we also consider maintainer and changed-by.
     if blamer and not archive.is_ppa:
-        maintainer = _emailToPerson(changes['Maintainer'])
+        maintainer = email_to_person(changes['Maintainer'])
         if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
@@ -425,7 +425,7 @@ def _getRecipients(blamer, archive, distroseries, changes, logger):
     return recipients
 
 
-def _buildUploadedFilesList(spr, builds, customfiles, logger):
+def build_uploaded_files_list(spr, builds, customfiles, logger):
     """Return a list of tuples of (filename, component, section).
 
     Component and section are only set where the file is a source upload.
@@ -463,7 +463,7 @@ def _buildUploadedFilesList(spr, builds, customfiles, logger):
     return files
 
 
-def _buildSummary(spr, files, action):
+def build_summary(spr, files, action):
     """Build a summary string based on the files present in the upload."""
     summary = []
     for filename, component, section in files:
@@ -477,7 +477,7 @@ def _buildSummary(spr, files, action):
     return summary
 
 
-def _emailToPerson(fullemail):
+def email_to_person(fullemail):
     """Return an IPerson given an RFC2047 email address."""
     # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
     # thing will have already parsed at this point.
@@ -488,7 +488,7 @@ def _emailToPerson(fullemail):
 
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     katie = getUtility(ILaunchpadCelebrities).katie
-    changed_by = _emailToPerson(changed_by_email)
+    changed_by = email_to_person(changed_by_email)
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
