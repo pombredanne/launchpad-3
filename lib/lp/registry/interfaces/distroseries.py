@@ -958,6 +958,44 @@ class IDistroSeriesEditRestricted(Interface):
             will be.
         """
 
+    @operation_parameters(
+        parents=List(
+            title=_("The list of parents to derive from."
+            "distroseries."), value_type=TextLine(),
+            required=False),
+        architectures=List(
+            title=_("The list of architectures to copy to the derived "
+            "distroseries."), value_type=TextLine(),
+            required=False),
+        packagesets=List(
+            title=_("The list of packagesets to copy to the derived "
+            "distroseries"), value_type=TextLine(),
+            required=False),
+        rebuild=Bool(
+            title=_("If binaries will be copied to the derived "
+            "distroseries."),
+            required=True),
+        )
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def initDerivedDistroSeries(user, parents, architectures,
+                                packagesets, rebuild):
+        """Initialize this series from parents.
+
+        This method performs checks and then creates a job to populate
+        the new distroseries.
+
+        :param parents: The list of parents this series will derive
+            from.
+        :param architectures: The architectures to copy to the derived
+            series. If not specified, all of the architectures are copied.
+        :param packagesets: The packagesets to copy to the derived series.
+            If not specified, all of the packagesets are copied.
+        :param rebuild: Whether binaries will be copied to the derived
+            series. If it's true, they will not be, and if it's false, they
+            will be.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
                     IStructuralSubscriptionTarget):

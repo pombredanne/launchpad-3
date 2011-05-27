@@ -79,7 +79,7 @@ class DistributionJobType(DBEnumeratedType):
 class IInitialiseDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitialiseDistroSeriesJobs."""
 
-    def create(distroseries, arches, packagesets, rebuild):
+    def create(parents, arches, packagesets, rebuild):
         """Create a new initialisation job for a distroseries."""
 
     def getPendingJobsForDistroseries(distroseries):
@@ -102,6 +102,17 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         :param sourcepackagename: A `SourcePackageName` that is being
             published in `distroseries`.
         :param pocket: The `PackagePublishingPocket` for the publication.
+        """
+
+    def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
+        """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.
+
+        :param derived_series: The derived `DistroSeries` that the
+            differences (and jobs) must be for.
+        :param distroseriesdifferences:
+            An iterable of `DistroSeriesDifference`s.
+        :return: A dict mapping each of `distroseriesdifferences` that has
+            pending jobs to a list of its jobs.
         """
 
 

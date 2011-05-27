@@ -14,7 +14,10 @@ from zope.interface import (
     implements,
     )
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -138,6 +141,29 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
             if may_require_job(relative, sourcepackagename):
                 jobs.append(create_job(relative, sourcepackagename))
         return jobs
+
+    @classmethod
+    def getPendingJobsForDifferences(cls, derived_series,
+                                     distroseriesdifferences):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        jobs = IStore(DistributionJob).find(
+            DistributionJob,
+            DistributionJob.job_type == cls.class_job_type,
+            Job.id == DistributionJob.job_id,
+            Job._status.is_in(Job.PENDING_STATUSES),
+            DistributionJob.distroseries == derived_series)
+
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Check for parent
+        # series once it becomes available.
+        keyed_dsds = dict(
+            (dsd.source_package_name.id, dsd)
+            for dsd in distroseriesdifferences)
+        jobs_by_dsd = {}
+        for job in jobs:
+            dsd = keyed_dsds.get(job.metadata["sourcepackagename"])
+            if dsd is not None:
+                jobs_by_dsd.setdefault(dsd, []).append(cls(job))
+        return jobs_by_dsd
 
     @property
     def sourcepackagename(self):

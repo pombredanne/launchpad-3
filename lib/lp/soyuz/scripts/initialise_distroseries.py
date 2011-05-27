@@ -63,10 +63,15 @@ class InitialiseDistroSeries:
     """
 
     def __init__(
-        self, parent, distroseries, arches=(), packagesets=(), rebuild=False):
+        self, distroseries, parents, arches=(), packagesets=(),
+        rebuild=False):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
-        self.parent = parent
+
+        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
+        # initialising from multiple parents.
+        self.parent = parents[0]
+
         self.distroseries = distroseries
         self.arches = arches
         self.packagesets = [
