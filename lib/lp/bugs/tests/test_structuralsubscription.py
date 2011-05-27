@@ -157,7 +157,7 @@ class FilteredStructuralSubscriptionTestBase:
         self.initial_filter = self.subscription.bug_filters[0]
 
     def assertSubscribers(
-        self, expected_subscribers, level=BugNotificationLevel.NOTHING):
+        self, expected_subscribers, level=BugNotificationLevel.LIFECYCLE):
         observed_subscribers = list(
             get_structural_subscribers(self.bugtask, None, level))
         self.assertEqual(expected_subscribers, observed_subscribers)
@@ -211,9 +211,9 @@ class FilteredStructuralSubscriptionTestBase:
         self.initial_filter.bug_notification_level = (
             BugNotificationLevel.METADATA)
 
-        # The subscription is found when looking for NOTHING or above.
+        # The subscription is found when looking for LIFECYCLE or above.
         self.assertSubscribers(
-            [self.ordinary_subscriber], BugNotificationLevel.NOTHING)
+            [self.ordinary_subscriber], BugNotificationLevel.LIFECYCLE)
         # The subscription is found when looking for METADATA or above.
         self.assertSubscribers(
             [self.ordinary_subscriber], BugNotificationLevel.METADATA)

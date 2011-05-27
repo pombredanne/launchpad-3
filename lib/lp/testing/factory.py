@@ -258,6 +258,7 @@ from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import (
@@ -2386,12 +2387,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None, set_base_version=False):
+        changelogs=None, set_base_version=False, parent_series=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            parent_series = self.makeDistroSeries()
-            derived_series = self.makeDistroSeries(
-                previous_series=parent_series)
+            dsp = self.makeDistroSeriesParent(
+                parent_series=parent_series)
+            derived_series = dsp.derived_series
+            parent_series = dsp.parent_series
+        else:
+            if parent_series is None:
+                dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                    derived_series)
+                if dsp.count() == 0:
+                    new_dsp = self.makeDistroSeriesParent(
+                        derived_series=derived_series,
+                        parent_series=parent_series)
+                    parent_series = new_dsp.parent_series
+                else:
+                    parent_series = dsp[0].parent_series
 
         if source_package_name_str is None:
             source_package_name_str = self.getUniqueString('src-name')
@@ -2406,7 +2419,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         base_version = versions.get('base')
         if base_version is not None:
-            for series in [derived_series, derived_series.previous_series]:
+            for series in [derived_series, parent_series]:
                 spr = self.makeSourcePackageRelease(
                     sourcepackagename=source_package_name,
                     version=base_version)
@@ -2431,12 +2444,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 version=versions.get('parent'),
                 changelog=changelogs.get('parent'))
             self.makeSourcePackagePublishingHistory(
-                distroseries=derived_series.previous_series,
+                distroseries=parent_series,
                 sourcepackagerelease=spr,
                 status=PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name)
+            derived_series, source_package_name, parent_series)
 
         removeSecurityProxy(diff).status = status
 
@@ -2463,13 +2476,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series_difference, owner, comment)
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
-                               initialized=False):
+                               initialized=False, is_overlay=False,
+                               pocket=None, component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized)
+            derived_series, parent_series, initialized, is_overlay, pocket,
+            component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
@@ -2564,6 +2579,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_archive.buildd_secret = "sekrit"
 
         return archive
+
+    def makeArchiveAdmin(self, archive=None):
+        """Make an Archive Admin.
+
+        :param archive: The `IArchive`, will be auto-created if None.
+
+        Make and return an `IPerson` who has an `ArchivePermission` to admin
+        the distroseries queue.
+        """
+        if archive is None:
+            archive = self.makeArchive()
+
+        person = self.makePerson()
+        permission_set = getUtility(IArchivePermissionSet)
+        permission_set.newQueueAdmin(archive, person, 'main')
+        return person
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,

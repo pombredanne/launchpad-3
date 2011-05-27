@@ -908,10 +908,8 @@ class QuestionSearch:
         particular person."""
         joins = [
             ("""LEFT OUTER JOIN QuestionMessage
-                ON QuestionMessage.question = Question.id"""),
-            ("""LEFT OUTER JOIN Message
-                ON QuestionMessage.message = Message.id
-                AND Message.owner = %s""" % sqlvalues(person))]
+                ON QuestionMessage.question = Question.id
+                AND QuestionMessage.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -942,7 +940,7 @@ class QuestionSearch:
                     AND Question.status IN %(owner_status)s)
                 OR (Question.owner != %(person)s AND
                     Question.status = %(open_status)s AND
-                    Message.owner = %(person)s)
+                    QuestionMessage.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
                     owner_status=[
@@ -1153,7 +1151,7 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ANSWERER: "Question.answerer = %s",
         QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
         QuestionParticipation.OWNER: "Question.owner = %s",
-        QuestionParticipation.COMMENTER: "Message.owner = %s",
+        QuestionParticipation.COMMENTER: "QuestionMessage.owner = %s",
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):

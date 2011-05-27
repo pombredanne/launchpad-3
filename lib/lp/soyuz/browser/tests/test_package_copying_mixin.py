@@ -23,7 +23,7 @@ from lp.soyuz.browser.archive import (
     render_cannotcopy_as_html,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -207,10 +207,13 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
 
     def makeDerivedSeries(self):
         """Create a derived `DistroSeries`, quickly."""
-        series = self.makeDistroSeries(previous_series=self.makeDistroSeries())
+        parent_series = self.makeDistroSeries()
+        derived_series = self.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(
+            parent_series=parent_series, derived_series=derived_series)
         getUtility(ISourcePackageFormatSelectionSet).add(
-            series, SourcePackageFormat.FORMAT_1_0)
-        return series
+            derived_series, SourcePackageFormat.FORMAT_1_0)
+        return derived_series
 
     def makeView(self):
         """Create a `PackageCopyingMixin`-based view."""
@@ -276,7 +279,8 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         copy_asynchronously(
             [spph], archive, dest_series, pocket, include_binaries=False,
             check_permissions=False)
-        jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
+        jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+            archive))
         self.assertEqual(1, len(jobs))
         spr = spph.sourcepackagerelease
         self.assertEqual(
@@ -295,7 +299,8 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         view.do_copy(
             'selected_differences', [spph], archive, dest_series, pocket,
             False, check_permissions=False)
-        jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
+        jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+            archive))
         self.assertNotEqual([], jobs)
 
     def test_copy_synchronously_may_allow_copy(self):

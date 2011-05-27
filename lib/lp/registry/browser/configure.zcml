@@ -177,7 +177,7 @@
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
-        path_expression="string:+difference/${source_package_name/name}"
+        path_expression="string:+source/${source_package_name/name}/+difference/${parent_series/parent/name}/${parent_series/name}"
         rootsite="mainsite"
         attribute_to_parent="derived_series"/>
     <browser:page

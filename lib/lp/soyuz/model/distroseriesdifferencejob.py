@@ -14,10 +14,14 @@ from zope.interface import (
     implements,
     )
 
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -92,12 +96,14 @@ def may_require_job(distroseries, sourcepackagename):
     """
     if distroseries is None:
         return False
-    previous_series = distroseries.previous_series
-    if previous_series is None:
+    dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+        distroseries)
+    if dsp.count() == 0:
         return False
-    if previous_series.distribution == distroseries.distribution:
-        # Differences within a distribution are not tracked.
-        return False
+    for parent in dsp:
+        if parent.parent_series.distribution == distroseries.distribution:
+            # Differences within a distribution are not tracked.
+            return False
     return find_waiting_jobs(distroseries, sourcepackagename).is_empty()
 
 
@@ -136,6 +142,29 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
                 jobs.append(create_job(relative, sourcepackagename))
         return jobs
 
+    @classmethod
+    def getPendingJobsForDifferences(cls, derived_series,
+                                     distroseriesdifferences):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        jobs = IStore(DistributionJob).find(
+            DistributionJob,
+            DistributionJob.job_type == cls.class_job_type,
+            Job.id == DistributionJob.job_id,
+            Job._status.is_in(Job.PENDING_STATUSES),
+            DistributionJob.distroseries == derived_series)
+
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Check for parent
+        # series once it becomes available.
+        keyed_dsds = dict(
+            (dsd.source_package_name.id, dsd)
+            for dsd in distroseriesdifferences)
+        jobs_by_dsd = {}
+        for job in jobs:
+            dsd = keyed_dsds.get(job.metadata["sourcepackagename"])
+            if dsd is not None:
+                jobs_by_dsd.setdefault(dsd, []).append(cls(job))
+        return jobs_by_dsd
+
     @property
     def sourcepackagename(self):
         return SourcePackageName.get(self.metadata['sourcepackagename'])
@@ -148,18 +177,20 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         in a packageset that the derived series also has.
         """
         derived_series = self.distroseries
-        previous_series = derived_series.previous_series
+        dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+            derived_series)
+        parent_series = dsp[0].parent_series
         if has_package(derived_series, self.sourcepackagename):
             return True
-        if not has_package(previous_series, self.sourcepackagename):
+        if not has_package(parent_series, self.sourcepackagename):
             return True
         packagesetset = getUtility(IPackagesetSet)
-        if packagesetset.getBySeries(previous_series).is_empty():
+        if packagesetset.getBySeries(parent_series).is_empty():
             # Parent series does not have packagesets, as would be the
             # case for e.g. Debian.  In that case, don't filter.
             return True
         parent_sets = packagesetset.setsIncludingSource(
-            self.sourcepackagename, distroseries=previous_series)
+            self.sourcepackagename, distroseries=parent_series)
         for parent_set in parent_sets:
             for related_set in parent_set.relatedSets():
                 if related_set.distroseries == derived_series:

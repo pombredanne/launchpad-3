@@ -21,6 +21,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+import apt_pkg
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
@@ -103,10 +104,23 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
+    )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.packagecopyjob import specify_dsd_package
+from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
     )
+
+# DistroSeries statuses that benefit from mass package upgrade support.
+UPGRADABLE_SERIES_STATUSES = [
+    SeriesStatus.FUTURE,
+    SeriesStatus.EXPERIMENTAL,
+    SeriesStatus.DEVELOPMENT,
+    ]
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -170,11 +184,6 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
     @stepthrough('+upload')
     def traverse_queue(self, id):
         return getUtility(IPackageUploadSet).get(id)
-
-    @stepthrough('+difference')
-    def traverse_difference(self, name):
-        dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        return dsd_source.getByDistroSeriesAndName(self.context, name)
 
 
 class DistroSeriesBreadcrumb(Breadcrumb):
@@ -349,7 +358,36 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
+class DerivedDistroSeriesMixin:
+
+    @cachedproperty
+    def has_unique_parent(self):
+        return len(self.context.getParentSeries()) == 1
+
+    @cachedproperty
+    def unique_parent(self):
+        if self.has_unique_parent:
+            return self.context.getParentSeries()[0]
+        else:
+            None
+
+    @cachedproperty
+    def number_of_parents(self):
+        return len(self.context.getParentSeries())
+
+    def getParentName(self, multiple_parent_default=None):
+        if self.has_unique_parent:
+            return ("parent series '%s'" %
+                self.unique_parent.displayname)
+        else:
+            if multiple_parent_default is not None:
+                return multiple_parent_default
+            else:
+                return 'a parent series'
+
+
+class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
+                       DerivedDistroSeriesMixin):
 
     def initialize(self):
         super(DistroSeriesView, self).initialize()
@@ -620,7 +658,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     @property
     def is_derived_series_feature_enabled(self):
-        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
+        return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
     def next_url(self):
@@ -663,7 +701,7 @@ def make_package_type_vocabulary(parent_name, higher_version_option=False):
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
-            "Ignored packages with a higher version than in '%s'"
+            "Ignored packages with a higher version than in %s"
                 % parent_name)
         voc.insert(2, higher_term)
     return SimpleVocabulary(tuple(voc))
@@ -696,7 +734,8 @@ class IDifferencesFormSchema(Interface):
 
 
 class DistroSeriesDifferenceBaseView(LaunchpadFormView,
-                                     PackageCopyingMixin):
+                                     PackageCopyingMixin,
+                                     DerivedDistroSeriesMixin):
     """Base class for all pages presenting differences between
     a derived series and its parent."""
     schema = IDifferencesFormSchema
@@ -717,7 +756,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
-        if not getFeatureFlag('soyuz.derived-series-ui.enabled'):
+        if not getFeatureFlag('soyuz.derived_series_ui.enabled'):
             self.request.response.redirect(canonical_url(self.context))
             return
 
@@ -731,10 +770,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return NotImplementedError()
 
     def setupPackageFilterRadio(self):
+        if self.has_unique_parent:
+            parent_name = "'%s'" % self.unique_parent.displayname
+        else:
+            parent_name = 'parent'
         return form.Fields(Choice(
             __name__='package_type',
             vocabulary=make_package_type_vocabulary(
-                self.context.previous_series.displayname,
+                parent_name,
                 self.search_higher_parent_option),
             default=DEFAULT_PACKAGE_TYPE,
             required=True))
@@ -751,9 +794,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             self.form_fields)
         check_permission('launchpad.Edit', self.context)
         terms = [
-            SimpleTerm(diff, diff.source_package_name.name,
-                diff.source_package_name.name)
-                for diff in self.cached_differences.batch]
+            SimpleTerm(diff, diff.id)
+                    for diff in self.cached_differences.batch]
         diffs_vocabulary = SimpleVocabulary(terms)
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
@@ -814,6 +856,88 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return (has_perm and
                 self.cached_differences.batch.total() > 0)
 
+    @cachedproperty
+    def pending_syncs(self):
+        """Pending synchronization jobs for this distroseries.
+
+        :return: A dict mapping (name, version) package specifications to
+            pending sync jobs.
+        """
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        return job_source.getPendingJobsPerPackage(self.context)
+
+    @cachedproperty
+    def pending_dsd_updates(self):
+        """Pending `DistroSeriesDifference` update jobs.
+
+        :return: A `set` of `DistroSeriesDifference`s that have pending
+            `DistroSeriesDifferenceJob`s.
+        """
+        job_source = getUtility(IDistroSeriesDifferenceJobSource)
+        return job_source.getPendingJobsForDifferences(
+            self.context, self.cached_differences.batch)
+
+    def hasPendingDSDUpdate(self, dsd):
+        """Have there been changes that `dsd` is still being updated for?"""
+        return dsd in self.pending_dsd_updates
+
+    def hasPendingSync(self, dsd):
+        """Is there a package-copying job pending to resolve `dsd`?"""
+        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+
+    def isNewerThanParent(self, dsd):
+        """Is the child's version of this package newer than the parent's?
+
+        If it is, there's no point in offering to sync it.
+
+        Any version is considered "newer" than a missing version.
+        """
+        # This is trickier than it looks: versions are not totally
+        # ordered.  Two non-identical versions may compare as equal.
+        # Only consider cases where the child's version is conclusively
+        # newer, not where the relationship is in any way unclear.
+        if dsd.parent_source_version is None:
+            # There is nothing to sync; the child is up to date and if
+            # anything needs updating, it's the parent.
+            return True
+        if dsd.source_version is None:
+            # The child doesn't have this package.  Treat that as the
+            # parent being newer.
+            return False
+        comparison = apt_pkg.VersionCompare(
+            dsd.parent_source_version, dsd.source_version)
+        return comparison < 0
+
+    def canRequestSync(self, dsd):
+        """Does it make sense to request a sync for this difference?"""
+        # There are two conditions for this: it doesn't make sense to
+        # sync if the child's version of the package is newer than the
+        # parent's version, or if there is already a sync pending.
+        return (
+            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
+
+    def describeJobs(self, dsd):
+        """Describe any jobs that may be pending for `dsd`.
+
+        Shows "synchronizing..." if the entry is being synchronized, and
+        "updating..." if the DSD is being updated with package changes.
+
+        :param dsd: A `DistroSeriesDifference` on the page.
+        :return: An HTML text describing work that is pending or in
+            progress for `dsd`; or None.
+        """
+        has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
+        has_pending_sync = self.hasPendingSync(dsd)
+        if not has_pending_dsd_update and not has_pending_sync:
+            return None
+
+        description = []
+        if has_pending_dsd_update:
+            description.append("updating")
+        if has_pending_sync:
+            description.append("synchronizing")
+        return " and ".join(description) + "&hellip;"
+
     @property
     def specified_name_filter(self):
         """If specified, return the name filter from the GET form data."""
@@ -840,31 +964,24 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_package_type == NON_IGNORED:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
-            child_version_higher = False
-        elif self.specified_package_type == IGNORED:
-            status=(
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-            child_version_higher = False
-        elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
-            status=(
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-            child_version_higher = True
-        elif self.specified_package_type == RESOLVED:
-            status=DistroSeriesDifferenceStatus.RESOLVED
-            child_version_higher = False
-        else:
-            raise AssertionError('specified_package_type unknown')
+        package_type_dsd_status = {
+            NON_IGNORED: (
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
+            IGNORED: DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            HIGHER_VERSION_THAN_PARENT: (
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
+            RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
+        }
+
+        status = package_type_dsd_status[self.specified_package_type]
+        child_version_higher = (
+            self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
 
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                difference_type = self.differences_type,
+                self.context, difference_type=self.differences_type,
                 source_package_name_filter=self.specified_name_filter,
-                status=status,
-                child_version_higher=child_version_higher)
+                status=status, child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -882,7 +999,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             differences = getUtility(
                 IDistroSeriesDifferenceSource).getForDistroSeries(
                     self.context,
-                    difference_type = self.differences_type,
+                    difference_type=self.differences_type,
                     status=(
                         DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
@@ -901,9 +1018,13 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def initialize(self):
         # Update the label for sync action.
+        if self.has_unique_parent:
+            parent_name = "'%s'" % self.unique_parent.displayname
+        else:
+            parent_name = 'Parent'
         self.initialize_sync_label(
             "Sync Selected %s Versions into %s" % (
-                self.context.previous_series.displayname,
+                parent_name,
                 self.context.displayname,
                 ))
         super(DistroSeriesLocalDifferencesView, self).initialize()
@@ -912,34 +1033,80 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     def explanation(self):
         return structured(
             "Source packages shown here are present in both %s "
-            "and the parent series, %s, but are different somehow. "
+            "and %s, but are different somehow. "
             "Changes could be in either or both series so check the "
-            "versions (and the diff if necessary) before syncing the %s "
+            "versions (and the diff if necessary) before syncing the parent "
             'version (<a href="/+help/soyuz/derived-series-syncing.html" '
-            'target="help">Read more about syncing from the parent series'
+            'target="help">Read more about syncing from a parent series'
             '</a>).',
             self.context.displayname,
-            self.context.previous_series.fullseriesname,
-            self.context.previous_series.displayname)
+            self.getParentName())
 
     @property
     def label(self):
         return (
-            "Source package differences between '%s' and "
-            "parent series '%s'" % (
+            "Source package differences between '%s' and"
+            " %s" % (
                 self.context.displayname,
-                self.context.previous_series.displayname,
+                self.getParentName(multiple_parent_default='parent series'),
                 ))
-
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
 
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
         self._sync_sources(action, data)
+
+    def getUpgrades(self):
+        """Find straightforward package upgrades.
+
+        These are updates for packages that this distroseries shares
+        with a parent series, for which there have been updates in the
+        parent, and which do not have any changes in this series that
+        might complicate a sync.
+
+        :return: A result set of `DistroSeriesDifference`s.
+        """
+        return getUtility(IDistroSeriesDifferenceSource).getSimpleUpgrades(
+            self.context)
+
+    @action(_("Upgrade Packages"), name="upgrade", condition='canUpgrade')
+    def upgrade(self, action, data):
+        """Request synchronization of straightforward package upgrades."""
+        self.requestUpgrades()
+
+    def requestUpgrades(self):
+        """Request sync of packages that can be easily upgraded."""
+        target_distroseries = self.context
+        target_archive = target_distroseries.main_archive
+        differences_by_archive = (
+            getUtility(IDistroSeriesDifferenceSource)
+                .collateDifferencesByParentArchive(self.getUpgrades()))
+        for source_archive, differences in differences_by_archive.iteritems():
+            source_package_info = [
+                (difference.source_package_name.name,
+                 difference.parent_source_version)
+                for difference in differences]
+            getUtility(IPlainPackageCopyJobSource).create(
+                source_package_info, source_archive, target_archive,
+                target_distroseries, PackagePublishingPocket.UPDATES)
+        self.request.response.addInfoNotification(
+            (u"Upgrades of {context.displayname} packages have been "
+             u"requested. Please give Launchpad some time to complete "
+             u"these.").format(context=self.context))
+
+    def canUpgrade(self, action=None):
+        """Should the form offer a packages upgrade?"""
+        if getFeatureFlag("soyuz.derived_series_sync.enabled") is None:
+            return False
+        elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
+            # A feature freeze precludes blanket updates.
+            return False
+        elif self.getUpgrades().is_empty():
+            # There are no simple updates to perform.
+            return False
+        else:
+            queue = PackageUploadQueue(self.context, None)
+            return check_permission("launchpad.Edit", queue)
 
 
 class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
@@ -956,7 +1123,7 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def initialize(self):
         # Update the label for sync action.
         self.initialize_sync_label(
-            "Include Selected packages into into %s" % (
+            "Include Selected packages into %s" % (
                 self.context.displayname,
                 ))
         super(DistroSeriesMissingPackagesView, self).initialize()
@@ -965,24 +1132,19 @@ class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
     def explanation(self):
         return structured(
             "Packages that are listed here are those that have been added to "
-            "the specific packages %s that were used to create %s. They are "
-            "listed here so you can consider including them in %s.",
-            self.context.previous_series.displayname,
+            "the specific packages in %s that were used to create %s. "
+            "They are listed here so you can consider including them in %s.",
+            self.getParentName(),
             self.context.displayname,
             self.context.displayname)
 
     @property
     def label(self):
         return (
-            "Packages in parent series '%s' but not in '%s'" % (
-                self.context.previous_series.displayname,
+            "Packages in %s but not in '%s'" % (
+                self.getParentName(),
                 self.context.displayname,
                 ))
-
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
 
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
@@ -1008,22 +1170,17 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
     def explanation(self):
         return structured(
             "Packages that are listed here are those that have been added to "
-            "%s but are not yet part of the parent series %s.",
+            "%s but are not yet part of %s.",
             self.context.displayname,
-            self.context.previous_series.displayname)
+            self.getParentName())
 
     @property
     def label(self):
         return (
-            "Packages in '%s' but not in parent series '%s'" % (
+            "Packages in '%s' but not in %s" % (
                 self.context.displayname,
-                self.context.previous_series.displayname,
+                self.getParentName(),
                 ))
-
-    @action(_("Update"), name="update")
-    def update_action(self, action, data):
-        """Simply re-issue the form with the new values."""
-        pass
 
     def canPerformSync(self, *args):
         return False

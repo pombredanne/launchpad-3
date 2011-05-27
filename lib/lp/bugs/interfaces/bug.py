@@ -14,6 +14,7 @@ __all__ = [
     'IBugAddForm',
     'IBugBecameQuestionEvent',
     'IBugDelta',
+    'IBugMute',
     'IBugSet',
     'IFileBugData',
     'IFrontPageBugAddForm',
@@ -85,6 +86,7 @@ from lp.services.fields import (
     ContentNameField,
     Description,
     DuplicateBug,
+    PersonChoice,
     PublicPersonChoice,
     Tag,
     Title,
@@ -490,8 +492,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def isMuted(person):
         """Does person have a muted subscription on this bug?
 
-        :returns: True if the user has a direct subscription to this bug
-            with a BugNotificationLevel of NOTHING.
+        :returns: True if the user has muted all email from this bug.
         """
 
     @operation_parameters(
@@ -508,7 +509,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     @operation_for_version('devel')
     def unmute(person, unmuted_by):
-        """Remove a muted subscription for `person`."""
+        """Remove a muted subscription for `person`.
+
+        Returns previously muted direct subscription, if any."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
@@ -778,9 +781,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
             schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
-            value_type=Reference(schema=Interface), # IBugNomination
+            value_type=Reference(schema=Interface),  # IBugNomination
             required=False))
-    @operation_returns_collection_of(Interface) # IBugNomination
+    @operation_returns_collection_of(Interface)  # IBugNomination
     @export_read_operation()
     def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
@@ -1210,3 +1213,18 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
+
+
+class IBugMute(Interface):
+    """A mute on an IBug."""
+
+    person = PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person subscribed."))
+    bug = Reference(
+        IBug, title=_("Bug"),
+        required=True, readonly=True,
+        description=_("The bug to be muted."))
+    date_created = Datetime(
+        title=_("The date on which the mute was created."), required=False,
+        readonly=True)
