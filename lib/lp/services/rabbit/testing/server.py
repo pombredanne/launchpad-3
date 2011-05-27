@@ -318,8 +318,9 @@ class RabbitServerRunner(Fixture):
             time.sleep(0.1)
         else:
             # Die!!!
-            self.process.kill()
-            time.sleep(0.5)
+            if self.is_running():
+                self.process.kill()
+                time.sleep(0.5)
             if self.is_running():
                 raise Exception("RabbitMQ server just won't die.")
 
