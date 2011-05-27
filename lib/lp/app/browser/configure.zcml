@@ -58,6 +58,21 @@
         permission="zope.Public"
         />
 
+    <!-- batching -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
+        class="canonical.launchpad.webapp.batching.UpperBatchNavigationView"
+        name="+navigation-links-upper"
+        template="../templates/batchnavigator-navigation-links.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.IBatchNavigator"
+        class="canonical.launchpad.webapp.batching.LowerBatchNavigationView"
+        name="+navigation-links-lower"
+        template="../templates/batchnavigator-navigation-links.pt"
+        permission="zope.Public" />
+
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.
         -->
