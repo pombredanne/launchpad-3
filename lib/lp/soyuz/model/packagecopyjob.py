@@ -283,7 +283,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         else:
             # source_packages is 2-tuples so divide by 2 to get true
             # length.
-            parts.append(" %d package(s)" % len(source_packages)/2)
+            parts.append(" %d package(s)" % (len(source_packages)/2))
         parts.append(
             " from %s/%s" % (
                 self.source_archive.distribution.name,

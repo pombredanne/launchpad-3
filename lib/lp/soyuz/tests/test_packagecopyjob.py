@@ -421,9 +421,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             include_binaries=False)
 
         self.runJob(job)
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
 
+        # The job should be suspended and there's a PackageUpload with
+        # its package_copy_job set.
         self.assertEqual(JobStatus.SUSPENDED, job.status)
-        pu = Store.of(job.context).find(
+        pu = Store.of(target_archive).find(
             PackageUpload,
-            job.id == PackageUpload.package_copy_job_id).one()
-        self.assertEqual(job, pu)
+            PackageUpload.package_copy_job_id == job.id).one()
+        pcj = removeSecurityProxy(job).context
+        self.assertEqual(pcj, pu.package_copy_job)
