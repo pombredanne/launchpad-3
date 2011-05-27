@@ -35,11 +35,11 @@ from lp.services.encoding import (
     )
 
 
-def notify_spr_less(blamer, changes_file_path, changes, archive,
-                    distroseries, reason, logger=None):
+def reject_changes_files(blamer, changes_file_path, changes, archive,
+                         distroseries, reason, logger=None):
     ignored, filename = os.path.split(changes_file_path)
     subject = '%s rejected' % filename
-    if archive.is_ppa:
+    if archive and archive.is_ppa:
         subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     information = {
         'SUMMARY': reason,
@@ -60,7 +60,7 @@ def notify_spr_less(blamer, changes_file_path, changes, archive,
     to_addrs = _getRecipients(blamer, archive, distroseries, changes, logger)
     recipients = ascii_smash(", ".join(to_addrs))
     extra_headers = {'X-Katie': 'Launchpad actually'}
-    if archive.is_ppa:
+    if archive and archive.is_ppa:
         extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
     logger.debug("Sending rejection email.")
     send_message(
@@ -83,15 +83,13 @@ def get_template(archive, action):
     return get_email_template(template_name)
 
 
-def get_status(action):
-    action_descriptions = {
-        'new': 'New',
-        'unapproved': 'Waiting for approval',
-        'rejected': 'Rejected',
-        'accepted': 'Accepted',
-        'announcement': 'Accepted'
-        }
-    return action_descriptions[action]
+ACTION_DESCRIPTIONS = {
+    'new': 'New',
+    'unapproved': 'Waiting for approval',
+    'rejected': 'Rejected',
+    'accepted': 'Accepted',
+    'announcement': 'Accepted'
+    }
 
 
 def calculate_subject(spr, bprs, customfiles, archive, distroseries,
@@ -103,15 +101,15 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
     if spr:
         names.add(spr.name)
         version = spr.version
-    for bpr in bprs:
-        names.add(bpr.build.source_package_release.name)
-        version = bpr.build.source_package_release.version
+    elif bprs:
+        names.add(bpr[0].build.source_package_release.name)
+        version = bpr[0].build.source_package_release.version
     for custom in customfiles:
         names.add(custom.libraryfilealias.filename)
     name_str = ', '.join(names)
     subject = '[%s/%s] %s %s (%s)' % (
         distroseries.distribution.name, suite, name_str, version,
-        get_status(action))
+        ACTION_DESCRIPTIONS[action])
     if archive.is_ppa:
         subject = '[PPA %s] %s' % (get_ppa_reference(archive), subject)
     return subject
@@ -124,14 +122,19 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
     if (
-        bool(bprs) and action != 'rejected' and
+        bprs and action != 'rejected' and
         pocket != PackagePublishingPocket.SECURITY):
         debug(logger, "Not sending email; upload is from a build.")
         return
 
-    if spr is None and not bool(bprs) and not customfiles:
-        # We do not have enough context to do a normal notification.
-        notify_spr_less(
+    if spr and spr.source_package_recipe_build and action == 'accepted':
+        debug(logger, "Not sending email; upload is from a recipe.")
+        return
+
+    if spr is None and not bprs and not customfiles:
+        # We do not have enough context to do a normal notification, so
+        # reject what we do have.
+        reject_changes_files(
             blamer, changes['_filename'], changes, archive, distroseries,
             summary_text, logger=logger)
         return
@@ -178,7 +181,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
                   action, announce_list):
     information = {
-        'STATUS': get_status(action),
+        'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
         'DATE': 'Date: %s' % changes['Date'],
         'CHANGESFILE': ChangesFile.formatChangesComment(
@@ -221,17 +224,6 @@ def send_mail(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
               summary_text, changes, recipients, dry_run, action,
               changesfile_content=None, from_addr=None, bcc=None,
               announce_list=None, logger=None):
-    # Packageupload:
-    # Summary_text: The body of the message.
-    # Changes: A dictionary of the parsed changes file.
-    # recipients: Who to send the mail to.
-    # dry_run: Should we send the mail?
-    # action: A string, documenting what sort of mail we are sending.
-    # changesfile_content: A file-like object of the changes file.
-    # from_addr: Which address to send the mail from.
-    # bcc: Which addresses to BCC.
-    # announce_list: Which list to announce the upload to.
-    # logger: A logger object.
     attach_changes = not archive.is_ppa
 
     subject = calculate_subject(
@@ -400,22 +392,19 @@ def send_message(subject, from_addr, recipients, extra_headers, mail_text,
                 dry_run=None, attach_changes=None, changesfile_content=None,
                 logger=None):
     if dry_run and logger is not None:
-        logger.info("Would have sent a mail:")
-        logger.info("  Subject: %s" % subject)
-        logger.info("  Sender: %s" % from_addr)
-        logger.info("  Recipients: %s" % recipients)
-        logger.info("  Bcc: %s" % extra_headers['Bcc'])
-        logger.info("  Body:")
-        for line in mail_text.splitlines():
-            logger.info(line)
+        debug(logger, "Would have sent a mail:")
     else:
         debug(logger, "Sent a mail:")
-        debug(logger, "    Subject: %s" % subject)
-        debug(logger, "    Recipients: %s" % recipients)
-        debug(logger, "    Body:")
-        for line in mail_text.splitlines():
-            debug(logger, line)
+    debug(logger, "  Subject: %s" % subject)
+    debug(logger, "  Sender: %s" % from_addr)
+    debug(logger, "  Recipients: %s" % recipients)
+    if extra_headers.has_key('Bcc'):
+       debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
+    debug(logger, "  Body:")
+    for line in mail_text.splitlines():
+        debug(logger, line)
 
+    if not dry_run:
         # Since we need to send the original changesfile as an
         # attachment the sendmail() method will be used as opposed to
         # simple_sendmail().
@@ -431,7 +420,7 @@ def send_message(subject, from_addr, recipients, extra_headers, mail_text,
         # Add the email body.
         message.attach(
             MIMEText(sanitize_string(mail_text).encode('utf-8'),
-            'plain', 'utf-8'))
+                'plain', 'utf-8'))
 
         if attach_changes:
             # Add the original changesfile as an attachment.
@@ -550,7 +539,7 @@ def _buildUploadedFilesList(spr, builds, customfiles, logger):
     for build in builds:
         for bpr in build.build.binarypackages:
             files.extend([
-            (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
+                (bpf.libraryfile.filename, '', '') for bpf in bpr.files])
 
     if customfiles:
         files.extend(

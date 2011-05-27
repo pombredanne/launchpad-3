@@ -686,14 +686,13 @@ class PackageUpload(SQLBase):
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.NEW:
-            action = 'new'
-        elif self.status == PackageUploadStatus.UNAPPROVED:
-            action = 'unapproved'
-        elif self.status == PackageUploadStatus.REJECTED:
-            action = 'rejected'
-        else:
-            action = 'accepted'
+        status_action = {
+            PackageUploadStatus.NEW: 'new',
+            PackageUploadStatus.UNAPPROVED: 'unapproved',
+            PackageUploadStatus.REJECTED: 'rejected',
+            PackageUploadStatus.ACCEPTED: 'accepted',
+            PackageUploadStatus.DONE: 'accepted',
+            }
         changes, changes_lines = self._getChangesDict(changes_file_object)
         changes['_filename'] = ''
         if changes_file_object is not None:
@@ -702,14 +701,15 @@ class PackageUpload(SQLBase):
                 changes['_filename'] = changes_file_object.name
         else:
             changesfile_content = 'No changes file content available.'
-        signer = None
         if self.signing_key is not None:
             signer = self.signing_key.owner
+        else:
+            signer = None
         notify(
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
             self.archive, self.distroseries, self.pocket, announce_list,
-            summary_text, changes, changesfile_content, action, dry_run,
-            logger)
+            summary_text, changes, changesfile_content,
+            status_action[self.status], dry_run, logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""

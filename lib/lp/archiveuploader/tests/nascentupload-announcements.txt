@@ -501,9 +501,11 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
     DEBUG Creating queue entry
     ...
     DEBUG Sent a mail:
-    DEBUG     Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
-    DEBUG     Recipients: Celso Providelo <celso.providelo@canonical.com>
-    DEBUG     Body:
+    DEBUG   Subject: [ubuntu/hoary-backports] bar 1.0-4 (Accepted)
+    ...
+    DEBUG   Recipients: Celso Providelo <celso.providelo@canonical.com>
+    ...
+    DEBUG   Body:
     DEBUG bar (1.0-4) breezy; urgency=low
     DEBUG
     DEBUG   * Changer using non-preferred email
@@ -645,18 +647,18 @@ the INFO level what it /would/ have sent.
     >>> random_package_upload.notify(dry_run=True, logger=FakeLogger())
     DEBUG Building recipients list.
     ...
-    INFO Would have sent a mail:
-    INFO   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
+    DEBUG Would have sent a mail:
+    DEBUG   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
     ...
-    INFO   Recipients: Celso Providelo <celso.providelo@canonical.com>
+    DEBUG   Recipients: Celso Providelo <celso.providelo@canonical.com>
     ...
-    INFO bar (1.0-6) breezy; urgency=low
+    DEBUG bar (1.0-6) breezy; urgency=low
     ...
-    INFO No announcement sent
+    DEBUG No announcement sent
     ...
-    INFO You are receiving this email because you are the uploader, maintainer
+    DEBUG You are receiving this email because you are the uploader, maintainer
     or
-    INFO signer of the above package.
+    DEBUG signer of the above package.
 
 No emails generated:
 
