@@ -36,7 +36,16 @@ from lp.services.encoding import (
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
-                         distroseries, reason, logger=None):
+                        distroseries, reason, logger=None):
+    """Notify about a rejection where all of the details are not known.
+
+    :param blamer: The `IPerson` that is to blame for this notification.
+    :param changes_file_path: The path to the changes file.
+    :param changes: A dictionary of the parsed changes file.
+    :param archive: The `IArchive` the notification is regarding.
+    :param distroseries: The `IDistroSeries` the notification is regarding.
+    :param reason: The reason for the rejection.
+    """
     ignored, filename = os.path.split(changes_file_path)
     subject = '%s rejected' % filename
     if archive and archive.is_ppa:
@@ -109,6 +118,26 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            announce_list=None, summary_text=None, changes=None,
            changesfile_content=None, changesfile_object=None, action=None,
            dry_run=False, logger=None):
+    """Notify about 
+
+    :param blamer: The `IPerson` who is to blame for this notification.
+    :param spr: The `ISourcePackageRelease` that was created.
+    :param bprs: A list of `IBinaryPackageRelease` that were created.
+    :param customfiles: An `ILibraryFileAlias` that was created.
+    :param archive: The target `IArchive`.
+    :param distroseries: The target `IDistroSeries`.
+    :param pocket: The target `PackagePublishingPocket`.
+    :param announce_list: Where to announce the upload.
+    :param summary_text: The summary of the notification.
+    :param changes: A dictionary of the parsed changes file.
+    :param changesfile_content: The raw content of the changes file, so it
+        can be attached to the mail if desired.
+    :param changesfile_object: The raw object of the changes file. Only used
+        to work out the filename for `reject_changes_file`.
+    :param action: A string of what action to notify for, such as 'new',
+        'accepted'.
+    :param dry_run: If True, only log the mail.
+    """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
     if (
@@ -206,6 +235,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
                   action, announce_list):
+    """Assemble the e-mail notification body."""
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
@@ -251,19 +281,21 @@ def send_mail(
     bcc=None, changesfile_content=None, attach_changes=False, logger=None):
     """Send an email to to_addrs with the given text and subject.
 
-    :to_addrs: A list of email addresses to be used as recipients. Each
-        email must be a valid ASCII str instance or a unicode one.
-    :subject: The email's subject.
-    :mail_text: The text body of the email. Unicode is preserved in the
+    :param spr: The `ISourcePackageRelease` to be notified about.
+    :param archive: The target `IArchive`.
+    :param to_addrs: A list of email addresses to be used as recipients.
+        Each email must be a valid ASCII str instance or a unicode one.
+    :param subject: The email's subject.
+    :param mail_text: The text body of the email. Unicode is preserved in the
         email.
-    :dry_run: Whether or not an email should actually be sent. But
+    :param dry_run: Whether or not an email should actually be sent. But
         please note that this flag is (largely) ignored.
-    :from_addr: The email address to be used as the sender. Must be a
+    :param from_addr: The email address to be used as the sender. Must be a
         valid ASCII str instance or a unicode one.  Defaults to the email
         for config.uploader.
-    :bcc: Optional email Blind Carbon Copy address(es).
-    :changesfile_content: The content of the actual changesfile.
-    :attach_changes: A flag governing whether the original changesfile
+    :param bcc: Optional email Blind Carbon Copy address(es).
+    :param param changesfile_content: The content of the actual changesfile.
+    :param attach_changes: A flag governing whether the original changesfile
         content shall be attached to the email.
     """
     extra_headers = {'X-Katie': 'Launchpad actually'}
@@ -487,6 +519,12 @@ def email_to_person(fullemail):
 
 
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
+    """Return True if this is a (Debian) auto sync upload.
+
+    Sync uploads are source-only, unsigned and not targeted to
+    the security pocket. The Changed-By field is also the Katie
+    user (archive@ubuntu.com).
+    """
     katie = getUtility(ILaunchpadCelebrities).katie
     changed_by = email_to_person(changed_by_email)
     return (
