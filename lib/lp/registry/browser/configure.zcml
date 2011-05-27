@@ -855,6 +855,12 @@
             permission="launchpad.Edit"
             template="../templates/person-editlanguages.pt"/>
         <browser:page
+            for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+            permission="launchpad.AnyPerson"
+            class="lp.registry.browser.person.RedirectToEditLanguagesView"
+            name="+editmylanguages"
+            />
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditView"
