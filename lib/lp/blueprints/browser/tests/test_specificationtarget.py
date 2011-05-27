@@ -288,21 +288,19 @@ class SpecificationSetViewTestCase(TestCaseWithFactory):
         specification_set = getUtility(ISpecificationSet)
         view = create_initialized_view(specification_set, '+index')
         content = find_tag_by_id(view.render(), 'search-all-specifications')
-        self.assertEqual('form', content.name)
-        self.assertTrue(
-            content.find(True, id='text') is not None)
-        self.assertTrue(
-            content.find(True, id='field.actions.search') is not None)
-        self.assertTrue(
-            content.find(True, id='field.scope.option.all') is not None)
-        self.assertTrue(
-            content.find(True, id='field.scope.option.project') is not None)
+        self.assertIsNot(None, content.find(True, id='text'))
+        self.assertIsNot(
+            None, content.find(True, id='field.actions.search'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.all'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.project'))
         target_widget = view.widgets['scope'].target_widget
-        self.assertTrue(
-            content.find(True, id=target_widget.show_widget_id) is not None)
+        self.assertIsNot(
+            None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
         picker_script = (
             "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
-        self.assertTrue(picker_script in text)
+        self.assertIn(picker_script, text)
         focus_script = "setFocusByName('field.search_text')"
-        self.assertTrue(focus_script in text)
+        self.assertIn(focus_script, text)
