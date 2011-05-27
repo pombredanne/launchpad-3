@@ -77,32 +77,107 @@
         permission="launchpad.Edit"
         />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="+search"
-      class="lp.app.browser.root.LaunchpadSearchView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        name="+search"
+        class="lp.app.browser.root.LaunchpadSearchView"
+        template="../templates/launchpad-search.pt"
+        permission="zope.Public" />
 
-  <browser:page
-      for="*"
-      name="+search-form"
-      class="lp.app.browser.root.LaunchpadSearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
+    <browser:page
+        for="*"
+        name="+search-form"
+        class="lp.app.browser.root.LaunchpadSearchFormView"
+        template="../templates/launchpad-search-form.pt"
+        permission="zope.Public" />
 
-  <browser:page
-      for="*"
-      name="+primary-search-form"
-      class="lp.app.browser.root.LaunchpadPrimarySearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
+    <browser:page
+        for="*"
+        name="+primary-search-form"
+        class="lp.app.browser.root.LaunchpadPrimarySearchFormView"
+        template="../templates/launchpad-search-form.pt"
+        permission="zope.Public" />
 
-  <browser:page
-      for="*"
-      name="+check-links"
-      class="lp.app.browser.linkchecker.LinkCheckerAPI"
-      permission="zope.Public"/>
+    <browser:page
+        for="*"
+        name="+check-links"
+        class="lp.app.browser.linkchecker.LinkCheckerAPI"
+        permission="zope.Public"/>
+
+    <!-- icing resources -->
+
+    <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+icing"
+      class="lp.app.browser.launchpad.IcingFolder"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
+    <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+icing-contrib"
+      class="lp.app.browser.launchpad.IcingContribFolder"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+
+    <!-- A page to list all the icons in LP -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        name="+graphics"
+        class="lp.app.browser.launchpad.LaunchpadGraphics"
+        template="../templates/launchpad-graphics.pt"
+        permission="zope.Public"
+        />
+
+    <facet facet="overview">
+      <!-- Common menus -->
+      <browser:menus
+          module="lp.app.browser.launchpad"
+          classes="LaunchpadRootFacets"
+          />
+
+      <browser:defaultView
+          for="canonical.launchpad.webapp.interfaces.ILink"
+          name="+link"
+          />
+
+      <browser:page
+          for="canonical.launchpad.webapp.interfaces.ILink"
+          name="+link"
+          class="lp.app.browser.launchpad.LinkView"
+          template="../templates/launchpad-link.pt"
+          permission="zope.Public"
+          />
+
+      <browser:page
+          for="canonical.launchpad.webapp.interfaces.ILink"
+          name="+inline"
+          class="lp.app.browser.launchpad.LinkView"
+          template="../templates/launchpad-inline-link.pt"
+          permission="zope.Public"
+          />
+
+      <browser:page
+          for="canonical.launchpad.webapp.interfaces.ILink"
+          name="+inline-icon"
+          class="lp.app.browser.launchpad.LinkView"
+          template="../templates/launchpad-inline-icon-link.pt"
+          permission="zope.Public"
+          />
+
+      <!-- Test page for soft timeouts. The permission checking is done in
+           the view class, only Launchpad developers have access to the
+           page -->
+      <browser:page
+          for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+          name="+soft-timeout"
+          class="lp.app.browser.launchpad.SoftTimeoutView"
+          attribute="__call__"
+          permission="zope.Public"
+          />
+    </facet>
 
   <!-- TALES namespaces. -->
 
@@ -563,6 +638,137 @@
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.launchpadform.WidgetHasStructuredDoc"
       name="query"
+      />
+
+  <!-- Marketing Microsite Home Page -->
+  <browser:page
+      name="+tour"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="lp.app.browser.launchpad.LaunchpadTourFolder"
+      attribute="__call__"
+      permission="zope.Public"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+about"
+      new_name="+tour/index"
+      rootsite="mainsite"
+      />
+
+  <!-- Marketing material for Answers. -->
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.answers.publisher.AnswersLayer"
+      name="+about"
+      new_name="+tour/community-support"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.answers.publisher.AnswersLayer"
+      name="+faq"
+      new_name="+tour/community-support"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      name="+tour"
+      new_name="+tour/community-support"
+      rootsite="mainsite"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.answers.publisher.AnswersLayer"
+      />
+
+  <!-- Marketing material for Blueprints. -->
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.blueprints.publisher.BlueprintsLayer"
+      name="+about"
+      new_name="+tour/feature-tracking"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.blueprints.publisher.BlueprintsLayer"
+      name="+faq"
+      new_name="+tour/feature-tracking"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      name="+tour"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.blueprints.publisher.BlueprintsLayer"
+      new_name="+tour/feature-tracking"
+      rootsite="mainsite"
+      />
+
+  <!-- Marketing material for Bugs. -->
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.bugs.publisher.BugsLayer"
+      name="+about"
+      new_name="+tour/bugs"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.bugs.publisher.BugsLayer"
+      name="+faq"
+      new_name="+tour/bugs"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      name="+tour"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.bugs.publisher.BugsLayer"
+      new_name="+tour/bugs"
+      rootsite="mainsite"
+      />
+
+  <!-- Marketing material for Code. -->
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.code.publisher.CodeLayer"
+      name="+about"
+      new_name="+tour/branch-hosting-tracking"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.code.publisher.CodeLayer"
+      name="+faq"
+      new_name="+tour/branch-hosting-tracking"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      name="+tour"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.code.publisher.CodeLayer"
+      new_name="+tour/branch-hosting-tracking"
+      rootsite="mainsite"
+      />
+
+
+  <!-- Marketing material for Translations. -->
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.translations.publisher.TranslationsLayer"
+      name="+about"
+      new_name="+tour/translation"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.translations.publisher.TranslationsLayer"
+      name="+faq"
+      new_name="+tour/translation"
+      rootsite="mainsite"
+      />
+  <browser:renamed-page
+      name="+tour"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      layer="lp.translations.publisher.TranslationsLayer"
+      new_name="+tour/translation"
+      rootsite="mainsite"
       />
 
   <adapter
