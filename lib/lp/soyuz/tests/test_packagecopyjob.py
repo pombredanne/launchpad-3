@@ -12,6 +12,7 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -40,6 +41,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
     """Test case for PlainPackageCopyJob."""
 
     layer = LaunchpadZopelessLayer
+    # XXX: GavinPanella 2011-04-20 bug=770297: The sync_packages database
+    # user should be renamed to copy_packages.
+    dbuser = 'sync_packages'
 
     def makeJob(self, dsd):
         """Create a `PlainPackageCopyJob` that would resolve `dsd`."""
@@ -55,7 +59,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
         self.layer.txn.commit()
-        self.layer.switchDbUser('sync_packages')
+        self.layer.switchDbUser(self.dbuser)
         job.run()
 
     def test_create(self):
@@ -174,9 +178,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         # Make sure everything hits the database, switching db users
         # aborts.
         transaction.commit()
-        # XXX: GavinPanella 2011-04-20 bug=770297: The sync_packages database
-        # user should be renamed to copy_packages.
-        self.layer.switchDbUser('sync_packages')
+        self.layer.switchDbUser(self.dbuser)
         job.run()
 
         published_sources = target_archive.getPublishedSources()
@@ -333,3 +335,52 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_copying_to_main_archive_ancestry_overrides(self):
+        # The job will complete right away for auto-approved copies to a
+        # main archive and apply any ancestry overrides.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        #getUtility(ISourcePackageFormatSelectionSet).add(
+        #    target_series, SourcePackageFormat.FORMAT_1_0)
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            component='universe', section='web',
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now put the same named package in the target archive with
+        # different override values.
+        ancestry_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            component='restricted', section='games',
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
+
+        # Now, run the copy job, which should auto-approve the copy and
+        # override the package with the existing values in the
+        # target_archive.
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("libc", "2.8-1")],
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+
+        self.runJob(job)
+
+        new_publication = target_archive.getPublishedSources(
+            name='libc', version='2.8-1').one()
+        self.assertEqual('restricted', new_publication.component.name)
+        self.assertEqual('games', new_publication.section.name)
