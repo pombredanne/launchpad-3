@@ -102,8 +102,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
         names.add(spr.name)
         version = spr.version
     elif bprs:
-        names.add(bpr[0].build.source_package_release.name)
-        version = bpr[0].build.source_package_release.version
+        names.add(bprs[0].build.source_package_release.name)
+        version = bprs[0].build.source_package_release.version
     for custom in customfiles:
         names.add(custom.libraryfilealias.filename)
     name_str = ', '.join(names)
@@ -166,16 +166,44 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         return
 
     if action == 'rejected':
-        _sendNotification(
-            blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-            recipients, announce_list, changes, summary_text, action,
-            dry_run, changesfile_content, logger)
-        return
+        default_recipient = "%s <%s>" % (
+            config.uploader.default_recipient_name,
+            config.uploader.default_recipient_address)
+        if not recipients:
+            recipients = [default_recipient]
+        debug(logger, "Sending rejection email.")
+        if summarystring is None:
+            summarystring = 'Rejected by archive administrator.'
+        else:
+            summarystring = summary_text
 
-    _sendNotification(
+    send_mail(
         blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-        recipients, announce_list, changes, summarystring,
-        action, dry_run, changesfile_content, logger)
+        summarystring, changes, recipients, dry_run, action,
+        announce_list=announce_list, changesfile_content=changesfile_content,
+        logger=logger)
+
+    # If we're sending an acceptance notification for a non-PPA upload,
+    # announce if possible. Avoid announcing backports, binary-only
+    # security uploads, or autosync uploads.
+    if (action == 'accepted' and announce_list and not archive.is_ppa and
+        pocket != PackagePublishingPocket.BACKPORTS and
+        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
+        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
+        from_addr = sanitize_string(changes['Changed-By'])
+        bcc_addr = None
+        if spr:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
+                spr.name)
+        if bprs:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
+                bprs[0].build.source_package_release.name)
+
+        send_mail(
+            blamer, spr, bprs, customfiles, archive, distroseries, pocket,
+            summarystring, changes, [str(announce_list)], dry_run,
+            'announcement', changesfile_content=changesfile_content,
+            from_addr=from_addr, bcc=bcc_addr, logger=logger)
 
 
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
@@ -237,51 +265,6 @@ def send_mail(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         changesfile_content=changesfile_content,
         attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
         logger=logger)
-
-
-def _sendNotification(blamer, spr, bprs, customfiles, archive,
-                      distroseries, pocket, recipients, announce_list,
-                      changes, summarystring, action, dry_run,
-                      changesfile_content, logger):
-    """Send a email."""
-
-    if action == 'rejected':
-        default_recipient = "%s <%s>" % (
-            config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address)
-        if not recipients:
-            recipients = [default_recipient]
-        debug(logger, "Sending rejection email.")
-        if summarystring is None:
-            summarystring = 'Rejected by archive administrator.'
-
-    send_mail(
-        blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-        summarystring, changes, recipients, dry_run, action,
-        announce_list=announce_list, changesfile_content=changesfile_content,
-        logger=logger)
-
-    # If we're sending an acceptance notification for a non-PPA upload,
-    # announce if possible. Avoid announcing backports, binary-only
-    # security uploads, or autosync uploads.
-    if (action == 'accepted' and announce_list and not archive.is_ppa and
-        pocket != PackagePublishingPocket.BACKPORTS and
-        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
-        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
-        from_addr = sanitize_string(changes['Changed-By'])
-        bcc_addr = None
-        if spr:
-            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
-                spr.name)
-        if bprs:
-            bcc_addr = '%s_derivatives@packages.qa.debian.org' % (
-                bprs[0].build.source_package_release.name)
-
-        send_mail(
-            blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-            summarystring, changes, [str(announce_list)], dry_run,
-            'announcement', changesfile_content=changesfile_content,
-            from_addr=from_addr, bcc=bcc_addr, logger=logger)
 
 
 def _sendMail(
