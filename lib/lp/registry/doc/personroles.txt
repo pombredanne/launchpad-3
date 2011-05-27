@@ -21,7 +21,7 @@ parameter to checkAuthenticated is a PersonRoles object (was a Person object).
 
 PersonRoles is registered as an unnamed adapter for IPersonRoles.
 
-    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> from lp.registry.interfaces.role import IPersonRoles
     >>> person = factory.makePerson()
     >>> print IPersonRoles(person)
     <lp.registry.model.personroles.PersonRoles object at ...>
