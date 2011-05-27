@@ -94,16 +94,23 @@ class IInitialiseDistroSeriesJob(IRunnableJob):
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(distroseries, sourcepackagename, pocket):
+    def createForPackagePublication(derivedseries, sourcepackagename, pocket,
+                                    parent_series=None):
         """Create jobs as appropriate for a given status publication.
 
-        :param distroseries: A `DistroSeries` that is assumed to be
-            derived from another one.
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
         :param sourcepackagename: A `SourcePackageName` that is being
-            published in `distroseries`.
+            published in `derived_series` or `parent_series`.
         :param pocket: The `PackagePublishingPocket` for the publication.
+        :param parent_series: The parent `DistroSeries` whose version of
+            `sourcepackagename` is to be compared with that in
+            `derived_series`.
+        :return: An iterable of `DistroSeriesDifferenceJob`.
         """
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
+        # mandatory as part of multi-parent support.
 
 
 class IDistroSeriesDifferenceJob(IRunnableJob):
-        """A Job that performs actions related to DSDs."""
+    """A `Job` that performs actions related to `DistroSeriesDifference`s."""
