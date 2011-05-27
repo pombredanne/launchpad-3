@@ -246,7 +246,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except CannotCopy, e:
             self.abort()
             self.reportFailure(e)
-            self.commit()
 
     def attemptCopy(self):
         """Attempt to perform the copy.
@@ -276,10 +275,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         """Abort work."""
         transaction.abort()
 
-    def commit(self):
-        """Commit work."""
-        transaction.commit()
-
     def findMatchingDSDs(self):
         """Find any `DistroSeriesDifference`s that this job might resolve."""
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
@@ -290,11 +285,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # coming from, and the version number in the DSD may have
         # changed.  We can however filter out DSDs that are from
         # different distributions, based on the job's target archive.
-        source_distro = self.source_archive.distribution
+        source_distro_id = self.source_archive.distributionID
         return [
             dsd
             for dsd in candidates
-                if dsd.parent_series.distribution == source_distro]
+                if dsd.parent_series.distributionID == source_distro_id]
 
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""

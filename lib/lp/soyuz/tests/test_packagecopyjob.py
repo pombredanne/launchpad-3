@@ -49,13 +49,6 @@ def get_dsd_comments(dsd):
         DistroSeriesDifferenceComment.distro_series_difference == dsd)
 
 
-def strip_error_handling_transactionality(job):
-    """Stop `job`'s error handling from committing or aborting."""
-    naked_job = removeSecurityProxy(job)
-    naked_job.commit = FakeMethod()
-    naked_job.abort = FakeMethod()
-
-
 class LocalTestHelper:
     """Put test helpers that want to be in the test classes here."""
 
@@ -406,8 +399,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # findMatchingDSDs finds matching DSDs for any of the packages
         # in the job.
         dsd = self.factory.makeDistroSeriesDifference()
-        job = removeSecurityProxy(self.makeJob(dsd))
-        self.assertContentEqual([dsd], job.findMatchingDSDs())
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
 
     def test_findMatchingDSDs_ignores_other_source_series(self):
         # findMatchingDSDs tries to ignore DSDs that are for different
@@ -416,14 +409,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # of source distroseries, but in practice it should be good
         # enough).
         dsd = self.factory.makeDistroSeriesDifference()
-        job = removeSecurityProxy(self.makeJob(dsd))
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
 
         # If the dsd differs only in parent series, that's enough to
         # make it a non-match.
         removeSecurityProxy(dsd).parent_series = (
             self.factory.makeDistroSeries())
 
-        self.assertContentEqual([], job.findMatchingDSDs())
+        self.assertContentEqual([], naked_job.findMatchingDSDs())
 
 
 class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
