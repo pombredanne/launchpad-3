@@ -8,11 +8,12 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from storm.store import Store
+
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -20,6 +21,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.model.distroseriesdifferencejob import (
     FEATURE_FLAG_ENABLE_MODULE,
     )
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -346,8 +348,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         target_archive = self.factory.makeArchive(
             distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
         source_archive = self.factory.makeArchive()
-        #getUtility(ISourcePackageFormatSelectionSet).add(
-        #    target_series, SourcePackageFormat.FORMAT_1_0)
 
         # Publish a package in the source archive with some overridable
         # properties set to known values.
@@ -384,3 +384,46 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             name='libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
+
+    def test_copying_to_main_archive_with_no_ancestry(self):
+        # The job should suspend itself and create a packageupload with
+        # a reference to the package_copy_job.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            component='universe', section='web',
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # There is no package of the same name already in the target
+        # archive.
+        existing_sources = target_archive.getPublishedSources(name='libc')
+        self.assertEqual(None, existing_sources.any())
+
+        # Now, run the copy job.
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("libc", "2.8-1")],
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+
+        self.runJob(job)
+
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        pu = Store.of(job).find(
+            PackageUpload,
+            PackageUpload.package_copy_job == job).one()
+        self.assertEqual(job, pu)
