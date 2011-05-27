@@ -62,6 +62,10 @@
                   tal:define="script view/focusedElementScript"
                   tal:condition="script"
                   tal:content="structure script" ></script>
+                <tal:sort
+                    replace="structure view/widgets/sort/hidden" />
+                <tal:status
+                  replace="structure view/widgets/status/hidden" />
               </td>
             </tr>
             </tbody>
