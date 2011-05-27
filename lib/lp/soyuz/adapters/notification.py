@@ -53,19 +53,9 @@ def reject_changes_files(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    from_addr = format_address(
-        config.uploader.default_sender_name,
-        config.uploader.default_sender_address)
-    logger.debug("Building recipients list.")
     to_addrs = _getRecipients(blamer, archive, distroseries, changes, logger)
-    recipients = ascii_smash(", ".join(to_addrs))
-    extra_headers = {'X-Katie': 'Launchpad actually'}
-    if archive and archive.is_ppa:
-        extra_headers['X-Launchpad-PPA'] = get_ppa_reference(archive)
     logger.debug("Sending rejection email.")
-    send_message(
-        subject, from_addr, recipients, extra_headers, body,
-        attach_changes=False, logger=logger)
+    _sendMail(None, archive, to_addrs, subject, body, False, logger=logger)
 
 
 def get_template(archive, action):
@@ -326,15 +316,6 @@ def _sendMail(
     else:
         from_addr.encode('ascii')
 
-    send_message(
-        subject, from_addr, recipients, extra_headers, mail_text,
-        dry_run=dry_run, attach_changes=attach_changes,
-        changesfile_content=changesfile_content, logger=logger)
-
-
-def send_message(subject, from_addr, recipients, extra_headers, mail_text,
-                dry_run=None, attach_changes=None, changesfile_content=None,
-                logger=None):
     if dry_run and logger is not None:
         debug(logger, "Would have sent a mail:")
     else:
