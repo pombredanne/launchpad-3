@@ -8,9 +8,14 @@ __metaclass__ = type
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugsummary import IBugSummary
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
-from lp.testing import TestCaseWithFactory
+from lp.bugs.model.bugtask import BugTask
+from lp.testing import (
+    login_celebrity,
+    TestCaseWithFactory,
+    )
 
 
 class TestBugSummary(TestCaseWithFactory):
@@ -25,6 +30,11 @@ class TestBugSummary(TestCaseWithFactory):
         # XXX: Should we just grant mortals permission to UPDATE BugTag
         # etc. ?
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # XXX: Unnecessary?
+        # And stop security wrappers getting in the way since they are
+        # uninteresting to these tests.
+        # login_celebrity('admin')
 
         self.store = IMasterStore(BugSummary)
 
@@ -56,22 +66,23 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
 
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
 
-        bug_tag = BugTag()
-        bug_tag.bug = bug
-        bug_tag.tag = tag
-        self.store.add(bug_tag)
+        for count in range(3):
+            bug = self.factory.makeBug(product=product)
+            bug_tag = BugTag()
+            bug_tag.bug = bug
+            bug_tag.tag = tag
+            self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
             self.getCount(
                 BugSummary.product == product,
-                BugSummary.tag == tag
-                ), 1)
+                BugSummary.tag == tag),
+            3)
 
         # There should be no other BugSummary rows.
-        self.assertEqual(self.getCount(BugSummary.tag == tag), 1)
+        self.assertEqual(self.getCount(BugSummary.tag == tag), 3)
 
     def test_changeTag(self):
         old_tag = u'pustular'
@@ -82,38 +93,39 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertEqual(self.getCount(BugSummary.tag == new_tag), 0)
 
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
 
-        bug_tag = BugTag()
-        bug_tag.bug = bug
-        bug_tag.tag = old_tag
-        self.store.add(bug_tag)
-
-        # Number of tagged tasks for a particular product
-        self.assertEqual(
-            self.getCount(
-                BugSummary.product == product,
-                BugSummary.tag == old_tag
-                ), 1)
-
-        # Change the tag.
-        bug_tag.tag = new_tag
+        for count in range(3):
+            bug = self.factory.makeBug(product=product)
+            bug_tag = BugTag()
+            bug_tag.bug = bug
+            bug_tag.tag = old_tag
+            self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
             self.getCount(
                 BugSummary.product == product,
                 BugSummary.tag == old_tag
-                ), 0)
-        self.assertEqual(
-            self.getCount(
-                BugSummary.product == product,
-                BugSummary.tag == new_tag
-                ), 1)
+                ), 3)
+
+        for count in reversed(range(3)):
+            bug_tag = self.store.find(BugTag, tag=old_tag).any()
+            bug_tag.tag = new_tag
+
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.tag == old_tag),
+                count)
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.tag == new_tag),
+                3 - count)
 
         # There should be no other BugSummary rows.
         self.assertEqual(self.getCount(BugSummary.tag == old_tag), 0)
-        self.assertEqual(self.getCount(BugSummary.tag == new_tag), 1)
+        self.assertEqual(self.getCount(BugSummary.tag == new_tag), 3)
 
     def test_removeTag(self):
         tag = u'pustular'
@@ -122,35 +134,64 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
 
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
 
-        bug_tag = BugTag()
-        bug_tag.bug = bug
-        bug_tag.tag = tag
-        self.store.add(bug_tag)
-
-        # Number of tagged tasks for a particular product
-        self.assertEqual(
-            self.getCount(
-                BugSummary.product == product,
-                BugSummary.tag == tag
-                ), 1)
-
-        # Delete the tag.
-        self.store.remove(bug_tag)
+        for count in range(3):
+            bug = self.factory.makeBug(product=product)
+            bug_tag = BugTag()
+            bug_tag.bug = bug
+            bug_tag.tag = tag
+            self.store.add(bug_tag)
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
             self.getCount(
                 BugSummary.product == product,
                 BugSummary.tag == tag
-                ), 0)
+                ), 3)
+
+        for count in reversed(range(3)):
+            bug_tag = self.store.find(BugTag, tag=tag).any()
+            self.store.remove(bug_tag)
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.tag == tag
+                    ), count)
 
         # There should be no other BugSummary rows.
         self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
 
     def test_changeStatus(self):
-        raise NotImplementedError
+        org_status = BugTaskStatus.NEW
+        new_status = BugTaskStatus.INVALID
+
+        product = self.factory.makeProduct()
+
+        for count in range(3):
+            bug = self.factory.makeBug(product=product)
+            bug_task = self.store.find(BugTask, bug=bug).one()
+            bug_task.status = org_status
+
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.status == org_status),
+                count + 1)
+
+        for count in reversed(range(3)):
+            bug_task = self.store.find(
+                BugTask, product=product, status=org_status).any()
+            bug_task.status = new_status
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.status == org_status),
+                count)
+            self.assertEqual(
+                self.getCount(
+                    BugSummary.product == product,
+                    BugSummary.status == new_status),
+                3 - count)
 
     def test_makePrivate(self):
         raise NotImplementedError
