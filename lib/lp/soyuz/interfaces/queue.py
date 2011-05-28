@@ -636,6 +636,13 @@ class IPackageUploadSet(Interface):
     def getSourceBySourcePackageReleaseIDs(spr_ids):
         """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
 
+    def getByPackageCopyJobIDs(pcj_ids):
+        """Return `PackageUpload`s using `PackageCopyJob`s.
+
+        :param pcj_ids: A list of `PackageCopyJob` IDs.
+        :return: all the `PackageUpload`s that reference the supplied IDs.
+        """
+
 
 class IHasQueueItems(Interface):
     """An Object that has queue items"""

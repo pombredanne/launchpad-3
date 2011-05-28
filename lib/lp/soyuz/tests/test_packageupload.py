@@ -364,3 +364,10 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
         self.assertEqual(pcj, pu.package_copy_job)
 
+    def test_getByPackageCopyJobIDs(self):
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+
+        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs([pcj.id])
+        self.assertEqual(pu, result.one())

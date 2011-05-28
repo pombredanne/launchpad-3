@@ -29,7 +29,10 @@ from storm.locals import (
     Join,
     Reference,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -41,8 +44,10 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -1327,3 +1332,13 @@ class PackageUploadSet:
         return PackageUploadSource.select("""
             PackageUploadSource.sourcepackagerelease IN %s
             """ % sqlvalues(spr_ids))
+
+    def getByPackageCopyJobIDs(self, pcj_ids):
+        """See `IPackageUploadSet`."""
+        if pcj_ids is None or len(pcj_ids) == 0:
+            return EmptyResultSet()
+
+        return IStore(PackageUpload).find(
+            PackageUpload,
+            PackageUpload.package_copy_job_id.is_in(pcj_ids))
+
