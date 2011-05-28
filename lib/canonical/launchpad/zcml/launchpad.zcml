@@ -136,19 +136,19 @@
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.default_pickerentry_adapter"
+    factory="canonical.launchpad.browser.vocabulary.DefaultPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.person_to_pickerentry"
+    factory="canonical.launchpad.browser.vocabulary.PersonPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.branch_to_pickerentry"
+    factory="canonical.launchpad.browser.vocabulary.BranchPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.sourcepackagename_to_pickerentry"
+    factory="canonical.launchpad.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
     />
 
 <facet facet="overview">
