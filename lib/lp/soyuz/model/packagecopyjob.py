@@ -17,6 +17,7 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -43,6 +44,7 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import FromExistingOverridePolicy
 from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJob,
@@ -245,6 +247,37 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if unapproved:
             pu.setUnapproved()
 
+    def _checkPolicies(self, source_names):
+        # The assumption here is that we are currently using one package
+        # per job right now to make it easier to show feedback to users
+        # in the UI.  If/when that changes, this code also needs to
+        # change.
+        #
+        # This helper will only return if it's safe to carry on with the
+        # copy, otherwise it raises SuspendJobException to tell the job
+        # runner to suspend the job.
+        override_policy = FromExistingOverridePolicy()
+        ancestry = override_policy.calculateSourceOverrides(
+            self.target_archive, self.target_distroseries,
+            self.target_pocket, source_names)
+
+        copy_policy = InsecureCopyPolicy()
+        approve_new = copy_policy.autoApproveNew(
+            self.target_archive, self.target_distroseries, self.target_pocket)
+        if len(ancestry) == 0 and not approve_new:
+            # There's no existing package with the same name and the
+            # policy says unapproved, so we poke it in the NEW queue.
+            self._createPackageUpload()
+            raise SuspendJobException
+
+        # The package is not new (it has ancestry) so check the copy
+        # policy for existing packages.
+        approve_existing = copy_policy.autoApprove(
+            self.target_archive, self.target_distroseries, self.target_pocket)
+        if not approve_existing:
+            self._createPackageUpload(unapproved=True)
+            raise SuspendJobException
+
     def run(self):
         """See `IRunnableJob`."""
         if self.target_archive.is_ppa:
@@ -263,31 +296,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 source_names.add(
                     source_package.sourcepackagerelease.sourcepackagename)
 
-        override_policy = FromExistingOverridePolicy()
-        ancestry = override_policy.calculateSourceOverrides(
-            self.target_archive, self.target_distroseries,
-            self.target_pocket, source_names)
-
-        # The assumption here is that we are currently using one package
-        # per job right now to make it easier to show feedback to users
-        # in the UI.  If/when that changes, this code also needs to
-        # change.
-        copy_policy = InsecureCopyPolicy()
-        approve_new = copy_policy.autoApproveNew(
-            self.target_archive, self.target_distroseries, self.target_pocket)
-        if len(ancestry) == 0 and not approve_new:
-            # There's no existing package with the same name and the
-            # policy says unapproved, so we poke it in the NEW queue.
-            self._createPackageUpload()
-            raise SuspendJobException
-
-        # The package is not new (it has ancestry) so check the copy
-        # policy for existing packages.
-        approve_existing = copy_policy.autoApprove(
-            self.target_archive, self.target_distroseries, self.target_pocket)
-        if not approve_existing:
-            self._createPackageUpload(unapproved=True)
-            raise SuspendJobException
+        # If there's a PackageUpload associated with this job then this
+        # job has just been released by an archive admin from the queue.
+        # We don't need to check any policies, but the admin may have
+        # set overrides which we will get from the job's metadata.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [self.context.id])
+        if pu is not None:
+            self._checkPolicies(source_names)
 
         # The package is free to go right in, so just copy it now.
         do_copy(
