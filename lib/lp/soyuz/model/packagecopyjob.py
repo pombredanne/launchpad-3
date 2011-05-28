@@ -235,6 +235,16 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def include_binaries(self):
         return self.metadata['include_binaries']
 
+    def _createPackageUpload(self, unapproved=False):
+        pu = self.target_distroseries.createQueueEntry(
+            pocket=self.target_pocket, changesfilename="changes",
+            changesfilecontent="changes", archive=self.target_archive,
+            package_copy_job=self.context)
+        # TODO: Fix PackageUpload to cope with a lack of changesfile
+        # when it has a package_copy_job.
+        if unapproved:
+            pu.setUnapproved()
+
     def run(self):
         """See `IRunnableJob`."""
         if self.target_archive.is_ppa:
@@ -268,12 +278,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if len(ancestry) == 0 and not approve_new:
             # There's no existing package with the same name and the
             # policy says unapproved, so we poke it in the NEW queue.
-            pu = self.target_distroseries.createQueueEntry(
-                pocket=self.target_pocket, changesfilename="changes",
-                changesfilecontent="changes", archive=self.target_archive,
-                package_copy_job=self.context)
-            # TODO: Fix PackageUpload to cope with a lack of changesfile
-            # when it has a package_copy_job.
+            self._createPackageUpload()
             raise SuspendJobException
 
         # The package is not new (it has ancestry) so check the copy
@@ -281,11 +286,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         approve_existing = copy_policy.autoApprove(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if not approve_existing:
-            pu = self.target_distroseries.createQueueEntry(
-                pocket=self.target_pocket, changesfilename="changes",
-                changesfilecontent="changes", archive=self.target_archive,
-                package_copy_job=self.context)
-            pu.setUnapproved()
+            self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
         # The package is free to go right in, so just copy it now.
