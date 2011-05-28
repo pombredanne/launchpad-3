@@ -1285,19 +1285,6 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         dest_display_name)
 
 
-def partition_pubs_by_archive(source_pubs):
-    """Group `source_pubs` by archive.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A dict mapping `Archive`s to the list of entries from
-        `source_pubs` that are in that archive.
-    """
-    by_source_archive = {}
-    for spph in source_pubs:
-        by_source_archive.setdefault(spph.archive, []).append(spph)
-    return by_source_archive
-
-
 def name_pubs_with_versions(source_pubs):
     """Annotate each entry from `source_pubs` with its version.
 
@@ -1328,11 +1315,11 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             person, dest_archive, dest_series, dest_pocket, spns)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
-    archive_pubs = partition_pubs_by_archive(source_pubs)
-    for source_archive, spphs in archive_pubs.iteritems():
+    for spph in source_pubs:
         job_source.create(
-            name_pubs_with_versions(spphs), source_archive, dest_archive,
+            name_pubs_with_versions([spph]), spph.archive, dest_archive,
             dest_series, dest_pocket, include_binaries=include_binaries)
+
     return structured("""
         <p>Requested sync of %s packages.</p>
         <p>Please allow some time for these to be processed.</p>
