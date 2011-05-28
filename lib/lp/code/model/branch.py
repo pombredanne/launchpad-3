@@ -316,8 +316,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         params = BugTaskSearchParams(user=user, linked_branches=self.id,
             status=status_filter)
         tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
-        # Post process to discard irrelevant tasks: we only return one task per
-        # bug, and cannot easily express this in sql (yet).
+        # Post process to discard irrelevant tasks: we only return one task
+        # per bug, and cannot easily express this in sql (yet).
         return filter_bugtasks_by_context(self.target.context, tasks)
 
     def linkBug(self, bug, registrant):
@@ -591,6 +591,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
+
         def eager_load(rows):
             revisions = map(operator.itemgetter(1), rows)
             load_related(RevisionAuthor, revisions, ['revision_author_id'])
@@ -740,8 +741,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Helper for associatedSuiteSourcePackages."""
         # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first. If changing this be
-        # sure to also change BranchCollection.getBranches.
+        # Order by the pocket to get the release one first. If changing this
+        # be sure to also change BranchCollection.getBranches.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
@@ -1010,17 +1011,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return getUtility(IBranchLookup).getByUniqueName(location)
 
-    def branchChanged(self, stacked_on_location, last_revision_id,
+    def branchChanged(self, stacked_on_url, last_revision_id,
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
-        if stacked_on_location == '' or stacked_on_location is None:
+        if stacked_on_url == '' or stacked_on_url is None:
             stacked_on_branch = None
         else:
-            stacked_on_branch = self._findStackedBranch(stacked_on_location)
+            stacked_on_branch = self._findStackedBranch(stacked_on_url)
             if stacked_on_branch is None:
                 self.mirror_status_message = (
-                    'Invalid stacked on location: ' + stacked_on_location)
+                    'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
@@ -1213,7 +1214,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         try:
             simplejson.loads(config)
             self.merge_queue_config = config
-        except ValueError: # The json string is invalid
+        except ValueError:  # The json string is invalid
             raise InvalidMergeQueueConfig
 
 

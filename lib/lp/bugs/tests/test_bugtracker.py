@@ -351,6 +351,23 @@ class TestMantis(TestCaseWithFactory):
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
 
 
+class TestSourceForge(TestCaseWithFactory):
+    """Tests for SourceForge-specific BugTracker code."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getBugFilingAndSearchLinks_handles_bad_data_correctly(self):
+        # It's possible for Product.remote_product to contain data
+        # that's not valid for SourceForge BugTrackers.
+        # getBugFilingAndSearchLinks() will return None if it encounters
+        # bad data in the remote_product field.
+        remote_product = "this is not valid"
+        bug_tracker = self.factory.makeBugTracker(
+            bugtrackertype=BugTrackerType.SOURCEFORGE)
+        self.assertIs(
+            None, bug_tracker.getBugFilingAndSearchLinks(remote_product))
+
+
 class TestMakeBugtrackerName(TestCase):
     """Tests for make_bugtracker_name."""
 

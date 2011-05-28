@@ -1682,8 +1682,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if milestone is not None:
             bugtask.transitionToMilestone(milestone, milestone.target.owner)
         if series is not None:
-            task = bug.addTask(owner, series)
-            task.transitionToStatus(status, owner)
+            with person_logged_in(owner):
+                task = bug.addTask(owner, series)
+                task.transitionToStatus(status, owner)
 
         return bug
 
