@@ -23,7 +23,7 @@ class TestMetaClass(InterfaceClass):
         attrs = {
             "test_invalid_chars+":
             Choice(vocabulary='ValidTeamOwner'),
-            "test":
+            "test_valid":
             Choice(vocabulary='ValidTeamOwner')}
         super(TestMetaClass, self).__init__(
             name, bases=bases, attrs=attrs, __doc__=__doc__,
@@ -51,7 +51,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # Check the picker widget is correctly set up for a field which has a
         # name containing only valid HTML ID characters.
 
-        field = ITest['test']
+        field = ITest['test_valid']
         bound_field = field.bind(self.context)
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
@@ -65,9 +65,9 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             simplejson.dumps(self.vocabulary.step_title),
             picker_widget.step_title_text)
         self.assertEqual(
-            'show-widget-field-test', picker_widget.show_widget_id)
+            'show-widget-field-test_valid', picker_widget.show_widget_id)
         self.assertEqual(
-            'field.test', picker_widget.input_id)
+            'field.test_valid', picker_widget.input_id)
         self.assertEqual(
             simplejson.dumps(None), picker_widget.extra_no_results_message)
 
@@ -83,8 +83,8 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # The widget name is encoded to get the widget's ID. It must only
         # contain valid HTML characters.
         self.assertEqual(
-            'show-widget-field-test-invalid-chars-dGVzdC1pbnZhbGlkLWNoYXJzKw',
+            'show-widget-field-test_invalid_chars-dGVzdF9pbnZhbGlkX2NoYXJzKw',
             picker_widget.show_widget_id)
         self.assertEqual(
-            'field.test-invalid-chars-dGVzdC1pbnZhbGlkLWNoYXJzKw',
+            'field.test_invalid_chars-dGVzdF9pbnZhbGlkX2NoYXJzKw',
             picker_widget.input_id)

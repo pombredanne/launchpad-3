@@ -277,20 +277,16 @@ class TestCssIdGeneration(TestCase):
         id = FormattersAPI('field.abc').css_id()
         self.assertEqual('field-abc', id)
         id = FormattersAPI('field_abc').css_id()
-        self.assertEqual('field-abc', id)
+        self.assertEqual('field_abc', id)
 
     def test_id_with_invalid_prefix(self):
-        for prefix in '-0123456789':
+        for prefix in '-_0123456789':
             id = FormattersAPI(prefix + 'abc').css_id()
             self.assertEqual('j%sabc' % prefix, id)
 
     def test_id_with_invalid_character(self):
         id = FormattersAPI('abc+def+').css_id()
         self.assertEqual('abc-def-YWJjK2RlZis', id)
-
-    def test_id_with_underscore(self):
-        id = FormattersAPI('abc_def').css_id()
-        self.assertEqual('abc-def', id)
 
     def test_id_with_user_prefix(self):
         id = FormattersAPI('abc').css_id('prefix')
