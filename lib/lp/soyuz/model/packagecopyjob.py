@@ -300,6 +300,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # job has just been released by an archive admin from the queue.
         # We don't need to check any policies, but the admin may have
         # set overrides which we will get from the job's metadata.
+        # TODO: Process overrides.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [self.context.id])
         if not pu.any():
