@@ -52,12 +52,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.archiveuploader.utils import safe_fix_maintainer
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
@@ -479,15 +474,6 @@ class PackageUpload(SQLBase):
     def from_build(self):
         return bool(self.builds) or self.getSourceBuild()
 
-    def isAutoSyncUpload(self, changed_by_email):
-        """See `IPackageUpload`."""
-        katie = getUtility(ILaunchpadCelebrities).katie
-        changed_by = self._emailToPerson(changed_by_email)
-        return (not self.signing_key
-                and self.contains_source and not self.contains_build
-                and changed_by == katie
-                and self.pocket != PackagePublishingPocket.SECURITY)
-
     @cachedproperty
     def _customFormats(self):
         """Return the custom upload formats contained in this upload."""
@@ -706,21 +692,27 @@ class PackageUpload(SQLBase):
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        notify(self, announce_list, summary_text, changes_file_object,
-            logger, dry_run)
-
-    # XXX julian 2007-05-21:
-    # This method should really be IPersonSet.getByUploader but requires
-    # some extra work to port safe_fix_maintainer to emailaddress.py and
-    # then get nascent upload to use that.
-    def _emailToPerson(self, fullemail):
-        """Return an IPerson given an RFC2047 email address."""
-        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-        # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
-        person = getUtility(IPersonSet).getByEmail(email)
-        return person
+        status_action = {
+            PackageUploadStatus.NEW: 'new',
+            PackageUploadStatus.UNAPPROVED: 'unapproved',
+            PackageUploadStatus.REJECTED: 'rejected',
+            PackageUploadStatus.ACCEPTED: 'accepted',
+            PackageUploadStatus.DONE: 'accepted',
+            }
+        changes, changes_lines = self._getChangesDict(changes_file_object)
+        if changes_file_object is not None:
+            changesfile_content = changes_file_object.read()
+        else:
+            changesfile_content = 'No changes file content available.'
+        if self.signing_key is not None:
+            signer = self.signing_key.owner
+        else:
+            signer = None
+        notify(
+            signer, self.sourcepackagerelease, self.builds, self.customfiles,
+            self.archive, self.distroseries, self.pocket, announce_list,
+            summary_text, changes, changesfile_content, changes_file_object,
+            status_action[self.status], dry_run, logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
@@ -1069,15 +1061,13 @@ class PackageUploadCustom(SQLBase):
         supplied action method.
         """
         temp_filename = self.temp_filename()
-        full_suite_name = "%s%s" % (
-            self.packageupload.distroseries.name,
-            pocketsuffix[self.packageupload.pocket])
+        suite = self.packageupload.distroseries.getSuite(
+            self.packageupload.pocket)
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
             action_method(
-                archive_config.archiveroot, temp_filename,
-                full_suite_name)
+                archive_config.archiveroot, temp_filename, suite)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
