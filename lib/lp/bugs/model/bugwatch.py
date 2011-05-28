@@ -151,7 +151,7 @@ class BugWatch(SQLBase):
         for bugtask in self.bugtasks:
             # We don't update conjoined bug tasks; they must be
             # updated through their conjoined masters.
-            if bugtask._isConjoinedBugTask():
+            if bugtask.conjoined_master is not None:
                 continue
             # We don't update tasks of duplicate bugs.
             if bugtask.bug.duplicateof is not None:
