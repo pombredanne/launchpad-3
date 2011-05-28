@@ -34,7 +34,10 @@ from lp.app.errors import NotFoundError
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import (
+    JobStatus,
+    SuspendJobException,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import FromExistingOverridePolicy
@@ -265,14 +268,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if len(ancestry) == 0 and not approve_new:
             # There's no existing package with the same name and the
             # policy says unapproved, so we poke it in the NEW queue.
-            self.suspend()
             pu = self.target_distroseries.createQueueEntry(
                 pocket=self.target_pocket, changesfilename="changes",
                 changesfilecontent="changes", archive=self.target_archive,
                 package_copy_job=self.context)
             # TODO: Fix PackageUpload to cope with a lack of changesfile
             # when it has a package_copy_job.
-            return
+            raise SuspendJobException
 
         # The package is not new (it has ancestry) so check the copy
         # policy for existing packages.
@@ -284,8 +286,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 changesfilecontent="changes", archive=self.target_archive,
                 package_copy_job=self.context)
             pu.setUnapproved()
-            self.suspend()
-            return
+            raise SuspendJobException
 
         # The package is free to go right in, so just copy it now.
         do_copy(

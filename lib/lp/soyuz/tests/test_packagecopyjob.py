@@ -14,7 +14,10 @@ from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import (
+    JobStatus,
+    SuspendJobException,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -427,13 +430,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
 
-        self.runJob(job)
-        self.layer.txn.commit()
-        self.layer.switchDbUser("launchpad_main")
-
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set.
-        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertRaises(SuspendJobException, self.runJob, job)
         pu = Store.of(target_archive).find(
             PackageUpload,
             PackageUpload.package_copy_job_id == job.id).one()
@@ -476,11 +475,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
-        self.runJob(job)
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set in the UNAPPROVED queue.
-        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertRaises(SuspendJobException, self.runJob, job)
+
         pu = Store.of(target_archive).find(
             PackageUpload,
             PackageUpload.package_copy_job_id == job.id).one()
