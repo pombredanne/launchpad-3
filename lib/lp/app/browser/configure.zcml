@@ -385,24 +385,24 @@
   <browser:page
     for="*"
     permission="zope.Public"
-    class="canonical.launchpad.browser.vocabulary.HugeVocabularyJSONView"
+    class="lp.app.browser.vocabulary.HugeVocabularyJSONView"
     name="+huge-vocabulary"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.DefaultPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.DefaultPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.PersonPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.PersonPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.BranchPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.BranchPickerEntryAdapter"
     />
 
   <adapter
-    factory="canonical.launchpad.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
     />
 
   <!-- TALES namespaces. -->
