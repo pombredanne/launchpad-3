@@ -486,3 +486,42 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         pcj = removeSecurityProxy(job).context
         self.assertEqual(pcj, pu.package_copy_job)
         self.assertEqual(PackageUploadStatus.UNAPPROVED, pu.status)
+
+    def test_copying_after_job_released(self):
+        # The first pass of the job may have created a PackageUpload and
+        # suspended the job.  Here we test the second run to make sure
+        # that it actually copies the package.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive.
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="copyme",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            source_packages=[("copyme", "2.8-1")],
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+
+        # Associate a PackageUpload with the job as happens when the
+        # job is suspended in the first run.
+        pcj = removeSecurityProxy(job).context
+        self.factory.makePackageUpload(package_copy_job=pcj)
+
+        # There is no ancestry, so normally thw job would get suspended
+        # but because we have a PackageUpload it will run to completion.
+        self.runJob(job)
+
+        existing_sources = target_archive.getPublishedSources(name='copyme')
+        self.assertIsNot(None, existing_sources.any())

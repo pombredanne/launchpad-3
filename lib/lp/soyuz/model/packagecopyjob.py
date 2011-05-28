@@ -302,7 +302,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # set overrides which we will get from the job's metadata.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [self.context.id])
-        if pu is not None:
+        if not pu.any():
             self._checkPolicies(source_names)
 
         # The package is free to go right in, so just copy it now.
