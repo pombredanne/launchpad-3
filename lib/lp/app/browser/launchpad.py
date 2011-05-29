@@ -777,7 +777,7 @@ class IcingFolder(ExportedFolder):
     export_subdirectories = True
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing/')
+        config.root, 'lib/canonical/launchpad/icing/')
 
 
 class LaunchpadImageFolder(ExportedImageFolder):
@@ -785,7 +785,7 @@ class LaunchpadImageFolder(ExportedImageFolder):
     """
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../images/')
+        config.root, 'lib/canonical/launchpad/images/')
 
 
 class IcingContribFolder(ExportedFolder):
@@ -794,7 +794,7 @@ class IcingContribFolder(ExportedFolder):
     export_subdirectories = True
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
+        config.root, 'lib/canonical/launchpad/icing-contrib/')
 
 
 class LaunchpadTourFolder(ExportedFolder):
@@ -832,7 +832,7 @@ class LaunchpadAPIDocFolder(ExportedFolder):
     """Export the API documentation."""
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+        config.root, 'lib/canonical/launchpad/apidoc/')
 
     def browserDefault(self, request):
         """Traverse to index.html if the directory itself is requested."""
