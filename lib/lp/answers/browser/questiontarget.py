@@ -49,7 +49,6 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     Link,
@@ -62,13 +61,13 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     IQuestionCollection,
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
-from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
@@ -81,6 +80,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct

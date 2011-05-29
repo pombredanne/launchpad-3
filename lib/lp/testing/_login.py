@@ -27,7 +27,6 @@ from contextlib import contextmanager
 from zope.component import getUtility
 from zope.security.management import endInteraction
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interaction import (
     ANONYMOUS,
     get_current_principal,
@@ -37,6 +36,7 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.utils import decorate_with
 from lp.testing.sampledata import ADMIN_EMAIL
 
