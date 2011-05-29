@@ -852,8 +852,21 @@ class FormattersAPI:
         return ''.join(result)
 
     _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_]+')
+    _zope_css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_\.]+')
 
     def css_id(self, prefix=None):
+        """Return a CSS compliant id."""
+        return self._css_id(self._css_id_strip_pattern, prefix)
+
+    def zope_css_id(self, prefix=None):
+        """Return a CSS compliant id compatible with zope's form fields.
+
+        The strip pattern allows ids which contain periods which is required
+        for compatibility with zope form fields.
+        """
+        return self._css_id(self._zope_css_id_strip_pattern, prefix)
+
+    def _css_id(self, strip_pattern, prefix=None):
         """Return a CSS compliant id.
 
         The id may contain letters, numbers, hyphens and underscores. The
@@ -869,20 +882,13 @@ class FormattersAPI:
             raw_text = prefix + self._stringtoformat
         else:
             raw_text = self._stringtoformat
+        id_ = strip_pattern.sub('-', raw_text)
 
-        # If we have to strip out any invalid characters and replace with a
-        # hyphen, we need to append a unique string to the end of the id to
-        # ensure it is guaranteed to be unique on the page. We use a base64
-        # encoding of the id.
-
-        # First get rid of '.' and replace with '-'. We don't want to trigger
-        # the need to append the id with the base64 encoding based on a '.'
-        # match.
-        raw_text = raw_text.replace('.', '-')
-        id_ = raw_text
-
-        if self._css_id_strip_pattern.search(raw_text):
-            id_ = self._css_id_strip_pattern.sub('-', raw_text)
+        # If any characters are converted to a hyphen, we cannot be 100%
+        # assured of a unique id unless we take further action. Note that we
+        # use the _zope_css_id_strip_pattern for the check because ids with
+        # periods are still in common usage.
+        if self._zope_css_id_strip_pattern.search(raw_text):
             # We need to ensure that the id is always guaranteed to be unique,
             # hence we append URL-safe base 64 encoding of the name. However
             # we also have to strip off any padding characters ("=") because
@@ -951,6 +957,11 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'zope-css-id':
+            if len(furtherPath) > 0:
+                return self.zope_css_id(furtherPath.pop())
+            else:
+                return self.zope_css_id()
         elif name == 'oops-id':
             return self.oops_id()
         else:

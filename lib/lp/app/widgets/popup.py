@@ -135,17 +135,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     @property
     def input_id(self):
         """This is used to ensure the widget id contains only valid chars."""
-
-        # If our name is a standard zope widget name, then we don't want to do
-        # any messing with the prefix 'field.' so strip it off.
-        match = re.match('field\.(.*)', self.name)
-        prefix = ''
-        if match:
-            name = match.group(1)
-            prefix = 'field.'
-        else:
-            name = self.name
-        return prefix + FormattersAPI(name).css_id()
+        return FormattersAPI(self.name).zope_css_id()
 
     def chooseLink(self):
         if self.nonajax_uri is None:
