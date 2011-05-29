@@ -70,8 +70,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
     IHasExternalBugTracker,
     IHasIcon,
     IHasLogo,
@@ -120,7 +118,11 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.services.fields import (
     Description,
     IconImageUpload,

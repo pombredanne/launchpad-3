@@ -78,8 +78,7 @@ no communication between the two systems.
 
     >>> the_owner = team_one.teamowner
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebrities = getUtility(ILaunchpadCelebrities)
     >>> an_expert = list(celebrities.registry_experts.allmembers)[0]
     >>> an_admin = list(celebrities.admin.allmembers)[0]

@@ -69,10 +69,6 @@ from canonical.database.constants import (
     )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
-from lp.services.messages.model.message import (
-    Message,
-    MessageChunk,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -83,7 +79,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -102,6 +97,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
@@ -191,9 +187,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
-from lp.registry.interfaces.distroseriesparent import (
-    IDistroSeriesParentSet,
-    )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -239,6 +233,10 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate

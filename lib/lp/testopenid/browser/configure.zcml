@@ -65,7 +65,7 @@
     <browser:page
         name=""
         for="..interfaces.server.ITestOpenIDApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         layer="canonical.launchpad.layers.TestOpenIDLayer"
         />

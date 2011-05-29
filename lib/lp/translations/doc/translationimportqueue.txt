@@ -27,8 +27,7 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.product import IProductSet

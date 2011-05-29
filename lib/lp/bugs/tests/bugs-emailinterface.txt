@@ -2968,8 +2968,7 @@ set the datecreated field of the bug's initial message (see bug
     >>> commit()
 
     >>> with lp_dbuser():
-    ...     from canonical.launchpad.interfaces.launchpad import (
-    ...         ILaunchpadCelebrities)
+    ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
     ...     bug_watch = bug_with_watch.addWatch(
     ...         bug_tracker,
