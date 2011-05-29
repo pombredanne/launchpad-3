@@ -373,9 +373,13 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         component = getUtility(IComponentSet)['restricted']
         section = getUtility(ISectionSet)['games']
 
+        expected_metadata = {
+            'component_override': component.name,
+            'section_override': section.name
+        }
+        expected_metadata.update(plain_copy_job.metadata)
+
         pu.overrideSource(component, section, allowed_components=[component])
 
         self.assertEqual(
-            component.name, plain_copy_job.metadata['component_override'])
-        self.assertEqual(
-            section.name, plain_copy_job.metadata['section_override'])
+            expected_metadata, plain_copy_job.metadata)

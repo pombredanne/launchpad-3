@@ -112,6 +112,12 @@ class PackageCopyJob(StormBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
+    def extendMetadata(self, metadata_dict):
+        """Add metadata_dict to the existing metadata."""
+        existing = self.metadata
+        existing.update(metadata_dict)
+        self._json_data = self.serializeMetadata(existing)
+
 
 class PackageCopyJobDerived(BaseRunnableJob):
     """Abstract class for deriving from PackageCopyJob."""
