@@ -11,15 +11,15 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.browser.launchpad import LaunchpadRootNavigation
 from lp.app.errors import GoneError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -33,7 +33,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_view
-
 
 # We set the request header HTTP_REFERER  when we want to simulate navigation
 # from a valid page. This is used in the assertDisplaysNotification check.

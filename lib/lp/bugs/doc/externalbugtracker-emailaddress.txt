@@ -79,7 +79,7 @@ If the message ID of the email sent to the remote tracker is not known,
 we record a remotebug value of '' for the bugwatch (we can't use None
 because BugWatch.remotebug is a NOT NULL field).
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> bug_watch = example_bug.addWatch(bugtracker=email_tracker,
     ...     remotebug='', owner=getUtility(ILaunchpadCelebrities).janitor)
     >>> bug_watch.bugtracker.name, bug_watch.remotebug, bug_watch.bug.id

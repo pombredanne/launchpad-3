@@ -329,8 +329,7 @@ that the editor is not a member of, like ubuntu-branches.
 
     >>> login('admin@canonical.com')
     >>> from lp.code.tests.helpers import make_official_package_branch
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> owner = getUtility(ILaunchpadCelebrities).ubuntu_branches
     >>> branch = make_official_package_branch(factory, owner=owner)
     >>> editor = factory.makePerson(
