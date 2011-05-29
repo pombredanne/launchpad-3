@@ -10,7 +10,7 @@ group. Some example of pages using it are:
 
 Let's fill a IPackageRelationshipSet:
 
-  >>> from canonical.launchpad.browser import PackageRelationshipSet
+  >>> from lp.soyuz.browser.packagerelationship import PackageRelationshipSet
 
   >>> relationship_set = PackageRelationshipSet()
   >>> relationship_set.add(
