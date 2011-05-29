@@ -53,7 +53,7 @@ Let's see what we call 'sane':
 
 Now for each parsed element we can build an IPackageRelationship:
 
-  >>> from canonical.launchpad.browser import PackageRelationship
+  >>> from lp.soyuz.browser.packagerelationship import PackageRelationship
   >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationship
   >>> from canonical.launchpad.webapp.testing import verifyObject
 
