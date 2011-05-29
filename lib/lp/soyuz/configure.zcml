@@ -919,6 +919,33 @@
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
     </class>
 
+    <!-- PackageCopyRequestSet -->
+    <securedutility
+        class="lp.soyuz.model.packagecopyrequest.PackageCopyRequestSet"
+        provides="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet" />
+    </securedutility>
+
+
+    <!-- PackageCopyRequest -->
+    <class class="lp.soyuz.model.packagecopyrequest.PackageCopyRequest">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"
+        />
+    </class>
+
+    <!-- PackageRelationship -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationship">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationship"/>
+    </class>
+
+    <!-- PackageRelationshipSet -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationshipSet">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"/>
+    </class>
+
    <!-- OverridePolicy -->
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />

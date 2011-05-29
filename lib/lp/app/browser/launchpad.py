@@ -58,7 +58,6 @@ from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm,
     IBazaarApplication,
-    ILaunchpadCelebrities,
     IRosettaApplication,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -114,6 +113,7 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
@@ -759,7 +759,7 @@ class SoftTimeoutView(LaunchpadView):
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
-        time.sleep(soft_timeout/1000.0)
+        time.sleep(soft_timeout / 1000.0)
         time_to_generate_page = (time.time() - start_time) * 1000
         # In case we didn't sleep enogh time, sleep a while longer to
         # pass the soft timeout threshold.
@@ -777,7 +777,7 @@ class IcingFolder(ExportedFolder):
     export_subdirectories = True
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing/')
+        config.root, 'lib/canonical/launchpad/icing/')
 
 
 class LaunchpadImageFolder(ExportedImageFolder):
@@ -785,7 +785,7 @@ class LaunchpadImageFolder(ExportedImageFolder):
     """
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../images/')
+        config.root, 'lib/canonical/launchpad/images/')
 
 
 class IcingContribFolder(ExportedFolder):
@@ -794,7 +794,7 @@ class IcingContribFolder(ExportedFolder):
     export_subdirectories = True
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../icing-contrib/')
+        config.root, 'lib/canonical/launchpad/icing-contrib/')
 
 
 class LaunchpadTourFolder(ExportedFolder):
@@ -832,7 +832,7 @@ class LaunchpadAPIDocFolder(ExportedFolder):
     """Export the API documentation."""
 
     folder = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../apidoc/')
+        config.root, 'lib/canonical/launchpad/apidoc/')
 
     def browserDefault(self, request):
         """Traverse to index.html if the directory itself is requested."""
