@@ -43,7 +43,11 @@ __all__ = [
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
+    'validate_external_dependencies',
     ]
+
+
+from urlparse import urlparse
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
@@ -1690,3 +1694,28 @@ FULL_COMPONENT_SUPPORT = (
     )
 
 # Circular dependency issues fixed in _schema_circular_imports.py
+
+def validate_external_dependencies(ext_deps):
+    """Validate the external_dependencies field.
+
+    :param ext_deps: The dependencies form field to check.
+    """
+    errors = []
+    # The field can consist of multiple entries separated by
+    # newlines, so process each in turn.
+    for dep in ext_deps.splitlines():
+        try:
+            deb, url, suite, components = dep.split(" ", 3)
+        except ValueError:
+            errors.append(
+                "'%s' is not a complete and valid sources.list entry"
+                    % dep)
+            continue
+
+        if deb != "deb":
+            errors.append("%s: Must start with 'deb'" % dep)
+        url_components = urlparse(url)
+        if not url_components[0] or not url_components[1]:
+            errors.append("%s: Invalid URL" % dep)
+
+    return errors
