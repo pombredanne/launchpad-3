@@ -1245,4 +1245,24 @@
     <!-- Widgets -->
     <include package=".widgets"/>
 
+    <!-- batching -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view"
+        template="../templates/bugs-listing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-table-without-navlinks.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
+        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
+        permission="zope.Public" />
+
 </configure>

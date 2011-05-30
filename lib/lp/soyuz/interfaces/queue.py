@@ -45,6 +45,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
 
 
@@ -139,6 +140,12 @@ class IPackageUpload(Interface):
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
+
+    package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Package Copy Job"), required=False, readonly=True)
+
     archive = exported(
         Reference(
             # Really IArchive, patched in _schema_circular_imports.py
@@ -198,14 +205,6 @@ class IPackageUpload(Interface):
         sourcepackagerelease.  For binaries, this is all the components
         on all the binarypackagerelease records arising from the build.
         """)
-
-    def isAutoSyncUpload(changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
 
     def setNew():
         """Set queue state to NEW."""
