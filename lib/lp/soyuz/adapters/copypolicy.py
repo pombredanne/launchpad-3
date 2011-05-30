@@ -22,6 +22,11 @@ from lp.registry.interfaces.series import SeriesStatus
 class BaseCopyPolicy:
     """Encapsulation of the policies for copying a package in Launchpad."""
 
+    @property
+    def name(self):
+        """The name of this policy that's used in adapter lookups."""
+        raise AssertionError("Subclass must provide name property")
+
     def autoApprove(self, archive, distroseries, pocket):
         """Decide if the upload can be approved automatically or
         should be held in the queue.
@@ -53,6 +58,8 @@ class BaseCopyPolicy:
 class InsecureCopyPolicy(BaseCopyPolicy):
     """A policy for copying from insecure sources."""
 
+    name = "insecure"
+
     def autoApproveNew(self, archive, distroseries=None, pocket=None):
         if archive.is_ppa:
             return True
@@ -80,6 +87,8 @@ class InsecureCopyPolicy(BaseCopyPolicy):
 
 class SyncCopyPolicy(InsecureCopyPolicy):
     """A policy for mass 'sync' copies."""
+
+    name = "sync"
 
     @property
     def send_email(self):

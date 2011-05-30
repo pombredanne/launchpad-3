@@ -79,3 +79,9 @@ class TestCopyPolicy(TestCaseWithFactory):
     def test_sync_does_not_send_emails(self):
         cp = SyncCopyPolicy()
         self.assertFalse(cp.send_email)
+
+    def test_policy_names(self):
+        icp = InsecureCopyPolicy()
+        scp = SyncCopyPolicy()
+        self.assertEquals("insecure", icp.name)
+        self.assertEquals("sync", scp.name)
