@@ -298,6 +298,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.target_archive, self.target_distroseries,
             self.target_pocket, source_names)
 
+        # TODO: this policy should come from the job itself, waiting on
+        # jtv to do the schema/model changes.
         copy_policy = InsecureCopyPolicy()
         approve_new = copy_policy.autoApproveNew(
             self.target_archive, self.target_distroseries, self.target_pocket)
