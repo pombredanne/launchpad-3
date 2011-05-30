@@ -1129,7 +1129,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            " AND ".join(queries), clauseTables=['SourcePackageRelease'],
             orderBy=['-id'])
 
         return published
@@ -1993,9 +1993,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         getUtility(IInitialiseDistroSeriesJobSource).create(
             child, [self], architectures, packagesets, rebuild)
 
-    def initDerivedDistroSeries(self, user, parents, architectures,
-                                packagesets, rebuild):
+    def initDerivedDistroSeries(self, user, parents, architectures=(),
+                                packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
+        if self.is_derived_series:
+            raise DerivationError(
+                "DistroSeries %s already has parent series." % self.name)
         initialise_series = InitialiseDistroSeries(self, parents)
         try:
             initialise_series.check()
@@ -2049,7 +2052,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
-                difference_type = difference_type,
+                difference_type=difference_type,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)

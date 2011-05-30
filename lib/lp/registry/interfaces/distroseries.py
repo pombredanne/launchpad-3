@@ -951,9 +951,9 @@ class IDistroSeriesEditRestricted(Interface):
 
     @operation_parameters(
         parents=List(
-            title=_("The list of parents to derive from."
-            "distroseries."), value_type=TextLine(),
-            required=False),
+            title=_("The list of parents to derive from."),
+            value_type=Reference(schema=Interface),
+            required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),
