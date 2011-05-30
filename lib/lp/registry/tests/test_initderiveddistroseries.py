@@ -50,11 +50,11 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
             ("DistroSeries {self.child.name} already has parent "
              "series.".format(self=self)),
             self.child.initDerivedDistroSeries, self.child.driver,
-            [self.parent])
+            [self.parent.id])
 
     def test_init_creates_new_job(self):
         self.child.initDerivedDistroSeries(
-            self.child.driver, [self.parent])
+            self.child.driver, [self.parent.id])
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
         self.assertEqual(job.distroseries, self.child)

@@ -228,7 +228,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             '5.10', None, bat.owner)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(self.breezy, [bat])
+        ids = InitialiseDistroSeries(self.breezy, [bat.id])
         ids.initialise()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')

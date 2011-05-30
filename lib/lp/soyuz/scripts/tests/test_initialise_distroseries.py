@@ -409,7 +409,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         component = getUtility(IComponentSet)['universe']
         pocket = PackagePublishingPocket.UPDATES
         child = self.factory.makeDistroSeries()
-        overlays = {child: [pocket, component]}
+        overlays = {child.id: [pocket, component]}
         child = self._full_initialise(
             child=child, rebuild=True, overlays=overlays)
         dsp_set = getUtility(IDistroSeriesParentSet)
