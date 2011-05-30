@@ -1,4 +1,5 @@
-= Bug statistics portlet =
+Bug statistics portlet
+======================
 
 The distribution, project group and project bug listings contain a
 portlet that shows bug statistics for the target. Each statistic is a
@@ -6,7 +7,8 @@ link to filter the listing to show just those bugs. This portlet is
 served in a separate request; the request is issued via Javascript and
 inserted into the page later.
 
-== Distribution ==
+Distribution
+------------
 
     >>> path = 'debian'
 
@@ -77,7 +79,8 @@ The content includes a link to the distribution CVE report.
     http://bugs.launchpad.dev/debian/+cve
 
 
-== Distribution Series ==
+Distribution Series
+-------------------
 
     >>> path = 'debian/woody'
 
@@ -149,7 +152,8 @@ The content includes a link to the distribution CVE report.
     http://bugs.launchpad.dev/debian/woody/+cve
 
 
-== Distribution Source Package ==
+Distribution Source Package
+---------------------------
 
     >>> path = 'debian/+source/mozilla-firefox'
 
@@ -219,7 +223,8 @@ source packages do not have a CVE reports page.
     LinkNotFoundError
 
 
-== Source Package in Distribution Series ==
+Source Package in Distribution Series
+-------------------------------------
 
     >>> path = 'debian/woody/+source/mozilla-firefox'
 
@@ -286,7 +291,8 @@ do not have a CVE reports page.
     LinkNotFoundError
 
 
-== Project group ==
+Project group
+-------------
 
     >>> path = 'mozilla'
 
@@ -356,7 +362,8 @@ not have a CVE reports page.
     LinkNotFoundError
 
 
-== Project ==
+Project
+-------
 
     >>> path = 'firefox'
 

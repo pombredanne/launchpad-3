@@ -111,6 +111,17 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
         # mandatory as part of multi-parent support.
 
+    def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
+        """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.
+
+        :param derived_series: The derived `DistroSeries` that the
+            differences (and jobs) must be for.
+        :param distroseriesdifferences:
+            An iterable of `DistroSeriesDifference`s.
+        :return: A dict mapping each of `distroseriesdifferences` that has
+            pending jobs to a list of its jobs.
+        """
+
 
 class IDistroSeriesDifferenceJob(IRunnableJob):
     """A `Job` that performs actions related to `DistroSeriesDifference`s."""

@@ -22,6 +22,7 @@ from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
+    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -38,6 +39,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -362,6 +364,17 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job])
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
+
+    def test_runJob_with_SuspendJobException(self):
+        # A job that raises SuspendJobError should end up suspended.
+        job = NullJob('suspended')
+        job.run = FakeMethod(failure=SuspendJobException())
+        runner = JobRunner([job])
+        runner.runJob(job)
+
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
 
 
 class StuckJob(BaseRunnableJob):

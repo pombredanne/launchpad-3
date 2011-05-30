@@ -773,7 +773,7 @@ class IDistroSeriesPublic(
         """
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None):
+                         archive, signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.

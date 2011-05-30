@@ -177,8 +177,8 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components
-                isAutoSyncUpload"/>
+                package_copy_job
+                components"/>
         <require
             permission="launchpad.Edit"
             attributes="

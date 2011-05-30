@@ -448,11 +448,16 @@ class BugTracker(SQLBase):
         description = description.encode('utf-8')
 
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
-            # SourceForge bug trackers use a group ID and an ATID to
-            # file a bug, rather than a product name. remote_product
-            # should be an ampersand-separated string in the form
-            # 'group_id&atid'
-            group_id, at_id = remote_product.split('&')
+            try:
+                # SourceForge bug trackers use a group ID and an ATID to
+                # file a bug, rather than a product name. remote_product
+                # should be an ampersand-separated string in the form
+                # 'group_id&atid'
+                group_id, at_id = remote_product.split('&')
+            except ValueError:
+                # If remote_product contains something that's not valid
+                # in a SourceForge context we just return early.
+                return None
 
             # If this bug tracker is the SourceForge celebrity the link
             # is to the new bug tracker rather than the old one.
