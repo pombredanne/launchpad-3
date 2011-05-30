@@ -13,7 +13,6 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -24,6 +23,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (

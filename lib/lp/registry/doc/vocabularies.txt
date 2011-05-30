@@ -778,8 +778,7 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set.merge(
@@ -1324,8 +1323,6 @@ launchpad.Moderate permission on IProductSet, then all commercial
 projects are returned.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts

@@ -6,7 +6,10 @@ from lp.testing import TestCaseWithFactory
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
+from lp.soyuz.adapters.copypolicy import (
+    InsecureCopyPolicy,
+    SyncCopyPolicy,
+    )
 from lp.soyuz.enums import ArchivePurpose
 
 
@@ -68,3 +71,17 @@ class TestCopyPolicy(TestCaseWithFactory):
     def test_insecure_approves_existing_ppa_package(self):
         cp = InsecureCopyPolicy()
         self.assertApproved(ArchivePurpose.PPA, cp.autoApprove)
+
+    def test_insecure_sends_emails(self):
+        cp = InsecureCopyPolicy()
+        self.assertTrue(cp.send_email)
+
+    def test_sync_does_not_send_emails(self):
+        cp = SyncCopyPolicy()
+        self.assertFalse(cp.send_email)
+
+    def test_policy_names(self):
+        icp = InsecureCopyPolicy()
+        scp = SyncCopyPolicy()
+        self.assertEquals("insecure", icp.name)
+        self.assertEquals("sync", scp.name)

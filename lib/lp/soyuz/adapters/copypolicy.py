@@ -11,6 +11,7 @@ __metaclass__ = type
 
 __all__ = [
     "InsecureCopyPolicy",
+    "SyncCopyPolicy",
     ]
 
 
@@ -20,6 +21,11 @@ from lp.registry.interfaces.series import SeriesStatus
 
 class BaseCopyPolicy:
     """Encapsulation of the policies for copying a package in Launchpad."""
+
+    @property
+    def name(self):
+        """The name of this policy that's used in adapter lookups."""
+        raise AssertionError("Subclass must provide name property")
 
     def autoApprove(self, archive, distroseries, pocket):
         """Decide if the upload can be approved automatically or
@@ -43,9 +49,16 @@ class BaseCopyPolicy:
         """
         raise AssertionError("Subclass must provide autoApproveNew")
 
+    @property
+    def send_email(self):
+        """Whether or not the copy should send emails after completing."""
+        raise AssertionError("Subclass must provide send_email")
+
 
 class InsecureCopyPolicy(BaseCopyPolicy):
     """A policy for copying from insecure sources."""
+
+    name = "insecure"
 
     def autoApproveNew(self, archive, distroseries=None, pocket=None):
         if archive.is_ppa:
@@ -65,4 +78,18 @@ class InsecureCopyPolicy(BaseCopyPolicy):
             distroseries.status != SeriesStatus.FROZEN):
             return True
 
+        return False
+
+    @property
+    def send_email(self):
+        return True
+
+
+class SyncCopyPolicy(InsecureCopyPolicy):
+    """A policy for mass 'sync' copies."""
+
+    name = "sync"
+
+    @property
+    def send_email(self):
         return False
