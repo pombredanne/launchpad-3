@@ -606,14 +606,20 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     copies = []
 
     # Copy source if it's not yet copied.
-    policy = archive.getOverridePolicy()
     source_in_destination = archive.getPublishedSources(
         name=source.sourcepackagerelease.name, exact_match=True,
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
     if source_in_destination.is_empty():
-        source_copy = source.copyTo(series, pocket, archive, policy=policy)
+        policy = archive.getOverridePolicy()
+        overrides = None
+        if policy is not None:
+            package_names = (
+                source_in_destination.sourcepackagerelease.sourcepackagename,)
+            overrides = policy.calculateSourceOverrides(
+                archive, series, pocket, package_names)
+        source_copy = source.copyTo(series, pocket, archive, overrides)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
