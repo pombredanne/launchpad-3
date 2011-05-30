@@ -611,12 +611,11 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
+    policy = archive.getOverridePolicy()
     if source_in_destination.is_empty():
-        policy = archive.getOverridePolicy()
         overrides = None
         if policy is not None:
-            package_names = (
-                source_in_destination.sourcepackagerelease.sourcepackagename,)
+            package_names = (source.sourcepackagerelease.sourcepackagename,)
             overrides = policy.calculateSourceOverrides(
                 archive, series, pocket, package_names)
         source_copy = source.copyTo(series, pocket, archive, overrides)
