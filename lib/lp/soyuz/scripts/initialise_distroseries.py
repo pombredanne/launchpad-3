@@ -73,7 +73,7 @@ class InitialiseDistroSeries:
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
         # initialising from multiple parents.
         self.parent_id = parents[0]
-        self.parent = DistroSeries.selectOneBy(id=self.parent_id)
+        self.parent = DistroSeries.selectOneBy(id=int(self.parent_id))
 
         self.distroseries = distroseries
         self.arches = arches
@@ -149,7 +149,7 @@ class InitialiseDistroSeries:
         transaction.commit()
 
     def _set_parent(self):
-        overlay = self.overlays.get(self.distroseries, None)
+        overlay = self.overlays.get(self.distroseries.id, None)
         if overlay is not None:
             pocket, component = overlay
             getUtility(IDistroSeriesParentSet).new(self.distroseries,

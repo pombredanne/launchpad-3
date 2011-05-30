@@ -41,7 +41,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def create(cls, child, parents, arches=(), packagesets=(), rebuild=False):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
-            'parents': [parent.id for parent in parents],
+            'parents': parents,
             'arches': arches,
             'packagesets': packagesets,
             'rebuild': rebuild,
