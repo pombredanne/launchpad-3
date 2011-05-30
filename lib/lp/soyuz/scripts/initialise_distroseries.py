@@ -324,7 +324,7 @@ class InitialiseDistroSeries:
         for parent_ps in packagesets:
             # Cross-distro initialisations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
-            if self.packagesets and parent_ps.name not in self.packagesets:
+            if self.packagesets and str(parent_ps.id) not in self.packagesets:
                 continue
             if self.distroseries.distribution == self.parent.distribution:
                 new_owner = parent_ps.owner
