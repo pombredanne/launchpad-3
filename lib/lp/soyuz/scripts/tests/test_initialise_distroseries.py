@@ -93,7 +93,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # error.
         child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitialiseDistroSeries(child, [self.parent])
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError,
             "Can not copy distroarchseries from parent, there are already "
@@ -109,7 +109,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         source.createMissingBuilds()
         child = self.factory.makeDistroSeries(
             distribution=self.parent.parent)
-        ids = InitialiseDistroSeries(child, [self.parent])
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series has pending builds.",
             ids.check)
@@ -131,7 +131,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE,
             'foo.changes', 'bar', self.parent.main_archive)
         child = self.factory.makeDistroSeries()
-        ids = InitialiseDistroSeries(child, [self.parent])
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series queues are not empty.",
             ids.check)
@@ -177,7 +177,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         if child is None:
             child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitialiseDistroSeries(
-            child, [self.parent], arches, packagesets, rebuild, overlays)
+            child, [self.parent.id], arches, packagesets, rebuild, overlays)
         ids.check()
         ids.initialise()
         return child
@@ -284,7 +284,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         packages = ('udev', 'chromium', 'libc6')
         for pkg in packages:
             test1.addSources(pkg)
-        child = self._full_initialise(packagesets=('test1',))
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=self.parent)
+        child = self._full_initialise(packagesets=(str(packageset1.id),))
         child_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=child)
         self.assertEqual(test1.description, child_test1.description)
@@ -326,7 +328,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroArchSeries(distroseries=self.parent)
         child = self._full_initialise(
             arches=[self.parent_das.architecturetag],
-            packagesets=('test1',), rebuild=True)
+            packagesets=(str(test1.id),), rebuild=True)
         child.updatePackageCount()
         builds = child.getBuildRecords(
             build_state=BuildStatus.NEEDSBUILD,

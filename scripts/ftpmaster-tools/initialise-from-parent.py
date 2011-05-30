@@ -87,7 +87,7 @@ def main():
         # good, at which point this script will be obsolete.
         parent, distroseries.previous_series = (
             distroseries.previous_series, None)
-        ids = InitialiseDistroSeries(distroseries, [parent], arches)
+        ids = InitialiseDistroSeries(distroseries, [parent.id], arches)
         ids.check()
         log.debug('initialising from parent(s), copying publishing records.')
         ids.initialise()
