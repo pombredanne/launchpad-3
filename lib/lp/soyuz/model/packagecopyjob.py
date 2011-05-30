@@ -38,6 +38,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
@@ -291,10 +292,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # changed.  We can however filter out DSDs that are from
         # different distributions, based on the job's target archive.
         source_distro_id = self.source_archive.distributionID
+        package_ids = set(
+            getUtility(ISourcePackageNameSet).queryByName(name).id
+            for name, version in self.metadata["source_packages"])
         return [
             dsd
             for dsd in candidates
-                if dsd.parent_series.distributionID == source_distro_id]
+                if dsd.parent_series.distributionID == source_distro_id and
+                    dsd.source_package_name_id in package_ids]
 
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
