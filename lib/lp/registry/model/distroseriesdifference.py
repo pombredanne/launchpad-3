@@ -288,6 +288,8 @@ class DistroSeriesDifference(StormBase):
     @staticmethod
     def new(derived_series, source_package_name, parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
+        # mandatory as part of multi-parent support.
         if parent_series is None:
             try:
                 dsps = getUtility(IDistroSeriesParentSet)
