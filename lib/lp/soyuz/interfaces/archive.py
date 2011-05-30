@@ -412,9 +412,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "A delta to apply to all build scores for the archive. Builds "
             "with a higher score will build sooner."))
 
-    external_dependencies = Text(
-        title=_("External dependencies"), required=False, readonly=False,
-        description=_(
+    external_dependencies = exported(
+        Text(title=_("External dependencies"), required=False,
+        readonly=False, description=_(
             "Newline-separated list of repositories to be used to retrieve "
             "any external build dependencies when building packages in the "
             "archive, in the format:\n"
@@ -422,7 +422,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
                 "[components]\n"
             "The series variable is replaced with the series name of the "
             "context build.\n"
-            "NOTE: This is for migration of OEM PPAs only!"))
+            "NOTE: This is for migration of OEM PPAs only!")))
 
     enabled_restricted_families = CollectionField(
             title=_("Enabled restricted families"),
