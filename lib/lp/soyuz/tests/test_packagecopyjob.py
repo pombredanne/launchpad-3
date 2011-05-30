@@ -470,7 +470,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # properties set to known values.
         source_package = publisher.getPubSource(
             distroseries=distroseries, sourcename="copyme",
-            component='universe', section='web',
+            component='multiverse', section='web',
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
 
@@ -499,6 +499,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pcj = removeSecurityProxy(job).context
         self.assertEqual(pcj, pu.package_copy_job)
 
+        # The job metadata should contain default overrides from the
+        # UnknownOverridePolicy policy.
+        self.assertEqual('universe', pcj.metadata['component_override'])
+
     def test_copying_to_main_archive_unapproved(self):
         # Uploading to a series that is in a state that precludes auto
         # approval will cause the job to suspend and a packageupload
@@ -517,6 +521,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         source_package = publisher.getPubSource(
             distroseries=distroseries, sourcename="copyme",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            component='multiverse', section='web',
             archive=source_archive)
 
         # Now put the same named package in the target archive so it has
@@ -524,6 +529,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         ancestry_package = publisher.getPubSource(
             distroseries=distroseries, sourcename="copyme",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            component='main', section='games',
             archive=target_archive)
 
         # Now, run the copy job.
@@ -546,6 +552,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pcj = removeSecurityProxy(job).context
         self.assertEqual(pcj, pu.package_copy_job)
         self.assertEqual(PackageUploadStatus.UNAPPROVED, pu.status)
+
+        # The job's metadata should contain the override ancestry from
+        # the target archive.
+        self.assertEqual('main', pcj.metadata['component_override'])
 
     def test_copying_after_job_released(self):
         # The first pass of the job may have created a PackageUpload and

@@ -51,7 +51,10 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.soyuz.adapters.overrides import FromExistingOverridePolicy
+from lp.soyuz.adapters.overrides import (
+    FromExistingOverridePolicy,
+    UnknownOverridePolicy,
+    )
 from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -268,6 +271,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if unapproved:
             pu.setUnapproved()
 
+    def _addOverrides(self, overrides):
+        # Helper to add the data returned from override policies to the
+        # job metadata.
+
+        # Again, we're assuming only one package per job as per the
+        # comment in _checkPolicies.
+        [override] = overrides
+
+        # TODO: get the section from the original SPR?
+        metadata_dict = dict(
+            component_override=override[1].name)
+        self.context.extendMetadata(metadata_dict)
+
     def _checkPolicies(self, source_names):
         # The assumption here is that we are currently using one package
         # per job right now to make it easier to show feedback to users
@@ -286,6 +302,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         approve_new = copy_policy.autoApproveNew(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if len(ancestry) == 0 and not approve_new:
+            # We need to get the default overrides and put them in the
+            # metadata.
+            defaults = UnknownOverridePolicy().calculateSourceOverrides(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket, source_names)
+            self._addOverrides(defaults)
+
             # There's no existing package with the same name and the
             # policy says unapproved, so we poke it in the NEW queue.
             self._createPackageUpload()
@@ -296,6 +319,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         approve_existing = copy_policy.autoApprove(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if not approve_existing:
+            # Put the existing overrides in the metadata.
+            self._addOverrides(ancestry)
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
