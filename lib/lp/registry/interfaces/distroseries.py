@@ -963,7 +963,7 @@ class IDistroSeriesEditRestricted(Interface):
     @operation_parameters(
         parents=List(
             title=_("The list of parents to derive from."),
-            value_type=Reference(schema=Interface),
+            value_type=TextLine(),
             required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
