@@ -32,6 +32,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -364,3 +365,21 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
         self.assertEqual(pcj, pu.package_copy_job)
 
+    def test_overrideSource_with_copy_job(self):
+        # The overrides should be stored in the job's metadata.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        component = getUtility(IComponentSet)['restricted']
+        section = getUtility(ISectionSet)['games']
+
+        expected_metadata = {
+            'component_override': component.name,
+            'section_override': section.name
+        }
+        expected_metadata.update(plain_copy_job.metadata)
+
+        pu.overrideSource(component, section, allowed_components=[component])
+
+        self.assertEqual(
+            expected_metadata, plain_copy_job.metadata)
