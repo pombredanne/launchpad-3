@@ -72,7 +72,8 @@ class InitialiseDistroSeries:
 
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
         # initialising from multiple parents.
-        self.parent = parents[0]
+        self.parent_id = parents[0]
+        self.parent = DistroSeries.selectOneBy(id=self.parent_id)
 
         self.distroseries = distroseries
         self.arches = arches
@@ -215,9 +216,8 @@ class InitialiseDistroSeries:
         # The overhead from looking up each packageset is mitigated by
         # this usually running from a job.
         if self.packagesets:
-            for pkgsetname in self.packagesets:
-                pkgset = getUtility(IPackagesetSet).getByName(
-                    pkgsetname, distroseries=self.parent)
+            for pkgsetid in self.packagesets:
+                pkgset = self._store.find(Packageset, id=int(pkgsetid)).one()
                 spns += list(pkgset.getSourcesIncluded())
 
         for archive in self.parent.distribution.all_distro_archives:

@@ -978,7 +978,7 @@ class IDistroSeriesEditRestricted(Interface):
         This method performs checks and then creates a job to populate
         the new distroseries.
 
-        :param parents: The list of parents this series will derive
+        :param parents: The list of parent ids this series will derive
             from.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.

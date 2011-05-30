@@ -15,6 +15,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
     IInitialiseDistroSeriesJobSource,
@@ -68,15 +69,17 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.assertRaises(IntegrityError, flush_database_caches)
 
     def test_run_with_previous_series_already_set(self):
-        # InitialisationError is raised if the parent series is already set on
-        # the child.
+        # InitialisationError is raised if a parent series already exists
+        # for this series.
         parent = self.factory.makeDistroSeries()
-        distroseries = self.factory.makeDistroSeries(previous_series=parent)
+        distroseries = self.factory.makeDistroSeries()
+        getUtility(IDistroSeriesParentSet).new(
+            distroseries, parent, initialized=True)
+
         job = self.job_source.create(distroseries, [parent])
         expected_message = (
-            "DistroSeries {child.name} has been initialized; it already "
-            "derives from {parent.distribution.name}/{parent.name}.").format(
-            parent=parent, child=distroseries)
+            "DistroSeries {child.name} has already been initialized"
+            ".").format(child=distroseries)
         self.assertRaisesWithContent(
             InitialisationError, expected_message, job.run)
 
@@ -86,7 +89,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
-        packagesets = (u'foo', u'bar', u'baz')
+        packagesets = (u'1', u'2', u'3')
 
         job = self.job_source.create(
             distroseries, [parent], arches, packagesets)
@@ -103,7 +106,7 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         job = self.job_source.create(distroseries, [parent])
         naked_job = removeSecurityProxy(job)
-        self.assertEqual(parent, naked_job.parents[0])
+        self.assertEqual(parent.id, naked_job.parents[0])
 
     def test_getPendingJobsForDistroseries(self):
         # Pending initialisation jobs can be retrieved per distroseries.
@@ -150,6 +153,7 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', parent.owner,
             distroseries=parent)
+        self.test1_packageset_id = str(test1.id)
         test1.addSources('udev')
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries()
@@ -171,8 +175,8 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         parent, child = self._create_child()
         arch = parent.nominatedarchindep.architecturetag
         job = self.job_source.create(
-            child, [parent], packagesets=('test1',), arches=(arch,),
-            rebuild=True)
+            child, [parent], packagesets=(self.test1_packageset_id,),
+            arches=(arch,), rebuild=True)
         self.layer.switchDbUser('initialisedistroseries')
 
         job.run()

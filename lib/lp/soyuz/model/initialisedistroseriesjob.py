@@ -65,7 +65,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
 
     @property
     def parents(self):
-        return bulk.load(DistroSeries, self.metadata['parents'])
+        return tuple(self.metadata['parents'])
 
     @property
     def arches(self):
