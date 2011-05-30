@@ -78,4 +78,4 @@ class TestCopyPolicy(TestCaseWithFactory):
 
     def test_sync_does_not_send_emails(self):
         cp = SyncCopyPolicy()
-        self.assertFale(cp.send_email)
+        self.assertFalse(cp.send_email)

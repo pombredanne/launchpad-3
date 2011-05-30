@@ -11,6 +11,7 @@ __metaclass__ = type
 
 __all__ = [
     "InsecureCopyPolicy",
+    "SyncCopyPolicy",
     ]
 
 
@@ -43,6 +44,11 @@ class BaseCopyPolicy:
         """
         raise AssertionError("Subclass must provide autoApproveNew")
 
+    @property
+    def send_email(self):
+        """Whether or not the copy should send emails after completing."""
+        raise AssertionError("Subclass must provide send_email")
+
 
 class InsecureCopyPolicy(BaseCopyPolicy):
     """A policy for copying from insecure sources."""
@@ -65,4 +71,16 @@ class InsecureCopyPolicy(BaseCopyPolicy):
             distroseries.status != SeriesStatus.FROZEN):
             return True
 
+        return False
+
+    @property
+    def send_email(self):
+        return True
+
+
+class SyncCopyPolicy(InsecureCopyPolicy):
+    """A policy for mass 'sync' copies."""
+
+    @property
+    def send_email(self):
         return False
