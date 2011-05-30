@@ -315,8 +315,8 @@ An attempt to upload an unknown key will fail.
     >>> gpghandler.uploadPublicKey('F' * 40)
     Traceback (most recent call last):
     ...
-    GPGKeyNotFoundError: No GPG key found with the given content:
-    ...
+    GPGKeyDoesNotExistOnServer: GPG key
+    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF does not exist on the keyserver.
 
 Uploading the same key more than once is fine, it is handled on the
 keyserver side.

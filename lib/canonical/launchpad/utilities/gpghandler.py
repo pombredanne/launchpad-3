@@ -11,13 +11,14 @@ __all__ = [
     ]
 
 import atexit
+import errno
 import httplib
 import os
-import re
 import shutil
 import socket
 from StringIO import StringIO
 import subprocess
+import sys
 import tempfile
 import urllib
 import urllib2
@@ -28,9 +29,11 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
     GPGKeyNotFoundError,
     GPGKeyRevoked,
+    GPGKeyTemporarilyNotFoundError,
     GPGUploadFailure,
     GPGVerificationError,
     IGPGHandler,
@@ -40,6 +43,8 @@ from canonical.launchpad.interfaces.gpghandler import (
     MoreThanOneGPGKeyFound,
     SecretGPGKeyImportDetected,
     )
+from canonical.launchpad.webapp import errorlog
+from canonical.lazr.utils import get_current_browser_request
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
@@ -91,6 +96,7 @@ class GPGHandler:
         conf.close()
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
+
         def removeHome(home):
             """Remove GNUPGHOME directory."""
             if os.path.exists(home):
@@ -125,7 +131,7 @@ class GPGHandler:
             try:
                 os.utime(os.path.join(self.home, file), None)
             except OSError as e:
-                if e.errno == ENOENT:
+                if e.errno == errno.ENOENT:
                     # The file has been deleted.
                     pass
                 else:
@@ -434,15 +440,7 @@ class GPGHandler:
         # key ring, but it needs "specing"
         key = PymeKey(fingerprint.encode('ascii'))
         if not key.exists_in_local_keyring:
-            result, pubkey = self._getPubKey(fingerprint)
-            if not result:
-                if "Connection refused" in pubkey:
-                    raise AssertionError(
-                        "The keyserver is not running, help!")
-                else:
-                    raise GPGKeyNotFoundError(fingerprint, pubkey)
-
-            # Import in the local key ring
+            pubkey = self._getPubKey(fingerprint)
             key = self.importPublicKey(pubkey)
         return key
 
@@ -501,55 +499,35 @@ class GPGHandler:
         return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
                                                urllib.urlencode(params))
 
-    def _getKeyIndex(self, fingerprint):
-        """See IGPGHandler for further information."""
-        # Grab Page from keyserver
-        result, page = self._grabPage('index', fingerprint)
-
-        if not result:
-            return result, page
-
-        # regexps to extract information
-        htmltag_re = re.compile('<[^>]+>')
-        keyinfo_re = re.compile('([\d]*)([RgDG])\/([\dABCDEF]*)')
-        emailaddresses_re = re.compile('[^;]+@[^&]*')
-
-        # clean html tags from page
-        page = htmltag_re.sub('', page)
-
-        # extract key info as [(size, type, id)]
-        keyinfo = keyinfo_re.findall(page)
-        # extract UIDs as sorted list
-        uids = emailaddresses_re.findall(page)
-
-        # sort the UID list
-        uids.sort()
-
-        return keyinfo, uids
-
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""
-        return self._grabPage('get', fingerprint)
+        try:
+            return self._grabPage('get', fingerprint)
+        except urllib2.HTTPError, exc:
+            # The key server behaves a bit odd when queried for non
+            # existent keys: Instead of responding with a 404, it
+            # returns a 500 error. But we can extract the fact that
+            # the key is unknown by looking into the response's content.
+            if exc.code == 500 and exc.fp is not None:
+                content = exc.fp.read()
+                no_key_message = 'Error handling request: No keys found'
+                if content.find(no_key_message) >= 0:
+                    raise GPGKeyDoesNotExistOnServer(fingerprint)
+                errorlog.globalErrorUtility.handling(
+                    sys.exc_info(), get_current_browser_request())
+                raise GPGKeyTemporarilyNotFoundError(fingerprint)
+        except urllib2.URLError, exc:
+            errorlog.globalErrorUtility.handling(
+                sys.exc_info(), get_current_browser_request())
+            raise GPGKeyTemporarilyNotFoundError(fingerprint)
 
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
-        # XXX cprov 2005-05-16:
-        # What if something went wrong ?
-        # 1 - Not Found
-        # 2 - Revoked Key
-        # 3 - Server Error (solved with urllib2.HTTPError exception)
-        # it needs more love
         url = self.getURLForKeyInServer(fingerprint, action)
-        # read and store html page
-        try:
-            f = urllib2.urlopen(url)
-        except urllib2.URLError, e:
-            return False, '%s at %s' % (e, url)
-
+        f = urllib2.urlopen(url, timeout=float(config.gpghandler.timeout))
         page = f.read()
         f.close()
-
-        return True, page
+        return page
 
     def checkTrustDb(self):
         """See IGPGHandler"""
