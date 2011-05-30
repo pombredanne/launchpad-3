@@ -165,17 +165,11 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
     INotificationRecipientSet,
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.services.messages.interfaces.message import (
-    IDirectEmailAuthorization,
-    QuotaReachedError,
-    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from lp.registry.mail.notification import send_direct_contact_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -205,8 +199,8 @@ from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.enums import QuestionParticipation
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -223,6 +217,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (
@@ -306,12 +301,17 @@ from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
     )
+from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.messages.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,

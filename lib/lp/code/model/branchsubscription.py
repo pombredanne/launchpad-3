@@ -12,7 +12,6 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -23,6 +22,7 @@ from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.role import IPersonRoles
 
 
 class BranchSubscription(SQLBase):

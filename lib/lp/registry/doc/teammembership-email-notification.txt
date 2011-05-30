@@ -620,7 +620,7 @@ is automatically renewed.
     >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
     >>> flush_database_updates()
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> membershipset.handleMembershipsExpiringToday(
     ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
     >>> flush_database_updates()
