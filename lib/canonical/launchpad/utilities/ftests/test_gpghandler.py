@@ -15,7 +15,6 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     keys_for_tests,
@@ -28,6 +27,10 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from canonical.lazr.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
 from lp.testing.keyserver import KeyServerTac
@@ -233,21 +236,21 @@ class TestImportKeyRing(TestCase):
         self):
         # If the keyserver responds too slowly, GPGHandler.retrieveKey()
         # raises GPGKeyTemporarilyNotFoundError.
-        config.push(
-            'short keyserver timeout',
-            """
-            [gpghandler]
-            timeout: 0.000001""")
         tac = KeyServerTac()
         tac.setUp()
         self.addCleanup(tac.tearDown)
-        gpghandler = getUtility(IGPGHandler)
-        self.assertRaises(
-            GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
-            'non-existent-fp')
-        # An informational OOPS report is generated for the timeout.
-        error_utility = ErrorReportingUtility()
-        error_report = error_utility.getLastOopsReport()
-        self.assertTrue(error_report.informational)
-        self.assertEqual('URLError', error_report.type)
-        self.assertEqual('<urlopen error timed out>', error_report.value)
+        old_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(lambda: 0.01)
+        try:
+            gpghandler = getUtility(IGPGHandler)
+            self.assertRaises(
+                GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
+                'non-existent-fp')
+            # An informational OOPS report is generated for the timeout.
+            error_utility = ErrorReportingUtility()
+            error_report = error_utility.getLastOopsReport()
+            self.assertTrue(error_report.informational)
+            self.assertEqual('TimeoutError', error_report.type)
+            self.assertEqual('timeout exceeded.', error_report.value)
+        finally:
+            set_default_timeout_function(old_timeout_function)

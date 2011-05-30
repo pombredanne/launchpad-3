@@ -32,9 +32,10 @@ __all__ = [
     'KeyServerResource',
     ]
 
+import cgi
 import glob
 import os
-import cgi
+from time import sleep
 
 from twisted.web.resource import Resource
 
@@ -135,6 +136,9 @@ class LookUp(Resource):
         return self.processRequest(action, keyid, request)
 
     def processRequest(self, action, keyid, request):
+        # Sleep a short time so that tests can ensure that timeouts
+        # are properly handled by setting an even shorter timeout.
+        sleep(0.02)
         if (action not in self.permitted_actions) or not keyid:
             return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
 

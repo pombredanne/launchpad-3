@@ -44,12 +44,17 @@ from canonical.launchpad.interfaces.gpghandler import (
     SecretGPGKeyImportDetected,
     )
 from canonical.launchpad.webapp import errorlog
+from canonical.lazr.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
 from canonical.lazr.utils import get_current_browser_request
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     valid_fingerprint,
     )
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 signing_only_param = """
@@ -501,6 +506,10 @@ class GPGHandler:
 
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start(
+            'retrieving GPG key', 'Fingerprint: %s' % fingerprint)
         try:
             return self._grabPage('get', fingerprint)
         except urllib2.HTTPError, exc:
@@ -513,18 +522,18 @@ class GPGHandler:
                 no_key_message = 'Error handling request: No keys found'
                 if content.find(no_key_message) >= 0:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
-                errorlog.globalErrorUtility.handling(
-                    sys.exc_info(), get_current_browser_request())
+                errorlog.globalErrorUtility.handling(sys.exc_info(), request)
                 raise GPGKeyTemporarilyNotFoundError(fingerprint)
-        except urllib2.URLError, exc:
-            errorlog.globalErrorUtility.handling(
-                sys.exc_info(), get_current_browser_request())
+        except (TimeoutError, urllib2.URLError), exc:
+            errorlog.globalErrorUtility.handling(sys.exc_info(), request)
             raise GPGKeyTemporarilyNotFoundError(fingerprint)
+        finally:
+            action.finish()
 
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
         url = self.getURLForKeyInServer(fingerprint, action)
-        f = urllib2.urlopen(url, timeout=float(config.gpghandler.timeout))
+        f = urlfetch(url)
         page = f.read()
         f.close()
         return page
