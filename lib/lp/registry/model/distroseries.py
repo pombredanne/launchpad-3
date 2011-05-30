@@ -1139,7 +1139,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            " AND ".join(queries), clauseTables=['SourcePackageRelease'],
             orderBy=['-id'])
 
         return published
@@ -1601,7 +1601,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None):
+                         archive, signing_key=None, package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1630,7 +1630,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key)
+            changesfile=changes_file, signing_key=signing_key,
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -2003,9 +2004,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         getUtility(IInitialiseDistroSeriesJobSource).create(
             child, [self], architectures, packagesets, rebuild)
 
-    def initDerivedDistroSeries(self, user, parents, architectures,
-                                packagesets, rebuild):
+    def initDerivedDistroSeries(self, user, parents, architectures=(),
+                                packagesets=(), rebuild=False):
         """See `IDistroSeries`."""
+        if self.is_derived_series:
+            raise DerivationError(
+                "DistroSeries %s already has parent series." % self.name)
         initialise_series = InitialiseDistroSeries(self, parents)
         try:
             initialise_series.check()
@@ -2059,7 +2063,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
-                difference_type = difference_type,
+                difference_type=difference_type,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)

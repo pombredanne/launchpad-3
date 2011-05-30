@@ -53,7 +53,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
@@ -74,7 +73,10 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
@@ -782,7 +784,7 @@ class IDistroSeriesPublic(
         """
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None):
+                         archive, signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.
@@ -960,9 +962,9 @@ class IDistroSeriesEditRestricted(Interface):
 
     @operation_parameters(
         parents=List(
-            title=_("The list of parents to derive from."
-            "distroseries."), value_type=TextLine(),
-            required=False),
+            title=_("The list of parents to derive from."),
+            value_type=Reference(schema=Interface),
+            required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),

@@ -30,7 +30,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -42,6 +41,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.archivepublisher.debversion import Version
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser.distroseries import (
     IGNORED,
     HIGHER_VERSION_THAN_PARENT,
@@ -1090,13 +1090,17 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(recorder1, HasQueryCount(LessThan(10)))
-        # The query count does not increase with more differences.
-        for index in xrange(3):
+        # Creating Jobs and DistributionJobs takes 2 extra queries per
+        # requested sync.
+        requested_syncs = 3
+        for index in xrange(requested_syncs):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(
+            recorder2,
+            HasQueryCount(Equals(recorder1.count + 2 * requested_syncs)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,

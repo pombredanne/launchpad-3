@@ -24,8 +24,7 @@ IDerivativeDistributions cannot use the form.
 Ubuntu is an IBaseDistributions and is full functionality. It can have
 mirrors.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> owner = ubuntu.owner.teamowner

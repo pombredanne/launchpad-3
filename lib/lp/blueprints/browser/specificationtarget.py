@@ -24,7 +24,6 @@ from zope.component import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -57,6 +56,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSeries,
     )
+from lp.registry.interfaces.role import IHasDrivers
 from lp.services.propertycache import cachedproperty
 
 
@@ -276,9 +276,11 @@ class HasSpecificationsView(LaunchpadView):
             'man_days',
             'delivery',
             ]
+
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
             return '%s-%s' % (item.value, item.title)
+
         def fperson(person):
             """Format a person as 'name (full name)', or 'none'"""
             if person is None:

@@ -17,6 +17,8 @@ from storm.locals import (
     Reference,
     Unicode,
     )
+import transaction
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
@@ -31,8 +33,15 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
@@ -153,6 +162,11 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies packages between archives."""
+    # This job type serves in different places: it supports copying
+    # packages between archives, but also the syncing of packages from
+    # parents into a derived distroseries.  We may split these into
+    # separate types at some point, but for now we (allenap, bigjools,
+    # jtv) chose to keep it as one.
 
     implements(IPlainPackageCopyJob)
 
@@ -232,6 +246,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def run(self):
         """See `IRunnableJob`."""
+        try:
+            self.attemptCopy()
+        except CannotCopy, e:
+            self.abort()
+            self.reportFailure(e)
+
+    def attemptCopy(self):
+        """Attempt to perform the copy.
+
+        :raise CannotCopy: If the copy fails for a reason that the user
+            can deal with.
+        """
         if self.target_archive.is_ppa:
             if self.target_pocket != PackagePublishingPocket.RELEASE:
                 raise CannotCopy(
@@ -249,6 +275,42 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             sources=source_packages, archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=False)
+
+    def abort(self):
+        """Abort work."""
+        transaction.abort()
+
+    def findMatchingDSDs(self):
+        """Find any `DistroSeriesDifference`s that this job might resolve."""
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        target_series = self.target_distroseries
+        candidates = dsd_source.getForDistroSeries(
+            distro_series=target_series)
+        # The job doesn't know what distroseries a given package is
+        # coming from, and the version number in the DSD may have
+        # changed.  We can however filter out DSDs that are from
+        # different distributions, based on the job's target archive.
+        source_distro_id = self.source_archive.distributionID
+        return [
+            dsd
+            for dsd in candidates
+                if dsd.parent_series.distributionID == source_distro_id]
+
+    def reportFailure(self, cannotcopy_exception):
+        """Attempt to report failure to the user."""
+        message = unicode(cannotcopy_exception)
+        dsds = self.findMatchingDSDs()
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+
+        # Register the error comment in the name of the Janitor.  Not a
+        # great choice, but we have no user identity to represent
+        # Launchpad; it's far too costly to create one; and
+        # impersonating the requester can be misleading and would also
+        # involve extra bookkeeping.
+        reporting_persona = getUtility(ILaunchpadCelebrities).janitor
+
+        for dsd in dsds:
+            comment_source.new(dsd, reporting_persona, message)
 
     def __repr__(self):
         """Returns an informative representation of the job."""

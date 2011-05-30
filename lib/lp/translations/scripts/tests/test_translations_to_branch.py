@@ -9,6 +9,7 @@ import re
 from textwrap import dedent
 
 from bzrlib.errors import NotBranchError
+from testtools.matchers import MatchesRegex
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -141,6 +142,30 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             stderr)
         self.assertEqual(
             None, re.search("INFO\s+Committed [0-9]+ file", stderr))
+
+    def test_exportToStaleBranch(self):
+        # Attempting to export to a stale branch marks it for scanning.
+        self.useBzrBranches(direct_database=False)
+        exporter = ExportTranslationsToBranch(test_args=[])
+        exporter.logger = BufferLogger()
+        productseries = self.factory.makeProductSeries()
+        db_branch, tree = self.create_branch_and_tree(
+            product=productseries.product)
+        removeSecurityProxy(productseries).translations_branch = db_branch
+        db_branch.last_mirrored_id = 'stale-id'
+        db_branch.last_scanned_id = db_branch.last_mirrored_id
+        self.becomeDbUser('translationstobranch')
+        self.assertFalse(db_branch.pending_writes)
+        self.assertNotEqual(
+            db_branch.last_mirrored_id, tree.branch.last_revision())
+        exporter._exportToBranch(productseries)
+        self.assertEqual(
+            db_branch.last_mirrored_id, tree.branch.last_revision())
+        self.assertTrue(db_branch.pending_writes)
+        matches = MatchesRegex(
+            '(.|\n)*WARNING Skipped .* due to stale DB info and scheduled'
+            ' scan.')
+        self.assertThat(exporter.logger.getLogBuffer(), matches)
 
     def test_exportToBranches_handles_nonascii_exceptions(self):
         # There's an exception handler in _exportToBranches that must

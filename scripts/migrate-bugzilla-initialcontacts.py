@@ -13,7 +13,7 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import IPersonSet
 

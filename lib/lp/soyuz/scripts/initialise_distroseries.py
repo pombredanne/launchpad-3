@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from operator import methodcaller
+
 import transaction
 from zope.component import getUtility
 
@@ -18,6 +19,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -64,7 +66,7 @@ class InitialiseDistroSeries:
 
     def __init__(
         self, distroseries, parents, arches=(), packagesets=(),
-        rebuild=False):
+        rebuild=False, overlays={}):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
 
@@ -77,14 +79,14 @@ class InitialiseDistroSeries:
         self.packagesets = [
             ensure_unicode(packageset) for packageset in packagesets]
         self.rebuild = rebuild
+        self.overlays = overlays
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.previous_series is not None:
+        if self.distroseries.is_derived_series:
             raise InitialisationError(
-                ("DistroSeries {child.name} has been initialized; it already "
-                 "derives from {child.previous_series.distribution.name}/"
-                 "{child.previous_series.name}.").format(
+                ("DistroSeries {child.name} has already been initialized"
+                 ".").format(
                     child=self.distroseries))
         if self.distroseries.distribution.id == self.parent.distribution.id:
             self._checkBuilds()
@@ -142,10 +144,25 @@ class InitialiseDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._set_initialised()
         transaction.commit()
 
     def _set_parent(self):
-        self.distroseries.previous_series = self.parent
+        overlay = self.overlays.get(self.distroseries, None)
+        if overlay is not None:
+            pocket, component = overlay
+            getUtility(IDistroSeriesParentSet).new(self.distroseries,
+                self.parent, initialized=False, is_overlay=True,
+                pocket=pocket, component=component)
+        else:
+            getUtility(IDistroSeriesParentSet).new(self.distroseries,
+                self.parent, initialized=False)
+
+    def _set_initialised(self):
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
+            self.distroseries, self.parent)
+        distroseriesparent.initialized = True
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = \
