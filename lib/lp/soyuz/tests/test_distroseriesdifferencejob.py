@@ -9,6 +9,7 @@ import transaction
 from psycopg2 import ProgrammingError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
@@ -26,8 +27,10 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionjob import (
+    DistributionJobType,
     IDistroSeriesDifferenceJobSource,
     )
+from lp.soyuz.model.distributionjob import DistributionJob
 from lp.soyuz.model.distroseriesdifferencejob import (
     create_job,
     DistroSeriesDifferenceJob,
@@ -108,15 +111,17 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsdjob = create_job(distroseries, package)
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
 
-    def find_waiting_jobs_finds_waiting_jobs(self):
+    def test_find_waiting_jobs_finds_waiting_jobs(self):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
         job = create_job(distroseries, sourcepackagename)
-        self.assertContentEqual(
-            [job], find_waiting_jobs(distroseries, sourcepackagename))
+        found_jobs = find_waiting_jobs(distroseries, sourcepackagename)
+        self.assertEqual([job], [
+            DistroSeriesDifferenceJob(found_job)
+            for found_job in found_jobs])
 
-    def find_waiting_jobs_ignores_other_series(self):
+    def test_find_waiting_jobs_ignores_other_series(self):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
@@ -125,7 +130,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [], find_waiting_jobs(other_series, sourcepackagename))
 
-    def find_waiting_jobs_ignores_other_packages(self):
+    def test_find_waiting_jobs_ignores_other_packages(self):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
@@ -134,7 +139,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [], find_waiting_jobs(distroseries, other_spn))
 
-    def find_waiting_jobs_considers_only_waiting_jobs(self):
+    def test_find_waiting_jobs_considers_only_waiting_jobs(self):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
@@ -191,6 +196,60 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.getJobSource().createForPackagePublication(
             distroseries, package, PackagePublishingPocket.PROPOSED)
         self.assertContentEqual([], find_waiting_jobs(distroseries, package))
+
+    def test_getPendingJobsForDifferences_finds_job(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = create_job(dsd.derived_series, dsd.source_package_name)
+        self.assertEqual(
+            {dsd: [job]},
+            self.getJobSource().getPendingJobsForDifferences(
+                dsd.derived_series, [dsd]))
+
+    def test_getPendingJobsForDifferences_ignores_other_package(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        create_job(dsd.derived_series, self.factory.makeSourcePackageName())
+        self.assertEqual(
+            {},
+            self.getJobSource().getPendingJobsForDifferences(
+                dsd.derived_series, [dsd]))
+
+    def test_getPendingJobsForDifferences_ignores_other_derived_series(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        create_job(self.makeDerivedDistroSeries(), dsd.source_package_name)
+        self.assertEqual(
+            {},
+            self.getJobSource().getPendingJobsForDifferences(
+                dsd.derived_series, [dsd]))
+
+    def test_getPendingJobsForDifferences_ignores_other_parent_series(self):
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Can't test this
+        # until we can specify the right parent series when creating a
+        # job.
+        return
+
+    def test_getPendingJobsForDifferences_ignores_non_pending_jobs(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        job = create_job(dsd.derived_series, dsd.source_package_name)
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertEqual(
+            {},
+            self.getJobSource().getPendingJobsForDifferences(
+                dsd.derived_series, [dsd]))
+
+    def test_getPendingJobsForDifferences_ignores_other_job_types(self):
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Once parent_series
+        # is incorporated into the job type, set it to dsd.parent_series
+        # on the fake job, or this test will become silently meaningless.
+        dsd = self.factory.makeDistroSeriesDifference()
+        DistributionJob(
+            distribution=dsd.derived_series.distribution,
+            distroseries=dsd.derived_series,
+            job_type=DistributionJobType.INITIALISE_SERIES,
+            metadata={"sourcepackagename": dsd.source_package_name.id})
+        self.assertEqual(
+            {},
+            self.getJobSource().getPendingJobsForDifferences(
+                dsd.derived_series, [dsd]))
 
     def test_cronscript(self):
         derived_series = self.makeDerivedDistroSeries()
@@ -285,7 +344,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         parent_packageset = self.factory.makePackageset(
             distroseries=distro_series_parent.parent_series,
             packages=packages)
-        derived_packageset = self.factory.makePackageset(
+        self.factory.makePackageset(
             distroseries=distro_series_parent.derived_series,
             packages=packages, name=parent_packageset.name,
             owner=parent_packageset.owner, related_set=parent_packageset)
@@ -414,7 +473,8 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
         self.assertEqual(
-            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT, ds_diff[0].status)
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            ds_diff[0].status)
         self.assertEqual('1.0-1', ds_diff[0].base_version)
 
     def test_child_is_synced(self):

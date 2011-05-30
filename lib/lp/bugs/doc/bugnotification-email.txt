@@ -463,7 +463,7 @@ The Launchpad Janitor celebrity isn't a real user, and shouldn't be
 sending mail. Notifications from the janitor are sent with the address
 of the bug itself.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> lp_janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> get_bugmail_from_address(lp_janitor, bug_four)
     'Launchpad Bug Tracker <4@bugs.launchpad.net>'

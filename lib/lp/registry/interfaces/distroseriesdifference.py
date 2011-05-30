@@ -338,15 +338,3 @@ class IDistroSeriesDifferenceSource(Interface):
 
         Blacklisted items are excluded.
         """
-
-    def collateDifferencesByParentArchive(differences):
-        """Collate the given differences by parent archive.
-
-        The given `IDistroSeriesDifference`s are returned in a `dict`, with
-        the parent `Archive` as keys.
-
-        :param differences: An iterable sequence of `IDistroSeriesDifference`.
-
-        :return: A `dict` of iterable sequences of `IDistroSeriesDifference`
-            keyed by their parent `IArchive`.
-        """

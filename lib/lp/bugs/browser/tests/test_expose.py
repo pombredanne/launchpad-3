@@ -44,7 +44,8 @@ class FakeRequest:
     """
     implements(IWebServiceClientRequest, IJSONRequestCache)
 
-    objects = {}
+    def __init__(self):
+        self.objects = {}
 
 
 class FakeTeam:

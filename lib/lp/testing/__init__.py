@@ -51,6 +51,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from cStringIO import StringIO
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -91,7 +92,7 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-from testtools.matchers import Matcher, Mismatch
+from testtools.matchers import MatchesRegex
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -529,6 +530,19 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """
         expected_vector, observed_vector = zip(*args)
         return self.assertEqual(expected_vector, observed_vector)
+
+    @contextmanager
+    def expectedLog(self, regex):
+        """Expect a log to be written that matches the regex."""
+        output = StringIO()
+        handler = logging.StreamHandler(output)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+        try:
+            yield
+        finally:
+            logger.removeHandler(handler)
+        self.assertThat(output.getvalue(), MatchesRegex(regex))
 
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
@@ -1323,26 +1337,3 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
-
-
-class RegexMatcher(Matcher):
-    """A matcher that matches a regular expression."""
-
-    def __init__(self, pattern, flags=0):
-        """Constructor.
-
-        :param pattern: The pattern to match.
-        :param flags: The flags to use when performing the match.
-        """
-        self.pattern = pattern
-        self.flags = flags
-
-    def match(self, something):
-        """See `Matcher`."""
-        if re.match(self.pattern, something, self.flags):
-            return None
-        return Mismatch('Pattern "%s" not in "%s".' % (self.pattern, something))
-
-    def __str__(self):
-        """See `Matcher`."""
-        return 'RegexMatcher(%r)' % self.pattern
