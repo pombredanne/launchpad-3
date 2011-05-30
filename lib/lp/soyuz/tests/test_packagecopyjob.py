@@ -609,6 +609,16 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         self.assertContentEqual([], naked_job.findMatchingDSDs())
 
+    def test_findMatchingDSDs_ignores_other_packages(self):
+        # findMatchingDSDs does not return DSDs that are similar to the
+        # information in the job, but are for different packages.
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=dsd.derived_series,
+            parent_series=dsd.parent_series)
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
+
 
 class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
     """Test that `PlainPackageCopyJob` has the privileges it needs.

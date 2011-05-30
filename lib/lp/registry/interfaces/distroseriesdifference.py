@@ -68,6 +68,8 @@ class IDistroSeriesDifferencePublic(Interface):
             "The distribution series which identifies the parent series "
             "with the difference.")))
 
+    source_package_name_id = Int(
+        title=u"Source package name id", required=True, readonly=True)
     source_package_name = Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
@@ -233,6 +235,7 @@ class IDistroSeriesDifferenceEdit(Interface):
         :raises DistroSeriesDifferenceError: When package diffs
             cannot be requested.
         """
+
 
 class IDistroSeriesDifferenceAdmin(Interface):
     """Difference attributes requiring launchpad.Admin."""

@@ -743,11 +743,22 @@ class PackageUpload(SQLBase):
 
     def overrideSource(self, new_component, new_section, allowed_components):
         """See `IPackageUpload`."""
-        if not self.contains_source:
-            return False
-
         if new_component is None and new_section is None:
             # Nothing needs overriding, bail out.
+            return False
+
+        if self.package_copy_job is not None:
+            # We just need to add the required component/section to the
+            # job metadata.
+            extra_data = {}
+            if new_component is not None:
+                extra_data['component_override'] = new_component.name
+            if new_section is not None:
+                extra_data['section_override'] = new_section.name
+            self.package_copy_job.extendMetadata(extra_data)
+            return
+
+        if not self.contains_source:
             return False
 
         for source in self.sources:
