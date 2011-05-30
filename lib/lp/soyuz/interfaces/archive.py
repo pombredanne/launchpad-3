@@ -32,6 +32,7 @@ __all__ = [
     'IDistributionArchive',
     'InsufficientUploadRights',
     'InvalidComponent',
+    'InvalidExternalDependencies',
     'InvalidPocketForPartnerArchive',
     'InvalidPocketForPPA',
     'IPPA',
@@ -250,6 +251,17 @@ class ArchiveDisabled(CannotUploadToArchive):
 
     def __init__(self, archive_name):
         CannotUploadToArchive.__init__(self, archive_name=archive_name)
+
+
+class InvalidExternalDependencies(Exception):
+    """Tried to set external dependencies to an invalid value."""
+
+    webservice_error(400) #Bad request.
+
+    def __init__(self, errors):
+        error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
+        Exception.__init__(self, error_msg)
+        self.errors = errors
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -1694,6 +1706,7 @@ FULL_COMPONENT_SUPPORT = (
     )
 
 # Circular dependency issues fixed in _schema_circular_imports.py
+
 
 def validate_external_dependencies(ext_deps):
     """Validate the external_dependencies field.

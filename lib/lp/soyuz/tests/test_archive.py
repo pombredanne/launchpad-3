@@ -9,8 +9,6 @@ from datetime import (
     timedelta,
     )
 
-from lazr.restfulclient.errors import Unauthorized as LRUnauthorized
-from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -76,7 +74,6 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
-    WebServiceTestCase,
     )
 from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
@@ -1781,39 +1778,3 @@ class TestSyncSource(TestCaseWithFactory):
             1,
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
-
-
-class TestArchiveWebService(WebServiceTestCase):
-
-    def test_external_dependencies_random_user(self):
-        """Normal users can look but not touch."""
-        archive = self.factory.makeArchive()
-        transaction.commit()
-        ws_archive = self.wsObject(archive)
-        self.assertIs(None, ws_archive.external_dependencies)
-        ws_archive.external_dependencies = "random"
-        with ExpectedException(LRUnauthorized, '.*'):
-            ws_archive.lp_save()
-
-    def test_external_dependencies_owner(self):
-        """Normal archive owners can look but not touch."""
-        archive = self.factory.makeArchive()
-        transaction.commit()
-        ws_archive = self.wsObject(archive, archive.owner)
-        self.assertIs(None, ws_archive.external_dependencies)
-        ws_archive.external_dependencies = "random"
-        with ExpectedException(LRUnauthorized, '.*'):
-            ws_archive.lp_save()
-
-    def test_external_dependencies_commercial_owner(self):
-        """Commercial archive owners can look and touch."""
-        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-        owner = self.factory.makePerson(member_of=[commercial])
-        archive = self.factory.makeArchive(owner=owner)
-        with person_logged_in(commercial.teamowner):
-            commercial.addMember(archive.owner, commercial.teamowner)
-        transaction.commit()
-        ws_archive = self.wsObject(archive, archive.owner)
-        self.assertIs(None, ws_archive.external_dependencies)
-        ws_archive.external_dependencies = "random"
-        ws_archive.lp_save()

@@ -5,15 +5,24 @@ __metaclass__ = type
 
 import unittest
 
-from lazr.restfulclient.errors import HTTPError
+from lazr.restfulclient.errors import (
+    BadRequest,
+    HTTPError,
+    Unauthorized as LRUnauthorized,
+)
+from testtools import ExpectedException
+import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 
 
@@ -65,6 +74,53 @@ class TestArchiveWebservice(TestCaseWithFactory):
         self.assertIn(
             "Not permitted to upload to the UPDATES pocket in a series "
             "in the 'DEVELOPMENT' state.", e.content)
+
+class TestExternalDependencies(WebServiceTestCase):
+
+    def test_external_dependencies_random_user(self):
+        """Normal users can look but not touch."""
+        archive = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        with ExpectedException(LRUnauthorized, '.*'):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_owner(self):
+        """Normal archive owners can look but not touch."""
+        archive = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        with ExpectedException(LRUnauthorized, '.*'):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_commercial_owner_invalid(self):
+        """Commercial admins can look and touch."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        owner = self.factory.makePerson(member_of=[commercial])
+        archive = self.factory.makeArchive(owner=owner)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        regex = '(\n|.)*Invalid external dependencies(\n|.)*'
+        with ExpectedException(BadRequest, regex):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_commercial_owner_valid(self):
+        """Commercial admins can look and touch."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        owner = self.factory.makePerson(member_of=[commercial])
+        archive = self.factory.makeArchive(owner=owner)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = (
+            "deb http://example.org suite components")
+        ws_archive.lp_save()
 
 
 def test_suite():

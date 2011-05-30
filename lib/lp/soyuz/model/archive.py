@@ -133,6 +133,7 @@ from lp.soyuz.interfaces.archive import (
     IDistributionArchive,
     InsufficientUploadRights,
     InvalidComponent,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     IPPA,
@@ -143,6 +144,7 @@ from lp.soyuz.interfaces.archive import (
     NoTokensForTeams,
     PocketNotFound,
     VersionRequiresName,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -195,6 +197,14 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+
+def storm_validate_external_dependencies(archive, attr, value):
+    assert attr == 'external_dependencies'
+    errors = validate_external_dependencies(value)
+    if len(errors) > 0:
+        raise InvalidExternalDependencies(errors)
+    return value
 
 
 class Archive(SQLBase):
@@ -306,7 +316,8 @@ class Archive(SQLBase):
     # Launchpad and should be re-examined in October 2010 to see if it
     # is still relevant.
     external_dependencies = StringCol(
-        dbName='external_dependencies', notNull=False, default=None)
+        dbName='external_dependencies', notNull=False, default=None,
+        storm_validator=storm_validate_external_dependencies)
 
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
