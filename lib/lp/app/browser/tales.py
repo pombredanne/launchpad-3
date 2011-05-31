@@ -1215,7 +1215,11 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         The link text uses both the display name and Launchpad id to clearly
         indicate which user profile is linked.
         """
-        text = '%s (%s)' % (self._context.displayname, self._context.name)
+        from lp.services.features import getFeatureFlag
+        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
+            text = '%s (%s)' % (self._context.displayname, self._context.name)
+        else:
+            text = self._context.displayname
         return self._makeLink(view_name, 'mainsite', text)
 
 

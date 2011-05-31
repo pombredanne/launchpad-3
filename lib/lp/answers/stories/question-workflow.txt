@@ -1,5 +1,11 @@
 = Question Workflow =
 
+    >>> # Enable the picker_enhancements feature to test the commenter name.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 The status of a question changes based on the action done by users on
 it. To demonstrate the workflow, we will use the existing question #2 on
 the Firefox product which was filed by 'Sample Person'.
@@ -441,3 +447,7 @@ question owner, so Sample person does not see it.
     ...     owner_browser.contents, 'ask-your-own-question')
     >>> content is None
     True
+
+Clean up the feature flag.
+
+    >>> flags.cleanUp()
