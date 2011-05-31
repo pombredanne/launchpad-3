@@ -331,7 +331,7 @@ The answer's message is also highlighted as the best answer.
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
     >>> answerer = bestAnswer.parent.find('a')
     >>> print extract_text(answerer)
-    No Privileges Person
+    No Privileges Person (no-priv)
     >>> message = bestAnswer.parent.parent.find(
     ...     'div', 'boardCommentBody highlighted')
     >>> print extract_text(message)
