@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -569,11 +570,21 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             destination_series = series
         if source.delayed:
             delayed_copy = _do_delayed_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
             sub_copies = [delayed_copy]
         else:
             sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
+            if archive.purpose == ArchivePurpose.PRIMARY:
+                announce_list = destination_series.changeslist
+            else:
+                announce_list = None
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                destination_series, pocket, changes=None, action='accepted',
+                announce_list=announce_list)
 
         copies.extend(sub_copies)
 

@@ -62,7 +62,8 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    to_addrs = get_recipients(blamer, archive, distroseries, changes, logger)
+    to_addrs = get_recipients(
+        blamer, archive, distroseries, logger, changes=changes)
     logger.debug("Sending rejection email.")
     send_mail(None, archive, to_addrs, subject, body, False, logger=logger)
 
@@ -171,7 +172,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         return
 
     recipients = get_recipients(
-        blamer, archive, distroseries, changes, logger)
+        blamer, archive, distroseries, logger, changes=changes, spr=spr,
+        bprs=bprs)
 
     # There can be no recipients if none of the emails are registered
     # in LP.
@@ -202,7 +204,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         subject = calculate_subject(
             spr, bprs, customfiles, archive, distroseries, pocket, action)
         body = assemble_body(
-            blamer, spr, archive, distroseries, summarystring, changes,
+            blamer, spr, bprs, archive, distroseries, summarystring, changes,
             action, announce_list)
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
@@ -212,14 +214,20 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
+    if changes:
+        changedby = email_to_person(sanitize_string(changes['Changed-By']))
+    elif spr:
+        changedby = spr.creator
+    elif bprs:
+        changedby = bprs[0].creator
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
     if (action == 'accepted' and announce_list and not archive.is_ppa and
         pocket != PackagePublishingPocket.BACKPORTS and
         not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
-        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
-        from_addr = sanitize_string(changes['Changed-By'])
+        not is_auto_sync_upload(spr, bprs, pocket, changedby)):
+        from_addr = changedby.preferredemail.email
         name = None
         bcc_addr = None
         if spr:
@@ -233,15 +241,16 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             'announcement', [str(announce_list)], from_addr, bcc_addr)
 
 
-def assemble_body(blamer, spr, archive, distroseries, summary, changes,
+def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
                   action, announce_list):
     """Assemble the e-mail notification body."""
+    if changes is None:
+        changes = {}
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
-        'DATE': 'Date: %s' % changes['Date'],
-        'CHANGESFILE': ChangesFile.formatChangesComment(
-            sanitize_string(changes.get('Changes'))),
+        'DATE': '',
+        'CHANGESFILE': '',
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -251,6 +260,16 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         'SPR_URL': '',
         'USERS_ADDRESS': config.launchpad.users_address,
         }
+    if changes:
+        information['CHANGESFILE'] = ChangesFile.formatChangesComment(
+            sanitize_string(changes.get('Changes')))
+        information['DATE'] = "Date: %s" % changes.get('Date')
+    elif spr:
+        information['CHANGESFILE'] = spr.changelog_entry
+        information['DATE'] = "Date: %s" % spr.dateuploaded
+    elif bprs:
+        information['CHANGESFILE'] = bprs[0].changelog_entry
+        information['DATE'] = "Date: %s" % bprs[0].dateuploaded
     if spr:
         information['SPR_URL'] = canonical_url(spr)
     changedby = sanitize_string(changes.get('Changed-By'))
@@ -407,11 +426,17 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-def get_recipients(blamer, archive, distroseries, changes, logger):
+def get_recipients(blamer, archive, distroseries, logger, changes=None,
+                   spr=None, bprs=None):
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    changer = email_to_person(changes['Changed-By'])
+    if changes:
+        changer = email_to_person(changes['Changed-By'])
+    elif spr:
+        changer = spr.creator
+    elif bprs:
+        changer = bprs[0].creator
 
     if blamer:
         # This is a signed upload.
@@ -432,7 +457,12 @@ def get_recipients(blamer, archive, distroseries, changes, logger):
 
     # If this is not a PPA, we also consider maintainer and changed-by.
     if blamer and not archive.is_ppa:
-        maintainer = email_to_person(changes['Maintainer'])
+        if changes:
+            maintainer = email_to_person(changes['Maintainer'])
+        elif spr:
+            maintainer = spr.maintainer
+        elif bprs:
+            maintainer = bprs[0].maintainer
         if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
@@ -518,7 +548,7 @@ def email_to_person(fullemail):
     return getUtility(IPersonSet).getByEmail(email)
 
 
-def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
+def is_auto_sync_upload(spr, bprs, pocket, changed_by):
     """Return True if this is a (Debian) auto sync upload.
 
     Sync uploads are source-only, unsigned and not targeted to
@@ -526,7 +556,6 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
-    changed_by = email_to_person(changed_by_email)
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
