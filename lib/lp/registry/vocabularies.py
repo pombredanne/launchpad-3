@@ -79,10 +79,6 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
-from storm.store import (
-    FindSpec,
-    ResultSet,
-    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
@@ -624,27 +620,19 @@ class ValidPersonOrTeamVocabulary(
                 # Searching for private teams that match can be easier since
                 # we are only interested in teams.  Teams can have email
                 # addresses but we're electing to ignore them here.
-                private_result = self.store.using(*private_tables).find(
-                    (Person.id, private_ranking_sql,
-                     SQL("true as is_private_team")),
-                    And(
+                private_result_select = Select(
+                    tables=private_tables,
+                    columns=(Person.id, private_ranking_sql,
+                                SQL("true as is_private_team")),
+                    where=And(
                         SQL("""
                             lower(Person.name) LIKE ? || '%%'
                             OR lower(Person.displayname) LIKE ? || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
-                        private_query,
-                        )
-                    )
-                # We will do the sorting later, not here.
-                private_result.order_by()
-            
-                matching_person_query = ResultSet(
-                    self.store, FindSpec(
-                            (Person.id, SQL("rank"), SQL("is_private_team"))),
-                    select = Union(matching_person_sql,
-                          private_result._get_select(), all=True))
-                matching_person_sql = matching_person_query._get_select()
+                        private_query))
+                matching_person_sql = Union(matching_person_sql,
+                          private_result_select, all=True)
 
             # The tables for public persons and teams that match the text.
             public_tables = [
@@ -676,10 +664,11 @@ class ValidPersonOrTeamVocabulary(
                             Person.visibility == PersonVisibility.PUBLIC,
                             Person.merged == None,
                             Or(# A valid person-or-team is either a team...
-                               # Note: 'Not' due to Bug 244768.
-                               Not(Person.teamowner == None),
-                               # Or a person who has a preferred email address.
-                               EmailAddress.status == EmailAddressStatus.PREFERRED)),
+                                # Note: 'Not' due to Bug 244768.
+                                Not(Person.teamowner == None),
+                                # Or a person who has preferred email address.
+                                EmailAddress.status ==
+                                    EmailAddressStatus.PREFERRED)),
                         # Or a private team
                         all_private_teams_query),
                     self.extra_clause),
