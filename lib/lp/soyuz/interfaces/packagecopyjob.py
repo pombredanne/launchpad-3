@@ -62,9 +62,8 @@ class IPackageCopyJob(Interface):
         schema=IDistroSeries, title=_('Target DistroSeries.'),
         required=True, readonly=True)
 
-# XXX: Make package_name required.
     package_name = TextLine(
-        title=_("Package name"), required=False, readonly=True)
+        title=_("Package name"), required=True, readonly=True)
 
     job = Reference(
         schema=IJob, title=_('The common Job attributes'),
