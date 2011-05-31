@@ -409,7 +409,7 @@ class PackageUpload(SQLBase):
             from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
             # Release the job hounds, Smithers.
             self.setAccepted()
-            job = PlainPackageCopyJob(self.package_copy_job)
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
             job.resume()
             # The copy job will send emails as appropriate.  We don't
             # need to worry about closing bugs from syncs, although we
@@ -458,7 +458,7 @@ class PackageUpload(SQLBase):
         if self.package_copy_job is not None:
             # Circular imports :(
             from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
-            job = PlainPackageCopyJob(self.package_copy_job)
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
             # Do the state transition dance.
             job.queue()
             job.start()
