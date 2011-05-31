@@ -13,9 +13,7 @@ from datetime import (
 from pytz import utc
 from testtools.matchers import Equals
 from zope.component import getUtility
-from zope.schema.interfaces import (
-    IVocabularyFactory,
-    )
+from zope.schema.interfaces import IVocabularyFactory
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
@@ -70,13 +68,35 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         # the vocabulary factory returns a vocabulary for all distroseries of
         # the distribution from which the derived series have been derived.
         parent_distroseries = self.factory.makeDistroSeries()
-        # Create a sibling to the parent.
         self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution)
-        distroseries = self.factory.makeDistroSeries(
-            previous_series=parent_distroseries)
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent_distroseries)
         vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = set(parent_distroseries.distribution.series)
+        observed_distroseries = set(term.value for term in vocabulary)
+        self.assertEqual(expected_distroseries, observed_distroseries)
+
+    def test_distribution_with_derived_series_from_multiple_parents(self):
+        # Given a distribution with series, one or more of which are derived
+        # from multiple parents, the vocabulary factory returns a vocabulary
+        # for all distroseries of the distribution*s* from which the derived
+        # series have been derived.
+        parent_distroseries = self.factory.makeDistroSeries()
+        another_parent_distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(
+            distribution=parent_distroseries.distribution)
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent_distroseries)
+        self.factory.makeDistroSeriesParent(
+            derived_series=distroseries,
+            parent_series=another_parent_distroseries)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
+        expected_distroseries = set(
+            parent_distroseries.distribution.series).union(
+                set(another_parent_distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -87,8 +107,9 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         # given distribution.
         parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries(
-            distribution=parent_distroseries.distribution,
-            previous_series=parent_distroseries)
+            distribution=parent_distroseries.distribution)
+        self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent_distroseries)
         vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = (
             set(self.all_distroseries).difference(
@@ -168,8 +189,9 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries(
-            previous_series=parent_distroseries,
             distribution=distribution)
+        self.factory.makeDistroSeriesParent(
+            derived_series=distroseries, parent_series=parent_distroseries)
         flush_database_caches()
         # Reload distroseries and distribution; these will reasonably already
         # be loaded before using the vocabulary.
