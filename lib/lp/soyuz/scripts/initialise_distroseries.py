@@ -27,6 +27,7 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packageset import Packageset
@@ -66,7 +67,8 @@ class InitialiseDistroSeries:
 
     def __init__(
         self, distroseries, parents, arches=(), packagesets=(),
-        rebuild=False, overlays=[], overlay_pockets=[], overlay_components=[]):
+        rebuild=False, overlays=[], overlay_pockets=[],
+        overlay_components=[]):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
 
@@ -153,9 +155,11 @@ class InitialiseDistroSeries:
     def _set_parent(self):
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
         # initialising from multiple parents.
-        if self.overlays and self.overlays[0] is not None:
-            pocket = self.overlay_pockets[0]
-            component = self.overlay_components[0]
+        if self.overlays and self.overlays[0]:
+            pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
+                PackagePublishingPocket, self.overlay_pockets[0]).value
+            component_set = getUtility(IComponentSet)
+            component = component_set[self.overlay_components[0]]
             getUtility(IDistroSeriesParentSet).new(self.distroseries,
                 self.parent, initialized=False, is_overlay=True,
                 pocket=pocket, component=component)
