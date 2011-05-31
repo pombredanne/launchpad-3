@@ -15,6 +15,7 @@ from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -518,9 +519,47 @@ class TestSourcePackageWebService(WebServiceTestCase):
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
-    """Tests for source package branch linking security."""
+    """Tests for source package security."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_admins_have_launchpad_Edit(self):
+        admin = self.factory.makeAdministrator()
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(admin):
+            self.failUnless(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Administrators should have launchpad.Edit on source "
+                "packages.")
+
+    def test_distro_owner_have_launchpad_Edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(sourcepackage.distribution.owner):
+            self.failUnless(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Distribution owner should have launchpad.Edit on source "
+                "packages.")
+
+    def test_uploader_have_launchpad_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        uploader = self.factory.makePerson()
+        archive =  sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.failUnless(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages.")
+
+    def test_john_doe_can_t_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        john_doe = self.factory.makePerson()
+        with person_logged_in(john_doe):
+            self.failIf(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Random user shouldn't have launchpad.Edit on source "
+                "packages.")
 
     def test_cannot_setBranch(self):
         sourcepackage = self.factory.makeSourcePackage()

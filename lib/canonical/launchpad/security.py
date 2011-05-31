@@ -122,6 +122,7 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklistSet,
     )
 from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -2611,3 +2612,24 @@ class SetMessageVisibility(AuthorizationBase):
 
 class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
+
+class EditSourcePackage(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackage
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it."""
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        # checkUpload() returns the reason the user can't upload
+        # or None if they are allowed.
+        reason = distribution.main_archive.checkUpload(
+            user.person, self.obj.distroseries, self.obj.sourcepackagename,
+            component=None, pocket=PackagePublishingPocket.RELEASE,
+            strict_component=False)
+        return reason is None
