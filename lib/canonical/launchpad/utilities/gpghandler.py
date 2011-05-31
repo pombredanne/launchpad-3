@@ -512,6 +512,13 @@ class GPGHandler:
             'retrieving GPG key', 'Fingerprint: %s' % fingerprint)
         try:
             return self._grabPage('get', fingerprint)
+        # We record an informational OOPS for most errors: If the
+        # keyserver does not respond, callsites should show users
+        # an error message like "sorry, the keyserver is not
+        # responding, try again in a few minutes." The details
+        # of the error do not matter for users (and for the code in
+        # callsites), but we should be able to see if this problem
+        # occurs too often.
         except urllib2.HTTPError, exc:
             # The key server behaves a bit odd when queried for non
             # existent keys: Instead of responding with a 404, it
