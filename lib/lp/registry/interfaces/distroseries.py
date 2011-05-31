@@ -968,11 +968,25 @@ class IDistroSeriesEditRestricted(Interface):
             title=_("If binaries will be copied to the derived "
             "distroseries."),
             required=True),
+        overlays=List(
+            title=_("The list of booleans indicating, for each parent, if "
+            "the parent/child relationship should be an overlay."),
+            value_type=Bool(),
+            required=False),
+        overlay_pockets=List(
+            title=_("The list of overlay pockets."),
+            value_type=TextLine(),
+            required=False),
+        overlay_components=List(
+            title=_("The list of overlay components."),
+            value_type=TextLine(),
+            required=False),
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def initDerivedDistroSeries(user, parents, architectures,
-                                packagesets, rebuild):
+                                packagesets, rebuild, overlays,
+                                overlay_pockets, overlay_components):
         """Initialize this series from parents.
 
         This method performs checks and then creates a job to populate
@@ -987,6 +1001,12 @@ class IDistroSeriesEditRestricted(Interface):
         :param rebuild: Whether binaries will be copied to the derived
             series. If it's true, they will not be, and if it's false, they
             will be.
+        :param overlays: A list of booleans indicating, for each parent, if
+            the parent/child relationship should be an overlay.
+        :param overlay_pockets: The list of pockets to use for overlay
+            relationships.
+        :param overlay_components: The list of components to use for overlay 
+            relationships.
         """
 
 

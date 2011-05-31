@@ -173,11 +173,13 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertTrue(child.backports_not_automatic)
 
     def _full_initialise(self, child=None, arches=(), packagesets=(),
-                         rebuild=False, distribution=None, overlays={}):
+                         rebuild=False, distribution=None, overlays=[],
+                         overlay_pockets=[], overlay_components=[]):
         if child is None:
             child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitialiseDistroSeries(
-            child, [self.parent.id], arches, packagesets, rebuild, overlays)
+            child, [self.parent.id], arches, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
         ids.check()
         ids.initialise()
         return child
@@ -397,7 +399,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_no_overlays(self):
         # Without the overlay parameter, no overlays are created.
-        child = self._full_initialise(rebuild=True, overlays={})
+        child = self._full_initialise(rebuild=True, overlays=[])
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             child, self.parent)
@@ -409,9 +411,13 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         component = getUtility(IComponentSet)['universe']
         pocket = PackagePublishingPocket.UPDATES
         child = self.factory.makeDistroSeries()
-        overlays = {child.id: [pocket, component]}
+        overlays = [True]
+        overlay_pockets = [pocket]
+        overlay_components = [component]
         child = self._full_initialise(
-            child=child, rebuild=True, overlays=overlays)
+            child=child, rebuild=True, overlays=overlays,
+            overlay_pockets=overlay_pockets,
+            overlay_components=overlay_components)
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             child, self.parent)

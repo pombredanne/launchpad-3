@@ -1995,7 +1995,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child, [self], architectures, packagesets, rebuild)
 
     def initDerivedDistroSeries(self, user, parents, architectures=(),
-                                packagesets=(), rebuild=False):
+                                packagesets=(), rebuild=False, overlays=[],
+                                overlay_pockets=[],
+                                overlay_components=[]):
         """See `IDistroSeries`."""
         if self.is_derived_series:
             raise DerivationError(
@@ -2006,7 +2008,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            self, parents, architectures, packagesets, rebuild)
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
 
     def getParentSeries(self):
         """See `IDistroSeriesPublic`."""
