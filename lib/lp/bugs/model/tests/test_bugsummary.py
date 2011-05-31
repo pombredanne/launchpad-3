@@ -221,13 +221,13 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Confirm counts.
         self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+        self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            0)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product == product),
             0)
 
     def test_makePublic(self):
@@ -242,14 +242,15 @@ class TestBugSummary(TestCaseWithFactory):
         # BugSubscription records get created for implicit
         # subscriptions.
         bug.setPrivate(False, bug.owner)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product==product),
+            1)
         self.assertEqual(
             self.getCount(person_a, BugSummary.product==product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product==product),
-            1)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product==product),
             1)
 
     def test_subscribePrivate(self):
@@ -261,13 +262,13 @@ class TestBugSummary(TestCaseWithFactory):
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+        self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            0)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product == product),
             0)
 
     def test_unsubscribePrivate(self):
@@ -281,13 +282,13 @@ class TestBugSummary(TestCaseWithFactory):
         bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
 
         self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+        self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            0)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product == product),
             0)
 
     def test_subscribePublic(self):
@@ -299,13 +300,13 @@ class TestBugSummary(TestCaseWithFactory):
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
+        self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            1)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product == product),
             1)
 
     def test_unsubscribePublic(self):
@@ -319,13 +320,13 @@ class TestBugSummary(TestCaseWithFactory):
         bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
 
         self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
+        self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            1)
-        self.assertEqual(
-            self.getPublicCount(BugSummary.product == product),
             1)
 
     def test_addProduct(self):
