@@ -435,7 +435,7 @@ BEGIN
         END IF;
         RETURN OLD;
 
-    ELSIF TG_OP = 'UPDATE' THEN
+    ELSE
         IF (OLD.product IS DISTINCT FROM NEW.product
             OR OLD.productseries IS DISTINCT FROM NEW.productseries
             OR OLD.distribution IS DISTINCT FROM NEW.distribution
@@ -484,15 +484,18 @@ BEGIN
         END IF;
         RETURN OLD;
     ELSE
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
-            IF OLD.bug <> NEW.bug THEN
-                PERFORM unsummarise_bug(bug_row(NEW.bug));
-            END IF;
-        ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
-            IF OLD.bug <> NEW.bug THEN
-                PERFORM summarise_bug(bug_row(NEW.bug));
+        IF (OLD.person IS DISTINCT FROM NEW.person
+            OR OLD.bug IS DISTINCT FROM NEW.bug) THEN
+            IF TG_WHEN = 'BEFORE' THEN
+                PERFORM unsummarise_bug(bug_row(OLD.bug));
+                IF OLD.bug <> NEW.bug THEN
+                    PERFORM unsummarise_bug(bug_row(NEW.bug));
+                END IF;
+            ELSE
+                PERFORM summarise_bug(bug_row(OLD.bug));
+                IF OLD.bug <> NEW.bug THEN
+                    PERFORM summarise_bug(bug_row(NEW.bug));
+                END IF;
             END IF;
         END IF;
         RETURN NEW;
