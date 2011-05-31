@@ -300,9 +300,11 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         # The difference portlet displays 'The series is initialising.' if
         # there is an initialising job for the series.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        derived_series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        self.simple_user = self.factory.makePerson()
         job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job_source.create(derived_series.parent, derived_series)
+        job_source.create(derived_series, [parent_series.id])
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
