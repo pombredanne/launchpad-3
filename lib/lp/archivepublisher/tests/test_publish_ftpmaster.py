@@ -5,22 +5,31 @@
 
 __metaclass__ = type
 
-from apt_pkg import TagFile
 import logging
 import os
-from testtools.matchers import StartsWith
 from textwrap import dedent
+
+from apt_pkg import TagFile
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.scripts.publish_ftpmaster import (
+    compose_env_string,
+    compose_shell_boolean,
+    find_run_parts_dir,
+    get_working_dists,
+    PublishFTPMaster,
+    shell_quote,
+    )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -35,14 +44,6 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
-    )
-from lp.archivepublisher.scripts.publish_ftpmaster import (
-    compose_env_string,
-    compose_shell_boolean,
-    find_run_parts_dir,
-    get_working_dists,
-    PublishFTPMaster,
-    shell_quote,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
