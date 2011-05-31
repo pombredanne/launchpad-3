@@ -2146,7 +2146,7 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
-            errors = self.validate_external_dependencies(ext_deps)
+            errors = validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
