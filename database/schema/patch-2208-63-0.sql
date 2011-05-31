@@ -416,6 +416,9 @@ CREATE OR REPLACE FUNCTION bugtask_maintain_bug_summary() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
+    -- This trigger only works if we are inserting, updating or deleting
+    -- a single row per statement.
+
     -- Unlike bug_maintain_bug_summary, this trigger does not have access
     -- to the old bug when invoked as an AFTER trigger. To work around this
     -- we install this trigger as both a BEFORE and an AFTER trigger.
@@ -469,6 +472,8 @@ RETURNS TRIGGER LANGUAGE plpgsql VOLATILE
 SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
+    -- This trigger only works if we are inserting, updating or deleting
+    -- a single row per statement.
     IF TG_OP = 'INSERT' THEN
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(NEW.bug));
