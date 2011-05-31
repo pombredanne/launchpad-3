@@ -494,7 +494,7 @@ class Archive(SQLBase):
 
         if name is not None:
             if exact_match:
-                storm_clauses.append(SourcePackageName.name==name)
+                storm_clauses.append(SourcePackageName.name == name)
             else:
                 clauses.append(
                     "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
@@ -505,7 +505,7 @@ class Archive(SQLBase):
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version==version)
+            storm_clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
@@ -525,7 +525,7 @@ class Archive(SQLBase):
 
         if pocket is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket==pocket)
+                SourcePackagePublishingHistory.pocket == pocket)
 
         if created_since_date is not None:
             clauses.append(
@@ -540,6 +540,7 @@ class Archive(SQLBase):
             *orderBy)
         if not eager_load:
             return resultset
+
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):
@@ -620,7 +621,7 @@ class Archive(SQLBase):
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         order_const = "SourcePackageRelease.version"
-        desc_version_order = SQLConstant(order_const+" DESC")
+        desc_version_order = SQLConstant(order_const + " DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
 

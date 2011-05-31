@@ -119,59 +119,59 @@ class ArchiveDependencyError(Exception):
 
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class CannotSwitchPrivacy(Exception):
     """Raised when switching the privacy of an archive that has
     publishing records."""
-    webservice_error(400) # Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class PocketNotFound(Exception):
     """Invalid pocket."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class DistroSeriesNotFound(Exception):
     """Invalid distroseries."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class AlreadySubscribed(Exception):
     """Raised when creating a subscription for a subscribed person."""
-    webservice_error(400) # Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
-    webservice_error(400) # Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class NoTokensForTeams(Exception):
     """Raised when creating a token for a team, rather than a person."""
-    webservice_error(400) # Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class ComponentNotFound(Exception):
     """Invalid source name."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class InvalidComponent(Exception):
     """Invalid component name."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
     _message_prefix = "No such ppa"
 
 
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
-    webservice_error(400) # Bad request.
+    webservice_error(400)  # Bad request.
 
 
 class CannotRestrictArchitectures(Exception):
@@ -180,7 +180,7 @@ class CannotRestrictArchitectures(Exception):
 
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
-    webservice_error(403) # Forbidden.
+    webservice_error(403)  # Forbidden.
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
@@ -197,7 +197,7 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
 
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
-    webservice_error(403) # Forbidden.
+    webservice_error(403)  # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -256,7 +256,7 @@ class ArchiveDisabled(CannotUploadToArchive):
 class InvalidExternalDependencies(Exception):
     """Tried to set external dependencies to an invalid value."""
 
-    webservice_error(400) #Bad request.
+    webservice_error(400)  # Bad request.
 
     def __init__(self, errors):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
@@ -348,7 +348,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     distribution = exported(
         Reference(
-            Interface, # Redefined to IDistribution later.
+            Interface,  # Redefined to IDistribution later.
             title=_("The distribution that uses or is used by this "
                     "archive.")))
 
@@ -908,7 +908,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
-    num_pkgs_building = Attribute("Tuple of packages building and waiting to build")
+    num_pkgs_building = Attribute(
+        "Tuple of packages building and waiting to build")
 
     def getSourcePackageReleases(build_status=None):
         """Return the releases for this archive.
@@ -960,7 +961,8 @@ class IArchiveView(IHasBuildRecords):
     dependencies = exported(
         CollectionField(
             title=_("Archive dependencies recorded for this archive."),
-            value_type=Reference(schema=Interface), #Really IArchiveDependency
+            value_type=Reference(schema=Interface),
+            # Really IArchiveDependency
             readonly=True))
 
     description = exported(
@@ -1127,8 +1129,8 @@ class IArchiveView(IHasBuildRecords):
         """
 
     @operation_parameters(
-        dependency=Reference(schema=Interface)) #Really IArchive. See below.
-    @operation_returns_entry(schema=Interface) #Really IArchiveDependency.
+        dependency=Reference(schema=Interface))  # Really IArchive. See below.
+    @operation_returns_entry(schema=Interface)  # Really IArchiveDependency.
     @export_read_operation()
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
@@ -1249,7 +1251,8 @@ class IArchiveAppend(Interface):
         source_names=List(
             title=_("Source package names"),
             value_type=TextLine()),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        from_archive=Reference(schema=Interface),
+        #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
@@ -1291,7 +1294,8 @@ class IArchiveAppend(Interface):
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
         version=TextLine(title=_("Version")),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        from_archive=Reference(schema=Interface),
+        # Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
@@ -1330,7 +1334,7 @@ class IArchiveAppend(Interface):
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
-        subscriber = PublicPersonChoice(
+        subscriber=PublicPersonChoice(
             title=_("Subscriber"),
             required=True,
             vocabulary='ValidPersonOrTeam',
