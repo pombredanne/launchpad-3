@@ -330,13 +330,70 @@ class TestBugSummary(TestCaseWithFactory):
             1)
 
     def test_addProduct(self):
-        raise NotImplementedError
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(distribution=distribution)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+
+        self.factory.makeBugTask(bug=bug, target=product)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
 
     def test_changeProduct(self):
-        raise NotImplementedError
+        product_a = self.factory.makeProduct()
+        product_b = self.factory.makeProduct()
+        bug_task = self.factory.makeBugTask(target=product_a)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product_a),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product_b),
+            0)
+
+        bug_task.product = product_b
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product_a),
+            0)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product_b),
+            1)
 
     def test_removeProduct(self):
-        raise NotImplementedError
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+
+        product_bug_task = self.factory.makeBugTask(target=product)
+        distribution_bug_task = self.factory.makeBugTask(
+            bug=product_bug_task.bug, target=distribution)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
+
+        self.store.remove(product_bug_task)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
 
     def test_addProductSeries(self):
         raise NotImplementedError
