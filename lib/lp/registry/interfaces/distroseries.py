@@ -37,7 +37,6 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -891,7 +890,7 @@ class IDistroSeriesEditRestricted(Interface):
     @operation_parameters(
         parents=List(
             title=_("The list of parents to derive from."),
-            value_type=Reference(schema=Interface),
+            value_type=TextLine(),
             required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
@@ -942,7 +941,7 @@ class IDistroSeriesEditRestricted(Interface):
             the parent/child relationship should be an overlay.
         :param overlay_pockets: The list of pockets to use for overlay
             relationships.
-        :param overlay_components: The list of components to use for overlay 
+        :param overlay_components: The list of components to use for overlay
             relationships.
         """
 
