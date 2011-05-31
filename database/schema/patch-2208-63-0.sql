@@ -425,35 +425,38 @@ BEGIN
         ELSE
             PERFORM summarise_bug(bug_row(NEW.bug));
         END IF;
+        RETURN NEW;
+
     ELSIF TG_OP = 'DELETE' THEN
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(OLD.bug));
         ELSE
             PERFORM summarise_bug(bug_row(OLD.bug));
         END IF;
+        RETURN OLD;
 
-    ELSIF TG_OP = 'UPDATE' AND (
-        OLD.product IS DISTINCT FROM NEW.product
-        OR OLD.productseries IS DISTINCT FROM NEW.productseries
-        OR OLD.distribution IS DISTINCT FROM NEW.distribution
-        OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
-        OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
-        OR OLD.status IS DISTINCT FROM NEW.status
-        OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
-        IF TG_WHEN = 'BEFORE' THEN
-            PERFORM unsummarise_bug(bug_row(OLD.bug));
-            IF OLD.bug <> NEW.bug THEN
-                PERFORM unsummarise_bug(bug_row(NEW.bug));
-            END IF;
-        ELSE
-            PERFORM summarise_bug(bug_row(OLD.bug));
-            IF OLD.bug <> NEW.bug THEN
-                PERFORM summarise_bug(bug_row(NEW.bug));
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF (OLD.product IS DISTINCT FROM NEW.product
+            OR OLD.productseries IS DISTINCT FROM NEW.productseries
+            OR OLD.distribution IS DISTINCT FROM NEW.distribution
+            OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
+            OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
+            OR OLD.status IS DISTINCT FROM NEW.status
+            OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
+            IF TG_WHEN = 'BEFORE' THEN
+                PERFORM unsummarise_bug(bug_row(OLD.bug));
+                IF OLD.bug <> NEW.bug THEN
+                    PERFORM unsummarise_bug(bug_row(NEW.bug));
+                END IF;
+            ELSE
+                PERFORM summarise_bug(bug_row(OLD.bug));
+                IF OLD.bug <> NEW.bug THEN
+                    PERFORM summarise_bug(bug_row(NEW.bug));
+                END IF;
             END IF;
         END IF;
+        RETURN NEW;
     END IF;
-
-    RETURN NEW;
 END;
 $$;
 
@@ -472,12 +475,14 @@ BEGIN
         ELSE
             PERFORM summarise_bug(bug_row(NEW.bug));
         END IF;
+        RETURN NEW;
     ELSIF TG_OP = 'DELETE' THEN
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(OLD.bug));
         ELSE
             PERFORM summarise_bug(bug_row(OLD.bug));
         END IF;
+        RETURN OLD;
     ELSE
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(OLD.bug));
@@ -490,8 +495,8 @@ BEGIN
                 PERFORM summarise_bug(bug_row(NEW.bug));
             END IF;
         END IF;
+        RETURN NEW;
     END IF;
-    RETURN NEW;
 END;
 $$;
 
