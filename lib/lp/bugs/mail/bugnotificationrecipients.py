@@ -80,7 +80,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
                     "to a duplicate bug report" % person.displayname)
             reason += " @%s" % person.name
         else:
-            text = "are subscribed to a duplicate bug report"
+            text = "are subscribed to a\nduplicate bug report"
         if duplicate_bug is not None:
             text += " (%s)" % duplicate_bug.id
         self._addReason(person, text, reason)
