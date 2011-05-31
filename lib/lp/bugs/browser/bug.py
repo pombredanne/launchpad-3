@@ -288,10 +288,10 @@ class BugContextMenu(ContextMenu):
         user = getUtility(ILaunchBag).user
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
-            icon = 'yes'
+            icon = 'unmute'
         else:
             text = "Mute bug mail"
-            icon = 'no'
+            icon = 'mute'
 
         return Link(
             '+mute', text, icon=icon, summary=(
@@ -674,7 +674,7 @@ class BugSubscriptionPortletView(BugView):
                 psi.direct.as_team_member or
                 psi.direct.as_team_admin)
             cache['other_subscription_notifications'] = (
-                self.other_subscription_notifications
+                self.other_subscription_notifications)
             self.only_other_subscription_notifications = (
                 self.other_subscription_notifications and
                 not self.direct_notifications)
