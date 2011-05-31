@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
-from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
@@ -187,10 +186,9 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
 
-class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
+class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
-                    HasBranchesMixin, HasMergeProposalsMixin,
-                    HasBugHeatMixin, HasCodeImportsMixin):
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -199,7 +197,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords, IQuestionTarget)
+        ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
@@ -424,16 +422,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.previous_series
+            ubuntuseries = self.distroseries.prior_series
             if ubuntuseries:
                 previous_ubuntu_series = ubuntuseries[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
         # if we have a parent distroseries, try that
-        if self.distroseries.parent_series is not None:
+        if self.distroseries.previous_series is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distroseries=self.distroseries.parent_series)
+                               distroseries=self.distroseries.previous_series)
             return sp.packaging
         # capitulate
         return None

@@ -275,7 +275,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
@@ -2968,8 +2968,7 @@ set the datecreated field of the bug's initial message (see bug
     >>> commit()
 
     >>> with lp_dbuser():
-    ...     from canonical.launchpad.interfaces.launchpad import (
-    ...         ILaunchpadCelebrities)
+    ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
     ...     bug_watch = bug_with_watch.addWatch(
     ...         bug_tracker,

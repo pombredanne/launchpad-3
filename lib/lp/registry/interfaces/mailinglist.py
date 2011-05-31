@@ -18,6 +18,7 @@ __all__ = [
     'IMailingListSubscription',
     'IMessageApproval',
     'IMessageApprovalSet',
+    'IMessageHeldEvent',
     'MailingListStatus',
     'PURGE_STATES',
     'PostedMessageStatus',
@@ -29,7 +30,10 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -40,10 +44,12 @@ from zope.schema import (
     TextLine,
     )
 
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PublicPersonChoice
@@ -110,7 +116,7 @@ class MailingListStatus(DBEnumeratedType):
     INACTIVE = DBItem(7, """
         Inactive
 
-        A previously active mailing lit has been made inactive by its team
+        A previously active mailing list has been made inactive by its team
         owner.
         """)
 
@@ -132,7 +138,7 @@ class MailingListStatus(DBEnumeratedType):
 
         The mailing list has been flagged for deactivation by the team owner.
         Mailman will be informed of this and will take the necessary actions
-        to deactive the list.
+        to deactivate the list.
         """)
 
     MOD_FAILED = DBItem(11, """
@@ -246,8 +252,7 @@ class IMailingList(Interface):
         title=_('Review date'),
         description=_('The date on which this mailing list registration was '
                       'reviewed, or None if the registration has not yet '
-                      'been reviewed.')
-        )
+                      'been reviewed.'))
 
     date_activated = Datetime(
         title=_('Activation date'),
@@ -255,8 +260,7 @@ class IMailingList(Interface):
                       'meaning that the Mailman process has successfully '
                       'created it.  This may be None if the mailing list '
                       'has not yet been activated, or that its activation '
-                      'has failed.')
-        )
+                      'has failed.'))
 
     status = Choice(
         title=_('Status'),
@@ -434,8 +438,8 @@ class IMailingList(Interface):
     def getReviewableMessages(message_id_filter=None):
         """Return the set of all held messages for this list requiring review.
 
-        :param message_id_filter: If supplied only messages with message ids in
-            the filter are returned.
+        :param message_id_filter: If supplied only messages with message ids
+            in the filter are returned.
         :return: A sequence of `IMessageApproval`s for this mailing list,
             where the status is `PostedMessageStatus.NEW`.  The returned set
             is ordered first by the date the message was posted, then by
@@ -938,3 +942,10 @@ class UnsafeToPurge(Exception):
     def __str__(self):
         return 'Cannot purge mailing list in %s state: %s' % (
             self._mailing_list.status.name, self._mailing_list.team.name)
+
+
+class IMessageHeldEvent(IObjectCreatedEvent):
+    """A mailing list message has been held for moderator approval."""
+
+    mailing_list = Attribute('The mailing list the message is held for.')
+    message_id = Attribute('The Message-ID of the held message.')

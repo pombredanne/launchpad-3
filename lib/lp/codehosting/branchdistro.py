@@ -23,12 +23,13 @@ from bzrlib.errors import (
     NotBranchError,
     NotStacked,
     )
+from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
@@ -356,7 +357,8 @@ class DistroBrancher:
         switch_branches(
             config.codehosting.mirrored_branches_root,
             'lp-internal', old_db_branch, new_db_branch)
-        # Directly copy the branch revisions from the old branch to the new branch.
+        # Directly copy the branch revisions from the old branch to the new
+        # branch.
         store = IMasterStore(BranchRevision)
         store.execute(
             """
@@ -371,8 +373,11 @@ class DistroBrancher:
         tip_revision = old_db_branch.getTipRevision()
         new_db_branch.updateScannedDetails(
             tip_revision, old_db_branch.revision_count)
+        tip_revision_id = (
+            tip_revision.revision_id if tip_revision is not None else
+            NULL_REVISION)
         new_db_branch.branchChanged(
-            '', tip_revision.revision_id,
+            '', tip_revision_id,
             old_db_branch.control_format,
             old_db_branch.branch_format,
             old_db_branch.repository_format)

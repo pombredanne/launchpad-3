@@ -50,7 +50,6 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'UserTeamsParticipationVocabulary',
-    'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
@@ -100,13 +99,15 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -124,6 +125,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
@@ -167,7 +169,7 @@ from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
 from lp.registry.model.milestone import Milestone
-from lp.registry.model.person import Person
+from lp.registry.model.person import Person, IrcID
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
@@ -175,6 +177,8 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database import bulk
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -183,10 +187,19 @@ class BasePersonVocabulary:
 
     _table = Person
 
+    def __init__(self, context=None):
+        self.enhanced_picker_enabled = bool(
+            getFeatureFlag('disclosure.picker_enhancements.enabled'))
+
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            return SimpleTerm(obj, obj.name, obj.displayname)
+            if self.enhanced_picker_enabled:
+                # Display the person's Launchpad id next to their name.
+                title = "%s (%s)" % (obj.displayname, obj.name)
+            else:
+                title = obj.displayname
+            return SimpleTerm(obj, obj.name, title)
         except Unauthorized:
             return None
 
@@ -580,7 +593,6 @@ class ValidPersonOrTeamVocabulary(
                       EmailAddressStatus.PREFERRED.value,
                       self.LIMIT))
 
-
             public_result = self.store.using(*public_tables).find(
                 Person,
                 And(
@@ -644,7 +656,14 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
-        return result
+
+        # We will be displaying the person's irc nic(s) in the description
+        # so we need to bulk load them in one query for performance.
+        def pre_iter_hook(rows):
+            persons = set(obj for obj in rows)
+            bulk.load_referencing(IrcID, persons, ['personID'])
+
+        return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
@@ -1433,7 +1452,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         series = self._table.select(
-            DistroSeries.q.distributionID==Distribution.q.id,
+            DistroSeries.q.distributionID == Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
         for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
@@ -1532,7 +1551,7 @@ class DistroSeriesDerivationVocabularyFactory:
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
-                child.parent_seriesID == parent.id))
+                child.previous_seriesID == parent.id))
         terms = self.find_terms(
             DistroSeries.distributionID.is_in(parent_distributions))
         if len(terms) == 0:

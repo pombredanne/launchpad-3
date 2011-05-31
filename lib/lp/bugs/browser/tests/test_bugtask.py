@@ -5,6 +5,8 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
@@ -12,6 +14,8 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -20,14 +24,15 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugtask import (
+    BugActivityItem,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
@@ -825,3 +830,33 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+
+class TestBugActivityItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setAttribute(self, obj, attribute, value):
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
+        setattr(removeSecurityProxy(obj), attribute, value)
+        notify(ObjectModifiedEvent(
+            obj, obj_before_modification, [attribute],
+            self.factory.makePerson()))
+
+    def test_escapes_assignee(self):
+        with celebrity_logged_in('admin'):
+            task = self.factory.makeBugTask()
+            self.setAttribute(
+                task, 'assignee',
+                self.factory.makePerson(displayname="Foo &<>", name='foo'))
+        self.assertEquals(
+            "nobody &#8594; Foo &amp;&lt;&gt; (foo)",
+            BugActivityItem(task.bug.activity[-1]).change_details)
+
+    def test_escapes_title(self):
+        with celebrity_logged_in('admin'):
+            bug = self.factory.makeBug(title="foo")
+            self.setAttribute(bug, 'title', "bar &<>")
+        self.assertEquals(
+            "- foo<br />+ bar &amp;&lt;&gt;",
+            BugActivityItem(bug.activity[-1]).change_details)

@@ -47,8 +47,8 @@ from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.structuralsubscription import (
@@ -272,7 +272,13 @@ class ProductTargetHelper:
         self.target_parent = target.project
         self.target_arguments = {"product": target}
         self.pillar = target
-        self.join = (StructuralSubscription.product == target)
+        if target.project is not None:
+            self.join = Or(
+                StructuralSubscription.product == target,
+                StructuralSubscription.project == target.project)
+        else:
+            self.join = (
+                StructuralSubscription.product == target)
 
 
 class ProductSeriesTargetHelper:

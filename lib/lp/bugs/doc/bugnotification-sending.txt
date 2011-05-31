@@ -45,7 +45,7 @@ assigned to.
 Anyway, let's start our demonstration by adding a comment to a bug:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> sample_person = getUtility(ILaunchBag).user
@@ -76,12 +76,6 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
     ----------------------------------------------------------------------
     To: mark@example.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -91,11 +85,6 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    You received this bug notification because you are a bug assignee.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
     ----------------------------------------------------------------------
     To: support@ubuntu.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -104,13 +93,7 @@ list of emails to send:
     <BLANKLINE>
     a comment.
     <BLANKLINE>
-    --
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
@@ -118,14 +101,6 @@ list of emails to send:
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
     a comment.
-    <BLANKLINE>
-    ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
     <BLANKLINE>
     ...
     ----------------------------------------------------------------------
@@ -192,13 +167,7 @@ subject, though, which is often the case when someone replies via email.
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
-    --
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -242,13 +211,8 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     ** Visibility changed to: Private
     <BLANKLINE>
+    --
     ...
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -300,12 +264,7 @@ in the order they were added:
     + Another summary
     <BLANKLINE>
     --
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
@@ -390,6 +349,21 @@ notification will be sent to all members individually.
 Duplicates
 ----------
 
+We will need some helper functions.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> def switch_db_to_launchpad():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> def switch_db_to_bugnotification():
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(
+    ...         config.malone.bugnotification_dbuser)
+
 We will also need a fresh new bug.
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
@@ -430,16 +404,7 @@ top of the email:
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    -- 
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
-    http://bugs.launchpad.dev/bugs/16
-    <BLANKLINE>
-    Title:
-      new bug
+    ...
     ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <16@bugs.launchpad.net>
@@ -448,19 +413,7 @@ top of the email:
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    a comment.
-    <BLANKLINE>
-    -- 
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    http://bugs.launchpad.dev/bugs/16
-    <BLANKLINE>
-    Title:
-      new bug
-    <BLANKLINE>
-    To unsubscribe from this bug, go to:
-    http://bugs.launchpad.dev/ubuntu/+bug/16/+subscribe
+    ...
     ----------------------------------------------------------------------
 
     >>> flush_notifications()
@@ -646,12 +599,7 @@ makes it write out the emails it sends.
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You received this bug notification because you are subscribed to
-    mozilla-firefox in Ubuntu.
-    http://bugs.launchpad.dev/bugs/1
-    <BLANKLINE>
-    Title:
-      Firefox does not support SVG
+    You received this bug notification because...
     INFO    Notifying mark@example.com about bug 1.
     ...
     INFO    Notifying owner@example.com about bug 1.
@@ -1037,7 +985,7 @@ However, Concise Person does get an unsubscribe link.
     >>> print_notification(collated_messages['concise@example.com'][0])
     To: concise@example.com
     ...
-    To unsubscribe from this bug, go to:...
+    To manage notifications about this bug go to:...
 
 Verbose Team Person gets a concise email, even though they belong to a team
 that gets verbose email.
@@ -1085,8 +1033,8 @@ Whereas Verbose Person does get the description and task status:
        will be automatically wrapped by the BugNotification
        machinery. Ain't technology great?
     <BLANKLINE>
-    To unsubscribe from this bug, go to:
-    http://bugs.launchpad.dev/.../+bug/.../+subscribe
+    To manage notifications about this bug go to:
+    http://bugs.launchpad.dev/.../+bug/.../+subscriptions
     ----------------------------------------------------------------------
 
 And Concise Team Person does too, even though his team doesn't want them:
@@ -1114,6 +1062,9 @@ And Concise Team Person does too, even though his team doesn't want them:
        This is a long description of the bug, which
        will be automatically wrapped by the BugNotification
        machinery. Ain't technology great?
+    <BLANKLINE>
+    To manage notifications about this bug go to:
+    http://bugs.launchpad.dev/.../+bug/.../+subscriptions
     ----------------------------------------------------------------------
 
 It's important to note that the bug title and description are wrapped
@@ -1129,7 +1080,7 @@ and indented correctly in verbose notifications.
      ...
      'Bug description:',
      '  This is a long description of the bug, which will be automatically',
-     "  wrapped by the BugNotification machinery. Ain't technology great?"]
+     "  wrapped by the BugNotification machinery. Ain't technology great?"...]
 
 The title is also wrapped and indented in normal notifications.
 
@@ -1139,7 +1090,7 @@ The title is also wrapped and indented in normal notifications.
     [...
      'Title:',
      '  In the beginning, the universe was created. This has made a lot of',
-     '  people very angry and has been widely regarded as a bad move']
+     '  people very angry and has been widely regarded as a bad move'...]
 
 Self-Generated Bug Notifications
 --------------------------------

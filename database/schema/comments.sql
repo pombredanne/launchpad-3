@@ -190,6 +190,12 @@ COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
 COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
 COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
+-- BugMute
+COMMENT ON TABLE BugMute IS 'Mutes for bug notifications.';
+COMMENT ON COLUMN BugMute.person IS 'The person that muted all notifications from this bug.';
+COMMENT ON COLUMN BugMute.bug IS 'The bug of this record';
+COMMENT ON COLUMN BugMute.date_created IS 'The date at which this mute was created.';
+
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
@@ -589,6 +595,10 @@ COMMENT ON TABLE DistroSeriesParent IS 'A list of all the derived distroseries f
 COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries';
 COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries';
 COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.';
+COMMENT ON COLUMN DistroSeriesParent.is_overlay is 'Whether or not the derived series is an overlay over the parent series.';
+COMMENT ON COLUMN DistroSeriesParent.ordering is 'The parent ordering. Parents are ordered in ascending order starting from 1.';
+COMMENT ON COLUMN DistroSeriesParent.pocket is 'The pocket for this overlay.';
+COMMENT ON COLUMN DistroSeriesParent.component is 'The component for this overlay.';
 
 -- DistroSeriesPackageCache
 

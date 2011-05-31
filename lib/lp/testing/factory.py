@@ -38,6 +38,7 @@ from operator import (
 import os
 from random import randint
 from StringIO import StringIO
+import sys
 from textwrap import dedent
 from threading import local
 from types import InstanceType
@@ -68,10 +69,6 @@ from canonical.database.constants import (
     )
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.message import (
-    Message,
-    MessageChunk,
-    )
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -82,7 +79,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
@@ -101,6 +97,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
@@ -190,9 +187,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
-from lp.registry.interfaces.distroseriesparent import (
-    IDistroSeriesParentSet,
-    )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet,
@@ -238,6 +233,10 @@ from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate
@@ -257,12 +256,14 @@ from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
@@ -418,13 +419,30 @@ class ObjectFactory:
         The string returned will always be a valid name that can be used in
         Launchpad URLs.
 
-        :param prefix: Used as a prefix for the unique string. If unspecified,
-            defaults to 'generic-string'.
+        :param prefix: Used as a prefix for the unique string. If
+            unspecified, generates a name starting with 'unique' and
+            mentioning the calling source location.
         """
         if prefix is None:
-            prefix = "generic-string"
-        string = "%s%s" % (prefix, self.getUniqueInteger())
-        return string.replace('_', '-').lower()
+            frame = sys._getframe(2)
+            source_filename = frame.f_code.co_filename
+            # Dots and dashes cause trouble with some consumers of these
+            # names.
+            source = (
+                os.path.basename(source_filename)
+                .replace('_', '-')
+                .replace('.', '-'))
+            if source.startswith(
+                    '<doctest '):
+                # Like '-<doctest xx-build-summary-txt[10]>'.
+                source = (source
+                    .replace('<doctest ', '')
+                    .replace('[', '')
+                    .replace(']>', ''))
+            prefix = 'unique-from-%s-line%d' % (
+                source, frame.f_lineno)
+        string = "%s-%s" % (prefix, self.getUniqueInteger())
+        return string
 
     def getUniqueUnicode(self):
         return self.getUniqueString().decode('latin-1')
@@ -1641,7 +1659,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('bug-title')
         if comment is None:
             comment = self.getUniqueString()
         if sourcepackagename is not None:
@@ -1666,8 +1684,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if milestone is not None:
             bugtask.transitionToMilestone(milestone, milestone.target.owner)
         if series is not None:
-            task = bug.addTask(owner, series)
-            task.transitionToStatus(status, owner)
+            with person_logged_in(owner):
+                task = bug.addTask(owner, series)
+                task.transitionToStatus(status, owner)
 
         return bug
 
@@ -2025,7 +2044,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     makeBlueprint = makeSpecification
 
-    def makeQuestion(self, target=None, title=None, owner=None):
+    def makeQuestion(self, target=None, title=None,
+                     owner=None, description=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2041,9 +2061,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString('title')
         if owner is None:
             owner = target.owner
+        if description is None:
+            description = self.getUniqueString('description')
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=owner, title=title, description='description')
+                owner=owner, title=title, description=description)
         return question
 
     def makeFAQ(self, target=None, title=None):
@@ -2319,7 +2341,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None, displayname=None,
+                          previous_series=None, name=None, displayname=None,
                           registrant=None):
         """Make a new distro release."""
         if distribution is None:
@@ -2342,19 +2364,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, registrant=registrant)
+            previous_series=previous_series, registrant=registrant)
         series.status = status
 
         return ProxyFactory(series)
 
     def makeUbuntuDistroRelease(self, version=None,
                                 status=SeriesStatus.DEVELOPMENT,
-                                parent_series=None, name=None,
+                                previous_series=None, name=None,
                                 displayname=None):
         """Short cut to use the celebrity 'ubuntu' as the distribution."""
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return self.makeDistroRelease(
-            ubuntu, version, status, parent_series, name, displayname)
+            ubuntu, version, status, previous_series, name, displayname)
 
     # Most people think of distro releases as distro series.
     makeDistroSeries = makeDistroRelease
@@ -2454,13 +2476,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series_difference, owner, comment)
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
-                               initialized=False):
+                               initialized=False, is_overlay=False,
+                               pocket=None, component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized)
+            derived_series, parent_series, initialized, is_overlay, pocket,
+            component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
@@ -2556,6 +2580,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return archive
 
+    def makeArchiveAdmin(self, archive=None):
+        """Make an Archive Admin.
+
+        :param archive: The `IArchive`, will be auto-created if None.
+
+        Make and return an `IPerson` who has an `ArchivePermission` to admin
+        the distroseries queue.
+        """
+        if archive is None:
+            archive = self.makeArchive()
+
+        person = self.makePerson()
+        permission_set = getUtility(IArchivePermissionSet)
+        permission_set.newQueueAdmin(archive, person, 'main')
+        return person
+
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
                     virtualized=True, vm_host=None, manual=False):
@@ -2572,11 +2612,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
-            name = self.getUniqueString()
+            name = self.getUniqueString('builder-name')
         if title is None:
-            title = self.getUniqueString()
+            title = self.getUniqueString('builder-title')
         if description is None:
-            description = self.getUniqueString()
+            description = self.getUniqueString('description')
         if owner is None:
             owner = self.makePerson()
 
@@ -2628,9 +2668,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroseries = self.makeSourcePackageRecipeDistroseries()
 
         if name is None:
-            name = self.getUniqueString().decode('utf8')
+            name = self.getUniqueString('spr-name').decode('utf8')
         if description is None:
-            description = self.getUniqueString().decode('utf8')
+            description = self.getUniqueString(
+                'spr-description').decode('utf8')
         if daily_build_archive is None:
             daily_build_archive = self.makeArchive(
                 distribution=distroseries.distribution, owner=owner)
@@ -3320,7 +3361,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePackageUpload(self, distroseries=None, archive=None,
                           pocket=None, changes_filename=None,
                           changes_file_content=None,
-                          signing_key=None, status=None):
+                          signing_key=None, status=None,
+                          package_copy_job=None):
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
@@ -3334,7 +3376,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.RELEASE
         package_upload = distroseries.createQueueEntry(
             pocket, changes_filename, changes_file_content, archive,
-            signing_key=signing_key)
+            signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
             naked_package_upload = removeSecurityProxy(package_upload)
             status_changers = {
@@ -4034,6 +4076,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             copy_base_url = self.getUniqueUnicode()
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
+
+    def makePlainPackageCopyJob(
+        self, package_name=None, package_version=None, source_archive=None,
+        target_archive=None, target_distroseries=None, target_pocket=None):
+        """Create a new `PlainPackageCopyJob`."""
+        if package_name is None and package_version is None:
+            package_name = self.makeSourcePackageName().name
+            package_version = unicode(self.getUniqueInteger()) + 'version'
+        package_tuple = (package_name, package_version)
+        if source_archive is None:
+            source_archive = self.makeArchive()
+        if target_archive is None:
+            target_archive = self.makeArchive()
+        if target_distroseries is None:
+            target_distroseries = self.makeDistroSeries()
+        if target_pocket is None:
+            target_pocket = self.getAnyPocket()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            package_tuple, source_archive, target_archive,
+            target_distroseries, target_pocket)
 
 
 # Some factory methods return simple Python types. We don't add

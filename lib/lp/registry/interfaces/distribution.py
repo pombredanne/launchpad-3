@@ -53,10 +53,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
-    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
@@ -84,7 +81,11 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.services.fields import (
     Description,
     IconImageUpload,
@@ -123,7 +124,7 @@ class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
-                  version, parent_series, registrant):
+                  version, previous_series, registrant):
         """Creates a new distroseries."""
 
 
@@ -641,7 +642,7 @@ class IDistributionPublic(
 
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
-    IRootContext, IStructuralSubscriptionTarget):
+    IQuestionTarget, IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution.
 
     Launchpadlib example: retrieving the current version of a package in a

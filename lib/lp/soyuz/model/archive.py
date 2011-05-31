@@ -64,7 +64,6 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
@@ -76,6 +75,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -107,11 +107,11 @@ from lp.services.propertycache import (
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
+    archive_suffixes,
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
-    archive_suffixes,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -195,7 +195,6 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class Archive(SQLBase):
@@ -911,13 +910,12 @@ class Archive(SQLBase):
                           source_package_name, dep_name):
         """See `IArchive`."""
         deps = expand_dependencies(
-            self, distro_arch_series.distroseries, pocket, component,
-            source_package_name)
+            self, distro_arch_series, pocket, component, source_package_name)
         archive_clause = Or([And(
             BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             Component.name.is_in(components))
-            for (archive, pocket, components) in deps])
+            for (archive, not_used, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         return store.find(
@@ -1501,6 +1499,8 @@ class Archive(SQLBase):
         It takes a list of SourcePackagePublishingHistory but the other args
         are strings.
         """
+        # Circular imports.
+        from lp.soyuz.scripts.packagecopier import do_copy
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
@@ -1811,6 +1811,16 @@ class Archive(SQLBase):
         # Cast to a list so we don't trip up with the security proxy not
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
+
+    def getOverridePolicy(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
+        # a PPA that overrides the component/pocket to main/RELEASE.
+        if self.purpose in MAIN_ARCHIVE_PURPOSES:
+            return UbuntuOverridePolicy()
+        return None
 
 
 class ArchiveSet:

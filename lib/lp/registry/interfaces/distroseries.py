@@ -53,7 +53,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
@@ -74,7 +73,10 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
@@ -234,12 +236,15 @@ class IDistroSeriesPublic(
         description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
-    parent_series = exported(
+    previous_series = exported(
         ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'),
+        ("devel", dict(exported_as="previous_series")),
+        ("1.0", dict(exported_as="parent_series")),
+        ("beta", dict(exported_as="parent_series")),
         readonly=True)
     registrant = exported(
         PublicPersonChoice(
@@ -352,8 +357,8 @@ class IDistroSeriesPublic(
             """))
 
     # other properties
-    previous_series = Attribute("Previous series from the same "
-        "distribution.")
+    prior_series = Attribute(
+        "Prior series *by date* from the same distribution.")
 
     main_archive = exported(
         Reference(
@@ -770,7 +775,7 @@ class IDistroSeriesPublic(
         """
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None):
+                         archive, signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.
@@ -827,6 +832,11 @@ class IDistroSeriesPublic(
     @export_read_operation()
     def getDerivedSeries():
         """Get all `DistroSeries` derived from this one."""
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getParentSeries():
+        """Get all parent `DistroSeries`."""
 
     @operation_parameters(
         parent_series=Reference(

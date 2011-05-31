@@ -67,11 +67,11 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.job_source.create(parent, distroseries)
         self.assertRaises(IntegrityError, flush_database_caches)
 
-    def test_run_with_parent_series_already_set(self):
+    def test_run_with_previous_series_already_set(self):
         # InitialisationError is raised if the parent series is already set on
         # the child.
         parent = self.factory.makeDistroSeries()
-        distroseries = self.factory.makeDistroSeries(parent_series=parent)
+        distroseries = self.factory.makeDistroSeries(previous_series=parent)
         job = self.job_source.create(parent, distroseries)
         expected_message = (
             "DistroSeries {child.name} has been initialized; it already "

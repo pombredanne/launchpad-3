@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
+import re
 import unittest
 
 import pytz
@@ -20,9 +21,12 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.ftests import login
-from canonical.launchpad.helpers import get_contact_email_addresses
+from canonical.launchpad.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -172,7 +176,8 @@ class FakeBugNotificationSetUtility:
 
     implements(IBugNotificationSet)
 
-    def getRecipientFilterData(self, recipient_to_sources, notifications):
+    def getRecipientFilterData(self, bug, recipient_to_sources,
+                               notifications):
         return dict(
             (recipient, {'sources': sources, 'filter descriptions': []})
             for recipient, sources in recipient_to_sources.items())
@@ -929,7 +934,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
 
     def setUp(self):
         super(TestEmailNotificationsWithFilters, self).setUp()
-        self.bug=self.factory.makeBug()
+        self.bug = self.factory.makeBug()
         subscriber = self.factory.makePerson()
         self.subscription = self.bug.default_bugtask.target.addSubscription(
             subscriber, subscriber)
@@ -1104,6 +1109,14 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
                                 self.getSubscriptionEmailHeaders())
 
 
+def fetch_notifications(subscriber, bug):
+    return IStore(BugNotification).find(
+        BugNotification,
+        BugNotification.id == BugNotificationRecipient.bug_notificationID,
+        BugNotificationRecipient.personID == subscriber.id,
+        BugNotification.bug == bug)
+
+
 class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
     # See bug 720147.
 
@@ -1128,11 +1141,7 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
             comment=message, owner=self.submitter,
             status=BugTaskStatus.NEW)
         bug = self.product.createBug(params)
-        notification = IStore(BugNotification).find(
-            BugNotification,
-            BugNotification.id==BugNotificationRecipient.bug_notificationID,
-            BugNotificationRecipient.personID == self.subscriber.id,
-            BugNotification.bug == bug).one()
+        notification = fetch_notifications(self.subscriber, bug).one()
         self.assertEqual(notification.message.text_contents, message)
 
     def test_filters_do_not_match_when_bug_is_created(self):
@@ -1143,9 +1152,41 @@ class TestEmailNotificationsWithFiltersWhenBugCreated(TestCaseWithFactory):
             status=BugTaskStatus.TRIAGED,
             importance=BugTaskImportance.HIGH)
         bug = self.product.createBug(params)
-        notifications = IStore(BugNotification).find(
-            BugNotification,
-            BugNotification.id==BugNotificationRecipient.bug_notificationID,
-            BugNotificationRecipient.personID == self.subscriber.id,
-            BugNotification.bug == bug)
+        notifications = fetch_notifications(self.subscriber, bug)
         self.assertTrue(notifications.is_empty())
+
+
+class TestManageNotificationsMessage(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_manage_notifications_message_is_included(self):
+        # Set up a subscription to a product.
+        subscriber = self.factory.makePerson()
+        submitter = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            bug_supervisor=submitter)
+        product.addSubscription(subscriber, subscriber)
+        # Create a bug that will match the subscription.
+        bug = product.createBug(CreateBugParams(
+            title=self.factory.getUniqueString(),
+            comment=self.factory.getUniqueString(),
+            owner=submitter))
+        notification = fetch_notifications(subscriber, bug).one()
+        _, _, (message,) = construct_email_notifications([notification])
+        payload = message.get_payload()
+        self.assertThat(payload, Contains(
+            'To manage notifications about this bug go to:\nhttp://'))
+
+
+class TestNotificationSignatureSeparator(TestCase):
+
+    def test_signature_separator(self):
+        # Email signatures are often separated from the body of a message by a
+        # special separator so user agents can identify the signature for
+        # special treatment (hiding, stripping when replying, colorizing,
+        # etc.).  The bug notification messages follow the convention.
+        names = ['bug-notification-verbose.txt', 'bug-notification.txt']
+        for name in names:
+            template = get_email_template(name, 'bugs')
+            self.assertTrue(re.search('^-- $', template, re.MULTILINE))

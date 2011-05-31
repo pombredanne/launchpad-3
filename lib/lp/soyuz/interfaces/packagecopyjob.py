@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -82,16 +82,16 @@ class PackageCopyJobType(DBEnumeratedType):
 class IPlainPackageCopyJobSource(IJobSource):
     """An interface for acquiring `IPackageCopyJobs`."""
 
-    def create(cls, source_archive, source_packages,
+    def create(cls, source_packages, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False):
         """Create a new `IPackageCopyJob`.
 
-        :param source_archive: The `IArchive` in which `source_packages` are
-            found.
         :param source_packages: An iterable of `(source_package_name,
             version)` tuples, where both `source_package_name` and `version`
             are strings.
+        :param source_archive: The `IArchive` in which `source_packages` are
+            found.
         :param target_archive: The `IArchive` to which to copy the packages.
         :param target_distroseries: The `IDistroSeries` to which to copy the
             packages.
@@ -102,6 +102,21 @@ class IPlainPackageCopyJobSource(IJobSource):
 
     def getActiveJobs(target_archive):
         """Retrieve all active sync jobs for an archive."""
+
+    def getPendingJobsPerPackage(target_series):
+        """Find pending jobs for each package in `target_series`.
+
+        This is meant for finding jobs that will resolve specific
+        `DistroSeriesDifference`s, so see also `specify_dsd_package`.
+
+        :param target_series: Target `DistroSeries`; this corresponds to
+            `DistroSeriesDifference.derived_series`.
+        :return: A dict containing as keys the (name, version) tuples for
+            each `DistroSeriesDifference` that has a resolving
+            `PlainPackageCopyJob` pending.  Each of these DSDs maps to its
+            oldest pending job.  The `version` corresponds to
+            `DistroSeriesDifference.parent_source_version`.
+        """
 
 
 class IPlainPackageCopyJob(IRunnableJob):

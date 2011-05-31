@@ -9,6 +9,7 @@ from storm.exceptions import IntegrityError
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -35,6 +36,7 @@ from lp.registry.model.distroseriesdifference import (
     most_recent_publications,
     )
 from lp.services.propertycache import get_property_cache
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
@@ -208,15 +210,32 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.package_diff)
         self.assertIs(None, ds_diff.parent_package_diff)
 
-    def test_update_re_opens_difference(self):
-        # The status of a resolved difference will updated with new
-        # uploads.
+    def test_parent_update_re_opens_difference(self):
+        # The status of a resolved difference will be updated to
+        # NEEDS_ATTENTION with parent uploads.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
-            versions={
-                'parent': '1.0',
-                'derived': '1.0',
-                },
+            versions=dict(parent='1.0', derived='1.0'),
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=ds_diff.source_package_name,
+            distroseries=ds_diff.parent_series,
+            status=PackagePublishingStatus.PENDING,
+            version='1.1')
+
+        was_updated = ds_diff.update()
+
+        self.assertTrue(was_updated)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            ds_diff.status)
+
+    def test_child_update_re_opens_difference(self):
+        # The status of a resolved difference will updated to
+        # BLACKLISTED_CURRENT with child uploads.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            source_package_name_str="foonew",
+            versions=dict(parent='1.0', derived='1.0'),
             status=DistroSeriesDifferenceStatus.RESOLVED)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
@@ -228,7 +247,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertTrue(was_updated)
         self.assertEqual(
-            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
 
     def test_update_new_version_doesnt_change_status(self):
@@ -408,30 +427,41 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 packagesets.append(ps)
         return packagesets
 
-    def test_getParentPackageSets(self):
+    def test_parent_packagesets(self):
         # All parent's packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.parent_series, 5)
-        parent_packagesets = ds_diff.getParentPackageSets()
+        parent_packagesets = ds_diff.parent_packagesets
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in parent_packagesets])
 
-    def test_getPackageSets(self):
+    def test_packagesets(self):
         # All the packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series, 5)
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
-            [packageset.name for packageset in ds_diff.getPackageSets()])
+            [packageset.name for packageset in ds_diff.packagesets])
+
+    def test_blacklist_unauthorised(self):
+        # If you're not an archive admin, you don't get to blacklist or
+        # unblacklist.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        random_joe = self.factory.makePerson()
+        with person_logged_in(random_joe):
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'blacklist')
+            self.assertRaises(Unauthorized, getattr, ds_diff, 'unblacklist')
 
     def test_blacklist_default(self):
         # By default the current version is blacklisted.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.blacklist()
 
         self.assertEqual(
@@ -441,8 +471,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_blacklist_all(self):
         # All versions are blacklisted with the all=True param.
         ds_diff = self.factory.makeDistroSeriesDifference()
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.blacklist(all=True)
 
         self.assertEqual(
@@ -453,8 +485,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Unblacklisting will return to NEEDS_ATTENTION by default.
         ds_diff = self.factory.makeDistroSeriesDifference(
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
 
-        with person_logged_in(self.factory.makePerson()):
+        with person_logged_in(admin):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -475,7 +509,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             status=PackagePublishingStatus.PENDING,
             version='1.0')
 
-        with person_logged_in(self.factory.makePerson()):
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
             ds_diff.unblacklist()
 
         self.assertEqual(
@@ -1027,14 +1063,14 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertContentEqual(diffs['normal'], results)
         self.assertContentEqual(diffs2['normal'], results2)
 
-    def test_getByDistroSeriesAndName(self):
+    def test_getByDistroSeriesNameAndParentSeries(self):
         # An individual difference is obtained using the name.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str='fooname')
 
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        result = dsd_source.getByDistroSeriesAndName(
-            ds_diff.derived_series, 'fooname')
+        result = dsd_source.getByDistroSeriesNameAndParentSeries(
+            ds_diff.derived_series, 'fooname', ds_diff.parent_series)
 
         self.assertEqual(ds_diff, result)
 
@@ -1092,24 +1128,6 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             difference_type=diff_type)
         self.assertContentEqual(
             [], dsd_source.getSimpleUpgrades(dsd.derived_series))
-
-    def test_collateDifferencesByParentArchive(self):
-        dsp1 = self.factory.makeDistroSeriesParent()
-        dsp2 = self.factory.makeDistroSeriesParent()
-        differences = [
-            self.factory.makeDistroSeriesDifference(dsp1.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp2.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp1.derived_series),
-            self.factory.makeDistroSeriesDifference(dsp2.derived_series),
-            ]
-        dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        observed = (
-            dsd_source.collateDifferencesByParentArchive(differences))
-        expected = {
-            dsp1.parent_series.main_archive: differences[0::2],
-            dsp2.parent_series.main_archive: differences[1::2],
-            }
-        self.assertEqual(observed, expected)
 
 
 class TestMostRecentComments(TestCaseWithFactory):

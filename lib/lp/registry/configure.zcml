@@ -162,6 +162,9 @@
         class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
         <require
+            permission="launchpad.Admin"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceAdmin"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"
             set_attributes="package_diff parent_package_diff"/>
@@ -212,7 +215,7 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="parent_series"/>
+            set_attributes="previous_series"/>
         <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>
@@ -513,25 +516,11 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                canUserAlterAnswerContact
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
+
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -875,6 +864,14 @@
             for="lp.registry.interfaces.person.ITeam"
             factory="lp.registry.browser.person.TeamBreadcrumb"
             permission="zope.Public"/>
+
+        <adapter
+            factory="lp.registry.model.pillaraffiliation.BugTaskPillarAffiliation"
+            />
+
+        <adapter
+            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
 
         <!-- Using
 
@@ -1237,7 +1234,7 @@
             attributes="
                 reviewer_whiteboard
                 is_permitted
-                license_reviewed
+                project_reviewed
                 license_approved"
             set_schema="lp.registry.interfaces.product.IProductModerateRestricted"
             set_attributes="active private_bugs "/>
@@ -1254,25 +1251,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                canUserAlterAnswerContact
-                addAnswerContact
-                removeAnswerContact"/>
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1395,10 +1377,10 @@
             interface="lp.registry.interfaces.ssh.ISSHKeySet"/>
     </securedutility>
     <subscriber
-        for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
+        for="lp.registry.interfaces.teammembership.IJoinTeamEvent"
         handler="lp.registry.mail.notification.notify_team_join"/>
     <subscriber
-        for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
+        for="lp.registry.interfaces.teammembership.ITeamInvitationEvent"
         handler="lp.registry.mail.notification.notify_invitation_to_join_team"/>
 
     <!-- This is class ProductSeries -->
@@ -1536,26 +1518,10 @@
 
         <!-- IQuestionTarget -->
 
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getSupportedLanguages
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getAnswerContactRecipients"/>
+        <allow interface="lp.answers.interfaces.questiontarget.IQuestionTargetPublic"/>
         <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                canUserAlterAnswerContact
-                addAnswerContact
-                removeAnswerContact"/>
-
+          permission="launchpad.AnyPerson"
+          interface="lp.answers.interfaces.questiontarget.IQuestionTargetView"/>
 
         <!-- IFAQTarget -->
 
@@ -1631,28 +1597,6 @@
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-
-        <!-- IQuestionTarget -->
-
-        <allow
-            attributes="
-                getQuestion
-                searchQuestions
-                findSimilarQuestions
-                answer_contacts
-                direct_answer_contacts
-                getQuestionLanguages
-                getAnswerContactsForLanguage
-                getSupportedLanguages
-                getAnswerContactRecipients"/>
-        <require
-            permission="launchpad.AnyPerson"
-            attributes="
-                newQuestion
-                createQuestionFromBug
-                canUserAlterAnswerContact
-                addAnswerContact
-                removeAnswerContact"/>
     </class>
     <securedutility
         component="lp.registry.model.sourcepackage.SourcePackage"
@@ -1911,4 +1855,14 @@
         <allow
             interface="lp.registry.interfaces.personproduct.IPersonProductFactory"/>
     </securedutility>
+
+    <class
+        class="lp.registry.model.personroles.PersonRoles">
+        <allow
+            interface="lp.registry.interfaces.role.IPersonRoles"/>
+    </class>
+    <adapter
+        for="lp.registry.interfaces.person.IPerson"
+        provides="lp.registry.interfaces.role.IPersonRoles"
+        factory="lp.registry.model.personroles.PersonRoles" />
 </configure>

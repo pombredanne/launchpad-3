@@ -11,7 +11,6 @@ import apt_pkg
 
 from lp.archiveuploader.tagfiles import (
     parse_tagfile,
-    TagFile,
     TagFileParseError,
     )
 from lp.archiveuploader.tests import datadir
@@ -19,61 +18,44 @@ from lp.archiveuploader.tests import datadir
 
 class Testtagfiles(unittest.TestCase):
 
-    def testTagFileOnSingular(self):
-        """lp.archiveuploader.tagfiles.TagFile should parse a singular stanza
-        """
-        f = TagFile(file(datadir("singular-stanza"), "r"))
-        seenone = False
-        for stanza in f:
-            self.assertEquals(seenone, False)
-            seenone = True
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-
-    def testTagFileOnSeveral(self):
-        """TagFile should parse multiple stanzas."""
-        f = TagFile(file(datadir("multiple-stanzas"), "r"))
-        seen = 0
-        for stanza in f:
-            seen += 1
-            self.assertEquals("Format" in stanza, True)
-            self.assertEquals("Source" in stanza, True)
-            self.assertEquals("FooBar" in stanza, False)
-        self.assertEquals(seen > 1, True)
-
     def testCheckParseChangesOkay(self):
         """lp.archiveuploader.tagfiles.parse_tagfile should work on a good
            changes file
         """
-        p = parse_tagfile(datadir("good-signed-changes"))
+        parse_tagfile(datadir("good-signed-changes"))
 
-    def testCheckParseBadChangesRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on failure
+    def testCheckParseBadChanges(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
         """
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("badformat-changes"), 1)
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
+
+    def testCheckParseMalformedMultiline(self):
+        """Malformed but somewhat readable files do not raise an exception.
+
+        We let apt_pkg make of them what it can, and dpkg-source will
+        reject them if it can't understand.
+        """
+        parsed = parse_tagfile(datadir("bad-multiline-changes"))
+        self.assertEqual('unstable', parsed['Distribution'])
+        self.assertRaises(KeyError, parsed.__getitem__, 'Fish')
 
     def testCheckParseEmptyChangesRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on empty
         """
         self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("empty-file"), 1)
+                          parse_tagfile, datadir("empty-file"))
 
     def testCheckParseMalformedSigRaises(self):
         """lp.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed signatures
         """
         self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("malformed-sig-changes"), 1)
-
-    def testCheckParseMalformedMultilineRaises(self):
-        """lp.archiveuploader.tagfiles.parse_chantges should raise
-           TagFileParseError on malformed continuation lines"""
-        self.assertRaises(TagFileParseError,
-                          parse_tagfile, datadir("bad-multiline-changes"), 1)
+                          parse_tagfile, datadir("malformed-sig-changes"))
 
     def testCheckParseUnterminatedSigRaises(self):
         """lp.archiveuploader.tagfiles.parse_changes should raise
@@ -81,8 +63,7 @@ class Testtagfiles(unittest.TestCase):
         """
         self.assertRaises(TagFileParseError,
                           parse_tagfile,
-                          datadir("unterminated-sig-changes"),
-                          1)
+                          datadir("unterminated-sig-changes"))
 
     def testParseChangesNotVulnerableToArchExploit(self):
         """lp.archiveuploader.tagfiles.parse_tagfile should not be vulnerable
@@ -104,8 +85,7 @@ class TestTagFileDebianPolicyCompat(unittest.TestCase):
         self.apt_pkg_parsed_version = apt_pkg.ParseTagFile(tagfile)
         self.apt_pkg_parsed_version.Step()
 
-        self.parse_tagfile_version = parse_tagfile(
-            tagfile_path, allow_unsigned = True)
+        self.parse_tagfile_version = parse_tagfile(tagfile_path)
 
     def test_parse_tagfile_with_multiline_values(self):
         """parse_tagfile should not leave trailing '\n' on multiline values.

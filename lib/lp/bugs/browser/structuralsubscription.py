@@ -14,7 +14,10 @@ __all__ = [
     'StructuralSubscribersPortletView',
     ]
 
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -428,33 +431,41 @@ def expose_enum_to_js(request, enum, name):
 def expose_user_administered_teams_to_js(request, user, context,
         absoluteURL=absoluteURL):
     """Make the list of teams the user administers available to JavaScript."""
+    # XXX: Robert Collins workaround multiple calls making this cause timeouts:
+    # see bug 788510.
+    objects = IJSONRequestCache(request).objects
+    if 'administratedTeams' in objects:
+        return
     info = []
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
+    if is_distro:
+        # If the context is a distro AND a bug supervisor is set then we only
+        # allow subscriptions from members of the bug supervisor team.
+        bug_supervisor = context.bug_supervisor
+    else:
+        bug_supervisor = None
     if user is not None:
-        administrated_teams = user.administrated_teams
+        administrated_teams = set(user.administrated_teams)
         if administrated_teams:
             # Get this only if we need to.
-            membership = list(user.teams_participated_in)
-            for team in administrated_teams:
-                # If the user is not a member of the team itself, then
-                # skip it, because structural subscriptions and their
-                # filters can only be edited by the subscriber.
-                # This can happen if the user is an owner but not a member.
-                if not team in membership:
-                    continue
-                # If the context is a distro AND a bug supervisor is set
-                # AND the admininistered team is not a member of the bug
-                # supervisor team THEN skip it.
-                if (is_distro and context.bug_supervisor is not None and
-                    not team.inTeam(context.bug_supervisor)):
+            membership = set(user.teams_participated_in)
+            # Only consider teams the user is both in and administers:
+            #  If the user is not a member of the team itself, then
+            # skip it, because structural subscriptions and their
+            # filters can only be edited by the subscriber.
+            # This can happen if the user is an owner but not a member.
+            administers_and_in = membership.intersection(administrated_teams)
+            for team in administers_and_in:
+                if (bug_supervisor is not None and
+                    not team.inTeam(bug_supervisor)):
                     continue
                 info.append({
                     'link': absoluteURL(team, api_request),
                     'title': team.title,
                     'url': canonical_url(team),
                 })
-    IJSONRequestCache(request).objects['administratedTeams'] = info
+    objects['administratedTeams'] = info
 
 
 def expose_user_subscriptions_to_js(user, subscriptions, request,
@@ -491,20 +502,33 @@ def expose_user_subscriptions_to_js(user, subscriptions, request,
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
-            user_is_team_admin = (is_team and
-                                  subscriber in administered_teams)
+            user_is_team_admin = (
+                is_team and subscriber in administered_teams)
+            team_has_contact_address = (
+                is_team and subscriber.preferredemail is not None)
+            mailing_list = subscriber.mailing_list
+            user_is_on_team_mailing_list = (
+                team_has_contact_address and
+                mailing_list is not None and
+                mailing_list.is_usable and
+                mailing_list.getSubscription(subscriber) is not None)
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),
-                subscriber_url = canonical_url(
+                subscriber_url=canonical_url(
                     subscriber, rootsite='mainsite'),
+                target_bugs_url=canonical_url(
+                    target, rootsite='bugs'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
                 user_is_team_admin=user_is_team_admin,
+                team_has_contact_address=team_has_contact_address,
+                user_is_on_team_mailing_list=user_is_on_team_mailing_list,
                 can_mute=filter.isMuteAllowed(user),
-                is_muted=filter.muted(user) is not None))
+                is_muted=filter.muted(user) is not None,
+                target_title=target.title))
     info = info.values()
-    info.sort(key=lambda item: item['target_url'])
+    info.sort(key=itemgetter('target_url'))
     IJSONRequestCache(request).objects['subscription_info'] = info
 
 

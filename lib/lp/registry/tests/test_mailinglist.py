@@ -8,7 +8,7 @@ from textwrap import dedent
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

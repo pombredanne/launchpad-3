@@ -11,7 +11,6 @@ __all__ = [
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
-    'SourcePackageHelpView',
     'SourcePackageNavigation',
     'SourcePackageOverviewMenu',
     'SourcePackageRemoveUpstreamView',
@@ -64,9 +63,6 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder,
-    )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -80,10 +76,6 @@ from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from lp.answers.browser.questiontarget import (
-    QuestionTargetAnswersMenu,
-    QuestionTargetFacetMixin,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -106,6 +98,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
@@ -180,14 +173,19 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+filebug')
     def filebug(self):
         """Redirect to the IDistributionSourcePackage +filebug page."""
-        sourcepackage = self.context
-        distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
-            sourcepackage.name)
+        distro_sourcepackage = self.context.distribution_sourcepackage
 
         redirection_url = canonical_url(
             distro_sourcepackage, view_name='+filebug')
         if self.request.form.get('no-redirect') is not None:
             redirection_url += '?no-redirect'
+        return self.redirectSubTree(redirection_url, status=303)
+
+    @stepto('+gethelp')
+    def gethelp(self):
+        """Redirect to the IDistributionSourcePackage +gethelp page."""
+        dsp = self.context.distribution_sourcepackage
+        redirection_url = canonical_url(dsp, view_name='+gethelp')
         return self.redirectSubTree(redirection_url, status=303)
 
 
@@ -207,10 +205,10 @@ class SourcePackageBreadcrumb(Breadcrumb):
         return smartquote('"%s" source package') % (self.context.name)
 
 
-class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'branches', 'answers', 'translations']
+    enable_only = ['overview', 'bugs', 'branches', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -258,17 +256,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         if packaging is None:
             return True
         return packaging.userCanDelete()
-
-
-class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
-
-    usedfor = ISourcePackage
-    facet = 'answers'
-
-    links = QuestionTargetAnswersMenu.links + ['gethelp']
-
-    def gethelp(self):
-        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class SourcePackageChangeUpstreamStepOne(ReturnToReferrerMixin, StepView):
@@ -547,12 +534,6 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
-
-
-class SourcePackageHelpView:
-    """A View to show Answers help."""
-
-    page_title = 'Help and support options'
 
 
 class SourcePackageAssociationPortletView(LaunchpadFormView):

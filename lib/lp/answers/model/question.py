@@ -60,36 +60,34 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
-    Message,
-    MessageChunk,
-    )
 from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessage
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.question import (
-    InvalidQuestionStateError,
-    IQuestion,
-    )
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.errors import (
     AddAnswerContactError,
+    FAQTargetError,
+    InvalidQuestionStateError,
+    NotAnswerContactError,
+    NotMessageOwnerError,
+    NotQuestionOwnerError,
+    QuestionTargetError,
     )
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
@@ -109,9 +107,13 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
@@ -229,18 +231,14 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def _settarget(self, question_target):
         """See Question.target."""
-        assert IQuestionTarget.providedBy(question_target), (
-            "The target must be an IQuestionTarget")
+        if not IQuestionTarget.providedBy(question_target):
+            raise QuestionTargetError(
+                "The target must be an IQuestionTarget")
         if IProduct.providedBy(question_target):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 bug=108240
-        # We test for ISourcePackage because it is a valid QuestionTarget even
-        # though it should not be. SourcePackages are never passed to this
-        # mutator.
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
@@ -321,7 +319,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
         """See `IQuestion`."""
-        assert user != self.owner, "Owner cannot use requestInfo()."
+        if user == self.owner:
+            raise NotQuestionOwnerError("Owner cannot use requestInfo().")
         if not self.can_request_info:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO, or ANSWERED")
@@ -387,10 +386,12 @@ class Question(SQLBase, BugLinkTargetMixin):
     def linkFAQ(self, user, faq, comment, datecreated=None):
         """See `IQuestion`."""
         if faq is not None:
-            assert IFAQ.providedBy(faq), (
-                "faq parameter must provide IFAQ or be None")
-        assert self.faq != faq, (
-            'cannot call linkFAQ() with already linked FAQ')
+            if not IFAQ.providedBy(faq):
+                raise FAQTargetError(
+                    "faq parameter must provide IFAQ or be None.")
+        if self.faq == faq:
+            raise FAQTargetError(
+                'Cannot call linkFAQ() with already linked FAQ.')
         self.faq = faq
         if self.can_give_answer:
             return self._giveAnswer(user, comment, datecreated)
@@ -421,8 +422,9 @@ class Question(SQLBase, BugLinkTargetMixin):
                 "There is no answer that can be confirmed")
         if answer:
             assert answer in self.messages
-            assert answer.owner != self.owner, (
-                'Use giveAnswer() when solving own question.')
+            if answer.owner == self.owner:
+                raise NotQuestionOwnerError(
+                    'Use giveAnswer() when solving own question.')
 
         msg = self._newMessage(
             self.owner, comment, datecreated=datecreated,
@@ -457,8 +459,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reject(self, user, comment, datecreated=None):
         """See `IQuestion`."""
-        assert self.canReject(user), (
-            'User "%s" cannot reject the question.' % user.displayname)
+        if not self.canReject(user):
+            raise NotAnswerContactError(
+                'User "%s" cannot reject the question.' % user.displayname)
         if self.status == QuestionStatus.INVALID:
             raise InvalidQuestionStateError("Question is already rejected.")
         msg = self._newMessage(
@@ -610,8 +613,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         :update_question_dates: A bool.
         """
         if IMessage.providedBy(content):
-            assert owner == content.owner, (
-                'The IMessage has the wrong owner.')
+            if owner != content.owner:
+                raise NotMessageOwnerError(
+                    'The IMessage has the wrong owner.')
             msg = content
         else:
             if subject is None:
@@ -1231,10 +1235,10 @@ class QuestionTargetMixin:
             return False
         return True
 
-    def findSimilarQuestions(self, title):
+    def findSimilarQuestions(self, phrase):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self.getTargetTypes()).getResults()
+            phrase, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""

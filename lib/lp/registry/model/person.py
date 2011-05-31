@@ -129,10 +129,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent,
-    ITeamInvitationEvent,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -158,7 +154,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -172,6 +167,8 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
+from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -254,6 +251,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
@@ -431,7 +430,8 @@ _readonly_person_settings = readonly_settings(
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
+    QuestionsPersonMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -4041,6 +4041,9 @@ class PersonSet:
         # We ignore BugSubscriptionFilterMutes.
         skip.append(('bugsubscriptionfiltermute', 'person'))
 
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
@@ -4539,9 +4542,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
-    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
-    domain_parts = domain.split(".")
 
     person_set = PersonSet()
 
@@ -4558,11 +4560,6 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     generated_nick = sanitize_name(user)
     if _valid_nick(generated_nick):
         return generated_nick
-
-    for domain_part in domain_parts:
-        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
-        if _valid_nick(generated_nick):
-            return generated_nick
 
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
@@ -4663,7 +4660,7 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team with a preferred email.
+        # Get transitive members of team without a preferred email.
         return _get_recipients_for_team(person)
     else:
         return []

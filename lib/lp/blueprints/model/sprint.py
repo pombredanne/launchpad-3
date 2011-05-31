@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -309,12 +309,12 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         result = list(Store.of(self).find(
             SprintAttendance,
             SprintAttendance.sprint == self))
-        people = [a.attendee_id for a in result]
+        people = [a.attendeeID for a in result]
         # In order to populate the person cache we need to materialize the
         # result set.  Listification should do.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 people, need_validity=True))
-        return sorted(result, key=lambda a: a.attendee.name)
+        return sorted(result, key=lambda a: a.attendee.displayname.lower())
 
     # linking to specifications
     def linkSpecification(self, spec):
@@ -415,4 +415,3 @@ class HasSprintsMixin:
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts',
             distinct=True)
-

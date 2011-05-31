@@ -18,10 +18,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IRosettaApplication,
-    )
+from canonical.launchpad.interfaces.launchpad import IRosettaApplication
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -31,6 +28,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.geoip.interfaces import IRequestPreferredLanguages

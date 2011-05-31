@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """PackageCopier utilities."""
@@ -9,6 +9,7 @@ __all__ = [
     'PackageCopier',
     'UnembargoSecurityPackage',
     'CopyChecker',
+    'check_copy_permissions',
     'do_copy',
     '_do_delayed_copy',
     '_do_direct_copy',
@@ -50,6 +51,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScriptError,
     )
 from lp.soyuz.scripts.processaccepted import close_bugs_for_sourcepublication
+
 
 # XXX cprov 2009-06-12: This function could be incorporated in ILFA,
 # I just don't see a clear benefit in doing that right now.
@@ -192,6 +194,41 @@ class CheckedCopy:
             return self.context.getStatusSummaryForBuilds()
         else:
             return {'status': BuildSetStatus.NEEDSBUILD}
+
+
+def check_copy_permissions(person, archive, series, pocket,
+                           sourcepackagenames):
+    """Check that `person` has permission to copy a package.
+
+    :param person: User attempting the upload.
+    :param archive: Destination `Archive`.
+    :param series: Destination `DistroSeries`.
+    :param pocket: Destination `Pocket`.
+    :param sourcepackagenames: Sequence of `SourcePackageName`s for the
+        packages to be copied.
+    :raises CannotCopy: If the copy is not allowed.
+    """
+    if person is None:
+        raise CannotCopy("Cannot check copy permissions (no requester).")
+
+    # If there is a requester, check that he has upload permission into
+    # the destination (archive, component, pocket). This check is done
+    # here rather than in the security adapter because it requires more
+    # info than is available in the security adapter.
+    for spn in set(sourcepackagenames):
+        package = series.getSourcePackage(spn)
+        destination_component = package.latest_published_component
+
+        # If destination_component is not None, make sure the person
+        # has upload permission for this component.  Otherwise, any
+        # upload permission on this archive will do.
+        strict_component = destination_component is not None
+        reason = archive.checkUpload(
+            person, series, spn, destination_component, pocket,
+            strict_component=strict_component)
+
+        if reason is not None:
+            raise CannotCopy(reason)
 
 
 class CopyChecker:
@@ -399,28 +436,10 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        # If there is a requester, check that he has upload permission
-        # into the destination (archive, component, pocket). This check
-        # is done here rather than in the security adapter because it
-        # requires more info than is available in the security adapter.
         if check_permissions:
-            if person is None:
-                raise CannotCopy(
-                    'Cannot check copy permissions (no requester).')
-            else:
-                sourcepackagerelease = source.sourcepackagerelease
-                sourcepackagename = sourcepackagerelease.sourcepackagename
-                destination_component = series.getSourcePackage(
-                    sourcepackagename).latest_published_component
-                # If destination_component is not None, make sure the person
-                # has upload permission for this component. Otherwise, any
-                # upload permission on this archive will do.
-                strict_component = destination_component is not None
-                reason = self.archive.checkUpload(
-                    person, series, sourcepackagename, destination_component,
-                    pocket, strict_component=strict_component)
-                if reason is not None:
-                    raise CannotCopy(reason)
+            check_copy_permissions(
+                person, self.archive, series, pocket,
+                [source.sourcepackagerelease.sourcepackagename])
 
         if series not in self.archive.distribution.series:
             raise CannotCopy(
@@ -592,8 +611,14 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
+    policy = archive.getOverridePolicy()
     if source_in_destination.is_empty():
-        source_copy = source.copyTo(series, pocket, archive)
+        overrides = None
+        if policy is not None:
+            package_names = (source.sourcepackagerelease.sourcepackagename,)
+            overrides = policy.calculateSourceOverrides(
+                archive, series, pocket, package_names)
+        source_copy = source.copyTo(series, pocket, archive, overrides)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
@@ -609,7 +634,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
     binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-        source.getBuiltBinaries(), series, pocket, archive)
+        source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
     copies.extend(binary_copies)
 

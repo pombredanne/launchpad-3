@@ -26,6 +26,7 @@ from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
 import urllib
+from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
 from pytz import timezone
@@ -59,7 +60,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -87,6 +87,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -133,6 +134,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -1065,7 +1067,8 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
                 config.malone.ubuntu_bug_filing_url)
 
     @safe_action
-    @action("Continue", name="projectgroupsearch", validator="validate_search")
+    @action("Continue", name="projectgroupsearch",
+            validator="validate_search")
     def projectgroup_search_action(self, action, data):
         """Search for similar bug reports."""
         # Don't give focus to any widget, to ensure that the browser
@@ -1568,6 +1571,14 @@ class TargetSubscriptionView(LaunchpadView):
 
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
+        # Some resources such as help files are only provided on the bugs
+        # rootsite.  So if we got here via another, possibly hand-crafted, URL
+        # redirect to the equivalent URL on the bugs rootsite.
+        if not BugsLayer.providedBy(self.request):
+            new_url = urljoin(
+                self.request.getRootURL('bugs'), self.request['PATH_INFO'])
+            self.request.response.redirect(new_url)
+            return
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, self.subscriptions)
 

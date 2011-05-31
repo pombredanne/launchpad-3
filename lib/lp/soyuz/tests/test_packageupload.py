@@ -7,7 +7,10 @@ from email import message_from_string
 import os
 import shutil
 
+from storm.store import Store
+
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -29,6 +32,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -242,7 +246,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         expected_subject = (
             '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz (delayed),\n\t'
+            'dist-upgrader_20060302.0120_all.tar.gz, '
             'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
 
@@ -345,3 +349,37 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
+
+
+class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def test_package_copy_job_property(self):
+        # Test that we can set and get package_copy_job.
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        Store.of(pu).flush()
+
+        self.assertEqual(pcj, pu.package_copy_job)
+
+    def test_overrideSource_with_copy_job(self):
+        # The overrides should be stored in the job's metadata.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        component = getUtility(IComponentSet)['restricted']
+        section = getUtility(ISectionSet)['games']
+
+        expected_metadata = {
+            'component_override': component.name,
+            'section_override': section.name
+        }
+        expected_metadata.update(plain_copy_job.metadata)
+
+        pu.overrideSource(component, section, allowed_components=[component])
+
+        self.assertEqual(
+            expected_metadata, plain_copy_job.metadata)

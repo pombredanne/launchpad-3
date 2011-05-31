@@ -7,13 +7,13 @@ __metaclass__ = type
 
 from storm.store import Store
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import (
     cursor,
     quote,
     )
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
@@ -131,7 +131,6 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
 
     def test_selects_sourcepackagename_sourcepackagerelease_version(self):
         spph = self.makeSPPH()
-        spr = spph.sourcepackagerelease
         query = compose_sql_find_latest_source_package_releases(
             spph.distroseries)
         self.assertContentEqual(
@@ -149,7 +148,6 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
             (purpose, self.makeSPPH(
                 distroseries=distroseries, archive_purpose=purpose))
             for purpose in ArchivePurpose.items)
-        primary_spr = spphs[ArchivePurpose.PRIMARY]
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual(
             [self.getExpectedResultFor(spphs[ArchivePurpose.PRIMARY])],
@@ -178,9 +176,8 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_find_inactive_publication(self):
         distroseries = self.factory.makeDistroSeries()
-        spphs = dict(
-            (status, self.makeSPPH(distroseries=distroseries, status=status))
-            for status in inactive_publishing_status)
+        for status in inactive_publishing_status:
+            self.makeSPPH(distroseries=distroseries, status=status)
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual([], Store.of(distroseries).execute(query))
 
@@ -346,7 +343,7 @@ class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
         parent_spph = self.makeSPPH(
             distroseries=parent_series,
             sourcepackagerelease=shared_spr)
-        derived_spph = self.makeSPPH(
+        self.makeSPPH(
             distroseries=derived_series,
             sourcepackagerelease=shared_spr)
         newer_spr = self.factory.makeSourcePackageRelease(
@@ -425,6 +422,13 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
         dsp = self.makeDerivedDistroSeries()
         self.assertIn(dsp.derived_series, find_derived_series())
 
+    def test_ignores_parent_within_same_distro(self):
+        previous_series = self.factory.makeDistroSeries()
+        derived_series = self.factory.makeDistroSeries(
+            distribution=previous_series.distribution,
+            previous_series=previous_series)
+        self.assertNotIn(derived_series, find_derived_series())
+
 
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
     """Test `populate_distroseriesdiff`."""
@@ -442,7 +446,6 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
         spph = self.makeSPPH(distroseries=dsp.derived_series)
         populate_distroseriesdiff(
             DevNullLogger(), dsp.derived_series, dsp.parent_series)
-        store = Store.of(dsp.derived_series)
         dsd = self.getDistroSeriesDiff(dsp.derived_series).one()
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename, dsd.source_package_name)
@@ -525,7 +528,7 @@ class TestDSDUpdater(TestCase):
 class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
     """Test the `populate-distroseriesdiff` script."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def makeScript(self, test_args):
         script = PopulateDistroSeriesDiff(test_args=test_args)
@@ -579,7 +582,7 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
 
     def test_dry_run_goes_through_the_motions(self):
         dsp = self.makeDerivedDistroSeries()
-        spph = self.makeSPPH(distroseries=dsp.derived_series)
+        self.makeSPPH(distroseries=dsp.derived_series)
         script = self.makeScript(['--all', '--dry-run'])
         script.processDistroSeries = FakeMethod
         script.main()
@@ -621,25 +624,38 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
         self.assertEqual(
             [((distroseries,), {})], script.update.calls)
 
+    def _makePublication(self, distroseries, package, version):
+        spr = self.factory.makeSourcePackageRelease(
+            distroseries=distroseries, sourcepackagename=package,
+            version=version)
+        spph = self.makeSPPH(
+            distroseries=distroseries, sourcepackagerelease=spr)
+        return spph
+
     def test_fixes_base_versions(self):
+        # Test that the script sets base_version on the DSDs.
+
+        # Create a package in parent and child that has some history in
+        # its changelog.
         dsp = self.makeDerivedDistroSeries()
         distroseries = dsp.derived_series
         package = self.factory.makeSourcePackageName()
-        derived_spr = self.factory.makeSourcePackageRelease(
-            distroseries=distroseries, sourcepackagename=package)
-        self.makeSPPH(
-            distroseries=distroseries,
-            sourcepackagerelease=derived_spr)
-        parent_spr = self.factory.makeSourcePackageRelease(
-            distroseries=dsp.parent_series, sourcepackagename=package)
-        self.makeSPPH(
-            distroseries=dsp.parent_series, sourcepackagerelease=parent_spr)
+        spph = self._makePublication(distroseries, package, '1.2')
+        parent_spph = self._makePublication(dsp.parent_series, package, '1.1')
+        naked_spr = removeSecurityProxy(spph.sourcepackagerelease)
+        naked_spr.changelog = self.factory.makeChangelog(
+            package.name, ['1.2', '1.1'])
+        naked_parent_spr = removeSecurityProxy(
+            parent_spph.sourcepackagerelease)
+        naked_parent_spr.changelog = self.factory.makeChangelog(
+            package.name, ['1.1'])
+        # Commit so the librarian gets the changelogs.
+        transaction.commit()
+
         script = self.makeScript([
             '--distribution', distroseries.distribution.name,
             '--series', distroseries.name,
             ])
         script.main()
         dsd = self.getDistroSeriesDiff(distroseries)[0]
-        dsd._updateBaseVersion = FakeMethod()
-        script.update(distroseries)
-        self.assertEqual(1, dsd._updateBaseVersion.call_count)
+        self.assertEqual('1.1', dsd.base_version)

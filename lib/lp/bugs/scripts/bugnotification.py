@@ -174,7 +174,7 @@ def construct_email_notifications(bug_notifications):
     from_address = get_bugmail_from_address(actor, bug)
     bug_notification_builder = BugNotificationBuilder(bug, actor)
     recipients = getUtility(IBugNotificationSet).getRecipientFilterData(
-        recipients, filtered_notifications)
+        bug, recipients, filtered_notifications)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
 
@@ -193,25 +193,27 @@ def construct_email_notifications(bug_notifications):
                 data['filter descriptions'])
         else:
             filters_text = u""
-        # XXX deryck 2009-11-17 Bug #484319
-        # This should be refactored to add a link inside the
-        # code where we build `reason`.  However, this will
-        # require some extra work, and this small change now
-        # will ease pain for a lot of unhappy users.
-        if 'direct subscriber' in reason and 'member of' not in reason:
-            unsubscribe_notice = ('To unsubscribe from this bug, go to:\n'
-                '%s/+subscribe' % canonical_url(bug.bugtasks[0]))
+
+        # In the rare case of a bug with no bugtasks, we can't generate the
+        # subscription management URL so just leave off the subscription
+        # management message entirely.
+        if len(bug.bugtasks):
+            bug_url = canonical_url(bug.bugtasks[0])
+            notification_url = bug_url + '/+subscriptions'
+            subscriptions_message = (
+                "To manage notifications about this bug go to:\n%s"
+                % notification_url)
         else:
-            unsubscribe_notice = ''
+            subscriptions_message = ''
 
         data_wrapper = MailWrapper(width=72, indent='  ')
         body_data = {
             'content': mail_wrapper.format(content),
             'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
-            'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason),
             'subscription_filters': filters_text,
+            'subscriptions_message': subscriptions_message,
             }
 
         # If the person we're sending to receives verbose notifications

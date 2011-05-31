@@ -21,7 +21,7 @@ from zope.interface import (
     implements,
     )
 
-from canonical.launchpad.database.message import Message, MessageChunk
+from lp.services.messages.model.message import Message, MessageChunk
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,

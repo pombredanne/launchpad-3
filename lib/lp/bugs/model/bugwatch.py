@@ -50,15 +50,14 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     urlappend,
     urlsplit,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -79,6 +78,7 @@ from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.stormbase import StormBase
+from lp.services.messages.model.message import Message
 
 
 BUG_TRACKER_URL_FORMATS = {
@@ -151,7 +151,7 @@ class BugWatch(SQLBase):
         for bugtask in self.bugtasks:
             # We don't update conjoined bug tasks; they must be
             # updated through their conjoined masters.
-            if bugtask._isConjoinedBugTask():
+            if bugtask.conjoined_master is not None:
                 continue
             # We don't update tasks of duplicate bugs.
             if bugtask.bug.duplicateof is not None:

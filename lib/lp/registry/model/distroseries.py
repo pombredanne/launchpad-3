@@ -38,7 +38,6 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import (
@@ -226,7 +225,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series = ForeignKey(
+    previous_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -471,8 +470,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) "
-                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
@@ -527,9 +524,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
 
         def decorator(row):
-            _, spn, score, bug_count, total_messages = row
+            spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -678,7 +676,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return result
 
     @cachedproperty
-    def previous_series(self):
+    def prior_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
@@ -754,7 +752,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory']).count()
 
-
         # next update the binary count
         clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
@@ -791,12 +788,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def is_derived_series(self):
         """See `IDistroSeries`."""
-        # Circular imports.
-        from lp.registry.interfaces.distroseriesparent import (
-            IDistroSeriesParentSet,
-            )
-        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
-        return not dsps.is_empty()
+        return not self.getParentSeries() == []
 
     @property
     def is_initialising(self):
@@ -1599,7 +1591,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None):
+                         archive, signing_key=None, package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1628,7 +1620,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key)
+            changesfile=changes_file, signing_key=signing_key,
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -1985,10 +1978,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=None, registrant=user)
+                version=version, previous_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not None:
+            if child.previous_series is not None:
                 raise DerivationError(
                     "DistroSeries %s parent series is %s, "
                     "but it must not be set" % (
@@ -2000,6 +1993,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
             self, child, architectures, packagesets, rebuild)
+
+    def getParentSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return [dsp.parent_series for dsp in dsps]
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""

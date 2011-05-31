@@ -177,7 +177,7 @@
         permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifference"
-        path_expression="string:+difference/${source_package_name/name}"
+        path_expression="string:+source/${source_package_name/name}/+difference/${parent_series/parent/name}/${parent_series/name}"
         rootsite="mainsite"
         attribute_to_parent="derived_series"/>
     <browser:page
@@ -381,7 +381,7 @@
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
     <browser:page
         name="+register-a-blueprint-button"
@@ -508,9 +508,17 @@
         name="+edit"
         facet="overview"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        permission="zope.Public"
+        class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageHelpView"
+        name="+gethelp"
+        facet="answers"
+        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             DistributionSourcePackageActionMenu
+            DistributionSourcePackageAnswersMenu
             DistributionSourcePackageBugsMenu
             DistributionSourcePackageFacets
             DistributionSourcePackageOverviewMenu"
@@ -847,6 +855,12 @@
             permission="launchpad.Edit"
             template="../templates/person-editlanguages.pt"/>
         <browser:page
+            for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+            permission="launchpad.AnyPerson"
+            class="lp.registry.browser.person.RedirectToEditLanguagesView"
+            name="+editmylanguages"
+            />
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditView"
@@ -1181,7 +1195,7 @@
             permission="launchpad.Owner"
             class="lp.registry.browser.person.TeamReassignmentView"
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
@@ -1977,7 +1991,7 @@
         class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
 
     <!-- DistroSeries create and initialize. -->
@@ -2088,10 +2102,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         layer="lp.bugs.publisher.BugsLayer"
         name="+bugs"/>
-    <browser:defaultView
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        layer="lp.answers.publisher.AnswersLayer"
-        name="+questions"/>
     <browser:navigation
         module="lp.registry.browser.sourcepackage"
         classes="
@@ -2137,18 +2147,10 @@
         facet="overview"
         class="lp.registry.browser.sourcepackage.SourcePackageUpstreamConnectionsView"
         template="../templates/sourcepackage-upstream-connections.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
-        name="+gethelp"
-        facet="answers"
-        template="../../answers/templates/sourcepackage-gethelp.pt"/>
     <browser:menus
         classes="
             SourcePackageFacets
-            SourcePackageOverviewMenu
-            SourcePackageAnswersMenu"
+            SourcePackageOverviewMenu"
         module="lp.registry.browser.sourcepackage"/>
     <browser:navigation
         module="lp.registry.browser.productrelease"
@@ -2220,7 +2222,7 @@
         module="lp.registry.browser.productrelease"/>
     <browser:page
         name="+driver"
-        for="canonical.launchpad.interfaces.launchpad.IHasAppointedDriver"
+        for="lp.registry.interfaces.role.IHasAppointedDriver"
         class="lp.registry.browser.driver.AppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
@@ -2281,7 +2283,7 @@
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
         facet="overview"
         name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt">
+        template="../../app/templates/object-reassignment.pt">
     </browser:page>
     <browser:page
         name="+prober-logs"

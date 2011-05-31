@@ -1179,9 +1179,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.assertIn(
-            "Unable to find mandatory field 'Files' "
-            "in the changes file", error_text)
+        expected_explanation = (
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
+        self.assertIn(expected_explanation, error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1348,8 +1348,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Expected Exception type not found in OOPS report:\n%s'
             % error_text)
 
+        # The upload policy requires a signature but none is present, so
+        # we get gpg verification errors.
         expected_explanation = (
-            "Unable to find mandatory field 'Files' in the changes file.")
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
         self.failUnless(
             error_text.find(expected_explanation) >= 0,
             'Expected Exception text not found in OOPS report:\n%s'
@@ -1996,12 +1998,12 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_success_mail(self):
-        # When a source package recipe build succeeds, it sends a build-style
-        # email, not user-upload-style one.
+        """Source package recipe build success does not cause mail.
+        
+        See bug 778437.
+        """
         self.doSuccessRecipeBuild()
-        (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
-        self.assertIn('Successfully built', subject)
+        self.assertEquals(len(pop_notifications()), 0, pop_notifications)
 
     def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.

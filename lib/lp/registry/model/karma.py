@@ -16,6 +16,7 @@ __all__ = [
     'KarmaContextMixin',
     ]
 
+from storm.expr import Desc
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -29,17 +30,17 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
-    cursor,
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
     IKarma,
     IKarmaAction,
     IKarmaActionSet,
+    IKarmaAssignedEvent,
     IKarmaCache,
     IKarmaCacheManager,
     IKarmaCategory,
@@ -242,34 +243,22 @@ class KarmaContextMixin:
     def getTopContributors(self, category=None, limit=None):
         """See IKarmaContext."""
         from lp.registry.model.person import Person
+        store = IStore(Person)
         if IProduct.providedBy(self):
-            where_clause = "product = %d" % self.id
+            condition = KarmaCache.productID == self.id
         elif IDistribution.providedBy(self):
-            where_clause = "distribution = %d" % self.id
+            condition = KarmaCache.distributionID == self.id
         elif IProjectGroup.providedBy(self):
-            where_clause = "project = %d" % self.id
+            condition = KarmaCache.projectID == self.id
         else:
             raise AssertionError(
                 "Not a product, project or distribution: %r" % self)
 
         if category is not None:
-            category_filter = " AND category = %s" % sqlvalues(category)
-        else:
-            category_filter = " AND category IS NULL"
-        if limit is not None:
-            limit_filter = " LIMIT %d" % limit
-        query = """
-            SELECT person, karmavalue
-            FROM KarmaCache
-            WHERE %(where_clause)s
-            %(category_filter)s
-            ORDER BY karmavalue DESC
-            %(limit)s
-            """ % {'where_clause': where_clause, 'limit': limit_filter,
-                   'category_filter': category_filter}
-
-        cur = cursor()
-        cur.execute(query)
-        return [(Person.get(person_id), karmavalue)
-                for person_id, karmavalue in cur.fetchall()]
-
+            category = category.id
+        contributors = store.find(
+            (Person, KarmaCache.karmavalue),
+            KarmaCache.personID == Person.id,
+            KarmaCache.categoryID == category, condition).order_by(
+                Desc(KarmaCache.karmavalue)).config(limit=limit)
+        return list(contributors)

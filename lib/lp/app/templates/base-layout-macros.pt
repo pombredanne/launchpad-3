@@ -177,7 +177,7 @@
 
   <script tal:condition="context/webservice:is_entry"
     tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json};">
+                 ${context/webservice:json/fmt:obfuscate-email};">
   </script>
 </metal:lp-client-cache>
 

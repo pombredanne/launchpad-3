@@ -928,12 +928,12 @@ class NascentUpload:
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distroseries.main_archive,
+                self.changes.raw_content, distroseries.main_archive,
                 self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(
                 self.policy.pocket, self.changes.filename,
-                self.changes.filecontents, self.policy.archive,
+                self.changes.raw_content, self.policy.archive,
                 self.changes.signingkey)
 
     #

@@ -8,14 +8,15 @@ from datetime import (
     datetime,
     timedelta,
     )
+import doctest
 
+from testtools.matchers import DocTestMatches
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -26,6 +27,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -36,6 +38,9 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.adapters.archivedependencies import (
+    get_sources_list_for_building,
+    )
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
@@ -1427,6 +1432,95 @@ class TestFindDepCandidates(TestCaseWithFactory):
             component=getUtility(IComponentSet)['universe'])
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
+
+
+class TestOverlays(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def _createDep(self, derived_series, parent_series,
+                   parent_distro, component_name=None, pocket=None,
+                   overlay=True, arch_tag='i386',
+                   publish_base_url=u'http://archive.launchpad.dev/'):
+        # Helper to create a parent/child relationshipi.
+        if type(parent_distro) == str:
+            depdistro = self.factory.makeDistribution(parent_distro,
+                publish_base_url=publish_base_url)
+        else:
+            depdistro = parent_distro
+        if type(parent_series) == str:
+            depseries = self.factory.makeDistroSeries(
+                name=parent_series, distribution=depdistro)
+            deparchseries = self.factory.makeDistroArchSeries(
+                distroseries=depseries, architecturetag=arch_tag)
+        else:
+            depseries = parent_series
+        if component_name is not None:
+            component = getUtility(IComponentSet)[component_name]
+        else:
+            component = None
+
+        self.factory.makeDistroSeriesParent(
+            derived_series=derived_series, parent_series=depseries,
+            initialized=True, is_overlay=overlay, pocket=pocket,
+            component=component)
+        return depseries, depdistro
+
+    def test_overlay_dependencies(self):
+        # sources.list is properly generated for a complex overlay structure.
+        # Pocket dependencies and component dependencies are taken into
+        # account when generating sources.list.
+        #
+        #            breezy               type of relation:
+        #               |                    |           |
+        #    -----------------------         |           o
+        #    |          |          |         |           |
+        #    o          o          |      no overlay  overlay
+        #    |          |          |
+        # series11  series21   series31
+        #    |
+        #    o
+        #    |
+        # series12
+        #
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.prepareBreezyAutotest()
+        breezy = test_publisher.breezy_autotest
+        pub_source = test_publisher.getPubSource(
+            version='1.1', archive=breezy.main_archive)
+        [build] = pub_source.createMissingBuilds()
+        series11, depdistro = self._createDep(
+            breezy, 'series11', 'depdistro', 'universe',
+            PackagePublishingPocket.SECURITY)
+        self._createDep(
+            breezy, 'series21', 'depdistro2', 'multiverse',
+            PackagePublishingPocket.UPDATES)
+        self._createDep(breezy, 'series31', 'depdistro3', overlay=False)
+        self._createDep(
+            series11, 'series12', 'depdistro4', 'multiverse',
+            PackagePublishingPocket.UPDATES)
+        sources_list = get_sources_list_for_building(build,
+            build.distro_arch_series, build.source_package_release.name)
+
+        self.assertThat(
+            "\n".join(sources_list),
+            DocTestMatches(
+                ".../ubuntutest breezy-autotest main\n"
+                ".../depdistro series11 main universe\n"
+                ".../depdistro series11-security main universe\n"
+                ".../depdistro2 series21 "
+                    "main restricted universe multiverse\n"
+                ".../depdistro2 series21-security "
+                    "main restricted universe multiverse\n"
+                ".../depdistro2 series21-updates "
+                   "main restricted universe multiverse\n"
+                ".../depdistro4 series12 main restricted "
+                    "universe multiverse\n"
+                ".../depdistro4 series12-security main "
+                    "restricted universe multiverse\n"
+                ".../depdistro4 series12-updates "
+                    "main restricted universe multiverse\n"
+                , doctest.ELLIPSIS))
 
 
 class TestComponents(TestCaseWithFactory):

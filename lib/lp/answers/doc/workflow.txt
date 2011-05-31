@@ -739,7 +739,7 @@ Using an IMessage as an explanation
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)
@@ -760,4 +760,4 @@ method.
     >>> question.setStatus(stub, QuestionStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
-    AssertionError...
+    NotMessageOwnerError...

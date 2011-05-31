@@ -31,11 +31,10 @@ from storm.store import Store
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import canonical_url
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -55,6 +54,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 logger = logging.getLogger('lp.bugs.scripts.bugzilla')

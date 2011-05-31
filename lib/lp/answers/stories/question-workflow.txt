@@ -139,14 +139,14 @@ discussion.
 
 Once the question is clarified, it is easier for a user to give an
 answer. This is done by entering the answer in the 'Message' box
-and clicking the 'Add Answer' button.
+and clicking the 'Propose Answer' button.
 
     >>> support_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> support_browser.getControl('Message').value = (
     ...     "New version of the firefox package are available with SVG "
     ...     "support enabled. You can use apt-get or adept to upgrade.")
-    >>> support_browser.getControl('Add Answer').click()
+    >>> support_browser.getControl('Propose Answer').click()
 
 This moves the the question to the Answered state and adds the
 answer to the end of the discussion:

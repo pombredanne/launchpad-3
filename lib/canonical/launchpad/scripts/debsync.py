@@ -17,12 +17,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import (
-    IMessageSet,
-    InvalidEmailMessage,
-    UnknownSender,
-    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -31,6 +26,11 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.scripts import debbugs
 from lp.services.encoding import guess as ensure_unicode
+from lp.services.messages.interfaces.message import (
+    IMessageSet,
+    InvalidEmailMessage,
+    UnknownSender,
+    )
 
 
 def bug_filter(bug, previous_import_set, target_bugs, target_package_set,

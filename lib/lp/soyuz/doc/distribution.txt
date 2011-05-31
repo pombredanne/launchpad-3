@@ -129,7 +129,7 @@ addition to PUBLISHED ones:
 It also works if we look for a package name which is the name of both
 binary and source packages but for which only the source is published:
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> source_name, bin_name = debian.guessPackageNames('alsa-utils')
     >>> print bin_name
