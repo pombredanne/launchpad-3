@@ -381,7 +381,7 @@
         class="lp.registry.browser.project.ProjectMaintainerReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
     <browser:page
         name="+register-a-blueprint-button"
@@ -855,6 +855,12 @@
             permission="launchpad.Edit"
             template="../templates/person-editlanguages.pt"/>
         <browser:page
+            for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+            permission="launchpad.AnyPerson"
+            class="lp.registry.browser.person.RedirectToEditLanguagesView"
+            name="+editmylanguages"
+            />
+        <browser:page
             name="+edit"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditView"
@@ -1183,7 +1189,7 @@
             permission="launchpad.Owner"
             class="lp.registry.browser.person.TeamReassignmentView"
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.ITeam"
             permission="launchpad.AnyPerson"
@@ -1979,7 +1985,7 @@
         class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
+            template="../../app/templates/object-reassignment.pt"/>
     </browser:pages>
 
     <!-- DistroSeries create and initialize. -->
@@ -2210,7 +2216,7 @@
         module="lp.registry.browser.productrelease"/>
     <browser:page
         name="+driver"
-        for="canonical.launchpad.interfaces.launchpad.IHasAppointedDriver"
+        for="lp.registry.interfaces.role.IHasAppointedDriver"
         class="lp.registry.browser.driver.AppointDriverView"
         facet="overview"
         permission="launchpad.Edit"
@@ -2271,7 +2277,7 @@
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
         facet="overview"
         name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt">
+        template="../../app/templates/object-reassignment.pt">
     </browser:page>
     <browser:page
         name="+prober-logs"

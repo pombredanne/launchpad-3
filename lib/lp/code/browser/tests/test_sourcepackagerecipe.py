@@ -7,13 +7,13 @@
 __metaclass__ = type
 
 
-from BeautifulSoup import BeautifulSoup
 from datetime import (
     datetime,
     timedelta,
     )
 from textwrap import dedent
 
+from BeautifulSoup import BeautifulSoup
 from mechanize import LinkNotFoundError
 from pytz import UTC
 from testtools.matchers import Equals
@@ -23,8 +23,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -35,25 +33,24 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
-    SourcePackageRecipeRequestBuildsView,
     SourcePackageRecipeEditView,
-    SourcePackageRecipeView)
+    SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeView,
+    )
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.sourcepackagerecipe import (
-    MINIMAL_RECIPE_TEXT,
-    )
+from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
 from lp.code.tests.helpers import recipe_parser_newest_version
-from lp.registry.interfaces.person import (
-    TeamSubscriptionPolicy,
-    )
+from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import clear_property_cache
@@ -69,8 +66,8 @@ from lp.testing import (
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.matchers import (
-    MatchesTagText,
     MatchesPickerText,
+    MatchesTagText,
     )
 from lp.testing.views import create_initialized_view
 
