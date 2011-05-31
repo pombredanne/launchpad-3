@@ -90,16 +90,23 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
         packagesets = (u'1', u'2', u'3')
+        overlays = (True, )
+        overlay_pockets = ('Updates', )
+        overlay_components = ('restricted', )
 
         job = self.job_source.create(
-            distroseries, [parent.id], arches, packagesets)
+            distroseries, [parent.id], arches, packagesets, False, overlays,
+            overlay_pockets, overlay_components)
 
         naked_job = removeSecurityProxy(job)
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
-        self.assertEqual(naked_job.metadata["parents"], [parent.id])
+        self.assertEqual(naked_job.parents, (parent.id, ))
+        self.assertEqual(naked_job.overlays, overlays)
+        self.assertEqual(naked_job.overlay_pockets, overlay_pockets)
+        self.assertEqual(naked_job.overlay_components, overlay_components)
 
     def test_parent(self):
         parent = self.factory.makeDistroSeries()

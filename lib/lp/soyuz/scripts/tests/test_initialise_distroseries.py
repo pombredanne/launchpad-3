@@ -408,12 +408,10 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_setup_overlays(self):
         # If the overlay parameter is passed, overlays are properly setup.
-        component = getUtility(IComponentSet)['universe']
-        pocket = PackagePublishingPocket.UPDATES
         child = self.factory.makeDistroSeries()
         overlays = [True]
-        overlay_pockets = [pocket]
-        overlay_components = [component]
+        overlay_pockets = ['Updates']
+        overlay_components = ['universe']
         child = self._full_initialise(
             child=child, rebuild=True, overlays=overlays,
             overlay_pockets=overlay_pockets,
@@ -423,5 +421,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             child, self.parent)
 
         self.assertTrue(distroseriesparent.is_overlay)
-        self.assertEqual(component, distroseriesparent.component)
-        self.assertEqual(pocket, distroseriesparent.pocket)
+        self.assertEqual(
+            getUtility(IComponentSet)['universe'],
+            distroseriesparent.component)
+        self.assertEqual(
+            PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
