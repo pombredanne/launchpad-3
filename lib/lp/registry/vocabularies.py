@@ -80,7 +80,6 @@ from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
-    IVocabulary,
     IVocabularyTokenized,
     )
 from zope.schema.vocabulary import (
@@ -1549,6 +1548,16 @@ class DistroSeriesDerivationVocabulary:
             raise LookupError(value)
         return self.toTerm(value)
 
+    def terms_by_token(self):
+        """Mapping of terms by token."""
+        return dict((term.token, term) for term in self.terms)
+
+    def getTermByToken(self, token):
+        try:
+            return self.terms_by_token[token]
+        except KeyError:
+            raise LookupError(token)
+
     def toTerm(self, series):
         """Return the term for a parent series."""
         title = "%s: %s" % (series.distribution.displayname, series.title)
@@ -1558,6 +1567,10 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         results = self.searchParents(query)
         return CountableIterator(len(results), results, self.toTerm)
+
+    @cachedproperty
+    def terms(self):
+        return self.searchParents()
 
     def find_terms(self, *where):
         """Return a `tuple` of terms matching the given criteria.
