@@ -578,22 +578,113 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(BugSummary.distroseries == series),
             0)
 
-    def test_addDistributionSourcePackageName(self):
+    def test_addDistributionSourcePackage(self):
+        distribution = self.factory.makeDistribution()
+        sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+
+        bug = self.factory.makeBug()
+        bug_task = self.factory.makeBugTask(bug=bug, target=sourcepackage)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage.sourcepackagename),
+            1)
+
+    def test_changeDistributionSourcePackage(self):
+        distribution = self.factory.makeDistribution()
+        sourcepackage_a = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        sourcepackage_b = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+
+        bug_task = self.factory.makeBugTask(target=sourcepackage_a)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage_a.sourcepackagename),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage_b.sourcepackagename),
+            0)
+
+        bug_task.sourcepackagename = sourcepackage_b.sourcepackagename
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage_a.sourcepackagename),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage_b.sourcepackagename),
+            1)
+
+    def test_removeDistributionSourcePackage(self):
+        distribution = self.factory.makeDistribution()
+        sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+
+        bug_task = self.factory.makeBugTask(target=sourcepackage)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage.sourcepackagename),
+            1)
+
+        bug_task.sourcepackagename = None
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.sourcepackagename
+                    == sourcepackage.sourcepackagename),
+            0)
+
+    def test_addDistroSeriesSourcePackage(self):
         raise NotImplementedError
 
-    def test_changeDistributionSourcePackageName(self):
+    def test_changeDistroSeriesSourcePackage(self):
         raise NotImplementedError
 
-    def test_removeDistributionSourcePackageName(self):
-        raise NotImplementedError
-
-    def test_addDistroSeriesSourcePackageName(self):
-        raise NotImplementedError
-
-    def test_changeDistroSeriesSourcePackageName(self):
-        raise NotImplementedError
-
-    def test_removeDistroSeriesSourcePackageName(self):
+    def test_removeDistroSeriesSourcePackage(self):
         raise NotImplementedError
 
     def test_addMilestone(self):
