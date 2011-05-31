@@ -547,6 +547,7 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause
                     )
                 )
+            result.config(distinct=True)
             result.order_by(Person.displayname, Person.name)
         else:
             # Do a full search based on the text given.
@@ -646,10 +647,9 @@ class ValidPersonOrTeamVocabulary(
             # public query. Otherwise, for efficiency as stated earlier, we
             # need to do a separate query to join to the TeamParticipation
             # table.
-            all_private_teams_query = SQL("is_private_team")
-            if not private_tables:
-                all_private_teams_query = And(
-                    private_query, all_private_teams_query)
+            private_teams_query = private_query
+            if private_tables:
+                private_teams_query = SQL("is_private_team")
 
             # We just select the required ids since we will use
             # IPersonSet.getPrecachedPersonsFromIDs to load the results
@@ -670,7 +670,7 @@ class ValidPersonOrTeamVocabulary(
                                 EmailAddress.status ==
                                     EmailAddressStatus.PREFERRED)),
                         # Or a private team
-                        all_private_teams_query),
+                        private_teams_query),
                     self.extra_clause),
                 )
             # Better ranked matches go first.
