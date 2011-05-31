@@ -12,6 +12,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
+from lp.registry.model.teammembership import TeamParticipation
 from lp.testing import (
     login_celebrity,
     TestCaseWithFactory,
@@ -38,7 +39,10 @@ class TestBugSummary(TestCaseWithFactory):
 
         self.store = IMasterStore(BugSummary)
 
-    def getCount(self, *bugsummary_find_expr):
+    def getPublicCount(self, *bugsummary_find_expr):
+        return self.getCount(None, *bugsummary_find_expr)
+
+    def getCount(self, person, *bugsummary_find_expr):
         # Flush any changes. This causes the database triggers to fire
         # and BugSummary records to be created.
         self.store.flush()
@@ -50,10 +54,19 @@ class TestBugSummary(TestCaseWithFactory):
         # previous transactions.
         self.store.invalidate()
 
+        public_summaries = self.store.find(
+            BugSummary,
+            BugSummary.viewed_by == None,
+            *bugsummary_find_expr)
+        private_summaries = self.store.find(
+            BugSummary,
+            BugSummary.viewed_by_id == TeamParticipation.teamID,
+            TeamParticipation.person == person)
+        all_summaries = public_summaries.union(private_summaries, all=True)
+
         # Note that if there a 0 records found, sum() returns None, but
         # we prefer to return 0 here.
-        return self.store.find(
-            BugSummary, *bugsummary_find_expr).sum(BugSummary.count) or 0
+        return all_summaries.sum(BugSummary.count) or 0
 
     def test_providesInterface(self):
         bug_summary = self.store.find(BugSummary)[0]
@@ -63,7 +76,7 @@ class TestBugSummary(TestCaseWithFactory):
         tag = u'pustular'
 
         # Ensure nothing using our tag yet.
-        self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == tag), 0)
 
         product = self.factory.makeProduct()
 
@@ -76,21 +89,21 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
-            self.getCount(
+            self.getPublicCount(
                 BugSummary.product == product,
                 BugSummary.tag == tag),
             3)
 
         # There should be no other BugSummary rows.
-        self.assertEqual(self.getCount(BugSummary.tag == tag), 3)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == tag), 3)
 
     def test_changeTag(self):
         old_tag = u'pustular'
         new_tag = u'flatulent'
 
         # Ensure nothing using our tags yet.
-        self.assertEqual(self.getCount(BugSummary.tag == old_tag), 0)
-        self.assertEqual(self.getCount(BugSummary.tag == new_tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == old_tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == new_tag), 0)
 
         product = self.factory.makeProduct()
 
@@ -103,7 +116,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
-            self.getCount(
+            self.getPublicCount(
                 BugSummary.product == product,
                 BugSummary.tag == old_tag
                 ), 3)
@@ -113,25 +126,25 @@ class TestBugSummary(TestCaseWithFactory):
             bug_tag.tag = new_tag
 
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.tag == old_tag),
                 count)
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.tag == new_tag),
                 3 - count)
 
         # There should be no other BugSummary rows.
-        self.assertEqual(self.getCount(BugSummary.tag == old_tag), 0)
-        self.assertEqual(self.getCount(BugSummary.tag == new_tag), 3)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == old_tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == new_tag), 3)
 
     def test_removeTag(self):
         tag = u'pustular'
 
         # Ensure nothing using our tags yet.
-        self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == tag), 0)
 
         product = self.factory.makeProduct()
 
@@ -144,7 +157,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Number of tagged tasks for a particular product
         self.assertEqual(
-            self.getCount(
+            self.getPublicCount(
                 BugSummary.product == product,
                 BugSummary.tag == tag
                 ), 3)
@@ -153,13 +166,13 @@ class TestBugSummary(TestCaseWithFactory):
             bug_tag = self.store.find(BugTag, tag=tag).any()
             self.store.remove(bug_tag)
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.tag == tag
                     ), count)
 
         # There should be no other BugSummary rows.
-        self.assertEqual(self.getCount(BugSummary.tag == tag), 0)
+        self.assertEqual(self.getPublicCount(BugSummary.tag == tag), 0)
 
     def test_changeStatus(self):
         org_status = BugTaskStatus.NEW
@@ -173,7 +186,7 @@ class TestBugSummary(TestCaseWithFactory):
             bug_task.status = org_status
 
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.status == org_status),
                 count + 1)
@@ -183,21 +196,137 @@ class TestBugSummary(TestCaseWithFactory):
                 BugTask, product=product, status=org_status).any()
             bug_task.status = new_status
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.status == org_status),
                 count)
             self.assertEqual(
-                self.getCount(
+                self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.status == new_status),
                 3 - count)
 
     def test_makePrivate(self):
-        raise NotImplementedError
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+
+        # Make the bug private. We have to use the Python API to ensure
+        # BugSubscription records get created for implicit
+        # subscriptions.
+        bug.setPrivate(True, bug.owner)
+
+        # Confirm counts.
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product == product),
+            0)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
 
     def test_makePublic(self):
-        raise NotImplementedError
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, private=True)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+
+        # Make the bug public. We have to use the Python API to ensure
+        # BugSubscription records get created for implicit
+        # subscriptions.
+        bug.setPrivate(False, bug.owner)
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product==product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product==product),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product==product),
+            1)
+
+    def test_subscribePrivate(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, private=True)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product == product),
+            0)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+
+    def test_unsubscribePrivate(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, private=True)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+        bug.subscribe(person=person_b, subscribed_by=person_b)
+        bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
+
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product == product),
+            0)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            0)
+
+    def test_subscribePublic(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
+
+    def test_unsubscribePublic(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        bug.subscribe(person=person_a, subscribed_by=person_a)
+        bug.subscribe(person=person_b, subscribed_by=person_b)
+        bug.unsubscribe(person=person_b, unsubscribed_by=person_b)
+
+        self.assertEqual(
+            self.getCount(person_a, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getCount(person_b, BugSummary.product == product),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.product == product),
+            1)
 
     def test_addProduct(self):
         raise NotImplementedError
