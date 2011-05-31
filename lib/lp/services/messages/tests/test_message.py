@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from doctest import DocTestSuite
 from email.Message import Message
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
@@ -60,7 +59,7 @@ class TestMessageSet(unittest.TestCase):
         expected = {
             message1: [message2, message3],
             message2: [message4],
-            message3: [], message4:[]}
+            message3: [], message4: []}
         result, roots = MessageSet._parentToChild(messages)
         self.assertEqual(expected, result)
         self.assertEqual([message1], roots)
@@ -140,6 +139,15 @@ class TestMessageSet(unittest.TestCase):
         # Need to commit in order to read back out of the librarian.
         transaction.commit()
         self.assertEqual('This is the diff, honest.', diff.blob.read())
+
+    def test_fromEmail_always_creates(self):
+        """Even when messages are identical, fromEmail creates a new one."""
+        email = self.factory.makeEmailMessage()
+        orig_message = MessageSet().fromEmail(email.as_string())
+        # update librarian
+        transaction.commit()
+        dupe_message = MessageSet().fromEmail(email.as_string())
+        self.assertNotEqual(orig_message.id, dupe_message.id)
 
 
 class TestMessageJob(TestCaseWithFactory):
