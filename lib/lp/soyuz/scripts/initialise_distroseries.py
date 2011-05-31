@@ -66,7 +66,7 @@ class InitialiseDistroSeries:
 
     def __init__(
         self, distroseries, parents, arches=(), packagesets=(),
-        rebuild=False, overlays={}):
+        rebuild=False, overlays=[], overlay_pockets=[], overlay_components=[]):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
 
@@ -81,6 +81,8 @@ class InitialiseDistroSeries:
             ensure_unicode(packageset) for packageset in packagesets]
         self.rebuild = rebuild
         self.overlays = overlays
+        self.overlay_pockets = overlay_pockets
+        self.overlay_components = overlay_components
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
@@ -149,9 +151,11 @@ class InitialiseDistroSeries:
         transaction.commit()
 
     def _set_parent(self):
-        overlay = self.overlays.get(self.distroseries.id, None)
-        if overlay is not None:
-            pocket, component = overlay
+        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
+        # initialising from multiple parents.
+        if self.overlays and self.overlays[0] is not None:
+            pocket = self.overlay_pockets[0]
+            component = self.overlay_components[0]
             getUtility(IDistroSeriesParentSet).new(self.distroseries,
                 self.parent, initialized=False, is_overlay=True,
                 pocket=pocket, component=component)

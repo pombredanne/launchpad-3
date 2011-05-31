@@ -38,13 +38,18 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitialiseDistroSeriesJobSource)
 
     @classmethod
-    def create(cls, child, parents, arches=(), packagesets=(), rebuild=False):
+    def create(cls, child, parents, arches=(), packagesets=(),
+               rebuild=False, overlays=[], overlay_pockets=[],
+               overlay_components=[]):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
             'parents': parents,
             'arches': arches,
             'packagesets': packagesets,
             'rebuild': rebuild,
+            'overlays': overlays,
+            'overlay_pockets': overlay_pockets,
+            'overlay_components': overlay_components,
             }
         job = DistributionJob(
             child.distribution, child, cls.class_job_type,
@@ -68,6 +73,18 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         return tuple(self.metadata['parents'])
 
     @property
+    def overlays(self):
+        return tuple(self.metadata['overlays'])
+
+    @property
+    def overlay_pockets(self):
+        return tuple(self.metadata['overlay_pockets'])
+
+    @property
+    def overlay_components(self):
+        return tuple(self.metadata['overlay_components'])
+
+    @property
     def arches(self):
         return tuple(self.metadata['arches'])
 
@@ -83,7 +100,8 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         """See `IRunnableJob`."""
         ids = InitialiseDistroSeries(
             self.distroseries, self.parents, self.arches,
-            self.packagesets, self.rebuild)
+            self.packagesets, self.rebuild, self.overlays,
+            self.overlay_pockets, self.overlay_components)
         ids.check()
         ids.initialise()
 
