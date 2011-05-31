@@ -1,4 +1,4 @@
-# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -6,11 +6,7 @@ import logging
 import os
 import unittest
 
-from testtools.matchers import (
-    Equals,
-    Is,
-    MatchesRegex,
-    )
+from testtools.matchers import Equals, Is
 import transaction
 from zope.security.management import setSecurityPolicy
 
@@ -28,17 +24,11 @@ from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
     handleMail,
-    handle_one_mail,
     MailErrorUtility,
     ORIGINAL_TO_HEADER,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
-from lp.services.messages.model.message import MessageSet
-from lp.services.mail.tests import (
-    active_handler,
-    ListHandler,
-    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.mail_helpers import pop_notifications
@@ -131,25 +121,6 @@ class TestIncoming(TestCaseWithFactory):
         self.factory.makeAccount(email=email)
         mail = self.factory.makeSignedMessage(email_address=email)
         self.assertThat(authenticateEmail(mail), Is(None))
-
-    def test_handle_one_mail_duplicate_message_id(self):
-        # An incoming mail with the message-id of an already-processed mail is
-        # skipped.
-        orig_message = self.factory.makeMessage()
-        handler_calls = []
-        self.assertEqual([], handler_calls)
-        duplicate_mail = self.factory.makeSignedMessage(
-            msgid=orig_message.rfc822msgid,
-            to_address='new@random.example.com')
-        log = BufferLogger()
-        with active_handler('random.example.com', ListHandler()) as handler:
-            handle_one_mail(log, duplicate_mail, None, None, None)
-        self.assertEqual([], handler.processed)
-        messages = MessageSet().get(orig_message.rfc822msgid)
-        self.assertEqual(1, len(messages))
-        matches = MatchesRegex(
-            '(.|\n)*WARNING Message with id .* already stored.  Skipping.')
-        self.assertThat(log.getLogBuffer(), matches)
 
 
 class TestExtractAddresses(TestCaseWithFactory):
