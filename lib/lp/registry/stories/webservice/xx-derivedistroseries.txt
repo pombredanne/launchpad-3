@@ -55,11 +55,10 @@ has a parent series.
 
     >>> ws_child_series_with_parent = ws_object(
     ...     soyuz_team_webservice, child_series_with_parent)
-    >>> ws_other_series = ws_object(soyuz_team_webservice, other_series)
 
     >>> print soyuz_team_webservice.named_post(
     ...     ws_child_series_with_parent['self_link'],
-    ...     'initDerivedDistroSeries', parents=[ws_other_series['self_link']],
+    ...     'initDerivedDistroSeries', parents=[str(other_series.id)],
     ...     rebuild=False)
     HTTP/1.1 400 Bad Request
     ...
@@ -67,12 +66,11 @@ has a parent series.
 
 If we call it correctly, it works.
 
-    >>> ws_parent_series = ws_object(soyuz_team_webservice, parent_series)
     >>> ws_child_series = ws_object(soyuz_team_webservice, child_series)
 
     >>> print soyuz_team_webservice.named_post(
     ...     ws_child_series['self_link'], 'initDerivedDistroSeries',
-    ...     parents=[ws_parent_series['self_link']],
+    ...     parents=[str(parent_series.id)],
     ...     rebuild=False)
     HTTP/1.1 200 Ok
     ...
