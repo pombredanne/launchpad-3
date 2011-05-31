@@ -514,13 +514,69 @@ class TestBugSummary(TestCaseWithFactory):
             0)
 
     def test_addDistroSeries(self):
-        raise NotImplementedError
+        series = self.factory.makeDistroRelease()
+        distribution = series.distribution
+
+        # This first creates a BugTask on the distribution. We can't
+        # have a distroseries BugTask without a distribution BugTask.
+        self.factory.makeBugTask(target=series)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series),
+            1)
 
     def test_changeDistroSeries(self):
-        raise NotImplementedError
+        distribution = self.factory.makeDistribution()
+        series_a = self.factory.makeDistroRelease(distribution=distribution)
+        series_b = self.factory.makeDistroRelease(distribution=distribution)
+
+        bug_task = self.factory.makeBugTask(target=series_a)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series_a),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series_b),
+            0)
+
+        bug_task.distroseries = series_b
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series_a),
+            0)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series_b),
+            1)
 
     def test_removeDistroSeries(self):
-        raise NotImplementedError
+        series = self.factory.makeDistroRelease()
+        distribution = series.distribution
+        bug_task = self.factory.makeBugTask(target=series)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series),
+            1)
+
+        self.store.remove(bug_task)
+
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distribution == distribution),
+            1)
+        self.assertEqual(
+            self.getPublicCount(BugSummary.distroseries == series),
+            0)
 
     def test_addDistributionSourcePackageName(self):
         raise NotImplementedError
