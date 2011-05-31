@@ -13,10 +13,7 @@ from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.teammembership import TeamParticipation
-from lp.testing import (
-    login_celebrity,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestBugSummary(TestCaseWithFactory):
@@ -237,13 +234,13 @@ class TestBugSummary(TestCaseWithFactory):
         bug.setPrivate(False, bug.owner)
 
         self.assertEqual(
-            self.getPublicCount(BugSummary.product==product),
+            self.getPublicCount(BugSummary.product == product),
             1)
         self.assertEqual(
-            self.getCount(person_a, BugSummary.product==product),
+            self.getCount(person_a, BugSummary.product == product),
             1)
         self.assertEqual(
-            self.getCount(person_b, BugSummary.product==product),
+            self.getCount(person_b, BugSummary.product == product),
             1)
 
     def test_subscribePrivate(self):
@@ -369,7 +366,7 @@ class TestBugSummary(TestCaseWithFactory):
         product = self.factory.makeProduct()
 
         product_bug_task = self.factory.makeBugTask(target=product)
-        distribution_bug_task = self.factory.makeBugTask(
+        self.factory.makeBugTask(
             bug=product_bug_task.bug, target=distribution)
 
         self.assertEqual(
@@ -459,7 +456,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_addDistribution(self):
         distribution = self.factory.makeDistribution()
-        bug_task = self.factory.makeBugTask(target=distribution)
+        self.factory.makeBugTask(target=distribution)
 
         self.assertEqual(
             self.getPublicCount(BugSummary.distribution == distribution),
@@ -577,7 +574,7 @@ class TestBugSummary(TestCaseWithFactory):
             distribution=distribution)
 
         bug = self.factory.makeBug()
-        bug_task = self.factory.makeBugTask(bug=bug, target=sourcepackage)
+        self.factory.makeBugTask(bug=bug, target=sourcepackage)
 
         self.assertEqual(
             self.getPublicCount(
@@ -676,7 +673,7 @@ class TestBugSummary(TestCaseWithFactory):
         series = self.factory.makeDistroRelease(distribution=distribution)
         package = self.factory.makeSourcePackage(distroseries=series)
         sourcepackagename = package.sourcepackagename
-        bug_task = self.factory.makeBugTask(target=package)
+        self.factory.makeBugTask(target=package)
 
         self.assertEqual(
             self.getPublicCount(
