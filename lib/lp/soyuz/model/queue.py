@@ -463,7 +463,8 @@ class PackageUpload(SQLBase):
             job.queue()
             job.start()
             job.fail()
-            # TODO This should be sending a rejection email.
+            # This possibly should be sending a rejection email but I
+            # don't think we need them for sync rejections.
             return
 
         changes_file_object = StringIO.StringIO(self.changesfile.read())
