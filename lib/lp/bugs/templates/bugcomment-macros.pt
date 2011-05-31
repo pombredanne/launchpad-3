@@ -32,7 +32,7 @@
   tal:attributes="class string:boardComment">
   <div class="boardCommentDetails">
     <tal:activity_has_person>
-      <tal:activity_person replace="structure activity_person/fmt:link" />
+      <tal:activity_person replace="structure activity_person/fmt:link-display-name-id" />
     </tal:activity_has_person>
     <span
       tal:attributes="title activity_date/fmt:datetime"

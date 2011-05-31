@@ -11,7 +11,7 @@ entered within Launchpad itself.
     >>> print extract_text(details)
     In
     Debian Bug tracker #308994,
-    josh
+    josh (jbuhl-nospam)
     wrote
     ...
     gnome-volume-manager: dvd+rw unreadable when automounted ...
