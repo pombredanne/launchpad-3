@@ -109,7 +109,6 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
-from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -860,8 +859,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def pending_syncs(self):
         """Pending synchronization jobs for this distroseries.
 
-        :return: A dict mapping (name, version) package specifications to
-            pending sync jobs.
+        :return: A dict mapping package names to pending sync jobs.
         """
         job_source = getUtility(IPlainPackageCopyJobSource)
         return job_source.getPendingJobsPerPackage(self.context)
@@ -883,7 +881,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def hasPendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+        pending_sync = self.pending_syncs.get(dsd.source_package_name.name)
+        return pending_sync is not None
 
     def isNewerThanParent(self, dsd):
         """Is the child's version of this package newer than the parent's?
@@ -1082,9 +1081,10 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
         for dsd in self.getUpgrades():
             job_source.create(
-                [specify_dsd_package(dsd)], dsd.parent_series.main_archive,
-                target_archive, target_distroseries,
-                PackagePublishingPocket.UPDATES)
+                dsd.source_package_name.name,
+                dsd.parent_series.main_archive, target_archive,
+                target_distroseries, PackagePublishingPocket.UPDATES,
+                package_version=dsd.parent_source_version)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
