@@ -1956,54 +1956,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
 
-    def deriveDistroSeries(self, user, name, distribution=None,
-                           displayname=None, title=None, summary=None,
-                           description=None, version=None,
-                           architectures=(), packagesets=(), rebuild=False):
-        """See `IDistroSeries`."""
-        if distribution is None:
-            distribution = self.distribution
-        child = IStore(self).find(
-            DistroSeries, name=name, distribution=distribution).one()
-        if child is None:
-            if not displayname:
-                raise DerivationError(
-                    "Display Name needs to be set when creating a "
-                    "distroseries.")
-            if not title:
-                raise DerivationError(
-                    "Title needs to be set when creating a distroseries.")
-            if not summary:
-                raise DerivationError(
-                    "Summary needs to be set when creating a "
-                    "distroseries.")
-            if not description:
-                raise DerivationError(
-                    "Description needs to be set when creating a "
-                    "distroseries.")
-            if not version:
-                raise DerivationError(
-                    "Version needs to be set when creating a "
-                    "distroseries.")
-            child = distribution.newSeries(
-                name=name, displayname=displayname, title=title,
-                summary=summary, description=description,
-                version=version, previous_series=None, registrant=user)
-            IStore(self).add(child)
-        else:
-            if child.previous_series is not None:
-                raise DerivationError(
-                    "DistroSeries %s parent series is %s, "
-                    "but it must not be set" % (
-                        child.name, self.name))
-        initialise_series = InitialiseDistroSeries(child, [self])
-        try:
-            initialise_series.check()
-        except InitialisationError, e:
-            raise DerivationError(e)
-        getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, [self], architectures, packagesets, rebuild)
-
     def initDerivedDistroSeries(self, user, parents, architectures=(),
                                 packagesets=(), rebuild=False, overlays=[],
                                 overlay_pockets=[],
