@@ -93,9 +93,6 @@
       /></a>
     </div>
 
-  </div>
-
-  <div class="yui-u two-column-list">
     <dl tal:condition="view/should_show_ubuntu_coc_section" id="ubuntu-coc">
       <dt>Signed Ubuntu Code of Conduct:</dt>
       <dd tal:condition="context/is_ubuntu_coc_signer">
@@ -114,7 +111,9 @@
             ><img src="/@@/edit" alt="Sign the Ubuntu Code of Conduct" /></a>
       </dd>
     </dl>
+  </div>
 
+  <div class="yui-u two-column-list">
     <dl tal:condition="view/should_show_ircnicknames_section">
       <dt>IRC:
         <a tal:replace="structure overview_menu/editircnicknames/fmt:icon" />
