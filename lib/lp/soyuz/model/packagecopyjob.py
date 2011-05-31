@@ -137,7 +137,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
         :raises: NotFoundError if there is no job with the specified id, or
             its job_type does not match the desired subclass.
         """
-        job = PackageCopyJob.get(job_id)
+        job = IStore(PackageCopyJob).get(PackageCopyJob, job_id)
         if job.job_type != cls.class_job_type:
             raise NotFoundError(
                 'No object found with id %d and type %s' % (job_id,

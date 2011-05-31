@@ -21,6 +21,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -31,6 +32,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet,
+    QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -383,3 +385,33 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
         self.assertEqual(
             expected_metadata, plain_copy_job.metadata)
+
+    def test_acceptFromQueue_with_copy_job(self):
+        # acceptFromQueue should accept the upload and resume the copy
+        # job.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+        plain_copy_job.suspend()
+
+        pu.acceptFromQueue(announce_list=None)
+
+        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+        self.assertEqual(JobStatus.WAITING, plain_copy_job.status)
+
+    def test_rejectFromQueue_with_copy_job(self):
+        # rejectFromQueue will reject the upload and fail the copy job.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        plain_copy_job.suspend()
+
+        pu.rejectFromQueue()
+
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
+        self.assertEqual(JobStatus.FAILED, plain_copy_job.status)
+
+        # It cannot be resurrected after rejection.
+        self.assertRaises(
+            QueueInconsistentStateError, pu.acceptFromQueue, None)
