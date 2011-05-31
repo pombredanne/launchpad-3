@@ -94,23 +94,10 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.messages.model.message import (
-    Message,
-    MessageChunk,
-    MessageSet,
-    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    IHasBug,
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
+from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.messages.interfaces.message import (
-    IMessage,
-    IndexedMessage,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -123,6 +110,7 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -177,8 +165,8 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
+    get_structural_subscriptions_for_bug,
     )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -192,6 +180,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import (
@@ -202,6 +191,15 @@ from lp.registry.model.person import (
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.fields import DuplicateBug
+from lp.services.messages.interfaces.message import (
+    IMessage,
+    IndexedMessage,
+    )
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    MessageSet,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,

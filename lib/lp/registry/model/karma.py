@@ -33,7 +33,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -41,6 +40,7 @@ from lp.registry.interfaces.karma import (
     IKarma,
     IKarmaAction,
     IKarmaActionSet,
+    IKarmaAssignedEvent,
     IKarmaCache,
     IKarmaCacheManager,
     IKarmaCategory,

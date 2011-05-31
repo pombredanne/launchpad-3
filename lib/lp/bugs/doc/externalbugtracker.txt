@@ -134,7 +134,7 @@ offered by the Bugzilla Launchpad plugin.
 
 The Gnome Bugzilla is a celebrity in Launchpad.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
 
 If the gnome_bugzilla doesn't have the Launchpad plugin installed, it

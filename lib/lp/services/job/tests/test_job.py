@@ -169,9 +169,10 @@ class TestJob(TestCase):
             JobStatus.SUSPENDED)
 
     def test_suspend_when_running(self):
-        """When a job is running, attempting to suspend is invalid."""
+        """When a job is running, attempting to suspend is valid."""
         job = Job(_status=JobStatus.RUNNING)
-        self.assertRaises(InvalidTransition, job.suspend)
+        job.suspend()
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
 
     def test_suspend_when_completed(self):
         """When a job is completed, attempting to suspend is invalid."""
