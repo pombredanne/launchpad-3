@@ -39,8 +39,8 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
 
     @classmethod
     def create(cls, child, parents, arches=(), packagesets=(),
-               rebuild=False, overlays=[], overlay_pockets=[],
-               overlay_components=[]):
+               rebuild=False, overlays=(), overlay_pockets=(),
+               overlay_components=()):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
             'parents': parents,

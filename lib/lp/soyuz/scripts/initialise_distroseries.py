@@ -67,8 +67,8 @@ class InitialiseDistroSeries:
 
     def __init__(
         self, distroseries, parents, arches=(), packagesets=(),
-        rebuild=False, overlays=[], overlay_pockets=[],
-        overlay_components=[]):
+        rebuild=False, overlays=(), overlay_pockets=(),
+        overlay_components=()):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
 

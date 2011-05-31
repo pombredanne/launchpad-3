@@ -1957,9 +1957,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 self, format) is not None
 
     def initDerivedDistroSeries(self, user, parents, architectures=(),
-                                packagesets=(), rebuild=False, overlays=[],
-                                overlay_pockets=[],
-                                overlay_components=[]):
+                                packagesets=(), rebuild=False, overlays=(),
+                                overlay_pockets=(),
+                                overlay_components=()):
         """See `IDistroSeries`."""
         if self.is_derived_series:
             raise DerivationError(
