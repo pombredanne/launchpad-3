@@ -226,9 +226,10 @@ class TestDistroSeries(TestCaseWithFactory):
         # The series is_initialising only if there is an initialisation
         # job with a pending status attached to this series.
         distroseries = self.factory.makeDistroRelease()
+        parent_distroseries = self.factory.makeDistroRelease()
         self.assertEquals(False, distroseries.is_initialising)
         job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job = job_source.create(distroseries.parent, distroseries)
+        job = job_source.create(distroseries, [parent_distroseries.id])
         self.assertEquals(True, distroseries.is_initialising)
         job.start()
         self.assertEquals(True, distroseries.is_initialising)
