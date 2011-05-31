@@ -1,4 +1,5 @@
-= Bug Activity =
+Bug Activity
+============
 
 The bug activity page is where you find the "changelog" of a bug.
 
@@ -21,7 +22,7 @@ the main heading repeats the bug number for clarity:
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
     * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
-    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) - http://bugs...dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
@@ -49,7 +50,8 @@ The bug page contains a link to the activity log.
     http://.../+bug/3/+activity
 
 
-== Activity interleaved with comments ==
+Activity interleaved with comments
+----------------------------------
 
 Some bug activity is show interleaved with comments on a bug's main
 page.

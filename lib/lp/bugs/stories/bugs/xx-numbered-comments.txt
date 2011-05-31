@@ -1,4 +1,5 @@
-= Comment numbering =
+Comment numbering
+=================
 
     >>> # Enable the picker_enhancements feature to test the commenter name.
     >>> from lp.services.features.testing import FeatureFixture

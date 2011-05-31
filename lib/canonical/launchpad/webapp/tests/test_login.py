@@ -512,7 +512,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
-            QUERY_STRING='starting_url='+self.STARTING_URL)
+            QUERY_STRING='starting_url=' + self.STARTING_URL)
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
