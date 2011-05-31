@@ -3,12 +3,11 @@
 
 __metaclass__ = type
 
+from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
 
-from lazr.restfulclient.errors import BadRequest
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket

@@ -26,8 +26,7 @@ reveal its translations to the public or hide them from the public.
     >>> from lp.app.errors import TranslationUnavailable
     >>> from lp.translations.browser.distroseries import (
     ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet, TeamMembershipStatus)
 

@@ -9,12 +9,16 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 __all__ = [
+    'ILaunchpadCelebrities',
     'ILaunchpadUsage',
     'IServiceUsage',
     ]
 
 from lazr.restful.declarations import exported
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -22,6 +26,48 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.app.enums import ServiceUsage
+
+
+class ILaunchpadCelebrities(Interface):
+    """Well known things.
+
+    Celebrities are SQLBase instances that have a well known name.
+    """
+    admin = Attribute("The 'admins' team.")
+    bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
+    bug_importer = Attribute("The bug importer.")
+    bug_watch_updater = Attribute("The Bug Watch Updater.")
+    buildd_admin = Attribute("The Build Daemon administrator.")
+    commercial_admin = Attribute("The Launchpad Commercial team.")
+    debbugs = Attribute("The Debian Bug Tracker")
+    debian = Attribute("The Debian Distribution.")
+    english = Attribute("The English language.")
+    gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
+    janitor = Attribute("The Launchpad Janitor.")
+    katie = Attribute("The Debian Auto-sync user.")
+    launchpad = Attribute("The Launchpad project.")
+    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
+    launchpad_developers = Attribute("The Launchpad development team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+    registry_experts = Attribute("The Registry Administrators team.")
+    rosetta_experts = Attribute("The Rosetta Experts team.")
+    savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
+    sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_branches = Attribute("The Ubuntu branches team")
+    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
+    ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_security = Attribute("The 'ubuntu-security' team.")
+    ubuntu_techboard = Attribute("The Ubuntu technical board.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
+
+    def isCelebrityPerson(name):
+        """Return true if there is an IPerson celebrity with the given name.
+        """
 
 
 class IServiceUsage(Interface):
