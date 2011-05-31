@@ -28,14 +28,7 @@ class TestBugSummary(TestCaseWithFactory):
 
         # Some things we are testing are impossible as mere mortals,
         # but might happen from the SQL command line.
-        # XXX: Should we just grant mortals permission to UPDATE BugTag
-        # etc. ?
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-
-        # XXX: Unnecessary?
-        # And stop security wrappers getting in the way since they are
-        # uninteresting to these tests.
-        # login_celebrity('admin')
 
         self.store = IMasterStore(BugSummary)
 
