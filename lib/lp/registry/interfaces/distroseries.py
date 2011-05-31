@@ -939,10 +939,10 @@ class IDistroSeriesEditRestricted(Interface):
             will be.
         :param overlays: A list of booleans indicating, for each parent, if
             the parent/child relationship should be an overlay.
-        :param overlay_pockets: The list of pockets to use for overlay
+        :param overlay_pockets: The list of pockets names to use for overlay
             relationships.
-        :param overlay_components: The list of components to use for overlay
-            relationships.
+        :param overlay_components: The list of components names to use for
+            overlay relationships.
         """
 
 

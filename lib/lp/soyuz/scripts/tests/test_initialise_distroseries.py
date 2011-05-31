@@ -173,8 +173,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertTrue(child.backports_not_automatic)
 
     def _full_initialise(self, child=None, arches=(), packagesets=(),
-                         rebuild=False, distribution=None, overlays=[],
-                         overlay_pockets=[], overlay_components=[]):
+                         rebuild=False, distribution=None, overlays=(),
+                         overlay_pockets=(), overlay_components=()):
         if child is None:
             child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitialiseDistroSeries(
