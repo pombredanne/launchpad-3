@@ -831,12 +831,96 @@ class TestBugSummary(TestCaseWithFactory):
             0)
 
     def test_addMilestone(self):
-        raise NotImplemetnedError
+        distribution = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(distribution=distribution)
+        bug_task = self.factory.makeBugTask(target=distribution)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            1)
+
+        bug_task.milestone = milestone
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone),
+            1)
 
     def test_changeMilestone(self):
-        raise NotImplementedError
+        distribution = self.factory.makeDistribution()
+        milestone_a = self.factory.makeMilestone(distribution=distribution)
+        milestone_b = self.factory.makeMilestone(distribution=distribution)
+        bug_task = self.factory.makeBugTask(target=distribution)
+        bug_task.milestone = milestone_a
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone_a),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone_b),
+            0)
+
+        bug_task.milestone = milestone_b
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone_a),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone_b),
+            1)
 
     def test_removeMilestone(self):
-        raise NotImplementedError
+        distribution = self.factory.makeDistribution()
+        milestone = self.factory.makeMilestone(distribution=distribution)
+        bug_task = self.factory.makeBugTask(target=distribution)
+        bug_task.milestone = milestone
 
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone),
+            1)
 
+        bug_task.milestone = None
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == None),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.milestone == milestone),
+            0)
