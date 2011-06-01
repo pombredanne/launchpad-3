@@ -673,7 +673,7 @@ class BugSubscriptionPortletView(BugView):
                 psi.as_assignee.count or
                 psi.direct.as_team_member or
                 psi.direct.as_team_admin)
-            cache['other_subscription_notifications'] = (
+            cache['other_subscription_notifications'] = bool(
                 self.other_subscription_notifications)
             self.only_other_subscription_notifications = (
                 self.other_subscription_notifications and

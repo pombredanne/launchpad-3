@@ -64,9 +64,7 @@
         }
 
         Y.on('domready', function() {
-            lp.bugs.bugtask_index.portlets.subscription.initialize();
-            Y.lp.bugs.bugtask_index.portlets.load_subscription_portlet(
-                subscription_link, subscription_link_handler);
+            Y.lp.bugs.bugtask_index.portlets.subscription.initialize();
             Y.lp.bugs.bugtask_index.portlets.load_subscribers_portlet(
                 subscription_link, subscription_link_handler);
         });
