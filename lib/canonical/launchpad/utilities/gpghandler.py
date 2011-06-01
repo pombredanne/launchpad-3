@@ -539,10 +539,7 @@ class GPGHandler:
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
         url = self.getURLForKeyInServer(fingerprint, action)
-        f = urlfetch(url)
-        page = f.read()
-        f.close()
-        return page
+        return urlfetch(url)
 
     def checkTrustDb(self):
         """See IGPGHandler"""
