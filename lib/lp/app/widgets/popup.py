@@ -8,8 +8,6 @@
 __metaclass__ = type
 
 import cgi
-
-import re
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -169,8 +167,6 @@ class PersonPickerWidget(VocabularyPickerWidget):
     @property
     def nonajax_uri(self):
         return '/people/'
-
-        
 
 
 class BugTrackerPickerWidget(VocabularyPickerWidget):
