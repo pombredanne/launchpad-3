@@ -289,3 +289,24 @@ targetted to the distribution:
     ...         CASE WHEN sourcepackagename IS NULL THEN count ELSE -count END
     ...         """))
     1L
+
+
+DistroSeries Bug Counts
+-----------------------
+
+DistroSeries bug summary queries work the same as Distribution ones.
+Just query using the distroseries column instead of the distribution
+column.
+
+    >>> distribution_c = factory.makeDistribution(name='di-c')
+    >>> series_c = factory.makeDistroRelease(
+    ...     distribution=distribution_c, name='ds-c')
+    >>> bug = factory.makeBugTask(target=series_c)
+    >>> print_find(BugSummary.distroseries == series_c)
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    x    x    x    ds-c x     x   New          x      1
+                                                    ===
+                                                      1
+
