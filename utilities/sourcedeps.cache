@@ -20,8 +20,8 @@
         "launchpad@pqm.canonical.com-20100325120516-q8to5dx3gga4wlvi"
     ], 
     "subvertpy": [
-        2042, 
-        "launchpad@pqm.canonical.com-20100727083620-u93rikomkjfj82dw"
+        2043, 
+        "launchpad@pqm.canonical.com-20110520175118-iovx148eje6qt7jt"
     ], 
     "python-debian": [
         186, 
@@ -60,11 +60,11 @@
         "launchpad@pqm.canonical.com-20100830004921-6c4hehto20axdkn6"
     ], 
     "bzr-hg": [
-        283, 
-        "launchpad@pqm.canonical.com-20100814010415-lzqc5jufq5u1hd44"
+        284, 
+        "launchpad@pqm.canonical.com-20110527213814-u4pi67ffqi9b722y"
     ], 
     "dulwich": [
-        424, 
-        "launchpad@pqm.canonical.com-20100812211021-x1uaubka3ael1j62"
+        426, 
+        "launchpad@pqm.canonical.com-20110520175715-e90dzs8os0kotbm9"
     ]
 }
