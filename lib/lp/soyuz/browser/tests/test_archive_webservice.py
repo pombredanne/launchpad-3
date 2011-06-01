@@ -76,6 +76,7 @@ class TestArchiveWebservice(TestCaseWithFactory):
             "Not permitted to upload to the UPDATES pocket in a series "
             "in the 'DEVELOPMENT' state.", e.content)
 
+
 class TestExternalDependencies(WebServiceTestCase):
 
     def test_external_dependencies_random_user(self):

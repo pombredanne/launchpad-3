@@ -226,9 +226,9 @@ IBranch['getSubscription'].queryTaggedValue(
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 IBranch['product'].schema = IProduct
 
 patch_plain_parameter_type(
@@ -243,9 +243,9 @@ IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
