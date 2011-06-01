@@ -1217,7 +1217,16 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         """
         from lp.services.features import getFeatureFlag
         if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
-            text = '%s (%s)' % (self._context.displayname, self._context.name)
+            text = self.unique_displayname(None)
+            # XXX sinzui 2011-05-31: Remove this next line when the feature
+            # flag is removed.
+            view_name = None
+        elif view_name == 'mainsite':
+            # XXX sinzui 2011-05-31: remove this block and /id-only from
+            # launchpad-loginstatus.pt whwn the feature flag is removed.
+            text = self._context.name
+            import pdb; pdb.set_trace()
+            view_name = None
         else:
             text = self._context.displayname
         return self._makeLink(view_name, 'mainsite', text)
