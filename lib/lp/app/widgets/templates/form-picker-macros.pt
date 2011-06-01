@@ -30,7 +30,8 @@
             var config = {
                 header: ${view/header_text},
                 step_title: ${view/step_title_text},
-                extra_no_results_message: ${view/extra_no_results_message}
+                extra_no_results_message: ${view/extra_no_results_message},
+                picker_type: '${view/picker_type}'
             };
             var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
             if (config.extra_no_results_message !== null) {
