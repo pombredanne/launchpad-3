@@ -332,7 +332,7 @@ targetted to the distribution:
     ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(SQL("""
     ...         CASE WHEN sourcepackagename IS NULL THEN count ELSE -count END
-    ...         """))
+    ...         """)) or 0
     1L
 
 
@@ -432,7 +432,7 @@ So how many public bugs are there on the distro?
     ...     BugSummary.distribution == distro_p,
     ...     BugSummary.viewed_by == None, # Public bugs only
     ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
 But how many can the owner see?
@@ -447,7 +447,7 @@ But how many can the owner see?
     ...         BugSummary.viewed_by == None,
     ...         TeamParticipation.person == owner),
     ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     4
 
 Note that private bug counts can be inaccurate if a user is subscribed
@@ -462,7 +462,7 @@ query - there is only a single private bug targetted to series_p.
     ...         BugSummary.viewed_by == None,
     ...         TeamParticipation.person == person_a),
     ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
     >>> direct_sub = bug_c.subscribe(person_a, person_a)
@@ -474,5 +474,5 @@ query - there is only a single private bug targetted to series_p.
     ...         BugSummary.viewed_by == None,
     ...         TeamParticipation.person == person_a),
     ...     BugSummary.sourcepackagename == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
