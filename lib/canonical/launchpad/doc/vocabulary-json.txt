@@ -56,9 +56,12 @@ A successful search.
     {
         "entries": [
             {
+                "alt_title": "guadamen",
+                "alt_title_link": "http://launchpad.dev/~guadamen",
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
-                "title": "GuadaMen (guadamen)",
+                "link_css": "js-action",
+                "title": "GuadaMen",
                 "value": "guadamen"
             }
         ],
@@ -84,9 +87,12 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "alt_title": "commercial-admins",
+                "alt_title_link": "http://launchpad.dev/~commercial-admins",
                 "api_uri": "/~commercial-admins",
                 "css": "sprite team",
-                "title": "Commercial Subscription Admins (commercial-admins)",
+                "link_css": "js-action",
+                "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
         ],
@@ -100,10 +106,13 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "alt_title": "name16",
+                "alt_title_link": "http://launchpad.dev/~name16",
                 "api_uri": "/~name16",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Foo Bar (name16)",
+                "link_css": "js-action",
+                "title": "Foo Bar",
                 "value": "name16"
             }
         ],
@@ -138,10 +147,13 @@ retrieved through vocabularies.
     {
         "entries": [
             {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Sample Person (name12)",
+                "link_css": "js-action",
+                "title": "Sample Person",
                 "value": "name12"
             }
         ],
@@ -157,10 +169,13 @@ IRC nicknames should be displayed after any email address.
     {
         "entries": [
             {
+                "alt_title": "mark",
+                "alt_title_link": "http://launchpad.dev/~mark",
                 "api_uri": "/~mark",
                 "css": "sprite person",
                 "description": "<email address hidden> (mark on irc.freenode.net)",
-                "title": "Mark Shuttleworth (mark)",
+                "link_css": "js-action",
+                "title": "Mark Shuttleworth",
                 "value": "mark"
             }
         ],

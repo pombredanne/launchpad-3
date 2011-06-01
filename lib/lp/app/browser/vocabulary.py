@@ -253,7 +253,7 @@ class HugeVocabularyJSONView:
             if picker_entry.css is not None:
                 entry['css'] = picker_entry.css
             if picker_entry.alt_title is not None:
-                entry['alt_title'] = picker_entry.alt_title + ' <foo></foo>'
+                entry['alt_title'] = picker_entry.alt_title
             if picker_entry.title_link is not None:
                 entry['title_link'] = picker_entry.title_link
             if picker_entry.alt_title_link is not None:
