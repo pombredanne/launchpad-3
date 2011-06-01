@@ -377,7 +377,12 @@ class ErrorReportingUtility:
             return True
         if strtype in self._ignored_exceptions_for_offsite_referer:
             if request is not None:
-                referer = request.get('HTTP_REFERER', '')
+                referer = request.get('HTTP_REFERER')
+                # If there is no referrer then we can't tell if this exception
+                # should be ignored or not, so we'll be conservative and
+                # ignore it.
+                if referer is None:
+                    return True
                 referer_parts = urlparse.urlparse(referer)
                 root_parts = urlparse.urlparse(
                     allvhosts.configs['mainsite'].rooturl)
