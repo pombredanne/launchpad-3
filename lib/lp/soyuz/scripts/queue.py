@@ -483,8 +483,7 @@ class QueueActionAccept(QueueAction):
             self.display('Accepting %s' % queue_item.displayname)
             try:
                 queue_item.acceptFromQueue(
-                    announce_list=self.announcelist, logger=self.log,
-                    dry_run=self.no_mail)
+                    logger=self.log, dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
                 self.display('** %s could not be accepted due to %s'
                              % (queue_item.displayname, info))

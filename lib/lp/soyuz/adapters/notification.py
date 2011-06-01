@@ -115,9 +115,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-           announce_list=None, summary_text=None, changes=None,
-           changesfile_content=None, changesfile_object=None, action=None,
-           dry_run=False, logger=None):
+           summary_text=None, changes=None, changesfile_content=None,
+           changesfile_object=None, action=None, dry_run=False, logger=None):
     """Notify about 
 
     :param blamer: The `IPerson` who is to blame for this notification.
@@ -127,7 +126,6 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param archive: The target `IArchive`.
     :param distroseries: The target `IDistroSeries`.
     :param pocket: The target `PackagePublishingPocket`.
-    :param announce_list: Where to announce the upload.
     :param summary_text: The summary of the notification.
     :param changes: A dictionary of the parsed changes file.
     :param changesfile_content: The raw content of the changes file, so it
@@ -203,7 +201,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             spr, bprs, customfiles, archive, distroseries, pocket, action)
         body = assemble_body(
             blamer, spr, archive, distroseries, summarystring, changes,
-            action, announce_list)
+            action)
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
@@ -215,10 +213,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
-    if (action == 'accepted' and announce_list and not archive.is_ppa and
-        pocket != PackagePublishingPocket.BACKPORTS and
-        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
-        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
+    if (action == 'accepted' and distroseries.changeslist and
+        not archive.is_ppa and pocket != PackagePublishingPocket.BACKPORTS
+        and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
+        and not is_auto_sync_upload(
+            spr, bprs, pocket, changes['Changed-By'])):
         from_addr = sanitize_string(changes['Changed-By'])
         name = None
         bcc_addr = None
@@ -230,11 +229,12 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
 
         build_and_send_mail(
-            'announcement', [str(announce_list)], from_addr, bcc_addr)
+            'announcement', [str(distroseries.changeslist)], from_addr,
+            bcc_addr)
 
 
 def assemble_body(blamer, spr, archive, distroseries, summary, changes,
-                  action, announce_list):
+                  action):
     """Assemble the e-mail notification body."""
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
@@ -262,8 +262,9 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
     if action == 'unapproved':
         information['SUMMARY'] += (
             "\nThis upload awaits approval by a distro manager\n")
-    if announce_list:
-        information['ANNOUNCE'] = "Announcing to %s" % announce_list
+    if distroseries.changeslist:
+        information['ANNOUNCE'] = "Announcing to %s" % (
+            distroseries.changeslist)
     if blamer is not None:
         signer_signature = '%s <%s>' % (
             blamer.displayname, blamer.preferredemail.email)
