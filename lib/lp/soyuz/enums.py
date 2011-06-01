@@ -294,7 +294,6 @@ class PackageCopyStatus(DBEnumeratedType):
 class PackageDiffStatus(DBEnumeratedType):
     """The status of a PackageDiff request."""
 
-
     PENDING = DBItem(0, """
         Pending
 
