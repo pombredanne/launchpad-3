@@ -390,7 +390,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     def test_is_initialized(self):
         # At the end of the initialisation, the distroseriesparent is marked
         # as 'initialised'.
-        child = self._full_initialise(rebuild=True, overlays={})
+        child = self._full_initialise(rebuild=True, overlays=())
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             child, self.parent)

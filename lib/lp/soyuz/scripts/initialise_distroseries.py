@@ -17,7 +17,10 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -75,7 +78,8 @@ class InitialiseDistroSeries:
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
         # initialising from multiple parents.
         self.parent_id = parents[0]
-        self.parent = DistroSeries.selectOneBy(id=int(self.parent_id))
+        self.parent = IStore(
+            DistroSeries).get(DistroSeries, int(self.parent_id))
 
         self.distroseries = distroseries
         self.arches = arches
@@ -155,17 +159,17 @@ class InitialiseDistroSeries:
     def _set_parent(self):
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
         # initialising from multiple parents.
+        dsp_set = getUtility(IDistroSeriesParentSet)
         if self.overlays and self.overlays[0]:
             pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
                 PackagePublishingPocket, self.overlay_pockets[0]).value
             component_set = getUtility(IComponentSet)
             component = component_set[self.overlay_components[0]]
-            getUtility(IDistroSeriesParentSet).new(self.distroseries,
-                self.parent, initialized=False, is_overlay=True,
-                pocket=pocket, component=component)
+            dsp_set.new(
+                self.distroseries, self.parent, initialized=False,
+                is_overlay=True, pocket=pocket, component=component)
         else:
-            getUtility(IDistroSeriesParentSet).new(self.distroseries,
-                self.parent, initialized=False)
+            dsp_set.new(self.distroseries, self.parent, initialized=False)
 
     def _set_initialised(self):
         dsp_set = getUtility(IDistroSeriesParentSet)
@@ -225,7 +229,7 @@ class InitialiseDistroSeries:
         # this usually running from a job.
         if self.packagesets:
             for pkgsetid in self.packagesets:
-                pkgset = self._store.find(Packageset, id=int(pkgsetid)).one()
+                pkgset = self._store.get(Packageset, int(pkgsetid))
                 spns += list(pkgset.getSourcesIncluded())
 
         for archive in self.parent.distribution.all_distro_archives:
