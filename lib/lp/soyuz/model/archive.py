@@ -125,6 +125,7 @@ from lp.soyuz.interfaces.archive import (
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    ComponentNotFound,
     default_name_by_purpose,
     DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
@@ -981,6 +982,15 @@ class Archive(SQLBase):
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
+
+    def _addArchiveDependency(self, dependency, pocket, component=None):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            try:
+                component = getUtility(IComponentSet)[component]
+            except NotFoundError as e:
+                raise ComponentNotFound(e)
+        return self.addArchiveDependency(dependency, pocket, component)
 
     def getPermissions(self, user, item, perm_type):
         """See `IArchive`."""

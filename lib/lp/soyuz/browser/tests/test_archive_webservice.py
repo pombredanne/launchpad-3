@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,6 +17,7 @@ from zope.component import getUtility
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
@@ -121,6 +122,36 @@ class TestExternalDependencies(WebServiceTestCase):
         ws_archive.external_dependencies = (
             "deb http://example.org suite components")
         ws_archive.lp_save()
+
+
+class TestArchiveDependencies(WebServiceTestCase):
+
+    def test_addArchiveDependency(self):
+        """Normal users can add archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
+        with ExpectedException(BadRequest, '(.|\n)*asdf(.|\n)*'):
+            ws_archive.addArchiveDependency(
+                dependency=ws_dependency, pocket='Release', component='asdf')
+        dependency = ws_archive.addArchiveDependency(
+            dependency=ws_dependency, pocket='Release', component='main')
+        self.assertContentEqual([dependency], ws_archive.dependencies)
+
+    def test_removeArchiveDependency(self):
+        """Normal users can remove archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        archive.addArchiveDependency(
+            dependency, PackagePublishingPocket.RELEASE)
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        ws_archive.removeArchiveDependency(dependency=ws_dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
 
 
 def test_suite():

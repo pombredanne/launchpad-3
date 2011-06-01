@@ -59,6 +59,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -536,6 +537,12 @@ class IArchivePublic(IHasOwner, IPrivacy):
             records.
         """
 
+    @operation_parameters(
+        dependency=Reference(schema=Interface, required=True),
+        # Really IArchive
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
     def removeArchiveDependency(dependency):
         """Remove the `IArchiveDependency` record for the given dependency.
 
@@ -548,6 +555,34 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param dependency: is an `IArchive` object.
         :param pocket: is an `PackagePublishingPocket` enum.
         :param component: is an optional `IComponent` object, if not given
+            the archive dependency will be tied to the component used
+            for a corresponding source in primary archive.
+
+        :raise: `ArchiveDependencyError` if given 'dependency' does not fit
+            the context archive.
+        :return: a `IArchiveDependency` object targeted to the context
+            `IArchive` requiring 'dependency' `IArchive`.
+        """
+    @operation_parameters(
+        dependency=Reference(schema=Interface, required=True),
+        #  Really IArchive
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        component=TextLine(title=_("Component"), required=False),
+        )
+    @export_operation_as('addArchiveDependency')
+    @export_factory_operation(Interface, [])  # Really IArchiveDependency
+    @operation_for_version('devel')
+    def _addArchiveDependency(dependency, pocket, component=None):
+        """Record an archive dependency record for the context archive.
+
+        :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is the name of a component.  If not given,
             the archive dependency will be tied to the component used
             for a corresponding source in primary archive.
 

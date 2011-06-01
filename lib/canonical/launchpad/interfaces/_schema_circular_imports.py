@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -426,6 +426,14 @@ patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
+patch_plain_parameter_type(
+    IArchive, 'removeArchiveDependency', 'dependency', IArchive)
+patch_plain_parameter_type(
+    IArchive, '_addArchiveDependency', 'dependency', IArchive)
+patch_choice_parameter_type(
+    IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
+patch_entry_return_type(
+    IArchive, '_addArchiveDependency', IArchiveDependency)
 
 
 # IBuildFarmJob
