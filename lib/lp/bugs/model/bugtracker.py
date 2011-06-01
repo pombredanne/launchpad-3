@@ -58,7 +58,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -66,6 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import sanitize_name
 from lp.bugs.interfaces.bugtracker import (
@@ -448,11 +448,16 @@ class BugTracker(SQLBase):
         description = description.encode('utf-8')
 
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
-            # SourceForge bug trackers use a group ID and an ATID to
-            # file a bug, rather than a product name. remote_product
-            # should be an ampersand-separated string in the form
-            # 'group_id&atid'
-            group_id, at_id = remote_product.split('&')
+            try:
+                # SourceForge bug trackers use a group ID and an ATID to
+                # file a bug, rather than a product name. remote_product
+                # should be an ampersand-separated string in the form
+                # 'group_id&atid'
+                group_id, at_id = remote_product.split('&')
+            except ValueError:
+                # If remote_product contains something that's not valid
+                # in a SourceForge context we just return early.
+                return None
 
             # If this bug tracker is the SourceForge celebrity the link
             # is to the new bug tracker rather than the old one.

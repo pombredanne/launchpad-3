@@ -68,6 +68,8 @@ class IDistroSeriesDifferencePublic(Interface):
             "The distribution series which identifies the parent series "
             "with the difference.")))
 
+    source_package_name_id = Int(
+        title=u"Source package name id", required=True, readonly=True)
     source_package_name = Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
@@ -234,6 +236,7 @@ class IDistroSeriesDifferenceEdit(Interface):
             cannot be requested.
         """
 
+
 class IDistroSeriesDifferenceAdmin(Interface):
     """Difference attributes requiring launchpad.Admin."""
 
@@ -337,16 +340,4 @@ class IDistroSeriesDifferenceSource(Interface):
         updated and the child still has the old version, unchanged.
 
         Blacklisted items are excluded.
-        """
-
-    def collateDifferencesByParentArchive(differences):
-        """Collate the given differences by parent archive.
-
-        The given `IDistroSeriesDifference`s are returned in a `dict`, with
-        the parent `Archive` as keys.
-
-        :param differences: An iterable sequence of `IDistroSeriesDifference`.
-
-        :return: A `dict` of iterable sequences of `IDistroSeriesDifference`
-            keyed by their parent `IArchive`.
         """

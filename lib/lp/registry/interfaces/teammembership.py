@@ -11,6 +11,8 @@ __all__ = [
     'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'IJoinTeamEvent',
+    'ITeamInvitationEvent',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
@@ -340,3 +342,17 @@ class CyclicalTeamMembershipError(Exception):
     a member of C then attempting to make C a member of A will
     result in this error being raised.
     """
+
+
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
+
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
+
+
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
+    team = Attribute("The team.")

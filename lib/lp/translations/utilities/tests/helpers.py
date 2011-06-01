@@ -17,7 +17,7 @@ from canonical.database.sqlbase import (
     commit,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.log.logger import FakeLogger
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (

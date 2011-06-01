@@ -30,7 +30,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -42,6 +41,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.archivepublisher.debversion import Version
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser.distroseries import (
     IGNORED,
     HIGHER_VERSION_THAN_PARENT,
@@ -66,6 +66,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
     IInitialiseDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
@@ -73,6 +74,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.testing import (
     anonymous_logged_in,
@@ -85,6 +87,7 @@ from lp.testing import (
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
@@ -99,6 +102,12 @@ def set_derived_series_sync_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
         u'soyuz.derived_series_sync.enabled': u'on',
         u'soyuz.derived_series_ui.enabled': u'on',
+        }))
+
+
+def set_derived_series_difference_jobs_feature_flag(test_case):
+    test_case.useFixture(FeatureFixture({
+        distroseriesdifferencejob.FEATURE_FLAG_ENABLE_MODULE: u'on',
         }))
 
 
@@ -1081,19 +1090,31 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(recorder1, HasQueryCount(LessThan(10)))
-        # The query count does not increase with more differences.
-        for index in xrange(3):
+        # Creating Jobs and DistributionJobs takes 2 extra queries per
+        # requested sync.
+        requested_syncs = 3
+        for index in xrange(requested_syncs):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(
+            recorder2,
+            HasQueryCount(Equals(recorder1.count + 2 * requested_syncs)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                                                  DistroSeriesDifferenceMixin):
 
     layer = LaunchpadFunctionalLayer
+
+    def makeDSDJob(self, dsd):
+        """Create a `DistroSeriesDifferenceJob` to update `dsd`."""
+        job_source = getUtility(IDistroSeriesDifferenceJobSource)
+        jobs = job_source.createForPackagePublication(
+            dsd.derived_series, dsd.source_package_name,
+            PackagePublishingPocket.RELEASE)
+        return jobs[0]
 
     def test_higher_radio_mentions_parent(self):
         # The user is shown an option to display only the blacklisted
@@ -1345,6 +1366,20 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
 
             self.assertFalse(view.canPerformSync())
 
+    def test_hasPendingDSDUpdate_returns_False_if_no_pending_update(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.hasPendingDSDUpdate(dsd))
+
+    def test_hasPendingDSDUpdate_returns_True_if_pending_update(self):
+        set_derived_series_difference_jobs_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.makeDSDJob(dsd)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertTrue(view.hasPendingDSDUpdate(dsd))
+
     def test_hasPendingSync_returns_False_if_no_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
@@ -1422,6 +1457,44 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         self.assertTrue(view.canRequestSync(dsd))
+
+    def test_canRequestSync_ignores_DSDJobs(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=True)
+        self.assertTrue(view.canRequestSync(dsd))
+
+    def test_describeJobs_returns_None_if_no_jobs(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertIs(None, view.describeJobs(dsd))
+
+    def test_describeJobs_reports_pending_update(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=True)
+        view.hasPendingSync = FakeMethod(result=False)
+        self.assertEqual("updating&hellip;", view.describeJobs(dsd))
+
+    def test_describeJobs_reports_pending_sync(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=False)
+        view.hasPendingSync = FakeMethod(result=True)
+        self.assertEqual("synchronizing&hellip;", view.describeJobs(dsd))
+
+    def test_describeJobs_reports_pending_sync_and_update(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=True)
+        view.hasPendingSync = FakeMethod(result=True)
+        self.assertEqual(
+            "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
                         difference_type=None, view_name='+localpackagediffs'):

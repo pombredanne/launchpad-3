@@ -288,6 +288,8 @@ class DistroSeriesDifference(StormBase):
     @staticmethod
     def new(derived_series, source_package_name, parent_series=None):
         """See `IDistroSeriesDifferenceSource`."""
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
+        # mandatory as part of multi-parent support.
         if parent_series is None:
             try:
                 dsps = getUtility(IDistroSeriesParentSet)
@@ -493,17 +495,6 @@ class DistroSeriesDifference(StormBase):
             SourcePackageName.id ==
                 DistroSeriesDifference.source_package_name_id)
         return DecoratedResultSet(differences, itemgetter(0))
-
-    @staticmethod
-    def collateDifferencesByParentArchive(differences):
-        by_archive = dict()
-        for difference in differences:
-            archive = difference.parent_series.main_archive
-            if archive in by_archive:
-                by_archive[archive].append(difference)
-            else:
-                by_archive[archive] = [difference]
-        return by_archive
 
     @cachedproperty
     def source_pub(self):

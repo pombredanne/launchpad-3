@@ -129,10 +129,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent,
-    ITeamInvitationEvent,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -158,7 +154,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -173,6 +168,7 @@ from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -255,6 +251,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
@@ -1338,18 +1336,7 @@ class Person(
                 pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
-        if tp is not None or self.id == team.teamownerID:
-            in_team = True
-        elif not team.teamowner.inTeam(team):
-            # The owner is not a member but must retain his rights over
-            # this team. This person may be a member of the owner, and in this
-            # case it'll also have rights over this team.
-            # Note that this query and the tp query above can be consolidated
-            # when we get to a finer grained level of optimisations.
-            in_team = self.inTeam(team.teamowner)
-        else:
-            in_team = False
-
+        in_team = tp is not None
         self._inTeam_cache[team.id] = in_team
         return in_team
 
@@ -4544,9 +4531,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
-    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
-    domain_parts = domain.split(".")
 
     person_set = PersonSet()
 
@@ -4563,11 +4549,6 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     generated_nick = sanitize_name(user)
     if _valid_nick(generated_nick):
         return generated_nick
-
-    for domain_part in domain_parts:
-        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
-        if _valid_nick(generated_nick):
-            return generated_nick
 
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.

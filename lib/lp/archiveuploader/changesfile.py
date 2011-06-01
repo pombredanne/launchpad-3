@@ -32,10 +32,6 @@ from lp.archiveuploader.nascentuploadfile import (
     UploadError,
     UploadWarning,
     )
-from lp.archiveuploader.tagfiles import (
-    parse_tagfile,
-    TagFileParseError,
-    )
 from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
@@ -103,12 +99,7 @@ class ChangesFile(SignableTagFile):
         self.policy = policy
         self.logger = logger
 
-        try:
-            self._dict = parse_tagfile(
-                self.filepath, allow_unsigned=self.policy.unsigned_changes_ok)
-        except (IOError, TagFileParseError), error:
-            raise UploadError("Unable to parse the changes %s: %s" % (
-                self.filename, error))
+        self.parse(verify_signature=not policy.unsigned_changes_ok)
 
         for field in self.mandatory_fields:
             if field not in self._dict:
@@ -126,11 +117,6 @@ class ChangesFile(SignableTagFile):
             raise UploadError(
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
-
-        if policy.unsigned_changes_ok:
-            self.logger.debug("Changes file can be unsigned.")
-        else:
-            self.processSignature()
 
     def checkFileName(self):
         """Make sure the changes file name is well-formed.
@@ -354,11 +340,6 @@ class ChangesFile(SignableTagFile):
     def architecture_line(self):
         """Return changesfile archicteture line."""
         return self._dict['Architecture']
-
-    @property
-    def filecontents(self):
-        """Return files section contents."""
-        return self._dict['filecontents']
 
     @property
     def simulated_changelog(self):
