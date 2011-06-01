@@ -456,6 +456,26 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 u"javascript-disabled",
                 message.get("class").split())
 
+    def test_rebuilding_allowed(self):
+        # If the distro has no initialised series, rebuilding is allowed.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        view = create_initialized_view(distroseries, "+initseries")
+
+        self.assertTrue(view.rebuilding_allowed)
+
+    def test_rebuilding_not_allowed(self):
+        # If the distro has an initialised series, no rebuilding is allowed.
+        distroseries = self.factory.makeDistroSeries()
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=another_distroseries)
+        view = create_initialized_view(distroseries, "+initseries")
+
+        self.assertFalse(view.rebuilding_allowed)
+
 
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
