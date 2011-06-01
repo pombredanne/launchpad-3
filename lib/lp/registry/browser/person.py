@@ -292,6 +292,7 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
+from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.milestone import (
     Milestone,
@@ -496,6 +497,14 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         if email is None or email.personID != self.context.id:
             return None
         return email
+
+    @stepthrough('+wikiname')
+    def traverse_wikiname(self, id):
+        """Traverse to this person's WikiNames on the webservice layer."""
+        wiki = getUtility(IWikiNameSet).get(id)
+        if wiki is None or wiki.person != self.context:
+            return None
+        return wiki
 
     @stepthrough('+jabberid')
     def traverse_jabberid(self, jabber_id):
