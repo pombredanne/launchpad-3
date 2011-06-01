@@ -36,12 +36,12 @@
         "launchpad@pqm.canonical.com-20090720061538-euyh68ifavhy0pi8"
     ], 
     "bzr-git": [
-        258, 
-        "launchpad@pqm.canonical.com-20100812210320-i61pvvvo9mjo2wp7"
+        259, 
+        "launchpad@pqm.canonical.com-20110601140035-gl5merbechngjw5s"
     ], 
     "bzr-loom": [
-        48, 
-        "launchpad@pqm.canonical.com-20100806142619-4huubp7dmz6ax9j2"
+        49, 
+        "launchpad@pqm.canonical.com-20110601122412-54vo3k8yae9i2zve"
     ], 
     "old_xmlplus": [
         4, 
@@ -56,8 +56,8 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2710, 
-        "launchpad@pqm.canonical.com-20100830004921-6c4hehto20axdkn6"
+        2711, 
+        "launchpad@pqm.canonical.com-20110601140725-ex9tq668d90p4oyc"
     ], 
     "bzr-hg": [
         284, 
