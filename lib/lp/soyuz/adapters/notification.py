@@ -264,17 +264,25 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         information['CHANGESFILE'] = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         information['DATE'] = "Date: %s" % changes.get('Date')
+        changedby = email_to_person(
+            sanitize_string(changes.get('Changed-By')))
+        maintainer = email_to_person(
+            sanitize_string(changes.get('Maintainer')))
     elif spr:
         information['CHANGESFILE'] = spr.changelog_entry
         information['DATE'] = "Date: %s" % spr.dateuploaded
+        changedby = spr.creator
+        maintainer = spr.maintainer
     elif bprs:
         information['CHANGESFILE'] = bprs[0].changelog_entry
         information['DATE'] = "Date: %s" % bprs[0].dateuploaded
+        changedby = bprs[0].creator
+        maintainer = bprs[0].maintainer
     if spr:
         information['SPR_URL'] = canonical_url(spr)
-    changedby = sanitize_string(changes.get('Changed-By'))
-    if changedby:
-        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
+    if changedby and changedby.preferredemail:
+        information['CHANGEDBY'] = '\nChanged-By: %s <%s>' % (
+            changedby.displayname, changedby.preferredemail.email)
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -283,15 +291,15 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
             "\nThis upload awaits approval by a distro manager\n")
     if announce_list:
         information['ANNOUNCE'] = "Announcing to %s" % announce_list
-    if blamer is not None:
+    if blamer is not None and blamer != changedby:
         signer_signature = '%s <%s>' % (
             blamer.displayname, blamer.preferredemail.email)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    maintainer = sanitize_string(changes.get('Maintainer'))
-    if maintainer and maintainer != changedby:
-        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
+    if maintainer and maintainer.preferredemail and maintainer != changedby:
+        information['MAINTAINER'] = '\nMaintainer: %s <%s>' % (
+            maintainer.displayname, maintainer.preferredemail.email)
     return get_template(archive, action) % information
 
 

@@ -510,7 +510,8 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, person=None, check_permissions=True):
+            allow_delayed_copies=True, person=None, check_permissions=True,
+            send_email=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -535,6 +536,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
         requester's permissions to copy should be checked.
+    :param send_email: Should we notify for the copy performed?
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -577,14 +579,15 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries)
-            if archive.purpose == ArchivePurpose.PRIMARY:
-                announce_list = destination_series.changeslist
-            else:
-                announce_list = None
-            notify(
-                person, source.sourcepackagerelease, [], [], archive,
-                destination_series, pocket, changes=None, action='accepted',
-                announce_list=announce_list)
+            if send_email:
+                if archive.purpose == ArchivePurpose.PRIMARY:
+                    announce_list = destination_series.changeslist
+                else:
+                    announce_list = None
+                notify(
+                    person, source.sourcepackagerelease, [], [], archive,
+                    destination_series, pocket, changes=None,
+                    action='accepted', announce_list=announce_list)
 
         copies.extend(sub_copies)
 

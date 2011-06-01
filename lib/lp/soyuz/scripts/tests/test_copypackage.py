@@ -7,6 +7,7 @@ import datetime
 import os
 import subprocess
 import sys
+from textwrap import dedent
 import unittest
 
 import pytz
@@ -1422,8 +1423,39 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=source.sourcepackagerelease.creator,
             check_permissions=False)
         [notification, announcement] = pop_notifications()
-        print notification
-        print announcement
+        self.assertEquals(
+            'Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEquals('nobby-changes@example.com', announcement['To'])
+        for mail in (notification, announcement):
+            self.assertEquals(
+                '[ubuntutest/nobby] foo 1.0-2 (Accepted)', mail['Subject'])
+        expected_text = dedent("""
+            * Foo!
+
+            Date: %s
+            Changed-By: Foo Bar <foo.bar@canonical.com>
+            http://launchpad.dev/ubuntutest/breezy-autotest/+source/foo/1.0-2
+            """ % source.sourcepackagerelease.dateuploaded)
+        self.assertIn(expected_text, notification.as_string())
+        self.assertIn(expected_text, announcement.as_string())
+
+    def test_copy_does_not_generate_notification(self):
+        # When notify = False is passed to do_copy, no notification is
+        # generated.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+        self.assertEquals([], pop_notifications())
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
