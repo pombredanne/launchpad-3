@@ -14,7 +14,16 @@ row for every unique public BugTask targetting:
     - milestone
 
 
-First we should setup some helpers to use in the examples:
+First we should setup some helpers to use in the examples. These will
+let us dump the BugSummary table in a readable format.
+
+    --------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status       vis    #
+    --------------------------------------------------------
+
+The columns are product, productseries, distribution, distroseries,
+sourcepackagename, tag, milestone, status, viewed_by and the count.
+viewed_by is a team reference and used to query private bug counts.
 
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -72,6 +81,17 @@ First we should setup some helpers to use in the examples:
     ...     print_result(resultset)
 
 
+/!\ A Note About Privacy in These Examples 
+------------------------------------------
+
+All the examples, except for the ones in the Privacy section, are
+dealing with public bugs only. This is why they all are using
+''BugSummary.viewed_by == None'' in their queries.
+
+To count private bugs, these queries need to join with the
+TeamParticipation table as detailed in the Privacy section.
+
+
 Product Bug Counts
 ------------------
 
@@ -82,6 +102,7 @@ We can query for how many bugs are targetted to a product.
     >>> bug_summaries = store.find(
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None)
 
     >>> print_result(bug_summaries)
@@ -103,7 +124,10 @@ or milestone, we need to aggregate them.
     >>> bug = factory.makeBug(
     ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
 
-    >>> print_find(BugSummary.product == prod_a, BugSummary.tag == None)
+    >>> print_find(
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == None,
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
@@ -112,7 +136,10 @@ or milestone, we need to aggregate them.
                                                          ===
                                                            4
 
-    >>> print_find(BugSummary.product == prod_a, BugSummary.tag == u't-a')
+    >>> print_find(
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == u't-a',
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
@@ -128,12 +155,14 @@ need to cope with that:
     >>> store.find(
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     4
 
     >>> store.find(
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == u't-a').sum(BugSummary.count) or 0
     1
 
@@ -142,17 +171,20 @@ total (so far, we have created only 4 bugs):
 
     >>> store.find(
     ...     BugSummary,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.product==prod_a).sum(BugSummary.count) or 0
     5
 
-Milestones works similarly, except if you leave out the milestone clause
+Milestones works similarly, except you leave out the milestone clause
 to calculate totals regardless of milestone. If you explicitly query for
 the NULL milestone, you are retrieving information on bugs that have not
 been assigned to a milestone:
 
     >>> milestone = factory.makeMilestone(product=prod_a, name='ms-a')
     >>> bug = factory.makeBug(milestone=milestone, tags=['t-b', 't-c'])
-    >>> print_find(BugSummary.product == prod_a)
+    >>> print_find(
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
@@ -172,6 +204,7 @@ between selecting records where tag is None, and where milestone is None:
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
     ...     BugSummary.status == BugTaskStatus.NEW,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.milestone == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
@@ -185,6 +218,7 @@ Number of bugs targetted to prod_a, grouped by milestone:
     >>> results = store.using(join).find(
     ...     (Milestone, Sum(BugSummary.count)),
     ...     BugSummary.product == prod_a,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None
     ...     ).group_by(Milestone).order_by(Milestone.name)
     >>> for milestone, count in results:
@@ -211,9 +245,11 @@ ProductSeries' Product:
     ...     product=prod_b, name='ps-b')
     >>> bug_task = factory.makeBugTask(target=productseries_b)
     >>> from storm.expr import Or
-    >>> print_find(Or(
-    ...     BugSummary.productseries == productseries_b,
-    ...     BugSummary.product == prod_b))
+    >>> print_find(
+    ...     Or(
+    ...         BugSummary.productseries == productseries_b,
+    ...         BugSummary.product == prod_b),
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
@@ -239,7 +275,9 @@ the same as tag.
     ...     distribution=distribution, status=BugTaskStatus.CONFIRMED)
     >>> bug_task = factory.makeBugTask(target=package) # status is NEW
 
-    >>> print_find(BugSummary.distribution == distribution)
+    >>> print_find(
+    ...     BugSummary.distribution == distribution,
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
@@ -255,6 +293,7 @@ How many bugs targetted to a distribution:
     ...     BugSummary,
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
 
@@ -265,6 +304,7 @@ How many NEW bugs targetted to a distribution:
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.sourcepackagename == None,
     ...     BugSummary.status == BugTaskStatus.NEW,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
@@ -274,6 +314,7 @@ How many bugs targetted to a particular sourcepackage in a distribution.
     ...     BugSummary,
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.sourcepackagename == package.sourcepackagename,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
@@ -288,6 +329,7 @@ targetted to the distribution:
     ...     BugSummary,
     ...     BugSummary.distribution == distribution,
     ...     BugSummary.status == BugTaskStatus.CONFIRMED,
+    ...     BugSummary.viewed_by == None,
     ...     BugSummary.tag == None).sum(SQL("""
     ...         CASE WHEN sourcepackagename IS NULL THEN count ELSE -count END
     ...         """))
@@ -305,10 +347,132 @@ column.
     >>> series_c = factory.makeDistroRelease(
     ...     distribution=distribution_c, name='ds-c')
     >>> bug = factory.makeBugTask(target=series_c)
-    >>> print_find(BugSummary.distroseries == series_c)
+    >>> print_find(
+    ...     BugSummary.distroseries == series_c,
+    ...     BugSummary.viewed_by == None)
     --------------------------------------------------------
     prod ps   dist ds   spn   tag mile status       vis    #
     --------------------------------------------------------
     x    x    x    ds-c x     x   x    New          x      1
                                                          ===
                                                            1
+
+
+Privacy
+-------
+
+So far, all the examples have been dealing with public bugs only.
+They can all be extended to include private bug totals by using the
+BugSummary.viewed_by column to join with the TeamParticipation table.
+This join needs to be an OUTER JOIN.
+
+    >>> from lp.registry.model.teammembership import TeamParticipation
+
+For our examples, first create three people. person_z will not
+be subscribed to any bugs, so will have no access to any private bugs.
+
+    >>> person_a = factory.makePerson(name='p-a')
+    >>> person_b = factory.makePerson(name='p-b')
+    >>> person_z = factory.makePerson(name='p-z')
+    >>> owner = factory.makePerson(name='own')
+
+Create some teams too. team_a just has person_a as a member. team_c
+has both person_a and person_b as members. These teams will be subscribed
+to private bugs.
+
+    >>> team_a = factory.makeTeam(name='t-a', members=[person_a])
+    >>> team_c = factory.makeTeam(name='t-c', members=[person_a, person_b])
+
+Create some bugs.
+    - bug_a is a private distribution bug, subscribed by team_a
+    - bug_b is a private distribution bug, subscribed by person_b
+    - bug_c is a private distroseries bug, which also gets an implicit
+      distribution task. Subscribed to by team_c.
+    - bug_z is public.
+
+    >>> distro_p = factory.makeDistribution(name='di-p')
+    >>> series_p = factory.makeDistroRelease(
+    ...     distribution=distro_p, name='ds-p')
+    >>> bug_a = factory.makeBug(
+    ...     owner=owner, distribution=distro_p, private=True)
+    >>> bug_b = factory.makeBug(
+    ...     owner=owner, distribution=distro_p, private=True)
+    >>> bug_c = factory.makeBug(
+    ...     owner=owner, series=series_p, private=True)
+    >>> bug_z = factory.makeBug(
+    ...     owner=owner, distribution=distro_p, private=False)
+
+    >>> sub = bug_a.subscribe(team_a, person_a)
+    >>> sub = bug_b.subscribe(person_b, person_b)
+    >>> sub = bug_c.subscribe(team_c, person_a)
+
+Whew! Check out what the BugSummary records now look like:
+
+    >>> distro_or_series = Or(
+    ...     BugSummary.distribution == distro_p,
+    ...     BugSummary.distroseries == series_p)
+    >>> print_find(distro_or_series)
+    --------------------------------------------------------
+    prod ps   dist ds   spn   tag mile status       vis    #
+    --------------------------------------------------------
+    x    x    di-p x    x     x   x    New          p-b    1
+    x    x    di-p x    x     x   x    New          own    3
+    x    x    di-p x    x     x   x    New          t-a    1
+    x    x    di-p x    x     x   x    New          t-c    1
+    x    x    di-p x    x     x   x    New          x      1
+    x    x    x    ds-p x     x   x    New          own    1
+    x    x    x    ds-p x     x   x    New          t-c    1
+                                                         ===
+                                                           9
+
+So how many public bugs are there on the distro?
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distro_p,
+    ...     BugSummary.viewed_by == None, # Public bugs only
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    1
+
+But how many can the owner see?
+
+    >>> join = LeftJoin(
+    ...     BugSummary, TeamParticipation,
+    ...     BugSummary.viewed_by_id == TeamParticipation.teamID)
+    >>> store.using(join).find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distro_p,
+    ...     Or(
+    ...         BugSummary.viewed_by == None,
+    ...         TeamParticipation.person == owner),
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    4
+
+Note that private bug counts can be inaccurate if a user is subscribed
+through multiple paths, such as being directly subscribed and also
+subscribed through a team. We demonstrate this using the distroseries
+query - there is only a single private bug targetted to series_p.
+
+    >>> store.using(join).find(
+    ...     BugSummary,
+    ...     BugSummary.distroseries == series_p,
+    ...     Or(
+    ...         BugSummary.viewed_by == None,
+    ...         TeamParticipation.person == person_a),
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    1
+
+    >>> direct_sub = bug_c.subscribe(person_a, person_a)
+
+    >>> store.using(join).find(
+    ...     BugSummary,
+    ...     BugSummary.distroseries == series_p,
+    ...     Or(
+    ...         BugSummary.viewed_by == None,
+    ...         TeamParticipation.person == person_a),
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    2
