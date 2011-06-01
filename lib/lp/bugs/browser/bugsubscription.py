@@ -590,14 +590,13 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
                 'display_name' : person.displayname,
                 'web_link' : canonical_url(person, rootsite='mainsite'),
                 'is_team' : person.is_team,
+                'can_edit' : self.user.inTeam(person),
                 }
             record = {
                 'subscriber': subscriber,
                 'subscription_level': str(
                     removeSecurityProxy(subscription.bug_notification_level)),
                 }
-            if subscriber['is_team'] and self.user.inTeam(person):
-                record['can_edit'] = True
             data.append(record)
 
         return dumps(data)
