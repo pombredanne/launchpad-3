@@ -10,6 +10,7 @@
   <div tal:define="context_menu context/menu:context">
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
+  <div id="other-bug-subscribers"></div>
   <a id="subscribers-ids-link"
      tal:define="bug context/bug|context"
      tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-ids"></a>

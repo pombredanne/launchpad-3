@@ -43,7 +43,7 @@
       </tal:if>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                  'lp.bugs.bugtask_index.portlets',
+                  'lp.bugs.bugtask_index.portlets', 'lp.bugs.subscribers_list',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
             Y.lp.bugs.bugtask_index.portlets.use_advanced_subscriptions =
@@ -55,6 +55,20 @@
             Y.on('domready', function() {
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
+                var sl = new Y.lp.bugs.subscribers_list.SubscribersList({
+                    container_box: '#other-bug-subscribers',
+                    bug: {}
+                });
+                /*sl.addSubscriber({name: 'danilo', display_name: 'Данило Фаца'},
+                                 'Details');
+                sl.addSubscriber({name: 'kaca', display_name: 'Данило Каца'},
+                                 'Discussion');
+                sl.indicateSubscriberActivity({name:'kaca'});
+                setTimeout(function() {
+                    sl.stopSubscriberActivity({name:'kaca'}, true);
+                }, 1400);*/
+                sl.resetNoSubscribers();
+                sl.loadSubscribers(LP.cache.bug);
             });
          });
       </script>
