@@ -969,27 +969,6 @@ class TestOopsLoggingHandler(TestCase):
 
 class Test404Oops(testtools.TestCase):
 
-    def setUp(self):
-        super(Test404Oops, self).setUp()
-        # ErrorReportingUtility reads the global config to get the
-        # current error directory.
-        test_data = dedent("""
-            [vhost.mainsite]
-            hostname: launchpad.net
-
-            [error_reports]
-            copy_to_zlog: true
-            error_dir: %s
-            """ % tempfile.mkdtemp())
-        config.push('test_data', test_data)
-        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-
-    def tearDown(self):
-        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-        config.pop('test_data')
-        reset_logging()
-        super(Test404Oops, self).tearDown()
-
     def test_offsite_404_ignored(self):
         # A request originating from another site that generates a NotFound
         # (404) is ignored (i.e., no OOPS is logged).
