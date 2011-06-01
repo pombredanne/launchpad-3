@@ -1,0 +1,218 @@
+Bug Count Summaries
+===================
+
+The BugSummary table contains summaries of bug counts. It contains one
+row for every unique public BugTask targetting:
+
+    - product
+    - productseries
+    - distribution
+    - distroseries
+    - sourcepackagename
+    - tag
+    - status
+    - milestone
+
+
+First we should setup some helpers to use in the examples:
+
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.bugs.model.bugsummary import BugSummary
+    >>> store = IMasterStore(BugSummary)
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+
+    >>> def name(object_or_none):
+    ...     if object_or_none is None:
+    ...         return 'x'
+    ...     return object_or_none.name
+
+    >>> def print_result(bugsummary_resultset):
+    ...     # First, flush and invalidate the cache so we see the effects
+    ...     # of the underlying database triggers. Normally you don't want
+    ...     # to bother with this as you are only interested in counts of
+    ...     # bugs created in previous transactions.
+    ...     store.flush()
+    ...     store.invalidate()
+    ...     # Make sure our results are in a consistent order.
+    ...     ordered_results = bugsummary_resultset.order_by(
+    ...         BugSummary.product_id, BugSummary.productseries_id,
+    ...         BugSummary.distribution_id, BugSummary.distroseries_id,
+    ...         BugSummary.sourcepackagename_id, BugSummary.tag,
+    ...         BugSummary.status, BugSummary.milestone_id, BugSummary.id)
+    ...     fmt = "%-4s %-4s %-4s %-4s %-5s %-3s %-12s %-4s %3s"
+    ...     header = fmt % (
+    ...         'prod', 'ps', 'dist', 'ds', 'spn', 'tag', 'status',
+    ...         'msto', '#')
+    ...     print "-" * len(header)
+    ...     print header
+    ...     print "-" * len(header)
+    ...     for bugsummary in ordered_results:
+    ...         print fmt % (
+    ...             name(bugsummary.product),
+    ...             name(bugsummary.productseries),
+    ...             name(bugsummary.distribution),
+    ...             name(bugsummary.distroseries),
+    ...             name(bugsummary.sourcepackagename),
+    ...             bugsummary.tag or 'x',
+    ...             bugsummary.status,
+    ...             name(bugsummary.milestone),
+    ...             bugsummary.count)
+    ...     print " " * (len(header) - 4),
+    ...     print "==="
+    ...     sum = bugsummary_resultset.sum(BugSummary.count)
+    ...     print " " * (len(header) - 4),
+    ...     print "%3s" % sum
+
+    >>> def print_find(*bs_query_args, **bs_query_kw):
+    ...     resultset = store.find(BugSummary, *bs_query_args, **bs_query_kw)
+    ...     print_result(resultset)
+
+Product Bug Counts
+------------------
+
+We can query for how many bugs are targetted to a product.
+
+    >>> prod_a = factory.makeProduct(name='pr-a')
+    >>> task = factory.makeBugTask(target=prod_a)
+    >>> bug_summaries = store.find(
+    ...     BugSummary,
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == None)
+
+    >>> print_result(bug_summaries)
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    pr-a x    x    x    x     x   New          x      1
+                                                    ===
+                                                      1
+
+There is one row per tag per combination of product, status and milestone.
+If we are interested in all bugs targetted to a product regardless of how
+they are tagged, we must specify BugSummary.tag == None. If we are
+interested in all bugs targetted to a product regardless of their status
+or milestone, we need to aggregate them.
+
+    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.NEW)
+    >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.CONFIRMED)
+    >>> bug = factory.makeBug(
+    ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
+
+    >>> print_find(BugSummary.product == prod_a, BugSummary.tag == None)
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    pr-a x    x    x    x     x   New          x      2
+    pr-a x    x    x    x     x   Confirmed    x      2
+                                                    ===
+                                                      4
+
+    >>> print_find(BugSummary.product == prod_a, BugSummary.tag == u't-a')
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    pr-a x    x    x    x     t-a Confirmed    x      1
+                                                    ===
+                                                      1
+
+You will normally want to get the total count counted in the database
+rather than waste transmittion time to calculate the rows client side:
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    4
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == u't-a').sum(BugSummary.count)
+    1
+
+If you neglect to specify the tag clause, you will get an incorrect
+total (so far, we have created only 4 bugs):
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.product==prod_a).sum(BugSummary.count)
+    5
+
+Milestones works similarly, except if you leave out the milestone clause
+to calculate totals regardless of milestone. If you explicitly query for
+the NULL milestone, you are retrieving information on bugs that have not
+been assigned to a milestone:
+
+    >>> milestone = factory.makeMilestone(product=prod_a, name='ms-a')
+    >>> bug = factory.makeBug(milestone=milestone, tags=['t-b', 't-c'])
+    >>> print_find(BugSummary.product == prod_a)
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    pr-a x    x    x    x     t-a Confirmed    x      1
+    pr-a x    x    x    x     t-b New          ms-a   1
+    pr-a x    x    x    x     t-c New          ms-a   1
+    pr-a x    x    x    x     x   New          ms-a   1
+    pr-a x    x    x    x     x   New          x      2
+    pr-a x    x    x    x     x   Confirmed    x      2
+                                                    ===
+                                                      8
+
+Number of New bugs not targetted to a milestone. Note the difference
+between selecting records where tag is None, and where milestone is None:
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.status == BugTaskStatus.NEW,
+    ...     BugSummary.milestone == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count)
+    2
+
+Number of bugs targetted to prod_a, grouped by milestone:
+
+    >>> from lp.registry.model.milestone import Milestone
+    >>> from storm.expr import Sum, LeftJoin
+    >>> join = LeftJoin(
+    ...     BugSummary, Milestone, BugSummary.milestone_id == Milestone.id)
+    >>> results = store.using(join).find(
+    ...     (Milestone, Sum(BugSummary.count)),
+    ...     BugSummary.product == prod_a,
+    ...     BugSummary.tag == None
+    ...     ).group_by(Milestone).order_by(Milestone.name)
+    >>> for milestone, count in results:
+    ...     if milestone:
+    ...         print milestone.name, count
+    ...     else:
+    ...         print None, count
+    ms-a 1
+    None 4
+
+
+ProductSeries Bug Counts
+------------------------
+
+Querying for ProductSeries information is identical to querying for
+Product information except you patch on the productseries column instead
+of the product column. Note that if there is a BugTask targetting a
+ProductSeries, there also must be a BugTask record targetting that
+ProductSeries' Product:
+
+    >>> from lp.registry.model.productseries import ProductSeries
+    >>> prod_b = factory.makeProduct(name='pr-b')
+    >>> productseries_b = factory.makeProductSeries(
+    ...     product=prod_b, name='ps-b')
+    >>> bug_task = factory.makeBugTask(target=productseries_b)
+    >>> from storm.expr import Or
+    >>> print_find(Or(
+    ...     BugSummary.productseries == productseries_b,
+    ...     BugSummary.product == prod_b))
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    pr-b x    x    x    x     x   New          x      1
+    x    ps-b x    x    x     x   New          x      1
+                                                    ===
+                                                      2
