@@ -18,8 +18,7 @@
             tal:content="string:${match/title} (${match/token})"
             />
       </select>
-      <script type="text/javascript"
-              tal:content="string:
+      <script type="text/javascript" tal:content="string:
           LPS.use('node', 'lp.app.picker', function(Y) {
               var text_input = Y.DOM.byId('${view/name}');
               var select_menu = Y.DOM.byId('${suggestion_id}');
