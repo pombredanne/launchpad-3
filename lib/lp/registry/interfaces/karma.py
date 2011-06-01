@@ -11,6 +11,7 @@ __all__ = [
     'IKarma',
     'IKarmaAction',
     'IKarmaActionSet',
+    'IKarmaAssignedEvent',
     'IKarmaCache',
     'IKarmaCacheManager',
     'IKarmaTotalCache',
@@ -19,6 +20,7 @@ __all__ = [
     ]
 
 from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
     Interface,
@@ -215,3 +217,8 @@ class IKarmaContext(Interface):
         The results are sorted descending by karma.
         """
 
+
+class IKarmaAssignedEvent(IObjectEvent):
+    """Karma was assigned to a person."""
+
+    karma = Attribute("The Karma object assigned to the person.")

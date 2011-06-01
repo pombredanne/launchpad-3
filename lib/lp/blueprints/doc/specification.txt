@@ -65,8 +65,7 @@ call this the specification target.
 
 We attach now a spec to a distribution.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> mark = Person.byName('mark')
     >>> ubuspec = specset.new('fix-spec-permissions',

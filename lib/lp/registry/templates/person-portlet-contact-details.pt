@@ -134,9 +134,7 @@
         <a tal:replace="structure overview_menu/editircnicknames/fmt:icon" />
       </dt>
       <dd tal:repeat="ircnick context/ircnicknames">
-        <strong tal:content="ircnick/nickname"/>
-        <span class="discreet">on network</span>
-        <strong tal:content="ircnick/network" />
+        <span tal:replace="structure ircnick/fmt:formatted_displayname"/>
       </dd>
       <dd tal:condition="not: context/ircnicknames">
         No IRC nicknames registered.
@@ -198,6 +196,8 @@
       <dd><a id="karma-total"
              tal:attributes="href overview_menu/karma/url"
              tal:content="context/karma">342</a>
+          <a target="help" href="/+help/karma.html" class="sprite maybe">&nbsp;
+          <span class="invisible-link">Karma help</span></a>
       </dd>
     </dl>
   </div>

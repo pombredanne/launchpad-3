@@ -39,11 +39,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.mail import (
-    signed_message_from_string,
-    )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -52,13 +48,9 @@ from lp.app.errors import NotFoundError
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
-from lp.archiveuploader.utils import safe_fix_maintainer
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket,
-    pocketsuffix,
-    )
+from lp.archiveuploader.tagfiles import parse_tagfile_content
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.enums import (
@@ -84,7 +76,6 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
-from lp.soyuz.scripts.packagecopier import update_files_privacy
 from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
 # There are imports below in PackageUploadCustom for various bits
@@ -412,7 +403,7 @@ class PackageUpload(SQLBase):
         # signature just before being stored.
         self.notify(
             announce_list=announce_list, logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, allow_unsigned=True)
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
         # If this is a single source upload we can create the
@@ -447,7 +438,7 @@ class PackageUpload(SQLBase):
         # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object, allow_unsigned=True)
+            changes_file_object=changes_file_object)
         self.syncUpdate()
 
     @property
@@ -476,15 +467,6 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def from_build(self):
         return bool(self.builds) or self.getSourceBuild()
-
-    def isAutoSyncUpload(self, changed_by_email):
-        """See `IPackageUpload`."""
-        katie = getUtility(ILaunchpadCelebrities).katie
-        changed_by = self._emailToPerson(changed_by_email)
-        return (not self.signing_key
-                and self.contains_source and not self.contains_build
-                and changed_by == katie
-                and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
     def _customFormats(self):
@@ -589,6 +571,8 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
+        # Circular imports.
+        from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
@@ -651,7 +635,7 @@ class PackageUpload(SQLBase):
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
-                        allow_unsigned=True, logger=logger)
+                        logger=logger)
                     self.syncUpdate()
 
         self.setDone()
@@ -681,66 +665,48 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.is_ppa
 
-    def _stripPgpSignature(self, changes_lines):
-        """Strip any PGP signature from the supplied changes lines."""
-        text = "".join(changes_lines)
-        signed_message = signed_message_from_string(text)
-        # For unsigned '.changes' files we'll get a None `signedContent`.
-        if signed_message.signedContent is not None:
-            return signed_message.signedContent.splitlines(True)
-        else:
-            return changes_lines
-
-    def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
+    def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
-        changes_lines = None
         if changes_file_object is None:
             changes_file_object = self.changesfile
-            changes_lines = self.changesfile.read().splitlines(True)
-        else:
-            changes_lines = changes_file_object.readlines()
+        changes_content = changes_file_object.read()
 
         # Rewind the file so that the next read starts at offset zero. Please
         # note that a LibraryFileAlias does not support seek operations.
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        # When the 'changesfile' content comes from a different
-        # `PackageUpload` instance (e.g. when dealing with delayed copies)
-        # we need to be able to specify the "allow unsigned" flag explicitly.
-        # In that case the presence of the signing key is immaterial.
-        if allow_unsigned is None:
-            unsigned = not self.signing_key
-        else:
-            unsigned = allow_unsigned
-        changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
+        changes = parse_tagfile_content(changes_content)
 
         # Leaving the PGP signature on a package uploaded
         # leaves the possibility of someone hijacking the notification
         # and uploading to any archive as the signer.
-        changes_lines = self._stripPgpSignature(changes_lines)
-
-        return changes, changes_lines
+        return changes, strip_pgp_signature(changes_content).splitlines(True)
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False,
-               allow_unsigned=None):
+               changes_file_object=None, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        notify(self, announce_list, summary_text, changes_file_object,
-            logger, dry_run, allow_unsigned)
-
-    # XXX julian 2007-05-21:
-    # This method should really be IPersonSet.getByUploader but requires
-    # some extra work to port safe_fix_maintainer to emailaddress.py and
-    # then get nascent upload to use that.
-    def _emailToPerson(self, fullemail):
-        """Return an IPerson given an RFC2047 email address."""
-        # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
-        # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
-        person = getUtility(IPersonSet).getByEmail(email)
-        return person
+        status_action = {
+            PackageUploadStatus.NEW: 'new',
+            PackageUploadStatus.UNAPPROVED: 'unapproved',
+            PackageUploadStatus.REJECTED: 'rejected',
+            PackageUploadStatus.ACCEPTED: 'accepted',
+            PackageUploadStatus.DONE: 'accepted',
+            }
+        changes, changes_lines = self._getChangesDict(changes_file_object)
+        if changes_file_object is not None:
+            changesfile_content = changes_file_object.read()
+        else:
+            changesfile_content = 'No changes file content available.'
+        if self.signing_key is not None:
+            signer = self.signing_key.owner
+        else:
+            signer = None
+        notify(
+            signer, self.sourcepackagerelease, self.builds, self.customfiles,
+            self.archive, self.distroseries, self.pocket, announce_list,
+            summary_text, changes, changesfile_content, changes_file_object,
+            status_action[self.status], dry_run, logger)
 
     def _isPersonUploader(self, person):
         """Return True if person is an uploader to the package's distro."""
@@ -1089,15 +1055,13 @@ class PackageUploadCustom(SQLBase):
         supplied action method.
         """
         temp_filename = self.temp_filename()
-        full_suite_name = "%s%s" % (
-            self.packageupload.distroseries.name,
-            pocketsuffix[self.packageupload.pocket])
+        suite = self.packageupload.distroseries.getSuite(
+            self.packageupload.pocket)
         try:
             # See the XXX near the import for getPubConfig.
             archive_config = getPubConfig(self.packageupload.archive)
             action_method(
-                archive_config.archiveroot, temp_filename,
-                full_suite_name)
+                archive_config.archiveroot, temp_filename, suite)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 

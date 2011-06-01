@@ -14,6 +14,7 @@ import math
 import os.path
 import rfc822
 import sys
+from textwrap import dedent
 import urllib
 
 ##import warnings
@@ -497,7 +498,7 @@ class NoneFormatter:
         # We are interested in the default value (param2).
         result = ''
         for nm in self.allowed_names:
-            if name.startswith(nm+":"):
+            if name.startswith(nm + ":"):
                 name_parts = name.split(":")
                 name = name_parts[0]
                 if len(name_parts) > 2:
@@ -1146,7 +1147,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
-                         'name_link': 'nameLink',
+                         'link-display-name-id': 'link_display_name_id',
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
@@ -1208,9 +1209,27 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         else:
             return '<img src="%s" width="14" height="14" />' % custom_icon
 
-    def nameLink(self, view_name):
-        """Return the Launchpad id of the person, linked to their profile."""
-        return self._makeLink(view_name, 'mainsite', self._context.name)
+    def link_display_name_id(self, view_name):
+        """Return a link to the user's profile page.
+
+        The link text uses both the display name and Launchpad id to clearly
+        indicate which user profile is linked.
+        """
+        from lp.services.features import getFeatureFlag
+        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
+            text = self.unique_displayname(None)
+            # XXX sinzui 2011-05-31: Remove this next line when the feature
+            # flag is removed.
+            view_name = None
+        elif view_name == 'mainsite':
+            # XXX sinzui 2011-05-31: remove this block and /id-only from
+            # launchpad-loginstatus.pt whwn the feature flag is removed.
+            text = self._context.name
+            import pdb; pdb.set_trace()
+            view_name = None
+        else:
+            text = self._context.displayname
+        return self._makeLink(view_name, 'mainsite', text)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
@@ -2051,7 +2070,7 @@ class DateTimeFormatterAPI:
         delta = abs(delta)
         days = delta.days
         hours = delta.seconds / 3600
-        minutes = (delta.seconds - (3600*hours)) / 60
+        minutes = (delta.seconds - (3600 * hours)) / 60
         seconds = delta.seconds % 60
         result = ''
         if future:
@@ -2129,7 +2148,7 @@ class DurationFormatterAPI:
         parts = []
         minutes, seconds = divmod(self._duration.seconds, 60)
         hours, minutes = divmod(minutes, 60)
-        seconds = seconds + (float(self._duration.microseconds) / 10**6)
+        seconds = seconds + (float(self._duration.microseconds) / 10 ** 6)
         if self._duration.days > 0:
             if self._duration.days == 1:
                 parts.append('%d day' % self._duration.days)
@@ -2175,7 +2194,7 @@ class DurationFormatterAPI:
         # including the decimal part.
         seconds = self._duration.days * (3600 * 24)
         seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10**6)
+        seconds += (float(self._duration.microseconds) / 10 ** 6)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2655,3 +2674,24 @@ class CSSFormatter:
             return getattr(self, name)(furtherPath)
         except AttributeError:
             raise TraversalError(name)
+
+
+class IRCNicknameFormatterAPI(ObjectFormatterAPI):
+    """Adapter from IrcID objects to a formatted string."""
+
+    implements(ITraversable)
+
+    traversable_names = {
+        'displayname': 'displayname',
+        'formatted_displayname': 'formatted_displayname',
+    }
+
+    def displayname(self, view_name=None):
+        return "%s on %s" % (self._context.nickname, self._context.network)
+
+    def formatted_displayname(self, view_name=None):
+        return dedent("""\
+            <strong>%s</strong>
+            <span class="discreet"> on </span>
+            <strong>%s</strong>
+        """ % (escape(self._context.nickname), escape(self._context.network)))

@@ -410,7 +410,7 @@ Let's see...
 It's important to note that even if the owner leaves the team, which
 removes his membership, he will still be the team's owner and retain his
 rights over it. This ensures we'll never have teams which can't be
-managed.
+managed. This does not imply that the owner will be a member of the team.
 
     >>> login_person(t5.teamowner)
     >>> t5.teamowner.leave(t5)
@@ -418,8 +418,23 @@ managed.
     >>> [m.displayname for m in t5.allmembers]
     []
     >>> t5.teamowner.inTeam(t5)
+    False
+
+The team owner can make themselves a member again even if the team is
+restricted:
+
+    >>> t5.teamowner.join(t5, requester=t5.teamowner)
+    >>> flush_database_updates()
+    >>> t5.teamowner in t5.allmembers
+    True
+    >>> t5.teamowner.inTeam(t5)
     True
 
+And escalate their privileges back to administrator:
+
+    >>> membership = membershipset.getByPersonAndTeam(t5.teamowner, t5)
+    >>> membership.setStatus(TeamMembershipStatus.ADMIN, t5.teamowner)
+    True
 
 Changing membership data
 ------------------------
