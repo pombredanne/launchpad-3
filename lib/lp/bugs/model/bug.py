@@ -926,6 +926,14 @@ BugMessage""" % sqlvalues(self.id))
                 recipients.addDirectSubscriber(subscriber)
         return subscriptions.subscribers.sorted
 
+    def getDirectSubscribersWithDetails(self):
+        """See `IBug`."""
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id).order_by(Person.displayname)
+        return results
+
     def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 

@@ -575,6 +575,39 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
                 key=(lambda subscription: subscription.person.displayname))]
 
 
+class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
+    """A view that returns a JSON dump of the subscriber IDs for a bug."""
+
+    @property
+    def subscriber_data_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        data = []
+        details = list(self.context.getDirectSubscribersWithDetails())
+        from zope.security.proxy import removeSecurityProxy
+        for person, subscription in details:
+            subscriber = {
+                'name' : person.name,
+                'display_name' : person.displayname,
+                'web_link' : canonical_url(person, rootsite='mainsite'),
+                'is_team' : person.is_team,
+                }
+            record = {
+                'subscriber': subscriber,
+                'subscription_level': str(
+                    removeSecurityProxy(subscription.bug_notification_level)),
+                }
+            if subscriber['is_team'] and self.user.inTeam(person):
+                record['can_edit'] = True
+            data.append(record)
+
+        return dumps(data)
+
+    def render(self):
+        """Override the default render() to return only JSON."""
+        self.request.response.setHeader('content-type', 'application/json')
+        return self.subscriber_data_js
+
+
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
     """A view that returns a JSON dump of the subscriber IDs for a bug."""
 

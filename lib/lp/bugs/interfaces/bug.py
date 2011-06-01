@@ -60,6 +60,7 @@ from zope.schema import (
     Object,
     Text,
     TextLine,
+    Tuple,
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -282,7 +283,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     has_cves = Bool(title=u"True if the bug has cve entries.")
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
-        doNotSnapshot(CollectionField(
+        (CollectionField(
             title=_('Subscriptions'),
             value_type=Reference(schema=Interface),
             readonly=True)))
@@ -520,6 +521,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getDirectSubscribersWithDetails():
+        """Get bug subscriptions and subscriber records for all subscribers.
+
+        Return a list of dicts with 'subscriber' (IPerson)
+        and 'subscription' fields (IBugSubscription).
         """
 
     def getIndirectSubscribers(recipients=None, level=None):
