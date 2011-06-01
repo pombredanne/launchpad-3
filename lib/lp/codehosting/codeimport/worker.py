@@ -545,14 +545,14 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses need to implement `format_classes`.
+    Subclasses need to implement `probers`.
     """
 
     needs_bzr_tree = False
 
     @property
-    def format_classes(self):
-        """The format classes that should be tried for this import."""
+    def probers(self):
+        """The probers that should be tried for this import."""
         raise NotImplementedError
 
     def getExtraPullArgs(self):
@@ -574,9 +574,10 @@ class PullingImportWorker(ImportWorker):
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             transport = get_transport(self.source_details.url)
-            for format_class in self.format_classes:
+            for prober_kls in self.probers:
+                prober = prober_kls()
                 try:
-                    format = format_class.probe_transport(transport)
+                    format = prober.probe_transport(transport)
                     break
                 except NotBranchError:
                     pass
@@ -610,12 +611,11 @@ class GitImportWorker(PullingImportWorker):
     """
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        # We only return LocalGitBzrDirFormat for tests.
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.git import (
-            LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
-        return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
+            LocalGitProber, RemoteGitProber)
+        return [LocalGitProber, RemoteGitProber]
 
     def getExtraPullArgs(self):
         """See `PullingImportWorker.getExtraPullArgs`."""
@@ -666,11 +666,10 @@ class HgImportWorker(PullingImportWorker):
     """
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        # We only return HgLocalRepository for tests.
-        from bzrlib.plugins.hg import HgBzrDirFormat
-        return [HgBzrDirFormat]
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
+        from bzrlib.plugins.hg import HgProber
+        return [HgProber]
 
     def getBazaarBranch(self):
         """See `ImportWorker.getBazaarBranch`.
@@ -719,7 +718,7 @@ class BzrSvnImportWorker(PullingImportWorker):
         return {'limit': config.codeimport.svn_revisions_import_limit}
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        from bzrlib.plugins.svn.format import SvnRemoteFormat
-        return [SvnRemoteFormat]
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
+        from bzrlib.plugins.svn import SvnRemoteProber
+        return [SvnRemoteProber]
