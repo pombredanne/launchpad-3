@@ -7,11 +7,10 @@ SET client_min_messages=ERROR;
 -- adding a NOT NULL column would be problematic!
 ALTER TABLE PackageCopyJob ADD COLUMN package_name text NOT NULL;
 
-ALTER TABLE PackageCopyJob ADD COLUMN copy_policy text;
+ALTER TABLE PackageCopyJob ADD COLUMN copy_policy integer;
 
 -- For getPendingJobsForTargetSeries, which happens on web-request time.
 CREATE UNIQUE INDEX packagecopyjob__job_type__target_ds__id__key
     ON PackageCopyJob(job_type, target_distroseries, id);
 
--- XXX: Fix once patch number assigned:
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 73, 0);
