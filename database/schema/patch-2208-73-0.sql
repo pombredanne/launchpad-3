@@ -7,7 +7,7 @@ SET client_min_messages=ERROR;
 -- adding a NOT NULL column would be problematic!
 ALTER TABLE PackageCopyJob ADD COLUMN package_name text NOT NULL;
 
-ALTER TABLE PackageCopyJob ADD COLUMN copy_policy integer;
+ALTER TABLE PackageCopyJob ADD COLUMN copy_policy integer NOT NULL;
 
 -- For getPendingJobsForTargetSeries, which happens on web-request time.
 CREATE UNIQUE INDEX packagecopyjob__job_type__target_ds__id__key
