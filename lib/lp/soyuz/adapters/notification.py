@@ -213,8 +213,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
-    if (action == 'accepted' and distroseries.changeslist and
-        not archive.is_ppa and pocket != PackagePublishingPocket.BACKPORTS
+    if (action == 'accepted' and distroseries.changeslist
+        and not archive.is_ppa
+        and pocket != PackagePublishingPocket.BACKPORTS
         and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
         and not is_auto_sync_upload(
             spr, bprs, pocket, changes['Changed-By'])):
