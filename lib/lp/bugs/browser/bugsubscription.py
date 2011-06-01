@@ -171,22 +171,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         }
 
     @property
-    def direct_and_other_subscription_notifications(self):
-        user = self.user
-        if user is not None:
-            psi = PersonSubscriptions(user, self.context.bug)
-            direct_notifications = bool(psi.direct.personal)
-            other_subscription_notifications = (
-                psi.from_duplicate.count or
-                psi.as_owner.count or
-                psi.as_assignee.count or
-                psi.direct.as_team_member or
-                psi.direct.as_team_admin)
-            return (direct_notifications and
-                    other_subscription_notifications)
-        return False
-
-    @property
     def field_names(self):
         if self._use_advanced_features:
             return ['bug_notification_level']
@@ -622,8 +606,8 @@ class BugSubscriptionListView(LaunchpadView):
 
     def initialize(self):
         super(BugSubscriptionListView, self).initialize()
-        subscriptions = get_structural_subscriptions_for_bug(
-            self.context.bug, self.user)
+        subscriptions = list(get_structural_subscriptions_for_bug(
+            self.context.bug, self.user))
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, subscriptions)
         subscriptions_info = PersonSubscriptions(

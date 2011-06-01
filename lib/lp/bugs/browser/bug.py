@@ -104,6 +104,9 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_bug,
+    )
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services import features
 from lp.services.fields import DuplicateBug
@@ -508,16 +511,6 @@ class BugViewMixin:
             return 'subscribed-false %s' % dup_class
 
     @cachedproperty
-    def user_should_see_mute_link(self):
-        """Return True if the user should see the Mute link."""
-        user_is_subscribed = (
-            self.context.isMuted(self.user) or
-            self.context.isSubscribed(self.user) or
-            self.context.isSubscribedToDupes(self.user) or
-            self.context.personIsAlsoNotifiedSubscriber(self.user))
-        return user_is_subscribed
-
-    @cachedproperty
     def _bug_attachments(self):
         """Get a dict of attachment type -> attachments list."""
         # Note that this is duplicated with get_comments_for_bugtask
@@ -651,6 +644,8 @@ class BugSubscriptionPortletView(BugView):
         self.muted = False
         if user is not None:
             bug = self.context
+            structural_subscription_count = (
+                get_structural_subscriptions_for_bug(bug, user).count())
             cache = IJSONRequestCache(self.request).objects
             cache['notifications_text'] = self.notifications_text
             self.muted = bug.isMuted(user)
@@ -667,7 +662,8 @@ class BugSubscriptionPortletView(BugView):
                 else:
                     assert level == BugNotificationLevel.LIFECYCLE
                     self.direct_lifecycle_notifications = True
-            self.other_subscription_notifications = (
+            self.other_subscription_notifications = bool(
+                structural_subscription_count or
                 psi.from_duplicate.count or
                 psi.as_owner.count or
                 psi.as_assignee.count or
@@ -678,7 +674,11 @@ class BugSubscriptionPortletView(BugView):
             self.only_other_subscription_notifications = (
                 self.other_subscription_notifications and
                 not self.direct_notifications)
-            self.any_subscription_notifications = psi.count > 0
+            self.any_subscription_notifications = (
+                self.other_subscription_notifications or
+                structural_subscription_count)
+        self.user_should_see_mute_link = (
+            self.any_subscription_notifications or self.muted)
 
 
 class BugWithoutContextView:
