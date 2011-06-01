@@ -118,18 +118,20 @@ or milestone, we need to aggregate them.
                                                       1
 
 You will normally want to get the total count counted in the database
-rather than waste transmittion time to calculate the rows client side:
+rather than waste transmittion time to calculate the rows client side.
+Note that sum() will return None if there are no matching rows, so we
+need to cope with that:
 
     >>> store.find(
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     4
 
     >>> store.find(
     ...     BugSummary,
     ...     BugSummary.product == prod_a,
-    ...     BugSummary.tag == u't-a').sum(BugSummary.count)
+    ...     BugSummary.tag == u't-a').sum(BugSummary.count) or 0
     1
 
 If you neglect to specify the tag clause, you will get an incorrect
@@ -137,7 +139,7 @@ total (so far, we have created only 4 bugs):
 
     >>> store.find(
     ...     BugSummary,
-    ...     BugSummary.product==prod_a).sum(BugSummary.count)
+    ...     BugSummary.product==prod_a).sum(BugSummary.count) or 0
     5
 
 Milestones works similarly, except if you leave out the milestone clause
@@ -168,7 +170,7 @@ between selecting records where tag is None, and where milestone is None:
     ...     BugSummary.product == prod_a,
     ...     BugSummary.status == BugTaskStatus.NEW,
     ...     BugSummary.milestone == None,
-    ...     BugSummary.tag == None).sum(BugSummary.count)
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
 
 Number of bugs targetted to prod_a, grouped by milestone:
@@ -216,3 +218,74 @@ ProductSeries' Product:
     x    ps-b x    x    x     x   New          x      1
                                                     ===
                                                       2
+
+Distribution Bug Counts
+-----------------------
+
+Querying for Distribution bug count information is similar to querying
+for Product information. Firstly, of course, you need to match on the
+distribution column instead of the product column. The second difference
+is you also have the sourcepackagename column to deal with, which acts
+the same as tag.
+
+    >>> distribution = factory.makeDistribution(name='di-a')
+    >>> package = factory.makeDistributionSourcePackage(
+    ...     distribution=distribution, sourcepackagename='sp-a')
+
+    >>> bug = factory.makeBug(
+    ...     distribution=distribution, status=BugTaskStatus.CONFIRMED)
+    >>> bug_task = factory.makeBugTask(target=package) # status is NEW
+
+    >>> print_find(BugSummary.distribution == distribution)
+    ---------------------------------------------------
+    prod ps   dist ds   spn   tag status       msto   #
+    ---------------------------------------------------
+    x    x    di-a x    sp-a  x   New          x      1
+    x    x    di-a x    x     x   New          x      1
+    x    x    di-a x    x     x   Confirmed    x      1
+                                                    ===
+                                                      3
+
+How many bugs targetted to a distribution:
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distribution,
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
+    2
+
+How many NEW bugs targetted to a distribution:
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distribution,
+    ...     BugSummary.sourcepackagename == None,
+    ...     BugSummary.status == BugTaskStatus.NEW,
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
+    1
+
+How many bugs targetted to a particular sourcepackage in a distribution.
+
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distribution,
+    ...     BugSummary.sourcepackagename == package.sourcepackagename,
+    ...     BugSummary.tag == None).sum(BugSummary.count) or 0
+    1
+
+How many Confirmed bugs for a distribution have not been linked to a
+sourcepackage. This is tricky, as we cannot directly ask for counts
+not linked to a sourcepackage. We can however ask for counts linked to
+a sourcepackage, so we subtract this count from the total number of bugs
+targetted to the distribution:
+
+    >>> from storm.expr import SQL
+    >>> store.find(
+    ...     BugSummary,
+    ...     BugSummary.distribution == distribution,
+    ...     BugSummary.status == BugTaskStatus.CONFIRMED,
+    ...     BugSummary.tag == None).sum(SQL("""
+    ...         CASE WHEN sourcepackagename IS NULL THEN count ELSE -count END
+    ...         """))
+    1L
