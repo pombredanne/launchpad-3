@@ -59,14 +59,24 @@
                     container_box: '#other-bug-subscribers',
                     bug: {}
                 });
-                /*sl.addSubscriber({name: 'danilo', display_name: 'Данило Фаца'},
-                                 'Details');
+                var danilo = {name: 'danilo', display_name: 'Данило Фаца'};
+                sl.addSubscriber(danilo, 'Details', {
+                                 unsubscribe_callback: function(subscriber) {
+                   console.log(subscriber.name + ':' + subscriber.display_name);
+                   sl.indicateSubscriberActivity(subscriber);
+                   setTimeout(function() {
+                     sl.stopSubscriberActivity(subscriber, false, function() {
+                        sl.removeSubscriber(subscriber);
+                     });
+                   }, 2400);
+                }});
                 sl.addSubscriber({name: 'kaca', display_name: 'Данило Каца'},
                                  'Discussion');
+                sl.addSubscriber(danilo, 'Lifecycle');
                 sl.indicateSubscriberActivity({name:'kaca'});
                 setTimeout(function() {
                     sl.stopSubscriberActivity({name:'kaca'}, true);
-                }, 1400);*/
+                }, 1400);
                 sl.resetNoSubscribers();
                 sl.loadSubscribers(LP.cache.bug);
             });
