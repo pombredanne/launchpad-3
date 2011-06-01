@@ -45,6 +45,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -78,7 +79,7 @@ class PackageCopyJob(StormBase):
     target_distroseries = Reference(target_distroseries_id, DistroSeries.id)
 
     package_name = Unicode('package_name')
-    copy_policy = Unicode('copy_policy')
+    copy_policy = EnumCol(enum=PackageCopyPolicy)
 
     job_type = EnumCol(enum=PackageCopyJobType, notNull=True)
 

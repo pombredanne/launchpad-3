@@ -234,6 +234,18 @@ class BinaryPackageFormat(DBEnumeratedType):
         in Ubuntu and similar distributions.""")
 
 
+class PackageCopyPolicy(DBEnumeratedType):
+    """Package copying policy."""
+
+    INSECURE = DBItem(1, """
+        Copy from insecure source.
+        """)
+
+    SYNC = DBItem(2, """
+        Mass "package sync" copy.
+        """)
+
+
 class PackageCopyStatus(DBEnumeratedType):
     """Package copy status type.
 
