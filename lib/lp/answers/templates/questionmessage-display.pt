@@ -12,7 +12,7 @@
            title="Marked as best answer" />
     </tal:bestanswer>
     <tal:comment_has_owner>
-      <tal:comment_owner replace="structure context/owner/fmt:link" />
+      <tal:comment_owner replace="structure context/owner/fmt:link-display-name-id" />
     </tal:comment_has_owner>
     said
     <span
