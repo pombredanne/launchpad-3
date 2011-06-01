@@ -287,7 +287,7 @@ the same as tag.
                                                          ===
                                                            3
 
-How many bugs targetted to a distribution:
+How many bugs targetted to a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -297,7 +297,7 @@ How many bugs targetted to a distribution:
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
 
-How many NEW bugs targetted to a distribution:
+How many NEW bugs targetted to a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -308,7 +308,7 @@ How many NEW bugs targetted to a distribution:
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
-How many bugs targetted to a particular sourcepackage in a distribution.
+How many bugs targetted to a particular sourcepackage in a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -319,7 +319,7 @@ How many bugs targetted to a particular sourcepackage in a distribution.
     1
 
 How many Confirmed bugs for a distribution have not been linked to a
-sourcepackage. This is tricky, as we cannot directly ask for counts
+sourcepackage? This is tricky, as we cannot directly ask for counts
 not linked to a sourcepackage. We can however ask for counts linked to
 a sourcepackage, so we subtract this count from the total number of bugs
 targetted to the distribution:
