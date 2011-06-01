@@ -21,7 +21,7 @@ arrangement or through a grant that applies to everyone.
 
 The logged in user must be an admin in order to change the quota.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin

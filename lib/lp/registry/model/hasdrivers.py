@@ -9,7 +9,7 @@ __all__ = [
     'HasDriversMixin',
     ]
 
-from canonical.launchpad.interfaces.launchpad import IPersonRoles
+from lp.registry.interfaces.role import IPersonRoles
 
 
 class HasDriversMixin:

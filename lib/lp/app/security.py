@@ -14,9 +14,9 @@ from zope.component import queryAdapter
 from zope.interface import implements
 from zope.security.permission import checkPermission
 
-from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.app.interfaces.security import IAuthorization
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IPersonRoles
 
 
 class AuthorizationBase:
