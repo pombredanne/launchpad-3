@@ -261,3 +261,12 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
+
+    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private is subscribed to the bug.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.setPrivate(True, person)
+            self.assertTrue(bug.personIsDirectSubscriber(person))
