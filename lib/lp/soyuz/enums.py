@@ -239,10 +239,14 @@ class PackageCopyPolicy(DBEnumeratedType):
 
     INSECURE = DBItem(1, """
         Copy from insecure source.
+
+        This is the default.
         """)
 
     SYNC = DBItem(2, """
-        Mass "package sync" copy.
+        Package sync.
+
+        This policy applies when synchronizing packages en masses.
         """)
 
 
