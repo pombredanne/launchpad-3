@@ -618,6 +618,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
             package_names = (source.sourcepackagerelease.sourcepackagename,)
             # Only one override can be returned so take the first
             # element of the returned list.
+            assert len(override) == 0, (
+                "More than one override encountered, something is wrong.")
             override = policy.calculateSourceOverrides(
                 archive, series, pocket, package_names)[0]
         source_copy = source.copyTo(series, pocket, archive, override)

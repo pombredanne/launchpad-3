@@ -62,15 +62,19 @@ class IOverride(Interface):
 class ISourceOverride(IOverride):
     """Source-specific overrides on a publication."""
 
-    source_package_name = Attribute("The ISourcePackageName that's being overridden")
+    source_package_name = Attribute(
+        "The ISourcePackageName that's being overridden")
 
 
 class IBinaryOverride(IOverride):
     """Binary-specific overrides on a publication."""
 
-    binary_package_name = Attribute("The IBinaryPackageName that's being overridden")
-    distro_arch_series = Attribute("The IDistroArchSeries for the publication")
-    priority = Attribute("The PackagePublishingPriority that's being overridden")
+    binary_package_name = Attribute(
+        "The IBinaryPackageName that's being overridden")
+    distro_arch_series = Attribute(
+        "The IDistroArchSeries for the publication")
+    priority = Attribute(
+        "The PackagePublishingPriority that's being overridden")
 
 
 class Override:
@@ -83,6 +87,12 @@ class Override:
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        # Prevent people getting very confused with these new classes,
+        # should their instances ever be put in a dict or set.
+        raise NotImplementedError(
+            "%s objects are not hashable." % self.__class__.__name__)
+
 
 class SourceOverride(Override):
     """See `ISourceOverride`."""
@@ -93,13 +103,10 @@ class SourceOverride(Override):
         self.source_package_name = source_package_name
 
     def __eq__(self, other):
-        if (
+        return (
             self.source_package_name == other.source_package_name and
             self.component == other.component and
-            self.section == other.section):
-            return True
-
-        return False
+            self.section == other.section)
 
 
 class BinaryOverride(Override):
@@ -114,15 +121,12 @@ class BinaryOverride(Override):
         self.priority = priority
 
     def __eq__(self, other):
-        if (
+        return (
             self.binary_package_name == other.binary_package_name and
             self.distro_arch_series == other.distro_arch_series and
             self.component == other.component and
             self.section == other.section and
-            self.priority == other.priority):
-            return True
-
-        return False
+            self.priority == other.priority)
 
 
 class IOverridePolicy(Interface):
