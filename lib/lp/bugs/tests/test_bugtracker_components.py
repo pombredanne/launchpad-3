@@ -21,12 +21,12 @@ from lp.testing import (
     )
 
 
-class TestBugTrackerComponent(TestCaseWithFactory):
+class BugTrackerComponentTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTrackerComponent, self).setUp()
+        super(BugTrackerComponentTestCase, self).setUp()
 
         regular_user = self.factory.makePerson()
         login_person(regular_user)
@@ -88,24 +88,15 @@ class TestBugTrackerComponent(TestCaseWithFactory):
 
     def test_link_distro_source_package(self):
         """Check that a link can be set to a distro source package"""
-        component = self.factory.makeBugTrackerComponent(
+        example_component = self.factory.makeBugTrackerComponent(
             u'example', self.comp_group)
-        package = self.factory.makeDistributionSourcePackage()
-        self.assertIs(None, component.distro_source_package)
+        dsp = self.factory.makeDistributionSourcePackage(u'example')
 
-        # No components link to the source package yet
-        link_comp = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
-            u'ubuntu', u'example')
-        self.assertIs(None, link_comp)
-
-        # Set the source package on the component
-        component.distro_source_package = package
-        self.assertIsNot(None, component.distro_source_package)
-
-        # Verify we can find the component by the source package now
-        link_comp = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
-            u'ubuntu', u'example')
-        self.assertIsNot(None, link_comp)
+        example_component.distro_source_package = dsp
+        self.assertEqual(dsp, example_component.distro_source_package)
+        component = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
+            dsp.distribution.name, dsp.sourcepackagename.name)
+        self.assertIsNot(example_component, component)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):
@@ -158,7 +149,7 @@ class TestBugTrackerWithComponents(TestCaseWithFactory):
     def test_multiple_product_bugtracker(self):
         """Bug tracker with multiple products and components"""
         # Create several component groups with varying numbers of components
-        comp_group_i = self.bug_tracker.addRemoteComponentGroup(u'alpha')
+        self.bug_tracker.addRemoteComponentGroup(u'alpha')
 
         comp_group_ii = self.bug_tracker.addRemoteComponentGroup(u'beta')
         comp_group_ii.addComponent(u'example-beta-1')
