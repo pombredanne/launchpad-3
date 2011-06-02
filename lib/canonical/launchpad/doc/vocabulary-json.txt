@@ -10,10 +10,10 @@ entries until vocabularies are integrated into the REST API.
     >>> def print_json(json):
     ...     data = simplejson.loads(json)
     ...     print simplejson.dumps(data, sort_keys=True, indent=4)
-    >>> def create_vocabulary_view(form):
+    >>> def create_vocabulary_view(form, context=root):
     ...     # The BatchNavigator looks in the query string for GET requests.
     ...     query_string = urlencode(form)
-    ...     return create_view(root, '+huge-vocabulary',
+    ...     return create_view(context, '+huge-vocabulary',
     ...                        form=form, query_string=query_string)
 
 The view requires the name of the vocabulary.
@@ -117,6 +117,38 @@ Size and offset parameters can be passed in to switch between batches.
             }
         ],
         "total_size": 6
+    }
+
+If a person is affiliated with the view context, the relevant badge(s) will be
+included in the picker entry.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> form = dict(name='ValidPersonOrTeam', search_text='name12',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form, context=bugtask)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
+                "api_uri": "/~name12",
+                "badges": [
+                     {
+                         "alt": "Product affiliation",
+                         "url": "/@@/product-badge"
+                     }
+                 ],
+                "css": "sprite person",
+                "description": "<email address hidden>",
+                "link_css": "js-action",
+                "title": "Sample Person",
+                "value": "name12"
+            }
+        ],
+        "total_size": 1
     }
 
 Long descriptions will be truncated.

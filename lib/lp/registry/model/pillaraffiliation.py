@@ -42,7 +42,7 @@ class IHasAffiliation(Interface):
         If the person has no affiliation with this object, return None.
         """
 
-BadgeDetails = namedtuple('url', 'alt_text')
+BadgeDetails = namedtuple('BadgeDetails', ('url', 'alt_text'))
 
 @adapter(Interface)
 class PillarAffiliation(object):
