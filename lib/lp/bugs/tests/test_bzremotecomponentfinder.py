@@ -15,7 +15,7 @@ from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import (
     login,
     )
-from canonical.launchpad.scripts.bzremotecomponentfinder import (
+from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     BugzillaRemoteComponentScraper,
     dictFromCSV,

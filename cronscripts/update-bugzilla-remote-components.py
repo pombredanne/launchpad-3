@@ -10,7 +10,7 @@ import time
 
 from canonical.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bzremotecomponentfinder import (
+from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     )
 
