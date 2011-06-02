@@ -1086,7 +1086,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.parent_series.main_archive, target_archive,
                 target_distroseries, PackagePublishingPocket.UPDATES,
                 package_version=dsd.parent_source_version,
-                copy_policy=PackageCopyPolicy.SYNC)
+                copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
