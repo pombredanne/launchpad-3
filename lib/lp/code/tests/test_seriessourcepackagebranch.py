@@ -24,8 +24,10 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
-    IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch,
+    )
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
@@ -36,25 +38,15 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        person = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        removeSecurityProxy(ubuntu_branches).addMember(
-            person, ubuntu_branches.teamowner)
-        login_person(person)
-        self.addCleanup(logout)
-
     def test_new_sets_attributes(self):
-        # ISeriesSourcePackageBranchSet.new sets all the defined attributes on
+        # SeriesSourcePackageBranchSet.new sets all the defined attributes on
         # the interface.
-        series_set = getUtility(IMakeOfficialBranchLinks)
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
         now = datetime.now(pytz.UTC)
-        sspb = series_set.new(
+        sspb = SeriesSourcePackageBranchSet.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant, now)
         self.assertEqual(distroseries, sspb.distroseries)
@@ -65,28 +57,26 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         self.assertEqual(now, sspb.date_created)
 
     def test_new_inserts_into_db(self):
-        # IMakeOfficialBranchLinks.new inserts the new object into the
+        # SeriesSourcePackageBranchSet.new inserts the new object into the
         # database, giving it an ID.
-        series_set = getUtility(IMakeOfficialBranchLinks)
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
-        sspb = series_set.new(
+        sspb = SeriesSourcePackageBranchSet.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)
         transaction.commit()
         self.assertIsNot(sspb.id, None)
 
     def test_new_returns_ISeriesSourcePackageBranch(self):
-        # IMakeOfficialBranchLinks.new returns an
+        # SeriesSourcePackageBranchSet.new returns an
         # ISeriesSourcePackageBranch, know what I mean?
-        series_set = getUtility(IMakeOfficialBranchLinks)
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
-        sspb = series_set.new(
+        sspb = SeriesSourcePackageBranchSet.new(
             distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
             branch, registrant)
         self.assertProvides(sspb, ISeriesSourcePackageBranch)
@@ -102,10 +92,9 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         # IFindOfficialBranchLinks.findForSourcePackage returns a result
         # set of links from the source package. Each link is an
         # ISeriesSourcePackageBranch.
-        make_branch_links = getUtility(IMakeOfficialBranchLinks)
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
-        make_branch_links.new(
+        SeriesSourcePackageBranchSet.new(
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
         find_branch_links = getUtility(IFindOfficialBranchLinks)
@@ -119,10 +108,9 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         # IFindOfficialBranchLinks.findForBranch returns a result set of
         # links from the branch to source packages & pockets. Each link is an
         # ISeriesSourcePackageBranch.
-        make_branch_links = getUtility(IMakeOfficialBranchLinks)
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
-        make_branch_links.new(
+        SeriesSourcePackageBranchSet.new(
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
         find_branch_links = getUtility(IFindOfficialBranchLinks)
@@ -135,33 +123,16 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
     def test_delete(self):
         # `delete` ensures that there is no branch associated with that
         # sourcepackage and pocket.
-        make_branch_links = getUtility(IMakeOfficialBranchLinks)
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
-        make_branch_links.new(
+        SeriesSourcePackageBranchSet.new(
             package.distroseries, PackagePublishingPocket.RELEASE,
             package.sourcepackagename, branch, self.factory.makePerson())
-        make_branch_links.delete(package, PackagePublishingPocket.RELEASE)
+        SeriesSourcePackageBranchSet.delete(
+            package, PackagePublishingPocket.RELEASE)
         find_branch_links = getUtility(IFindOfficialBranchLinks)
         self.assertEqual(
             [], list(find_branch_links.findForSourcePackage(package)))
-
-    def test_cannot_edit_branch_link(self):
-        # You can only edit an ISeriesSourcePackageBranch if you have edit
-        # permissions, which almost no one has.
-        series_set = getUtility(IMakeOfficialBranchLinks)
-        distroseries = self.factory.makeDistroRelease()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        registrant = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch()
-        sspb = series_set.new(
-            distroseries, PackagePublishingPocket.RELEASE, sourcepackagename,
-            branch, registrant)
-        logout()
-        login(ANONYMOUS)
-        self.assertRaises(
-            Unauthorized, setattr, sspb, 'pocket',
-            PackagePublishingPocket.BACKPORTS)
 
 
 def test_suite():

@@ -46,8 +46,8 @@ from lp.bugs.model.bugtarget import (
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
@@ -731,10 +731,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        series_set = getUtility(IMakeOfficialBranchLinks)
-        series_set.delete(self, pocket)
+        SeriesSourcePackageBranchSet.delete(self, pocket)
         if branch is not None:
-            series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
 

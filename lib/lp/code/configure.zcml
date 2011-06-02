@@ -398,19 +398,8 @@
   <class
       class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranch">
     <allow interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
-    <require
-        permission="launchpad.Edit"
-        set_schema="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
   </class>
 
-  <securedutility
-     class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
-     provides="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks">
-    <allow interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-    <require
-       permission="launchpad.Edit"
-       interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-  </securedutility>
   <securedutility
      class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
      provides="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks">

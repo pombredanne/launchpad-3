@@ -79,10 +79,6 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch,
-    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -2504,38 +2500,6 @@ class EditArchivePermissionSet(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Users must be an admin or a member of the tech board."""
         return user.in_admin or user.in_ubuntu_techboard
-
-
-class LinkOfficialSourcePackageBranches(AuthorizationBase):
-    """Who can source packages to their official branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = IMakeOfficialBranchLinks
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
-
-
-class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
-    """Who can change the links from source packages to their branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = ISeriesSourcePackageBranch
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
 
 
 class ViewPackageset(AnonymousAuthorization):

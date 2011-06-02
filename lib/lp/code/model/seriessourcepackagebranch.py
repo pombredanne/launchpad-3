@@ -32,7 +32,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
-    IMakeOfficialBranchLinks,
     ISeriesSourcePackageBranch,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -85,11 +84,12 @@ class SeriesSourcePackageBranch(Storm):
 class SeriesSourcePackageBranchSet:
     """See `ISeriesSourcePackageBranchSet`."""
 
-    implements(IFindOfficialBranchLinks, IMakeOfficialBranchLinks)
+    implements(IFindOfficialBranchLinks)
 
-    def new(self, distroseries, pocket, sourcepackagename, branch, registrant,
+    @staticmethod
+    def new(distroseries, pocket, sourcepackagename, branch, registrant,
             date_created=None):
-        """See `IMakeOfficialBranchLinks`."""
+        """Link a source package in a distribution suite to a branch."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
         sspb = SeriesSourcePackageBranch(
@@ -136,8 +136,13 @@ class SeriesSourcePackageBranchSet:
             SeriesSourcePackageBranch.sourcepackagename ==
             sourcepackagename.id)
 
-    def delete(self, sourcepackage, pocket):
-        """See `IMakeOfficialBranchLinks`."""
+    @staticmethod
+    def delete(sourcepackage, pocket):
+        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
+
+        :param sourcepackage: An `ISourcePackage`.
+        :param pocket: A `PackagePublishingPocket` enum item.
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename

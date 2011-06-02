@@ -17,16 +17,11 @@ from zope.component import getUtility
 from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
 from zope.security.management import checkPermission
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    login_person,
-    logout,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -50,15 +45,6 @@ class TestSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        person = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        removeSecurityProxy(ubuntu_branches).addMember(
-            person, ubuntu_branches.teamowner)
-        login_person(person)
-        self.addCleanup(logout)
-
     def test_path(self):
         sourcepackage = self.factory.makeSourcePackage()
         self.assertEqual(
@@ -81,7 +67,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        getUtility(IMakeOfficialBranchLinks).new(
+        SeriesSourcePackageBranchSet.new(
             sourcepackage.distroseries, PackagePublishingPocket.RELEASE,
             sourcepackage.sourcepackagename, branch, registrant)
         official_branch = sourcepackage.getBranch(
@@ -94,7 +80,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
     def test_change_branch_once_set(self):
@@ -106,8 +93,9 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         new_branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, new_branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, new_branch, registrant)
         self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
 
     def test_unsetBranch(self):
@@ -117,8 +105,9 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, None, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, None, registrant)
         self.assertIs(None, sourcepackage.getBranch(pocket))
 
     def test_linked_branches(self):
@@ -127,7 +116,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
@@ -471,8 +461,9 @@ class TestSourcePackage(TestCaseWithFactory):
             'user_can_change_branch': False,
             'user_can_change_translation_usage': False,
             'user_can_change_translations_autoimport_mode': False}
-        self.assertEqual(
-            expected, sourcepackage.getSharingDetailPermissions())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual(
+                expected, sourcepackage.getSharingDetailPermissions())
 
     def test_getSharingDetailPermissions_no_user(self):
         sourcepackage = self.factory.makeSourcePackage()
@@ -481,7 +472,6 @@ class TestSourcePackage(TestCaseWithFactory):
             'user_can_change_branch': False,
             'user_can_change_translation_usage': False,
             'user_can_change_translations_autoimport_mode': False}
-        logout()
         self.assertEqual(
             expected, sourcepackage.getSharingDetailPermissions())
 
