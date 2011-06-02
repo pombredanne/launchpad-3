@@ -153,7 +153,6 @@ class LaunchpadCelebrities:
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
-    ubuntu_branches = PersonCelebrityDescriptor('ubuntu-branches')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     ubuntu_security = PersonCelebrityDescriptor('ubuntu-security')
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')
