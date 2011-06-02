@@ -525,6 +525,154 @@ class ValidPersonOrTeamVocabulary(
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
+        if self.enhanced_picker_enabled:
+            return self._doSearchWithImprovedSorting(text)
+        else:
+            return self._doSearchWithOriginalSorting(text)
+
+    def _doSearchWithOriginalSorting(self, text=""):
+        private_query, private_tables = self._privateTeamQueryAndTables()
+        exact_match = None
+
+        # Short circuit if there is no search text - all valid people and
+        # teams have been requested.
+        if not text:
+            tables = [
+                Person,
+                Join(self.cache_table_name,
+                     SQL("%s.id = Person.id" % self.cache_table_name)),
+                ]
+            tables.extend(private_tables)
+            result = self.store.using(*tables).find(
+                Person,
+                And(
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
+                       private_query,
+                       ),
+                    Person.merged == None,
+                    self.extra_clause
+                    )
+                )
+        else:
+            # Do a full search based on the text given.
+
+            # The queries are broken up into several steps for efficiency.
+            # The public person and team searches do not need to join with the
+            # TeamParticipation table, which is very expensive.  The search
+            # for private teams does need that table but the number of private
+            # teams is very small so the cost is not great.
+
+            # First search for public persons and teams that match the text.
+            public_tables = [
+                Person,
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                ]
+
+            # Create an inner query that will match public persons and teams
+            # that have the search text in the fti, at the start of the email
+            # address, or as their full IRC nickname.
+            # Since we may be eliminating results with the limit to improve
+            # performance, we sort by the rank, so that we will always get
+            # the best results. The fti rank will be between 0 and 1.
+            # Note we use lower() instead of the non-standard ILIKE because
+            # ILIKE doesn't hit the indexes.
+            # The '%%' is necessary because storm variable substitution
+            # converts it to '%'.
+            public_inner_textual_select = SQL("""
+                SELECT id FROM (
+                    SELECT Person.id, 100 AS rank
+                    FROM Person
+                    WHERE name = ?
+                    UNION ALL
+                    SELECT Person.id, rank(fti, ftq(?))
+                    FROM Person
+                    WHERE Person.fti @@ ftq(?)
+                    UNION ALL
+                    SELECT Person.id, 10 AS rank
+                    FROM Person, IrcId
+                    WHERE IrcId.person = Person.id
+                        AND lower(IrcId.nickname) = ?
+                    UNION ALL
+                    SELECT Person.id, 1 AS rank
+                    FROM Person, EmailAddress
+                    WHERE EmailAddress.person = Person.id
+                        AND lower(email) LIKE ? || '%%'
+                        AND EmailAddress.status IN (?, ?)
+                    ) AS public_subquery
+                ORDER BY rank DESC
+                LIMIT ?
+                """, (text, text, text, text, text,
+                      EmailAddressStatus.VALIDATED.value,
+                      EmailAddressStatus.PREFERRED.value,
+                      self.LIMIT))
+
+            public_result = self.store.using(*public_tables).find(
+                Person,
+                And(
+                    Person.id.is_in(public_inner_textual_select),
+                    Person.visibility == PersonVisibility.PUBLIC,
+                    Person.merged == None,
+                    Or(# A valid person-or-team is either a team...
+                       # Note: 'Not' due to Bug 244768.
+                       Not(Person.teamowner == None),
+                       # Or a person who has a preferred email address.
+                       EmailAddress.status == EmailAddressStatus.PREFERRED),
+                    ))
+            # The public query doesn't need to be ordered as it will be done
+            # at the end.
+            public_result.order_by()
+
+            # Next search for the private teams.
+            private_query, private_tables = self._privateTeamQueryAndTables()
+            private_tables = [Person] + private_tables
+
+            # Searching for private teams that match can be easier since we
+            # are only interested in teams.  Teams can have email addresses
+            # but we're electing to ignore them here.
+            private_result = self.store.using(*private_tables).find(
+                Person,
+                And(
+                    SQL('Person.fti @@ ftq(?)', [text]),
+                    private_query,
+                    )
+                )
+
+            private_result.order_by(SQL('rank(fti, ftq(?)) DESC', [text]))
+            private_result.config(limit=self.LIMIT)
+
+            combined_result = public_result.union(private_result)
+            # Eliminate default ordering.
+            combined_result.order_by()
+            # XXX: BradCrittenden 2009-04-26 bug=217644: The use of Alias and
+            # _get_select() is a work-around for .count() not working
+            # with the 'distinct' option.
+            subselect = Alias(combined_result._get_select(), 'Person')
+            exact_match = (Person.name == text)
+            result = self.store.using(subselect).find(
+                (Person, exact_match),
+                self.extra_clause)
+        # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
+        # setting the 'distinct' and 'limit' options in a single call to
+        # .config().  The work-around is to split them up.  Note the limit has
+        # to be after the call to 'order_by' for this work-around to be
+        # effective.
+        result.config(distinct=True)
+        if exact_match is not None:
+            # A DISTINCT requires that the sort parameters appear in the
+            # select, but it will break the vocabulary if it returns a list of
+            # tuples instead of a list of Person objects, so we create
+            # another subselect to sort after the DISTINCT is done.
+            distinct_subselect = Alias(result._get_select(), 'Person')
+            result = self.store.using(distinct_subselect).find(Person)
+            result.order_by(
+                Desc(exact_match), Person.displayname, Person.name)
+        else:
+            result.order_by(Person.displayname, Person.name)
+        result.config(limit=self.LIMIT)
+        return result
+
+    def _doSearchWithImprovedSorting(self, text=""):
+        """Return the people/teams whose fti or email address match :text:"""
 
         private_query, private_tables = self._privateTeamQueryAndTables()
 
@@ -751,11 +899,14 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
-            name_match_query = SQL("""
-                lower(Person.name) LIKE ? || '%%'
-                OR lower(Person.displayname) LIKE ? || '%%'
-                OR Person.fti @@ ftq(?)
-                """, [text, text, text]),
+            if self.enhanced_picker_enabled:
+                name_match_query = SQL("""
+                    lower(Person.name) LIKE ? || '%%'
+                    OR lower(Person.displayname) LIKE ? || '%%'
+                    OR Person.fti @@ ftq(?)
+                    """, [text, text, text]),
+            else:
+                name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,

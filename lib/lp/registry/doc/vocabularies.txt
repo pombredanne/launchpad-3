@@ -743,6 +743,12 @@ But it doesn't include merged accounts:
 ValidPersonOrTeam
 .................
 
+To use the new sorting functionality, we need to turn on the feature flag.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 All 'valid' persons or teams. This is currently defined as people with a
 password, a preferred email address and not merged (Person.merged is
 None).  It also includes all public teams and private teams the user has
@@ -822,7 +828,7 @@ team.
 
     >>> term = vocab.getTermByToken('private-team')
     >>> print term.title
-    Private Team
+    Private Team (private-team)
 
 The PRIVATE team is not returned for a user who is not part of the team.
 
@@ -952,6 +958,8 @@ Search for names with '%' and '?' is supported.
     ...     print person.name
     symbolic
 
+Clean up the feature flag.
+    >>> flags.cleanUp()
 
 ValidOwner
 ..........
