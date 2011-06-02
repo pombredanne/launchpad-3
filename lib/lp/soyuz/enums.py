@@ -13,6 +13,7 @@ __all__ = [
     'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'PackageCopyPolicy',
     'PackageCopyStatus',
     'PackageDiffStatus',
     'PackagePublishingPriority',
@@ -235,7 +236,10 @@ class BinaryPackageFormat(DBEnumeratedType):
 
 
 class PackageCopyPolicy(DBEnumeratedType):
-    """Package copying policy."""
+    """Package copying policy.
+
+    Each of these is associated with one `ICopyPolicy`.
+    """
 
     INSECURE = DBItem(1, """
         Copy from insecure source.
