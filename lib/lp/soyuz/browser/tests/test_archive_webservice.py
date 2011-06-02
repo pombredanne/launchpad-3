@@ -22,6 +22,7 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
+    person_logged_in,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -127,12 +128,25 @@ class TestExternalDependencies(WebServiceTestCase):
 
 class TestArchiveDependencies(WebServiceTestCase):
 
-    def test_addArchiveDependency(self):
-        """Normal users can add archive dependencies."""
+    def test_addArchiveDependency_random_user(self):
+        """Normal users cannot add archive dependencies."""
         archive = self.factory.makeArchive()
         dependency = self.factory.makeArchive()
         transaction.commit()
         ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
+        failure_regex = '(.|\n)*addArchiveDependency.*launchpad.Edit(.|\n)*'
+        with ExpectedException(LRUnauthorized, failure_regex):
+            dependency = ws_archive.addArchiveDependency(
+                dependency=ws_dependency, pocket='Release', component='main')
+
+    def test_addArchiveDependency_owner(self):
+        """Normal users cannot add archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
         ws_dependency = self.wsObject(dependency)
         self.assertContentEqual([], ws_archive.dependencies)
         with ExpectedException(BadRequest, '(.|\n)*asdf(.|\n)*'):
@@ -142,14 +156,29 @@ class TestArchiveDependencies(WebServiceTestCase):
             dependency=ws_dependency, pocket='Release', component='main')
         self.assertContentEqual([dependency], ws_archive.dependencies)
 
-    def test_removeArchiveDependency(self):
+    def test_removeArchiveDependency_random_user(self):
         """Normal users can remove archive dependencies."""
         archive = self.factory.makeArchive()
         dependency = self.factory.makeArchive()
-        archive.addArchiveDependency(
-            dependency, PackagePublishingPocket.RELEASE)
+        with person_logged_in(archive.owner):
+            archive.addArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE)
         transaction.commit()
         ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        failure_regex = '(.|\n)*remove.*Dependency.*launchpad.Edit(.|\n)*'
+        with ExpectedException(LRUnauthorized, failure_regex):
+            ws_archive.removeArchiveDependency(dependency=ws_dependency)
+
+    def test_removeArchiveDependency_owner(self):
+        """Normal users can remove archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            archive.addArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
         ws_dependency = self.wsObject(dependency)
         ws_archive.removeArchiveDependency(dependency=ws_dependency)
         self.assertContentEqual([], ws_archive.dependencies)
