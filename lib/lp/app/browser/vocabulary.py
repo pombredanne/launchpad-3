@@ -61,6 +61,7 @@ class IPickerEntry(Interface):
     title_link = Attribute('URL used for anchor on title')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
+    badges = Attribute('List of badge image URLs')
 
 
 class PickerEntry:
@@ -69,7 +70,7 @@ class PickerEntry:
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
                  title_link=None, alt_title_link=None, link_css='js-action',
-                 api_uri=None):
+                 badges=None, api_uri=None):
         self.description = description
         self.image = image
         self.css = css
@@ -77,6 +78,7 @@ class PickerEntry:
         self.title_link = title_link
         self.alt_title_link = alt_title_link
         self.link_css = link_css
+        self.badges = badges
 
 
 @adapter(Interface)
@@ -260,6 +262,8 @@ class HugeVocabularyJSONView:
                 entry['alt_title_link'] = picker_entry.alt_title_link
             if picker_entry.link_css is not None:
                 entry['link_css'] = picker_entry.link_css
+            if picker_entry.badges is not None:
+                entry['badges'] = picker_entry.badges
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')
