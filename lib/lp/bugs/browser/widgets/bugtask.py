@@ -55,6 +55,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import VocabularyPickerWidget
@@ -528,23 +529,12 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
         return distribution
 
 
-class UbuntuSourcePackageNameWidget(
-    BugTaskSourcePackageNameWidget):
-    """Package widget where the distribution can be assumed as Ubuntu
-
-    This widgets works the same as `BugTaskSourcePackageNameWidget`,
-    except that it assumes the distribution is 'ubuntu'.
-    """
-    distribution_name = "ubuntu"
+class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
+    """A widget to select Ubuntu packages."""
 
     def getDistribution(self):
         """See `BugTaskSourcePackageNameWidget`"""
-        distribution = getUtility(IDistributionSet).getByName(
-            self.distribution_name)
-        if distribution is None:
-            raise UnexpectedFormData(
-                "No such distribution: %s" % self.distribution_name)
-        return distribution
+        return getUtility(ILaunchpadCelebrities).ubuntu
 
 
 class AssigneeDisplayWidget(BrowserWidget):

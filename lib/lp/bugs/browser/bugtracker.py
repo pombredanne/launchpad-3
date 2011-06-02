@@ -77,7 +77,6 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     IRemoteBug,
     )
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
@@ -472,8 +471,7 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     """
 
     schema = IBugTrackerComponent
-    custom_widget('sourcepackagename',
-                  UbuntuSourcePackageNameWidget)
+    custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
 
     @property
     def page_title(self):
@@ -528,26 +526,25 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         sourcepackagename = self.request.form.get(
             self.widgets['sourcepackagename'].name)
 
-        distro_name = self.widgets['sourcepackagename'].distribution_name
-        distribution = getUtility(IDistributionSet).getByName(distro_name)
+        distribution = self.widgets['sourcepackagename'].getDistribution()
         pkg = distribution.getSourcePackage(sourcepackagename)
         bug_tracker = self.context.component_group.bug_tracker
 
         # Has this source package already been assigned to a component?
         link_comp = bug_tracker.getRemoteComponentForDistroSourcePackage(
-            distro_name, sourcepackagename)
+            distribution.name, sourcepackagename)
         if link_comp is not None:
             self.request.response.addNotification(
                 "The %s source package is already linked to %s:%s in %s" % (
                     sourcepackagename, link_comp.component_group.name,
-                    link_comp.name, distro_name))
+                    link_comp.name, distribution.name))
             return
 
         component.distro_source_package = pkg
         self.request.response.addNotification(
             "%s:%s is now linked to the %s source package in %s" % (
                 component.component_group.name, component.name,
-                sourcepackagename, distro_name))
+                sourcepackagename, distribution.name))
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):
