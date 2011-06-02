@@ -214,13 +214,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
-    from_addr = None
-    if changes:
-        from_addr = sanitize_string(changes['Changed-By'])
-    elif spr:
-        from_addr = person_to_email(spr.creator)
-    elif bprs:
-        from_addr = person_to_email(bprs[0].creator)
+    (changesfile, date, from_addr, maintainer) = fetch_information(
+        spr, bprs, changes)
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
@@ -246,11 +241,13 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     """Assemble the e-mail notification body."""
     if changes is None:
         changes = {}
+    (changesfile, date, changedby, maintainer) = fetch_information(
+        spr, bprs, changes)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
-        'DATE': '',
-        'CHANGESFILE': '',
+        'DATE': 'Date: %s' % date,
+        'CHANGESFILE': changesfile,
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -260,24 +257,6 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'SPR_URL': '',
         'USERS_ADDRESS': config.launchpad.users_address,
         }
-    changedby = None
-    maintainer = None
-    if changes:
-        information['CHANGESFILE'] = ChangesFile.formatChangesComment(
-            sanitize_string(changes.get('Changes')))
-        information['DATE'] = "Date: %s" % changes.get('Date')
-        changedby = sanitize_string(changes.get('Changed-By'))
-        maintainer = sanitize_string(changes.get('Maintainer'))
-    elif spr:
-        information['CHANGESFILE'] = spr.changelog_entry
-        information['DATE'] = "Date: %s" % spr.dateuploaded
-        changedby = person_to_email(spr.creator)
-        maintainer = person_to_email(spr.maintainer)
-    elif bprs:
-        information['CHANGESFILE'] = bprs[0].changelog_entry
-        information['DATE'] = "Date: %s" % bprs[0].dateuploaded
-        changedby = person_to_email(bprs[0].creator)
-        maintainer = person_to_email(bprs[0].maintainer)
     if spr:
         information['SPR_URL'] = canonical_url(spr)
     if changedby:
@@ -290,7 +269,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
             "\nThis upload awaits approval by a distro manager\n")
     if announce_list:
         information['ANNOUNCE'] = "Announcing to %s" % announce_list
-    if blamer is not None and blamer != changedby:
+    if blamer is not None and blamer != email_to_person(changedby):
         signer_signature = person_to_email(blamer)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
@@ -436,12 +415,16 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    if changes:
-        changer = email_to_person(changes['Changed-By'])
-    elif spr:
-        changer = spr.creator
-    elif bprs:
-        changer = bprs[0].creator
+    (changesfile, date, changedby, maint) = fetch_information(
+        spr, bprs, changes)
+    if changedby:
+        changer = email_to_person(changedby)
+    else:
+        changer = None
+    if maint:
+        maintainer = email_to_person(maint)
+    else:
+        maintainer = None
 
     if blamer:
         # This is a signed upload.
@@ -462,12 +445,6 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
 
     # If this is not a PPA, we also consider maintainer and changed-by.
     if blamer and not archive.is_ppa:
-        if changes:
-            maintainer = email_to_person(changes['Maintainer'])
-        elif spr:
-            maintainer = spr.maintainer
-        elif bprs:
-            maintainer = bprs[0].maintainer
         if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
@@ -571,6 +548,29 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
+
+def fetch_information(spr, bprs, changes):
+    changedby = None
+    maintainer = None
+    if changes:
+        changesfile = ChangesFile.formatChangesComment(
+            sanitize_string(changes.get('Changes')))
+        date = changes.get('Date')
+        changedby = sanitize_string(changes.get('Changed-By'))
+        maintainer = sanitize_string(changes.get('Maintainer'))
+    elif spr:
+        changesfile = spr.changelog_entry
+        date = spr.dateuploaded
+        changedby = person_to_email(spr.creator)
+        maintainer = person_to_email(spr.maintainer)
+    elif bprs:
+        changesfile = bprs[0].changelog_entry
+        date = bprs[0].dateuploaded
+        changedby = person_to_email(
+            bprs[0].build.source_package_release.creator)
+        maintainer = person_to_email(
+            bprs[0].build.source_package_release.maintainer)
+    return (changesfile, date, changedby, maintainer)
 
 
 class LanguagePackEncountered(Exception):
