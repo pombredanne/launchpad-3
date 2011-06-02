@@ -86,7 +86,8 @@ class IPlainPackageCopyJobSource(IJobSource):
 
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
-               include_binaries=False, package_version=None):
+               include_binaries=False, package_version=None,
+               copy_policy=None):
         """Create a new `IPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -100,6 +101,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param include_binaries: See `do_copy`.
         :param package_version: The version string for the package version
             that is to be copied.
+        :param copy_policy: Applicable `PackageCopyPolicy`.
         """
 
     def getActiveJobs(target_archive):
