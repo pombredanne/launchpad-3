@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = []
 
-import unittest
 import transaction
 
 from canonical.launchpad.ftests import login_person
@@ -292,10 +291,3 @@ class TestWebservice(TestCaseWithFactory):
         component = ws_object(self.launchpad, db_comp)
         package = ws_object(self.launchpad, db_src_pkg)
         component.distro_source_package = package
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-
-    return suite
