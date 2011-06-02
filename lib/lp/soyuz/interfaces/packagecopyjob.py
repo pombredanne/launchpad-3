@@ -137,3 +137,6 @@ class IPlainPackageCopyJob(IRunnableJob):
 
     def addSourceOverride(override):
         """Add an `ISourceOverride` to the metadata."""
+
+    def getSourceOverride():
+        """Get an `ISourceOverride` from the metadata."""

@@ -47,13 +47,16 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -257,6 +260,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             component_override=override.component.name,
             section_override=override.section.name)
         self.context.extendMetadata(metadata_dict)
+
+    def getSourceOverride(self):
+        """Fetch an `ISourceOverride` from the metadata."""
+        # There's only one package per job; although the schema allows
+        # multiple we're not using that.
+        name, version = self.metadata["source_packages"][0]
+        component_name = self.metadata.get("component_override")
+        section_name = self.metadata.get("section_override")
+        source_package_name = getUtility(ISourcePackageNameSet)[name]
+        component = getUtility(IComponentSet)[component_name]
+        section = getUtility(ISectionSet)[section_name]
+        return SourceOverride(source_package_name, component, section)
 
     def run(self):
         """See `IRunnableJob`."""

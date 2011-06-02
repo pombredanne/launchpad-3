@@ -460,6 +460,25 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             section=Equals(metadata_section))
         self.assertThat(override, matcher)
 
+    def test_getSourceOverride(self):
+        # Test the getSourceOverride which gets an ISourceOverride from
+        # the metadata.
+        name = self.factory.makeSourcePackageName()
+        component = self.factory.makeComponent()
+        section=self.factory.makeSection()
+        pcj = self.factory.makePlainPackageCopyJob(
+            package_name=name.name, package_version="1.0")
+        self.layer.txn.commit()
+        self.layer.switchDbUser('sync_packages')
+
+        override = SourceOverride(
+            source_package_name=name,
+            component=component,
+            section=section)
+        pcj.addSourceOverride(override)
+
+        self.assertEqual(override, pcj.getSourceOverride())
+
 
 class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
     """Test that `PlainPackageCopyJob` has the privileges it needs.
