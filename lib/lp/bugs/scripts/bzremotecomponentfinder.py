@@ -47,7 +47,7 @@ class BugzillaRemoteComponentScraper:
 
     def __init__(self, base_url=None):
         self.base_url = re.sub(r'/$', '', base_url)
-        self.url = "%s/query.cgi?format=advanced" %(self.base_url)
+        self.url = "%s/query.cgi?format=advanced" % (self.base_url)
         self.products = {}
 
     def getPage(self):
@@ -132,10 +132,10 @@ class BugzillaRemoteComponentFinder:
             if lp_bugtracker.name in self._BLACKLIST:
                 continue
 
-            self.logger.info("%s: %s" %(
+            self.logger.info("%s: %s" % (
                 lp_bugtracker.name, lp_bugtracker.baseurl))
             bz_bugtracker = BugzillaRemoteComponentScraper(
-                base_url = lp_bugtracker.baseurl)
+                base_url=lp_bugtracker.baseurl)
 
             if self.static_bugzilla_text is not None:
                 self.logger.debug("Using static bugzilla text")
@@ -187,10 +187,10 @@ class BugzillaRemoteComponentFinder:
             # added to launchpad.  Record them for now.
             for component in product['components'].values():
                 components_to_add.append(
-                    "('%s', %d, 'True', 'False')" %(
+                    "('%s', %d, 'True', 'False')" % (
                         component['name'], lp_component_group.id))
 
-        if len(components_to_add)>0:
+        if len(components_to_add) > 0:
             sqltext = """
             INSERT INTO BugTrackerComponent
             (name, component_group, is_visible, is_custom)
