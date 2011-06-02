@@ -488,22 +488,22 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         look it up in Ubuntu to retrieve the distro_source_package
         object, and link it to this component.
         """
-        component = context or self.context
         sourcepackagename = data['sourcepackagename']
         distribution = self.widgets['sourcepackagename'].getDistribution()
         dsp = distribution.getSourcePackage(sourcepackagename)
         bug_tracker = self.context.component_group.bug_tracker
-
         # Has this source package already been assigned to a component?
-        old_component = bug_tracker.getRemoteComponentForDistroSourcePackage(
+        component = bug_tracker.getRemoteComponentForDistroSourcePackage(
             distribution.name, sourcepackagename.name)
-        if old_component is not None:
+        if component is not None:
             self.request.response.addNotification(
                 "The %s source package is already linked to %s:%s in %s" % (
                     sourcepackagename.name,
-                    old_component.component_group.name,
-                    old_component.name, distribution.name))
+                    component.component_group.name,
+                    component.name, distribution.name))
             return
+        # The submitted component can be linked to the distro source package.
+        component = context or self.context
         component.distro_source_package = dsp
         self.request.response.addNotification(
             "%s:%s is now linked to the %s source package in %s" % (
