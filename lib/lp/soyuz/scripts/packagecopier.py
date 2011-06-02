@@ -613,7 +613,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy()
     if source_in_destination.is_empty():
-        overrides = None
+        override = None
         if policy is not None:
             package_names = (source.sourcepackagerelease.sourcepackagename,)
             # Only one override can be returned so take the first
