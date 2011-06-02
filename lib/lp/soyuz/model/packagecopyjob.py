@@ -47,6 +47,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJob,
@@ -159,6 +160,11 @@ class PackageCopyJobDerived(BaseRunnableJob):
             ])
         return vars
 
+    @property
+    def copy_policy(self):
+        """See `PlainPackageCopyJob`."""
+        return self.context.copy_policy
+
 
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies a package from one archive to another."""
@@ -177,7 +183,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=None):
+               copy_policy=PackageCopyPolicy.INSECURE):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         metadata = {
@@ -335,3 +341,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if self.include_binaries:
             parts.append(", including binaries")
         return "<%s>" % "".join(parts)
+
+    def getPolicyImplementation(self):
+        """Return the `ICopyPolicy` applicable to this job."""
+        return ICopyPolicy(self.copy_policy)

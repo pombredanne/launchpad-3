@@ -247,10 +247,10 @@ class PackageCopyPolicy(DBEnumeratedType):
         This is the default.
         """)
 
-    SYNC = DBItem(2, """
-        Package sync.
+    MASS_SYNC = DBItem(2, """
+        Mass package sync.
 
-        This policy applies when synchronizing packages en masses.
+        This policy applies when synchronizing packages en masse.
         """)
 
 

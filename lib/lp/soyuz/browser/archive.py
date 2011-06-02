@@ -134,6 +134,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -1308,7 +1309,8 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         job_source.create(
             spph.source_package_name, spph.archive, dest_archive, dest_series,
             dest_pocket, include_binaries=include_binaries,
-            package_version=spph.sourcepackagerelease.version)
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE)
 
     return structured("""
         <p>Requested sync of %s packages.</p>

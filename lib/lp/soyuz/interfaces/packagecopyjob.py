@@ -21,6 +21,7 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Int,
     TextLine,
     )
@@ -32,6 +33,7 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import IArchive
 
 
@@ -84,10 +86,10 @@ class PackageCopyJobType(DBEnumeratedType):
 class IPlainPackageCopyJobSource(IJobSource):
     """An interface for acquiring `IPackageCopyJobs`."""
 
-    def create(cls, package_name, source_archive,
+    def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=None):
+               copy_policy=PackageCopyPolicy.INSECURE):
         """Create a new `IPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -136,3 +138,7 @@ class IPlainPackageCopyJob(IRunnableJob):
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
+
+    copy_policy = Choice(
+        title=_("Applicable copy policy"),
+        values=PackageCopyPolicy, required=True, readonly=True)

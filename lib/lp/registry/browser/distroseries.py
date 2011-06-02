@@ -104,6 +104,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
@@ -1084,7 +1085,8 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.source_package_name.name,
                 dsd.parent_series.main_archive, target_archive,
                 target_distroseries, PackagePublishingPocket.UPDATES,
-                package_version=dsd.parent_source_version)
+                package_version=dsd.parent_source_version,
+                copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
