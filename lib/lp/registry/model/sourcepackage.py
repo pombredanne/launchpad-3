@@ -202,8 +202,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
+        # We store the ID of the sourcepackagename and distroseries
+        # simply because Storm can break when accessing them
+        # with implicit flush is blocked (like in a permission check when
+        # storing the object in the permission cache).
+        self.sourcepackagenameID =  sourcepackagename.id
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+        self.distroseriesID = distroseries.id
 
     @classmethod
     def new(cls, sourcepackagename, distroseries):
@@ -585,7 +591,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def __hash__(self):
         """See `ISourcePackage`."""
-        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+        return hash(self.distroseriesID) ^ hash(self.sourcepackagenameID)
 
     def __eq__(self, other):
         """See `ISourcePackage`."""

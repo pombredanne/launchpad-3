@@ -1585,15 +1585,17 @@
     </securedutility>
 
     <!-- SourcePackage -->
-
     <class
         class="lp.registry.model.sourcepackage.SourcePackage">
         <allow
-            interface="lp.registry.interfaces.sourcepackage.ISourcePackage"/>
+            interface="lp.registry.interfaces.sourcepackage.ISourcePackagePublic"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
+        <require
+            permission="launchpad.Edit"
+            interface="lp.registry.interfaces.sourcepackage.ISourcePackageEdit"/>
     </class>
     <securedutility
         component="lp.registry.model.sourcepackage.SourcePackage"

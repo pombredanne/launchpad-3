@@ -14,6 +14,7 @@ from lazr.lifecycle.event import (
 from storm.locals import Store
 import transaction
 from zope.component import getUtility
+from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
 from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
@@ -93,7 +94,7 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
     def test_change_branch_once_set(self):
@@ -105,8 +106,8 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         new_branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, new_branch, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, new_branch, registrant)
         self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
 
     def test_unsetBranch(self):
@@ -116,8 +117,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, None, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, None, registrant)
         self.assertIs(None, sourcepackage.getBranch(pocket))
 
     def test_linked_branches(self):
@@ -126,7 +127,7 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        removeSecurityProxy(sourcepackage).setBranch(pocket, branch, registrant)
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
@@ -563,11 +564,9 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
 
     def test_cannot_setBranch(self):
         sourcepackage = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
-        registrant = self.factory.makePerson()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        self.assertRaises(
-            Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
+        self.failIf(
+            canAccess(sourcepackage, 'setBranch'),
+            "setBranch should only be available to admins and uploaders")
 
 
 class TestSourcePackageViews(TestCaseWithFactory):
