@@ -509,7 +509,8 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, person=None, check_permissions=True):
+            allow_delayed_copies=True, person=None, check_permissions=True,
+            overrides=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -534,6 +535,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
         requester's permissions to copy should be checked.
+    :param overrides: A list of `IOverride` as returned from one of the copy
+        policies which will be used as a manual override insyead of using the
+        default override returned by IArchive.getOverridePolicy().  There
+        must be the same number of overrides as there are sources and each
+        override must be for the corresponding source in the sources list.
+        Overrides will be ignored for delayed copies.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -562,6 +569,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     if len(errors) != 0:
         raise CannotCopy("\n".join(errors))
 
+    overrides_index = 0
     for source in copy_checker.getCheckedCopies():
         if series is None:
             destination_series = source.distroseries
@@ -573,14 +581,17 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             sub_copies = [delayed_copy]
         else:
             sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket, include_binaries,
+                overrides[overrides_index])
 
+        overrides_index += 1
         copies.extend(sub_copies)
 
     return copies
 
 
-def _do_direct_copy(source, archive, series, pocket, include_binaries):
+def _do_direct_copy(source, archive, series, pocket, include_binaries,
+                    override=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -598,6 +609,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     :param include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
+    :param override: An `IOverride` as per do_copy().
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -613,8 +625,9 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy()
     if source_in_destination.is_empty():
-        override = None
-        if policy is not None:
+        # If no manual overrides were specified and the archive has an
+        # override policy then use that policy to get overrides.
+        if override is None and policy is not None:
             package_names = (source.sourcepackagerelease.sourcepackagename,)
             # Only one override can be returned so take the first
             # element of the returned list.

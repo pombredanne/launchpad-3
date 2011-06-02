@@ -14,6 +14,7 @@ from testtools.content import text_content
 from testtools.matchers import (
     Equals,
     LessThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -39,6 +40,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -1376,6 +1378,31 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
+
+    def test_copy_with_override(self):
+        # Test the override parameter for do_copy and by extension
+        # _do_direct_copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        dsp = self.factory.makeDistroSeriesParent()
+        target_archive = dsp.derived_series.main_archive
+        override = SourceOverride(
+            source.sourcepackagerelease.sourcepackagename,
+            self.factory.makeComponent(),
+            self.factory.makeSection())
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
+        self.layer.txn.commit()
+        self.layer.switchDbUser('archivepublisher')
+        [copied_source] = do_copy(
+            [source], target_archive, dsp.derived_series, source.pocket,
+            check_permissions=False, overrides=[override])
+
+        matcher = MatchesStructure(
+            component=Equals(override.component),
+            section=Equals(override.section))
+        self.assertThat(copied_source, matcher)
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
