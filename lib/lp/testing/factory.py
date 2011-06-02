@@ -4094,7 +4094,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if target_pocket is None:
             target_pocket = self.getAnyPocket()
         return getUtility(IPlainPackageCopyJobSource).create(
-            package_tuple, source_archive, target_archive,
+            [package_tuple], source_archive, target_archive,
             target_distroseries, target_pocket)
 
 

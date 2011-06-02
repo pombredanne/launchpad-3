@@ -53,10 +53,12 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
+    SourceOverride,
     UnknownOverridePolicy,
     )
 from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -64,6 +66,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -271,18 +274,30 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if unapproved:
             pu.setUnapproved()
 
-    def _addOverrides(self, overrides):
-        # Helper to add the data returned from override policies to the
-        # job metadata.
-
-        # Again, we're assuming only one package per job as per the
-        # comment in _checkPolicies.
-        [override] = overrides
-
-        # TODO: get the section from the original SPR?
+    def addSourceOverride(self, override):
+        """Add an `ISourceOverride` to the metadata."""
+        component = None
+        section = None
+        if override.component:
+            component = override.component.name
+        if override.section:
+            section = override.section.name
         metadata_dict = dict(
-            component_override=override[1].name)
+            component_override=component,
+            section_override=section)
         self.context.extendMetadata(metadata_dict)
+
+    def getSourceOverride(self):
+        """Fetch an `ISourceOverride` from the metadata."""
+        # There's only one package per job; although the schema allows
+        # multiple we're not using that.
+        name, version = self.metadata["source_packages"][0]
+        component_name = self.metadata.get("component_override")
+        section_name = self.metadata.get("section_override")
+        source_package_name = getUtility(ISourcePackageNameSet)[name]
+        component = getUtility(IComponentSet)[component_name]
+        section = getUtility(ISectionSet)[section_name]
+        return SourceOverride(source_package_name, component, section)
 
     def _checkPolicies(self, source_names):
         # The assumption here is that we are currently using one package
@@ -309,7 +324,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
                 self.target_archive, self.target_distroseries,
                 self.target_pocket, source_names)
-            self._addOverrides(defaults)
+            self.addSourceOverride(defaults[0])
 
             # There's no existing package with the same name and the
             # policy says unapproved, so we poke it in the NEW queue.
@@ -321,8 +336,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         approve_existing = copy_policy.autoApprove(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if not approve_existing:
-            # Put the existing overrides in the metadata.
-            self._addOverrides(ancestry)
+            # Put the existing override in the metadata.
+            self.addSourceOverride(ancestry[0])
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
