@@ -84,10 +84,10 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "api_uri": "/~commercial-admins",
+                "api_uri": "/~admins",
                 "css": "sprite team",
-                "title": "Commercial Subscription Admins (commercial-admins)",
-                "value": "commercial-admins"
+                "title": "Launchpad Administrators (admins)",
+                "value": "admins"
             }
         ],
         "total_size": 6

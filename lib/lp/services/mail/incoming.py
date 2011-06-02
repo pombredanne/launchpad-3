@@ -50,13 +50,11 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
-from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
-from lp.services.messages.interfaces.message import IMessageSet
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a '\n', and all '\n' that are not preceded by a '\r'.
@@ -426,16 +424,6 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
 
     log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
-    msg_set = getUtility(IMessageSet)
-    try:
-        msg_set.get(mail['message-id'])
-    except NotFoundError:
-        pass
-    else:
-        log.warning(
-            'Message with id %s already stored.  Skipping.',
-            mail['message-id'])
-        return None
 
     # If the Return-Path header is '<>', it probably means
     # that it's a bounce from a message we sent.
