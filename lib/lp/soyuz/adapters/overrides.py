@@ -80,6 +80,9 @@ class Override:
         self.component = component
         self.section = section
 
+    def __ne__(self, other):
+        return not self == other
+
 
 class SourceOverride(Override):
     """See `ISourceOverride`."""
@@ -120,9 +123,6 @@ class BinaryOverride(Override):
             return True
 
         return False
-
-    def __ne__(self, other):
-        return not self == other
 
 
 class IOverridePolicy(Interface):
