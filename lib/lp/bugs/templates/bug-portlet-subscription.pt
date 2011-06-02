@@ -14,8 +14,9 @@
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:condition="request/features/malone.advanced-structural-subscriptions.enabled"
         tal:content="structure context_menu/editsubscriptions/render" />
-    <tal:show-mute condition="
-        request/features/malone.advanced-subscriptions.enabled">
+    <tal:show-mute
+        define="enabled request/features/malone.advanced-subscriptions.enabled"
+        condition="python: view.user and enabled">
       <div tal:attributes="class view/current_user_mute_class"
            id="mute-link-container">
         <span tal:replace="structure context_menu/mute_subscription/render"
