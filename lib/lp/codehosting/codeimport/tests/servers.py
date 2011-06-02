@@ -32,7 +32,7 @@ import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
 import subvertpy.ra
-import subvertpy.repos
+import svn_oo
 
 from lp.services.log.logger import BufferLogger
 
@@ -83,7 +83,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        subvertpy.repos.create(path)
+        svn_oo.Repository.Create(path, BufferLogger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
