@@ -44,6 +44,7 @@ class IHasAffiliation(Interface):
 
 BadgeDetails = namedtuple('BadgeDetails', ('url', 'alt_text'))
 
+
 @adapter(Interface)
 class PillarAffiliation(object):
     """Default affiliation adapter.
