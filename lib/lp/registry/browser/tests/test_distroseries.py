@@ -75,7 +75,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model import distroseriesdifferencejob
-from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
@@ -1058,11 +1057,8 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         self.assertEquals(1, len(jobs))
         job = jobs[0]
         self.assertEquals(series, job.target_distroseries)
-        source_package_info = list(job.source_packages)
-        self.assertEquals(1, len(source_package_info))
-        self.assertEqual(
-            (dsd.source_package_name.name, dsd.parent_source_version),
-            source_package_info[0][:2])
+        self.assertEqual(dsd.source_package_name.name, job.package_name)
+        self.assertEqual(dsd.parent_source_version, job.package_version)
 
     def test_upgrade_gives_feedback(self):
         # requestUpgrades doesn't instantly perform package upgrades,
@@ -1392,7 +1388,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        view.pending_syncs = {dsd.source_package_name.name: object()}
         self.assertTrue(view.hasPendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
@@ -1444,7 +1440,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        view.pending_syncs = {dsd.source_package_name.name: object()}
         self.assertFalse(view.canRequestSync(dsd))
 
     def test_canRequestSync_returns_False_if_child_is_newer(self):
