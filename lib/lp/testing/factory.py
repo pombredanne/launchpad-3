@@ -4084,7 +4084,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
             package_version = unicode(self.getUniqueInteger()) + 'version'
-        package_tuple = (package_name, package_version)
         if source_archive is None:
             source_archive = self.makeArchive()
         if target_archive is None:
@@ -4094,8 +4093,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if target_pocket is None:
             target_pocket = self.getAnyPocket()
         return getUtility(IPlainPackageCopyJobSource).create(
-            package_tuple, source_archive, target_archive,
-            target_distroseries, target_pocket)
+            package_name, source_archive, target_archive,
+            target_distroseries, target_pocket,
+            package_version=package_version)
 
 
 # Some factory methods return simple Python types. We don't add
