@@ -65,6 +65,7 @@ For distroseries we publish a subset of its attributes.
     bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
+    component_names: [u'main', u'restricted']
     date_created: u'2006-10-16T18:31:43.483559+00:00'
     datereleased: None
     description: u'Hoary is the ...
@@ -82,6 +83,8 @@ For distroseries we publish a subset of its attributes.
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary'
     status: u'Active Development'
+    suite_names:
+        [u'Release', u'Security', u'Updates', u'Proposed', u'Backports']
     summary: u'Hoary is the ...
     supported: False
     title: u'The Hoary Hedgehog Release'
