@@ -20,6 +20,8 @@ __all__ = [
     'IHasAffiliation',
     ]
 
+from collections import namedtuple
+
 from zope.component import adapter
 from zope.interface import (
     implements,
@@ -40,6 +42,7 @@ class IHasAffiliation(Interface):
         If the person has no affiliation with this object, return None.
         """
 
+BadgeDetails = namedtuple('url', 'alt_text')
 
 @adapter(Interface)
 class PillarAffiliation(object):
@@ -70,6 +73,8 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         if not affiliated:
             return None
         if self.context.distribution or self.context.distroseries:
-            return "distribution-badge", "Distribution affiliation"
+            return BadgeDetails(
+                "distribution-badge", "Distribution affiliation")
         if self.context.product or self.context.productseries:
-            return "product-badge", "Product affiliation"
+            return BadgeDetails(
+                "product-badge", "Product affiliation")

@@ -124,7 +124,8 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 associated_object).getAffiliationBadge(person)
             if badge_info:
                 extra.badges = [
-                    dict(url="/@@/%s" % badge_info[0], alt=badge_info[1])]
+                    dict(url="/@@/%s" % badge_info.url,
+                         alt=badge_info.alt_text)]
 
         if person.preferredemail is not None:
             if person.hide_email_addresses:
