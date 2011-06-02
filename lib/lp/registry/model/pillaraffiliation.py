@@ -33,7 +33,9 @@ class IHasAffiliation(Interface):
     """The affiliation status of a person with a context."""
 
     def getAffiliationBadge(person):
-        """Return the badge name for the type of affiliation the person has.
+        """Return the badge for the type of affiliation the person has.
+
+        The return value is a tuple: (url, alt).
 
         If the person has no affiliation with this object, return None.
         """
@@ -68,6 +70,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         if not affiliated:
             return None
         if self.context.distribution or self.context.distroseries:
-            return "distribution-badge"
+            return "distribution-badge", "Distribution affiliation"
         if self.context.product or self.context.productseries:
-            return "product-badge"
+            return "product-badge", "Product affiliation"

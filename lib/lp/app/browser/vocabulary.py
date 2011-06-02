@@ -61,7 +61,7 @@ class IPickerEntry(Interface):
     title_link = Attribute('URL used for anchor on title')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
-    badges = Attribute('List of badge image URLs')
+    badges = Attribute('List of badge img attributes')
 
 
 class PickerEntry:
@@ -120,10 +120,11 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         if enhanced_picker_enabled:
             # If the person is affiliated with the associated_object then we
             # can display a badge.
-            badge_name = IHasAffiliation(
+            badge_info = IHasAffiliation(
                 associated_object).getAffiliationBadge(person)
-            if badge_name is not None:
-                extra.image = "/@@/%s" % badge_name
+            if badge_info:
+                extra.badges = [
+                    dict(url="/@@/%s" % badge_info[0], alt=badge_info[1])]
 
         if person.preferredemail is not None:
             if person.hide_email_addresses:

@@ -20,7 +20,8 @@ class TestPillarAffiliation(TestCaseWithFactory):
         distro = self.factory.makeDistribution(owner=person)
         bugtask = self.factory.makeBugTask(target=distro)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
-        self.assertEqual(badge, "distribution-badge")
+        self.assertEqual(
+            badge, ("distribution-badge", "Distribution affiliation"))
 
     def test_bugtask_product_affiliation(self):
         # A person who owns a bugtask product is affiliated.
@@ -28,4 +29,5 @@ class TestPillarAffiliation(TestCaseWithFactory):
         product = self.factory.makeProduct(owner=person)
         bugtask = self.factory.makeBugTask(target=product)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
-        self.assertEqual(badge, "product-badge")
+        self.assertEqual(
+            badge, ("product-badge", "Product affiliation"))
