@@ -214,20 +214,20 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
+    from_addr = None
     if changes:
-        changedby = email_to_person(sanitize_string(changes['Changed-By']))
+        from_addr = sanitize_string(changes['Changed-By'])
     elif spr:
-        changedby = spr.creator
+        from_addr = person_to_email(spr.creator)
     elif bprs:
-        changedby = bprs[0].creator
+        from_addr = person_to_email(bprs[0].creator)
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
     if (action == 'accepted' and announce_list and not archive.is_ppa and
         pocket != PackagePublishingPocket.BACKPORTS and
         not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
-        not is_auto_sync_upload(spr, bprs, pocket, changedby)):
-        from_addr = changedby.preferredemail.email
+        not is_auto_sync_upload(spr, bprs, pocket, from_addr)):
         name = None
         bcc_addr = None
         if spr:
@@ -260,29 +260,28 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'SPR_URL': '',
         'USERS_ADDRESS': config.launchpad.users_address,
         }
+    changedby = None
+    maintainer = None
     if changes:
         information['CHANGESFILE'] = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         information['DATE'] = "Date: %s" % changes.get('Date')
-        changedby = email_to_person(
-            sanitize_string(changes.get('Changed-By')))
-        maintainer = email_to_person(
-            sanitize_string(changes.get('Maintainer')))
+        changedby = sanitize_string(changes.get('Changed-By'))
+        maintainer = sanitize_string(changes.get('Maintainer'))
     elif spr:
         information['CHANGESFILE'] = spr.changelog_entry
         information['DATE'] = "Date: %s" % spr.dateuploaded
-        changedby = spr.creator
-        maintainer = spr.maintainer
+        changedby = person_to_email(spr.creator)
+        maintainer = person_to_email(spr.maintainer)
     elif bprs:
         information['CHANGESFILE'] = bprs[0].changelog_entry
         information['DATE'] = "Date: %s" % bprs[0].dateuploaded
-        changedby = bprs[0].creator
-        maintainer = bprs[0].maintainer
+        changedby = person_to_email(bprs[0].creator)
+        maintainer = person_to_email(bprs[0].maintainer)
     if spr:
         information['SPR_URL'] = canonical_url(spr)
-    if changedby and changedby.preferredemail:
-        information['CHANGEDBY'] = '\nChanged-By: %s <%s>' % (
-            changedby.displayname, changedby.preferredemail.email)
+    if changedby:
+        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -292,14 +291,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if announce_list:
         information['ANNOUNCE'] = "Announcing to %s" % announce_list
     if blamer is not None and blamer != changedby:
-        signer_signature = '%s <%s>' % (
-            blamer.displayname, blamer.preferredemail.email)
+        signer_signature = person_to_email(blamer)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    if maintainer and maintainer.preferredemail and maintainer != changedby:
-        information['MAINTAINER'] = '\nMaintainer: %s <%s>' % (
-            maintainer.displayname, maintainer.preferredemail.email)
+    if maintainer and maintainer != changedby:
+        information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
 
 
@@ -556,7 +553,13 @@ def email_to_person(fullemail):
     return getUtility(IPersonSet).getByEmail(email)
 
 
-def is_auto_sync_upload(spr, bprs, pocket, changed_by):
+def person_to_email(person):
+    """Return a string of full name <e-mail address> given an IPerson."""
+    if person and person.preferredemail:
+        return '%s <%s>' % (person.displayname, person.preferredemail.email)
+
+
+def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     """Return True if this is a (Debian) auto sync upload.
 
     Sync uploads are source-only, unsigned and not targeted to
@@ -564,6 +567,7 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
+    changed_by = email_to_person(changed_by_email)
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
