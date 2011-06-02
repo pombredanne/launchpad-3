@@ -16,6 +16,7 @@ from cStringIO import StringIO
 import os
 import shutil
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -27,6 +28,8 @@ from bzrlib.urlutils import (
     join as urljoin,
     )
 import CVS
+import dulwich.index
+from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
 import subvertpy.ra
 import subvertpy.repos
@@ -208,16 +211,19 @@ class GitServer(Server):
         self.repo_url = repo_url
 
     def makeRepo(self, tree_contents):
-        from bzrlib.plugins.git.tests import GitBranchBuilder
         wd = os.getcwd()
         try:
             os.chdir(self.repo_url)
-            GitRepo.init(".")
-            builder = GitBranchBuilder()
-            for filename, contents in tree_contents:
-                builder.set_file(filename, contents, False)
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.finish()
+            repo = GitRepo.init(".")
+            blobs = [
+                (Blob.from_string(contents), filename) for (filename, contents)
+                in tree_contents]
+            repo.object_store.add_objects(blobs)
+            root_id = dulwich.index.commit_tree(repo.object_store, [
+                (filename, b.id, stat.S_IFREG | 0644)
+                for (b, filename) in blobs])
+            repo.do_commit(committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>', tree=root_id)
         finally:
             os.chdir(wd)
 
