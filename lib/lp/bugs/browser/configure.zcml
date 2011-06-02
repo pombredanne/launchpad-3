@@ -818,7 +818,7 @@
             for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
             class="lp.bugs.browser.bugtracker.BugTrackerEditComponentView"
             permission="launchpad.AnyPerson"
-            template="../templates/bugtracker-edit-component.pt"/>
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             class="lp.bugs.browser.bugtracker.BugTrackerView"
