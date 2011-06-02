@@ -1,0 +1,37 @@
+<div
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    class="portlet" id="portlet-components">
+  <h2>Components</h2>
+  <p>
+    You can link components from this bug tracker to their corresponding
+    distribution source packages in the project's &ldquo;Change
+    components&rdquo; page.
+  </p>
+  <ul tal:define="related_component_groups view/related_component_groups">
+    <li tal:repeat="component_group related_component_groups">
+      <strong><span tal:replace="component_group/name" /></strong>
+      <ul tal:define="components component_group/components">
+        <li tal:repeat="component components">
+          <span tal:replace="component/name" />
+          &nbsp;
+          <span tal:condition="component/distro_source_package">
+            <a class="sprite edit"
+               tal:attributes="href string:${context/fmt:url}/+components/${component_group/id}/${component/id}/+edit">
+               <span tal:replace="structure component/distro_source_package/name"/></a>
+          </span>
+          <a class="sprite add"
+             tal:condition="not: component/distro_source_package"
+             tal:attributes="href string:${context/fmt:url}/+components/${component_group/id}/${component/id}/+edit"></a>
+        </li>
+        <li tal:condition="not: components">
+          <i>This bug tracker has no components for this group</i>
+        </li>
+      </ul>
+    </li>
+    <li tal:condition="not: related_component_groups">
+      <i>This bug tracker has no components</i>
+    </li>
+  </ul>
+</div>

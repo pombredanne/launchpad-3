@@ -34,6 +34,9 @@
     <div class="yui-g">
       <div class="first yui-u">
         <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:condition="features/bugtracker_components">
+          <div tal:replace="structure context/@@+portlet-components" />
+        </div>
       </div>
       <div class="yui-u">
         <div tal:replace="structure context/@@+portlet-projects" />

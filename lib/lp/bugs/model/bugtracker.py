@@ -83,6 +83,7 @@ from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugtrackerperson import BugTrackerPerson
 from lp.bugs.model.bugwatch import BugWatch
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
@@ -271,10 +272,17 @@ class BugTrackerComponentGroup(StormBase):
 
         if component_name is None:
             return None
+        elif component_name.isdigit():
+            component_id = int(component_name)
+            return Store.of(self).find(
+                BugTrackerComponent,
+                BugTrackerComponent.id == component_id,
+                BugTrackerComponent.component_group == self.id).one()
         else:
             return Store.of(self).find(
                 BugTrackerComponent,
-                (BugTrackerComponent.name == component_name)).one()
+                BugTrackerComponent.name == component_name,
+                BugTrackerComponent.component_group == self.id).one()
 
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker
@@ -680,10 +688,34 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        component_group = store.find(
-            BugTrackerComponentGroup,
-            name = component_group_name).one()
+        if component_group_name.isdigit():
+            component_group_id = int(component_group_name)
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                id = component_group_id).one()
+        else:
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                name = component_group_name).one()
         return component_group
+
+    def getRemoteComponentForDistroSourcePackage(
+        self, distro_name, source_package_name):
+        """See `IBugTracker`."""
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distribution is None:
+            return None
+        pkg = distribution.getSourcePackage(source_package_name)
+
+        pkgs = Store.of(self).find(
+            BugTrackerComponent,
+            BugTrackerComponent.distribution == distribution.id,
+            BugTrackerComponent.source_package_name ==
+            pkg.sourcepackagename.id)
+        if pkgs.count() == 0:
+            return None
+        assert(pkgs.count() == 1)
+        return pkgs[0]
 
 
 class BugTrackerSet:

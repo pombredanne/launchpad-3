@@ -394,6 +394,7 @@
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentForDistroSourcePackage
                     getRemoteComponentGroup
                     has_lp_plugin
                     id

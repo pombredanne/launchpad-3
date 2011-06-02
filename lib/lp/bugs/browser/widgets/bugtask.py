@@ -527,6 +527,25 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
         return distribution
 
 
+class UbuntuSourcePackageNameWidget(
+    BugTaskSourcePackageNameWidget):
+    """Package widget where the distribution can be assumed as Ubuntu
+
+    This widgets works the same as `BugTaskSourcePackageNameWidget`,
+    except that it assumes the distribution is 'ubuntu'.
+    """
+    distribution_name = "ubuntu"
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`"""
+        distribution = getUtility(IDistributionSet).getByName(
+            self.distribution_name)
+        if distribution is None:
+            raise UnexpectedFormData(
+                "No such distribution: %s" % self.distribution_name)
+        return distribution
+
+
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
 

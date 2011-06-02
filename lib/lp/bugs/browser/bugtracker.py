@@ -10,6 +10,7 @@ __all__ = [
     'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
+    'BugTrackerEditComponentView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
     'BugTrackerSetBreadcrumb',
@@ -56,6 +57,9 @@ from canonical.launchpad.webapp.batching import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
+from canonical.widgets.bugtask import (
+    UbuntuSourcePackageNameWidget,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -68,10 +72,12 @@ from lp.app.widgets.textwidgets import DelimitedListWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
+    IBugTrackerComponent,
     IBugTrackerComponentGroup,
     IBugTrackerSet,
     IRemoteBug,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
@@ -227,6 +233,14 @@ class BugTrackerView(LaunchpadView):
         return shortlist(chain(self.context.projects,
                                self.context.products), 100)
 
+    @property
+    def related_component_groups(self):
+        """Return all component groups and components
+
+        This property was created for the Related components portlet in
+        the bug tracker's page.
+        """
+        return self.context.getAllRemoteComponentGroups()
 
 BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
     [('On', True), ('Off', False)])
@@ -445,16 +459,111 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
     @stepthrough("+components")
-    def component_groups(self, name):
-        return self.context.getRemoteComponentGroup(name)
+    def component_groups(self, id):
+        # Navigate by id (component group name should work too)
+        return self.context.getRemoteComponentGroup(id)
+
+
+class BugTrackerEditComponentView(LaunchpadEditFormView):
+    """Provides editing form for setting source packages for components.
+
+    In this class we assume that bug tracker components are always
+    linked to source packages in the Ubuntu distribution.
+    """
+
+    schema = IBugTrackerComponent
+    custom_widget('sourcepackagename',
+                  UbuntuSourcePackageNameWidget)
+
+    @property
+    def page_title(self):
+        return smartquote(
+            u'Link a distribution source package to the %s component'
+            % self.context.name)
+
+    @property
+    def field_names(self):
+        field_names = [
+            'sourcepackagename',
+            ]
+        return field_names
+
+    def setUpWidgets(self, context=None):
+        for field in self.form_fields:
+            if (field.custom_widget is None and
+                field.__name__ in self.custom_widgets):
+                field.custom_widget = self.custom_widgets[field.__name__]
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context, self.request,
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        field_values = {}
+        for name in self.field_names:
+            if name == 'sourcepackagename':
+                pkg = self.context.distro_source_package
+                if pkg is not None:
+                    field_values['sourcepackagename'] = pkg.name
+                else:
+                    field_values['sourcepackagename'] = ""
+            else:
+                field_values[name] = getattr(self.context, name)
+
+        return field_values
+
+    def updateContextFromData(self, data, context=None):
+        """Link component to specified distro source package.
+
+        Get the user-provided source package name from the form widget,
+        look it up in Ubuntu to retrieve the distro_source_package
+        object, and link it to this component.
+        """
+        if context is None:
+            context = self.context
+        component = context
+
+        sourcepackagename = self.request.form.get(
+            self.widgets['sourcepackagename'].name)
+
+        distro_name = self.widgets['sourcepackagename'].distribution_name
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+        pkg = distribution.getSourcePackage(sourcepackagename)
+        bug_tracker = self.context.component_group.bug_tracker
+
+        # Has this source package already been assigned to a component?
+        link_comp = bug_tracker.getRemoteComponentForDistroSourcePackage(
+            distro_name, sourcepackagename)
+        if link_comp is not None:
+            self.request.response.addNotification(
+                "The %s source package is already linked to %s:%s in %s" % (
+                    sourcepackagename, link_comp.component_group.name,
+                    link_comp.name, distro_name))
+            return
+
+        component.distro_source_package = pkg
+        self.request.response.addNotification(
+            "%s:%s is now linked to the %s source package in %s" % (
+                component.component_group.name, component.name,
+                sourcepackagename, distro_name))
+
+    @action('Save Changes', name='save')
+    def save_action(self, action, data):
+        """Update the component with the form data."""
+        self.updateContextFromData(data)
+
+        self.next_url = canonical_url(
+            self.context.component_group.bug_tracker)
 
 
 class BugTrackerComponentGroupNavigation(Navigation):
 
     usedfor = IBugTrackerComponentGroup
 
-    def traverse(self, name):
-        return self.context.getComponent(name)
+    def traverse(self, id):
+        return self.context.getComponent(id)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):
