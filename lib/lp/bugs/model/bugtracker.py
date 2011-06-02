@@ -692,30 +692,27 @@ class BugTracker(SQLBase):
             component_group_id = int(component_group_name)
             component_group = store.find(
                 BugTrackerComponentGroup,
-                id = component_group_id).one()
+                BugTrackerComponentGroup.id == component_group_id).one()
         else:
             component_group = store.find(
                 BugTrackerComponentGroup,
-                name = component_group_name).one()
+                BugTrackerComponentGroup.name == component_group_name).one()
         return component_group
 
     def getRemoteComponentForDistroSourcePackage(
-        self, distro_name, source_package_name):
+                                      self, distro_name, source_package_name):
         """See `IBugTracker`."""
         distribution = getUtility(IDistributionSet).getByName(distro_name)
         if distribution is None:
             return None
-        pkg = distribution.getSourcePackage(source_package_name)
-
-        pkgs = Store.of(self).find(
+        dsp = distribution.getSourcePackage(source_package_name)
+        if dsp is None:
+            return None
+        return Store.of(self).find(
             BugTrackerComponent,
             BugTrackerComponent.distribution == distribution.id,
             BugTrackerComponent.source_package_name ==
-            pkg.sourcepackagename.id)
-        if pkgs.count() == 0:
-            return None
-        assert(pkgs.count() == 1)
-        return pkgs[0]
+                dsp.sourcepackagename.id).one()
 
 
 class BugTrackerSet:
@@ -783,7 +780,7 @@ class BugTrackerSet:
         # Without context, cannot tell what store flavour is desirable.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         if active is not None:
-            clauses = [BugTracker.active==active]
+            clauses = [BugTracker.active == active]
         else:
             clauses = []
         results = store.find(BugTracker, *clauses)
