@@ -11,17 +11,8 @@ import unittest
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    login_person,
-    logout,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     ISeriesSourcePackageBranch,
@@ -137,4 +128,3 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

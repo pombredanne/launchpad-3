@@ -89,4 +89,3 @@ class IFindOfficialBranchLinks(Interface):
         :param distrosourcepackage: An `IDistributionSourcePackage`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
-

@@ -43,7 +43,6 @@ class SeriesSourcePackageBranch(Storm):
     __storm_table__ = 'SeriesSourcePackageBranch'
     implements(ISeriesSourcePackageBranch)
 
-
     id = Int(primary=True)
     distroseriesID = Int('distroseries')
     distroseries = Reference(distroseriesID, 'DistroSeries.id')

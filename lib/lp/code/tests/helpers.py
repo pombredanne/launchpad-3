@@ -89,7 +89,6 @@ def make_erics_fooix_project(factory):
 
     :return: a dict of objects to put into local scope.
     """
-    result = {}
     eric = factory.makePerson(
         name='eric', displayname='Eric the Viking',
         email='eric@example.com', password='test')
@@ -181,7 +180,7 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
     for i in range(min(official_count, len(pockets))):
         branch = branches.pop()
         pocket = pockets.pop()
-        sspb = SeriesSourcePackageBranchSet.new(
+        SeriesSourcePackageBranchSet.new(
             series, pocket, sourcepackagename, branch, branch.owner)
         official.append(branch)
 

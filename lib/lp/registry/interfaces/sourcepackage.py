@@ -307,6 +307,7 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
         :return: A {`Pocket`-name : `IBranch`} dict.
         """
 
+
 class ISourcePackageEdit(Interface):
     """SourcePackage attributes requiring launchpad.Edit."""
 

@@ -262,7 +262,7 @@ class TestSourcePackage(TestCaseWithFactory):
         store = Store.of(packaging)
         with person_logged_in(packaging.owner):
             packaging.sourcepackage.deletePackaging()
-        result = store.find(Packaging, Packaging.id==packaging_id)
+        result = store.find(Packaging, Packaging.id == packaging_id)
         self.assertIs(None, result.one())
 
     def test_setPackaging__new(self):
@@ -534,7 +534,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
     def test_uploader_have_launchpad_edit(self):
         sourcepackage = self.factory.makeSourcePackage()
         uploader = self.factory.makePerson()
-        archive =  sourcepackage.get_default_archive()
+        archive = sourcepackage.get_default_archive()
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):

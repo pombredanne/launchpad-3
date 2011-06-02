@@ -206,7 +206,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # simply because Storm can break when accessing them
         # with implicit flush is blocked (like in a permission check when
         # storing the object in the permission cache).
-        self.sourcepackagenameID =  sourcepackagename.id
+        self.sourcepackagenameID = sourcepackagename.id
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
         self.distroseriesID = distroseries.id

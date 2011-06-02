@@ -101,7 +101,7 @@ class PersonCelebrityDescriptor(CelebrityDescriptor):
     This descriptor maintains a list of names so code can detect
     if a given person is a celebrity for special handling.
     """
-    names = set() # Populated by the constructor.
+    names = set()  # Populated by the constructor.
 
     def __init__(self, name):
         PersonCelebrityDescriptor.names.add(name)

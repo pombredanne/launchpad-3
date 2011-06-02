@@ -162,8 +162,9 @@ from lp.registry.interfaces.projectgroup import (
     )
 from lp.registry.interfaces.sourcepackage import (
     ISourcePackage,
+    ISourcePackageEdit,
     ISourcePackagePublic,
-    ISourcePackageEdit)
+    )
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
@@ -229,9 +230,9 @@ IBranch['getSubscription'].queryTaggedValue(
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 IBranch['product'].schema = IProduct
 
 patch_plain_parameter_type(
@@ -246,9 +247,9 @@ IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
@@ -319,12 +320,12 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'return_type'].value_type.schema = IBinaryPackageBuild
 
-ISourcePackage['distroseries'].schema = IDistroSeries
-ISourcePackage['productseries'].schema = IProductSeries
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['distroseries'].schema = IDistroSeries
+ISourcePackagePublic['productseries'].schema = IProductSeries
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
 ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[

@@ -16,7 +16,6 @@ from storm.expr import (
     Desc,
     )
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import (
     extract_text,
@@ -275,7 +274,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         for i in range(official_count):
             branch = branches.pop()
             pocket = pockets.pop()
-            sspb = SeriesSourcePackageBranchSet.new(
+            SeriesSourcePackageBranchSet.new(
                 distroseries, pocket, self.sourcepackagename,
                 branch, branch.owner)
             official.append(branch)
@@ -351,7 +350,7 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     def test_package_development_focus(self):
         # Check the bzr_identity of a development focus package branch.
         branch = self.factory.makePackageBranch()
-        sspb = SeriesSourcePackageBranchSet.new(
+        SeriesSourcePackageBranchSet.new(
             branch.distroseries, PackagePublishingPocket.RELEASE,
             branch.sourcepackagename, branch, branch.owner)
         identity = "lp://dev/%s/%s" % (

@@ -2577,6 +2577,7 @@ class SetMessageVisibility(AuthorizationBase):
 class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
 
+
 class EditSourcePackage(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ISourcePackage
