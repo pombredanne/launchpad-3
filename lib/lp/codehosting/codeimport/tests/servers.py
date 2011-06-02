@@ -12,6 +12,7 @@ __all__ = [
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import shutil
 import signal
@@ -27,8 +28,8 @@ from bzrlib.urlutils import (
     )
 import CVS
 from dulwich.repo import Repo as GitRepo
-import pysvn
-import svn_oo
+import subvertpy.ra
+import subvertpy.repos
 
 from lp.services.log.logger import BufferLogger
 
@@ -73,9 +74,13 @@ class SubversionServer(Server):
         self.repository_path = os.path.abspath(repository_path)
         self._use_svn_serve = use_svn_serve
 
+    def _get_ra(self, url):
+        return subvertpy.ra.RemoteAccess(url,
+            auth=subvertpy.ra.Auth([subvertpy.ra.get_username_provider()]))
+
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, BufferLogger())
+        subvertpy.repos.create(path)
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -98,9 +103,8 @@ class SubversionServer(Server):
             delay = 0.1
             for i in range(10):
                 try:
-                    client = pysvn.Client()
-                    client.ls(self.get_url())
-                except pysvn.ClientError, e:
+                    ra = self._get_ra(self.get_url())
+                except subvertpy.SubversionException, e:
                     if 'Connection refused' in str(e):
                         time.sleep(delay)
                         delay *= 1.5
@@ -117,7 +121,6 @@ class SubversionServer(Server):
             os.kill(self._svnserve.pid, signal.SIGINT)
             self._svnserve.communicate()
 
-    @run_in_temporary_directory
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
 
@@ -126,27 +129,31 @@ class SubversionServer(Server):
             tuples of (relative filename, file contents).
         """
         branch_url = self.makeDirectory(branch_name)
-        client = pysvn.Client()
-        branch_path = os.path.abspath(branch_name)
-        client.checkout(branch_url, branch_path)
-        build_tree_contents(
-            [(os.path.join(branch_path, filename), content)
-             for filename, content in tree_contents])
-        client.add(
-            [os.path.join(branch_path, filename)
-             for filename in os.listdir(branch_path)
-             if not filename.startswith('.')], recurse=True)
-        client.checkin(branch_path, 'Import', recurse=True)
+        ra = self._get_ra(branch_url)
+        editor = ra.get_commit_editor({"svn:log": "Import"})
+        root = editor.open_root()
+        for filename, content in tree_contents:
+            f = root.add_file(filename)
+            try:
+                subvertpy.delta.send_stream(StringIO(content),
+                    f.apply_textdelta())
+            finally:
+                f.close()
+        root.close()
+        editor.close()
         return branch_url
 
     def makeDirectory(self, directory_name, commit_message=None):
         """Make a directory on the repository."""
         if commit_message is None:
             commit_message = 'Make %r' % (directory_name,)
-        url = urljoin(self.get_url(), directory_name)
-        client = pysvn.Client()
-        client.mkdir(url, commit_message)
-        return url
+        ra = self._get_ra(self.get_url())
+        editor = ra.get_commit_editor({"svn:log": commit_message})
+        root = editor.open_root()
+        root.add_directory(directory_name).close()
+        root.close()
+        editor.close()
+        return urljoin(self.get_url(), directory_name)
 
 
 class CVSServer(Server):
