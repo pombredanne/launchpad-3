@@ -466,22 +466,11 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     In this class we assume that bug tracker components are always
     linked to source packages in the Ubuntu distribution.
     """
-
     schema = IBugTrackerComponent
     custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
-
-    @property
-    def page_title(self):
-        return smartquote(
-            u'Link a distribution source package to the %s component'
-            % self.context.name)
-
-    @property
-    def field_names(self):
-        field_names = [
-            'sourcepackagename',
-            ]
-        return field_names
+    field_names = ['sourcepackagename']
+    label = 'Link a distribution source package to the Example component'
+    page_title = 'Link component'
 
     def setUpWidgets(self, context=None):
         for field in self.form_fields:
