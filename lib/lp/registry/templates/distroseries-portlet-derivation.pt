@@ -60,9 +60,9 @@
         </tal:no_diffs>
       </tal:diffs>
   </tal:is_initialised>
+  </tal:is_derived>
   <tal:is_initialising condition="context/is_initialising">
     <h2>Series initialisation in progress</h2>
       This series is initialising.
   </tal:is_initialising>
-  </tal:is_derived>
 </div>
