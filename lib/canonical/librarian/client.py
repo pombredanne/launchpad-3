@@ -95,9 +95,10 @@ class FileUploadClient:
             response = self.state.f.readline().strip()
             raise UploadFailed('Server said: ' + response)
 
-    def _sendLine(self, line):
+    def _sendLine(self, line, check_for_error_responses=True):
         self.state.f.write(line + '\r\n')
-        self._checkError()
+        if check_for_error_responses:
+            self._checkError()
 
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
@@ -162,8 +163,11 @@ class FileUploadClient:
             if debugID is not None:
                 self._sendHeader('Debug-ID', debugID)
 
-            # Send blank line
-            self._sendLine('')
+            # Send blank line. Do not check for a response from the
+            # server when no data will be sent. Otherwise
+            # _checkError() might consume the "200" response which
+            # is supposed to be read below in this method.
+            self._sendLine('', check_for_error_responses=(size > 0))
 
             # Prepare to the upload the file
             shaDigester = hashlib.sha1()
@@ -173,7 +177,7 @@ class FileUploadClient:
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
-            for chunk in iter(lambda: file.read(1024*64), ''):
+            for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
                 shaDigester.update(chunk)
@@ -241,7 +245,7 @@ class FileUploadClient:
             # Read in and upload the file 64kb at a time, by using the two-arg
             # form of iter (see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
-            for chunk in iter(lambda: file.read(1024*64), ''):
+            for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
 

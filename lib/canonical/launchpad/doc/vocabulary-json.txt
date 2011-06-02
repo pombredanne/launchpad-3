@@ -87,13 +87,13 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "alt_title": "commercial-admins",
-                "alt_title_link": "http://launchpad.dev/~commercial-admins",
-                "api_uri": "/~commercial-admins",
+                "alt_title": "admins",
+                "alt_title_link": "http://launchpad.dev/~admins",
+                "api_uri": "/~admins",
                 "css": "sprite team",
                 "link_css": "js-action",
-                "title": "Commercial Subscription Admins",
-                "value": "commercial-admins"
+                "title": "Launchpad Administrators",
+                "value": "admins"
             }
         ],
         "total_size": 6

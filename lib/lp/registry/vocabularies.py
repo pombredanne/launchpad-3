@@ -75,6 +75,8 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Union,
+    With,
     )
 from storm.info import ClassAlias
 from zope.component import getUtility
@@ -169,7 +171,10 @@ from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
 from lp.registry.model.milestone import Milestone
-from lp.registry.model.person import Person, IrcID
+from lp.registry.model.person import (
+    IrcID,
+    Person,
+    )
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
@@ -178,13 +183,21 @@ from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
-from lp.services.propertycache import cachedproperty
+from lp.services.features import getFeatureFlag
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache
+    )
 
 
 class BasePersonVocabulary:
     """This is a base class used by all different Person Vocabularies."""
 
     _table = Person
+
+    def __init__(self, context=None):
+        self.enhanced_picker_enabled = bool(
+            getFeatureFlag('disclosure.picker_enhancements.enabled'))
 
     def toTerm(self, obj):
         """Return the term for this object."""
@@ -507,7 +520,12 @@ class ValidPersonOrTeamVocabulary(
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
+        if self.enhanced_picker_enabled:
+            return self._doSearchWithImprovedSorting(text)
+        else:
+            return self._doSearchWithOriginalSorting(text)
 
+    def _doSearchWithOriginalSorting(self, text=""):
         private_query, private_tables = self._privateTeamQueryAndTables()
         exact_match = None
 
@@ -646,12 +664,184 @@ class ValidPersonOrTeamVocabulary(
         else:
             result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
+        return result
 
-        # We will be displaying the person's irc nic(s) in the description
-        # so we need to bulk load them in one query for performance.
+    def _doSearchWithImprovedSorting(self, text=""):
+        """Return the people/teams whose fti or email address match :text:"""
+
+        private_query, private_tables = self._privateTeamQueryAndTables()
+
+        # Short circuit if there is no search text - all valid people and
+        # teams have been requested.
+        if not text:
+            tables = [
+                Person,
+                Join(self.cache_table_name,
+                     SQL("%s.id = Person.id" % self.cache_table_name)),
+                ]
+            tables.extend(private_tables)
+            result = self.store.using(*tables).find(
+                Person,
+                And(
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
+                       private_query,
+                       ),
+                    Person.merged == None,
+                    self.extra_clause
+                    )
+                )
+            result.config(distinct=True)
+            result.order_by(Person.displayname, Person.name)
+        else:
+            # Do a full search based on the text given.
+
+            # The queries are broken up into several steps for efficiency.
+            # The public person and team searches do not need to join with the
+            # TeamParticipation table, which is very expensive.  The search
+            # for private teams does need that table but the number of private
+            # teams is very small so the cost is not great. However, if the
+            # person is a logged in administrator, we don't need to join to
+            # the TeamParticipation table and can construct a more efficient
+            # query (since in this case we are searching all private teams).
+
+            # Create a query that will match public persons and teams that
+            # have the search text in the fti, at the start of their email
+            # address, as their full IRC nickname, or at the start of their
+            # displayname.
+            # Since we may be eliminating results with the limit to improve
+            # performance, we sort by the rank, so that we will always get
+            # the best results. The fti rank will be between 0 and 1.
+            # Note we use lower() instead of the non-standard ILIKE because
+            # ILIKE doesn't hit the indexes.
+            # The '%%' is necessary because storm variable substitution
+            # converts it to '%'.
+
+            # This is the SQL that will give us the IDs of the people we want
+            # in the result.
+            matching_person_sql = SQL("""
+                SELECT id, MAX(rank) AS rank, false as is_private_team
+                FROM (
+                    SELECT Person.id,
+                    (case
+                        when person.name=? then 100
+                        when lower(person.name) like ? || '%%' then 75
+                        when lower(person.displayname) like ? || '%%' then 50
+                        else rank(fti, ftq(?))
+                    end) as rank
+                    FROM Person
+                    WHERE lower(Person.name) LIKE ? || '%%'
+                    or lower(Person.displayname) LIKE ? || '%%'
+                    or Person.fti @@ ftq(?)
+                    UNION ALL
+                    SELECT Person.id, 25 AS rank
+                    FROM Person, IrcID
+                    WHERE Person.id = IrcID.person
+                        AND IrcID.nickname = ?
+                    UNION ALL
+                    SELECT Person.id, 10 AS rank
+                    FROM Person, EmailAddress
+                    WHERE Person.id = EmailAddress.person
+                        AND LOWER(EmailAddress.email) LIKE ? || '%%'
+                        AND status IN (?, ?)
+                ) AS person_match
+                GROUP BY id, is_private_team
+            """, (text, text, text, text, text, text, text, text, text,
+                  EmailAddressStatus.VALIDATED.value,
+                  EmailAddressStatus.PREFERRED.value))
+
+            # Do we need to search for private teams.
+            if private_tables:
+                private_tables = [Person] + private_tables
+                private_ranking_sql = SQL("""
+                    (case
+                        when person.name=? then 100
+                        when lower(person.name) like ? || '%%' then 75
+                        when lower(person.displayname) like ? || '%%' then 50
+                        else rank(fti, ftq(?))
+                    end) as rank
+                """, (text, text, text, text))
+
+                # Searching for private teams that match can be easier since
+                # we are only interested in teams.  Teams can have email
+                # addresses but we're electing to ignore them here.
+                private_result_select = Select(
+                    tables=private_tables,
+                    columns=(Person.id, private_ranking_sql,
+                                SQL("true as is_private_team")),
+                    where=And(
+                        SQL("""
+                            lower(Person.name) LIKE ? || '%%'
+                            OR lower(Person.displayname) LIKE ? || '%%'
+                            OR Person.fti @@ ftq(?)
+                            """, [text, text, text]),
+                        private_query))
+                matching_person_sql = Union(matching_person_sql,
+                          private_result_select, all=True)
+
+            # The tables for public persons and teams that match the text.
+            public_tables = [
+                SQL("MatchingPerson"),
+                Person,
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                ]
+
+            # If private_tables is empty, we are searching for all private
+            # teams. We can simply append the private query component to the
+            # public query. Otherwise, for efficiency as stated earlier, we
+            # need to do a separate query to join to the TeamParticipation
+            # table.
+            private_teams_query = private_query
+            if private_tables:
+                private_teams_query = SQL("is_private_team")
+
+            # We just select the required ids since we will use
+            # IPersonSet.getPrecachedPersonsFromIDs to load the results
+            matching_with = With("MatchingPerson", matching_person_sql)
+            result = self.store.with_(
+                matching_with).using(*public_tables).find(
+                Person,
+                And(
+                    SQL("Person.id = MatchingPerson.id"),
+                    Or(
+                        And(# A public person or team
+                            Person.visibility == PersonVisibility.PUBLIC,
+                            Person.merged == None,
+                            Or(# A valid person-or-team is either a team...
+                                # Note: 'Not' due to Bug 244768.
+                                Not(Person.teamowner == None),
+                                # Or a person who has preferred email address.
+                                EmailAddress.status ==
+                                    EmailAddressStatus.PREFERRED)),
+                        # Or a private team
+                        private_teams_query),
+                    self.extra_clause),
+                )
+            # Better ranked matches go first.
+            result.order_by(
+                SQL("rank desc"), Person.displayname, Person.name)
+        result.config(limit=self.LIMIT)
+
+        # We will be displaying the person's irc nick(s) and emails in the
+        # description so we need to bulk load them for performance, otherwise
+        # we get one query per person per attribute.
         def pre_iter_hook(rows):
             persons = set(obj for obj in rows)
-            bulk.load_referencing(IrcID, persons, ['personID'])
+            # The emails.
+            emails = bulk.load_referencing(
+                EmailAddress, persons, ['personID'])
+            email_by_person = dict((email.personID, email)
+                for email in emails
+                if email.status == EmailAddressStatus.PREFERRED)
+
+            # The irc nicks.
+            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
+            nicks_by_person = dict((nick.personID, nicks)
+                for nick in nicks)
+
+            for person in persons:
+                cache = get_property_cache(person)
+                cache.preferredemail = email_by_person.get(person.id, None)
+                cache.ircnicknames = nicks_by_person.get(person.id, None)
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
@@ -704,7 +894,14 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
-            name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
+            if self.enhanced_picker_enabled:
+                name_match_query = SQL("""
+                    lower(Person.name) LIKE ? || '%%'
+                    OR lower(Person.displayname) LIKE ? || '%%'
+                    OR Person.fti @@ ftq(?)
+                    """, [text, text, text]),
+            else:
+                name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
@@ -722,11 +919,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                     Or(name_match_query,
                        EmailAddress.person != None)))
 
-        # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
-        # setting the 'distinct' and 'limit' options in a single call to
-        # .config().  The work-around is to split them up.  Note the limit has
-        # to be after the call to 'order_by' for this work-around to be
-        # effective.
+        # To get the correct results we need to do distinct first, then order
+        # by, then limit.
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)

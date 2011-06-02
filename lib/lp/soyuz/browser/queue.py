@@ -400,7 +400,7 @@ class QueueItemsView(LaunchpadView):
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
-        queue_item.acceptFromQueue(announce_list=self.context.changeslist)
+        queue_item.acceptFromQueue()
 
     def queue_action_reject(self, queue_item):
         """Accept the queue item passed."""
