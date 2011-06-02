@@ -14,6 +14,7 @@ __all__ = [
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
     "NominationReviewActionWidget",
+    "UbuntuSourcePackageNameWidget",
     ]
 
 from xml.sax.saxutils import escape
