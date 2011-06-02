@@ -488,38 +488,32 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         look it up in Ubuntu to retrieve the distro_source_package
         object, and link it to this component.
         """
-        if context is None:
-            context = self.context
-        component = context
-
-        sourcepackagename = self.request.form.get(
-            self.widgets['sourcepackagename'].name)
-
+        component = context or self.context
+        sourcepackagename = data['sourcepackagename']
         distribution = self.widgets['sourcepackagename'].getDistribution()
-        pkg = distribution.getSourcePackage(sourcepackagename)
+        dsp = distribution.getSourcePackage(sourcepackagename)
         bug_tracker = self.context.component_group.bug_tracker
 
         # Has this source package already been assigned to a component?
-        link_comp = bug_tracker.getRemoteComponentForDistroSourcePackage(
-            distribution.name, sourcepackagename)
-        if link_comp is not None:
+        old_component = bug_tracker.getRemoteComponentForDistroSourcePackage(
+            distribution.name, sourcepackagename.name)
+        if old_component is not None:
             self.request.response.addNotification(
                 "The %s source package is already linked to %s:%s in %s" % (
-                    sourcepackagename, link_comp.component_group.name,
-                    link_comp.name, distribution.name))
+                    sourcepackagename.name,
+                    old_component.component_group.name,
+                    old_component.name, distribution.name))
             return
-
-        component.distro_source_package = pkg
+        component.distro_source_package = dsp
         self.request.response.addNotification(
             "%s:%s is now linked to the %s source package in %s" % (
                 component.component_group.name, component.name,
-                sourcepackagename, distribution.name))
+                sourcepackagename.name, distribution.name))
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):
         """Update the component with the form data."""
         self.updateContextFromData(data)
-
         self.next_url = canonical_url(
             self.context.component_group.bug_tracker)
 
