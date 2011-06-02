@@ -855,7 +855,6 @@ class NascentUpload:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
                     summary_text=self.warning_message,
-                    announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
                 changes_file_object.close()
