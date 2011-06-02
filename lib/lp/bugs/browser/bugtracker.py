@@ -234,12 +234,9 @@ class BugTrackerView(LaunchpadView):
 
     @property
     def related_component_groups(self):
-        """Return all component groups and components
-
-        This property was created for the Related components portlet in
-        the bug tracker's page.
-        """
+        """All component groups and components."""
         return self.context.getAllRemoteComponentGroups()
+
 
 BUG_TRACKER_ACTIVE_VOCABULARY = SimpleVocabulary.fromItems(
     [('On', True), ('Off', False)])
