@@ -203,6 +203,16 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                     self._hasCSSClass(html, 'mute-link-container', 'hidden'),
                     'No "hidden" CSS class in mute-link-container.')
 
+    def test_mute_subscription_link_not_rendered_for_anonymous(self):
+        # If a person is not already subscribed to a bug in some way,
+        # the mute link will not be displayed to them.
+        with FeatureFixture({self.feature_flag_1: 'on'}):
+            view = create_initialized_view(
+                self.bug, name="+portlet-subscription")
+            self.assertFalse(view.user_should_see_mute_link)
+            html = view.render()
+            self.assertFalse('mute_subscription' in html)
+
     def test_mute_subscription_link_shown_if_muted(self):
         # If a person is muted but not otherwise subscribed, they should still
         # see the (un)mute link.
