@@ -475,17 +475,10 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        field_values = {}
-        for name in self.field_names:
-            if name == 'sourcepackagename':
-                pkg = self.context.distro_source_package
-                if pkg is not None:
-                    field_values['sourcepackagename'] = pkg.name
-                else:
-                    field_values['sourcepackagename'] = ""
-            else:
-                field_values[name] = getattr(self.context, name)
-
+        field_values = dict(sourcepackagename='')
+        dsp = self.context.distro_source_package
+        if dsp is not None:
+            field_values['sourcepackagename'] = dsp.name
         return field_values
 
     def updateContextFromData(self, data, context=None):
