@@ -251,6 +251,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def include_binaries(self):
         return self.metadata['include_binaries']
 
+    def addSourceOverride(self, override):
+        """Add an `ISourceOverride` to the metadata."""
+        metadata_dict = dict(
+            component_override=override.component.name,
+            section_override=override.section.name)
+        self.context.extendMetadata(metadata_dict)
+
     def run(self):
         """See `IRunnableJob`."""
         try:

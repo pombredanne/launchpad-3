@@ -134,3 +134,6 @@ class IPlainPackageCopyJob(IRunnableJob):
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
+
+    def addSourceOverride(override):
+        """Add an `ISourceOverride` to the metadata."""

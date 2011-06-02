@@ -4,6 +4,10 @@
 """Tests for sync package jobs."""
 
 from testtools.content import text_content
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -17,6 +21,7 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -25,11 +30,13 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -427,6 +434,31 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             parent_series=dsd.parent_series)
         naked_job = removeSecurityProxy(self.makeJob(dsd))
         self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
+
+    def test_addSourceOverride(self):
+        # Test the addOverride method which adds an ISourceOverride to the
+        # metadata.
+        name = self.factory.makeSourcePackageName()
+        component = self.factory.makeComponent()
+        section=self.factory.makeSection()
+        pcj = self.factory.makePlainPackageCopyJob()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('sync_packages')
+
+        override = SourceOverride(
+            source_package_name=name,
+            component=component,
+            section=section)
+        pcj.addSourceOverride(override)
+
+        metadata_component = getUtility(
+            IComponentSet)[pcj.metadata["component_override"]]
+        metadata_section = getUtility(
+            ISectionSet)[pcj.metadata["section_override"]]
+        matcher = MatchesStructure(
+            component=Equals(metadata_component),
+            section=Equals(metadata_section))
+        self.assertThat(override, matcher)
 
 
 class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
