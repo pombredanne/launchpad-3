@@ -11,13 +11,18 @@ __all__ = [
     ]
 
 from operator import methodcaller
+
 import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -25,6 +30,7 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packageset import Packageset
@@ -63,23 +69,33 @@ class InitialiseDistroSeries:
     """
 
     def __init__(
-        self, parent, distroseries, arches=(), packagesets=(), rebuild=False):
+        self, distroseries, parents, arches=(), packagesets=(),
+        rebuild=False, overlays=(), overlay_pockets=(),
+        overlay_components=()):
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
-        self.parent = parent
+
+        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
+        # initialising from multiple parents.
+        self.parent_id = parents[0]
+        self.parent = IStore(
+            DistroSeries).get(DistroSeries, int(self.parent_id))
+
         self.distroseries = distroseries
         self.arches = arches
         self.packagesets = [
             ensure_unicode(packageset) for packageset in packagesets]
         self.rebuild = rebuild
+        self.overlays = overlays
+        self.overlay_pockets = overlay_pockets
+        self.overlay_components = overlay_components
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.previous_series is not None:
+        if self.distroseries.is_derived_series:
             raise InitialisationError(
-                ("DistroSeries {child.name} has been initialized; it already "
-                 "derives from {child.previous_series.distribution.name}/"
-                 "{child.previous_series.name}.").format(
+                ("DistroSeries {child.name} has already been initialized"
+                 ".").format(
                     child=self.distroseries))
         if self.distroseries.distribution.id == self.parent.distribution.id:
             self._checkBuilds()
@@ -137,10 +153,29 @@ class InitialiseDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._set_initialised()
         transaction.commit()
 
     def _set_parent(self):
-        self.distroseries.previous_series = self.parent
+        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
+        # initialising from multiple parents.
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        if self.overlays and self.overlays[0]:
+            pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
+                PackagePublishingPocket, self.overlay_pockets[0]).value
+            component_set = getUtility(IComponentSet)
+            component = component_set[self.overlay_components[0]]
+            dsp_set.new(
+                self.distroseries, self.parent, initialized=False,
+                is_overlay=True, pocket=pocket, component=component)
+        else:
+            dsp_set.new(self.distroseries, self.parent, initialized=False)
+
+    def _set_initialised(self):
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
+            self.distroseries, self.parent)
+        distroseriesparent.initialized = True
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = \
@@ -193,9 +228,8 @@ class InitialiseDistroSeries:
         # The overhead from looking up each packageset is mitigated by
         # this usually running from a job.
         if self.packagesets:
-            for pkgsetname in self.packagesets:
-                pkgset = getUtility(IPackagesetSet).getByName(
-                    pkgsetname, distroseries=self.parent)
+            for pkgsetid in self.packagesets:
+                pkgset = self._store.get(Packageset, int(pkgsetid))
                 spns += list(pkgset.getSourcesIncluded())
 
         for archive in self.parent.distribution.all_distro_archives:
@@ -270,7 +304,7 @@ class InitialiseDistroSeries:
                 -- the data set for the series being updated, yet results are
                 -- in fact the data from the original series.
                 JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = ChildSeries.parent_series
+                    ON Packaging.distroseries = %s
             WHERE
                 -- Select only the packaging links that are in the parent
                 -- that are not in the child.
@@ -281,7 +315,7 @@ class InitialiseDistroSeries:
                     WHERE distroseries in (
                         SELECT id
                         FROM Distroseries
-                        WHERE id = ChildSeries.parent_series
+                        WHERE id = %s
                         )
                     EXCEPT
                     SELECT sourcepackagename
@@ -292,7 +326,7 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % self.distroseries.id)
+            """ % (self.parent.id, self.distroseries.id, self.parent.id))
 
     def _copy_packagesets(self):
         """Copy packagesets from the parent distroseries."""
@@ -302,7 +336,7 @@ class InitialiseDistroSeries:
         for parent_ps in packagesets:
             # Cross-distro initialisations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
-            if self.packagesets and parent_ps.name not in self.packagesets:
+            if self.packagesets and str(parent_ps.id) not in self.packagesets:
                 continue
             if self.distroseries.distribution == self.parent.distribution:
                 new_owner = parent_ps.owner

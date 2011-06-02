@@ -1336,18 +1336,7 @@ class Person(
                 pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
-        if tp is not None or self.id == team.teamownerID:
-            in_team = True
-        elif not team.teamowner.inTeam(team):
-            # The owner is not a member but must retain his rights over
-            # this team. This person may be a member of the owner, and in this
-            # case it'll also have rights over this team.
-            # Note that this query and the tp query above can be consolidated
-            # when we get to a finer grained level of optimisations.
-            in_team = self.inTeam(team.teamowner)
-        else:
-            in_team = False
-
+        in_team = tp is not None
         self._inTeam_cache[team.id] = in_team
         return in_team
 
