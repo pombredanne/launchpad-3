@@ -98,7 +98,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
-            copy_policy=PackageCopyPolicy.SYNC)
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -109,7 +109,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual("foo", job.package_name)
         self.assertEqual("1.0-1", job.package_version)
         self.assertEquals(False, job.include_binaries)
-        self.assertEquals(PackageCopyPolicy.SYNC, job.copy_policy)
+        self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
 
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.

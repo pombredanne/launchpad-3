@@ -7,7 +7,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
-    SyncCopyPolicy,
+    MassSyncCopyPolicy,
     )
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.enums import (
@@ -82,7 +82,7 @@ class TestCopyPolicy(TestCaseWithFactory):
         self.assertTrue(cp.send_email)
 
     def test_sync_does_not_send_emails(self):
-        cp = SyncCopyPolicy()
+        cp = MassSyncCopyPolicy()
         self.assertFalse(cp.send_email)
 
     def test_policies_implement_ICopyPolicy(self):

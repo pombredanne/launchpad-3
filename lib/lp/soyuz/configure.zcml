@@ -923,7 +923,7 @@
     <class class=".adapters.copypolicy.InsecureCopyPolicy">
       <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
     </class>
-    <class class=".adapters.copypolicy.SyncCopyPolicy">
+    <class class=".adapters.copypolicy.MassSyncCopyPolicy">
       <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
     </class>
     <adapter

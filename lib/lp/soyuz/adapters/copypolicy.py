@@ -9,9 +9,9 @@ decided at runtime, such as whether to auto-accept a package or not.
 
 __metaclass__ = type
 
+# All of this module's functionality can be reached through the
+# ICopyPolicy adapter.
 __all__ = [
-    "InsecureCopyPolicy",
-    "SyncCopyPolicy",
     ]
 
 
@@ -63,18 +63,18 @@ class InsecureCopyPolicy(BasicCopyPolicy):
     send_email = True
 
 
-class SyncCopyPolicy(BasicCopyPolicy):
+class MassSyncCopyPolicy(BasicCopyPolicy):
     """A policy for mass 'sync' copies."""
     implements(ICopyPolicy)
 
-    enum_value = PackageCopyPolicy.SYNC
+    enum_value = PackageCopyPolicy.MASS_SYNC
 
     send_email = False
 
 
 policies = [
     InsecureCopyPolicy,
-    SyncCopyPolicy,
+    MassSyncCopyPolicy,
     ]
 
 
