@@ -805,11 +805,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         component = self.component
         section = self.section
         if overrides is not None:
-            [spn, new_component, new_section] = overrides[0]
-            if new_component is not None:
-                component = new_component
-            if new_section is not None:
-                section = new_section
+            # Assume only one override per package.
+            override = overrides[0]
+            if override.component is not None:
+                component = override.component
+            if override.section is not None:
+                section = override.section
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
@@ -1346,11 +1347,13 @@ class PublishingSet:
             with_overrides = {}
             overrides = policy.calculateBinaryOverrides(
                 archive, distroseries, pocket, bpn_archtag.keys())
-            for bpn, das, component, section, priority in overrides:
-                bpph = bpn_archtag[(bpn, das.architecturetag)]
-                new_component = component or bpph.component
-                new_section = section or bpph.section
-                new_priority = priority or bpph.priority
+            for override in overrides:
+                bpph = bpn_archtag[
+                    (override.binary_package_name,
+                     override.distro_arch_series.architecturetag)]
+                new_component = override.component or bpph.component
+                new_section = override.section or bpph.section
+                new_priority = override.priority or bpph.priority
                 calculated = (new_component, new_section, new_priority)
                 with_overrides[bpph.binarypackagerelease] = calculated
         else:
