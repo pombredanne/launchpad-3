@@ -13,6 +13,7 @@ __all__ = [
     'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'PackageCopyPolicy',
     'PackageCopyStatus',
     'PackageDiffStatus',
     'PackagePublishingPriority',
