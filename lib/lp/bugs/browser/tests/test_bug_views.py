@@ -202,3 +202,70 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertTrue(
                     self._hasCSSClass(html, 'mute-link-container', 'hidden'),
                     'No "hidden" CSS class in mute-link-container.')
+
+
+class TestBugSecrecyViews(TestCaseWithFactory):
+    """Tests for the Bug secrecy views."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_notification_shown_if_marking_private_and_not_subscribed(self):
+        # If a user who is not subscribed to a bug marks that bug as
+        # private, the user will be subscribed to the bug. This allows
+        # them to un-mark the bug if they choose to, rather than being
+        # blocked from doing so.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        with person_logged_in(person):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy', form={
+                    'field.private': 'on',
+                    'field.security_related': '',
+                    'field.actions.change': 'Change',
+                    })
+            self.assertEqual(1, len(view.request.response.notifications))
+            message_text = (
+                "Since you marked this bug as private you have "
+                "automatically been subscribed to it.")
+            self.assertEqual(
+                message_text, view.request.response.notifications[0].message)
+
+    def test_no_notification_shown_if_marking_private_and_subscribed(self):
+        # If a user who is subscribed to a bug marks that bug as
+        # private, the user will see not notification.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        with person_logged_in(person):
+            bug.subscribe(person, person)
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy', form={
+                    'field.private': 'on',
+                    'field.security_related': '',
+                    'field.actions.change': 'Change',
+                    })
+            self.assertEqual(0, len(view.request.response.notifications))
+
+    def test_notification_includes_link_for_advanced_subscriptions(self):
+        # If the advanced subscriptions feature flag is turned on, the
+        # notification will include a link to the edit subscription
+        # page.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        with FeatureFixture({'malone.advanced-subscriptions.enabled': 'on'}):
+            with person_logged_in(person):
+                view = create_initialized_view(
+                    bug.default_bugtask, name='+secrecy', form={
+                        'field.private': 'on',
+                        'field.security_related': '',
+                        'field.actions.change': 'Change',
+                        })
+                self.assertEqual(1, len(view.request.response.notifications))
+                message_text = (
+                    "Since you marked this bug as private you have "
+                    "automatically been subscribed to it. If you don't want "
+                    "to receive email about this bug you can <a href=\""
+                    "%s\">mute your subscription or unsubscribe</a>."
+                    % canonical_url(
+                        bug.default_bugtask, view_name='+subscribe'))
+                self.assertEqual(
+                    message_text, view.request.response.notifications[0].message)

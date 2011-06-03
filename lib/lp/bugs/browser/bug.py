@@ -843,6 +843,10 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
+        user_will_be_subscribed = False
+        if private:
+            user_will_be_subscribed = (
+                not bug.personIsDirectSubscriber(self.user))
         security_related = data.pop('security_related')
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
@@ -851,6 +855,21 @@ class BugSecrecyEditView(BugEditViewBase):
             changed_fields = []
             if private_changed:
                 changed_fields.append('private')
+                if user_will_be_subscribed:
+                    notification_text = (
+                        "Since you marked this bug as private you have "
+                        "automatically been subscribed to it.")
+                    if features.getFeatureFlag(
+                        'malone.advanced-subscriptions.enabled'):
+                        notification_text = (
+                            "%s If you don't want to receive email about "
+                            "this bug you can <a href=\"%s\">mute your "
+                            "subscription or unsubscribe</a>." % (
+                            notification_text,
+                            canonical_url(
+                                self.context, view_name='+subscribe')))
+                    self.request.response.addInfoNotification(
+                        structured(notification_text))
             if security_related_changed:
                 changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
