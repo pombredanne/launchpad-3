@@ -23,7 +23,7 @@
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable
         Javascript in your browser and reload this page. Alternatively,
-        please use the <code>deriveDistroSeries</code> API call via the
+        please use the <code>initDerivedDistroSeries</code> API call via the
         web service.
       </p>
       <div class="unseen" id="initseries-form-container">
