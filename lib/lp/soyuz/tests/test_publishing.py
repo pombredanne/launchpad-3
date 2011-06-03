@@ -997,9 +997,10 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         policy = UnknownOverridePolicy()
         overrides = policy.calculateSourceOverrides(
             target_archive, None, None, [name])
+        [override] = overrides
 
         copy = spph.copyTo(
-            spph.distroseries, spph.pocket, target_archive, overrides)
+            spph.distroseries, spph.pocket, target_archive, override)
 
         # The component is overridden to the default.
         self.assertEqual('universe', copy.component.name)
