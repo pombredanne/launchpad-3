@@ -644,8 +644,8 @@ class BugSubscriptionListView(LaunchpadView):
 
     def initialize(self):
         super(BugSubscriptionListView, self).initialize()
-        subscriptions = get_structural_subscriptions_for_bug(
-            self.context.bug, self.user)
+        subscriptions = list(get_structural_subscriptions_for_bug(
+            self.context.bug, self.user))
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, subscriptions)
         subscriptions_info = PersonSubscriptions(

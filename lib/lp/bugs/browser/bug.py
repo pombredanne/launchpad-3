@@ -37,6 +37,7 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 from zope import formlib
 from zope.app.form.browser import TextWidget
@@ -85,6 +86,7 @@ from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.widgets.bug import BugTagsWidget
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IBugSet,
@@ -102,6 +104,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_bug,
+    )
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
@@ -504,48 +510,6 @@ class BugViewMixin:
         else:
             return 'subscribed-false %s' % dup_class
 
-    @property
-    def current_user_subscription_class(self):
-        bug = self.context
-
-        if bug.personIsSubscribedToDuplicate(self.user):
-            dup_class = 'dup-subscribed-true'
-        else:
-            dup_class = 'dup-subscribed-false'
-
-        if (bug.personIsDirectSubscriber(self.user) and not
-            bug.isMuted(self.user)):
-            return 'subscribed-true %s' % dup_class
-        else:
-            return 'subscribed-false %s' % dup_class
-
-    @property
-    def current_user_mute_class(self):
-        bug = self.context
-        subscription_class = self.current_user_subscription_class
-        if self.user_should_see_mute_link:
-            visibility_class = ''
-        else:
-            visibility_class = 'hidden'
-        if bug.isMuted(self.user):
-            return 'muted-true %s %s' % (subscription_class, visibility_class)
-        else:
-            return 'muted-false %s %s' % (
-                subscription_class, visibility_class)
-
-    @cachedproperty
-    def user_should_see_mute_link(self):
-        """Return True if the user should see the Mute link."""
-        if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
-            user_is_subscribed = self.user is not None and (
-                self.context.isMuted(self.user) or
-                self.context.isSubscribed(self.user) or
-                self.context.isSubscribedToDupes(self.user) or
-                self.context.personIsAlsoNotifiedSubscriber(self.user))
-            return user_is_subscribed
-        else:
-            return False
-
     @cachedproperty
     def _bug_attachments(self):
         """Get a dict of attachment type -> attachments list."""
@@ -642,6 +606,79 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
+
+class BugSubscriptionPortletView(BugView):
+
+    # We want these strings to be available for the template and for the
+    # JavaScript.
+    notifications_text = {
+        'not_only_other_subscription': _('You are'),
+        'only_other_subscription': _(
+            'You have subscriptions that may cause you to receive '
+            'notifications, but you are'),
+        'direct_all': _('subscribed to all notifications for this bug.'),
+        'direct_metadata': _(
+            'subscribed to all notifications except comments for this bug.'),
+        'direct_lifecycle': _(
+            'subscribed to notifications when this bug is closed or '
+            'reopened.'),
+        'not_direct': _(
+            "not directly subscribed to this bug's notifications."),
+        'muted': _(
+            'Your personal email notifications from this bug are muted.'),
+        }
+
+    def initialize(self):
+        """Initialize the view to handle the request."""
+        BugView.initialize(self)
+        user = self.user
+        # We are using "direct" to represent both direct and personal
+        # (not team).
+        self.direct_notifications = False
+        self.direct_all_notifications = False
+        self.direct_metadata_notifications = False
+        self.direct_lifecycle_notifications = False
+        self.other_subscription_notifications = False
+        self.only_other_subscription_notifications = False
+        self.any_subscription_notifications = False
+        self.muted = False
+        if user is not None:
+            bug = self.context
+            structural_subscription_count = (
+                get_structural_subscriptions_for_bug(bug, user).count())
+            cache = IJSONRequestCache(self.request).objects
+            cache['notifications_text'] = self.notifications_text
+            self.muted = bug.isMuted(user)
+            psi = PersonSubscriptions(user, bug)
+            if psi.direct.personal:
+                self.direct_notifications = True
+                direct = psi.direct.personal[0]
+                cache['subscription'] = direct.subscription
+                level = direct.subscription.bug_notification_level
+                if level == BugNotificationLevel.COMMENTS:
+                    self.direct_all_notifications = True
+                elif level == BugNotificationLevel.METADATA:
+                    self.direct_metadata_notifications = True
+                else:
+                    assert level == BugNotificationLevel.LIFECYCLE
+                    self.direct_lifecycle_notifications = True
+            self.other_subscription_notifications = bool(
+                structural_subscription_count or
+                psi.from_duplicate.count or
+                psi.as_owner.count or
+                psi.as_assignee.count or
+                psi.direct.as_team_member or
+                psi.direct.as_team_admin)
+            cache['other_subscription_notifications'] = bool(
+                self.other_subscription_notifications)
+            self.only_other_subscription_notifications = (
+                self.other_subscription_notifications and
+                not self.direct_notifications)
+            self.any_subscription_notifications = (
+                self.other_subscription_notifications or
+                structural_subscription_count)
+        self.user_should_see_mute_link = (
+            self.any_subscription_notifications or self.muted)
 
 
 class BugWithoutContextView:
