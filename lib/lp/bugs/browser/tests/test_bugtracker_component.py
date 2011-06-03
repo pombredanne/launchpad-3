@@ -48,7 +48,7 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         form = self._makeForm(package)
         view = create_initialized_view(
             component, name='+edit', form=form)
-        label = 'Link a distribution source package to the Example component'
+        label = 'Link a distribution source package to Example component'
         self.assertEqual(label, view.label)
         self.assertEqual('Link component', view.page_title)
         self.assertEqual(['sourcepackagename'], view.field_names)

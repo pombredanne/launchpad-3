@@ -469,8 +469,13 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     schema = IBugTrackerComponent
     custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
     field_names = ['sourcepackagename']
-    label = 'Link a distribution source package to the Example component'
     page_title = 'Link component'
+
+    @property
+    def label(self):
+        return (
+            'Link a distribution source package to %s component' %
+            self.context.name)
 
     @property
     def initial_values(self):
