@@ -33,7 +33,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -62,7 +61,6 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -74,7 +72,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
 from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
@@ -91,6 +92,7 @@ from lp.app.browser.lazrjs import (
     TextLineEditorWidget,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
@@ -131,6 +133,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -139,6 +142,7 @@ from lp.soyuz.interfaces.archive import (
     IArchiveEditDependenciesForm,
     IArchiveSet,
     NoSuchPPA,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -1282,30 +1286,6 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         dest_display_name)
 
 
-def partition_pubs_by_archive(source_pubs):
-    """Group `source_pubs` by archive.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A dict mapping `Archive`s to the list of entries from
-        `source_pubs` that are in that archive.
-    """
-    by_source_archive = {}
-    for spph in source_pubs:
-        by_source_archive.setdefault(spph.archive, []).append(spph)
-    return by_source_archive
-
-
-def name_pubs_with_versions(source_pubs):
-    """Annotate each entry from `source_pubs` with its version.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A list of tuples (name, version), one for each respective
-        entry in `source_pubs`.
-    """
-    sprs = [spph.sourcepackagerelease for spph in source_pubs]
-    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
@@ -1325,11 +1305,13 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             person, dest_archive, dest_series, dest_pocket, spns)
 
     job_source = getUtility(IPlainPackageCopyJobSource)
-    archive_pubs = partition_pubs_by_archive(source_pubs)
-    for source_archive, spphs in archive_pubs.iteritems():
+    for spph in source_pubs:
         job_source.create(
-            name_pubs_with_versions(spphs), source_archive, dest_archive,
-            dest_series, dest_pocket, include_binaries=include_binaries)
+            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            dest_pocket, include_binaries=include_binaries,
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE)
+
     return structured("""
         <p>Requested sync of %s packages.</p>
         <p>Please allow some time for these to be processed.</p>
@@ -1596,6 +1578,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
             self.setNextURL()
 
 
+def get_escapedtext(message):
+    """Return escapedtext if message is an `IStructuredString`."""
+    if IStructuredString.providedBy(message):
+        return message.escapedtext
+    else:
+        return message
+
+
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     """Archive dependencies view class."""
 
@@ -1792,7 +1782,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def messages(self):
-        return '\n'.join(self._messages)
+        return '\n'.join(map(get_escapedtext, self._messages))
 
     def _remove_dependencies(self, data):
         """Perform the removal of the selected dependencies."""
@@ -1808,7 +1798,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.displayname)
+            self._messages.append(
+                structured('<br/>%s', dependency.displayname))
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1821,8 +1812,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
 
-        self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
+        self._messages.append(structured(
+            '<p>Dependency added: %s</p>', dependency_candidate.displayname))
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
@@ -1867,8 +1858,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket,
             dependency_component)
-        self._messages.append(
-            '<p>Primary dependency added: %s</p>' % primary_dependency.title)
+        self._messages.append(structured(
+            '<p>Primary dependency added: %s</p>', primary_dependency.title))
 
     def validate(self, data):
         """Validate dependency configuration changes.
@@ -2134,7 +2125,7 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
-            errors = self.validate_external_dependencies(ext_deps)
+            errors = validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
@@ -2143,31 +2134,6 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'commercial',
                 'Can only set commericial for private archives.')
-
-    def validate_external_dependencies(self, ext_deps):
-        """Validate the external_dependencies field.
-
-        :param ext_deps: The dependencies form field to check.
-        """
-        errors = []
-        # The field can consist of multiple entries separated by
-        # newlines, so process each in turn.
-        for dep in ext_deps.splitlines():
-            try:
-                deb, url, suite, components = dep.split(" ", 3)
-            except ValueError:
-                errors.append(
-                    "'%s' is not a complete and valid sources.list entry"
-                        % dep)
-                continue
-
-            if deb != "deb":
-                errors.append("%s: Must start with 'deb'" % dep)
-            url_components = urlparse(url)
-            if not url_components[0] or not url_components[1]:
-                errors.append("%s: Invalid URL" % dep)
-
-        return errors
 
     @property
     def owner_is_private_team(self):

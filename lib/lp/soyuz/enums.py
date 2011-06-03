@@ -13,6 +13,7 @@ __all__ = [
     'archive_suffixes',
     'BinaryPackageFileType',
     'BinaryPackageFormat',
+    'PackageCopyPolicy',
     'PackageCopyStatus',
     'PackageDiffStatus',
     'PackagePublishingPriority',
@@ -234,6 +235,25 @@ class BinaryPackageFormat(DBEnumeratedType):
         in Ubuntu and similar distributions.""")
 
 
+class PackageCopyPolicy(DBEnumeratedType):
+    """Package copying policy.
+
+    Each of these is associated with one `ICopyPolicy`.
+    """
+
+    INSECURE = DBItem(1, """
+        Copy from insecure source.
+
+        This is the default.
+        """)
+
+    MASS_SYNC = DBItem(2, """
+        Mass package sync.
+
+        This policy applies when synchronizing packages en masse.
+        """)
+
+
 class PackageCopyStatus(DBEnumeratedType):
     """Package copy status type.
 
@@ -281,7 +301,6 @@ class PackageCopyStatus(DBEnumeratedType):
 
 class PackageDiffStatus(DBEnumeratedType):
     """The status of a PackageDiff request."""
-
 
     PENDING = DBItem(0, """
         Pending

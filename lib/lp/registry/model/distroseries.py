@@ -286,6 +286,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"]))
 
+    @cachedproperty
+    def component_names(self):
+        """See `IDistroSeries`."""
+        return [component.name for component in self.components]
+
+    @cachedproperty
+    def suite_names(self):
+        """See `IDistroSeries`."""
+        return [unicode(pocket) for pocket in PackagePublishingPocket.items]
+
     @property
     def answers_usage(self):
         """See `IServiceUsage.`"""
@@ -1129,7 +1139,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            " AND ".join(queries), clauseTables=['SourcePackageRelease'],
             orderBy=['-id'])
 
         return published
@@ -1591,7 +1601,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None):
+                         archive, signing_key=None, package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1620,7 +1630,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key)
+            changesfile=changes_file, signing_key=signing_key,
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -1945,53 +1956,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
 
-    def deriveDistroSeries(self, user, name, distribution=None,
-                           displayname=None, title=None, summary=None,
-                           description=None, version=None,
-                           architectures=(), packagesets=(), rebuild=False):
+    def initDerivedDistroSeries(self, user, parents, architectures=(),
+                                packagesets=(), rebuild=False, overlays=(),
+                                overlay_pockets=(),
+                                overlay_components=()):
         """See `IDistroSeries`."""
-        if distribution is None:
-            distribution = self.distribution
-        child = IStore(self).find(
-            DistroSeries, name=name, distribution=distribution).one()
-        if child is None:
-            if not displayname:
-                raise DerivationError(
-                    "Display Name needs to be set when creating a "
-                    "distroseries.")
-            if not title:
-                raise DerivationError(
-                    "Title needs to be set when creating a distroseries.")
-            if not summary:
-                raise DerivationError(
-                    "Summary needs to be set when creating a "
-                    "distroseries.")
-            if not description:
-                raise DerivationError(
-                    "Description needs to be set when creating a "
-                    "distroseries.")
-            if not version:
-                raise DerivationError(
-                    "Version needs to be set when creating a "
-                    "distroseries.")
-            child = distribution.newSeries(
-                name=name, displayname=displayname, title=title,
-                summary=summary, description=description,
-                version=version, previous_series=None, registrant=user)
-            IStore(self).add(child)
-        else:
-            if child.previous_series is not None:
-                raise DerivationError(
-                    "DistroSeries %s parent series is %s, "
-                    "but it must not be set" % (
-                        child.name, self.name))
-        initialise_series = InitialiseDistroSeries(self, child)
+        if self.is_derived_series:
+            raise DerivationError(
+                "DistroSeries %s already has parent series." % self.name)
+        initialise_series = InitialiseDistroSeries(self, parents)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            self, child, architectures, packagesets, rebuild)
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
 
     def getParentSeries(self):
         """See `IDistroSeriesPublic`."""
@@ -2038,7 +2018,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
-                difference_type = difference_type,
+                difference_type=difference_type,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)

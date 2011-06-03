@@ -44,7 +44,7 @@ class SystemErrorView(LaunchpadView):
     override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
-        '../templates/oops-veryplain.pt')
+        'templates/oops-veryplain.pt')
 
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500

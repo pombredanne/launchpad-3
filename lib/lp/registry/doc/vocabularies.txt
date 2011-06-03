@@ -743,6 +743,12 @@ But it doesn't include merged accounts:
 ValidPersonOrTeam
 .................
 
+To use the new sorting functionality, we need to turn on the feature flag.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 All 'valid' persons or teams. This is currently defined as people with a
 password, a preferred email address and not merged (Person.merged is
 None).  It also includes all public teams and private teams the user has
@@ -778,8 +784,7 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set.merge(
@@ -823,7 +828,7 @@ team.
 
     >>> term = vocab.getTermByToken('private-team')
     >>> print term.title
-    Private Team
+    Private Team (private-team)
 
 The PRIVATE team is not returned for a user who is not part of the team.
 
@@ -891,34 +896,54 @@ The vocabulary also allows us to search by IRC nickname.
 
 Since there are so many people and teams a vocabulary that includes them
 all is not very useful when displaying in the user interface.  So we
-limit the number of results.  The results are ordered by displayname and
+limit the number of results.  The results are ordered by rank, displayname and
 the first set of those are the ones returned
 
     >>> login(ANONYMOUS)
     >>> [person.displayname for person in vocab.search('team')]
-    [u'HWDB Team', u'Hoary Gnome Team', u'No Team Memberships',
-     u'Other Team', u'Simple Team', u'Ubuntu Gnome Team',
-     u'Ubuntu Security Team', u'Ubuntu Team', u'Warty Gnome Team',
-     u'Warty Security Team', u'testing Spanish team']
+    [u'HWDB Team', u'No Team Memberships', u'Simple Team', u'Ubuntu Team',
+     u'testing Spanish team', u'Hoary Gnome Team', u'Other Team',
+     u'Ubuntu Gnome Team', u'Ubuntu Security Team', u'Warty Gnome Team',
+     u'Warty Security Team']
+
+If a match is done against irc nick, that is ranked higher than a fti match.
+
+    >>> from lp.registry.interfaces.irc import IIrcIDSet
+    >>> ircid_set = getUtility(IIrcIDSet)
+
+    >>> irc_person = factory.makePerson(name='ircperson')
+    >>> irc_id = ircid_set.new(
+    ...     irc_person, 'irc.freenode.net', 'team')
+    >>> [person.displayname for person in vocab.search('team')]
+    [u'Ircperson', u'HWDB Team', u'No Team Memberships', u'Simple Team',
+     u'Ubuntu Team', u'testing Spanish team', u'Hoary Gnome Team',
+     u'Other Team', u'Ubuntu Gnome Team', u'Ubuntu Security Team',
+     u'Warty Gnome Team', u'Warty Security Team']
+
+A match on launchpad name ranks higher than irc nickname:
+    >>> lifeless2 = factory.makePerson(name='anotherlifeless')
+    >>> irc_id = ircid_set.new(
+    ...     lifeless2, 'irc.freenode.net', 'lifeless')
+    >>> [person.displayname for person in vocab.search('lifeless')]
+    [u'Robert Collins', u'Anotherlifeless']
+
+A match on displayname ranks higher than email address:
+    >>> lifeless3 = factory.makePerson(name='nolife', displayname='RobertC')
+    >>> [person.displayname for person in vocab.search('robertc')]
+    [u'RobertC', u'Robert Collins']
+
+But even a partial match on name ranks higher:
+    >>> lifeless3 = factory.makePerson(name='robertc2', displayname='RobertC')
+    >>> [person.name for person in vocab.search('robertc')]
+    [u'robertc2', u'nolife', u'lifeless']
 
     >>> login(ANONYMOUS)
     >>> vocab.LIMIT
     100
 
-    >>> vocab.LIMIT = 4
-
-    # The limit gets applied in multiple subselects, so the result
-    # can actually be less than the limit.
-
-    >>> [person.displayname for person in vocab.search('team')]
-    [u'HWDB Team', u'No Team Memberships', u'testing Spanish team']
-
 Search for names with '%' and '?' is supported.
 
-    >>> from lp.registry.interfaces.irc import IIrcIDSet
-
     >>> symbolic_person = factory.makePerson(name='symbolic')
-    >>> ircid_set = getUtility(IIrcIDSet)
     >>> irc_id = ircid_set.new(
     ...     symbolic_person, 'irc.freenode.net', '%percent')
     >>> irc_id =ircid_set.new(
@@ -933,6 +958,8 @@ Search for names with '%' and '?' is supported.
     ...     print person.name
     symbolic
 
+Clean up the feature flag.
+    >>> flags.cleanUp()
 
 ValidOwner
 ..........
@@ -948,10 +975,11 @@ All valid persons and teams are also valid owners.
     []
 
 Almost all teams have the word 'team' as part of their names, so a
-search for 'team' should give us some of them:
+search for 'team' should give us some of them. There's also the ircperson
+created earlier with an icr nickname of 'team':
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21',
+    [u'hwdb-team', u'ircperson', u'name18', u'name20', u'name21',
      u'no-team-memberships', u'otherteam',
      u'simple-team', u'testing-spanish-team', u'ubuntu-security',
      u'ubuntu-team', u'warty-gnome']
@@ -1324,8 +1352,6 @@ launchpad.Moderate permission on IProductSet, then all commercial
 projects are returned.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts

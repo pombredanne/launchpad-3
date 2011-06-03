@@ -228,7 +228,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             '5.10', None, bat.owner)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(bat, self.breezy)
+        ids = InitialiseDistroSeries(self.breezy, [bat.id])
         ids.initialise()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
@@ -1179,9 +1179,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.assertIn(
-            "Unable to find mandatory field 'Files' "
-            "in the changes file", error_text)
+        expected_explanation = (
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
+        self.assertIn(expected_explanation, error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1348,8 +1348,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Expected Exception type not found in OOPS report:\n%s'
             % error_text)
 
+        # The upload policy requires a signature but none is present, so
+        # we get gpg verification errors.
         expected_explanation = (
-            "Unable to find mandatory field 'Files' in the changes file.")
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
         self.failUnless(
             error_text.find(expected_explanation) >= 0,
             'Expected Exception text not found in OOPS report:\n%s'
@@ -1436,7 +1438,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # just-uploaded changesfile from librarian.
         self.layer.txn.commit()
 
-        upload.queue_root.acceptFromQueue('announce@ubuntu.com')
+        upload.queue_root.acceptFromQueue()
 
         # 'biscuit_1.0-2' building on i386 get accepted and published.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")

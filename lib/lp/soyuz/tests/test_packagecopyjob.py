@@ -8,12 +8,19 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
+from lp.registry.model.distroseriesdifferencecomment import (
+    DistroSeriesDifferenceComment,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageCopyPolicy,
     SourcePackageFormat,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
@@ -22,41 +29,63 @@ from lp.soyuz.model.distroseriesdifferencejob import (
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
+    IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
-class PlainPackageCopyJobTests(TestCaseWithFactory):
-    """Test case for PlainPackageCopyJob."""
+def get_dsd_comments(dsd):
+    """Retrieve `DistroSeriesDifferenceComment`s for `dsd`."""
+    return IStore(dsd).find(
+        DistroSeriesDifferenceComment,
+        DistroSeriesDifferenceComment.distro_series_difference == dsd)
 
-    layer = LaunchpadZopelessLayer
 
-    def makeJob(self, dsd):
+class LocalTestHelper:
+    """Put test helpers that want to be in the test classes here."""
+
+    def makeJob(self, dsd=None, **kwargs):
         """Create a `PlainPackageCopyJob` that would resolve `dsd`."""
-        source_packages = [specify_dsd_package(dsd)]
+        if dsd is None:
+            dsd = self.factory.makeDistroSeriesDifference()
         source_archive = dsd.parent_series.main_archive
         target_archive = dsd.derived_series.main_archive
         target_distroseries = dsd.derived_series
         target_pocket = self.factory.getAnyPocket()
         return getUtility(IPlainPackageCopyJobSource).create(
-            source_packages, source_archive, target_archive,
-            target_distroseries, target_pocket)
+            dsd.source_package_name.name, source_archive, target_archive,
+            target_distroseries, target_pocket,
+            package_version=dsd.parent_source_version, **kwargs)
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
         self.layer.txn.commit()
         self.layer.switchDbUser('sync_packages')
         job.run()
+
+
+class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
+    """Test case for PlainPackageCopyJob."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_job_implements_IPlainPackageCopyJob(self):
+        job = self.makeJob()
+        self.assertTrue(verifyObject(IPlainPackageCopyJob, job))
+
+    def test_job_source_implements_IPlainPackageCopyJobSource(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertTrue(verifyObject(IPlainPackageCopyJobSource, job_source))
 
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
@@ -65,11 +94,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
-            source_archive=archive1, target_archive=archive2,
-            target_distroseries=distroseries,
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -77,10 +106,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         self.assertEquals(archive2, job.target_archive)
         self.assertEquals(distroseries, job.target_distroseries)
         self.assertEquals(PackagePublishingPocket.RELEASE, job.target_pocket)
-        self.assertContentEqual(
-            job.source_packages,
-            [("foo", "1.0-1", None), ("bar", "2.4", None)])
+        self.assertEqual("foo", job.package_name)
+        self.assertEqual("1.0-1", job.package_version)
         self.assertEquals(False, job.include_binaries)
+        self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
 
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.
@@ -89,10 +118,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            package_version="1.0-1", include_binaries=False)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
     def test_getActiveJobs_gets_oldest_first(self):
@@ -105,36 +134,79 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
 
     def test_getActiveJobs_only_returns_waiting_jobs(self):
         # getActiveJobs ignores jobs that aren't in the WAITING state.
-        job = self.makeJob(self.factory.makeDistroSeriesDifference())
+        job = self.makeJob()
         removeSecurityProxy(job).job._status = JobStatus.RUNNING
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertContentEqual([], source.getActiveJobs(job.target_archive))
 
-    def test_run_unknown_package(self):
-        # A job properly records failure.
+    def test_run_raises_errors(self):
+        # A job reports unexpected errors as exceptions.
+        class Boom(Exception):
+            pass
+
+        job = self.makeJob()
+        removeSecurityProxy(job).attemptCopy = FakeMethod(failure=Boom())
+
+        self.assertRaises(Boom, job.run)
+
+    def test_run_posts_copy_failure_as_comment(self):
+        # If the job fails with a CannotCopy exception, it swallows the
+        # exception and posts a DistroSeriesDifferenceComment with the
+        # failure message.
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.factory.makeArchive(distribution=dsd.derived_series.distribution)
+        job = self.makeJob(dsd)
+        removeSecurityProxy(job).attemptCopy = FakeMethod(
+            failure=CannotCopy("Server meltdown"))
+
+        # The job's error handling will abort, so commit the objects we
+        # created as would have happened in real life.
+        transaction.commit()
+
+        job.run()
+
+        self.assertEqual(
+            ["Server meltdown"],
+            [comment.body_text for comment in get_dsd_comments(dsd)])
+
+    def test_run_cannot_copy_unknown_package(self):
+        # Attempting to copy an unknown package is reported as a
+        # failure.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        source = getUtility(IPlainPackageCopyJobSource)
-        job = source.create(
-            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job = job_source.create(
+            package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
-        self.assertRaises(CannotCopy, self.runJob, job)
+            package_version="1.0-1", include_binaries=False)
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+
+        job.run()
+
+        self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_target_ppa_non_release_pocket(self):
         # When copying to a PPA archive the target must be the release pocket.
         distroseries = self.factory.makeDistroSeries()
+        package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[], source_archive=archive1,
+            package_name=package.name, source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.UPDATES,
-            include_binaries=False)
-        self.assertRaises(CannotCopy, self.runJob, job)
+            include_binaries=False, package_version='1.0')
+
+        naked_job = removeSecurityProxy(job)
+        naked_job.reportFailure = FakeMethod()
+
+        job.run()
+
+        self.assertEqual(1, naked_job.reportFailure.call_count)
 
     def test_run(self):
         # A proper test run synchronizes packages.
@@ -157,19 +229,20 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         getUtility(ISourcePackageFormatSelectionSet).add(
             target_series, SourcePackageFormat.FORMAT_1_0)
 
-        source_package = publisher.getPubSource(
+        publisher.getPubSource(
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=breezy_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("libc", "2.8-1")], source_archive=breezy_archive,
-            target_archive=target_archive, target_distroseries=target_series,
+            package_name="libc",
+            source_archive=breezy_archive, target_archive=target_archive,
+            target_distroseries=target_series,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
-        self.assertContentEqual(
-            job.source_packages, [("libc", "2.8-1", source_package)])
+            package_version="2.8-1", include_binaries=False)
+        self.assertEqual("libc", job.package_name)
+        self.assertEqual("2.8-1", job.package_version)
 
         # Make sure everything hits the database, switching db users
         # aborts.
@@ -194,10 +267,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("foo", "1.0-1")], source_archive=archive1,
+            package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            package_version="1.0-1", include_binaries=False)
         oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
@@ -223,10 +296,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=archive1)
         getUtility(IPlainPackageCopyJobSource).create(
-            source_packages=[("libc", "2.8-1")], source_archive=archive1,
+            package_name="libc", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            package_version="2.8-1", include_binaries=False)
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -247,13 +320,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
-            source_packages=[("foo", "1.0-1"), ("bar", "2.4")],
-            source_archive=archive1, target_archive=archive2,
-            target_distroseries=distroseries,
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=True)
+            package_version="1.0-1", include_binaries=True)
         self.assertEqual(
-            ("<PlainPackageCopyJob to copy 2 package(s) from "
+            ("<PlainPackageCopyJob to copy package foo from "
              "{distroseries.distribution.name}/{archive1.name} to "
              "{distroseries.distribution.name}/{archive2.name}, "
              "RELEASE pocket, in {distroseries.distribution.name} "
@@ -269,14 +341,13 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         job = self.makeJob(dsd)
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
-            {specify_dsd_package(dsd): job},
+            {dsd.source_package_name.name: job},
             job_source.getPendingJobsPerPackage(dsd.derived_series))
 
     def test_getPendingJobsPerPackage_ignores_other_distroseries(self):
         # getPendingJobsPerPackage only looks for jobs on the indicated
         # distroseries.
-        dsd = self.factory.makeDistroSeriesDifference()
-        self.makeJob(dsd)
+        self.makeJob()
         other_series = self.factory.makeDistroSeries()
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
@@ -286,7 +357,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         # getPendingJobsPerPackage ignores jobs that have already been
         # run.
         dsd = self.factory.makeDistroSeriesDifference()
-        package = specify_dsd_package(dsd)
         job = self.makeJob(dsd)
         job_source = getUtility(IPlainPackageCopyJobSource)
         found_by_state = {}
@@ -294,7 +364,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
             removeSecurityProxy(job).job._status = status
             result = job_source.getPendingJobsPerPackage(dsd.derived_series)
             if len(result) > 0:
-                found_by_state[status] = result[package]
+                found_by_state[status] = result[dsd.source_package_name.name]
         expected = {
             JobStatus.WAITING: job,
             JobStatus.RUNNING: job,
@@ -313,7 +383,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         jobs = map(self.makeJob, dsds)
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
-            dict(zip(map(specify_dsd_package, dsds), jobs)),
+            dict(zip([dsd.source_package_name.name for dsd in dsds], jobs)),
             job_source.getPendingJobsPerPackage(derived_series))
 
     def test_getPendingJobsPerPackage_picks_oldest_job_for_dsd(self):
@@ -323,7 +393,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         jobs = [self.makeJob(dsd) for counter in xrange(2)]
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
-            {specify_dsd_package(dsd): jobs[0]},
+            {dsd.source_package_name.name: jobs[0]},
             job_source.getPendingJobsPerPackage(dsd.derived_series))
 
     def test_getPendingJobsPerPackage_ignores_dsds_without_jobs(self):
@@ -333,3 +403,68 @@ class PlainPackageCopyJobTests(TestCaseWithFactory):
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             {}, job_source.getPendingJobsPerPackage(dsd.derived_series))
+
+    def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
+        # findMatchingDSDs finds matching DSDs for any of the packages
+        # in the job.
+        dsd = self.factory.makeDistroSeriesDifference()
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
+
+    def test_findMatchingDSDs_ignores_other_source_series(self):
+        # findMatchingDSDs tries to ignore DSDs that are for different
+        # parent series than the job's source series.  (This can't be
+        # done with perfect precision because the job doesn't keep track
+        # of source distroseries, but in practice it should be good
+        # enough).
+        dsd = self.factory.makeDistroSeriesDifference()
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
+
+        # If the dsd differs only in parent series, that's enough to
+        # make it a non-match.
+        removeSecurityProxy(dsd).parent_series = (
+            self.factory.makeDistroSeries())
+
+        self.assertContentEqual([], naked_job.findMatchingDSDs())
+
+    def test_findMatchingDSDs_ignores_other_packages(self):
+        # findMatchingDSDs does not return DSDs that are similar to the
+        # information in the job, but are for different packages.
+        dsd = self.factory.makeDistroSeriesDifference()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=dsd.derived_series,
+            parent_series=dsd.parent_series)
+        naked_job = removeSecurityProxy(self.makeJob(dsd))
+        self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
+
+    def test_getPolicyImplementation_returns_policy(self):
+        # getPolicyImplementation returns the ICopyPolicy that was
+        # chosen for the job.
+        dsd = self.factory.makeDistroSeriesDifference()
+        for policy in PackageCopyPolicy.items:
+            naked_job = removeSecurityProxy(
+                self.makeJob(dsd, copy_policy=policy))
+            self.assertEqual(
+                policy, naked_job.getPolicyImplementation().enum_value)
+
+
+class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
+    """Test that `PlainPackageCopyJob` has the privileges it needs.
+
+    This test looks for errors, not failures.  It's here only to see that
+    these operations don't run into any privilege limitations.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def test_findMatchingDSDs(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.IPlainPackageCopyJobSource.dbuser)
+        removeSecurityProxy(job).findMatchingDSDs()
+
+    def test_reportFailure(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.layer.switchDbUser(config.IPlainPackageCopyJobSource.dbuser)
+        removeSecurityProxy(job).reportFailure(CannotCopy("Mommy it hurts"))

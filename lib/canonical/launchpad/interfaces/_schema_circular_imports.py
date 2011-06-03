@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -230,9 +230,9 @@ IBranch['getSubscription'].queryTaggedValue(
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 IBranch['product'].schema = IProduct
 
 patch_plain_parameter_type(
@@ -247,9 +247,9 @@ IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
@@ -430,6 +430,14 @@ patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
+patch_plain_parameter_type(
+    IArchive, 'removeArchiveDependency', 'dependency', IArchive)
+patch_plain_parameter_type(
+    IArchive, '_addArchiveDependency', 'dependency', IArchive)
+patch_choice_parameter_type(
+    IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
+patch_entry_return_type(
+    IArchive, '_addArchiveDependency', IArchiveDependency)
 
 
 # IBuildFarmJob
@@ -486,8 +494,6 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
-patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
 patch_collection_return_type(
@@ -857,7 +863,7 @@ patch_entry_explicit_version(IDistroArchSeries, 'beta')
 # IDistroSeries
 patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
-    IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
+    IDistroSeries, 'beta', "initDerivedDistroSeries", "getDerivedSeries",
     "getParentSeries", "getDistroArchSeries", "getPackageUploads",
     "getSourcePackage", "newMilestone")
 
