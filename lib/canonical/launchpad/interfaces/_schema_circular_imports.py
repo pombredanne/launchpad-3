@@ -611,7 +611,7 @@ patch_entry_return_type(
 patch_collection_return_type(
     IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
 patch_entry_return_type(
-    IBugTracker, 'getRemoteComponentForDistroSourcePackage',
+    IBugTracker, 'getRemoteComponentForDistroSourcePackageName',
     IBugTrackerComponent)
 
 ## IBugTrackerComponent

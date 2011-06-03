@@ -93,9 +93,9 @@ class BugTrackerComponentTestCase(TestCaseWithFactory):
 
         example_component.distro_source_package = dsp
         self.assertEqual(dsp, example_component.distro_source_package)
-        component = self.bug_tracker.getRemoteComponentForDistroSourcePackage(
-            dsp.distribution.name, dsp.sourcepackagename.name)
-        self.assertIsNot(example_component, component)
+        comp = self.bug_tracker.getRemoteComponentForDistroSourcePackageName(
+            dsp.distribution, dsp.sourcepackagename)
+        self.assertIsNot(example_component, comp)
 
 
 class TestBugTrackerWithComponents(TestCaseWithFactory):

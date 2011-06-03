@@ -402,17 +402,17 @@ class IBugTracker(Interface):
         """
 
     @operation_parameters(
-        distro_name=TextLine(
-            title=u"The name of the distribution for the source package",
+        distribution=TextLine(
+            title=u"The distribution for the source package",
             required=True),
-        source_package_name=TextLine(
-            title=u"The name of the source package to look for",
+        sourcepackagename=TextLine(
+            title=u"The source package name",
             required=True))
     @operation_returns_entry(Interface)
     @export_read_operation()
     @operation_for_version('devel')
-    def getRemoteComponentForDistroSourcePackage(
-        distro_name, source_package_name):
+    def getRemoteComponentForDistroSourcePackageName(
+        distribution, sourcepackagename):
         """Returns the component linked to this source package, if any.
 
         If no components have been linked, returns value of None.

@@ -498,8 +498,8 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         dsp = distribution.getSourcePackage(sourcepackagename)
         bug_tracker = self.context.component_group.bug_tracker
         # Has this source package already been assigned to a component?
-        component = bug_tracker.getRemoteComponentForDistroSourcePackage(
-            distribution.name, sourcepackagename.name)
+        component = bug_tracker.getRemoteComponentForDistroSourcePackageName(
+            distribution, sourcepackagename)
         if component is not None:
             self.request.response.addNotification(
                 "The %s source package is already linked to %s:%s in %s" % (
