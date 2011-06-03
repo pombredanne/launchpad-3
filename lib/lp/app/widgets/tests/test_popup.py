@@ -70,6 +70,9 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'field.test_valid.item', picker_widget.input_id)
         self.assertEqual(
             simplejson.dumps(None), picker_widget.extra_no_results_message)
+        markup = picker_widget()
+        self.assertIn(
+            "Y.lp.app.picker.create('ValidTeamOwner', config);", markup)
 
     def test_widget_fieldname_with_invalid_html_chars(self):
         # Check the picker widget is correctly set up for a field which has a
@@ -83,8 +86,29 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # The widget name is encoded to get the widget's ID. It must only
         # contain valid HTML characters.
         self.assertEqual(
-            'show-widget-field-test_invalid_chars-ZmllbGQudGVzdF9pbnZhbGlkX2NoYXJzKw',
+            'show-widget-field-test_invalid_chars-'
+            'ZmllbGQudGVzdF9pbnZhbGlkX2NoYXJzKw',
             picker_widget.show_widget_id)
         self.assertEqual(
             'field.test_invalid_chars-ZmllbGQudGVzdF9pbnZhbGlkX2NoYXJzKw',
             picker_widget.input_id)
+
+    def test_widget_suggestions(self):
+        # The suggestions menu is shown when the input is invalid and there
+        # are matches to suggest to the user.
+        field = ITest['test_valid.item']
+        bound_field = field.bind(self.context)
+        request = LaunchpadTestRequest(form={'field.test_valid.item': 'foo'})
+        picker_widget = VocabularyPickerWidget(
+            bound_field, self.vocabulary, request)
+        matches = list(picker_widget.matches)
+        self.assertEqual(1, len(matches))
+        self.assertEqual('Foo Bar', matches[0].title)
+        markup = picker_widget()
+        self.assertIn('id="field.test_valid.item-suggestions"', markup)
+        self.assertIn(
+            "Y.DOM.byId('field.test_valid.item-suggestions')", markup)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'Y.lp.app.picker.connect_select_menu\( '
+            'select_menu, text_input\);',
+            markup)

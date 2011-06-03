@@ -63,8 +63,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         delayed_copy = self.createEmptyDelayedCopy()
         self.assertRaisesWithContent(
             AssertionError,
-            'Cannot process delayed copies.',
-            delayed_copy.acceptFromQueue, 'some-announce-list')
+            'Cannot process delayed copies.', delayed_copy.acceptFromQueue)
 
     def test_acceptFromCopy_refuses_empty_copies(self):
         # Empty delayed-copies cannot be accepted.
