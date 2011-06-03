@@ -285,13 +285,13 @@ class BugContextMenu(ContextMenu):
         user = getUtility(ILaunchBag).user
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
-            link = "+subscribe"
+            icon = 'unmute'
         else:
             text = "Mute bug mail"
-            link = "+mute"
+            icon = 'mute'
 
         return Link(
-            link, text, icon='remove', summary=(
+            '+mute', text, icon=icon, summary=(
                 "Mute this bug so that you will not receive emails "
                 "about it."))
 
@@ -537,7 +537,7 @@ class BugViewMixin:
     def user_should_see_mute_link(self):
         """Return True if the user should see the Mute link."""
         if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
-            user_is_subscribed = (
+            user_is_subscribed = self.user is not None and (
                 self.context.isMuted(self.user) or
                 self.context.isSubscribed(self.user) or
                 self.context.isSubscribedToDupes(self.user) or

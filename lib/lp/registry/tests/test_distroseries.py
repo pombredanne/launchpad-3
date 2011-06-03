@@ -135,7 +135,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
     def ignore_other_distributions(self):
         # Packages with the same name in other distributions don't
         # affect the returned version.
-        series_in_other_distribution = self.factory.makeDistroRelease()
+        series_in_other_distribution = self.factory.makeDistroSeries()
         self.publisher.getPubSource(version='0.9')
         self.publisher.getPubSource(
             version='1.0', distroseries=series_in_other_distribution)
@@ -174,7 +174,7 @@ class TestDistroSeries(TestCaseWithFactory):
     def test_getSuite_release_pocket(self):
         # The suite of a distro series and the release pocket is the name of
         # the distroseries.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertEqual(
             distroseries.name,
             distroseries.getSuite(PackagePublishingPocket.RELEASE))
@@ -183,14 +183,14 @@ class TestDistroSeries(TestCaseWithFactory):
         # The suite of a distro series and a non-release pocket is the name of
         # the distroseries followed by a hyphen and the name of the pocket in
         # lower case.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.PROPOSED
         suite = '%s-%s' % (distroseries.name, pocket.name.lower())
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
     def test_getDistroArchSeriesByProcessor(self):
         # A IDistroArchSeries can be retrieved by processor
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         processorfamily = ProcessorFamilySet().getByName('x86')
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386',
@@ -202,7 +202,7 @@ class TestDistroSeries(TestCaseWithFactory):
     def test_getDistroArchSeriesByProcessor_none(self):
         # getDistroArchSeriesByProcessor returns None when no distroarchseries
         # is found
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         processorfamily = ProcessorFamilySet().getByName('x86')
         self.assertIs(None,
             distroseries.getDistroArchSeriesByProcessor(
@@ -217,7 +217,7 @@ class TestDistroSeries(TestCaseWithFactory):
         # The registrant is the creator whereas the owner is the
         # distribution's owner.
         registrant = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease(registrant=registrant)
+        distroseries = self.factory.makeDistroSeries(registrant=registrant)
         self.assertEquals(distroseries.distribution.owner, distroseries.owner)
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
@@ -225,10 +225,11 @@ class TestDistroSeries(TestCaseWithFactory):
     def test_is_initialising(self):
         # The series is_initialising only if there is an initialisation
         # job with a pending status attached to this series.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
         self.assertEquals(False, distroseries.is_initialising)
         job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job = job_source.create(distroseries.parent, distroseries)
+        job = job_source.create(distroseries, [parent_distroseries.id])
         self.assertEquals(True, distroseries.is_initialising)
         job.start()
         self.assertEquals(True, distroseries.is_initialising)
@@ -245,7 +246,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesPackaging, self).setUp()
-        self.series = self.factory.makeDistroRelease()
+        self.series = self.factory.makeDistroSeries()
         self.user = self.series.distribution.owner
         login('admin@canonical.com')
         component_set = getUtility(IComponentSet)
@@ -396,7 +397,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
         self.ref_translatables = self._get_translatables()
 
         new_distroseries = (
-            self.factory.makeDistroRelease(name=u"sampleseries"))
+            self.factory.makeDistroSeries(name=u"sampleseries"))
         with person_logged_in(new_distroseries.distribution.owner):
             new_distroseries.hide_all_translations = False
         transaction.commit()
@@ -431,13 +432,13 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables, self._ref_translatables()))
 
     def test_fromSuite_release_pocket(self):
-        series = self.factory.makeDistroRelease()
+        series = self.factory.makeDistroSeries()
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, series.name)
         self.assertEqual((series, PackagePublishingPocket.RELEASE), result)
 
     def test_fromSuite_non_release_pocket(self):
-        series = self.factory.makeDistroRelease()
+        series = self.factory.makeDistroSeries()
         suite = '%s-backports' % series.name
         result = getUtility(IDistroSeriesSet).fromSuite(
             series.distribution, suite)
