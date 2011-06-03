@@ -65,7 +65,7 @@ class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
     export_as_webservice_entry(publish_web_link=False)
 
-    id = Int(title=_('ID'), required=True, readonly=True)
+    id = exported(Int(title=_('ID'), required=True, readonly=True))
 
     date_created = exported(Datetime(
         title=_("Date Created"), required=True, readonly=True,

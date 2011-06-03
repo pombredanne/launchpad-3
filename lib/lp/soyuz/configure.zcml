@@ -923,7 +923,7 @@
     <class class=".adapters.copypolicy.InsecureCopyPolicy">
       <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
     </class>
-    <class class=".adapters.copypolicy.SyncCopyPolicy">
+    <class class=".adapters.copypolicy.MassSyncCopyPolicy">
       <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
     </class>
     <adapter
@@ -957,6 +957,14 @@
     <class class="lp.soyuz.browser.packagerelationship.PackageRelationshipSet">
       <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"/>
     </class>
+
+   <!-- Overrides -->
+   <class class="lp.soyuz.adapters.overrides.SourceOverride">
+        <allow interface="lp.soyuz.adapters.overrides.ISourceOverride" />
+   </class>
+   <class class="lp.soyuz.adapters.overrides.BinaryOverride">
+        <allow interface="lp.soyuz.adapters.overrides.IBinaryOverride" />
+   </class>
 
    <!-- OverridePolicy -->
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">

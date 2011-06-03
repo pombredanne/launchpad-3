@@ -37,6 +37,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
@@ -45,14 +46,18 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -159,6 +164,11 @@ class PackageCopyJobDerived(BaseRunnableJob):
             ])
         return vars
 
+    @property
+    def copy_policy(self):
+        """See `PlainPackageCopyJob`."""
+        return self.context.copy_policy
+
 
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies a package from one archive to another."""
@@ -177,7 +187,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=None):
+               copy_policy=PackageCopyPolicy.INSECURE):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         metadata = {
@@ -243,6 +253,25 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def include_binaries(self):
         return self.metadata['include_binaries']
+
+    def addSourceOverride(self, override):
+        """Add an `ISourceOverride` to the metadata."""
+        metadata_dict = dict(
+            component_override=override.component.name,
+            section_override=override.section.name)
+        self.context.extendMetadata(metadata_dict)
+
+    def getSourceOverride(self):
+        """Fetch an `ISourceOverride` from the metadata."""
+        # There's only one package per job; although the schema allows
+        # multiple we're not using that.
+        name = self.package_name
+        component_name = self.metadata.get("component_override")
+        section_name = self.metadata.get("section_override")
+        source_package_name = getUtility(ISourcePackageNameSet)[name]
+        component = getUtility(IComponentSet)[component_name]
+        section = getUtility(ISectionSet)[section_name]
+        return SourceOverride(source_package_name, component, section)
 
     def run(self):
         """See `IRunnableJob`."""
@@ -335,3 +364,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if self.include_binaries:
             parts.append(", including binaries")
         return "<%s>" % "".join(parts)
+
+    def getPolicyImplementation(self):
+        """Return the `ICopyPolicy` applicable to this job."""
+        return ICopyPolicy(self.copy_policy)

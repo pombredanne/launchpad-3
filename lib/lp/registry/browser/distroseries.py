@@ -104,6 +104,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
@@ -626,28 +627,14 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class IDistroSeriesInitializeForm(Interface):
-
-    derived_from_series = Choice(
-        title=_('Derived from distribution series'),
-        default=None,
-        vocabulary="DistroSeriesDerivation",
-        description=_(
-            "Select the distribution series you "
-            "want to derive from."),
-        required=True)
+class EmptySchema(Interface):
+    pass
 
 
 class DistroSeriesInitializeView(LaunchpadFormView):
     """A view to initialize an `IDistroSeries`."""
 
-    schema = IDistroSeriesInitializeForm
-    field_names = [
-        "derived_from_series",
-        ]
-
-    custom_widget('derived_from_series', LaunchpadDropdownWidget)
-
+    schema = EmptySchema
     label = 'Initialize series'
     page_title = label
 
@@ -1084,7 +1071,8 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.source_package_name.name,
                 dsd.parent_series.main_archive, target_archive,
                 target_distroseries, PackagePublishingPocket.UPDATES,
-                package_version=dsd.parent_source_version)
+                package_version=dsd.parent_source_version,
+                copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

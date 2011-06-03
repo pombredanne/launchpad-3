@@ -4,12 +4,17 @@
 """Tests for sync package jobs."""
 
 from testtools.content import text_content
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
@@ -17,19 +22,24 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageCopyPolicy,
     SourcePackageFormat,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
     FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
+    IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -51,7 +61,7 @@ def get_dsd_comments(dsd):
 class LocalTestHelper:
     """Put test helpers that want to be in the test classes here."""
 
-    def makeJob(self, dsd=None):
+    def makeJob(self, dsd=None, **kwargs):
         """Create a `PlainPackageCopyJob` that would resolve `dsd`."""
         if dsd is None:
             dsd = self.factory.makeDistroSeriesDifference()
@@ -62,7 +72,7 @@ class LocalTestHelper:
         return getUtility(IPlainPackageCopyJobSource).create(
             dsd.source_package_name.name, source_archive, target_archive,
             target_distroseries, target_pocket,
-            package_version=dsd.parent_source_version)
+            package_version=dsd.parent_source_version, **kwargs)
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
@@ -76,6 +86,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     layer = LaunchpadZopelessLayer
 
+    def test_job_implements_IPlainPackageCopyJob(self):
+        job = self.makeJob()
+        self.assertTrue(verifyObject(IPlainPackageCopyJob, job))
+
+    def test_job_source_implements_IPlainPackageCopyJobSource(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        self.assertTrue(verifyObject(IPlainPackageCopyJobSource, job_source))
+
     def test_create(self):
         # A PackageCopyJob can be created and stores its arguments.
         distroseries = self.factory.makeDistroSeries()
@@ -86,7 +104,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -97,6 +116,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual("foo", job.package_name)
         self.assertEqual("1.0-1", job.package_version)
         self.assertEquals(False, job.include_binaries)
+        self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
 
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.
@@ -423,6 +443,60 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             parent_series=dsd.parent_series)
         naked_job = removeSecurityProxy(self.makeJob(dsd))
         self.assertContentEqual([dsd], naked_job.findMatchingDSDs())
+
+    def test_addSourceOverride(self):
+        # Test the addOverride method which adds an ISourceOverride to the
+        # metadata.
+        name = self.factory.makeSourcePackageName()
+        component = self.factory.makeComponent()
+        section=self.factory.makeSection()
+        pcj = self.factory.makePlainPackageCopyJob()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('sync_packages')
+
+        override = SourceOverride(
+            source_package_name=name,
+            component=component,
+            section=section)
+        pcj.addSourceOverride(override)
+
+        metadata_component = getUtility(
+            IComponentSet)[pcj.metadata["component_override"]]
+        metadata_section = getUtility(
+            ISectionSet)[pcj.metadata["section_override"]]
+        matcher = MatchesStructure(
+            component=Equals(metadata_component),
+            section=Equals(metadata_section))
+        self.assertThat(override, matcher)
+
+    def test_getSourceOverride(self):
+        # Test the getSourceOverride which gets an ISourceOverride from
+        # the metadata.
+        name = self.factory.makeSourcePackageName()
+        component = self.factory.makeComponent()
+        section=self.factory.makeSection()
+        pcj = self.factory.makePlainPackageCopyJob(
+            package_name=name.name, package_version="1.0")
+        self.layer.txn.commit()
+        self.layer.switchDbUser('sync_packages')
+
+        override = SourceOverride(
+            source_package_name=name,
+            component=component,
+            section=section)
+        pcj.addSourceOverride(override)
+
+        self.assertEqual(override, pcj.getSourceOverride())
+
+    def test_getPolicyImplementation_returns_policy(self):
+        # getPolicyImplementation returns the ICopyPolicy that was
+        # chosen for the job.
+        dsd = self.factory.makeDistroSeriesDifference()
+        for policy in PackageCopyPolicy.items:
+            naked_job = removeSecurityProxy(
+                self.makeJob(dsd, copy_policy=policy))
+            self.assertEqual(
+                policy, naked_job.getPolicyImplementation().enum_value)
 
 
 class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
