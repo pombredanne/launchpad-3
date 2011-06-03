@@ -4,6 +4,7 @@
 SET client_min_messages=ERROR;
 
 CREATE TABLE BugSummary(
+    -- Slony needs a primary key and there are no natural candidates.
     id serial PRIMARY KEY,
     count INTEGER NOT NULL default 0,
     product INTEGER REFERENCES Product ON DELETE CASCADE,
@@ -110,59 +111,60 @@ WITH
         product, productseries, distribution, distroseries,
         sourcepackagename, person, tag, status, milestone;
 
--- XXX: Is there a reason why the distribution, distroseries, product
--- and productseries indexes are not partial?
 -- Need indices for FK CASCADE DELETE to find any FK easily
-CREATE INDEX bugsummary_distribution ON BugSummary (distribution);
+CREATE INDEX bugsummary__distribution__idx ON BugSummary (distribution)
+    WHERE distribution IS NOT NULL;
 
-CREATE INDEX bugsummary_distroseries ON BugSummary (distroseries);
+CREATE INDEX bugsummary__distroseries__idx ON BugSummary (distroseries)
+    WHERE distroseries IS NOT NULL;
 
-CREATE INDEX bugsummary_privates ON BugSummary (viewed_by)
-WHERE viewed_by IS NOT NULL;
+CREATE INDEX bugsummary__viewed_by__idx ON BugSummary (viewed_by)
+    WHERE viewed_by IS NOT NULL;
 
-CREATE INDEX bugsummary_product ON BugSummary (product);
+CREATE INDEX bugsummary__product__idx ON BugSummary (product)
+    WHERE product IS NOT NULL;
 
-CREATE INDEX bugsummary_productseries ON BugSummary (productseries);
+CREATE INDEX bugsummary__productseries__idx ON BugSummary (productseries)
+    WHERE productseries IS NOT NULL;
 
 -- can only have one fact row per set of dimensions
-CREATE UNIQUE INDEX bugsummary_dimensions_unique_idx ON bugsummary (
+CREATE UNIQUE INDEX bugsummary__dimensions__unique ON bugsummary (
+    status,
     COALESCE(product, (-1)),
     COALESCE(productseries, (-1)),
     COALESCE(distribution, (-1)),
     COALESCE(distroseries, (-1)),
     COALESCE(sourcepackagename, (-1)),
     COALESCE(viewed_by, (-1)),
-    COALESCE(tag, ('')),
-    status,
-    COALESCE(milestone, (-1)));
+    COALESCE(milestone, (-1)),
+    COALESCE(tag, ('')));
 
 -- While querying is tolerably fast with the base dimension indices,
 -- we want snappy:
 -- Distribution bug counts
-CREATE INDEX bugsummary_distribution_count_idx
+CREATE INDEX bugsummary__distribution_count__idx
 ON BugSummary (distribution)
 WHERE sourcepackagename IS NULL AND tag IS NULL;
 
 -- Distribution wide tag counts
-CREATE INDEX bugsummary_distribution_tag_count_idx
+CREATE INDEX bugsummary__distribution_tag_count__idx
 ON BugSummary (distribution)
 WHERE sourcepackagename IS NULL AND tag IS NOT NULL;
 
 -- Everything (counts)
--- XXX: What is this index used for? Looks like counts of bugs with a given
--- status
-CREATE INDEX bugsummary_count_idx
+CREATE INDEX bugsummary__status_count__idx
 ON BugSummary (status)
 WHERE sourcepackagename IS NULL AND tag IS NULL;
 
 -- Everything (tags)
-CREATE INDEX bugsummary_tag_count_idx
+CREATE INDEX bugsummary__tag_count__idx
 ON BugSummary (status)
 WHERE sourcepackagename IS NULL AND tag IS NOT NULL;
 
 
 --
--- Functions temporary exist here.
+-- Functions exist here for pathalogical reasons.
+--
 -- They can't go in trusted.sql at the moment, because trusted.sql is
 -- run against an empty database. If these functions where in there,
 -- it would fail because they use BugSummary table as a useful
@@ -170,7 +172,13 @@ WHERE sourcepackagename IS NULL AND tag IS NOT NULL;
 -- I suspect we will need to leave these function definitions in here,
 -- and move them to trusted.sql after the baseline SQL script contains
 -- the BugSummary table definition.
---
+
+-- We also considered switching from one 'trusted.sql' to two files -
+-- pre_patch.sql and post_patch.sql. But that doesn't gain us much
+-- as the functions need to be declared before the triggers can be
+-- created. It would work, but we would still need stub 'forward
+-- declarations' of the functions in here, with the functions recreated
+-- with the real implementation in post_patch.sql.
 
 CREATE OR REPLACE FUNCTION bug_summary_inc(d bugsummary) RETURNS VOID
 LANGUAGE plpgsql AS
