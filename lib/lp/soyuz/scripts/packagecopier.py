@@ -511,7 +511,7 @@ class CopyChecker:
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
-            send_email=True):
+            send_email=False):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and

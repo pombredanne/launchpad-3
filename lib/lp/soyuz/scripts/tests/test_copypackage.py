@@ -1395,7 +1395,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             distribution=self.test_publisher.ubuntutest)
         [copied_source] = do_copy(
             [source], target_archive, nobby, source.pocket, False,
-            person=target_archive.owner, check_permissions=False)
+            person=target_archive.owner, check_permissions=False,
+            send_email=True)
         [notification] = pop_notifications()
         self.assertEquals(
             get_ppa_reference(target_archive),
@@ -1421,7 +1422,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source] = do_copy(
             [source], archive, nobby, source.pocket, False,
             person=source.sourcepackagerelease.creator,
-            check_permissions=False)
+            check_permissions=False, send_email=True)
         [notification, announcement] = pop_notifications()
         self.assertEquals(
             'Foo Bar <foo.bar@canonical.com>', notification['To'])
