@@ -233,7 +233,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product, owner=person)
-        branch2 = self.factory.makeAnyBranch(owner=person)
+        self.factory.makeAnyBranch(owner=person)
         self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(person)
         self.all_branches.inProduct(product).ownedBy(person)
@@ -445,7 +445,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             branch_type=BranchType.HOSTED)
         mirrored_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.MIRRORED)
-        imported_branch = self.factory.makeAnyBranch(
+        self.factory.makeAnyBranch(
             branch_type=BranchType.IMPORTED)
         branches = self.all_branches.withBranchType(
             BranchType.HOSTED, BranchType.MIRRORED)
@@ -456,7 +456,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
     def test_scanned(self):
         scanned_branch = self.factory.makeAnyBranch()
         self.factory.makeRevisionsForBranch(scanned_branch)
-        unscanned_branch = self.factory.makeAnyBranch()
+        # This branch isn't scanned (no revision associated).
+        self.factory.makeAnyBranch()
         branches = self.all_branches.scanned()
         self.assertEqual([scanned_branch], list(branches.getBranches()))
 
@@ -536,7 +537,8 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
     def test_visibility_then_product(self):
         # We can apply other filters after applying the visibleByUser filter.
-        second_public_branch = self.factory.makeAnyBranch()
+        # Create another public branch.
+        self.factory.makeAnyBranch()
         branches = self.all_branches.visibleByUser(None).inProduct(
             self.public_branch.product).getBranches()
         self.assertEqual([self.public_branch], list(branches))
@@ -755,7 +757,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         branch2 = self.factory.makeProductBranch(
             product=product, owner=person)
         branch3 = self.factory.makeProductBranch(product=product)
-        branch4 = self.factory.makeProductBranch(product=product)
+        self.factory.makeProductBranch(product=product)
         target = self.factory.makeProductBranch(product=product)
         mp1 = self.factory.makeBranchMergeProposal(
             target_branch=target, source_branch=branch1)
@@ -821,12 +823,12 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # an excluded status.
         mp1 = self.factory.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        mp2 = self.factory.makeBranchMergeProposal(
+        self.factory.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         product = mp1.source_branch.product
         branch1 = self.factory.makeProductBranch(product=product)
         branch2 = self.factory.makeProductBranch(product=product)
-        mp3 = self.factory.makeBranchMergeProposal(
+        self.factory.makeBranchMergeProposal(
             target_branch=branch1, source_branch=branch2,
             set_state=BranchMergeProposalStatus.CODE_APPROVED)
         collection = self.all_branches.inProduct(product)
