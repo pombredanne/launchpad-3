@@ -17,7 +17,7 @@
         <tr>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
                   tal:content="comment/datecreated/fmt:displaydate">
@@ -34,7 +34,7 @@
             <a tal:attributes="href comment/bugwatch/url"
                tal:content="comment/bugwatch/title" />,
             <tal:comment_owner
-                replace="structure comment/owner/fmt:link" />
+                replace="structure comment/owner/fmt:link-display-name-id" />
             wrote
             <span tal:attributes="title comment/datecreated/fmt:datetime"
                   tal:content="comment/datecreated/fmt:displaydate">

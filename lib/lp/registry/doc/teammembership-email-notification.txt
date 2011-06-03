@@ -41,6 +41,8 @@ for the member.
     >>> kamion = personset.getByName('kamion')
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> admin_person = personset.getByEmail(ADMIN_EMAIL)
 
 
 Now Robert Collins proposes himself as a member of the Ubuntu Team. This
@@ -826,8 +828,9 @@ sent) by Launchpad Administrators.
     ...     hwdb_admins)
     >>> print dumper_hwdb_membership.status.title
     Approved
-    >>> setStatus(dumper_hwdb_membership,
-    ...     TeamMembershipStatus.DEACTIVATED, reviewer=mark, silent=True)
+    >>> login_person(admin_person)
+    >>> setStatus(dumper_hwdb_membership, TeamMembershipStatus.DEACTIVATED,
+    ...     reviewer=admin_person, silent=True)
     >>> run_mail_jobs()
     >>> len(stub.test_emails)
     0

@@ -12,6 +12,11 @@ Set up required objects
     >>> merge_proposal_url = canonical_url(merge_proposal)
     >>> merge_proposal_path = canonical_url(
     ...     merge_proposal, force_local_path=True)
+    >>> # Enable the picker_enhancements feature to test the commenter name.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
     >>> logout()
 
     >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
@@ -38,7 +43,7 @@ to the main merge proposal page.
     ...             print extract_text(tag)
 
     >>> print_comments('boardCommentDetails')
-    Eric the Viking wrote ...
+    Eric the Viking (eric) wrote ...
     >>> print_comments('boardCommentBody')
     This is a very long comment about what things should be done to the
     source branch to land it. When this comment is replied to, it should
@@ -64,18 +69,19 @@ We can reply to a comment.
 
 
 XXX: Bjorn Tillenius 2010-05-19 bug=582842: Following test disabled,
-     since it failed spuriously in buildbot.
+since it failed spuriously in buildbot.
 
-    XXX print eric_browser.getControl(name='field.comment').value.replace(
-    ...     '\r\n', '\n') # doctest: -NORMALIZE_WHITESPACE
-    > This is a very long comment about what things should be done to the source
-    > branch to land it.  When this comment is replied to, it should wrap the line
-    > properly.
+#    >>> print eric_browser.getControl(name='field.comment').value.replace(
+#    ...     '\r\n', '\n')
+#    This is a very long comment about what things should be done to the
+#    source branch to land it.  When this comment is replied to, it should
+#    wrap the line properly.
 
-    >>> eric_browser.getControl(name='field.comment').value = ('I like this.\n'
-    ... 'I wish I had time to review it properly\n\n'
-    ... 'This is a longer\nmessage with several\nlines\n'
-    ... 'Email me at eric@vikings-r-us.example.com for more details')
+    >>> eric_browser.getControl(name='field.comment').value = (
+    ...     'I like this.\n'
+    ...     'I wish I had time to review it properly\n\n'
+    ...     'This is a longer\nmessage with several\nlines\n'
+    ...     'Email me at eric@vikings-r-us.example.com for more details')
     >>> eric_browser.getControl(name='field.actions.add').click()
 
 After this, we are taken to the main page for the merge proposal
@@ -101,7 +107,8 @@ If a merge proposal is resubmitted, the comments on the superseded proposal
 are also displayed in the new proposal.
 
     >>> login('foo.bar@canonical.com')
-    >>> new_merge_proposal = merge_proposal.resubmit(merge_proposal.registrant)
+    >>> new_merge_proposal = merge_proposal.resubmit(
+    ...     merge_proposal.registrant)
     >>> new_merge_proposal_url = canonical_url(new_merge_proposal)
     >>> logout()
     >>> anon_browser.open(new_merge_proposal_url)
@@ -110,7 +117,7 @@ are also displayed in the new proposal.
     source branch to land it. When this comment is replied to, it should
     wrap the line properly.
     >>> print_comments('boardCommentDetails', anon_browser, index=0)
-    Eric the Viking wrote ... ago
+    Eric the Viking (eric) wrote ... ago
     Posted in a previous version of this proposal
     >>> details = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentDetails')[0]
@@ -188,3 +195,6 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     4. By ... on 2009-09-12
     and it works!
 
+Clean up the feature flag.
+
+    >>> flags.cleanUp()

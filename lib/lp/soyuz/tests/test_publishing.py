@@ -37,6 +37,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.log.logger import DevNullLogger
+from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
@@ -980,6 +981,31 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             sourcepackagerelease=spr, archive=ppa)
         spph2.overrideFromAncestry()
         self.assertEquals(spph2.component.name, 'main')
+
+    def test_copyTo_with_overrides(self):
+        # Specifying overrides with copyTo should result in the new
+        # publication having those overrides.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        main_component = getUtility(IComponentSet)['main']
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, component=main_component)
+        name = spph.sourcepackagerelease.sourcepackagename
+
+        # Roll with default overrides to reduce the setup.
+        policy = UnknownOverridePolicy()
+        overrides = policy.calculateSourceOverrides(
+            target_archive, None, None, [name])
+
+        copy = spph.copyTo(
+            spph.distroseries, spph.pocket, target_archive, overrides)
+
+        # The component is overridden to the default.
+        self.assertEqual('universe', copy.component.name)
+        # Section has no default so it comes from the old publication.
+        self.assertEqual(spph.section, copy.section)
+
 
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""
