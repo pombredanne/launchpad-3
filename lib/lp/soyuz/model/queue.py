@@ -401,7 +401,24 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         assert not self.is_delayed_copy, 'Cannot process delayed copies.'
 
+        if self.package_copy_job is not None:
+            if self.status == PackageUploadStatus.REJECTED:
+                raise QueueInconsistentStateError(
+                    "Can't resurrect rejected syncs")
+            # Circular imports :(
+            from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+            # Release the job hounds, Smithers.
+            self.setAccepted()
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
+            job.resume()
+            # The copy job will send emails as appropriate.  We don't
+            # need to worry about closing bugs from syncs, although we
+            # should probably give karma but that needs more work to
+            # fix here.
+            return
+
         self.setAccepted()
+
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         # We explicitly allow unsigned uploads here since the .changes file
         # is pulled from the librarian which are stripped of their
@@ -438,6 +455,18 @@ class PackageUpload(SQLBase):
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
+        if self.package_copy_job is not None:
+            # Circular imports :(
+            from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
+            # Do the state transition dance.
+            job.queue()
+            job.start()
+            job.fail()
+            # This possibly should be sending a rejection email but I
+            # don't think we need them for sync rejections.
+            return
+
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         # We allow unsigned uploads since they come from the librarian,
         # which are now stored unsigned.
@@ -737,11 +766,22 @@ class PackageUpload(SQLBase):
 
     def overrideSource(self, new_component, new_section, allowed_components):
         """See `IPackageUpload`."""
-        if not self.contains_source:
-            return False
-
         if new_component is None and new_section is None:
             # Nothing needs overriding, bail out.
+            return False
+
+        if self.package_copy_job is not None:
+            # We just need to add the required component/section to the
+            # job metadata.
+            extra_data = {}
+            if new_component is not None:
+                extra_data['component_override'] = new_component.name
+            if new_section is not None:
+                extra_data['section_override'] = new_section.name
+            self.package_copy_job.extendMetadata(extra_data)
+            return
+
+        if not self.contains_source:
             return False
 
         for source in self.sources:

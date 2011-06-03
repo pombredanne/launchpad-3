@@ -278,14 +278,6 @@ the integrity of OpenPGP-signed messages.
     >>> msg.raw.read() == raw_msg
     True
 
-If you attempt to stuff the same email in again, you get the same
-Message back out (but we have to check with == rather than is, as
-SQLObject doesn't necessarily give us the same intance back)
-
-    >>> msg2 = msgset.fromEmail(raw_msg)
-    >>> msg == msg2
-    True
-
 Let's add another multipart message, this time we include a message in
 the message, like it is done when forwarding an email.
 
