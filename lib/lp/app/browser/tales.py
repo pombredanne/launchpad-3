@@ -1221,11 +1221,10 @@ class PersonFormatterAPI(ObjectFormatterAPI):
             # XXX sinzui 2011-05-31: Remove this next line when the feature
             # flag is removed.
             view_name = None
-        elif view_name == 'mainsite':
+        elif view_name == 'id-only':
             # XXX sinzui 2011-05-31: remove this block and /id-only from
             # launchpad-loginstatus.pt whwn the feature flag is removed.
             text = self._context.name
-            import pdb; pdb.set_trace()
             view_name = None
         else:
             text = self._context.displayname

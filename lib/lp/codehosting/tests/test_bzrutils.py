@@ -31,7 +31,7 @@ from bzrlib.tests import (
     )
 from bzrlib.tests.per_branch import (
     branch_scenarios,
-    TestCaseWithBzrDir,
+    TestCaseWithControlDir,
     )
 from bzrlib.transport import chroot
 from lazr.uri import URI
@@ -51,7 +51,7 @@ from lp.codehosting.bzrutils import (
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
-class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
+class TestGetBranchStackedOnURL(TestCaseWithControlDir):
     """Tests for get_branch_stacked_on_url()."""
 
     def __str__(self):
@@ -63,7 +63,7 @@ class TestGetBranchStackedOnURL(TestCaseWithBzrDir):
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        TestCaseWithBzrDir.tearDown(self)
+        TestCaseWithControlDir.tearDown(self)
 
     def run(self, result=None):
         """Run the test, with the result wrapped so that it knows about skips.

@@ -213,6 +213,11 @@ class RepositoryFormat(BazaarFormatEnum):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_DEV_8 = DBItem(306,
+        "Bazaar development format 8\n",
+        "2a repository format with support for nested trees.\n"
+        )
+
     BZR_CHK1 = DBItem(400,
         "Bazaar development format - group compression and chk inventory"
         " (needs bzr.dev from 1.14)\n",
@@ -269,6 +274,7 @@ CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.BZR_DEV_1_SUBTREE,
     RepositoryFormat.BZR_DEV_2,
     RepositoryFormat.BZR_DEV_2_SUBTREE,
+    RepositoryFormat.BZR_DEV_8,
     RepositoryFormat.BZR_CHK1,
     RepositoryFormat.BZR_CHK2,
     RepositoryFormat.BZR_CHK_2A)

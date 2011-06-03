@@ -1438,7 +1438,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # just-uploaded changesfile from librarian.
         self.layer.txn.commit()
 
-        upload.queue_root.acceptFromQueue('announce@ubuntu.com')
+        upload.queue_root.acceptFromQueue()
 
         # 'biscuit_1.0-2' building on i386 get accepted and published.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
