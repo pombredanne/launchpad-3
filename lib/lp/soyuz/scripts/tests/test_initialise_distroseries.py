@@ -43,9 +43,6 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestInitialiseDistroSeries, self).setUp()
-
     def setupParent(self, packages=None):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
