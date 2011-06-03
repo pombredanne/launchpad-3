@@ -13,7 +13,8 @@ in the actions portlet.
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
 
     >>> subscription_widget = browser.getControl(name='field.subscription')
     >>> subscription_widget.options
@@ -53,7 +54,8 @@ in the context of the bug page.
     +subscribe
 
     >>> browser.open(bug_1)
-    >>> browser.getLink('Unsubscribe').click()
+    >>> browser.getLink(
+    ...     'subscribed to all notifications for this bug.').click()
     >>> print browser.title
     Bug #1...
     >>> browser.url
@@ -106,7 +108,8 @@ subscribing Foo Bar, and unsubscribing the Launchpad team.
     '+subscribe'
 
     >>> browser.open(bug_1)
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -136,7 +139,8 @@ On the subscribe page there's a Cancel link as well, that will return
 the browser to the bug page.
 
     >>> browser.open(bug_1)
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -215,7 +219,8 @@ When he chooses to unsubscribe, he will be unsubscribed from bug #2, the
 dupe of bug #3, so he'll no longer get mail from bug #3.
 
     >>> stevea_browser.open("http://launchpad.dev/bugs/3")
-    >>> stevea_browser.getLink('Unsubscribe').click()
+    >>> stevea_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> stevea_browser.getControl("Continue").click()
 
 # XXX: Brad Bollenbach 2006-09-27 bug=62634: Printing the tag here,
@@ -267,7 +272,8 @@ previous example.)
     Also notified:
 
     >>> stevea_browser.open("http://launchpad.dev/bugs/3")
-    >>> stevea_browser.getLink("Unsubscribe").click()
+    >>> stevea_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> stevea_browser.getControl("Continue").click()
 
     >>> for tag in find_tags_by_class(
@@ -313,7 +319,8 @@ the team, the (-) icon can be used. In reality, the two links point to
 the same page, but that is changed when the page is AJAX enabled.
 
     >>> foobar_browser.open("http://launchpad.dev/bugs/3")
-    >>> foobar_browser.getLink('Subscribe').click()
+    >>> foobar_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
 
 Foo Bar can unsubscribe ubuntu-team, and ubuntu-team will no longer show
 up in the indirect subscriptions.
