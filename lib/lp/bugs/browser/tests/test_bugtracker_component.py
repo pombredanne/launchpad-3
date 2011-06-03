@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import (
@@ -16,12 +17,12 @@ from lp.testing import (
 from lp.testing.views import create_initialized_view
 
 
-class TestBugTrackerEditComponentView(TestCaseWithFactory):
+class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestBugTrackerEditComponentView, self).setUp()
+        super(BugTrackerEditComponentViewTextCase, self).setUp()
         regular_user = self.factory.makePerson()
         login_person(regular_user)
 
@@ -52,6 +53,9 @@ class TestBugTrackerEditComponentView(TestCaseWithFactory):
         self.assertEqual(label, view.label)
         self.assertEqual('Link component', view.page_title)
         self.assertEqual(['sourcepackagename'], view.field_names)
+        url = canonical_url(component.component_group.bug_tracker)
+        self.assertEqual(url, view.next_url)
+        self.assertEqual(url, view.cancel_url)
 
     def test_linking(self):
         component = self.factory.makeBugTrackerComponent(

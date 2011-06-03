@@ -486,6 +486,12 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
             field_values['sourcepackagename'] = dsp.name
         return field_values
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context.component_group.bug_tracker)
+
+    cancel_url = next_url
+
     def updateContextFromData(self, data, context=None):
         """Link component to specified distro source package.
 
@@ -519,8 +525,6 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     def save_action(self, action, data):
         """Update the component with the form data."""
         self.updateContextFromData(data)
-        self.next_url = canonical_url(
-            self.context.component_group.bug_tracker)
 
 
 class BugTrackerComponentGroupNavigation(Navigation):
