@@ -562,18 +562,13 @@ def fetch_information(spr, bprs, changes):
         date = changes.get('Date')
         changedby = sanitize_string(changes.get('Changed-By'))
         maintainer = sanitize_string(changes.get('Maintainer'))
-    elif spr:
+    elif spr or bprs:
+        if not spr and bprs:
+            spr = bprs[0].build.source_package_release
         changesfile = spr.changelog_entry
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
-    elif bprs:
-        changesfile = bprs[0].changelog_entry
-        date = bprs[0].dateuploaded
-        changedby = person_to_email(
-            bprs[0].build.source_package_release.creator)
-        maintainer = person_to_email(
-            bprs[0].build.source_package_release.maintainer)
     return (changesfile, date, changedby, maintainer)
 
 
