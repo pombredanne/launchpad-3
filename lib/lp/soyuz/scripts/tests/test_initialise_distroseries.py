@@ -27,6 +27,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -44,12 +45,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setupParent(self, packages=None):
-        if packages is None:
-            packages = {'udev': '0.1-1', 'libc6': '2.8-1',
-                'postgresql': '9.0-1', 'chromium': '3.6'}
         parent = self.factory.makeDistroSeries()
-        pf = self.factory.makeProcessorFamily()
-        pf.addProcessor('x86', '', '')
+        pf = getUtility(IProcessorFamilySet).getByName('x86')
+        if pf is None:
+            pf = self.factory.makeProcessorFamily(name='x86')
+            pf.addProcessor('x86', '', '')
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf)
         lf = self.factory.makeLibraryFileAlias()
@@ -63,9 +63,12 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self._populate_parent(parent, parent_das, packages)
         return parent, parent_das
 
-    def _populate_parent(self, parent, parent_das, packages):
+    def _populate_parent(self, parent, parent_das, packages=None):
+        if packages is None:
+            packages = {'udev': '0.1-1', 'libc6': '2.8-1',
+                'postgresql': '9.0-1', 'chromium': '3.6'}
         for package in packages.keys():
-            spn = self.factory.makeSourcePackageName(package)
+            spn = self.factory.getOrMakeSourcePackageName(package)
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=spn, version=packages[package],
                 distroseries=parent,
@@ -74,7 +77,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             status = BuildStatus.FULLYBUILT
             if package is 'chromium':
                 status = BuildStatus.FAILEDTOBUILD
-            bpn = self.factory.makeBinaryPackageName(package)
+            bpn = self.factory.getOrMakeBinaryPackageName(package)
             build = self.factory.makeBinaryPackageBuild(
                 source_package_release=spph.sourcepackagerelease,
                 distroarchseries=parent_das,
@@ -454,6 +457,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
 
+
 class TestInitialiseDistroSeriesMultipleParents(TestInitialiseDistroSeries):
 
     layer = LaunchpadZopelessLayer
@@ -473,4 +477,4 @@ class TestInitialiseDistroSeriesMultipleParents(TestInitialiseDistroSeries):
     def test_multiple_parents(self):
         self.parent, self.parent_das = self.setupParent()
         self.parent2, self.parent_das2 = self.setupParent()
-        _fullInitialise([self.parent, self.parent2])
+        self._fullInitialise([self.parent, self.parent2])
