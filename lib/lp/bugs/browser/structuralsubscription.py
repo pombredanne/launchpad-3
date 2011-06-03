@@ -431,8 +431,8 @@ def expose_enum_to_js(request, enum, name):
 def expose_user_administered_teams_to_js(request, user, context,
         absoluteURL=absoluteURL):
     """Make the list of teams the user administers available to JavaScript."""
-    # XXX: Robert Collins workaround multiple calls making this cause timeouts:
-    # see bug 788510.
+    # XXX: Robert Collins workaround multiple calls making this cause
+    # timeouts: see bug 788510.
     objects = IJSONRequestCache(request).objects
     if 'administratedTeams' in objects:
         return
