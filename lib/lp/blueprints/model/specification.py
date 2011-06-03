@@ -221,7 +221,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def subscriptions(self):
         """Sort the subscriptions"""
         return sorted(
-            self._subscriptions, key=lambda sub: sub.person.displayname.lower())
+            self._subscriptions, key=lambda sub:
+                sub.person.displayname.lower())
 
     @property
     def target(self):

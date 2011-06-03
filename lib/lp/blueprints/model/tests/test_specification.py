@@ -73,13 +73,15 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         self.assertThat(
             sorted(do_last.all_deps),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
-            
-class SpecificationSubscriptionSort(TestCaseWithFactory):
-    
+
+
+class TestSpecificationSubscriptionSort(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
-    
+
     def test_subscribers(self):
-        #Test the sorting of subscribers to be by displayname rather than name
+        #Test the sorting of subscribers to be by lowercase displayname
+        #rather than name
         spec = self.factory.makeBlueprint()
         bob = self.factory.makePerson(name='zbob', displayname='Bob')
         ced = self.factory.makePerson(name='xed', displayname='ced')
@@ -87,6 +89,7 @@ class SpecificationSubscriptionSort(TestCaseWithFactory):
         spec.subscribe(bob, bob, True)
         spec.subscribe(ced, bob, True)
         spec.subscribe(dave, bob, True)
-        attendances = [bob.displayname, ced.displayname, dave.displayname]
+        sorted_subscriptions = [bob.displayname, ced.displayname,
+            dave.displayname]
         people = [sub.person.displayname for sub in spec.subscriptions]
-        self.assertEqual(attendances, people)
+        self.assertEqual(sorted_subscriptions, people)
