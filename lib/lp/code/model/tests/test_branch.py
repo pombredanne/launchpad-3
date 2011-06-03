@@ -2792,8 +2792,6 @@ class TestWebservice(TestCaseWithFactory):
             launchpad = launchpadlib_for('test', db_branch.owner,
                 service_root=self.layer.appserver_root_url('api'))
 
-        configuration = simplejson.dumps({'test': 'make check'})
-
         branch = ws_object(launchpad, db_branch)
         queue = ws_object(launchpad, db_queue)
         branch.merge_queue = queue

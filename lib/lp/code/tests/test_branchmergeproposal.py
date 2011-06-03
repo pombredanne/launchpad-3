@@ -53,7 +53,6 @@ class TestEditMergeProposal(PermissionTest):
         # And so isn't allowed to edit the merge proposal
         self.assertCannotEdit(person, proposal)
 
-
     def test_package_upload_permissions_grant_merge_proposal_edit(self):
         # If you can upload to the package then you can edit merge
         # proposals against the official branch.
@@ -65,7 +64,8 @@ class TestEditMergeProposal(PermissionTest):
         # restriction isn't relevant to these tests.
         permission_set = removeSecurityProxy(permission_set)
         # Now give 'person' permission to upload to 'package'.
-        archive = proposal.target_branch.distroseries.distribution.main_archive
+        archive = (
+            proposal.target_branch.distroseries.distribution.main_archive)
         package = proposal.target_branch.sourcepackage
         spn = package.sourcepackagename
         permission_set.newPackageUploader(archive, person, spn)

@@ -688,7 +688,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # linked branch but is followed by extra path segments, then we return
         # the linked branch but chop off the extra segments. We might want to
         # change this behaviour in future.
-        branch= self.factory.makeBranch()
+        branch = self.factory.makeBranch()
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
