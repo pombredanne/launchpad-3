@@ -613,12 +613,17 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         distroseries=series, pocket=pocket)
     policy = archive.getOverridePolicy()
     if source_in_destination.is_empty():
-        overrides = None
+        override = None
         if policy is not None:
             package_names = (source.sourcepackagerelease.sourcepackagename,)
             overrides = policy.calculateSourceOverrides(
                 archive, series, pocket, package_names)
-        source_copy = source.copyTo(series, pocket, archive, overrides)
+            # Only one override can be returned so take the first
+            # element of the returned list.
+            assert len(overrides) == 1, (
+                "More than one override encountered, something is wrong.")
+            override = overrides[0]
+        source_copy = source.copyTo(series, pocket, archive, override)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:

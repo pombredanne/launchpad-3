@@ -139,6 +139,12 @@ class IPlainPackageCopyJob(IRunnableJob):
         title=_("Copy binaries"),
         required=False, readonly=True)
 
+    def addSourceOverride(override):
+        """Add an `ISourceOverride` to the metadata."""
+
+    def getSourceOverride():
+        """Get an `ISourceOverride` from the metadata."""
+
     copy_policy = Choice(
         title=_("Applicable copy policy"),
         values=PackageCopyPolicy, required=True, readonly=True)
