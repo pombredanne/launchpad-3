@@ -142,6 +142,15 @@ are available.
     >>> gentoo.has_published_binaries
     False
 
+You can use the has_published_sources property to find out if the
+distribution has any published sources.
+
+    >>> ubuntu.has_published_sources
+    True
+
+    >>> gentoo.has_published_sources
+    False
+
 
 Distribution Sorting
 --------------------
