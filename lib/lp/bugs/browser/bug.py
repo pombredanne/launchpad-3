@@ -644,8 +644,8 @@ class BugSubscriptionPortletView(BugView):
         self.muted = False
         if user is not None:
             bug = self.context
-            structural_subscription_count = (
-                get_structural_subscriptions_for_bug(bug, user).count())
+            has_structural_subscriptions = not (
+                get_structural_subscriptions_for_bug(bug, user).is_empty())
             cache = IJSONRequestCache(self.request).objects
             cache['notifications_text'] = self.notifications_text
             self.muted = bug.isMuted(user)
@@ -663,7 +663,7 @@ class BugSubscriptionPortletView(BugView):
                     assert level == BugNotificationLevel.LIFECYCLE
                     self.direct_lifecycle_notifications = True
             self.other_subscription_notifications = bool(
-                structural_subscription_count or
+                has_structural_subscriptions or
                 psi.from_duplicate.count or
                 psi.as_owner.count or
                 psi.as_assignee.count or
