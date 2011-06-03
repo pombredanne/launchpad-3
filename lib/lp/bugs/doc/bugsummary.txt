@@ -148,7 +148,7 @@ or milestone, we need to aggregate them.
                                                            1
 
 You will normally want to get the total count counted in the database
-rather than waste transmittion time to calculate the rows client side.
+rather than waste transmission time to calculate the rows client side.
 Note that sum() will return None if there are no matching rows, so we
 need to cope with that:
 
