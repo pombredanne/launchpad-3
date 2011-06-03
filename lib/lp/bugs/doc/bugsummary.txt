@@ -124,6 +124,10 @@ or milestone, we need to aggregate them.
     >>> bug = factory.makeBug(
     ...     product=prod_a, status=BugTaskStatus.CONFIRMED, tags=['t-a'])
 
+
+Here are the untagged rows. This will show us there are 2 New and 2
+Confirmed bug tasks targetted to the pr-a product.:
+
     >>> print_find(
     ...     BugSummary.product == prod_a,
     ...     BugSummary.tag == None,
@@ -135,6 +139,9 @@ or milestone, we need to aggregate them.
     pr-a x    x    x    x     x   x    Confirmed    x      2
                                                          ===
                                                            4
+
+Here are the rows associated with the 't-a' tag. There is 1 Confirmed
+bug task targetted to the pr-a product who's bug is tagged 't-a'.:
 
     >>> print_find(
     ...     BugSummary.product == prod_a,
