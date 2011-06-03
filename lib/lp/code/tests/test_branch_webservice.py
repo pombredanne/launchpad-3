@@ -7,7 +7,6 @@ from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -107,8 +106,7 @@ class TestSlashBranches(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)

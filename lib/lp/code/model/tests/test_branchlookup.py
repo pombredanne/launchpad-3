@@ -13,7 +13,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -591,8 +590,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
@@ -703,13 +701,10 @@ class TestGetByLPPath(TestCaseWithFactory):
         # change this behaviour in future.
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(package.distribution.owner):
+            package.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)

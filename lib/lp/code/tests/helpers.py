@@ -28,7 +28,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -255,9 +254,8 @@ def make_official_package_branch(factory, owner=None):
     sourcepackage = branch.sourcepackage
     suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
     registrant = factory.makePerson()
-    ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
     run_with_login(
-        ubuntu_branches.teamowner,
+        suite_sourcepackage.distribution.owner,
         ICanHasLinkedBranch(suite_sourcepackage).setBranch,
         branch, registrant)
     return branch

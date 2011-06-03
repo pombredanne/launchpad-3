@@ -7,13 +7,11 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchType,
     RevisionControlSystems,
@@ -28,6 +26,7 @@ from lp.code.model.branchtarget import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -133,12 +132,11 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             sourcepackage=development_package)
         removeSecurityProxy(default_branch).branchChanged(
             '', self.factory.getUniqueString(), None, None, None)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            development_package.setBranch,
-            PackagePublishingPocket.RELEASE, default_branch,
-            ubuntu_branches.teamowner)
+        registrant = development_package.distribution.owner
+        with person_logged_in(registrant):
+            development_package.setBranch(
+                PackagePublishingPocket.RELEASE, default_branch,
+                registrant)
         self.assertEqual(default_branch, target.default_stacked_on_branch)
 
     def test_supports_merge_proposals(self):
@@ -196,12 +194,10 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertIs(None, self.target.default_merge_target)
         # Now create and link a branch.
         branch = self.factory.makePackageBranch(sourcepackage=self.original)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            self.original.setBranch,
-            PackagePublishingPocket.RELEASE, branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(self.original.distribution.owner):
+            self.original.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                self.original.distribution.owner)
         self.assertEqual(branch, self.target.default_merge_target)
 
     def test_supports_code_imports(self):

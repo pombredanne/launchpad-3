@@ -1399,13 +1399,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # here.
         removeSecurityProxy(branch).branchChanged(
             '', 'rev1', None, None, None)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
             PackagePublishingPocket.RELEASE,
             branch,
-            ubuntu_branches.teamowner)
+            package.distribution.owner)
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,

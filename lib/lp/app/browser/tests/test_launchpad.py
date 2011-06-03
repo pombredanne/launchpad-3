@@ -217,8 +217,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         target = ICanHasLinkedBranch(distro_package)
         with person_logged_in(registrant):
             target.setBranch(branch, registrant)
@@ -231,8 +230,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage, private=True)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
             ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
         login(ANONYMOUS)

@@ -814,8 +814,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -847,8 +846,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.BACKPORTS)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -879,8 +877,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sp)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sp.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -910,8 +907,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -1022,8 +1018,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         pocket = PackagePublishingPocket.BACKPORTS
         linked_branch = ICanHasLinkedBranch(
             branch.sourcepackage.getSuiteSourcePackage(pocket))
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = branch.sourcepackage.distribution.owner
         login_person(registrant)
         linked_branch.setBranch(branch, registrant)
         logout()
@@ -1038,8 +1033,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(
             sourcepackage=distro_package.development_version)
         linked_branch = ICanHasLinkedBranch(distro_package)
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             linked_branch.setBranch, branch, registrant)
@@ -1432,11 +1426,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         self.assertEqual(
@@ -1451,11 +1444,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         self.assertEqual(False, branch.canBeDeleted())
         branch.destroySelf(break_references=True)
         self.assertIs(None, package.getBranch(pocket))
@@ -1504,11 +1496,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         ClearOfficialPackageBranch(link)()

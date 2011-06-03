@@ -306,10 +306,9 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
             sorted([branch, branch2]), sorted(collection.getBranches()))
 
     def _makeOffical(self, branch, pocket):
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner, branch.sourcepackage.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+        registrant = branch.sourcepackage.distribution.owner
+        with person_logged_in(registrant):
+            branch.sourcepackage.setBranch(pocket, branch, registrant)
 
     def test_official_branches(self):
         # `officialBranches` returns a new collection that only has branches
