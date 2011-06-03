@@ -28,9 +28,9 @@ viewed_by is a team reference and used to query private bug counts.
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.bugs.model.bugsummary import BugSummary
+    >>> from lp.testing import login_celebrity
+    >>> me = login_celebrity("admin")
     >>> store = IMasterStore(BugSummary)
-    >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> login(ADMIN_EMAIL)
 
     >>> def name(object_or_none):
     ...     if object_or_none is None:
