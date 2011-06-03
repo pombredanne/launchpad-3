@@ -461,6 +461,7 @@ def expose_user_administered_teams_to_js(request, user, context,
                     not team.inTeam(bug_supervisor)):
                     continue
                 info.append({
+                    'has_preferredemail': team.preferredemail is not None,
                     'link': absoluteURL(team, api_request),
                     'title': team.title,
                     'url': canonical_url(team),
