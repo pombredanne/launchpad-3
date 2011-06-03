@@ -95,7 +95,7 @@ TeamParticipation table as detailed in the Privacy section.
 Product Bug Counts
 ------------------
 
-We can query for how many bugs are targetted to a product.
+We can query for how many bugs are targeted to a product.
 
     >>> prod_a = factory.makeProduct(name='pr-a')
     >>> task = factory.makeBugTask(target=prod_a)
@@ -114,9 +114,9 @@ We can query for how many bugs are targetted to a product.
                                                            1
 
 There is one row per tag per combination of product, status and milestone.
-If we are interested in all bugs targetted to a product regardless of how
+If we are interested in all bugs targeted to a product regardless of how
 they are tagged, we must specify BugSummary.tag == None. If we are
-interested in all bugs targetted to a product regardless of their status
+interested in all bugs targeted to a product regardless of their status
 or milestone, we need to aggregate them.
 
     >>> bug = factory.makeBug(product=prod_a, status=BugTaskStatus.NEW)
@@ -197,7 +197,7 @@ been assigned to a milestone:
                                                          ===
                                                            8
 
-Number of New bugs not targetted to a milestone. Note the difference
+Number of New bugs not targeted to a milestone. Note the difference
 between selecting records where tag is None, and where milestone is None:
 
     >>> store.find(
@@ -209,7 +209,7 @@ between selecting records where tag is None, and where milestone is None:
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
 
-Number of bugs targetted to prod_a, grouped by milestone:
+Number of bugs targeted to prod_a, grouped by milestone:
 
     >>> from lp.registry.model.milestone import Milestone
     >>> from storm.expr import Sum, LeftJoin
@@ -287,7 +287,7 @@ the same as tag.
                                                          ===
                                                            3
 
-How many bugs targetted to a distribution?
+How many bugs targeted to a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -297,7 +297,7 @@ How many bugs targetted to a distribution?
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     2
 
-How many NEW bugs targetted to a distribution?
+How many NEW bugs targeted to a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -308,7 +308,7 @@ How many NEW bugs targetted to a distribution?
     ...     BugSummary.tag == None).sum(BugSummary.count) or 0
     1
 
-How many bugs targetted to a particular sourcepackage in a distribution?
+How many bugs targeted to a particular sourcepackage in a distribution?
 
     >>> store.find(
     ...     BugSummary,
@@ -322,7 +322,7 @@ How many Confirmed bugs for a distribution have not been linked to a
 sourcepackage? This is tricky, as we cannot directly ask for counts
 not linked to a sourcepackage. We can however ask for counts linked to
 a sourcepackage, so we subtract this count from the total number of bugs
-targetted to the distribution:
+targeted to the distribution:
 
     >>> from storm.expr import SQL
     >>> store.find(
@@ -453,7 +453,7 @@ But how many can the owner see?
 Note that private bug counts can be inaccurate if a user is subscribed
 through multiple paths, such as being directly subscribed and also
 subscribed through a team. We demonstrate this using the distroseries
-query - there is only a single private bug targetted to series_p.
+query - there is only a single private bug targeted to series_p.
 
     >>> store.using(join).find(
     ...     BugSummary,
