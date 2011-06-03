@@ -42,6 +42,12 @@ The name must be a valid vocabulary.
     ...
     UnexpectedFormData: Unknown vocabulary 'invalid-vocabulary'
 
+To use the new disclosure functionality, we need to turn on the feature flag.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 A successful search.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='guadamen')
@@ -52,7 +58,7 @@ A successful search.
             {
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
-                "title": "GuadaMen",
+                "title": "GuadaMen (guadamen)",
                 "value": "guadamen"
             }
         ],
@@ -78,10 +84,10 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "api_uri": "/~commercial-admins",
+                "api_uri": "/~admins",
                 "css": "sprite team",
-                "title": "Commercial Subscription Admins",
-                "value": "commercial-admins"
+                "title": "Launchpad Administrators (admins)",
+                "value": "admins"
             }
         ],
         "total_size": 6
@@ -97,7 +103,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "api_uri": "/~name16",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Foo Bar",
+                "title": "Foo Bar (name16)",
                 "value": "name16"
             }
         ],
@@ -135,9 +141,31 @@ retrieved through vocabularies.
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Sample Person",
+                "title": "Sample Person (name12)",
                 "value": "name12"
             }
         ],
         "total_size": 1
     }
+
+IRC nicknames should be displayed after any email address.
+
+    >>> form = dict(name='ValidPersonOrTeam', search_text='mark',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "api_uri": "/~mark",
+                "css": "sprite person",
+                "description": "<email address hidden> (mark on irc.freenode.net)",
+                "title": "Mark Shuttleworth (mark)",
+                "value": "mark"
+            }
+        ],
+        "total_size": 1
+    }
+
+Clean up the feature flag.
+    >>> flags.cleanUp()

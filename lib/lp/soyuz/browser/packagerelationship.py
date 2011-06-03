@@ -13,11 +13,11 @@ __all__ = [
 import operator as std_operator
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.packagerelationship import (
+from canonical.launchpad.webapp import canonical_url
+from lp.soyuz.interfaces.packagerelationship import (
     IPackageRelationship,
     IPackageRelationshipSet,
     )
-from canonical.launchpad.webapp import canonical_url
 
 
 def relationship_builder(relationship_line, parser, getter):

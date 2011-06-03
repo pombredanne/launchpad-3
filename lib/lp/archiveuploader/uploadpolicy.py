@@ -29,7 +29,7 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -149,15 +149,6 @@ class AbstractUploadPolicy:
 
         if self.archive is None:
             self.archive = self.distroseries.main_archive
-
-    @property
-    def announcelist(self):
-        """Return the announcement list address."""
-        announce_list = getattr(self.options, 'announcelist', None)
-        if (announce_list is None and
-            getattr(self, 'distroseries', None) is not None):
-            announce_list = self.distroseries.changeslist
-        return announce_list
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""

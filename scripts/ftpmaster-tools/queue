@@ -59,12 +59,6 @@ def main():
                       default=False,
                       help="Ignore errors when performing a list of commands.")
 
-    parser.add_option("-A", "--announcelist",
-                      dest="announcelist", metavar="ANNOUNCELIST",
-                      default=None,
-                      help=("Overrides the announcement list for accepts, "
-                            "defaults to the distribution 'changeslist'"))
-
     parser.add_option("-f", "--file", metavar="FILE", default=None,
                       help="file containing a sequence of command lines.")
 
@@ -98,8 +92,8 @@ def main():
 
     cmd_runner = CommandRunner(
         queue, options.distribution_name, options.suite_name,
-        options.announcelist, no_mail, options.component_name,
-        options.section_name, options.priority_name, log=log)
+        no_mail, options.component_name, options.section_name,
+        options.priority_name, log=log)
 
     print ("Initialising connection to queue %s" % options.queue_name)
 

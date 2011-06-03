@@ -1364,6 +1364,19 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertComponentSectionAndPriority(
             main, bin_hppa, copied_bin_hppa)
 
+    def test_copy_into_derived_series(self):
+        # We are able to successfully copy into a derived series.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        dsp = self.factory.makeDistroSeriesParent()
+        target_archive = dsp.derived_series.main_archive
+        self.layer.txn.commit()
+        self.layer.switchDbUser('archivepublisher')
+        # The real test is that the doCopy doesn't fail.
+        [copied_source] = self.doCopy(
+            source, target_archive, dsp.derived_series, source.pocket, False)
+
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
 

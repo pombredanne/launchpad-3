@@ -5,7 +5,10 @@
 
 from lxml import html
 
-from zope.component import getAdapter
+from zope.component import (
+    getAdapter,
+    getUtility
+    )
 from zope.traversing.interfaces import (
     IPathAdapter,
     TraversalError,
@@ -19,6 +22,7 @@ from lp.app.browser.tales import (
     format_link,
     PersonFormatterAPI,
     )
+from lp.registry.interfaces.irc import IIrcIDSet
 from lp.testing import (
     test_tales,
     TestCaseWithFactory,
@@ -122,13 +126,19 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_nameLink(self):
-        """The nameLink links to the URL with the person name as the text."""
+    def test_link_display_name_id(self):
+        """The link to the user profile page using displayname and id."""
         person = self.factory.makePerson()
+        # Enable the picker_enhancements feature to test the commenter name.
+        from lp.services.features.testing import FeatureFixture
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
         formatter = getAdapter(person, IPathAdapter, 'fmt')
-        result = formatter.nameLink(None)
-        expected = '<a href="%s" class="sprite person">%s</a>' % (
-            formatter.url(), person.name)
+        result = formatter.link_display_name_id(None)
+        expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
+            formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
 
 
@@ -141,7 +151,8 @@ class TestObjectFormatterAPI(TestCaseWithFactory):
         # The rendering of an object's link ignores any specified default
         # value which would be used in the case where the object were None.
         person = self.factory.makePerson()
-        person_link = test_tales('person/fmt:link::default value', person=person)
+        person_link = test_tales(
+            'person/fmt:link::default value', person=person)
         self.assertEqual(PersonFormatterAPI(person).link(None), person_link)
         person_link = test_tales(
             'person/fmt:link:bugs:default value', person=person)
@@ -264,3 +275,30 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         extra = ['1', '2']
         self.assertEqual('', traverse('shorten', extra))
         self.assertEqual(['1'], extra)
+
+
+class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
+    """Tests for IRCNicknameFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_nick_displayname(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        ircID = ircset.new(person, "irc.canonical.com", "fred")
+        self.assertEqual(
+            'fred on irc.canonical.com',
+            test_tales('nick/fmt:displayname', nick=ircID))
+
+    def test_nick_formatted_displayname(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        # Include some bogus markup to check escaping works.
+        ircID = ircset.new(person, "<b>irc.canonical.com</b>", "fred")
+        expected_html = test_tales(
+            'nick/fmt:formatted_displayname', nick=ircID)
+        self.assertEquals(
+            u'<strong>fred</strong>\n'
+            '<span class="discreet"> on </span>\n'
+            '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
+            expected_html)
