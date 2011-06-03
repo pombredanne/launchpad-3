@@ -453,3 +453,24 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             distroseriesparent.component)
         self.assertEqual(
             PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
+
+class TestInitialiseDistroSeriesMultipleParents(TestInitialiseDistroSeries):
+
+    layer = LaunchpadZopelessLayer
+
+    def _fullInitialise(self, parents, child=None, arches=(), packagesets=(),
+                        rebuild=False, distribution=None, overlays=(),
+                        overlay_pockets=(), overlay_components=()):
+        if child is None:
+            child = self.factory.makeDistroSeries(distribution=distribution)
+        ids = InitialiseDistroSeries(
+            child, [parent.id for parent in parents], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+        ids.check()
+        ids.initialise()
+        return child
+
+    def test_multiple_parents(self):
+        self.parent, self.parent_das = self.setupParent()
+        self.parent2, self.parent_das2 = self.setupParent()
+        _fullInitialise([self.parent, self.parent2])
