@@ -655,11 +655,17 @@ the INFO level what it /would/ have sent.
     DEBUG   Body:
     DEBUG bar (1.0-6) breezy; urgency=low
     ...
-    DEBUG No announcement sent
+    DEBUG Announcing to hoary-announce@lists.ubuntu.com
     ...
     DEBUG You are receiving this email because you are the uploader, maintainer
     or
     DEBUG signer of the above package.
+    DEBUG Would have sent a mail:
+    DEBUG   Subject: [ubuntu/hoary] bar 1.0-6 (Accepted)
+    DEBUG   Sender: Celso Providelo <cprov@ubuntu.com>
+    DEBUG   Recipients: hoary-announce@lists.ubuntu.com
+    DEBUG   Bcc: Root <root@localhost>, bar_derivatives@packages.qa.debian.org
+    ...
 
 No emails generated:
 
