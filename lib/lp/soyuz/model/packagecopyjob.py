@@ -37,6 +37,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
@@ -264,7 +265,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         """Fetch an `ISourceOverride` from the metadata."""
         # There's only one package per job; although the schema allows
         # multiple we're not using that.
-        name, version = self.metadata["source_packages"][0]
+        name = self.package_name
         component_name = self.metadata.get("component_override")
         section_name = self.metadata.get("section_override")
         source_package_name = getUtility(ISourcePackageNameSet)[name]
