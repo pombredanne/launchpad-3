@@ -16,7 +16,10 @@ __all__ = [
 import cgi
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+)
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -589,12 +592,15 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         data = []
         details = list(self.context.getDirectSubscribersWithDetails())
+        api_request = IWebServiceClientRequest(self.request)
         from zope.security.proxy import removeSecurityProxy
+        from zope.traversing.browser import absoluteURL
         for person, subscription in details:
             subscriber = {
                 'name' : person.name,
                 'display_name' : person.displayname,
                 'web_link' : canonical_url(person, rootsite='mainsite'),
+                'self_link' : absoluteURL(person, api_request),
                 'is_team' : person.is_team,
                 'can_edit' : self.user.inTeam(person),
                 }
