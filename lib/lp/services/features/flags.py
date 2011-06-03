@@ -38,6 +38,10 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.bugtracker_components.enabled',
+     'boolean',
+     ('Enables the display of bugtracker components.'),
+     ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
