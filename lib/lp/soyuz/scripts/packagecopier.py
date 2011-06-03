@@ -580,14 +580,10 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 source, archive, destination_series, pocket,
                 include_binaries)
             if send_email:
-                if archive.purpose == ArchivePurpose.PRIMARY:
-                    announce_list = destination_series.changeslist
-                else:
-                    announce_list = None
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, changes=None,
-                    action='accepted', announce_list=announce_list)
+                    action='accepted')
 
         copies.extend(sub_copies)
 
