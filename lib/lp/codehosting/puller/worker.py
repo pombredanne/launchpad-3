@@ -512,12 +512,13 @@ class PullerWorkerUIFactory(SilentUIFactory):
         SilentUIFactory.__init__(self)
         self.puller_worker_protocol = puller_worker_protocol
 
-    def get_boolean(self, prompt):
+    def confirm_action(self, prompt, confirmation_id, args):
         """If we're asked to break a lock like a stale lock of ours, say yes.
         """
-        assert prompt.startswith('Break '), (
-            "Didn't expect prompt %r" % (prompt,))
+        assert confirmation_id == 'bzrlib.lockdir.break', \
+            "Didn't expect confirmation id %r" % (confirmation_id,)
         branch_id = self.puller_worker_protocol.branch_id
+        prompt = prompt % args
         if get_lock_id_for_branch_id(branch_id) in prompt:
             return True
         else:

@@ -8,7 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from bzrlib.branch import BranchFormat as BzrBranchFormat
-from bzrlib.bzrdir import BzrDirFormat
+from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry
 
 from lp.code.bzr import (
@@ -28,7 +28,7 @@ class TestFormatSupport(TestCase):
     """
 
     def test_control_format_complement(self):
-        self.bzrlib_is_subset(BzrDirFormat._formats.keys(), ControlFormat)
+        self.bzrlib_is_subset(BzrProber._formats.keys(), ControlFormat)
 
     def test_branch_format_complement(self):
         self.bzrlib_is_subset(BzrBranchFormat._formats.keys(), BranchFormat)
