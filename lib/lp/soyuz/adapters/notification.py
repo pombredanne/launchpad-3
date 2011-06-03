@@ -33,6 +33,7 @@ from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
+from lp.services.mail.sendmail import format_address_for_person
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
@@ -533,7 +534,7 @@ def email_to_person(fullemail):
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
     if person and person.preferredemail:
-        return '%s <%s>' % (person.displayname, person.preferredemail.email)
+        return format_address_for_person(person)
 
 
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
