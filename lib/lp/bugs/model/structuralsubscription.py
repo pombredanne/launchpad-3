@@ -560,9 +560,8 @@ def _get_structural_subscriptions(find, targets, *conditions):
     target_descriptions = [
         IStructuralSubscriptionTargetHelper(target).join
         for target in targets]
-    return list(
-        IStore(StructuralSubscription).find(
-            find, Or(*target_descriptions), *conditions))
+    return IStore(StructuralSubscription).find(
+        find, Or(*target_descriptions), *conditions)
 
 
 @ProxyFactory
@@ -711,8 +710,8 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
-    candidates = _get_structural_subscriptions(
-        StructuralSubscription.id, query_arguments, *filters)
+    candidates = list(_get_structural_subscriptions(
+        StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
         # If there are no structural subscriptions for these targets,
         # then we don't need to look at the importance, status, and

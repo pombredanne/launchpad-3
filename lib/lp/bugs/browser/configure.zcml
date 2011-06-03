@@ -533,7 +533,7 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            class="lp.bugs.browser.bug.BugView"
+            class="lp.bugs.browser.bug.BugSubscriptionPortletView"
             permission="launchpad.View"
             name="+portlet-subscription"
             template="../templates/bug-portlet-subscription.pt"/>

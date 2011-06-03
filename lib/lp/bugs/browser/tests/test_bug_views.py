@@ -125,7 +125,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         # a CSS class `css_class`.
         soup = BeautifulSoup(html)
         element = soup.find(attrs={'id': element_id})
-        return css_class in element['class'].split(' ')
+        return css_class in element.get('class', '').split(' ')
 
     def test_bug_mute_for_individual_structural_subscription(self):
         # If the person has a structural subscription to the pillar,
