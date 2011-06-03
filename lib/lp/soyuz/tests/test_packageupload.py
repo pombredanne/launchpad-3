@@ -394,7 +394,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         self.assertEqual(PackageUploadStatus.NEW, pu.status)
         plain_copy_job.suspend()
 
-        pu.acceptFromQueue(announce_list=None)
+        pu.acceptFromQueue()
 
         self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
         self.assertEqual(JobStatus.WAITING, plain_copy_job.status)
