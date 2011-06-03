@@ -219,6 +219,10 @@ class TestBugSummary(TestCaseWithFactory):
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
             0)
+        # Confirm implicit subscriptions work too.
+        self.assertEqual(
+            self.getCount(bug.owner, BugSummary.product == product),
+            1)
 
     def test_makePublic(self):
         product = self.factory.makeProduct()
