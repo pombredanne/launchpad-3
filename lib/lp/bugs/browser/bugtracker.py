@@ -508,7 +508,7 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
             distribution, sourcepackagename)
         if component is not None:
             self.request.response.addNotification(
-                "The %s source package is already linked to %s:%s in %s" % (
+                "The %s source package is already linked to %s:%s in %s." % (
                     sourcepackagename.name,
                     component.component_group.name,
                     component.name, distribution.name))
@@ -516,10 +516,15 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
         # The submitted component can be linked to the distro source package.
         component = context or self.context
         component.distro_source_package = dsp
-        self.request.response.addNotification(
-            "%s:%s is now linked to the %s source package in %s" % (
-                component.component_group.name, component.name,
-                sourcepackagename.name, distribution.name))
+        if sourcepackagename is None:
+            self.request.response.addNotification(
+                "%s:%s is now unlinked." % (
+                    component.component_group.name, component.name))
+        else:
+            self.request.response.addNotification(
+                "%s:%s is now linked to the %s source package in %s." % (
+                    component.component_group.name, component.name,
+                    sourcepackagename.name, distribution.name))
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):

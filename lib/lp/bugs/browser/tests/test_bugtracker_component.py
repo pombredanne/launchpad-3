@@ -71,11 +71,26 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual([], view.errors)
 
         notifications = view.request.response.notifications
-        #self.assertEqual(1, len(notifications))
         self.assertEqual(component.distro_source_package, package)
         expected = (
             u"alpha:Example is now linked to the example "
-            "source package in ubuntu")
+            "source package in ubuntu.")
+        self.assertEqual(expected, notifications.pop().message)
+
+    def test_unlinking(self):
+        component = self.factory.makeBugTrackerComponent(
+            u'Example', self.comp_group)
+        distro = getUtility(IDistributionSet).getByName('ubuntu')
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='example', distribution=distro)
+        component.distro_source_package = dsp
+        form = self._makeForm(None)
+        view = create_initialized_view(
+            component, name='+edit', form=form)
+        self.assertEqual([], view.errors)
+        notifications = view.request.response.notifications
+        self.assertEqual(None, component.distro_source_package)
+        expected = "alpha:Example is now unlinked."
         self.assertEqual(expected, notifications.pop().message)
 
     def test_cannot_doublelink_sourcepackages(self):
@@ -104,6 +119,6 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         expected = (
-            u"""The example source package is already linked to """
-            """alpha:a in ubuntu""")
+            "The example source package is already linked to "
+            "alpha:a in ubuntu.")
         self.assertEqual(expected, notifications.pop().message)
