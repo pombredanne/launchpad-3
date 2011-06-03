@@ -51,7 +51,6 @@
   </div>
   <script type="text/javascript">
     LPS.use('io-base', 'node',
-            'lp.bugs.bugtask_index.portlets',
             'lp.bugs.bugtask_index.portlets.subscription', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.
@@ -64,8 +63,6 @@
 
         Y.on('domready', function() {
             Y.lp.bugs.bugtask_index.portlets.subscription.initialize();
-            Y.lp.bugs.bugtask_index.portlets.load_subscribers_portlet(
-                subscription_link, subscription_link_handler);
         });
     });
   </script>

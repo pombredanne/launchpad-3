@@ -477,24 +477,6 @@ class BugViewMixin:
         """
         return self.subscription_info.duplicate_subscriptions.subscribers
 
-    @cachedproperty
-    def subscriber_ids(self):
-        """Return a dictionary mapping a css_name to user name."""
-        subscribers = set().union(
-            self.direct_subscribers,
-            self.duplicate_subscribers)
-
-        # The current user has to be in subscribers_id so
-        # in case the id is needed for a new subscription.
-        user = getUtility(ILaunchBag).user
-        if user is not None:
-            subscribers.add(user)
-
-        ids = {}
-        for sub in subscribers:
-            ids[sub.name] = 'subscriber-%s' % sub.id
-        return ids
-
     def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 

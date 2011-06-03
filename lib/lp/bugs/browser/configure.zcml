@@ -1076,23 +1076,6 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
-            template="../templates/bug-portlet-subscribers-content.pt"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-dupe-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
-            template="../templates/bug-portlet-dupe-subscribers-content.pt"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-ids"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
             name="+bug-portlet-subscribers-details"
             class="
               lp.bugs.browser.bugsubscription.BugPortletSubcribersWithDetails"

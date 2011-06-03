@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AdvancedSubscriptionMixin',
     'BugMuteSelfView',
-    'BugPortletDuplicateSubcribersContents',
-    'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
     'BugSubscriptionListView',
     ]
@@ -544,46 +542,6 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 'dupe_links_string': dupe_links_string})
 
 
-class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
-    """View for the contents for the subscribers portlet."""
-
-    @property
-    def sorted_direct_subscriptions(self):
-        """Get the list of direct subscriptions to the bug.
-
-        The list is sorted such that subscriptions you can unsubscribe appear
-        before all other subscriptions.
-        """
-        direct_subscriptions = [
-            SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions().sorted]
-        can_unsubscribe = []
-        cannot_unsubscribe = []
-        for subscription in direct_subscriptions:
-            if not check_permission('launchpad.View', subscription.person):
-                continue
-            if subscription.person == self.user:
-                can_unsubscribe = [subscription] + can_unsubscribe
-            elif subscription.canBeUnsubscribedByUser(self.user):
-                can_unsubscribe.append(subscription)
-            else:
-                cannot_unsubscribe.append(subscription)
-        return can_unsubscribe + cannot_unsubscribe
-
-
-class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
-    """View for the contents for the subscribers-from-dupes portlet block."""
-
-    @property
-    def sorted_subscriptions_from_dupes(self):
-        """Get the list of subscriptions to duplicates of this bug."""
-        return [
-            SubscriptionAttrDecorator(subscription)
-            for subscription in sorted(
-                self.context.getSubscriptionsFromDuplicates(),
-                key=(lambda subscription: subscription.person.displayname))]
-
-
 class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
     """A view that returns a JSON dump of the subscriber IDs for a bug."""
 
@@ -617,20 +575,6 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
         """Override the default render() to return only JSON."""
         self.request.response.setHeader('content-type', 'application/json')
         return self.subscriber_data_js
-
-
-class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
-    """A view that returns a JSON dump of the subscriber IDs for a bug."""
-
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
-
-    def render(self):
-        """Override the default render() to return only JSON."""
-        self.request.response.setHeader('content-type', 'application/json')
-        return self.subscriber_ids_js
 
 
 class SubscriptionAttrDecorator:

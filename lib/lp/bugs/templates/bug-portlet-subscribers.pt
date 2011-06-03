@@ -11,14 +11,4 @@
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
   <div id="other-bug-subscribers"></div>
-  <a id="subscribers-ids-link"
-     tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-ids"></a>
-  <a id="subscribers-content-link"
-     tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
-  <div id="subscribers-portlet-spinner"
-       style="text-align: center; display: none">
-    <img src="/@@/spinner" />
-  </div>
 </div>
