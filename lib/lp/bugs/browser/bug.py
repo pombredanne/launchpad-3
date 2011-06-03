@@ -676,7 +676,7 @@ class BugSubscriptionPortletView(BugView):
                 not self.direct_notifications)
             self.any_subscription_notifications = (
                 self.other_subscription_notifications or
-                structural_subscription_count)
+                self.direct_notifications)
         self.user_should_see_mute_link = (
             self.any_subscription_notifications or self.muted)
 
