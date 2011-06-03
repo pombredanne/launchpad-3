@@ -388,7 +388,6 @@ And this is for a person:
 >>> check("/~name16/+related-software")
 >>> check("/~name16/+editsshkeys", auth=True)
 >>> check("/~name16/+editpgpkeys", auth=True)
->>> check("/~name16/+editwikinames", auth=True)
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)

@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     "PackageCopyJob",
     "PlainPackageCopyJob",
-    "specify_dsd_package",
 ]
 
 from lazr.delegates import delegates
@@ -38,7 +37,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
@@ -48,8 +46,10 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.adapters.overrides import SourceOverride
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
     IPlainPackageCopyJob,
@@ -59,17 +59,6 @@ from lp.soyuz.interfaces.packagecopyjob import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
-
-
-def specify_dsd_package(dsd):
-    """Return (name, parent version) for `dsd`'s package.
-
-    This describes the package that `dsd` is for in a format suitable for
-    `PlainPackageCopyJobSource`.
-
-    :param dsd: A `DistroSeriesDifference`.
-    """
-    return (dsd.source_package_name.name, dsd.parent_source_version)
 
 
 class PackageCopyJob(StormBase):
@@ -93,18 +82,23 @@ class PackageCopyJob(StormBase):
     target_distroseries_id = Int(name='target_distroseries')
     target_distroseries = Reference(target_distroseries_id, DistroSeries.id)
 
+    package_name = Unicode('package_name')
+    copy_policy = EnumCol(enum=PackageCopyPolicy)
+
     job_type = EnumCol(enum=PackageCopyJobType, notNull=True)
 
     _json_data = Unicode('json_data')
 
     def __init__(self, source_archive, target_archive, target_distroseries,
-                 job_type, metadata):
+                 job_type, metadata, package_name=None, copy_policy=None):
         super(PackageCopyJob, self).__init__()
         self.job = Job()
+        self.job_type = job_type
         self.source_archive = source_archive
         self.target_archive = target_archive
         self.target_distroseries = target_distroseries
-        self.job_type = job_type
+        self.package_name = unicode(package_name)
+        self.copy_policy = copy_policy
         self._json_data = self.serializeMetadata(metadata)
 
     @classmethod
@@ -169,9 +163,14 @@ class PackageCopyJobDerived(BaseRunnableJob):
             ])
         return vars
 
+    @property
+    def copy_policy(self):
+        """See `PlainPackageCopyJob`."""
+        return self.context.copy_policy
+
 
 class PlainPackageCopyJob(PackageCopyJobDerived):
-    """Job that copies packages between archives."""
+    """Job that copies a package from one archive to another."""
     # This job type serves in different places: it supports copying
     # packages between archives, but also the syncing of packages from
     # parents into a derived distroseries.  We may split these into
@@ -184,20 +183,24 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
-    def create(cls, source_packages, source_archive,
+    def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
-               include_binaries=False):
+               include_binaries=False, package_version=None,
+               copy_policy=PackageCopyPolicy.INSECURE):
         """See `IPlainPackageCopyJobSource`."""
+        assert package_version is not None, "No package version specified."
         metadata = {
-            'source_packages': source_packages,
             'target_pocket': target_pocket.value,
+            'package_version': package_version,
             'include_binaries': bool(include_binaries),
             }
         job = PackageCopyJob(
+            job_type=cls.class_job_type,
             source_archive=source_archive,
             target_archive=target_archive,
             target_distroseries=target_distroseries,
-            job_type=cls.class_job_type,
+            package_name=package_name,
+            copy_policy=copy_policy,
             metadata=metadata)
         IMasterStore(PackageCopyJob).add(job)
         return cls(job)
@@ -235,20 +238,16 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # getPendingJobsForTargetSeries orders its results, the first
         # will be the oldest and thus presumably the first to finish.
         for job in cls.getPendingJobsForTargetSeries(target_series):
-            for package in job.metadata["source_packages"]:
-                result.setdefault(tuple(package), job)
+            result.setdefault(job.package_name, job)
         return result
-
-    @property
-    def source_packages(self):
-        getPublishedSources = self.source_archive.getPublishedSources
-        for name, version in self.metadata['source_packages']:
-            yield name, version, getPublishedSources(
-                name=name, version=version, exact_match=True).first()
 
     @property
     def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
+
+    @property
+    def package_version(self):
+        return self.metadata["package_version"]
 
     @property
     def include_binaries(self):
@@ -292,16 +291,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 raise CannotCopy(
                     "Destination pocket must be 'release' for a PPA.")
 
-        source_packages = set()
-        for name, version, source_package in self.source_packages:
-            if source_package is None:
-                raise CannotCopy(
-                    "Package %r %r not found." % (name, version))
-            else:
-                source_packages.add(source_package)
+        name = self.package_name
+        version = self.package_version
+        source_package = self.source_archive.getPublishedSources(
+            name=name, version=version, exact_match=True).first()
+        if source_package is None:
+            raise CannotCopy("Package %r %r not found." % (name, version))
 
         do_copy(
-            sources=source_packages, archive=self.target_archive,
+            sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=False)
 
@@ -314,20 +312,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series)
+            distro_series=target_series,
+            source_package_name_filter=self.package_name)
+
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have
         # changed.  We can however filter out DSDs that are from
         # different distributions, based on the job's target archive.
         source_distro_id = self.source_archive.distributionID
-        package_ids = set(
-            getUtility(ISourcePackageNameSet).queryByName(name).id
-            for name, version in self.metadata["source_packages"])
         return [
             dsd
             for dsd in candidates
-                if dsd.parent_series.distributionID == source_distro_id and
-                    dsd.source_package_name_id in package_ids]
+                if dsd.parent_series.distributionID == source_distro_id]
 
     def reportFailure(self, cannotcopy_exception):
         """Attempt to report failure to the user."""
@@ -348,11 +344,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def __repr__(self):
         """Returns an informative representation of the job."""
         parts = ["%s to copy" % self.__class__.__name__]
-        source_packages = self.metadata["source_packages"]
-        if len(source_packages) == 0:
-            parts.append(" no packages (!)")
+        if self.package_name is None:
+            parts.append(" no package (!)")
         else:
-            parts.append(" %d package(s)" % len(source_packages))
+            parts.append(" package %s" % self.package_name)
         parts.append(
             " from %s/%s" % (
                 self.source_archive.distribution.name,
@@ -368,3 +363,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if self.include_binaries:
             parts.append(", including binaries")
         return "<%s>" % "".join(parts)
+
+    def getPolicyImplementation(self):
+        """Return the `ICopyPolicy` applicable to this job."""
+        return ICopyPolicy(self.copy_policy)

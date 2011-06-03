@@ -146,7 +146,7 @@ class Message(SQLBase):
         """See IMessage."""
         if self.title.lower().startswith('re: '):
             return self.title
-        return 'Re: '+self.title
+        return 'Re: ' + self.title
 
     @property
     def title(self):
@@ -201,7 +201,7 @@ def get_parent_msgids(parsed_message):
         []
     """
     for name in ['In-Reply-To', 'References']:
-        if parsed_message.has_key(name):
+        if name in parsed_message:
             return parsed_message.get(name).split()
 
     return []
@@ -302,30 +302,9 @@ class MessageSet:
             raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
                 rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
 
-        # Handle duplicate Message-Id
-        # XXX kiko 2005-08-03: shouldn't we be using DuplicateMessageId here?
-        try:
-            existing_msgs = self.get(rfc822msgid=rfc822msgid)
-        except LookupError:
-            pass
-        else:
-            # we are now allowing multiple msgs in the db with the same
-            # rfc822 msg-id to allow for variations in headers and,
-            # potentially, content. so we scan through the results to try
-            # and find one that matches,
-            for existing in existing_msgs:
-                existing_raw = existing.raw.read()
-                if email_message == existing_raw:
-                    return existing
-                # ok, this is an interesting situation. we have a new
-                # message with the same rfc822 msg-id as an existing message
-                # in the database, but the message headers and/or content
-                # are different. For the moment, we have chosen to allow
-                # this, but in future we may want to flag it in some way
-
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.
-        file_alias_set = getUtility(ILibraryFileAliasSet) # Reused later
+        file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
         if filealias is None:
             # We generate a filename to avoid people guessing the URL.
             # We don't want URLs to private bug messages to be guessable
@@ -536,6 +515,7 @@ class MessageSet:
     def threadMessages(klass, messages):
         """See `IMessageSet`."""
         result, roots = klass._parentToChild(messages)
+
         def get_children(node):
             children = []
             for child in result[node]:

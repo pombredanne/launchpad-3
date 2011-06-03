@@ -919,6 +919,18 @@
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
     </class>
 
+    <!-- PackageCopyPolicy -->
+    <class class=".adapters.copypolicy.InsecureCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <class class=".adapters.copypolicy.MassSyncCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <adapter
+      for="lazr.enum.DBItem"
+      provides="lp.soyuz.interfaces.copypolicy.ICopyPolicy"
+      factory="lp.soyuz.adapters.copypolicy.get_icopypolicy_for_packagecopypolicy"/>
+
     <!-- PackageCopyRequestSet -->
     <securedutility
         class="lp.soyuz.model.packagecopyrequest.PackageCopyRequestSet"

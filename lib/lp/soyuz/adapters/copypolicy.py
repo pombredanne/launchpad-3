@@ -9,63 +9,36 @@ decided at runtime, such as whether to auto-accept a package or not.
 
 __metaclass__ = type
 
+# All of this module's functionality can be reached through the
+# ICopyPolicy adapter.
 __all__ = [
-    "InsecureCopyPolicy",
-    "SyncCopyPolicy",
     ]
 
 
+from zope.interface import implements
+
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 
 
-class BaseCopyPolicy:
-    """Encapsulation of the policies for copying a package in Launchpad."""
+class BasicCopyPolicy:
+    """Useful standard copy policy.
 
-    @property
-    def name(self):
-        """The name of this policy that's used in adapter lookups."""
-        raise AssertionError("Subclass must provide name property")
-
-    def autoApprove(self, archive, distroseries, pocket):
-        """Decide if the upload can be approved automatically or
-        should be held in the queue.
-
-        This should only be called for packages that are known not new.
-
-        :param archive: The target `IArchive` for the upload.
-        :param distroseries: The target `IDistroSeries` for the upload.
-        :param pocket: The target `PackagePublishingPocket` for the upload.
-        """
-        raise AssertionError("Subclass must provide autoApprove")
-
-    def autoApproveNew(self, archive, distroseries, pocket):
-        """Decide if a previously unknown package is approved automatically
-        or should be held in the queue.
-
-        :param archive: The target `IArchive` for the upload.
-        :param distroseries: The target `IDistroSeries` for the upload.
-        :param pocket: The target `PackagePublishingPocket` for the upload.
-        """
-        raise AssertionError("Subclass must provide autoApproveNew")
-
-    @property
-    def send_email(self):
-        """Whether or not the copy should send emails after completing."""
-        raise AssertionError("Subclass must provide send_email")
-
-
-class InsecureCopyPolicy(BaseCopyPolicy):
-    """A policy for copying from insecure sources."""
-
-    name = "insecure"
+    This policy auto-approves all PPA uploads.  For distribution archives it
+    auto-approves only uploads to the Release pocket, and only while the
+    series is not frozen.
+    """
 
     def autoApproveNew(self, archive, distroseries=None, pocket=None):
+        """See `ICopyPolicy`."""
         if archive.is_ppa:
             return True
         return False
 
     def autoApprove(self, archive, distroseries, pocket):
+        """See `ICopyPolicy`."""
         if archive.is_ppa:
             return True
 
@@ -80,16 +53,34 @@ class InsecureCopyPolicy(BaseCopyPolicy):
 
         return False
 
-    @property
-    def send_email(self):
-        return True
+
+class InsecureCopyPolicy(BasicCopyPolicy):
+    """A policy for copying from insecure sources."""
+    implements(ICopyPolicy)
+
+    enum_value = PackageCopyPolicy.INSECURE
+
+    send_email = True
 
 
-class SyncCopyPolicy(InsecureCopyPolicy):
+class MassSyncCopyPolicy(BasicCopyPolicy):
     """A policy for mass 'sync' copies."""
+    implements(ICopyPolicy)
 
-    name = "sync"
+    enum_value = PackageCopyPolicy.MASS_SYNC
 
-    @property
-    def send_email(self):
-        return False
+    send_email = False
+
+
+policies = [
+    InsecureCopyPolicy,
+    MassSyncCopyPolicy,
+    ]
+
+
+enum_to_policy = dict((policy.enum_value, policy()) for policy in policies)
+
+
+def get_icopypolicy_for_packagecopypolicy(packagecopypolicy):
+    """Look up the `ICopyPolicy` for a given `PackageCopyPolicy`."""
+    return enum_to_policy[packagecopypolicy]
