@@ -218,6 +218,26 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
+    if (action == 'accepted' and distroseries.changeslist
+        and not archive.is_ppa
+        and pocket != PackagePublishingPocket.BACKPORTS
+        and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
+        and not is_auto_sync_upload(
+            spr, bprs, pocket, from_addr)):
+        name = None
+        bcc_addr = None
+        if spr:
+            name = spr.name
+        elif bprs:
+            name = bprs[0].build.source_package_release.name
+        if name:
+            bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
+
+        build_and_send_mail(
+            'announcement', [str(distroseries.changeslist)], from_addr,
+            bcc_addr)
+
+
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
                   action):
     """Assemble the e-mail notification body."""
@@ -531,6 +551,7 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
+
 
 def fetch_information(spr, bprs, changes):
     changedby = None
