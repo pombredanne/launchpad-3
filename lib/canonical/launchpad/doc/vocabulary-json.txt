@@ -137,7 +137,7 @@ included in the picker entry.
                 "api_uri": "/~name12",
                 "badges": [
                      {
-                         "alt": "Product affiliation",
+                         "alt": "Affiliated with Launchpad itself",
                          "url": "/@@/product-badge"
                      }
                  ],
