@@ -1040,12 +1040,6 @@
             class="lp.registry.browser.person.PersonCodeOfConductEditView"
             template="../templates/person-codesofconduct.pt"/>
         <browser:page
-            name="+editwikinames"
-            for="lp.registry.interfaces.person.IPerson"
-            permission="launchpad.Edit"
-            class="lp.registry.browser.person.PersonEditWikiNamesView"
-            template="../templates/person-editwikinames.pt"/>
-        <browser:page
             name="+editircnicknames"
             for="lp.registry.interfaces.person.IPerson"
             permission="launchpad.Edit"
