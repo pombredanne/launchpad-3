@@ -28,6 +28,7 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.launchpad.interfaces.launchpad import IHasIcon
 from lp.bugs.interfaces.bugtask import IBugTask
 
 
@@ -73,9 +74,20 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         affiliated = person.inTeam(pillar.owner)
         if not affiliated:
             return None
+
+        def getIconUrl(context, default_url):
+            if IHasIcon.providedBy(context) and context.icon is not None:
+                icon_url = context.icon.getURL()
+                return icon_url
+            return default_url
+        
         if self.context.distribution or self.context.distroseries:
-            return BadgeDetails(
-                "distribution-badge", "Distribution affiliation")
+            icon_url = getIconUrl(
+                self.context.distribution or self.context.distroseries.distribution,
+                "/@@/distribution-badge")
+            return BadgeDetails(icon_url, "Affiliated with Ubuntu")
         if self.context.product or self.context.productseries:
-            return BadgeDetails(
-                "product-badge", "Product affiliation")
+            icon_url = getIconUrl(
+                self.context.product or self.context.productseries.product,
+                "/@@/product-badge")
+            return BadgeDetails(icon_url, "Affiliated with Launchpad itself")

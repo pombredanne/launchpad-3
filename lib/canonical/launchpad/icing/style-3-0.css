@@ -1939,10 +1939,10 @@ body.tab-bugs #duplicate-actions .sprite {
     position: absolute;
     top: 3px;
     right: 3px;
-    left: initial;
+    left: auto;
     }
 .yui3-picker-results div.badge img {
-    position: initial;
+    position: relative;
     padding-left: 3px;
     }
 
