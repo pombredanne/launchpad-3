@@ -79,6 +79,6 @@ class TestBugContextMenu(TestCaseWithFactory):
                 request = LaunchpadTestRequest()
                 request.features = get_relevant_feature_controller()
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers", request=request)
+                    self.bug, name="+portlet-subscription", request=request)
                 html = view.render()
         self.assertTrue('class="sprite maybe mute-help"' in html)

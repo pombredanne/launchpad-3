@@ -104,9 +104,12 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.enums import PackageCopyPolicy
+from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
+    )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
-from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -624,28 +627,14 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class IDistroSeriesInitializeForm(Interface):
-
-    derived_from_series = Choice(
-        title=_('Derived from distribution series'),
-        default=None,
-        vocabulary="DistroSeriesDerivation",
-        description=_(
-            "Select the distribution series you "
-            "want to derive from."),
-        required=True)
+class EmptySchema(Interface):
+    pass
 
 
 class DistroSeriesInitializeView(LaunchpadFormView):
     """A view to initialize an `IDistroSeries`."""
 
-    schema = IDistroSeriesInitializeForm
-    field_names = [
-        "derived_from_series",
-        ]
-
-    custom_widget('derived_from_series', LaunchpadDropdownWidget)
-
+    schema = EmptySchema
     label = 'Initialize series'
     page_title = label
 
@@ -857,15 +846,30 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def pending_syncs(self):
         """Pending synchronization jobs for this distroseries.
 
-        :return: A dict mapping (name, version) package specifications to
-            pending sync jobs.
+        :return: A dict mapping package names to pending sync jobs.
         """
         job_source = getUtility(IPlainPackageCopyJobSource)
         return job_source.getPendingJobsPerPackage(self.context)
 
+    @cachedproperty
+    def pending_dsd_updates(self):
+        """Pending `DistroSeriesDifference` update jobs.
+
+        :return: A `set` of `DistroSeriesDifference`s that have pending
+            `DistroSeriesDifferenceJob`s.
+        """
+        job_source = getUtility(IDistroSeriesDifferenceJobSource)
+        return job_source.getPendingJobsForDifferences(
+            self.context, self.cached_differences.batch)
+
+    def hasPendingDSDUpdate(self, dsd):
+        """Have there been changes that `dsd` is still being updated for?"""
+        return dsd in self.pending_dsd_updates
+
     def hasPendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        return self.pending_syncs.get(specify_dsd_package(dsd)) is not None
+        pending_sync = self.pending_syncs.get(dsd.source_package_name.name)
+        return pending_sync is not None
 
     def isNewerThanParent(self, dsd):
         """Is the child's version of this package newer than the parent's?
@@ -898,6 +902,28 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return (
             not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
 
+    def describeJobs(self, dsd):
+        """Describe any jobs that may be pending for `dsd`.
+
+        Shows "synchronizing..." if the entry is being synchronized, and
+        "updating..." if the DSD is being updated with package changes.
+
+        :param dsd: A `DistroSeriesDifference` on the page.
+        :return: An HTML text describing work that is pending or in
+            progress for `dsd`; or None.
+        """
+        has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
+        has_pending_sync = self.hasPendingSync(dsd)
+        if not has_pending_dsd_update and not has_pending_sync:
+            return None
+
+        description = []
+        if has_pending_dsd_update:
+            description.append("updating")
+        if has_pending_sync:
+            description.append("synchronizing")
+        return " and ".join(description) + "&hellip;"
+
     @property
     def specified_name_filter(self):
         """If specified, return the name filter from the GET form data."""
@@ -924,23 +950,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_package_type == NON_IGNORED:
-            status = (
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
-            child_version_higher = False
-        elif self.specified_package_type == IGNORED:
-            status = (
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-            child_version_higher = False
-        elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
-            status = (
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-            child_version_higher = True
-        elif self.specified_package_type == RESOLVED:
-            status = DistroSeriesDifferenceStatus.RESOLVED
-            child_version_higher = False
-        else:
-            raise AssertionError('specified_package_type unknown')
+        package_type_dsd_status = {
+            NON_IGNORED: (
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
+            IGNORED: DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            HIGHER_VERSION_THAN_PARENT: (
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
+            RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
+        }
+
+        status = package_type_dsd_status[self.specified_package_type]
+        child_version_higher = (
+            self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
 
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
@@ -1043,17 +1064,16 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
         """Request sync of packages that can be easily upgraded."""
         target_distroseries = self.context
         target_archive = target_distroseries.main_archive
-        differences_by_archive = (
-            getUtility(IDistroSeriesDifferenceSource)
-                .collateDifferencesByParentArchive(self.getUpgrades()))
-        for source_archive, differences in differences_by_archive.iteritems():
-            source_package_info = [
-                (difference.source_package_name.name,
-                 difference.parent_source_version)
-                for difference in differences]
-            getUtility(IPlainPackageCopyJobSource).create(
-                source_package_info, source_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.UPDATES)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+
+        for dsd in self.getUpgrades():
+            job_source.create(
+                dsd.source_package_name.name,
+                dsd.parent_series.main_archive, target_archive,
+                target_distroseries, PackagePublishingPocket.UPDATES,
+                package_version=dsd.parent_source_version,
+                copy_policy=PackageCopyPolicy.MASS_SYNC)
+
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
              u"requested. Please give Launchpad some time to complete "

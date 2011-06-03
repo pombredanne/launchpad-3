@@ -3,12 +3,13 @@
 
 import logging
 import re
+
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod

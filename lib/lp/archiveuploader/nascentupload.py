@@ -855,7 +855,6 @@ class NascentUpload:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
                     summary_text=self.warning_message,
-                    announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
                 changes_file_object.close()
@@ -928,12 +927,12 @@ class NascentUpload:
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distroseries.main_archive,
+                self.changes.raw_content, distroseries.main_archive,
                 self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(
                 self.policy.pocket, self.changes.filename,
-                self.changes.filecontents, self.policy.archive,
+                self.changes.raw_content, self.policy.archive,
                 self.changes.signingkey)
 
     #

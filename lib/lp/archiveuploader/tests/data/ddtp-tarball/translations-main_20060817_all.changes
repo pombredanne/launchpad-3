@@ -13,16 +13,15 @@ Urgency: low
 Maintainer: Foo Bar <foo.bar@canonical.com>
 Changed-By: Foo Bar <foo.bar@canonical.com>
 Changes:
-
+ .
  * Partial update, new language index
-
+ .
 Files:
  a774352e50a4b4606a85d53b1cf1b49e 181 raw-ddtp-tarball - translations_main_20060817.tar.gz
-
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.2.2 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iD8DBQFE5Khujn63CGxkqMURAio4AJ9LB9UGqm7G0JXWD9K3VB8L5WxUKwCdEJ+D
-jc/GVKQmHp5I8HA5K2uH/9g=
-=wYva
+iEYEARECAAYFAk3WbpIACgkQjn63CGxkqMVACgCfc3GXQwcDuSs8C+lopI+Igw2c
+w0cAn1YBCAxqTvipznXueOOWsphAMLCP
+=803N
 -----END PGP SIGNATURE-----

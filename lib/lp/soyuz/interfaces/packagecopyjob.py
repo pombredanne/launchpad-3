@@ -21,9 +21,9 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Int,
-    List,
-    Tuple,
+    TextLine,
     )
 
 from canonical.launchpad import _
@@ -33,6 +33,7 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
+from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import IArchive
 
 
@@ -63,6 +64,9 @@ class IPackageCopyJob(Interface):
         schema=IDistroSeries, title=_('Target DistroSeries.'),
         required=True, readonly=True)
 
+    package_name = TextLine(
+        title=_("Package name"), required=True, readonly=True)
+
     job = Reference(
         schema=IJob, title=_('The common Job attributes'),
         required=True, readonly=True)
@@ -82,14 +86,13 @@ class PackageCopyJobType(DBEnumeratedType):
 class IPlainPackageCopyJobSource(IJobSource):
     """An interface for acquiring `IPackageCopyJobs`."""
 
-    def create(cls, source_packages, source_archive,
+    def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
-               include_binaries=False):
+               include_binaries=False, package_version=None,
+               copy_policy=PackageCopyPolicy.INSECURE):
         """Create a new `IPackageCopyJob`.
 
-        :param source_packages: An iterable of `(source_package_name,
-            version)` tuples, where both `source_package_name` and `version`
-            are strings.
+        :param package_name: The name of the source package to copy.
         :param source_archive: The `IArchive` in which `source_packages` are
             found.
         :param target_archive: The `IArchive` to which to copy the packages.
@@ -98,6 +101,9 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param target_pocket: The pocket into which to copy the packages. Must
             be a member of `PackagePublishingPocket`.
         :param include_binaries: See `do_copy`.
+        :param package_version: The version string for the package version
+            that is to be copied.
+        :param copy_policy: Applicable `PackageCopyPolicy`.
         """
 
     def getActiveJobs(target_archive):
@@ -107,7 +113,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         """Find pending jobs for each package in `target_series`.
 
         This is meant for finding jobs that will resolve specific
-        `DistroSeriesDifference`s, so see also `specify_dsd_package`.
+        `DistroSeriesDifference`s.
 
         :param target_series: Target `DistroSeries`; this corresponds to
             `DistroSeriesDifference.derived_series`.
@@ -122,15 +128,17 @@ class IPlainPackageCopyJobSource(IJobSource):
 class IPlainPackageCopyJob(IRunnableJob):
     """A no-frills job to copy packages between `IArchive`s."""
 
-    source_packages = List(
-        title=_("Source Packages"),
-        value_type=Tuple(min_length=3, max_length=3),
-        required=True, readonly=True)
-
     target_pocket = Int(
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
 
+    package_version = TextLine(
+        title=_("Package version"), required=True, readonly=True)
+
     include_binaries = Bool(
         title=_("Copy binaries"),
         required=False, readonly=True)
+
+    copy_policy = Choice(
+        title=_("Applicable copy policy"),
+        values=PackageCopyPolicy, required=True, readonly=True)

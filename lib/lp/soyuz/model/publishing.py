@@ -800,15 +800,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket, archive, policy=None):
+    def copyTo(self, distroseries, pocket, archive, overrides=None):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
-        if policy is not None:
-            packages = (self.sourcepackagerelease.sourcepackagename,)
-            override = policy.calculateSourceOverrides(
-                archive, distroseries, pocket, packages)
-            [spn, new_component, new_section] = override[0]
+        if overrides is not None:
+            [spn, new_component, new_section] = overrides[0]
             if new_component is not None:
                 component = new_component
             if new_section is not None:
