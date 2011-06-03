@@ -45,6 +45,14 @@
     background-image: url(/@@/yes.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.mute {
+    background-image: url(/@@/mute.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.unmute {
+    background-image: url(/@@/unmute.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .crowd {
     background-image: url(/@@/crowd.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

@@ -486,8 +486,6 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
-patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
 patch_collection_return_type(
@@ -857,7 +855,7 @@ patch_entry_explicit_version(IDistroArchSeries, 'beta')
 # IDistroSeries
 patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
-    IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
+    IDistroSeries, 'beta', "initDerivedDistroSeries", "getDerivedSeries",
     "getParentSeries", "getDistroArchSeries", "getPackageUploads",
     "getSourcePackage", "newMilestone")
 

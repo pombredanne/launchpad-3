@@ -126,13 +126,19 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_nameLink(self):
-        """The nameLink links to the URL with the person name as the text."""
+    def test_link_display_name_id(self):
+        """The link to the user profile page using displayname and id."""
         person = self.factory.makePerson()
+        # Enable the picker_enhancements feature to test the commenter name.
+        from lp.services.features.testing import FeatureFixture
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
         formatter = getAdapter(person, IPathAdapter, 'fmt')
-        result = formatter.nameLink(None)
-        expected = '<a href="%s" class="sprite person">%s</a>' % (
-            formatter.url(), person.name)
+        result = formatter.link_display_name_id(None)
+        expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
+            formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
 
 

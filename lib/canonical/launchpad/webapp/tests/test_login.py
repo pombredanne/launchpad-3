@@ -512,7 +512,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
-            QUERY_STRING='starting_url='+self.STARTING_URL)
+            QUERY_STRING='starting_url=' + self.STARTING_URL)
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -561,6 +561,13 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_replay_attacks_do_not_succeed(self):
+        # Enable the picker_enhancements feature to test the commenter name.
+        from lp.services.features.testing import FeatureFixture
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
         browser = Browser(mech_browser=MyMechanizeBrowser())
         browser.open('%s/+login' % self.layer.appserver_root_url())
         # On a JS-enabled browser this page would've been auto-submitted
@@ -572,7 +579,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('name12', login_status)
+        self.assertIn('Sample Person (name12)', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different

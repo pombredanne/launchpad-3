@@ -75,7 +75,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model import distroseriesdifferencejob
-from lp.soyuz.model.packagecopyjob import specify_dsd_package
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
@@ -300,9 +299,11 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         # The difference portlet displays 'The series is initialising.' if
         # there is an initialising job for the series.
         set_derived_series_ui_feature_flag(self)
-        derived_series = self._setupDifferences('deri', 'sid', 0, 0, 0)
+        derived_series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        self.simple_user = self.factory.makePerson()
         job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job_source.create(derived_series.parent, derived_series)
+        job_source.create(derived_series, [parent_series.id])
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
@@ -1056,11 +1057,8 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         self.assertEquals(1, len(jobs))
         job = jobs[0]
         self.assertEquals(series, job.target_distroseries)
-        source_package_info = list(job.source_packages)
-        self.assertEquals(1, len(source_package_info))
-        self.assertEqual(
-            (dsd.source_package_name.name, dsd.parent_source_version),
-            source_package_info[0][:2])
+        self.assertEqual(dsd.source_package_name.name, job.package_name)
+        self.assertEqual(dsd.parent_source_version, job.package_version)
 
     def test_upgrade_gives_feedback(self):
         # requestUpgrades doesn't instantly perform package upgrades,
@@ -1390,7 +1388,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        view.pending_syncs = {dsd.source_package_name.name: object()}
         self.assertTrue(view.hasPendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
@@ -1442,7 +1440,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        view.pending_syncs = {specify_dsd_package(dsd): object()}
+        view.pending_syncs = {dsd.source_package_name.name: object()}
         self.assertFalse(view.canRequestSync(dsd))
 
     def test_canRequestSync_returns_False_if_child_is_newer(self):
