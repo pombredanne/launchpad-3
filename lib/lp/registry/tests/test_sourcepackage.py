@@ -543,7 +543,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages.")
 
-    def test_john_doe_can_t_edit(self):
+    def test_john_doe_cannot_edit(self):
         sourcepackage = self.factory.makeSourcePackage()
         john_doe = self.factory.makePerson()
         with person_logged_in(john_doe):
