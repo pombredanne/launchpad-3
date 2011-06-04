@@ -246,4 +246,4 @@ class TestOverrides(TestCaseWithFactory):
             expected, key=attrgetter("binary_package_name.name"))
         sorted_overrides = sorted(
             overrides, key=attrgetter("binary_package_name.name"))
-        self.assertEqual(expected, overrides)
+        self.assertEqual(sorted_expected, sorted_overrides)
