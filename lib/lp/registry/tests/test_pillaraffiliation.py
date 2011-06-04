@@ -21,7 +21,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(target=distro)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
         self.assertEqual(
-            badge, ("distribution-badge", "Distribution affiliation"))
+            badge, ("/@@/distribution-badge", "Affiliated with Ubuntu"))
 
     def test_bugtask_product_affiliation(self):
         # A person who owns a bugtask product is affiliated.
@@ -30,4 +30,4 @@ class TestPillarAffiliation(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(target=product)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
         self.assertEqual(
-            badge, ("product-badge", "Product affiliation"))
+            badge, ("/@@/product-badge", "Affiliated with Launchpad itself"))

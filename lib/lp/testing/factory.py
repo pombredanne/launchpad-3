@@ -593,7 +593,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False):
+        selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -657,6 +657,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(email).status = email_address_status
 
         self.makeOpenIdIdentifier(person.account)
+
+        for team in member_of:
+            with person_logged_in(team.teamowner):
+                team.addMember(person, team.teamowner)
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
