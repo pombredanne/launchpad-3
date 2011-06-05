@@ -530,12 +530,14 @@ BEGIN
         ELSE
             PERFORM summarise_bug(bug_row(NEW.bug));
         END IF;
+        RETURN NEW;
     ELSIF TG_OP = 'DELETE' THEN
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(OLD.bug));
         ELSE
             PERFORM summarise_bug(bug_row(OLD.bug));
         END IF;
+        RETURN OLD;
     ELSE
         IF TG_WHEN = 'BEFORE' THEN
             PERFORM unsummarise_bug(bug_row(OLD.bug));
@@ -548,8 +550,8 @@ BEGIN
                 PERFORM summarise_bug(bug_row(NEW.bug));
             END IF;
         END IF;
+        RETURN NEW;
     END IF;
-    RETURN NEW; -- Ignored - this is an AFTER trigger
 END;
 $$;
 
