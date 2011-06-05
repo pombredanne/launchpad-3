@@ -1979,7 +1979,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         from lp.registry.interfaces.distroseriesparent import (
             IDistroSeriesParentSet,
             )
-        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        dsps = dsp_set.getByDerivedSeries(self).order_by('ordering')
         return [dsp.parent_series for dsp in dsps]
 
     def getDerivedSeries(self):
