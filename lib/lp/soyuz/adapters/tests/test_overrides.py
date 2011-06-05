@@ -242,8 +242,9 @@ class TestOverrides(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket, bpns)
         self.assertEqual(5, len(overrides))
-        sorted_expected = sorted(
-            expected, key=attrgetter("binary_package_name.name"))
-        sorted_overrides = sorted(
-            overrides, key=attrgetter("binary_package_name.name"))
+        key=attrgetter("binary_package_name.name",
+            "distro_arch_series.architecturetag", 
+            "component.name")
+        sorted_expected = sorted(expected, key=key)
+        sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
