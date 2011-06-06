@@ -227,7 +227,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
 
-    def test_muted_subs_have_unmute_option(self):
+    def test_muted_subs_have_subscribe_option_and_unmute_option(self):
         # If a user has a muted subscription, but no previous
         # direct bug subscription, the BugSubscriptionSubscribeSelfView's
         # subscription field will show an "Unmute" option.
@@ -240,10 +240,14 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     self.bug.default_bugtask, name='+subscribe')
                 subscription_widget = (
                     subscribe_view.widgets['subscription'])
-                # The Unmute option is actually treated the same way as
-                # the unsubscribe option.
+                update_term = subscription_widget.vocabulary.getTermByToken(
+                    'update-subscription')
                 self.assertEqual(
-                    "unmute bug mail from this bug",
+                    "unmute bug mail from this bug and subscribe me to this "
+                    "bug, or",
+                    update_term.title)
+                self.assertEqual(
+                    "unmute bug mail from this bug.",
                     subscription_widget.vocabulary.getTerm(self.person).title)
 
     def test_muted_subs_have_unmute_and_restore_option(self):
@@ -270,8 +274,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     update_term.title)
 
     def test_unmute_unmutes(self):
-        # Using the "Unmute bug mail" option when the user has a muted
-        # subscription will unmute.
+        # Using the "Unmute bug mail" option when the user has muted their
+        # email will unmute.
         with person_logged_in(self.person):
             self.bug.mute(self.person, self.person)
 
@@ -287,7 +291,38 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     self.bug.default_bugtask, form=form_data,
                     name='+subscribe')
                 self.assertFalse(self.bug.isMuted(self.person))
-                self.assertFalse(self.bug.isSubscribed(self.person))
+        subscription = self.bug.getSubscriptionForPerson(self.person)
+        self.assertIs(
+            None, subscription,
+            "There should be no BugSubscription for this person.")
+
+    def test_unmute_and_subscribe(self):
+        # Using the "unmute bug mail from this bug and subscribe me to this
+        # bug" option when the user has muted their email will unmute and
+        # subscribe.
+        with FeatureFixture({self.feature_flag: ON}):
+            with person_logged_in(self.person):
+                self.bug.mute(self.person, self.person)
+                level = BugNotificationLevel.METADATA
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.title,
+                    # Although this isn't used we must pass it for the
+                    # sake of form validation.
+                    'field.actions.continue': 'Continue',
+                    }
+                create_initialized_view(
+                    self.bug.default_bugtask, form=form_data,
+                    name='+subscribe')
+                self.assertFalse(self.bug.isMuted(self.person))
+        subscription = self.bug.getSubscriptionForPerson(self.person)
+        self.assertEqual(
+            BugNotificationLevel.METADATA,
+            subscription.bug_notification_level,
+            "Bug notification level of subscription should be METADATA, is "
+            "actually %s." % (subscription.bug_notification_level.title
+                              if subscription is not None
+                              else '[not subscribed!]'))
 
     def test_bug_notification_level_field_has_widget_class(self):
         # The bug_notification_level widget has a widget_class property

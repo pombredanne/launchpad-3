@@ -8,8 +8,6 @@
 __metaclass__ = type
 
 import cgi
-
-import re
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -156,6 +154,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
+
     include_create_team_link = False
 
     def chooseLink(self):

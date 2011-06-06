@@ -1,16 +1,20 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory
-
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
-    SyncCopyPolicy,
+    MassSyncCopyPolicy,
     )
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.copypolicy import ICopyPolicy
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageCopyPolicy,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestCopyPolicy(TestCaseWithFactory):
@@ -30,7 +34,8 @@ class TestCopyPolicy(TestCaseWithFactory):
         self.assertTrue(approved)
 
     def assertUnapproved(self, archive_purpose, method):
-        archive, distroseries, pocket = self._getUploadCriteria(archive_purpose)
+        archive, distroseries, pocket = self._getUploadCriteria(
+            archive_purpose)
         approved = method(archive, distroseries, pocket)
         self.assertFalse(approved)
 
@@ -42,7 +47,7 @@ class TestCopyPolicy(TestCaseWithFactory):
         cp = InsecureCopyPolicy()
         self.assertApproved(ArchivePurpose.PPA, cp.autoApproveNew)
 
-    def test_insecure_approves_existing_distro_package_to_unfrozen_release(self):
+    def test_insecure_approves_known_distro_package_to_unfrozen_release(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
@@ -77,11 +82,9 @@ class TestCopyPolicy(TestCaseWithFactory):
         self.assertTrue(cp.send_email)
 
     def test_sync_does_not_send_emails(self):
-        cp = SyncCopyPolicy()
+        cp = MassSyncCopyPolicy()
         self.assertFalse(cp.send_email)
 
-    def test_policy_names(self):
-        icp = InsecureCopyPolicy()
-        scp = SyncCopyPolicy()
-        self.assertEquals("insecure", icp.name)
-        self.assertEquals("sync", scp.name)
+    def test_policies_implement_ICopyPolicy(self):
+        for policy in PackageCopyPolicy.items:
+            self.assertTrue(verifyObject(ICopyPolicy, ICopyPolicy(policy)))

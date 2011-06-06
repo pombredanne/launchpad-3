@@ -303,7 +303,8 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
-        :param source_package_name_filter: Package source name filter.
+        :param source_package_name_filter: Name of a source package.  If
+            given, restricts the search to this package.
         :type source_package_name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.

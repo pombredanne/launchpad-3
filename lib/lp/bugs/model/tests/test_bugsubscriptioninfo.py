@@ -237,7 +237,7 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(set(), found_subscriptions)
 
     def test_structural(self):
-        # The set of structural subscribers.
+        # The set of structural subscriptions.
         subscribers = (
             self.factory.makePerson(),
             self.factory.makePerson())
@@ -250,6 +250,29 @@ class TestBugSubscriptionInfo(TestCaseWithFactory):
         self.assertEqual(subscriptions, found_subscriptions.sorted)
         self.assertEqual(set(subscribers), found_subscriptions.subscribers)
         self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
+
+    def test_structural_subscriptions_from_duplicates(self):
+        # The set of structural subscriptions from duplicates.
+        subscribers = (self.factory.makePerson(), self.factory.makePerson())
+        # Note that this duplicate_bug will have a different target than the
+        # main bug's.
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(self.bug)
+        target = duplicate_bug.default_bugtask.target
+        subscriptions = []
+        for subscriber in subscribers:
+            with person_logged_in(subscriber):
+                subscriptions.append(target.addBugSubscription(
+                    subscriber, subscriber))
+        found_subscriptions = (
+            self.getInfo().structural_subscriptions_from_duplicates)
+        self.assertEqual(set(subscriptions), found_subscriptions)
+        self.assertEqual(set(subscribers), found_subscriptions.subscribers)
+        # There's no particular order of our subscriptions, so sorted does
+        # not compare.
+        # self.assertEqual(subscriptions, found_subscriptions.sorted)
+        # self.assertEqual(subscribers, found_subscriptions.subscribers.sorted)
 
     def test_all_assignees(self):
         # The set of bugtask assignees for bugtasks that have been assigned.

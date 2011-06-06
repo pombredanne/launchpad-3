@@ -275,10 +275,18 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                         'unsubscribe <a href="%s">%s</a> from this bug' % (
                             canonical_url(person),
                             cgi.escape(person.displayname))))
-        if not self_subscribed and not is_really_muted:
-            subscription_terms.insert(0,
-                SimpleTerm(
-                    self.user, self.user.name, 'subscribe me to this bug'))
+        if not self_subscribed:
+            if not is_really_muted:
+                subscription_terms.insert(0,
+                    SimpleTerm(
+                        self.user, self.user.name,
+                        'subscribe me to this bug'))
+            elif not self.user_is_subscribed_directly:
+                subscription_terms.insert(0,
+                    SimpleTerm(
+                        'update-subscription', 'update-subscription',
+                        'unmute bug mail from this bug and subscribe me to '
+                        'this bug'))
 
         # Add punctuation to the list of terms.
         if len(subscription_terms) > 1:
@@ -289,7 +297,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         if (self._use_advanced_features and
-            self.user_is_subscribed_directly):
+            (self.user_is_subscribed_directly or self.user_is_muted)):
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -319,7 +327,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self._use_advanced_features:
             self.widgets['bug_notification_level'].widget_class = (
                 'bug-notification-level-field')
-            if self._subscriber_count_for_current_user == 0:
+            if (len(self.form_fields['subscription'].field.vocabulary)==1):
                 # We hide the subscription widget if the user isn't
                 # subscribed, since we know who the subscriber is and we
                 # don't need to present them with a single radio button.
@@ -330,9 +338,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 # subscribe theirself or unsubscribe their team.
                 self.widgets['subscription'].visible = True
 
-            if (self.user_is_subscribed_to_dupes_only or
-                (self._use_advanced_features and self.user_is_muted and
-                 not self.user_is_subscribed)):
+            if self.user_is_subscribed_to_dupes_only:
                 # If the user is subscribed via a duplicate but is not
                 # directly subscribed, we hide the
                 # bug_notification_level field, since it's not used.
