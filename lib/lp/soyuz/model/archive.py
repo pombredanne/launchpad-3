@@ -125,7 +125,6 @@ from lp.soyuz.interfaces.archive import (
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
-    ComponentNotFound,
     default_name_by_purpose,
     DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
@@ -134,7 +133,6 @@ from lp.soyuz.interfaces.archive import (
     IDistributionArchive,
     InsufficientUploadRights,
     InvalidComponent,
-    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     IPPA,
@@ -145,7 +143,6 @@ from lp.soyuz.interfaces.archive import (
     NoTokensForTeams,
     PocketNotFound,
     VersionRequiresName,
-    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -198,14 +195,6 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
-
-def storm_validate_external_dependencies(archive, attr, value):
-    assert attr == 'external_dependencies'
-    errors = validate_external_dependencies(value)
-    if len(errors) > 0:
-        raise InvalidExternalDependencies(errors)
-    return value
 
 
 class Archive(SQLBase):
@@ -317,8 +306,7 @@ class Archive(SQLBase):
     # Launchpad and should be re-examined in October 2010 to see if it
     # is still relevant.
     external_dependencies = StringCol(
-        dbName='external_dependencies', notNull=False, default=None,
-        storm_validator=storm_validate_external_dependencies)
+        dbName='external_dependencies', notNull=False, default=None)
 
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
@@ -495,7 +483,7 @@ class Archive(SQLBase):
 
         if name is not None:
             if exact_match:
-                storm_clauses.append(SourcePackageName.name == name)
+                storm_clauses.append(SourcePackageName.name==name)
             else:
                 clauses.append(
                     "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
@@ -506,7 +494,7 @@ class Archive(SQLBase):
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version == version)
+            storm_clauses.append(SourcePackageRelease.version==version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
@@ -526,7 +514,7 @@ class Archive(SQLBase):
 
         if pocket is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket == pocket)
+                SourcePackagePublishingHistory.pocket==pocket)
 
         if created_since_date is not None:
             clauses.append(
@@ -541,7 +529,6 @@ class Archive(SQLBase):
             *orderBy)
         if not eager_load:
             return resultset
-
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):
@@ -622,7 +609,7 @@ class Archive(SQLBase):
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         order_const = "SourcePackageRelease.version"
-        desc_version_order = SQLConstant(order_const + " DESC")
+        desc_version_order = SQLConstant(order_const+" DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
 
@@ -982,15 +969,6 @@ class Archive(SQLBase):
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
-
-    def _addArchiveDependency(self, dependency, pocket, component=None):
-        """See `IArchive`."""
-        if isinstance(component, basestring):
-            try:
-                component = getUtility(IComponentSet)[component]
-            except NotFoundError as e:
-                raise ComponentNotFound(e)
-        return self.addArchiveDependency(dependency, pocket, component)
 
     def getPermissions(self, user, item, perm_type):
         """See `IArchive`."""

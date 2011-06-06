@@ -316,15 +316,80 @@ Remove the private PPA dependency before continuing.
     >>> cprov.archive.enabled
     True
 
-What when we supply invalid dependencies, an exception is raised.
+What happens when we fake external dependencies?
 
     >>> cprov.archive.external_dependencies = (
     ...     "Malformed format string here --> %(series)")
+
+The error caused by the malformed format string is caught and the other
+dependencies are returned as normal.
+
+    >>> print_building_sources_list(a_build)
+    ERROR:root:Exception during external dependency processing:
     Traceback (most recent call last):
-    InvalidExternalDependencies: (InvalidExternalDependencies(...),
-    "Invalid external dependencies:\nMalformed format string here
-    --> %(series): Must start with 'deb'\nMalformed format string here
-    --> %(series): Invalid URL\n")
+      File ... in get_sources_list_for_building
+        {'series': distroarchseries.distroseries.name})
+    ValueError: incomplete format
+    <BLANKLINE>
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+
+However, in order to avoid the problem going forward (and to allow the PPA
+owner to correct the external dependencies) the PPA will be disabled.
+
+    >>> cprov.archive.enabled
+    False
+
+Restore the 'external_dependencies' property to its original state and
+re-enable the PPA.
+
+    >>> cprov.archive.external_dependencies = None
+    >>> cprov.archive.enable()
+
+    >>> cprov.archive.external_dependencies is None
+    True
+    >>> cprov.archive.enabled
+    True
+
+What happens when we fake external dependencies?
+
+    >>> cprov.archive.external_dependencies = (
+    ...     "Malformed format string here --> %(series)")
+
+The error caused by the malformed format string is caught and the other
+dependencies are returned as normal.
+
+    >>> print_building_sources_list(a_build)
+    ERROR:root:Exception during external dependency processing:
+    Traceback (most recent call last):
+      File ... in get_sources_list_for_building
+        {'series': distroarchseries.distroseries.name})
+    ValueError: incomplete format
+    <BLANKLINE>
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://archive.launchpad.dev/ubuntu hoary
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
+        main restricted universe multiverse
+
+However, in order to avoid the problem going forward (and to allow the PPA
+owner to correct the external dependencies) the PPA will be disabled.
+
+    >>> cprov.archive.enabled
+    False
+
+Restore the 'external_dependencies' property to its original state and
+re-enable the PPA.
+
+    >>> cprov.archive.external_dependencies = None
+    >>> cprov.archive.enable()
 
 
 == Overriding default primary archive dependencies ==
