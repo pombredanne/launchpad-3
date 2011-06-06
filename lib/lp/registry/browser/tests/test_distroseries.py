@@ -457,7 +457,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 message.get("class").split())
 
     def test_rebuilding_allowed(self):
-        # If the distro has no initialised series, rebuilding is allowed.
+        # If the distro has no initialized series, rebuilding is allowed.
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
@@ -466,7 +466,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         self.assertTrue(view.rebuilding_allowed)
 
     def test_rebuilding_not_allowed(self):
-        # If the distro has an initialised series, no rebuilding is allowed.
+        # If the distro has an initialized series, no rebuilding is allowed.
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
