@@ -7,9 +7,7 @@
 
 __metaclass__ = type
 
-from base64 import urlsafe_b64encode
 import cgi
-
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -19,6 +17,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.propertycache import cachedproperty
 
 
@@ -80,7 +79,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def inputField(self):
         d = {
             'formToken': cgi.escape(self.formToken, quote=True),
-            'name': self.name,
+            'name': self.input_id,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
             'onKeyPress': self.onKeyPress,
@@ -94,19 +93,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
-    def suffix(self):
-        """This is used to uniquify the widget ID to avoid ID collisions."""
-        # Since this will be used in an HTML ID, the allowable set of
-        # characters is smaller than the set that can appear in self.name.
-        # Therefore we use the URL-safe base 64 encoding of the name.  However
-        # we also have to strip off any padding characters ("=") because
-        # Python's URL-safe base 64 encoding includes those and they aren't
-        # allowed in IDs either.
-        return urlsafe_b64encode(self.name).replace('=', '')
-
-    @property
     def show_widget_id(self):
-        return 'show-widget-%s' % self.suffix
+        return 'show-widget-%s' % self.input_id.replace('.', '-')
 
     @property
     def extra_no_results_message(self):
@@ -144,7 +132,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def input_id(self):
-        return self.name
+        """This is used to ensure the widget id contains only valid chars."""
+        return FormattersAPI(self.name).zope_css_id()
 
     def chooseLink(self):
         if self.nonajax_uri is None:
@@ -165,6 +154,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
+
     include_create_team_link = False
 
     def chooseLink(self):

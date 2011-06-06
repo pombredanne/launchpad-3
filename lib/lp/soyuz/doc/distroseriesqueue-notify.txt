@@ -43,7 +43,6 @@ logger object that will extract tracebacks for the purposes of this doctest.
   >>> changes_file = open(changes_file_path,'r')
   >>> from lp.services.log.logger import FakeLogger
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com", 
   ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG Building recipients list.
   DEBUG Changes file is unsigned, adding changer as recipient
@@ -116,7 +115,6 @@ Now request the email:
   >>> changes_file = open(changes_file_path,'r')
   >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
-  ...     announce_list="announcelist@canonical.com",
   ...     changes_file_object=changes_file, logger=FakeLogger())
   DEBUG Building recipients list.
   ...
@@ -124,7 +122,7 @@ Now request the email:
   ...
   DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG Announcing to announcelist@canonical.com
+  DEBUG Announcing to autotest_changes@ubuntu.com
   ...
   DEBUG Sent a mail:
   ...
@@ -137,10 +135,10 @@ this upload is already accepted.
   2
 
 The mail 'To:' addresses contain the signer and the changer's email.  The
-announcement email contains the argument specified for "announce_list".
+announcement email contains the serieses changeslist.
 
   >>> [msg['To'] for msg in msgs]
-  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'announcelist@canonical.com']
+  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'autotest_changes@ubuntu.com']
 
 The mail 'Bcc:' address is the uploader.  The announcement has the uploader
 and the Debian derivatives address for the package uploaded.
@@ -185,8 +183,7 @@ the case when nascent upload runs).  This example demonstrates this usage:
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
   >>> netapplet_upload.setNew()
-  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com",
-  ...     logger=FakeLogger())
+  >>> netapplet_upload.notify(logger=FakeLogger())
   DEBUG Building recipients list.
   ...
   DEBUG Sent a mail:

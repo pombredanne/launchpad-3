@@ -982,7 +982,7 @@ with fake changes files first so that emails can be generated.)
   >>> insertFakeChangesFile(items[1].changesfile.id)
   >>> insertFakeChangesFile(items[3].changesfile.id)
   >>> try:
-  ...    items[1].acceptFromQueue('announce@example.com')
+  ...    items[1].acceptFromQueue()
   ... except QueueInconsistentStateError, e:
   ...    print 'FAILED'
   ... else:
