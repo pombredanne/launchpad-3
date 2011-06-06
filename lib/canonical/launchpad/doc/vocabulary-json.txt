@@ -10,10 +10,10 @@ entries until vocabularies are integrated into the REST API.
     >>> def print_json(json):
     ...     data = simplejson.loads(json)
     ...     print simplejson.dumps(data, sort_keys=True, indent=4)
-    >>> def create_vocabulary_view(form):
+    >>> def create_vocabulary_view(form, context=root):
     ...     # The BatchNavigator looks in the query string for GET requests.
     ...     query_string = urlencode(form)
-    ...     return create_view(root, '+huge-vocabulary',
+    ...     return create_view(context, '+huge-vocabulary',
     ...                        form=form, query_string=query_string)
 
 The view requires the name of the vocabulary.
@@ -56,9 +56,12 @@ A successful search.
     {
         "entries": [
             {
+                "alt_title": "guadamen",
+                "alt_title_link": "http://launchpad.dev/~guadamen",
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
-                "title": "GuadaMen (guadamen)",
+                "link_css": "js-action",
+                "title": "GuadaMen",
                 "value": "guadamen"
             }
         ],
@@ -84,9 +87,12 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "alt_title": "admins",
+                "alt_title_link": "http://launchpad.dev/~admins",
                 "api_uri": "/~admins",
                 "css": "sprite team",
-                "title": "Launchpad Administrators (admins)",
+                "link_css": "js-action",
+                "title": "Launchpad Administrators",
                 "value": "admins"
             }
         ],
@@ -100,14 +106,49 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "alt_title": "name16",
+                "alt_title_link": "http://launchpad.dev/~name16",
                 "api_uri": "/~name16",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Foo Bar (name16)",
+                "link_css": "js-action",
+                "title": "Foo Bar",
                 "value": "name16"
             }
         ],
         "total_size": 6
+    }
+
+If a person is affiliated with the view context, the relevant badge(s) will be
+included in the picker entry.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> form = dict(name='ValidPersonOrTeam', search_text='name12',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form, context=bugtask)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
+                "api_uri": "/~name12",
+                "badges": [
+                     {
+                         "alt": "Affiliated with Launchpad itself",
+                         "url": "/@@/product-badge"
+                     }
+                 ],
+                "css": "sprite person",
+                "description": "<email address hidden>",
+                "link_css": "js-action",
+                "title": "Sample Person",
+                "value": "name12"
+            }
+        ],
+        "total_size": 1
     }
 
 Long descriptions will be truncated.
@@ -138,10 +179,13 @@ retrieved through vocabularies.
     {
         "entries": [
             {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
-                "title": "Sample Person (name12)",
+                "link_css": "js-action",
+                "title": "Sample Person",
                 "value": "name12"
             }
         ],
@@ -157,10 +201,13 @@ IRC nicknames should be displayed after any email address.
     {
         "entries": [
             {
+                "alt_title": "mark",
+                "alt_title_link": "http://launchpad.dev/~mark",
                 "api_uri": "/~mark",
                 "css": "sprite person",
                 "description": "<email address hidden> (mark on irc.freenode.net)",
-                "title": "Mark Shuttleworth (mark)",
+                "link_css": "js-action",
+                "title": "Mark Shuttleworth",
                 "value": "mark"
             }
         ],
