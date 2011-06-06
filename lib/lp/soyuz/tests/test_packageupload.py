@@ -63,8 +63,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         delayed_copy = self.createEmptyDelayedCopy()
         self.assertRaisesWithContent(
             AssertionError,
-            'Cannot process delayed copies.',
-            delayed_copy.acceptFromQueue, 'some-announce-list')
+            'Cannot process delayed copies.', delayed_copy.acceptFromQueue)
 
     def test_acceptFromCopy_refuses_empty_copies(self):
         # Empty delayed-copies cannot be accepted.
@@ -242,7 +241,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         expected_subject = (
             '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz (delayed),\n\t'
+            'dist-upgrader_20060302.0120_all.tar.gz, '
             'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
 

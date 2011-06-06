@@ -21,10 +21,10 @@ parameter to checkAuthenticated is a PersonRoles object (was a Person object).
 
 PersonRoles is registered as an unnamed adapter for IPersonRoles.
 
-    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> from lp.registry.interfaces.role import IPersonRoles
     >>> person = factory.makePerson()
     >>> print IPersonRoles(person)
-    <canonical.launchpad.utilities.personroles.PersonRoles object at ...>
+    <lp.registry.model.personroles.PersonRoles object at ...>
 
 The original Person object can be reached through the person attribute.
 
@@ -40,8 +40,7 @@ PersonRoles has a corresponding attribute of the same name prefixed with
 "in_" to check if the person in question is a member of this celebrity or is
 this celebrity. The following tests are identical.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> print person.inTeam(rosetta_experts)
     False

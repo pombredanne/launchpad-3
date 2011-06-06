@@ -844,4 +844,12 @@
         facet="overview"
         permission="launchpad.View"
         template="../templates/buildfarmbuildjob-current.pt"/>
+    <browser:pages
+        for="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"
+        permission="zope.Public">
+        <browser:page
+            name="+render-list"
+            template="../templates/packagerelationship-list.pt"
+         />
+    </browser:pages>
 </configure>

@@ -52,6 +52,10 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -182,7 +186,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = SQLMultipleJoin('SpecificationSubscription',
+    _subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
@@ -212,6 +216,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+
+    @cachedproperty
+    def subscriptions(self):
+        """Sort the subscriptions"""
+        return sorted(
+            self._subscriptions, key=lambda sub: sub.person.displayname)
 
     @property
     def target(self):
@@ -545,6 +555,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
+        property_cache = get_property_cache(self)
+        if 'subscription' in property_cache:
+            property_cache.subscriptions.append(sub)
+            property_cache.subscriptions.sort(
+                key=lambda sub: sub.person.displayname)
         notify(ObjectCreatedEvent(sub, user=user))
         return sub
 
@@ -553,6 +568,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # see if a relevant subscription exists, and if so, delete it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
                 return
 
@@ -692,7 +708,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
-
 
 
 class HasSpecificationsMixin:

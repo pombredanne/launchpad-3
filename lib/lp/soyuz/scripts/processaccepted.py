@@ -13,19 +13,19 @@ __all__ = [
     'ProcessAccepted',
     ]
 
-from debian.deb822 import Deb822Dict
 import sys
 
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -38,12 +38,8 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 def get_bugs_from_changes_file(changes_file):
@@ -52,9 +48,7 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
-    contents = changes_file.read()
-    changes_lines = contents.splitlines(True)
-    tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
+    tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():

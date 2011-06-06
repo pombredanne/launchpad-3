@@ -18,6 +18,7 @@ __all__ = [
     'IMailingListSubscription',
     'IMessageApproval',
     'IMessageApprovalSet',
+    'IMessageHeldEvent',
     'MailingListStatus',
     'PURGE_STATES',
     'PostedMessageStatus',
@@ -29,7 +30,10 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -39,6 +43,8 @@ from zope.schema import (
     Text,
     TextLine,
     )
+
+from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
@@ -936,3 +942,10 @@ class UnsafeToPurge(Exception):
     def __str__(self):
         return 'Cannot purge mailing list in %s state: %s' % (
             self._mailing_list.status.name, self._mailing_list.team.name)
+
+
+class IMessageHeldEvent(IObjectCreatedEvent):
+    """A mailing list message has been held for moderator approval."""
+
+    mailing_list = Attribute('The mailing list the message is held for.')
+    message_id = Attribute('The Message-ID of the held message.')

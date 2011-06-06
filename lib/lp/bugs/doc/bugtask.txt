@@ -648,22 +648,6 @@ But a normal unprivileged user can't set the milestone.
     >>> print current_series_netapplet_task.sourcepackagename.name
     pmount
 
-The generic tasks are not directly editable.
-
-    >>> generic_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    Traceback (most recent call last):
-      ...
-    ConjoinedBugTaskEditError: This task cannot be edited directly, it
-                               should be edited through its conjoined_master.
-
-    >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
-    Traceback (most recent call last):
-      ...
-    ConjoinedBugTaskEditError: This task cannot be edited directly, it
-                               should be edited through its conjoined_master.
-
-
 A conjoined relationship can be broken, though. If the development
 task (i.e the conjoined master) is Won't Fix, it means that the bug is
 deferred to the next series. In this case the development task should

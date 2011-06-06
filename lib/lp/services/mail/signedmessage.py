@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SignedMessage',
     'signed_message_from_string',
+    'strip_pgp_signature',
     ]
 
 import email
@@ -150,3 +151,13 @@ class SignedMessage(email.Message.Message):
         """
         signature, signed_content = self._getSignatureAndSignedContent()
         return signature
+
+
+def strip_pgp_signature(text):
+    """Strip any PGP signature from the supplied text."""
+    signed_message = signed_message_from_string(text)
+    # For unsigned text the signedContent will be None.
+    if signed_message.signedContent is not None:
+        return signed_message.signedContent
+    else:
+        return text

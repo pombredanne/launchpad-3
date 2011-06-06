@@ -83,7 +83,7 @@ The ICookbook and IRecipe breadcrumb objects show up in the hierarchy after
 IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
-    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+    >>> from lp.app.browser.launchpad import Hierarchy
     >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
     # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't

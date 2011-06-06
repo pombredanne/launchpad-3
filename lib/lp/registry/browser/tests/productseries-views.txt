@@ -241,8 +241,7 @@ There is a cancel_url property too.
 
 Bazaar experts can change the branch links.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebrities = getUtility(ILaunchpadCelebrities)
     >>> login_person(celebrities.bazaar_experts.teamowner)
     >>> check_permission('launchpad.Edit', view)

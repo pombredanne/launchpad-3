@@ -8,8 +8,7 @@ database, which we want to give easy access to in the code. To this end,
 there is an ILaunchpadCelebrities utility available that gives access to
 these well-known objects through attributes.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPerson, IPersonSet
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -240,7 +239,7 @@ IPersonRoles, to check if a person has that role. If the attributes
 differ, IPersonRoles needs to be synced to ILaunchpadCelebrities by
 adding/removing the appropriate "in_" attribute(s).
 
-    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> from lp.registry.interfaces.role import IPersonRoles
     >>> def get_person_celebrity_names():
     ...     for name in ILaunchpadCelebrities.names():
     ...         if IPerson.providedBy(getattr(celebs, name)):

@@ -1933,14 +1933,18 @@ body.tab-bugs #duplicate-actions .sprite {
     */
     display:inline;
     }
-.yui-picker-results li.sprite {
-    /* XXX: EdwinGrubbs 2009-07-27 bug=405476
-     * Override the .yui-picker-results style, so that the next icon
-     * in the sprite file won't appear for tall list items.
-     */
-    padding:2px 0 0 18px;
-    }
 
+/* Picker styles */
+.yui3-picker-results div.badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    left: auto;
+    }
+.yui3-picker-results div.badge img {
+    position: relative;
+    padding-left: 3px;
+    }
 
 /* ====================
    Global notifications

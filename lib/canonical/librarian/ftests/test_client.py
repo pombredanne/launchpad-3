@@ -21,6 +21,11 @@ from canonical.launchpad.database.librarian import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):
+
+    def __init__(self, *args, **kwargs):
+        super(InstrumentedLibrarianClient, self).__init__(*args, **kwargs)
+        self.check_error_calls = 0
+
     sentDatabaseName = False
     def _sendHeader(self, name, value):
         if name == 'Database-Name':
@@ -31,6 +36,10 @@ class InstrumentedLibrarianClient(LibrarianClient):
     def _getURLForDownload(self, aliasID):
         self.called_getURLForDownload = True
         return LibrarianClient._getURLForDownload(self, aliasID)
+
+    def _checkError(self):
+        self.check_error_calls += 1
+        super(InstrumentedLibrarianClient, self)._checkError()
 
 
 def make_mock_file(error, max_raise):
@@ -107,6 +116,31 @@ class LibrarianClientTestCase(unittest.TestCase):
         transaction.commit()
         f = client.getFileByAlias(alias_id)
         self.assertEqual(f.read(), 'sample')
+
+    def test_addFile_no_response_check_at_end_headers_for_empty_file(self):
+        # When addFile() sends the request header, it checks if the
+        # server responded with an error response after sending each
+        # header line. It does _not_ do this check when it sends the
+        # empty line following the headers.
+        client = InstrumentedLibrarianClient()
+        client.addFile(
+            'sample.txt', 0, StringIO(''), 'text/plain',
+            allow_zero_length=True)
+        # addFile() calls _sendHeader() three times and _sendLine()
+        # twice, but it does not check if the server responded
+        # in the second call.
+        self.assertEqual(4, client.check_error_calls)
+
+    def test_addFile_response_check_at_end_headers_for_non_empty_file(self):
+        # When addFile() sends the request header, it checks if the
+        # server responded with an error response after sending each
+        # header line. It does _not_ do this check when it sends the
+        # empty line following the headers.
+        client = InstrumentedLibrarianClient()
+        client.addFile('sample.txt', 4, StringIO('1234'), 'text/plain')
+        # addFile() calls _sendHeader() three times and _sendLine()
+        # twice.
+        self.assertEqual(5, client.check_error_calls)
 
     def test__getURLForDownload(self):
         # This protected method is used by getFileByAlias. It is supposed to

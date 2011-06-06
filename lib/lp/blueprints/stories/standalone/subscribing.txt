@@ -273,10 +273,9 @@ not.
     ...     img = a_tags[0].first('img')
     ...     print img['src'],
     ...     print a_tags[1].string
+    /@@/subscriber-essential Andrew Bennetts
+    /@@/subscriber-inessential Dafydd Harries
     /@@/subscriber-inessential Foo Bar
     /@@/subscriber-essential Robert Collins
-    /@@/subscriber-essential Andrew Bennetts
     /@@/subscriber-inessential Stuart Bishop
-    /@@/subscriber-inessential Dafydd Harries
-
 

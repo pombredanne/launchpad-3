@@ -102,6 +102,10 @@ flag_info = sorted([
      'boolean',
      'Changes the appearance of notifications on private bugs.',
      ''),
+    ('disclosure.picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display of extra details in the person picker.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.

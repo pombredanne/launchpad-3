@@ -343,7 +343,7 @@ And it is not allowed to call linkFAQ() when the FAQ is already linked:
     ...     no_priv, firefox_faq, 'See the FAQ.')
     Traceback (most recent call last):
       ...
-    AssertionError: cannot call linkFAQ() with already linked FAQ
+    FAQTargetError: Cannot call linkFAQ() with already linked FAQ.
 
 A FAQ can be linked to a 'solved' question, in which case, the status is
 not changed.

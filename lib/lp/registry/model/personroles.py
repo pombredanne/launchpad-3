@@ -12,12 +12,12 @@ from zope.component import (
     )
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.launchpad import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import (
     IHasDrivers,
-    ILaunchpadCelebrities,
     IPersonRoles,
     )
-from lp.registry.interfaces.person import IPerson
 
 
 class PersonRoles:
@@ -69,4 +69,3 @@ class PersonRoles:
             if self.person.inTeam(role):
                 return True
         return False
-

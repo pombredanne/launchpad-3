@@ -39,8 +39,7 @@ from storm.store import Store
 
 from canonical.lp import initZopeless
 
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities)
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.logger import logger, logger_options
 from canonical.launchpad.webapp.interfaces import (

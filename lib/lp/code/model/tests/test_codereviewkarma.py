@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
-from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
 from lp.testing import TestCaseWithFactory
 

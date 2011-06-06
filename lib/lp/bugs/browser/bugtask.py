@@ -48,9 +48,7 @@ from datetime import (
     datetime,
     timedelta,
     )
-from itertools import (
-    groupby,
-    )
+from itertools import groupby
 from math import (
     floor,
     log,
@@ -133,10 +131,7 @@ from canonical.launchpad.browser.feeds import (
     BugTargetLatestBugsFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker,
-    ILaunchpadCelebrities,
-    )
+from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_distrotask,
@@ -147,7 +142,6 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -178,6 +172,7 @@ from lp.app.browser.lazrjs import (
     TextLineEditorWidget,
     vocabulary_to_choice_edit_items,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import (
     ObjectImageDisplayAPI,
     PersonFormatterAPI,
@@ -187,7 +182,10 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -196,12 +194,12 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
-from lp.bugs.browser.structuralsubscription import (
-    expose_structural_subscription_data_to_js,
-    )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.browser.widgets.bugtask import (
@@ -275,11 +273,10 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import (
-    cachedproperty,
-    )
+from lp.services.propertycache import cachedproperty
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
@@ -650,7 +647,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def page_title(self):
         heading = 'Bug #%s in %s' % (
             self.context.bug.id, self.context.bugtargetdisplayname)
-        return smartquote('%s: "%s"') % (heading, self.context.bug.title)
+        title = FormattersAPI(self.context.bug.title).obfuscate_email()
+        return smartquote('%s: "%s"') % (heading, title)
 
     @property
     def next_url(self):

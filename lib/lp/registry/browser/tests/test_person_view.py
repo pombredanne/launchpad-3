@@ -3,10 +3,10 @@
 
 __metaclass__ = type
 
-import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
 from testtools.matchers import LessThan
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -14,10 +14,9 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -25,34 +24,32 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView)
-
-
+    TeamInvitationView,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    PersonVisibility,
     IPersonSet,
+    PersonVisibility,
     )
 from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
+from lp.registry.model.person import Person
 from lp.soyuz.enums import (
     ArchiveStatus,
     PackagePublishingStatus,
     )
-from lp.registry.model.person import Person
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login_person,

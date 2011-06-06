@@ -250,7 +250,7 @@
     <browser:page
         for="*"
         name="bag"
-        template="../templates/launchbag-debug.pt"
+        template="templates/launchbag-debug.pt"
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
         />
@@ -260,13 +260,13 @@
     <browser:page
         name=""
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
-        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        class="lp.app.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
         />
 
@@ -307,28 +307,28 @@
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest1"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
-        template="../templates/notification-test.pt"
+        template="templates/notification-test.pt"
         permission="launchpad.Admin"
         class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />

@@ -176,8 +176,9 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
     def value(self):
         text = getattr(self.context, self.attribute_name, self.default_text)
         if text is None:
-            text = self.default_text
-        return text
+            return self.default_text
+        else:
+            return FormattersAPI(text).obfuscate_email()
 
 
 class TextAreaEditorWidget(TextWidgetBase):
@@ -246,8 +247,8 @@ class InlineEditPickerWidget(WidgetBase):
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param header: The large text at the top of the picker.
         :param step_title: Smaller line of text below the header.
         :param remove_button_text: Override default button text: "Remove"
@@ -493,8 +494,8 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param header: The large text at the top of the choice popup.
         """
         super(BooleanChoiceWidget, self).__init__(
@@ -546,8 +547,8 @@ class EnumChoiceWidget(WidgetBase):
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param header: The large text at the top of the picker.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param enum: The enumerated type used to generate the widget items.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.

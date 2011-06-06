@@ -28,7 +28,6 @@ __all__ = [
     'PersonEditLocationView',
     'PersonEditSSHKeysView',
     'PersonEditView',
-    'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexMenu',
@@ -100,10 +99,7 @@ from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
-from lazr.uri import (
-    InvalidURIError,
-    URI,
-    )
+from lazr.uri import URI
 import pytz
 from storm.expr import Join
 from storm.zope.interfaces import IResultSet
@@ -165,17 +161,11 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
     INotificationRecipientSet,
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.services.messages.interfaces.message import (
-    IDirectEmailAuthorization,
-    QuotaReachedError,
-    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from lp.registry.mail.notification import send_direct_contact_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -205,8 +195,8 @@ from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.enums import QuestionParticipation
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -223,6 +213,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (
@@ -233,7 +224,6 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.app.widgets.location import LocationWidget
 from lp.app.widgets.password import PasswordChangeWidget
-from lp.app.widgets.textwidgets import URIWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -302,16 +292,18 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.interfaces.wikiname import (
-    IWikiName,
-    IWikiNameSet,
-    )
+from lp.registry.interfaces.wikiname import IWikiNameSet
+from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.messages.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
@@ -1054,7 +1046,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'common_edithomepage',
         'editemailaddresses',
         'editlanguages',
-        'editwikinames',
         'editircnicknames',
         'editjabberids',
         'editsshkeys',
@@ -1101,12 +1092,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editwikinames(self):
-        target = '+editwikinames'
-        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -2789,16 +2774,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             check_permission('launchpad.Edit', self.context))
 
     @property
-    def should_show_wikinames_section(self):
-        """Should the 'Wiki names' section be shown?
-
-        It's shown when the person has Wiki names registered or has rights
-        to register new ones.
-        """
-        return not self.context.wiki_names.is_empty() or (
-            check_permission('launchpad.Edit', self.context))
-
-    @property
     def should_show_jabberids_section(self):
         """Should the 'Jabber IDs' section be shown?
 
@@ -3558,161 +3533,6 @@ class PersonCodeOfConductEditView(LaunchpadView):
                 # Deactivating signature.
                 comment = 'Deactivated by Owner'
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
-
-
-class PersonEditWikiNamesView(LaunchpadFormView):
-    """View for ~person/+editwikinames"""
-
-    schema = IWikiName
-    fields = ['wiki', 'wikiname']
-    # Use custom widgets solely to get the width correct.  The URIWidget has a
-    # CSS class that does not respect the displayWidth, thus the need to use a
-    # different cssClass.
-    custom_widget('wiki', URIWidget, displayWidth=40, cssClass="textType")
-    custom_widget('wikiname', TextWidget, displayWidth=40)
-
-    @property
-    def label(self):
-        return smartquote("%s's wiki names" % self.context.displayname)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
-
-    def setUpFields(self):
-        super(PersonEditWikiNamesView, self).setUpFields()
-        if self.context.wiki_names.count() > 0:
-            # Make the wiki and wiki_name entries optional on the edit page if
-            # one or more ids already exist, which allows the removal of ids
-            # without filling out the new wiki fields.
-            wiki_field = self.form_fields['wiki']
-            wikiname_field = self.form_fields['wikiname']
-            # Copy the fields so as not to modify the interface.
-            wiki_field.field = copy_field(wiki_field.field)
-            wiki_field.field.required = False
-            wikiname_field.field = copy_field(wikiname_field.field)
-            wikiname_field.field.required = False
-
-    def _validateWikiURL(self, url):
-        """Validate the URL.
-
-        Make sure that the result is a valid URL with only the
-        appropriate schemes.  The url is assumed to be a string.
-        """
-        if url is None:
-            return
-        try:
-            uri = URI(url)
-            if uri.scheme not in ('http', 'https'):
-                self.setFieldError(
-                    'wiki',
-                    structured(
-                        'The URL scheme "%(scheme)s" is not allowed.  '
-                        'Only http or https URLs may be used.',
-                        scheme=uri.scheme))
-        except InvalidURIError:
-            self.setFieldError(
-                'wiki',
-                structured(
-                    '"%(url)s" is not a valid URL.', url=url))
-
-    def _validateWikiName(self, name):
-        """Ensure the wikiname is valid.
-
-        It must not be longer than 100 characters.  Name is assumed to be a
-        string.
-        """
-        max_len = 100
-        if len(name) > max_len:
-            self.setFieldError(
-                'wikiname',
-                structured(
-                    'The wiki name cannot exceed %d characters.' % max_len))
-
-    def _sanitizeWikiURL(self, url):
-        """Strip whitespaces and make sure :url ends in a single '/'."""
-        if not url:
-            return url
-        return '%s/' % url.strip().rstrip('/')
-
-    def validate(self, data):
-        # If there are already form errors then just show them.
-        if self.errors:
-            return
-        wikiurl = self._sanitizeWikiURL(data.get('wiki'))
-        wikiname = data.get('wikiname')
-        if wikiurl or wikiname:
-            if not wikiurl:
-                self.setFieldError(
-                    'wiki',
-                    structured(
-                        'The Wiki URL must be specified.'))
-            if not wikiname:
-                self.setFieldError(
-                    'wikiname',
-                    structured(
-                        'The Wiki name must be specified.'))
-
-        if self.errors:
-            return
-
-        if wikiurl is not None:
-            self._validateWikiURL(wikiurl)
-        if wikiname is not None:
-            self._validateWikiName(wikiname)
-
-        if self.errors:
-            return
-
-        wikinameset = getUtility(IWikiNameSet)
-        existingwiki = wikinameset.getByWikiAndName(wikiurl, wikiname)
-        if existingwiki:
-            if existingwiki.person != self.context:
-                owner_name = urllib.quote(existingwiki.person.name)
-                merge_url = (
-                    '%s/+requestmerge?field.dupe_person=%s'
-                    % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.setFieldError(
-                    'wikiname',
-                    structured(
-                        'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>. If you think this is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        '</a> into your account.',
-                        wikiurl, wikiname,
-                        canonical_url(existingwiki.person),
-                        existingwiki.person.displayname, merge_url))
-            else:
-                # The person already has this wiki.
-                self.setFieldError(
-                    'wikiname',
-                    'The WikiName %s%s already belongs to you.' %
-                    (wikiurl, wikiname))
-
-    def _save(self, wikiurl, wikiname):
-        """Given a wikiurl and wikiname, attempt to save it.
-
-        Verify someone else doesn't have it already.
-        """
-
-    @action(_("Save Changes"), name="save")
-    def save(self, action, data):
-        """Process the wiki names form."""
-        form = self.request.form
-        for obj in self.context.wiki_names:
-            if form.get('remove_%s' % obj.id):
-                obj.destroySelf()
-
-        if not self.errors:
-            wikiurl = self._sanitizeWikiURL(data.get('wiki'))
-            wikiname = data.get('wikiname')
-            # If either url or name are present then they both must be
-            # entered.
-            if wikiurl and wikiname:
-                wikinameset = getUtility(IWikiNameSet)
-                wikinameset.new(self.context, wikiurl, wikiname)
 
 
 class PersonEditIRCNicknamesView(LaunchpadFormView):

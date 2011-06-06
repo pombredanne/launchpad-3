@@ -189,8 +189,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.account import Account
         from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
-        from canonical.launchpad.interfaces.launchpad import (
-            ILaunchpadCelebrities)
+        from lp.app.interfaces.launchpad import ILaunchpadCelebrities
         from lp.registry.model.person import Person
         celebrities = getUtility(ILaunchpadCelebrities)
         # This is a slow operation due to the huge amount of cascading.

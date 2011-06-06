@@ -202,7 +202,7 @@ a link to retrieve the question's messages.
     date_last_query: u'20...+00:00'
     date_last_response: u'20...+00:00'
     date_solved: None
-    description: u'description'
+    description: u'description...'
     id: ...
     language_link: u'http://api.launchpad.dev/devel/+languages/en'
     messages_collection_link:

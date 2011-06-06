@@ -10,6 +10,8 @@ __all__ = [
     'plan_update',
     ]
 
+import errno
+import json
 import optparse
 import os
 import shutil
@@ -61,6 +63,16 @@ def interpret_config_entry(entry):
         optional = False
     return branch_name, branch_url, revision, optional
 
+def load_cache(cache_filename):
+    try:
+        cache_file = open(cache_filename, 'rb')
+    except IOError as e:
+        if e.errno == errno.ENOENT:
+            return {}
+        else:
+            raise
+    with cache_file:
+        return json.load(cache_file)
 
 def interpret_config(config_entries, public_only):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
@@ -178,6 +190,42 @@ def get_branches(sourcecode_directory, new_branches,
             possible_transports=possible_transports)
 
 
+def find_stale(updated, cache, sourcecode_directory, quiet):
+    """Find branches whose revision info doesn't match the cache."""
+    new_updated = dict(updated)
+    for project, (branch_url, revision, optional) in updated.iteritems():
+        cache_revision_info = cache.get(project)
+        if cache_revision_info is None:
+            continue
+        if cache_revision_info[0] != int(revision):
+            continue
+        destination = os.path.join(sourcecode_directory, project)
+        try:
+            branch = Branch.open(destination)
+        except BzrError:
+            continue
+        if list(branch.last_revision_info()) != cache_revision_info:
+            continue
+        if not quiet:
+            print '%s is already up to date.' % project
+        del new_updated[project]
+    return new_updated
+
+
+def update_cache(cache, cache_filename, changed, sourcecode_directory, quiet):
+    """Update the cache with the changed branches."""
+    if len(changed) == 0:
+        return
+    if not quiet:
+        print 'Cache updated.  Please commit "%s".' % cache_filename
+    for project, (branch_url, revision, optional) in changed.iteritems():
+        destination = os.path.join(sourcecode_directory, project)
+        branch = Branch.open(destination)
+        cache[project] = branch.last_revision_info()
+    with open(cache_filename, 'wb') as cache_file:
+        json.dump(cache, cache_file, indent=4)
+
+
 def update_branches(sourcecode_directory, update_branches,
                     possible_transports=None, tip=False, quiet=False):
     """Update the existing branches in sourcecode."""
@@ -246,12 +294,13 @@ def remove_branches(sourcecode_directory, removed_branches, quiet=False):
             os.unlink(destination)
 
 
-def update_sourcecode(sourcecode_directory, config_filename, public_only,
-                      tip, dry_run, quiet=False):
+def update_sourcecode(sourcecode_directory, config_filename, cache_filename,
+                      public_only, tip, dry_run, quiet=False):
     """Update the sourcecode."""
     config_file = open(config_filename)
     config = interpret_config(parse_config_file(config_file), public_only)
     config_file.close()
+    cache = load_cache(cache_filename)
     branches = find_branches(sourcecode_directory)
     new, updated, removed = plan_update(branches, config)
     possible_transports = []
@@ -262,8 +311,13 @@ def update_sourcecode(sourcecode_directory, config_filename, public_only,
     else:
         get_branches(
             sourcecode_directory, new, possible_transports, tip, quiet)
+        updated = find_stale(updated, cache, sourcecode_directory, quiet)
         update_branches(
             sourcecode_directory, updated, possible_transports, tip, quiet)
+        changed = dict(updated)
+        changed.update(new)
+        update_cache(
+            cache, cache_filename, changed, sourcecode_directory, quiet)
         remove_branches(sourcecode_directory, removed, quiet)
 
 
@@ -302,6 +356,8 @@ def main(args):
         config_filename = args[2]
     else:
         config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
+    cache_filename = os.path.join(
+        root, 'utilities', 'sourcedeps.cache')
     if len(args) > 3:
         parser.error("Too many arguments.")
     if not options.quiet:
@@ -313,6 +369,6 @@ def main(args):
         sys.stdin, sys.stdout, sys.stderr)
     load_plugins()
     update_sourcecode(
-        sourcecode_directory, config_filename,
+        sourcecode_directory, config_filename, cache_filename,
         options.public_only, options.tip, options.dry_run, options.quiet)
     return 0

@@ -278,8 +278,7 @@ Set up a helper function to check access:
     >>> def checkAccess(true_or_false):
     ...     for method in restricted_methods:
     ...         assert(canAccess(permission_set, method) == true_or_false)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.teammembership import (
     ...     TeamMembershipStatus)

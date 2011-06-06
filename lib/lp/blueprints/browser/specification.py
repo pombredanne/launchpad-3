@@ -50,12 +50,12 @@ from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
     )
+from zope import component
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
 from zope.app.form.browser.itemswidgets import DropdownWidget
-from zope import component
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
@@ -75,7 +75,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -90,6 +89,7 @@ from canonical.launchpad.webapp.menu import (
     Link,
     NavigationMenu,
     )
+from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -114,11 +114,11 @@ from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationImplementationStatus,
     )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
     )
-from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet

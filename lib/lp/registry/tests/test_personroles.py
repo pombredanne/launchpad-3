@@ -3,18 +3,14 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IPersonRoles
 from lp.testing import TestCaseWithFactory
 
 
@@ -151,8 +147,3 @@ class TestPersonRoles(TestCaseWithFactory):
         fake_attr = self.factory.getUniqueString()
         roles = IPersonRoles(self.person)
         self.assertRaises(AttributeError, roles.isOneOf, obj, [fake_attr])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

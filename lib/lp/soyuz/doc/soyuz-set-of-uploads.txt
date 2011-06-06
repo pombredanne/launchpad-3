@@ -432,9 +432,11 @@ ubututest/breezy-RELEASE:
   DEBUG Initialising connection.
   ...
   DEBUG Sent a mail:
-  DEBUG     Subject: [ubuntutest/breezy] foo 1.0-1 (New)
-  DEBUG     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG     Body:
+  DEBUG   Subject: [ubuntutest/breezy] foo 1.0-1 (New)
+  DEBUG   Sender: Root <root@localhost>
+  DEBUG   Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG   Bcc: Root <root@localhost>
+  DEBUG   Body:
   DEBUG NEW: foo_1.0.orig.tar.gz
   DEBUG NEW: foo_1.0-1.diff.gz
   DEBUG NEW: foo_1.0-1.dsc

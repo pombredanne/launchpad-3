@@ -8,8 +8,13 @@ __metaclass__ = type
 import os
 
 from debian.deb822 import Changes
+from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.ftests import import_public_test_keys
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -23,9 +28,15 @@ from lp.archiveuploader.nascentuploadfile import (
     UdebBinaryUploadFile,
     UploadError,
     )
-from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
+from lp.archiveuploader.tests import (
+    AbsolutelyAnythingGoesUploadPolicy,
+    datadir,
+    )
+from lp.archiveuploader.uploadpolicy import InsecureUploadPolicy
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
+from lp.testing.keyserver import KeyServerTac
 
 
 class TestDetermineFileClassAndName(TestCase):
@@ -188,3 +199,48 @@ class ChangesFileTests(TestCase):
         self.assertRaises(
             UploadError,
             self.createChangesFile, "mypkg_0.1_i386.changes", contents)
+
+
+class TestSignatureVerification(TestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestSignatureVerification, self).setUp()
+        self.useFixture(KeyServerTac())
+        import_public_test_keys()
+
+    def test_valid_signature_accepted(self):
+        # A correctly signed changes file is excepted, and all its
+        # content is parsed.
+        path = datadir('signatures/signed.changes')
+        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        self.assertEqual(
+            getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
+            parsed.signer)
+        expected = "\AFormat: 1.7\n.*foo_1.0-1.diff.gz\Z"
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected,
+            parsed.parsed_content)
+
+    def test_no_signature_rejected(self):
+        # An unsigned changes file is rejected.
+        path = datadir('signatures/unsigned.changes')
+        self.assertRaises(
+            UploadError,
+            ChangesFile, path, InsecureUploadPolicy(), BufferLogger())
+
+    def test_prefix_ignored(self):
+        # A signed changes file with an unsigned prefix has only the
+        # signed part parsed.
+        path = datadir('signatures/prefixed.changes')
+        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        self.assertEqual(
+            getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
+            parsed.signer)
+        expected = "\AFormat: 1.7\n.*foo_1.0-1.diff.gz\Z"
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected,
+            parsed.parsed_content)
+        self.assertEqual("breezy", parsed.suite_name)
+        self.assertNotIn("evil", parsed.changes_comment)
