@@ -27,7 +27,7 @@
         web service.
       </p>
       <script
-       tal:content="string:LP.cache['rebuilding_allowed'] = ('${view/rebuilding_allowed}' === 'True');">
+        tal:content="string:LP.cache['rebuilding_allowed'] = ('${view/rebuilding_allowed}' === 'True');">
       </script>
       <div class="unseen" id="initseries-form-container">
         <metal:form use-macro="context/@@launchpad_form/form" />
