@@ -476,8 +476,8 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
             text = 'Edit subscription'
             icon = 'edit'
         elif self.context.isSubscribed(user):
-            text = 'Unsubscribe'
-            icon = 'remove'
+            text = 'Update Subscription'
+            icon = 'edit'
         else:
             text = 'Subscribe'
             icon = 'add'

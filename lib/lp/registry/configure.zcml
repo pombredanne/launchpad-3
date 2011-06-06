@@ -162,6 +162,9 @@
         class="lp.registry.model.distroseriesdifference.DistroSeriesDifference">
         <allow interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferencePublic"/>
         <require
+            permission="launchpad.Admin"
+            interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceAdmin"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseriesdifference.IDistroSeriesDifferenceEdit"
             set_attributes="package_diff parent_package_diff"/>
