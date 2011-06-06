@@ -1077,7 +1077,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         observed = map(vars, view.request.response.notifications)
         self.assertEqual([expected], observed)
 
-    def test_requestUpgrade_is_efficient(self):
+    def test_requestUpgrades_is_efficient(self):
         # A single web request may need to schedule large numbers of
         # package upgrades.  It must do so without issuing large numbers
         # of database queries.
