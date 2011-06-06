@@ -17,6 +17,8 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     def _makeData(self, potemplate, **kwargs):
         """Create form data for the given template with some changed values.
+
+        The attributes are only those considered by the validate method.
         """
         attributes = [
             'distroseries', 'sourcepackagename', 'productseries',
@@ -80,4 +82,3 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         view.validate(data)
         self.assertEqual(
             [u'Series already has a template with that domain.'], view.errors)
-
