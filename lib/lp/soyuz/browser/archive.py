@@ -1833,6 +1833,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.context.addArchiveDependency(
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
+
         self._messages.append(structured(
             '<p>Dependency added: %s</p>', dependency_candidate.displayname))
 

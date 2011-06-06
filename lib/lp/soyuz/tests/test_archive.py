@@ -9,6 +9,7 @@ from datetime import (
     timedelta,
     )
 
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -43,6 +44,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
+    ArchiveDependencyError,
     ArchiveDisabled,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
@@ -1292,6 +1294,42 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         login(COMMERCIAL_ADMIN_EMAIL)
         self.setBuildDebugSymbols(self.archive, True)
         self.assertTrue(self.archive.build_debug_symbols)
+
+
+class TestAddArchiveDependencies(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_add_hidden_dependency(self):
+        # The user cannot add a dependency on an archive they cannot see.
+        archive = self.factory.makeArchive(private=True)
+        dependency = self.factory.makeArchive(private=True)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "You don't have permission to use this dependency."):
+                archive.addArchiveDependency(dependency, 'foo')
+
+    def test_private_dependency_public_archive(self):
+        # A public archive may not depend on a private archive.
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive(
+            private=True, owner=archive.owner)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "Public PPAs cannot depend on private ones."):
+                archive.addArchiveDependency(dependency, 'foo')
+
+    def test_add_private_dependency(self):
+        # The user can add a dependency on private archive they can see.
+        archive = self.factory.makeArchive(private=True)
+        dependency = self.factory.makeArchive(
+            private=True, owner=archive.owner)
+        with person_logged_in(archive.owner):
+            archive_dependency = archive.addArchiveDependency(dependency,
+                    PackagePublishingPocket.RELEASE)
+            self.assertContentEqual(archive.dependencies, [archive_dependency])
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
