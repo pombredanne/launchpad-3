@@ -15,6 +15,17 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def _makeData(self, potemplate, **kwargs):
+        """Create form data for the given template with some changed values.
+        """
+        attributes = [
+            'distroseries', 'sourcepackagename', 'productseries',
+            'name', 'translation_domain']
+        data = dict(
+            [(name, getattr(potemplate, name)) for name in attributes])
+        data.update(**kwargs)
+        return data
+
     def test_detects_name_clash_on_name_change(self):
         # A template name may not already be used.
         existing_name = self.factory.getUniqueString()
@@ -23,13 +34,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(productseries=series)
 
         view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = dict(
-            distroseries=None,
-            sourcepackagename=None,
-            productseries=series,
-            name=existing_name,
-            translation_domain=potemplate.translation_domain,
-            )
+        data = self._makeData(potemplate, name=existing_name)
         view.validate(data)
         self.assertEqual([u'Name is already in use.'], view.errors)
 
@@ -42,13 +47,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(productseries=series)
 
         view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = dict(
-            distroseries=None,
-            sourcepackagename=None,
-            productseries=series,
-            name=potemplate.name,
-            translation_domain=existing_domain,
-            )
+        data = self._makeData(potemplate, translation_domain=existing_domain)
         view.validate(data)
         self.assertEqual([u'Domain is already in use.'], view.errors)
 
@@ -61,13 +60,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(name=template_name)
 
         view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = dict(
-            distroseries=None,
-            sourcepackagename=None,
-            productseries=new_series,
-            name=template_name,
-            translation_domain=potemplate.translation_domain,
-            )
+        data = self._makeData(potemplate, productseries=new_series)
         view.validate(data)
         self.assertEqual(
             [u'Series already has a template with that name.'], view.errors)
@@ -83,13 +76,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
             translation_domain=translation_domain)
 
         view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = dict(
-            distroseries=None,
-            sourcepackagename=None,
-            productseries=new_series,
-            name=potemplate.name,
-            translation_domain=translation_domain,
-            )
+        data = self._makeData(potemplate, productseries=new_series)
         view.validate(data)
         self.assertEqual(
             [u'Series already has a template with that domain.'], view.errors)
