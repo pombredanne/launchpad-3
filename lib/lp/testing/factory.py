@@ -1399,12 +1399,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # here.
         removeSecurityProxy(branch).branchChanged(
             '', 'rev1', None, None, None)
-        run_with_login(
-            package.distribution.owner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            package.distribution.owner)
+        with person_logged_in(package.distribution.owner):
+            package.development_version.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
