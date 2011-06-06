@@ -15,10 +15,12 @@ from lp.testing import (
 
 class TranslationsYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = TranslationsYUITestLayer 
+    layer = TranslationsYUITestLayer
     suite_name = 'TranslationsYUIUnitTests'
 
 
 def test_suite():
     app_testing_path = 'lp/translations/javascript/tests'
-    return build_yui_unittest_suite(app_testing_path, TranslationsYUIUnitTestCase)
+    return build_yui_unittest_suite(
+            app_testing_path,
+            TranslationsYUIUnitTestCase)

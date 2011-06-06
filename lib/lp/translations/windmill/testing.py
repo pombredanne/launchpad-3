@@ -33,4 +33,3 @@ class TranslationsYUITestLayer(BaseYUITestLayer):
     def setUp(cls):
         cls.base_url = cls.appserver_root_url()
         super(TranslationsYUITestLayer, cls).setUp()
-
