@@ -647,6 +647,14 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
+    def rebuilding_allowed(self):
+        # If the distro has got any initialised series already,
+        # no rebuilding is allowed.
+        return all(
+            [archive.getPublishedSources().is_empty()
+             for archive in self.context.distribution.all_distro_archives])
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
 
