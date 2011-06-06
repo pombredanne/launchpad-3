@@ -648,8 +648,9 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     @property
     def rebuilding_allowed(self):
-        # If the distro has got any initialized series already,
-        # no rebuilding is allowed.
+        """If the distribution has got any initialized series already,
+        rebuilding is not allowed.
+        """
         return not self.context.distribution.has_published_sources
 
     @property
