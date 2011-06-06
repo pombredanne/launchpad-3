@@ -8,14 +8,9 @@ import time
 
 import pytz
 from storm.locals import Store
-from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (
@@ -43,6 +38,22 @@ class TestJob(TestCase):
         """The default status should be WAITING."""
         job = Job()
         self.assertEqual(job.status, JobStatus.WAITING)
+
+    def test_createMultiple_creates_requested_number_of_jobs(self):
+        job_ids = list(Job.createMultiple(IStore(Job), 3))
+        self.assertEqual(3, len(job_ids))
+        self.assertEqual(3, len(set(job_ids)))
+
+    def test_createMultiple_returns_valid_job_ids(self):
+        job_ids = list(Job.createMultiple(IStore(Job), 3))
+        store = IStore(Job)
+        for job_id in job_ids:
+            self.assertIsNot(None, store.get(Job, job_id))
+
+    def test_createMultiple_sets_status_to_WAITING(self):
+        store = IStore(Job)
+        job = store.get(Job, Job.createMultiple(store, 1).get_one())
+        self.assertEqual(JobStatus.WAITING, job.status)
 
     def test_start(self):
         """Job.start should update the object appropriately.
@@ -214,8 +225,7 @@ class TestReadiness(TestCase):
     layer = ZopelessDatabaseLayer
 
     def _sampleData(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return list(store.execute(Job.ready_jobs))
+        return list(IStore(Job).execute(Job.ready_jobs))
 
     def test_ready_jobs(self):
         """Job.ready_jobs should include new jobs."""
