@@ -575,7 +575,7 @@ It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
 similar to bug 1 for Firefox.
 
-  >>> print webservice.named_get(
+  >>> print anon_webservice.named_get(
   ...     firefox_bugtask['self_link'],
   ...     'findSimilarBugs')
   HTTP/1.1 200 Ok...
@@ -598,7 +598,7 @@ will return something more useful.
     ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
     ...     ).jsonBody()
 
-    >>> print webservice.named_get(
+    >>> print anon_webservice.named_get(
     ...     new_bug_task['self_link'],
     ...     'findSimilarBugs')
     HTTP/1.1 200 Ok...

@@ -1863,20 +1863,24 @@ BugMessage""" % sqlvalues(self.id))
     def userCanView(self, user):
         """See `IBug`.
 
-        Note that Editing is also controlled by this check,
-        because we permit editing of any bug one can see.
+        This method is called by security adapters but only in the case for
+        authenticated users.  It is also called in other contexts where the
+        user may be anonymous.
 
         If bug privacy rights are changed here, corresponding changes need
         to be made to the queries which screen for privacy.  See
         Bug.searchAsUser and BugTask.get_bug_privacy_filter_with_decorator.
         """
-        assert user is not None, "User may not be None"
-
-        if user.id in self._known_viewers:
-            return True
         if not self.private:
             # This is a public bug.
             return True
+        # This method may be called for anonymous users.  For private bugs
+        # always return false for anonymous.
+        if user is None:
+            return False
+        if user.id in self._known_viewers:
+            return True
+
         elif IPersonRoles(user).in_admin:
             # Admins can view all bugs.
             return True
@@ -2625,7 +2629,7 @@ class BugSet:
         #      Transaction.iterSelect() will try to listify the results.
         #      This can be fixed by selecting from Bugs directly, but
         #      that's non-trivial.
-        # ---: Robert Collins 20100818: if bug_tasks implements IResultSset
+        # ---: Robert Collins 2010-08-18: if bug_tasks implements IResultSet
         #      then it should be very possible to improve on it, though
         #      DecoratedResultSets would need careful handling (e.g. type
         #      driven callbacks on columns)
