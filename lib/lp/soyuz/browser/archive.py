@@ -136,6 +136,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
+    ArchiveDependencyError,
     CannotCopy,
     IArchive,
     IArchiveEditDependenciesForm,
@@ -1832,7 +1833,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self.context.addArchiveDependency(
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
-
         self._messages.append(structured(
             '<p>Dependency added: %s</p>', dependency_candidate.displayname))
 
@@ -1882,45 +1882,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self._messages.append(structured(
             '<p>Primary dependency added: %s</p>', primary_dependency.title))
 
-    def validate(self, data):
-        """Validate dependency configuration changes.
-
-        Skip checks if no dependency candidate was sent in the form.
-
-        Validate if the requested PPA dependency is sane (different than
-        the context PPA and not yet registered).
-
-        Also check if the dependency candidate is private, if so, it can
-        only be set if the user has 'launchpad.View' permission on it and
-        the context PPA is also private (this way P3A credentials will be
-        sanitized from buildlogs).
-        """
-        dependency_candidate = data.get('dependency_candidate')
-
-        if dependency_candidate is None:
-            return
-
-        if dependency_candidate == self.context:
-            self.setFieldError('dependency_candidate',
-                               "An archive should not depend on itself.")
-            return
-
-        if self.context.getArchiveDependency(dependency_candidate):
-            self.setFieldError('dependency_candidate',
-                               "This dependency is already registered.")
-            return
-
-        if not check_permission('launchpad.View', dependency_candidate):
-            self.setFieldError(
-                'dependency_candidate',
-                "You don't have permission to use this dependency.")
-            return
-
-        if dependency_candidate.private and not self.context.private:
-            self.setFieldError(
-                'dependency_candidate',
-                "Public PPAs cannot depend on private ones.")
-
     @action(_("Save"), name="save")
     def save_action(self, action, data):
         """Save dependency configuration changes.
@@ -1937,7 +1898,11 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
         # Process the form.
         self._add_primary_dependencies(data)
-        self._add_ppa_dependencies(data)
+        try:
+            self._add_ppa_dependencies(data)
+        except ArchiveDependencyError as e:
+            self.setFieldError('dependency_candidate', str(e))
+            return
         self._remove_dependencies(data)
 
         # Issue a notification if anything was changed.

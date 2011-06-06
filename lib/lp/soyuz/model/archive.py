@@ -68,6 +68,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -967,7 +968,14 @@ class Archive(SQLBase):
         a_dependency = self.getArchiveDependency(dependency)
         if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Only one dependency record per archive is supported.")
+                "This dependency is already registered.")
+        if not check_permission('launchpad.View', dependency):
+            raise ArchiveDependencyError(
+                "You don't have permission to use this dependency.")
+            return
+        if dependency.private and not self.private:
+            raise ArchiveDependencyError(
+                "Public PPAs cannot depend on private ones.")
 
         if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
