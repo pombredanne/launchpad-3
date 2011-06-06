@@ -506,6 +506,9 @@ class BugViewMixin:
 
     @property
     def current_user_subscription_class(self):
+        if not self.user:
+            return 'subscribed-false dup-subscribed-false'
+
         bug = self.context
 
         if bug.personIsSubscribedToDuplicate(self.user):
@@ -521,6 +524,10 @@ class BugViewMixin:
 
     @property
     def current_user_mute_class(self):
+        if not self.user:
+            return 'muted-false hidden %s' % (
+                self.current_user_subscription_class)
+
         bug = self.context
         subscription_class = self.current_user_subscription_class
         if self.user_should_see_mute_link:
