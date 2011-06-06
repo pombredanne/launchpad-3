@@ -47,6 +47,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -472,6 +473,63 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
 
+    def test_copying_to_main_archive_manual_overrides(self):
+        # Test processing a packagecopyjob that has manual overrides.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        source_package = publisher.getPubSource(
+            distroseries=distroseries, sourcename="copyme",
+            component='universe', section='web',
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now, run the copy job, which should raise an error because
+        # there's no ancestry.
+        source = getUtility(IPlainPackageCopyJobSource)
+        job = source.create(
+            package_name="copyme",
+            package_version="2.8-1",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False)
+
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        # Simulate the job runner suspending after getting a
+        # SuspendJobException
+        job.suspend()
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
+
+        # Add some overrides to the job.
+        package = source_package.sourcepackagerelease.sourcepackagename
+        restricted = getUtility(IComponentSet)['restricted']
+        editors = getUtility(ISectionSet)['editors']
+        override = SourceOverride(package, restricted, editors)
+        job.addSourceOverride(override)
+
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        pu.acceptFromQueue()
+        self.runJob(job)
+
+        # The copied source should have the manual overrides, not the
+        # original values.
+        new_publication = target_archive.getPublishedSources(
+            name='copyme', version='2.8-1').one()
+        self.assertEqual('restricted', new_publication.component.name)
+        self.assertEqual('editors', new_publication.section.name)
+
     def test_copying_to_main_archive_with_no_ancestry(self):
         # The job should suspend itself and create a packageupload with
         # a reference to the package_copy_job.
@@ -609,7 +667,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pcj = removeSecurityProxy(job).context
         self.factory.makePackageUpload(package_copy_job=pcj)
 
-        # There is no ancestry, so normally thw job would get suspended
+        # There is no ancestry, so normally the job would get suspended
         # but because we have a PackageUpload it will run to completion.
         self.runJob(job)
 

@@ -367,17 +367,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # job has just been released by an archive admin from the queue.
         # We don't need to check any policies, but the admin may have
         # set overrides which we will get from the job's metadata.
-        # TODO: Process overrides.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [self.context.id])
         if not pu.any():
             self._checkPolicies(source_name)
 
         # The package is free to go right in, so just copy it now.
+        override = self.getSourceOverride()
         do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
-            include_binaries=self.include_binaries, check_permissions=False)
+            include_binaries=self.include_binaries, check_permissions=False,
+            overrides=[override])
 
     def abort(self):
         """Abort work."""
