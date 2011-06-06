@@ -580,9 +580,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 source, archive, destination_series, pocket, include_binaries)
             sub_copies = [delayed_copy]
         else:
+            override = None
+            if overrides:
+                override = overrides[overrides_index]
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket, include_binaries,
-                overrides[overrides_index])
+                override)
 
         overrides_index += 1
         copies.extend(sub_copies)
