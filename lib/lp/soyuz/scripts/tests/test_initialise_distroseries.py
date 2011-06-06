@@ -18,9 +18,11 @@ from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
@@ -91,7 +93,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # error.
         child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError,
             "Can not copy distroarchseries from parent, there are already "
@@ -107,7 +109,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         source.createMissingBuilds()
         child = self.factory.makeDistroSeries(
             distribution=self.parent.parent)
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series has pending builds.",
             ids.check)
@@ -129,7 +131,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE,
             'foo.changes', 'bar', self.parent.main_archive)
         child = self.factory.makeDistroSeries()
-        ids = InitialiseDistroSeries(self.parent, child)
+        ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitialisationError, "Parent series queues are not empty.",
             ids.check)
@@ -170,11 +172,14 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
-                         distribution=None):
-        child = self.factory.makeDistroSeries(distribution=distribution)
+    def _full_initialise(self, child=None, arches=(), packagesets=(),
+                         rebuild=False, distribution=None, overlays=(),
+                         overlay_pockets=(), overlay_components=()):
+        if child is None:
+            child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitialiseDistroSeries(
-            self.parent, child, arches, packagesets, rebuild)
+            child, [self.parent.id], arches, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
         ids.check()
         ids.initialise()
         return child
@@ -192,7 +197,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             arches=[self.parent_das.architecturetag])
         self.assertDistroSeriesInitialisedCorrectly(child)
         das = list(IStore(DistroArchSeries).find(
-            DistroArchSeries, distroseries = child))
+            DistroArchSeries, distroseries=child))
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
@@ -281,7 +286,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         packages = ('udev', 'chromium', 'libc6')
         for pkg in packages:
             test1.addSources(pkg)
-        child = self._full_initialise(packagesets=('test1',))
+        packageset1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=self.parent)
+        child = self._full_initialise(packagesets=(str(packageset1.id),))
         child_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=child)
         self.assertEqual(test1.description, child_test1.description)
@@ -323,7 +330,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.factory.makeDistroArchSeries(distroseries=self.parent)
         child = self._full_initialise(
             arches=[self.parent_das.architecturetag],
-            packagesets=('test1',), rebuild=True)
+            packagesets=(str(test1.id),), rebuild=True)
         child.updatePackageCount()
         builds = child.getBuildRecords(
             build_state=BuildStatus.NEEDSBUILD,
@@ -332,7 +339,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), len(packages))
         das = list(IStore(DistroArchSeries).find(
-            DistroArchSeries, distroseries = child))
+            DistroArchSeries, distroseries=child))
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
@@ -344,7 +351,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         ppc_das.enabled = False
         child = self._full_initialise()
         das = list(IStore(DistroArchSeries).find(
-            DistroArchSeries, distroseries = child))
+            DistroArchSeries, distroseries=child))
         self.assertEqual(len(das), 1)
         self.assertEqual(
             das[0].architecturetag, self.parent_das.architecturetag)
@@ -379,3 +386,43 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             "DEBUG   Committing transaction." in stderr.split('\n'))
         transaction.commit()
         self.assertDistroSeriesInitialisedCorrectly(child)
+
+    def test_is_initialized(self):
+        # At the end of the initialisation, the distroseriesparent is marked
+        # as 'initialised'.
+        child = self._full_initialise(rebuild=True, overlays=())
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent)
+
+        self.assertTrue(distroseriesparent.initialized)
+
+    def test_no_overlays(self):
+        # Without the overlay parameter, no overlays are created.
+        child = self._full_initialise(rebuild=True, overlays=[])
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent)
+
+        self.assertFalse(distroseriesparent.is_overlay)
+
+    def test_setup_overlays(self):
+        # If the overlay parameter is passed, overlays are properly setup.
+        child = self.factory.makeDistroSeries()
+        overlays = [True]
+        overlay_pockets = ['Updates']
+        overlay_components = ['universe']
+        child = self._full_initialise(
+            child=child, rebuild=True, overlays=overlays,
+            overlay_pockets=overlay_pockets,
+            overlay_components=overlay_components)
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent)
+
+        self.assertTrue(distroseriesparent.is_overlay)
+        self.assertEqual(
+            getUtility(IComponentSet)['universe'],
+            distroseriesparent.component)
+        self.assertEqual(
+            PackagePublishingPocket.UPDATES, distroseriesparent.pocket)

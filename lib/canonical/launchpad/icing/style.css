@@ -550,6 +550,11 @@ button.spinner {
   background-image: url(/@@/spinner) !important;
 }
 
+/* This lets us have a help link sprite and a normal link sprite on the same
+   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
+div#mute-link-container a.sprite {
+  width: auto;
+}
 
 /* === Translations === */
 

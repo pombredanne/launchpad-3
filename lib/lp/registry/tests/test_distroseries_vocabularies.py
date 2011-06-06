@@ -14,16 +14,15 @@ from pytz import utc
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.schema.interfaces import (
-    IVocabulary,
     IVocabularyFactory,
-    IVocabularyTokenized,
     )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.vocabularies import DistroSeriesDerivationVocabularyFactory
+from lp.registry.vocabularies import DistroSeriesDerivationVocabulary
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -31,37 +30,35 @@ from lp.testing import (
 from lp.testing.matchers import HasQueryCount
 
 
-class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
-    """Tests for `DistroSeriesDerivationVocabularyFactory`."""
+class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
+    """Tests for `DistroSeriesDerivationVocabulary`."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDistroSeriesDerivationVocabularyFactory, self).setUp()
-        self.vocabulary_factory = DistroSeriesDerivationVocabularyFactory
+        super(TestDistroSeriesDerivationVocabulary, self).setUp()
         self.all_distroseries = getUtility(IDistroSeriesSet).search()
 
     def test_registration(self):
-        # DistroSeriesDerivationVocabularyFactory is registered as a named
+        # DistroSeriesDerivationVocabulary is registered as a named
         # utility for IVocabularyFactory.
         self.assertEqual(
             getUtility(IVocabularyFactory, name="DistroSeriesDerivation"),
-            DistroSeriesDerivationVocabularyFactory)
+            DistroSeriesDerivationVocabulary)
 
     def test_interfaces(self):
-        # DistroSeriesDerivationVocabularyFactory instances provide
+        # DistroSeriesDerivationVocabulary instances provide
         # IVocabulary and IVocabularyTokenized.
         distroseries = self.factory.makeDistroSeries()
-        vocabulary = self.vocabulary_factory(distroseries)
-        self.assertProvides(vocabulary, IVocabulary)
-        self.assertProvides(vocabulary, IVocabularyTokenized)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
+        self.assertProvides(vocabulary, IHugeVocabulary)
 
     def test_distribution_with_non_derived_series(self):
         # Given a distribution with series, none of which are derived, the
         # vocabulary factory returns a vocabulary for all distroseries in all
         # distributions *except* the given distribution.
         distroseries = self.factory.makeDistroSeries()
-        vocabulary = self.vocabulary_factory(distroseries)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = (
             set(self.all_distroseries).difference(
                 distroseries.distribution.series))
@@ -78,7 +75,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             distribution=parent_distroseries.distribution)
         distroseries = self.factory.makeDistroSeries(
             previous_series=parent_distroseries)
-        vocabulary = self.vocabulary_factory(distroseries)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = set(parent_distroseries.distribution.series)
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
@@ -92,7 +89,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution,
             previous_series=parent_distroseries)
-        vocabulary = self.vocabulary_factory(distroseries)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = (
             set(self.all_distroseries).difference(
                 distroseries.distribution.series))
@@ -103,7 +100,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         # Given a distroseries, the vocabulary factory returns the vocabulary
         # the same as for its distribution.
         distroseries = self.factory.makeDistroSeries()
-        vocabulary = self.vocabulary_factory(distroseries)
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         expected_distroseries = (
             set(self.all_distroseries).difference(
                 distroseries.distribution.series))
@@ -136,7 +133,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         ccc = self.factory.makeDistribution(displayname="ccc")
         ccc_series = self.factory.makeDistroSeries(distribution=ccc)
 
-        vocabulary = self.vocabulary_factory(ccc_series)
+        vocabulary = DistroSeriesDerivationVocabulary(ccc_series)
         expected_distroseries = [
             aaa_series_newer, aaa_series_older,
             bbb_series_newer, bbb_series_older]
@@ -162,7 +159,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         # Getting terms issues two queries: one to search for parent serieses
         # (of which there are none) and a second for all serieses.
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distroseries).terms
+            DistroSeriesDerivationVocabulary(distroseries).terms
             self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_queries_for_distribution_with_derived_series(self):
@@ -179,5 +176,5 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries.distribution
         # Getting terms issues one query to find parent serieses.
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distroseries).terms
+            DistroSeriesDerivationVocabulary(distroseries).terms
             self.assertThat(recorder, HasQueryCount(Equals(1)))
