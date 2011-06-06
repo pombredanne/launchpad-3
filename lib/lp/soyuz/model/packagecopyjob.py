@@ -246,7 +246,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         store = IMasterStore(Job)
         job_ids = Job.createMultiple(store, len(copy_tasks))
         job_contents = [
-            cls._makeJobInsertionTuple(
+            cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
                 task)
             for job_id, task in zip(job_ids, copy_tasks)]

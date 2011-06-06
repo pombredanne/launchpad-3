@@ -1087,9 +1087,9 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         flush_database_caches()
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(12)))
 
-        # Creating Jobs and DistributionJobs takes another 2 queries.
+        # The query count does not increase with the number of upgrades.
         for index in xrange(3):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
@@ -1097,7 +1097,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(
             recorder2,
-            HasQueryCount(Equals(recorder1.count + 2)))
+            HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,

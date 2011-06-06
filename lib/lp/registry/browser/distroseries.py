@@ -1063,16 +1063,18 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     def requestUpgrades(self):
         """Request sync of packages that can be easily upgraded."""
         target_distroseries = self.context
-        target_archive = target_distroseries.main_archive
-        job_source = getUtility(IPlainPackageCopyJobSource)
-
-        for dsd in self.getUpgrades():
-            job_source.create(
+        copies = [
+            (
                 dsd.source_package_name.name,
-                dsd.parent_series.main_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.UPDATES,
-                package_version=dsd.parent_source_version,
-                copy_policy=PackageCopyPolicy.MASS_SYNC)
+                dsd.parent_source_version,
+                dsd.parent_series.main_archive,
+                target_distroseries.main_archive,
+                PackagePublishingPocket.UPDATES,
+            )
+            for dsd in self.getUpgrades()]
+        getUtility(IPlainPackageCopyJobSource).createMultiple(
+            target_distroseries, copies,
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "
