@@ -52,7 +52,7 @@ class TestJob(TestCase):
 
     def test_createMultiple_sets_status_to_WAITING(self):
         store = IStore(Job)
-        job = store.get(Job, Job.createMultiple(store, 1).get_one())
+        job = store.get(Job, Job.createMultiple(store, 1)[0])
         self.assertEqual(JobStatus.WAITING, job.status)
 
     def test_start(self):

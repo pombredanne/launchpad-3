@@ -111,11 +111,12 @@ class Job(SQLBase):
         :return: An iterable of `Job.id` values for the new jobs.
         """
         job_contents = ["(%s)" % quote(JobStatus.WAITING)] * num_jobs
-        return store.execute("""
+        result = store.execute("""
             INSERT INTO Job (status)
             VALUES %s
             RETURNING id
             """ % ", ".join(job_contents))
+        return [job_id for job_id, in result]
 
     def acquireLease(self, duration=300):
         """See `IJob`."""
