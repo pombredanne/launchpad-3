@@ -50,6 +50,9 @@ class BinaryPackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
+    def __repr__(self):
+        return "<BinaryPackageName at %X name=%r>" % (id(self), self.name)
+
 
 class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
