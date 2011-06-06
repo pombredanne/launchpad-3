@@ -29,7 +29,10 @@ from storm.locals import (
     Or,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -1878,6 +1881,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @property
+    def has_published_sources(self):
+        archives_sources = EmptyResultSet()
+        for archive in self.all_distro_archives:
+            archives_sources = archives_sources.union(
+                archive.getPublishedSources())
+        return not archives_sources.is_empty()
 
 
 class DistributionSet:

@@ -340,6 +340,11 @@ class IDistributionPublic(
                       "on disk."),
         readonly=True, required=False)
 
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
+        readonly=True, required=False)
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 

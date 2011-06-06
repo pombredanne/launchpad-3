@@ -648,11 +648,9 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     @property
     def rebuilding_allowed(self):
-        # If the distro has got any initialised series already,
+        # If the distro has got any initialized series already,
         # no rebuilding is allowed.
-        return all(
-            [archive.getPublishedSources().is_empty()
-             for archive in self.context.distribution.all_distro_archives])
+        return not self.context.distribution.has_published_sources
 
     @property
     def next_url(self):
