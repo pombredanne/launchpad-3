@@ -220,7 +220,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
         # Calling series_with_sources returns all series with publishings.
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(distribution=distribution)
-        series_with_no_sources = self.factory.makeDistroSeries(
+        self.factory.makeDistroSeries(
             distribution=distribution, version="0.5")
         series_with_sources1 = self.factory.makeDistroSeries(
             distribution=distribution, version="1")
@@ -280,7 +280,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
                 source_package_release=sourcepackagerelease,
                 archive=archive, status=status)
             sprs.append(sourcepackagerelease)
-        unlinked_spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageRelease()
         return archive, sprs
 
     def test_getSourcePackageReleases_with_no_params(self):
@@ -422,7 +422,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         other_spn = self.factory.makeSourcePackageName(name="bar")
         archive = self.factory.makeArchive()
         self.makePublishedSources(archive,
-            [PackagePublishingStatus.PUBLISHED]*3,
+            [PackagePublishingStatus.PUBLISHED] * 3,
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
@@ -1328,8 +1328,9 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
             private=True, owner=archive.owner)
         with person_logged_in(archive.owner):
             archive_dependency = archive.addArchiveDependency(dependency,
-                    PackagePublishingPocket.RELEASE)
-            self.assertContentEqual(archive.dependencies, [archive_dependency])
+                PackagePublishingPocket.RELEASE)
+            self.assertContentEqual(
+                archive.dependencies, [archive_dependency])
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
@@ -1379,7 +1380,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
 
     def test_does_not_find_pending_publication(self):
         # A pending candidate in the same archive should not be found.
-        bins = self.publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname='foo', archive=self.archive)
         self.assertDep('i386', 'foo', [])
 
@@ -1516,7 +1517,7 @@ class TestvalidatePPA(TestCaseWithFactory):
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        ppa = self.factory.makeArchive(owner=team, name='ppa')
+        self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual("%s already has a PPA named 'ppa'." % (
             team.displayname), Archive.validatePPA(team, 'ppa'))
 
