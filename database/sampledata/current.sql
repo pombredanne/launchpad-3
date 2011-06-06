@@ -975,8 +975,6 @@ INSERT INTO accountpassword (id, account, password) VALUES (243623, 2436231, '0H
 INSERT INTO accountpassword (id, account, password) VALUES (243624, 261, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243625, 71, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243626, 31, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (243627, 101, 'test');
-INSERT INTO accountpassword (id, account, password) VALUES (243628, 2436241, 'test');
 INSERT INTO accountpassword (id, account, password) VALUES (243629, 2436242, 'AmIxkZe2yl53W8ai9xg8ok+JtsX1CTpR6Ma9bT5LJyMMz1HXnvfPoA==');
 
 
@@ -5417,9 +5415,6 @@ INSERT INTO lp_teamparticipation (id, team, person) VALUES (193, 32, 10);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (194, 243625, 243625);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (195, 243626, 243626);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (196, 243626, 12);
-INSERT INTO lp_teamparticipation (id, team, person) VALUES (197, 243627, 243627);
-INSERT INTO lp_teamparticipation (id, team, person) VALUES (198, 243628, 243628);
-INSERT INTO lp_teamparticipation (id, team, person) VALUES (199, 243628, 243627);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (200, 243629, 243629);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (201, 243629, 4);
 INSERT INTO lp_teamparticipation (id, team, person) VALUES (202, 243630, 243630);
@@ -6453,8 +6448,6 @@ INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (2436
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243624, true);
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243625, true);
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243626, true);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243627, true);
-INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243628, true);
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243629, true);
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243630, true);
 INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243631, true);
@@ -10916,7 +10909,6 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (83, 243622, 243621, 3, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, 16, NULL, 16, '2008-05-12 17:40:08.720578', NULL, NULL, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, '2008-05-12 17:40:08.637114');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (84, 243623, 243624, 3, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, 243623, NULL, 243623, '2008-06-27 14:49:38.698594', NULL, NULL, '2008-06-27 14:49:38.698594', NULL, NULL, NULL, '2008-06-27 14:49:38.676264');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (85, 12, 243626, 3, '2008-11-26 18:19:53.849673', NULL, NULL, NULL, 12, NULL, 12, '2008-11-26 18:19:53.849673', NULL, NULL, '2008-11-26 18:19:53.849673', NULL, NULL, NULL, '2008-11-26 18:19:53.547918');
-INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (86, 243627, 243628, 3, '2009-03-17 07:27:39.361471', NULL, NULL, NULL, 243627, NULL, 243627, '2009-03-17 07:27:39.361471', NULL, NULL, '2009-03-17 07:27:39.361471', NULL, NULL, NULL, '2009-03-17 07:27:39.306182');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (87, 4, 243629, 3, '2009-07-14 20:23:59.769346', NULL, NULL, NULL, 4, NULL, 4, '2009-07-14 20:23:59.769346', NULL, NULL, '2009-07-14 20:23:59.769346', NULL, NULL, NULL, '2009-07-14 20:23:59.698654');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (88, 1, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (89, 12, 243630, 2, '2009-07-09 11:58:38.122886', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2009-07-09 11:58:38.122886');
@@ -11118,9 +11110,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (193, 32, 10);
 INSERT INTO teamparticipation (id, team, person) VALUES (194, 243625, 243625);
 INSERT INTO teamparticipation (id, team, person) VALUES (195, 243626, 243626);
 INSERT INTO teamparticipation (id, team, person) VALUES (196, 243626, 12);
-INSERT INTO teamparticipation (id, team, person) VALUES (197, 243627, 243627);
-INSERT INTO teamparticipation (id, team, person) VALUES (198, 243628, 243628);
-INSERT INTO teamparticipation (id, team, person) VALUES (199, 243628, 243627);
 INSERT INTO teamparticipation (id, team, person) VALUES (200, 243629, 243629);
 INSERT INTO teamparticipation (id, team, person) VALUES (201, 243629, 4);
 INSERT INTO teamparticipation (id, team, person) VALUES (202, 243630, 243630);
