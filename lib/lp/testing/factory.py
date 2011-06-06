@@ -256,12 +256,14 @@ from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
@@ -593,7 +595,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False, member_of=()):
+        selfgenerated_bugnotifications=False):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -657,10 +659,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(email).status = email_address_status
 
         self.makeOpenIdIdentifier(person.account)
-
-        for team in member_of:
-            with person_logged_in(team.teamowner):
-                team.addMember(person, team.teamowner)
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
@@ -2389,12 +2387,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None, set_base_version=False):
+        changelogs=None, set_base_version=False, parent_series=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
-            parent_series = self.makeDistroSeries()
-            derived_series = self.makeDistroSeries(
-                previous_series=parent_series)
+            dsp = self.makeDistroSeriesParent(
+                parent_series=parent_series)
+            derived_series = dsp.derived_series
+            parent_series = dsp.parent_series
+        else:
+            if parent_series is None:
+                dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
+                    derived_series)
+                if dsp.count() == 0:
+                    new_dsp = self.makeDistroSeriesParent(
+                        derived_series=derived_series,
+                        parent_series=parent_series)
+                    parent_series = new_dsp.parent_series
+                else:
+                    parent_series = dsp[0].parent_series
 
         if source_package_name_str is None:
             source_package_name_str = self.getUniqueString('src-name')
@@ -2409,7 +2419,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         base_version = versions.get('base')
         if base_version is not None:
-            for series in [derived_series, derived_series.previous_series]:
+            for series in [derived_series, parent_series]:
                 spr = self.makeSourcePackageRelease(
                     sourcepackagename=source_package_name,
                     version=base_version)
@@ -2434,12 +2444,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 version=versions.get('parent'),
                 changelog=changelogs.get('parent'))
             self.makeSourcePackagePublishingHistory(
-                distroseries=derived_series.previous_series,
+                distroseries=parent_series,
                 sourcepackagerelease=spr,
                 status=PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
-            derived_series, source_package_name)
+            derived_series, source_package_name, parent_series)
 
         removeSecurityProxy(diff).status = status
 
@@ -2466,13 +2476,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series_difference, owner, comment)
 
     def makeDistroSeriesParent(self, derived_series=None, parent_series=None,
-                               initialized=False):
+                               initialized=False, is_overlay=False,
+                               pocket=None, component=None):
         if parent_series is None:
             parent_series = self.makeDistroSeries()
         if derived_series is None:
             derived_series = self.makeDistroSeries()
         return getUtility(IDistroSeriesParentSet).new(
-            derived_series, parent_series, initialized)
+            derived_series, parent_series, initialized, is_overlay, pocket,
+            component)
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
@@ -2567,6 +2579,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_archive.buildd_secret = "sekrit"
 
         return archive
+
+    def makeArchiveAdmin(self, archive=None):
+        """Make an Archive Admin.
+
+        :param archive: The `IArchive`, will be auto-created if None.
+
+        Make and return an `IPerson` who has an `ArchivePermission` to admin
+        the distroseries queue.
+        """
+        if archive is None:
+            archive = self.makeArchive()
+
+        person = self.makePerson()
+        permission_set = getUtility(IArchivePermissionSet)
+        permission_set.newQueueAdmin(archive, person, 'main')
+        return person
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
@@ -3333,7 +3361,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePackageUpload(self, distroseries=None, archive=None,
                           pocket=None, changes_filename=None,
                           changes_file_content=None,
-                          signing_key=None, status=None):
+                          signing_key=None, status=None,
+                          package_copy_job=None):
         if archive is None:
             archive = self.makeArchive()
         if distroseries is None:
@@ -3347,7 +3376,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.RELEASE
         package_upload = distroseries.createQueueEntry(
             pocket, changes_filename, changes_file_content, archive,
-            signing_key=signing_key)
+            signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
             naked_package_upload = removeSecurityProxy(package_upload)
             status_changers = {
@@ -4047,6 +4076,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             copy_base_url = self.getUniqueUnicode()
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
+
+    def makePlainPackageCopyJob(
+        self, package_name=None, package_version=None, source_archive=None,
+        target_archive=None, target_distroseries=None, target_pocket=None):
+        """Create a new `PlainPackageCopyJob`."""
+        if package_name is None and package_version is None:
+            package_name = self.makeSourcePackageName().name
+            package_version = unicode(self.getUniqueInteger()) + 'version'
+        if source_archive is None:
+            source_archive = self.makeArchive()
+        if target_archive is None:
+            target_archive = self.makeArchive()
+        if target_distroseries is None:
+            target_distroseries = self.makeDistroSeries()
+        if target_pocket is None:
+            target_pocket = self.getAnyPocket()
+        return getUtility(IPlainPackageCopyJobSource).create(
+            package_name, source_archive, target_archive,
+            target_distroseries, target_pocket,
+            package_version=package_version)
 
 
 # Some factory methods return simple Python types. We don't add

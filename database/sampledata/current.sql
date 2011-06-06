@@ -843,6 +843,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3100,25 +3106,25 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
 
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (4, 1, 20, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (5, 2, 20, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (6, 3, 20, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (7, 4, 20, 7);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (8, 5, 20, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (9, 6, 20, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (10, 1, 21, 4);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (11, 2, 21, 5);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (12, 3, 21, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (13, 4, 21, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (14, 5, 21, 8);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (15, 6, 21, 9);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (16, NULL, 20, 10);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (17, NULL, 20, 11);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (18, NULL, 21, 6);
-INSERT INTO branchrevision (id, sequence, branch, revision) VALUES (19, NULL, 21, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 10, 1);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 11, 2);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 12, 3);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 20, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (1, 21, 4);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 20, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (2, 21, 5);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 20, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (3, 21, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 20, 7);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (4, 21, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 20, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (5, 21, 8);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 20, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (6, 21, 9);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 10);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 20, 11);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 6);
+INSERT INTO branchrevision (sequence, branch, revision) VALUES (NULL, 21, 7);
 
 
 ALTER TABLE branchrevision ENABLE TRIGGER ALL;
@@ -3380,6 +3386,13 @@ INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index, ow
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugmute DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugmute ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productseries DISABLE TRIGGER ALL;
@@ -3736,6 +3749,13 @@ ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
 ALTER TABLE bugsubscriptionfilterimportance ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugsubscriptionfiltermute DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfiltermute ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugsubscriptionfilterstatus DISABLE TRIGGER ALL;
 
 
@@ -3748,6 +3768,77 @@ ALTER TABLE bugsubscriptionfiltertag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfiltertag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsummary DISABLE TRIGGER ALL;
+
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (2, 1, NULL, NULL, 3, NULL, 1, NULL, NULL, 30, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (3, 1, NULL, NULL, NULL, 7, NULL, NULL, NULL, 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (4, 1, NULL, 2, NULL, NULL, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (5, 1, NULL, NULL, 3, NULL, 1, NULL, 'pebcak', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (6, 1, NULL, NULL, 1, NULL, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (7, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (8, 1, NULL, NULL, 1, NULL, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (9, 1, 20, NULL, NULL, NULL, NULL, 14, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (10, 1, 17, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (11, 1, NULL, NULL, NULL, 6, 1, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (12, 1, NULL, NULL, NULL, 6, 1, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (13, 1, NULL, NULL, 1, NULL, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (14, 2, NULL, NULL, 3, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (15, 1, 20, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (16, 1, NULL, NULL, NULL, 6, 1, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (17, 1, 20, NULL, NULL, NULL, NULL, 63, 'lunch-money', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (18, 1, 8, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (19, 1, NULL, NULL, 3, NULL, 1, NULL, 'dataloss', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (20, 2, NULL, NULL, NULL, 6, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (21, 3, 4, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (22, 1, NULL, NULL, NULL, 7, 1, NULL, 'layout-test', 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (23, 1, NULL, NULL, 3, NULL, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (24, 1, NULL, NULL, NULL, 3, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (25, 1, NULL, NULL, 1, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (26, 1, NULL, NULL, 3, NULL, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (27, 1, NULL, NULL, NULL, 3, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (28, 1, NULL, NULL, 1, NULL, NULL, NULL, 'crash', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (29, 1, NULL, NULL, NULL, 1, 1, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (30, 1, NULL, NULL, NULL, 1, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (31, 2, NULL, NULL, 3, NULL, 1, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (32, 1, 4, NULL, NULL, NULL, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (33, 1, 22, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (34, 1, NULL, NULL, NULL, 6, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (35, 1, NULL, NULL, 3, NULL, NULL, NULL, 'dataloss', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (36, 1, NULL, NULL, 1, NULL, NULL, NULL, 'crash', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (37, 1, NULL, NULL, 1, NULL, 18, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (38, 1, NULL, NULL, 3, NULL, 9, NULL, NULL, 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (39, 2, NULL, NULL, NULL, 6, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (40, 1, 20, NULL, NULL, NULL, NULL, 63, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (41, 1, 1, NULL, NULL, NULL, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (42, 1, NULL, NULL, NULL, 7, NULL, NULL, 'layout-test', 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (43, 1, 20, NULL, NULL, NULL, NULL, 14, 'lunch-money', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (44, 1, 4, NULL, NULL, NULL, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (45, 1, NULL, NULL, NULL, 7, 1, NULL, NULL, 10, 2);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (46, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 30, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (47, 1, 1, NULL, NULL, NULL, NULL, NULL, 'dataloss', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (48, 3, NULL, NULL, 1, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (49, 1, NULL, NULL, 3, NULL, NULL, NULL, 'pebcak', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (50, 1, NULL, NULL, 1, NULL, 18, NULL, 'crash', 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (51, 1, NULL, 2, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (52, 1, NULL, NULL, NULL, 6, NULL, NULL, 'pebcak', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (53, 1, NULL, NULL, NULL, 6, NULL, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (54, 1, NULL, NULL, 3, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (55, 1, NULL, NULL, NULL, 3, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (56, 1, 20, NULL, NULL, NULL, NULL, NULL, NULL, 20, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (57, 1, 8, NULL, NULL, NULL, NULL, NULL, 'crash', 999, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (58, 1, NULL, NULL, NULL, 1, NULL, NULL, 'doc', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (59, 1, NULL, NULL, 1, NULL, 22, NULL, 'crash', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (60, 1, NULL, NULL, NULL, 1, 1, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (61, 1, NULL, NULL, 1, NULL, 22, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (62, 1, NULL, NULL, 3, NULL, 1, NULL, 'layout-test', 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (63, 1, 5, NULL, NULL, NULL, NULL, NULL, NULL, 10, NULL);
+INSERT INTO bugsummary (id, count, product, productseries, distribution, distroseries, sourcepackagename, viewed_by, tag, status, milestone) VALUES (64, 1, 8, NULL, NULL, NULL, NULL, NULL, NULL, 999, NULL);
+
+
+ALTER TABLE bugsummary ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugtag DISABLE TRIGGER ALL;
@@ -4167,6 +4258,13 @@ INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name,
 
 
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
+
+
+ALTER TABLE distroseriesparent DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE distroseriesparent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE emailaddress DISABLE TRIGGER ALL;
@@ -6195,6 +6293,13 @@ ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
 ALTER TABLE packagebugsupervisor ENABLE TRIGGER ALL;
 
 
+ALTER TABLE packagecopyjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagecopyjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
@@ -6225,21 +6330,21 @@ ALTER TABLE packagesetsources ENABLE TRIGGER ALL;
 
 ALTER TABLE packageupload DISABLE TRIGGER ALL;
 
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
-INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 10);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (1, 0, 10, 0, 52, '2006-10-16 18:31:43.522813', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (2, 0, 10, 0, 1, '2006-10-16 18:31:43.523987', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (3, 0, 10, 0, 1, '2006-10-16 18:31:43.524367', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (4, 0, 10, 0, 1, '2006-10-16 18:31:43.524734', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (5, 1, 10, 20, 1, '2006-10-16 18:31:43.5251', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (6, 0, 10, 0, 1, '2006-10-16 18:31:43.525466', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (7, 0, 10, 0, 1, '2006-10-16 18:31:43.525832', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (8, 1, 10, 0, 1, '2006-10-16 18:31:43.526197', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (9, 1, 10, 0, 1, '2006-10-16 18:31:43.526624', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (10, 1, 10, 40, 1, '2006-10-16 18:31:43.526624', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (11, 3, 1, 0, 52, '2006-11-14 18:39:27.186515', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12, NULL);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive, package_copy_job) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 10, NULL);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -9994,14 +10099,14 @@ ALTER TABLE questionjob ENABLE TRIGGER ALL;
 
 ALTER TABLE questionmessage DISABLE TRIGGER ALL;
 
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (1, 6, 12, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (2, 7, 13, 10, 15);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (3, 11, 18, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (4, 9, 19, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (5, 8, 20, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (6, 10, 21, 35, 18);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (7, 9, 22, 40, 20);
-INSERT INTO questionmessage (id, question, message, action, new_status) VALUES (8, 11, 23, 80, 10);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (1, 6, 12, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (2, 7, 13, 10, 15, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (3, 11, 18, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (4, 9, 19, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (5, 8, 20, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (6, 10, 21, 35, 18, 16);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (7, 9, 22, 40, 20, 12);
+INSERT INTO questionmessage (id, question, message, action, new_status, owner) VALUES (8, 11, 23, 80, 10, 12);
 
 
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;

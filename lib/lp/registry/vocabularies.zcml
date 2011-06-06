@@ -31,13 +31,13 @@
 
   <securedutility
       name="DistroSeriesDerivation"
-      component=".vocabularies.DistroSeriesDerivationVocabularyFactory"
+      component=".vocabularies.DistroSeriesDerivationVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory">
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class=".vocabularies.DistroSeriesDerivationVocabularyFactory">
-    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+  <class class=".vocabularies.DistroSeriesDerivationVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 

@@ -60,7 +60,7 @@
       </dd>
     </dl>
 
-    <dl tal:condition="request/features/soyuz.derived-series-ui.enabled"
+    <dl tal:condition="request/features/soyuz.derived_series_ui.enabled"
         tal:define="all_child_series context/getDerivedSeries">
       <dt>Derived series:</dt>
       <dd>
@@ -70,7 +70,7 @@
             tal:content="child_series/named_version" /><tal:comma
             condition="not: repeat/child_series/end">,</tal:comma>
         </tal:per_child_series>
-       <tal:none condition="all_child_series/is_empty">
+       <tal:none condition="all_child_series">
           No derived series.
         </tal:none>
       </dd>
