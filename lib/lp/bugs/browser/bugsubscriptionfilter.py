@@ -65,16 +65,10 @@ class BugSubscriptionFilterView(LaunchpadView):
         description = self.context.description
         return u"" if description is None else description.strip()
 
-    @property
-    def filters_everything(self):
-        """Return a boolean as to whether the filter masks everything.
-
-        Right now the only thing we check is the bug_notification_level.  We
-        could check more later--in particular, if no importances are checked,
-        or no statuses.
-        """
-        return (self.context.bug_notification_level ==
-                BugNotificationLevel.NOTHING)
+    # At the moment, we never filter everything.
+    # We could turn it into a property and check more later--
+    # in particular, if no importances are checked, or no statuses.
+    filters_everything = False
 
     @property
     def conditions(self):
@@ -82,15 +76,10 @@ class BugSubscriptionFilterView(LaunchpadView):
         conditions = []
         bug_notification_level = self.context.bug_notification_level
         if bug_notification_level < BugNotificationLevel.COMMENTS:
-            if bug_notification_level == BugNotificationLevel.NOTHING:
-                return conditions # The template should use
-                # filters_everything to determine whether the conditions
-                # should be rendered.
-            else:
-                mapping = bug_notification_level_description_mapping(
-                    'the bug')
-                conditions.append(
-                    mapping[bug_notification_level].lower()[:-1])
+            mapping = bug_notification_level_description_mapping(
+                'the bug')
+            conditions.append(
+                mapping[bug_notification_level].lower()[:-1])
         statuses = self.context.statuses
         if len(statuses) > 0:
             conditions.append(

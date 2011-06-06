@@ -33,6 +33,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -133,6 +134,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -141,14 +143,13 @@ from lp.soyuz.interfaces.archive import (
     IArchiveEditDependenciesForm,
     IArchiveSet,
     NoSuchPPA,
-    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -1285,30 +1286,6 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         dest_display_name)
 
 
-def partition_pubs_by_archive(source_pubs):
-    """Group `source_pubs` by archive.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A dict mapping `Archive`s to the list of entries from
-        `source_pubs` that are in that archive.
-    """
-    by_source_archive = {}
-    for spph in source_pubs:
-        by_source_archive.setdefault(spph.archive, []).append(spph)
-    return by_source_archive
-
-
-def name_pubs_with_versions(source_pubs):
-    """Annotate each entry from `source_pubs` with its version.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A list of tuples (name, version), one for each respective
-        entry in `source_pubs`.
-    """
-    sprs = [spph.sourcepackagerelease for spph in source_pubs]
-    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
@@ -1327,12 +1304,14 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         check_copy_permissions(
             person, dest_archive, dest_series, dest_pocket, spns)
 
-    job_source = getUtility(IPackageCopyJobSource)
-    archive_pubs = partition_pubs_by_archive(source_pubs)
-    for source_archive, spphs in archive_pubs.iteritems():
+    job_source = getUtility(IPlainPackageCopyJobSource)
+    for spph in source_pubs:
         job_source.create(
-            name_pubs_with_versions(spphs), source_archive, dest_archive,
-            dest_series, dest_pocket, include_binaries=include_binaries)
+            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            dest_pocket, include_binaries=include_binaries,
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE)
+
     return structured("""
         <p>Requested sync of %s packages.</p>
         <p>Please allow some time for these to be processed.</p>
@@ -2146,7 +2125,7 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
-            errors = validate_external_dependencies(ext_deps)
+            errors = self.validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
@@ -2155,6 +2134,31 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'commercial',
                 'Can only set commericial for private archives.')
+
+    def validate_external_dependencies(self, ext_deps):
+        """Validate the external_dependencies field.
+
+        :param ext_deps: The dependencies form field to check.
+        """
+        errors = []
+        # The field can consist of multiple entries separated by
+        # newlines, so process each in turn.
+        for dep in ext_deps.splitlines():
+            try:
+                deb, url, suite, components = dep.split(" ", 3)
+            except ValueError:
+                errors.append(
+                    "'%s' is not a complete and valid sources.list entry"
+                        % dep)
+                continue
+
+            if deb != "deb":
+                errors.append("%s: Must start with 'deb'" % dep)
+            url_components = urlparse(url)
+            if not url_components[0] or not url_components[1]:
+                errors.append("%s: Invalid URL" % dep)
+
+        return errors
 
     @property
     def owner_is_private_team(self):

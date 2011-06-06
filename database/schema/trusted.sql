@@ -1995,7 +1995,51 @@ END;
 $$;
 
 COMMENT ON FUNCTION message_copy_owner_to_bugmessage() IS
-'Copies the message owner into bugmessage whenmessage changes.';
+'Copies the message owner into bugmessage when message changes.';
+
+
+CREATE OR REPLACE FUNCTION questionmessage_copy_owner_from_message()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.owner is NULL THEN
+            UPDATE QuestionMessage
+            SET owner = Message.owner FROM
+            Message WHERE
+            Message.id = NEW.message AND
+            QuestionMessage.id = NEW.id;
+        END IF;
+    ELSIF NEW.message != OLD.message THEN
+        UPDATE QuestionMessage
+        SET owner = Message.owner FROM
+        Message WHERE
+        Message.id = NEW.message AND
+        QuestionMessage.id = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION questionmessage_copy_owner_from_message() IS
+'Copies the message owner into QuestionMessage when QuestionMessage changes.';
+
+CREATE OR REPLACE FUNCTION message_copy_owner_to_questionmessage()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.owner != OLD.owner THEN
+        UPDATE QuestionMessage
+        SET owner = NEW.owner
+        WHERE
+        QuestionMessage.message = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION message_copy_owner_to_questionmessage() IS
+'Copies the message owner into questionmessage when message changes.';
 
 
 CREATE OR REPLACE FUNCTION bug_update_heat_copy_to_bugtask()
