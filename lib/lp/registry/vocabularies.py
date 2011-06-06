@@ -202,12 +202,7 @@ class BasePersonVocabulary:
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            if self.enhanced_picker_enabled:
-                # Display the person's Launchpad id next to their name.
-                title = "%s (%s)" % (obj.displayname, obj.name)
-            else:
-                title = obj.displayname
-            return SimpleTerm(obj, obj.name, title)
+            return SimpleTerm(obj, obj.name, obj.displayname)
         except Unauthorized:
             return None
 
