@@ -1,4 +1,5 @@
-= Deleting branches =
+Deleting branches
+=================
 
 Branches that have no revisions or links to other Launchpad objects
 can be deleted.  The main use for this is to allow users to delete

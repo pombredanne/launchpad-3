@@ -6,7 +6,8 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
@@ -83,7 +84,8 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
     >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
