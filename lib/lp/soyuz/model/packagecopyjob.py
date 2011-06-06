@@ -207,6 +207,16 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return cls(job)
 
     @classmethod
+    def createMultiple(cls, target_distroseries, copy_tasks,
+                       copy_policy=PackageCopyPolicy.INSECURE,
+                       include_binaries=False):
+        """See `IPlainPackageCopyJobSource`."""
+        store = IMasterStore(Job)
+        job_ids = Job.createMultiple(store, len(copy_tasks))
+# XXX: Implement
+        return []
+
+    @classmethod
     def getActiveJobs(cls, target_archive):
         """See `IPlainPackageCopyJobSource`."""
         jobs = IStore(PackageCopyJob).find(
