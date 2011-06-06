@@ -828,7 +828,7 @@ team.
 
     >>> term = vocab.getTermByToken('private-team')
     >>> print term.title
-    Private Team (private-team)
+    Private Team
 
 The PRIVATE team is not returned for a user who is not part of the team.
 
