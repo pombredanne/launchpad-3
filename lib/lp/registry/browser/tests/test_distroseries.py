@@ -1088,17 +1088,16 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(recorder1, HasQueryCount(LessThan(10)))
-        # Creating Jobs and DistributionJobs takes 2 extra queries per
-        # requested sync.
-        requested_syncs = 3
-        for index in xrange(requested_syncs):
+
+        # Creating Jobs and DistributionJobs takes another 2 queries.
+        for index in xrange(3):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(
             recorder2,
-            HasQueryCount(Equals(recorder1.count + 2 * requested_syncs)))
+            HasQueryCount(Equals(recorder1.count + 2)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
