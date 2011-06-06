@@ -120,8 +120,8 @@ list of emails to send:
     a comment.
     <BLANKLINE>
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     Title:
@@ -324,8 +324,8 @@ signature, and the signature marker has a trailing space.
     [...,
      '',
      '-- ',
-     'You received this bug notification because you are a direct subscriber',
-     'of the bug.',
+     'You received this bug notification because you are subscribed to the bug',
+     'report.',
      'http://bugs.launchpad.dev/bugs/1',
      '',
      'Title:',
@@ -467,8 +467,8 @@ top of the email:
     a comment.
     <BLANKLINE>
     -- 
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/16
     <BLANKLINE>
     Title:
@@ -1038,8 +1038,8 @@ We can see that Concise Person doesn't receive verbose notifications:
     a really simple comment.
     <BLANKLINE>
     --
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
@@ -1066,7 +1066,7 @@ that gets verbose email.
     <BLANKLINE>
     --
     You received this bug notification because you are a member of Verbose
-    Team, which is a direct subscriber.
+    Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
@@ -1084,8 +1084,8 @@ Whereas Verbose Person does get the description and task status:
     a really simple comment.
     <BLANKLINE>
     --
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
@@ -1115,7 +1115,7 @@ And Concise Team Person does too, even though his team doesn't want them:
     <BLANKLINE>
     --
     You received this bug notification because you are a member of Concise
-    Team, which is a direct subscriber.
+    Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/...
     <BLANKLINE>
     Title:
@@ -1241,8 +1241,8 @@ notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1253,8 +1253,8 @@ notifications.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
 
@@ -1305,8 +1305,8 @@ COMMENTS, he also receives these notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1317,8 +1317,8 @@ COMMENTS, he also receives these notifications.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
 
@@ -1358,8 +1358,8 @@ no comment notifications.
     no comment for no-priv.
     <BLANKLINE>
     --
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1370,8 +1370,8 @@ no comment notifications.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
 
@@ -1422,8 +1422,8 @@ receives these notifications.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1434,8 +1434,8 @@ receives these notifications.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
 
@@ -1477,8 +1477,8 @@ no notifications created by addChange().
     + Whatever else
     <BLANKLINE>
     --
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     http://bugs.launchpad.dev/bugs/1
     ...
     ----------------------------------------------------------------------
@@ -1490,8 +1490,8 @@ no notifications created by addChange().
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
 
@@ -1544,8 +1544,8 @@ after all.
     ----------------------------------------------------------------------
     To: owner@example.com
     ...
-    You received this bug notification because you are a member of Addressless
-    Team, which is a direct subscriber.
+    You received this bug notification because you are a member of 
+    Addressless Team, which is subscribed to the bug report.
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1556,7 +1556,7 @@ after all.
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
+    You received this bug notification because you are subscribed to the bug
+    report.
     ...
     ----------------------------------------------------------------------
