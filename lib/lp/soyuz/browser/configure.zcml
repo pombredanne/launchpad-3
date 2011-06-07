@@ -723,6 +723,12 @@
         <browser:page
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageDifferenceView"
+            permission="zope.Public"
+            name="+difference"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
                 "lp.soyuz.browser.sourcepackage.SourcePackageChangelogView"
             permission="zope.Public"
             name="+changelog"

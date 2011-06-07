@@ -597,7 +597,7 @@ class Person(
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -611,6 +611,10 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty
+    def ircnicknames(self):
+        return list(self._ircnicknames)
 
     @cachedproperty
     def languages(self):
@@ -4030,6 +4034,9 @@ class PersonSet:
         # We ignore BugSubscriptionFilterMutes.
         skip.append(('bugsubscriptionfiltermute', 'person'))
 
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
@@ -4646,7 +4653,7 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team with a preferred email.
+        # Get transitive members of team without a preferred email.
         return _get_recipients_for_team(person)
     else:
         return []
