@@ -910,7 +910,7 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(WindmillTestCase):
+class YUIUnitTestCase(TestCase):
 
     layer = None
     suite_name = ''
@@ -934,74 +934,6 @@ class YUIUnitTestCase(WindmillTestCase):
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
-        #This goes here to prevent circular import issues
-        from canonical.testing.layers import BaseLayer
-        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
-        yui_runner_url = _view_name + self.test_path
-
-        client = self.client
-        client.open(url=yui_runner_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        # This is very fragile for some reason, so we need a long delay here.
-        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
-        response = client.commands.getPageText()
-        self._yui_results = {}
-        # Maybe testing.pages should move to lp to avoid circular imports.
-        from canonical.launchpad.testing.pages import find_tags_by_class
-        entries = find_tags_by_class(
-            response['result'], 'yui3-console-entry-TestRunner')
-        for entry in entries:
-            category = entry.find(
-                attrs={'class': 'yui3-console-entry-cat'})
-            if category is None:
-                continue
-            result = category.string
-            if result not in ('pass', 'fail'):
-                continue
-            message = entry.pre.string
-            test_name, ignore = message.split(':', 1)
-            self._yui_results[test_name] = dict(
-                result=result, message=message)
-
-    def checkResults(self):
-        """Check the results.
-
-        The tests are run during `setUp()`, but failures need to be reported
-        from here.
-        """
-        if self._yui_results is None or len(self._yui_results) == 0:
-            self.fail("Test harness or js failed.")
-        for test_name in self._yui_results:
-            result = self._yui_results[test_name]
-            self.assertTrue('pass' == result['result'],
-                    'Failure in %s.%s: %s' % (
-                        self.test_path, test_name, result['message']))
-
-
-class YUIUnitTestCaseZeta(TestCase):
-
-    layer = None
-    suite_name = ''
-
-    _yui_results = None
-
-    def __init__(self):
-        """Create a new test case without a choice of test method name.
-
-        Preventing the choice of test method ensures that we can safely
-        provide a test ID based on the file path.
-        """
-        super(YUIUnitTestCaseZeta, self).__init__("checkResults")
-
-    def initialize(self, test_path):
-        self.test_path = test_path
-
-    def id(self):
-        """Return an ID for this test based on the file path."""
-        return self.test_path
-
-    def setUp(self):
-        super(YUIUnitTestCaseZeta, self).setUp()
         client = html5browser.Browser()
         html_path = os.path.join(config.root, 'lib', self.test_path)
         page = client.load_page(html_path)

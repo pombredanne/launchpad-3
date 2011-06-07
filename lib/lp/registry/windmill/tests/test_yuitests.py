@@ -9,11 +9,11 @@ __all__ = []
 from lp.registry.windmill.testing import RegistryYUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
-    YUIUnitTestCaseZeta,
+    YUIUnitTestCase,
     )
 
 
-class RegistryYUIUnitTestCase(YUIUnitTestCaseZeta):
+class RegistryYUIUnitTestCase(YUIUnitTestCase):
 
     layer = RegistryYUITestLayer
     suite_name = 'RegistryYUIUnitTests'
