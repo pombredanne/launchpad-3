@@ -604,25 +604,31 @@ class POTemplateAdminView(POTemplateEditView):
                 self.setFieldError(
                     'sourcepackagename',
                     "Source package already has a template with "
-                    "the same name.")
+                    "that same name.")
             elif productseries_changed:
                 self.setFieldError(
                     'productseries',
-                    "Series already has a template with the same name.")
-            else:
+                    "Series already has a template with that same name.")
+            elif name != self.context.name:
                 self.setFieldError('name', "Name is already in use.")
 
-    def validateDomain(self, domain, similar_templates):
-        if domain == self.context.translation_domain:
-            # Not changed.
-            return
-
+    def validateDomain(self, domain, similar_templates,
+                       sourcepackage_changed, productseries_changed):
         other_template = similar_templates.getPOTemplateByTranslationDomain(
             domain)
         if other_template is not None:
-            self.setFieldError(
-                'translation_domain', "Domain is already in use.")
-            return
+            if sourcepackage_changed:
+                self.setFieldError(
+                    'sourcepackagename',
+                    "Source package already has a template with "
+                    "that same domain.")
+            elif productseries_changed:
+                self.setFieldError(
+                    'productseries',
+                    "Series already has a template with that same domain.")
+            elif domain != self.context.translation_domain:
+                self.setFieldError(
+                    'translation_domain', "Domain is already in use.")
 
     def validate(self, data):
         super(POTemplateAdminView, self).validate(data)
@@ -659,7 +665,9 @@ class POTemplateAdminView(POTemplateEditView):
         self.validateName(
             data.get('name'), similar_templates,
             sourcepackage_changed, productseries_changed)
-        self.validateDomain(data.get('translation_domain'), similar_templates)
+        self.validateDomain(
+            data.get('translation_domain'), similar_templates,
+            sourcepackage_changed, productseries_changed)
 
 
 class POTemplateExportView(BaseExportView):
