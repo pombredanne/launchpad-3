@@ -2105,5 +2105,5 @@ class BaseWindmillLayer(AppServerLayer):
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
 
 
-class BaseYUITestLayer(BaseWindmillLayer):
+class BaseYUITestLayer(FunctionalLayer):
     """The base class for all YUITests cases."""

@@ -999,10 +999,13 @@ class YUIUnitTestCaseZeta(TestCase):
         return self.test_path
 
     def setUp(self):
-        super(YUIUnitTestCase, self).setUp()
-        import HTML5Browser
-        client = HTML5Browser.Browser()
-        page = client.load_page(self.test_path)
+        super(YUIUnitTestCaseZeta, self).setUp()
+        import html5browser
+        client = html5browser.Browser()
+        html_path = os.path.join(config.root, 'lib', self.test_path)
+        page = client.load_page(html_path)
+        if page.return_code == page.CODE_FAIL:
+            return
         markup = page.content
 
         self._yui_results = {}
