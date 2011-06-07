@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -510,7 +511,7 @@ class CopyChecker:
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
-            overrides=None):
+            overrides=None, send_email=False):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -541,6 +542,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         must be the same number of overrides as there are sources and each
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
+    :param send_email: Should we notify for the copy performed?
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -577,15 +579,21 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             destination_series = series
         if source.delayed:
             delayed_copy = _do_delayed_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
             sub_copies = [delayed_copy]
         else:
             override = None
             if overrides:
                 override = overrides[overrides_index]
             sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket, include_binaries,
-                override)
+                source, archive, destination_series, pocket,
+                include_binaries, override)
+            if send_email:
+                notify(
+                    person, source.sourcepackagerelease, [], [], archive,
+                    destination_series, pocket, changes=None,
+                    action='accepted')
 
         overrides_index += 1
         copies.extend(sub_copies)
