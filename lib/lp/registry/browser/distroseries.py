@@ -1070,7 +1070,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             job_source.create(
                 dsd.source_package_name.name,
                 dsd.parent_series.main_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.UPDATES,
+                target_distroseries, PackagePublishingPocket.RELEASE,
                 package_version=dsd.parent_source_version,
                 copy_policy=PackageCopyPolicy.MASS_SYNC)
 
