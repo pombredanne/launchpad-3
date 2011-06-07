@@ -50,7 +50,6 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.soyuz.adapters.copypolicy import InsecureCopyPolicy
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
     SourceOverride,
@@ -289,14 +288,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
-        # There's only one package per job; although the schema allows
-        # multiple we're not using that.
         name = self.package_name
         component_name = self.metadata.get("component_override")
         section_name = self.metadata.get("section_override")
         source_package_name = getUtility(ISourcePackageNameSet)[name]
-        component = getUtility(IComponentSet)[component_name]
-        section = getUtility(ISectionSet)[section_name]
+        try:
+            component = getUtility(IComponentSet)[component_name]
+        except NotFoundError:
+            component = None
+        try:
+            section = getUtility(ISectionSet)[section_name]
+        except NotFoundError:
+            section = None
+
         return SourceOverride(source_package_name, component, section)
 
     def _checkPolicies(self, source_name):
@@ -308,12 +312,9 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.target_archive, self.target_distroseries,
             self.target_pocket, [source_name])
 
-        # TODO: this policy should come from the job itself, waiting on
-        # jtv to do the schema/model changes.
-        copy_policy = InsecureCopyPolicy()
-        approve_new = copy_policy.autoApproveNew(
-            self.target_archive, self.target_distroseries, self.target_pocket)
-        if len(ancestry) == 0 and not approve_new:
+        copy_policy = self.getPolicyImplementation()
+
+        if len(ancestry) == 0:
             # We need to get the default overrides and put them in the
             # metadata.
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
@@ -321,18 +322,24 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                 self.target_pocket, [source_name])
             self.addSourceOverride(defaults[0])
 
-            # There's no existing package with the same name and the
-            # policy says unapproved, so we poke it in the NEW queue.
-            self._createPackageUpload()
-            raise SuspendJobException
+            approve_new = copy_policy.autoApproveNew(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket)
+
+            if not approve_new:
+                # There's no existing package with the same name and the
+                # policy says unapproved, so we poke it in the NEW queue.
+                self._createPackageUpload()
+                raise SuspendJobException
+        else:
+            # Put the existing override in the metadata.
+            self.addSourceOverride(ancestry[0])
 
         # The package is not new (it has ancestry) so check the copy
         # policy for existing packages.
         approve_existing = copy_policy.autoApprove(
             self.target_archive, self.target_distroseries, self.target_pocket)
         if not approve_existing:
-            # Put the existing override in the metadata.
-            self.addSourceOverride(ancestry[0])
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 

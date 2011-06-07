@@ -662,13 +662,18 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             include_binaries=False)
 
-        # Associate a PackageUpload with the job as happens when the
-        # job is suspended in the first run.
-        pcj = removeSecurityProxy(job).context
-        self.factory.makePackageUpload(package_copy_job=pcj)
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        # Simulate the job runner suspending after getting a
+        # SuspendJobException
+        job.suspend()
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
 
-        # There is no ancestry, so normally the job would get suspended
-        # but because we have a PackageUpload it will run to completion.
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        pu.acceptFromQueue()
         self.runJob(job)
 
         existing_sources = target_archive.getPublishedSources(name='copyme')
