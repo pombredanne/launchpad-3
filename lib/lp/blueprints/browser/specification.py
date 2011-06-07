@@ -593,7 +593,7 @@ class SpecificationView(SpecificationSimpleView):
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
-                self.context.unsubscribe(self.user)
+                self.context.unsubscribe(self.user, self.user)
                 self.notices.append(
                     "You have unsubscribed from this blueprint.")
 

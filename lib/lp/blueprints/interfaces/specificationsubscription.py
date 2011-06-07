@@ -11,6 +11,7 @@ __all__ = [
     'ISpecificationSubscription',
     ]
 
+from lazr.restful.declarations import export_as_webservice_entry
 from zope.interface import (
     Attribute,
     Interface,
@@ -26,6 +27,8 @@ from lp.services.fields import PublicPersonChoice
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
+
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
@@ -46,4 +49,3 @@ class ISpecificationSubscription(Interface):
         'cause the meeting scheduler to try to ensure that this person '
         'attends meetings about this feature.'),
         default=False)
-
