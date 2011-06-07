@@ -92,7 +92,7 @@
             tal:content="child_series/named_version" /><tal:comma
             condition="not: repeat/child_series/end">,</tal:comma>
         </tal:per_child_series>
-       <tal:none condition="all_child_series">
+        <tal:none condition="not:all_child_series">
           No derived series.
         </tal:none>
       </dd>

@@ -51,7 +51,7 @@ on the series' details.
     Release manager: None
     Status: Current Stable Release
     Derives from: Warty (4.10) is not derived from another series.
-    Derived series:
+    Derived series: No derived series.
     Source packages: 3
     Binary packages: 4
 
@@ -72,7 +72,8 @@ change its text slightly to annouce this:
     Binary packages: No binaries imported or published.
 
 The series' derivation parents - rather than the previous series - are
-shown when derivation is enabled:
+shown when derivation is enabled, as are the series derived from this
+series:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing import celebrity_logged_in
@@ -88,6 +89,13 @@ shown when derivation is enabled:
     ...         factory.makeDistroSeriesParent(
     ...             derived_series=sarge, parent_series=parent)
     ...         for parent in parents]
+    ...     children = [
+    ...         factory.makeDistroSeries(name=u"bobby"),
+    ...         factory.makeDistroSeries(name=u"tables")]
+    ...     distro_series_children = [
+    ...         factory.makeDistroSeriesParent(
+    ...             derived_series=child, parent_series=sarge)
+    ...         for child in children]
 
     >>> with derivation_enabled:
     ...     anon_browser.open('http://launchpad.dev/debian/sarge')
@@ -100,7 +108,7 @@ shown when derivation is enabled:
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
     Derives from: Dobby (...), Knobby (...)
-    Derived series:
+    Derived series: Bobby (...), Tables (...)
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 
