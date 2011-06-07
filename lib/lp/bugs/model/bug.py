@@ -63,6 +63,7 @@ from storm.expr import (
     Select,
     SQL,
     SQLRaw,
+    Sum,
     Union,
     )
 from storm.info import ClassAlias
@@ -242,11 +243,6 @@ class BugTag(SQLBase):
     tag = StringCol(notNull=True)
 
 
-# We need to always use the same Count instance or the
-# get_bug_tags_open_count is not UNIONable.
-tag_count_columns = (BugTag.tag, Count())
-
-
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
@@ -266,39 +262,56 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
-    """Return all the used bug tags with their open bug count.
+def get_bug_tags_open_count(context_condition, user, tag_limit=0,
+    include_tags=None):
+    """Worker for IBugTarget.getUsedBugTagsWithOpenCounts.
 
+    See `IBugTarget` for details.
+
+    The only change is that this function takes a SQL expression for limiting
+    the found tags.
     :param context_condition: A Storm SQL expression, limiting the
         used tags to a specific context. Only the BugTask table may be
         used to choose the context.
-    :param user: The user performing the search.
-    :param wanted_tags: A set of tags within which to restrict the search.
-
-    :return: A list of tuples, (tag name, open bug count).
     """
-    tables = (
-        BugTag,
-        Join(BugTask, BugTask.bugID == BugTag.bugID),
-        )
+    # Circular fail.
+    from lp.bugs.model.bugsummary import BugSummary
+    tags = {}
+    if include_tags:
+        tags = dict((tag, 0) for tag in include_tags)
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    admin_team = getUtility(ILaunchpadCelebrities).admin
+    if user is not None and not user.inTeam(admin_team):
+        store = store.with_(SQL(
+            "teams AS ("
+            "SELECT team from TeamParticipation WHERE person=%s)" % user.id))
     where_conditions = [
-        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        BugSummary.tag != None,
         context_condition,
         ]
-    if wanted_tags is not None:
-        where_conditions.append(BugTag.tag.is_in(wanted_tags))
-    privacy_filter = get_bug_privacy_filter(user)
-    if privacy_filter:
-        # The EXISTS sub-select avoids a join against Bug, improving
-        # performance significantly.
+    if user is None:
+        where_conditions.append(BugSummary.viewed_by_id == None)
+    elif not user.inTeam(admin_team):
         where_conditions.append(
-            Exists(Select(
-                columns=[True], tables=[Bug],
-                where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    return store.using(*tables).find(
-        tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
-            Desc(Count()), BugTag.tag)
+            Or(
+                BugSummary.viewed_by_id == None,
+                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                ))
+    tag_count_columns = (BugSummary.tag, Sum(BugSummary.count))
+    # Always query for used
+    def _query(*args):
+        return store.find(tag_count_columns, *(where_conditions + list(args))
+            ).group_by(BugSummary.tag).order_by(
+            Desc(Sum(BugSummary.count)), BugSummary.tag)
+    used = _query()
+    if tag_limit:
+        used = used[:tag_limit]
+    if include_tags:
+        # Union in a query for just include_tags.
+        used = used.union(_query(BugSummary.tag.is_in(include_tags)))
+    tags.update(dict(used))
+    return tags
 
 
 class BugBecameQuestionEvent:
