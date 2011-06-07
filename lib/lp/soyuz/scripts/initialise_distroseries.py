@@ -33,7 +33,9 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.packageset import Packageset
+from lp.app.errors import NotFoundError
 
 
 class InitialisationError(Exception):
@@ -75,12 +77,7 @@ class InitialiseDistroSeries:
         # Avoid circular imports
         from lp.registry.model.distroseries import DistroSeries
 
-        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
-        # initialising from multiple parents.
-        self.parent_id = parents[0]
-        self.parent = IStore(
-            DistroSeries).get(DistroSeries, int(self.parent_id))
-
+        self.parent_ids = parents
         self.distroseries = distroseries
         self.arches = arches
         self.packagesets = [
@@ -92,17 +89,23 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
+        # Avoid circular imports
+        from lp.registry.model.distroseries import DistroSeries
+
         if self.distroseries.is_derived_series:
             raise InitialisationError(
                 ("DistroSeries {child.name} has already been initialized"
                  ".").format(
                     child=self.distroseries))
-        if self.distroseries.distribution.id == self.parent.distribution.id:
-            self._checkBuilds()
-        self._checkQueue()
+        for parent_id in self.parent_ids:
+            parent = IStore(
+                DistroSeries).get(DistroSeries, int(parent_id))
+            if self.distroseries.distribution.id == parent.distribution.id:
+                self._checkBuilds(parent)
+            self._checkQueue(parent)
         self._checkSeries()
 
-    def _checkBuilds(self):
+    def _checkBuilds(self, parent):
         """Assert there are no pending builds for parent series.
 
         Only cares about the RELEASE pocket, which is the only one inherited
@@ -110,13 +113,13 @@ class InitialiseDistroSeries:
         """
         # only the RELEASE pocket is inherited, so we only check
         # pending build records for it.
-        pending_builds = self.parent.getBuildRecords(
+        pending_builds = parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
         if pending_builds.any():
             raise InitialisationError("Parent series has pending builds.")
 
-    def _checkQueue(self):
+    def _checkQueue(self, parent):
         """Assert upload queue is empty on parent series.
 
         Only cares about the RELEASE pocket, which is the only one inherited
@@ -127,7 +130,7 @@ class InitialiseDistroSeries:
         for queue in (
             PackageUploadStatus.NEW, PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED):
-            items = self.parent.getQueueItems(
+            items = parent.getQueueItems(
                 queue, pocket=PackagePublishingPocket.RELEASE)
             if items:
                 raise InitialisationError(
@@ -148,17 +151,23 @@ class InitialiseDistroSeries:
             raise InitialisationError(error)
 
     def initialise(self):
-        self._set_parent()
-        self._copy_configuration()
-        self._copy_architectures()
-        self._copy_packages()
-        self._copy_packagesets()
-        self._set_initialised()
+        # Avoid circular imports
+        from lp.registry.model.distroseries import DistroSeries
+
+        count = 1
+        for parent_id in self.parent_ids:
+            parent = IStore(
+                DistroSeries).get(DistroSeries, int(parent_id))
+            self._set_parent(parent, count)
+            self._copy_configuration(parent)
+            self._copy_architectures(parent)
+            self._copy_packages(parent)
+            self._copy_packagesets(parent)
+            self._set_initialised(parent)
+            count = count + 1
         transaction.commit()
 
-    def _set_parent(self):
-        # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
-        # initialising from multiple parents.
+    def _set_parent(self, parent, count):
         dsp_set = getUtility(IDistroSeriesParentSet)
         if self.overlays and self.overlays[0]:
             pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
@@ -166,25 +175,42 @@ class InitialiseDistroSeries:
             component_set = getUtility(IComponentSet)
             component = component_set[self.overlay_components[0]]
             dsp_set.new(
-                self.distroseries, self.parent, initialized=False,
-                is_overlay=True, pocket=pocket, component=component)
+                self.distroseries, parent, initialized=False,
+                is_overlay=True, pocket=pocket, component=component,
+                ordering=count)
         else:
-            dsp_set.new(self.distroseries, self.parent, initialized=False)
+            dsp_set.new(self.distroseries, parent, initialized=False)
 
-    def _set_initialised(self):
+    def _set_initialised(self, parent):
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
-            self.distroseries, self.parent)
+            self.distroseries, parent)
         distroseriesparent.initialized = True
 
-    def _copy_configuration(self):
+    def _copy_configuration(self, parent):
+        # XXX??
         self.distroseries.backports_not_automatic = \
-            self.parent.backports_not_automatic
+            parent.backports_not_automatic
 
-    def _copy_architectures(self):
-        include = ''
+    def _copy_architectures(self, parent):
+        filtering = ''
+        # Filter out existing architecture tags.
+        existing_archtags = self._store.find(
+            DistroArchSeries.architecturetag,
+            DistroArchSeries.distroseries == self.distroseries)
+        if not existing_archtags.is_empty():
+            filtering += ' AND architecturetag not IN %s ' % (
+                sqlvalues(list(existing_archtags)))
+        # Filter out existing processor families.
+        existing_proc_families = self._store.find(
+            DistroArchSeries.processorfamilyID,
+            DistroArchSeries.distroseries == self.distroseries)
+        if not existing_proc_families.is_empty():
+            filtering += ' AND processorfamily not IN %s ' % (
+                sqlvalues(list(existing_proc_families)))
         if self.arches:
-            include = "AND architecturetag IN %s" % sqlvalues(self.arches)
+            filtering += ' AND architecturetag IN %s ' % (
+                sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
@@ -192,14 +218,15 @@ class InitialiseDistroSeries:
             FROM DistroArchSeries WHERE distroseries = %s
             AND enabled = TRUE %s
             """ % (sqlvalues(self.distroseries, self.distroseries.owner,
-            self.parent) + (include,)))
+            parent) + (filtering, )))
         self._store.flush()
-        self.distroseries.nominatedarchindep = self.distroseries[
-            self.parent.nominatedarchindep.architecturetag]
+        # XXX??
+        # self.distroseries.nominatedarchindep = self.distroseries[
+        #     parent.nominatedarchindep.architecturetag]
 
-    def _copy_packages(self):
+    def _copy_packages(self, parent):
         # Perform the copies
-        self._copy_component_section_and_format_selections()
+        self._copy_component_section_and_format_selections(parent)
 
         # Prepare the list of distroarchseries for which binary packages
         # shall be copied.
@@ -207,13 +234,18 @@ class InitialiseDistroSeries:
         for arch in self.distroseries.architectures:
             if self.arches and (arch.architecturetag not in self.arches):
                 continue
-            parent_arch = self.parent[arch.architecturetag]
+            try:
+                parent_arch = parent[arch.architecturetag]
+            except NotFoundError:
+                # XXX??
+                continue
+
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
-        self._copy_publishing_records(distroarchseries_list)
-        self._copy_packaging_links()
+        self._copy_publishing_records(distroarchseries_list, parent)
+        self._copy_packaging_links(parent)
 
-    def _copy_publishing_records(self, distroarchseries_list):
+    def _copy_publishing_records(self, distroarchseries_list, parent):
         """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
 
@@ -232,7 +264,7 @@ class InitialiseDistroSeries:
                 pkgset = self._store.get(Packageset, int(pkgsetid))
                 spns += list(pkgset.getSourcesIncluded())
 
-        for archive in self.parent.distribution.all_distro_archives:
+        for archive in parent.distribution.all_distro_archives:
             if archive.purpose not in (
                 ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
                 continue
@@ -243,7 +275,7 @@ class InitialiseDistroSeries:
                 assert target_archive is not None, (
                     "Target archive doesn't exist?")
             origin = PackageLocation(
-                archive, self.parent.distribution, self.parent,
+                archive, parent.distribution, parent,
                 PackagePublishingPocket.RELEASE)
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
@@ -258,7 +290,7 @@ class InitialiseDistroSeries:
                 origin, destination, distroarchseries_list,
                 proc_families, spns, self.rebuild)
 
-    def _copy_component_section_and_format_selections(self):
+    def _copy_component_section_and_format_selections(self, parent):
         """Copy the section, component and format selections from the parent
         distro series into this one.
         """
@@ -268,24 +300,25 @@ class InitialiseDistroSeries:
             SELECT %s AS distroseries, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distroseries = %s
             ''' % sqlvalues(self.distroseries.id,
-            self.parent.id))
+            parent.id))
         # Copy the section selections
         self._store.execute('''
             INSERT INTO SectionSelection (distroseries, section)
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
             ''' % sqlvalues(self.distroseries.id,
-            self.parent.id))
+            parent.id))
         # Copy the source format selections
-        self._store.execute('''
-            INSERT INTO SourcePackageFormatSelection (distroseries, format)
-            SELECT %s as distroseries, spfs.format AS format
-            FROM SourcePackageFormatSelection AS spfs
-            WHERE spfs.distroseries = %s
-            ''' % sqlvalues(self.distroseries.id,
-            self.parent.id))
+        # XXX?
+        # self._store.execute('''
+        #     INSERT INTO SourcePackageFormatSelection (distroseries, format)
+        #     SELECT %s as distroseries, spfs.format AS format
+        #     FROM SourcePackageFormatSelection AS spfs
+        #     WHERE spfs.distroseries = %s
+        #     ''' % sqlvalues(self.distroseries.id,
+        #     parent.id))
 
-    def _copy_packaging_links(self):
+    def _copy_packaging_links(self, parent):
         """Copy the packaging links from the parent series to this one."""
         self._store.execute("""
             INSERT INTO
@@ -326,11 +359,11 @@ class InitialiseDistroSeries:
                         WHERE id = ChildSeries.id
                         )
                     )
-            """ % (self.parent.id, self.distroseries.id, self.parent.id))
+            """ % (parent.id, self.distroseries.id, parent.id))
 
-    def _copy_packagesets(self):
+    def _copy_packagesets(self, parent):
         """Copy packagesets from the parent distroseries."""
-        packagesets = self._store.find(Packageset, distroseries=self.parent)
+        packagesets = self._store.find(Packageset, distroseries=parent)
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
@@ -338,7 +371,7 @@ class InitialiseDistroSeries:
             # distro owner, otherwise the old owner is preserved.
             if self.packagesets and str(parent_ps.id) not in self.packagesets:
                 continue
-            if self.distroseries.distribution == self.parent.distribution:
+            if self.distroseries.distribution == parent.distribution:
                 new_owner = parent_ps.owner
             else:
                 new_owner = self.distroseries.owner
