@@ -65,7 +65,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         data = self._makeData(potemplate, productseries=new_series)
         view.validate(data)
         self.assertEqual(
-            [u'Series already has a template with the same name.'],
+            [u'Series already has a template with that same name.'],
             view.errors)
 
     def test_detects_domain_clash_on_productseries_change(self):
@@ -82,7 +82,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         data = self._makeData(potemplate, productseries=new_series)
         view.validate(data)
         self.assertEqual(
-            [u'Series already has a template with the same domain.'],
+            [u'Series already has a template with that same domain.'],
             view.errors)
 
     def test_detects_name_clash_on_sourcepackage_change(self):
@@ -100,7 +100,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
             potemplate, sourcepackagename=sourcepackage.sourcepackagename)
         view.validate(data)
         self.assertEqual(
-            [u'Source package already has a template with the same name.'],
+            [u'Source package already has a template with that same name.'],
             view.errors)
 
     def test_detects_domain_clash_on_sourcepackage_change(self):
@@ -118,5 +118,5 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
             potemplate, sourcepackagename=sourcepackage.sourcepackagename)
         view.validate(data)
         self.assertEqual(
-            [u'Source package already has a template with the same domain.'],
+            [u'Source package already has a template with that same domain.'],
             view.errors)
