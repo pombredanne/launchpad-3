@@ -40,7 +40,7 @@ class QuestionsPersonMixin:
             UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
             UNION SELECT question
-                  FROM QuestionMessage JOIN Message ON (message = Message.id)
+                  FROM QuestionMessage
                   WHERE owner = %(personID)s
             )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))

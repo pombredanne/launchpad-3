@@ -65,10 +65,13 @@
           <div
             tal:replace="structure context/@@+portlet-details"/>
         </div>
-        <div class="yui-u"
-             tal:condition="request/features/soyuz.derived-series-ui.enabled">
-          <div tal:replace="structure context/@@+portlet-derivation" />
-        </div>
+        <tal:derivation
+          tal:condition="request/features/soyuz.derived_series_ui.enabled">
+          <div class="yui-u"
+               tal:condition="python:context.is_derived_series or context.is_initialising">
+            <div tal:replace="structure context/@@+portlet-derivation" />
+          </div>
+        </tal:derivation>
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-package-summary" />

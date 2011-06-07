@@ -20,12 +20,15 @@ __all__ = [
     'IHasAffiliation',
     ]
 
+from collections import namedtuple
+
 from zope.component import adapter
 from zope.interface import (
     implements,
     Interface,
     )
 
+from canonical.launchpad.interfaces.launchpad import IHasIcon
 from lp.bugs.interfaces.bugtask import IBugTask
 
 
@@ -33,10 +36,14 @@ class IHasAffiliation(Interface):
     """The affiliation status of a person with a context."""
 
     def getAffiliationBadge(person):
-        """Return the badge name for the type of affiliation the person has.
+        """Return the badge for the type of affiliation the person has.
+
+        The return value is a tuple: (url, alt).
 
         If the person has no affiliation with this object, return None.
         """
+
+BadgeDetails = namedtuple('BadgeDetails', ('url', 'alt_text'))
 
 
 @adapter(Interface)
@@ -67,7 +74,20 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         affiliated = person.inTeam(pillar.owner)
         if not affiliated:
             return None
+
+        def getIconUrl(context, default_url):
+            if IHasIcon.providedBy(context) and context.icon is not None:
+                icon_url = context.icon.getURL()
+                return icon_url
+            return default_url
+        
         if self.context.distribution or self.context.distroseries:
-            return "distribution-badge"
+            icon_url = getIconUrl(
+                self.context.distribution or self.context.distroseries.distribution,
+                "/@@/distribution-badge")
+            return BadgeDetails(icon_url, "Affiliated with Ubuntu")
         if self.context.product or self.context.productseries:
-            return "product-badge"
+            icon_url = getIconUrl(
+                self.context.product or self.context.productseries.product,
+                "/@@/product-badge")
+            return BadgeDetails(icon_url, "Affiliated with Launchpad itself")

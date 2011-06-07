@@ -10,25 +10,19 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
-    "IPackageCopyJob",
-    "IPackageCopyJobSource",
 ]
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
-    Bool,
     Int,
-    List,
     Object,
-    Tuple,
     )
 
 from canonical.launchpad import _
@@ -39,7 +33,6 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.soyuz.interfaces.archive import IArchive
 
 
 class IDistributionJob(Interface):
@@ -75,12 +68,6 @@ class DistributionJobType(DBEnumeratedType):
         populating the archive from the parent distroseries.
         """)
 
-    COPY_PACKAGE = DBItem(2, """
-        Copy a single package from another distribution.
-
-        This job copies a single package, optionally including binaries.
-        """)
-
     DISTROSERIESDIFFERENCE = DBItem(3, """
         Create, delete, or update a Distro Series Difference.
 
@@ -92,7 +79,8 @@ class DistributionJobType(DBEnumeratedType):
 class IInitialiseDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitialiseDistroSeriesJobs."""
 
-    def create(distroseries, arches, packagesets, rebuild):
+    def create(parents, arches, packagesets, rebuild, overlay,
+               overlay_pockets, overlay_components):
         """Create a new initialisation job for a distroseries."""
 
     def getPendingJobsForDistroseries(distroseries):
@@ -100,90 +88,41 @@ class IInitialiseDistroSeriesJobSource(IJobSource):
         """
 
 
-class IPackageCopyJobSource(IJobSource):
-    """An interface for acquiring IIPackageCopyJobs."""
-
-    def create(cls, source_packages, source_archive,
-               target_archive, target_distroseries, target_pocket,
-               include_binaries=False):
-        """Create a new sync package job.
-
-        :param source_packages: This is an iterable of `(source_package_name,
-            version)` tuples, where both `source_package_name` and `version`
-            are strings.
-        :param source_archive: The `IArchive` in which `source_packages` are
-            found.
-        :param target_archive: The `IArchive` to which to copy the packages.
-        :param target_distroseries: The `IDistroSeries` to which to copy the
-            packages.
-        :param target_pocket: The pocket into which to copy the packages. Must
-            be a member of `PackagePublishingPocket`.
-        :param include_binaries: See `do_copy`.
-        """
-
-    def getActiveJobs(archive):
-        """Retrieve all active sync jobs for an archive."""
-
-
 class IInitialiseDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
-
-
-class IPackageCopyJob(IRunnableJob):
-    """A Job that synchronizes packages."""
-
-    source_packages = List(
-        title=_("Source Packages"),
-        value_type=Tuple(min_length=3, max_length=3),
-        required=True, readonly=True,
-        )
-
-    source_archive_id = Int(
-        title=_('Source Archive ID'), required=True, readonly=True,
-        )
-
-    source_archive = Reference(
-        schema=IArchive, title=_('Source Archive'),
-        required=True, readonly=True,
-        )
-
-    target_archive_id = Int(
-        title=_('Target Archive ID'), required=True, readonly=True,
-        )
-
-    target_archive = Reference(
-        schema=IArchive, title=_('Target Archive'),
-        required=True, readonly=True,
-        )
-
-    target_distroseries = Reference(
-        schema=IDistroSeries, title=_('Target DistroSeries.'),
-        required=True, readonly=True)
-
-    target_pocket = Int(
-        title=_('Target package publishing pocket'), required=True,
-        readonly=True,
-        )
-
-    include_binaries = Bool(
-        title=_("Copy binaries"),
-        required=False, readonly=True,
-        )
-
-
-class IDistroSeriesDifferenceJob(IRunnableJob):
-        """A Job that performs actions related to DSDs."""
 
 
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(distroseries, sourcepackagename, pocket):
+    def createForPackagePublication(derivedseries, sourcepackagename, pocket,
+                                    parent_series=None):
         """Create jobs as appropriate for a given status publication.
 
-        :param distroseries: A `DistroSeries` that is assumed to be
-            derived from another one.
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
         :param sourcepackagename: A `SourcePackageName` that is being
-            published in `distroseries`.
+            published in `derived_series` or `parent_series`.
         :param pocket: The `PackagePublishingPocket` for the publication.
+        :param parent_series: The parent `DistroSeries` whose version of
+            `sourcepackagename` is to be compared with that in
+            `derived_series`.
+        :return: An iterable of `DistroSeriesDifferenceJob`.
         """
+        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
+        # mandatory as part of multi-parent support.
+
+    def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
+        """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.
+
+        :param derived_series: The derived `DistroSeries` that the
+            differences (and jobs) must be for.
+        :param distroseriesdifferences:
+            An iterable of `DistroSeriesDifference`s.
+        :return: A dict mapping each of `distroseriesdifferences` that has
+            pending jobs to a list of its jobs.
+        """
+
+
+class IDistroSeriesDifferenceJob(IRunnableJob):
+    """A `Job` that performs actions related to `DistroSeriesDifference`s."""

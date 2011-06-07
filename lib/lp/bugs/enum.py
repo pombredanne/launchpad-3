@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'BugNotificationLevel',
     'BugNotificationStatus',
-    'HIDDEN_BUG_NOTIFICATION_LEVELS',
     ]
 
 from lazr.enum import (
@@ -21,12 +20,6 @@ class BugNotificationLevel(DBEnumeratedType):
 
     The type and volume of bug notification email sent to subscribers.
     """
-
-    NOTHING = DBItem(10, """
-        Nothing
-
-        Don't send any notifications about bugs.
-        """)
 
     LIFECYCLE = DBItem(20, """
         Lifecycle
@@ -49,10 +42,6 @@ class BugNotificationLevel(DBEnumeratedType):
         notifications about new events in the bugs's discussion, like new
         comments.
         """)
-
-
-# The set of bug notification levels that won't be displayed in the UI.
-HIDDEN_BUG_NOTIFICATION_LEVELS = [BugNotificationLevel.NOTHING]
 
 
 class BugNotificationStatus(DBEnumeratedType):
