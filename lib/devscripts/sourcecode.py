@@ -63,6 +63,7 @@ def interpret_config_entry(entry):
         optional = False
     return branch_name, branch_url, revision, optional
 
+
 def load_cache(cache_filename):
     try:
         cache_file = open(cache_filename, 'rb')
@@ -73,6 +74,7 @@ def load_cache(cache_filename):
             raise
     with cache_file:
         return json.load(cache_file)
+
 
 def interpret_config(config_entries, public_only):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
@@ -259,10 +261,10 @@ def update_branches(sourcecode_directory, update_branches,
                 remote_branch, stop_revision=revision_id, overwrite=True,
                 possible_transports=possible_transports)
         except IncompatibleRepositories:
-            # XXX JRV 20100407: Ideally remote_branch.bzrdir._format 
+            # XXX JRV 20100407: Ideally remote_branch.bzrdir._format
             # should be passed into upgrade() to ensure the format is the same
-            # locally and remotely. Unfortunately smart server branches 
-            # have their _format set to RemoteFormat rather than an actual 
+            # locally and remotely. Unfortunately smart server branches
+            # have their _format set to RemoteFormat rather than an actual
             # format instance.
             upgrade(destination)
             # Upgraded, repoen working tree
