@@ -74,6 +74,8 @@ import tempfile
 import time
 import unittest
 
+import html5browser
+
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -1000,14 +1002,12 @@ class YUIUnitTestCaseZeta(TestCase):
 
     def setUp(self):
         super(YUIUnitTestCaseZeta, self).setUp()
-        import html5browser
         client = html5browser.Browser()
         html_path = os.path.join(config.root, 'lib', self.test_path)
         page = client.load_page(html_path)
         if page.return_code == page.CODE_FAIL:
             return
         markup = page.content
-
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
