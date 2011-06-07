@@ -11,6 +11,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.potemplate import POTemplateAdminView
 
+
 class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -55,7 +56,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     def test_detects_name_clash_on_productseries_change(self):
         # Detect changing to a productseries that already has a template of
-        # the same name. 
+        # the same name.
         template_name = self.factory.getUniqueString()
         existing_potemplate = self.factory.makePOTemplate(name=template_name)
         new_series = existing_potemplate.productseries
@@ -70,7 +71,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     def test_detects_domain_clash_on_productseries_change(self):
         # Detect changing to a productseries that already has a template with
-        # the same translation domain. 
+        # the same translation domain.
         translation_domain = self.factory.getUniqueString()
         existing_potemplate = self.factory.makePOTemplate(
             translation_domain=translation_domain)
@@ -87,7 +88,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     def test_detects_name_clash_on_sourcepackage_change(self):
         # Detect changing to a source package that already has a template of
-        # the same name. 
+        # the same name.
         sourcepackage = self.factory.makeSourcePackage()
         existing_potemplate = self.factory.makePOTemplate(
             sourcepackage=sourcepackage)
@@ -105,7 +106,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
 
     def test_detects_domain_clash_on_sourcepackage_change(self):
         # Detect changing to a productseries that already has a template with
-        # the same translation domain. 
+        # the same translation domain.
         sourcepackage = self.factory.makeSourcePackage()
         existing_potemplate = self.factory.makePOTemplate(
             sourcepackage=sourcepackage)
