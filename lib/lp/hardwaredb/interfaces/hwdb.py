@@ -1235,6 +1235,73 @@ class IHWDBApplication(ILaunchpadApplication):
             readonly=True))
 
     @operation_parameters(
+        device=Reference(
+            IHWDevice,
+            title=u'A Device',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'containing this device.'),
+            required=False),
+        driver=Reference(
+            IHWDriver,
+            title=u'A Driver',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'containing devices that use this driver.'),
+            required=False),
+        distribution=Reference(
+            IDistribution,
+            title=u'A Distribution',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for this distribution.'),
+            required=False),
+        distroseries=Reference(
+            IDistroSeries,
+            title=u'A Distribution Series',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                u'made for the given distribution series.'),
+            required=False),
+        architecture=TextLine(
+            title=u'A processor architecture',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'made for a specific architecture.',
+            required=False),
+        owner=Reference(
+            IPerson,
+	    title=u'Person',
+            description=
+                u'If specified, the result set is limited to sumbissions '
+                'from this person.',
+	    required=False))
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(IHWSubmission)
+    @export_read_operation()
+    def search(user=None, device=None, driver=None, distribution=None,
+               distroseries=None, architecture=None, owner=None):
+        """Return the submissions matiching the given parmeters.
+
+        :param user: The `IPerson` running the query. Private submissions
+            are returned only if the person running the query is the
+            owner or an admin.
+        :param device: Limit results to submissions containing this
+            `IHWDevice`.
+        :param driver: Limit results to submissions containing devices
+            that use this `IHWDriver`.
+        :param distribution: Limit results to submissions made for
+            this `IDistribution`.
+        :param distroseries: Limit results to submissions made for
+            this `IDistroSeries`.
+        :param architecture: Limit results to submissions made for
+            a specific architecture.
+        :param owner: Limit results to submissions from this person.
+
+        Only one of :distribution: or :distroseries: may be supplied.
+        """
+
+    @operation_parameters(
         bus=Choice(
             title=u'The device bus', vocabulary=HWBus, required=False),
         vendor_id=TextLine(

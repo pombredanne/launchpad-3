@@ -296,6 +296,14 @@ class HWDBApplication:
         """See `IHWDBApplication`."""
         return getUtility(IHWDriverSet).all_package_names()
 
+    def search(self, user=None, device=None, driver=None, distribution=None,
+               distroseries=None, architecture=None, owner=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).search(
+            user=user, device=device, driver=driver,
+            distribution=distribution, distroseries=distroseries,
+            architecture=architecture, owner=owner)
+
     def getDistroTarget(self, distribution, distroseries, distroarchseries):
         distro_targets = [
             target for target in (
