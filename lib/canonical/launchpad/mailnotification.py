@@ -44,12 +44,12 @@ NotificationRecipientSet
 
 
 CC = "CC"
-MAX_RETURNED_MESSAGE_SIZE = config.processmail.max_error_message_return_size
+MAX_RETURN_MESSAGE_SIZE = config.processmail.max_error_message_return_size
 
 
 def send_process_error_notification(to_address, subject, error_msg,
                                     original_msg, failing_command=None,
-                                    max_return_size=MAX_RETURNED_MESSAGE_SIZE):
+                                    max_return_size=MAX_RETURN_MESSAGE_SIZE):
     """Send a mail about an error occurring while using the email interface.
 
     Tells the user that an error was encountered while processing his
@@ -90,8 +90,8 @@ def send_process_error_notification(to_address, subject, error_msg,
     msg.attach(error_part)
     original_msg_str = str(original_msg)
     if len(original_msg_str) > max_return_size:
-        truncated_msg = original_msg_str[:max_return_size]
-        original_msg = message_from_string(truncated_msg)
+        truncated_msg_str = original_msg_str[:max_return_size]
+        original_msg = message_from_string(truncated_msg_str)
     msg.attach(MIMEMessage(original_msg))
     sendmail(msg)
 
@@ -154,7 +154,7 @@ def notify_specification_modified(spec, event):
         return
 
     subject = specification_notification_subject(spec)
-    indent = ' '*4
+    indent = ' ' * 4
     info_lines = []
     for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title
