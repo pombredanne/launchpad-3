@@ -121,3 +121,32 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         self.assertEqual(
             [u'Source package already has a template with that same domain.'],
             view.errors)
+
+    def test_detects_no_sourcepackage_or_productseries(self):
+        # Detect if no source package or productseries was selected.
+        potemplate = self.factory.makePOTemplate()
+
+        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
+        data = self._makeData(
+            potemplate,
+            distroseries=None, sourcepackagename=None, productseries=None)
+        view.validate(data)
+        self.assertEqual(
+            [u'Choose either a distribution release series or a project '
+             u'release series.'], view.errors)
+
+    def test_detects_sourcepackage_and_productseries(self):
+        # Detect if no source package or productseries was selected.
+        potemplate = self.factory.makePOTemplate()
+        sourcepackage = self.factory.makeSourcePackage()
+
+        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
+        data = self._makeData(
+            potemplate,
+            distroseries=sourcepackage.distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename,
+            productseries=potemplate.productseries)
+        view.validate(data)
+        self.assertEqual(
+            [u'Choose a distribution release series or a project '
+             u'release series, but not both.'], view.errors)
