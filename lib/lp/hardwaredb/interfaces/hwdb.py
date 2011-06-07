@@ -283,7 +283,9 @@ class IHWSubmissionSet(Interface):
         """
 
     def search(user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None, owner=None):
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -300,6 +302,14 @@ class IHWSubmissionSet(Interface):
         :param architecture: Limit results to submissions made for
             a specific architecture.
         :param owner: Limit results to submissions from this person.
+        :param created_before: Limit results to submissions created
+            before this date inclusively.
+        :param created_after: Limit results to submissions created
+            after this date exclusively.
+        :param submitted_before: Limit results to submissions submitted
+            before this date inclusively.
+        :param submitted_after: Limit results to submissions submitted
+            after this date exclusively.
 
         Only one of :distribution: or :distroseries: may be supplied.
         """
@@ -1271,16 +1281,42 @@ class IHWDBApplication(ILaunchpadApplication):
             required=False),
         owner=Reference(
             IPerson,
-	    title=u'Person',
+            title=u'Person',
             description=
                 u'If specified, the result set is limited to sumbissions '
                 'from this person.',
-	    required=False))
+            required=False),
+        created_before=Datetime(
+            title=u'Created Before',
+            description=
+                u'If specified, the result set is limited to submissions '
+                'created before this date inclusively',
+            required=False),
+        created_after=Datetime(
+            title=u'Created After',
+            description=
+                u'If specified, the result set is limited to submissions '
+                'created after this date exclusively',
+            required=False),
+        submitted_before=Datetime(
+            title=u'Created Before',
+            description=
+                u'If specified, the result set is limited to submissions '
+                'submitted before this date inclusively',
+            required=False),
+        submitted_after=Datetime(
+            title=u'Created After',
+            description=
+                u'If specified, the result set is limited to submissions '
+                'submitted after this date exclusively',
+            required=False))
     @call_with(user=REQUEST_USER)
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
     def search(user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None, owner=None):
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
         """Return the submissions matiching the given parmeters.
 
         :param user: The `IPerson` running the query. Private submissions
@@ -1297,6 +1333,14 @@ class IHWDBApplication(ILaunchpadApplication):
         :param architecture: Limit results to submissions made for
             a specific architecture.
         :param owner: Limit results to submissions from this person.
+        :param created_before: Limit results to submissions created
+            before this date inclusively.
+        :param created_after: Limit results to submissions created
+            after this date exclusively.
+        :param submitted_before: Limit results to submissions submitted
+            before this date inclusively.
+        :param submitted_after: Limit results to submissions submitted
+            after this date exclusively.
 
         Only one of :distribution: or :distroseries: may be supplied.
         """

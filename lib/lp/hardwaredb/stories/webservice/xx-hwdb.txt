@@ -780,6 +780,30 @@ Alternatively, we can also search for hardware submissions by user:
     >>> print submissions['total_size']
     0
 
+...and by date created:
+
+    >>> date_created = u'2007-09-11T00:00:00+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_before=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_after=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by date submitted:
+
+    >>> date_submitted = u'2007-09-11T15:23:45.653316+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_before=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_after=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
+
 
 === Submission Devices ===
 
