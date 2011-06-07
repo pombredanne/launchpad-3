@@ -570,7 +570,7 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         dn = 'Bug #%d' % self.id
         if self.name:
-            dn += ' ('+self.name+')'
+            dn += ' (' + self.name + ')'
         return dn
 
     @cachedproperty
@@ -742,11 +742,11 @@ BugMessage""" % sqlvalues(self.id))
         table = LeftJoin(
             table,
             Distribution,
-            OfficialBugTag.distribution_id==Distribution.id)
+            OfficialBugTag.distribution_id == Distribution.id)
         table = LeftJoin(
             table,
             Product,
-            OfficialBugTag.product_id==Product.id)
+            OfficialBugTag.product_id == Product.id)
         # When this method is typically called it already has the necessary
         # info in memory, so rather than rejoin with Product etc, we do this
         # bit in Python. If reviewing performance here feel free to change.
@@ -761,7 +761,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def followup_subject(self):
         """See `IBug`."""
-        return 'Re: '+ self.title
+        return 'Re: ' + self.title
 
     @property
     def has_patches(self):
@@ -1063,8 +1063,9 @@ BugMessage""" % sqlvalues(self.id))
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
-            # Call getIndirectSubscribers to update the recipients list with direct
-            # subscribers.  The results of the method call are not used.
+            # Call getIndirectSubscribers to update the recipients list with
+            # direct subscribers.  The results of the method call are not
+            # used.
             self.getIndirectSubscribers(recipients, level=level)
             if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
@@ -1466,9 +1467,9 @@ BugMessage""" % sqlvalues(self.id))
         # 1 bugmessage -> 1 message -> small N chunks. For now, using a wide
         # query seems fine as we have to join out from bugmessage anyway.
         result = Store.of(self).find((BugMessage, Message, MessageChunk),
-            Message.id==MessageChunk.messageID,
-            BugMessage.messageID==Message.id,
-            BugMessage.bug==self.id,
+            Message.id == MessageChunk.messageID,
+            BugMessage.messageID == Message.id,
+            BugMessage.bug == self.id,
             *ranges)
         result.order_by(BugMessage.index, MessageChunk.sequence)
 
@@ -1679,9 +1680,9 @@ BugMessage""" % sqlvalues(self.id))
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
-            return True # Changed.
+            return True  # Changed.
         else:
-            return False # Not changed.
+            return False  # Not changed.
 
     def setSecurityRelated(self, security_related):
         """Setter for the `security_related` property."""
@@ -1692,9 +1693,9 @@ BugMessage""" % sqlvalues(self.id))
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
 
-            return True # Changed
+            return True  # Changed
         else:
-            return False # Unchanged
+            return False  # Unchanged
 
     def getBugTask(self, target):
         """See `IBug`."""
@@ -1712,7 +1713,7 @@ BugMessage""" % sqlvalues(self.id))
     def _cached_tags(self):
         return list(Store.of(self).find(
             BugTag.tag,
-            BugTag.bugID==self.id).order_by(BugTag.tag))
+            BugTag.bugID == self.id).order_by(BugTag.tag))
 
     def _setTags(self, tags):
         """Set the tags from a list of strings."""
@@ -2294,7 +2295,7 @@ class BugSubscriptionInfo:
             BugSubscription.bug_notification_level >= self.level,
             BugSubscription.bug == self.bug,
             Not(In(BugSubscription.person_id,
-                   Select(BugMute.person_id, BugMute.bug_id==self.bug.id))))
+                   Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2309,7 +2310,7 @@ class BugSubscriptionInfo:
                 BugSubscription.bug_id == Bug.id,
                 Bug.duplicateof == self.bug,
                 Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id==Bug.id))))
+                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2319,7 +2320,7 @@ class BugSubscriptionInfo:
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
         """
-        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        self.duplicate_subscriptions.subscribers  # Pre-load subscribers.
         higher_precedence = (
             self.direct_subscriptions.subscribers.union(
                 self.also_notified_subscribers))
@@ -2337,7 +2338,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions_from_duplicates(self):
         """Structural subscriptions from the bug's duplicates."""
-        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
+        self.duplicate_subscriptions.subscribers  # Pre-load subscribers.
         higher_precedence = (
             self.direct_subscriptions.subscribers.union(
                 self.also_notified_subscribers))
@@ -2375,8 +2376,8 @@ class BugSubscriptionInfo:
         else:
             muted = IStore(BugMute).find(
                 Person,
-                BugMute.person_id==Person.id,
-                BugMute.bug==self.bug)
+                BugMute.person_id == Person.id,
+                BugMute.bug == self.bug)
             return BugSubscriberSet().union(
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
@@ -2678,7 +2679,7 @@ class BugSet:
             Bug.heat_last_updated == None)
 
         return store.find(
-            Bug, Bug.duplicateof==None, last_updated_clause).order_by('id')
+            Bug, Bug.duplicateof == None, last_updated_clause).order_by('id')
 
 
 class BugAffectsPerson(SQLBase):
