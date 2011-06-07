@@ -56,7 +56,7 @@ class IDistroSeriesParent(Interface):
         title=_("The component for this overlay"), required=False,
         vocabulary='Component')
 
-    succeeded_count = Int(
+    ordering = Int(
             title=_("Parent ordering"), required=False,
             default=1,
             description=_(
