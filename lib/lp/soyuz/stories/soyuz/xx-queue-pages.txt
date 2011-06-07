@@ -112,8 +112,8 @@ custom-upload filename.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Sets Pocket   When
-  netapplet...(raw-translations) -                               Updates  2006-...
   netapplet...ddtp... -                                          Backp... 2006-...
+  netapplet...(raw-translations) -                               Updates  2006-...
 
   >>> anon_browser.getControl(
   ...     name="queue_state", index=0).displayValue = ['New']
