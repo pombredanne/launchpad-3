@@ -647,6 +647,22 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
+    def show_derivation_not_yet_available(self):
+        return not self.is_derived_series_feature_enabled
+
+    @property
+    def show_derivation_form(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            not self.context.is_derived_series)
+
+    @property
+    def show_already_derived_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.is_derived_series)
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
 

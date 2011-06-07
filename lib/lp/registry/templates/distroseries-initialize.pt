@@ -12,13 +12,13 @@
   </metal:head-epilogue>
   <body>
     <div metal:fill-slot="main">
-      <tal:enabled condition="view/is_derived_series_feature_enabled">
+
+      <tal:enabled condition="view/show_derivation_form">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
         <a href="/+help/init-series-title-help.html"
            target="help" class="sprite maybe">&nbsp;
           <span class="invisible-link">Initialization help</span></a>
-
       </div>
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable
@@ -39,7 +39,8 @@
         many thousands of packages is likely to take hours to complete.
       </p>
       </tal:enabled>
-      <tal:disabled condition="not:view/is_derived_series_feature_enabled">
+
+      <tal:disabled condition="view/show_derivation_not_yet_available">
       <p class="error message">
         The Derivative Distributions feature is under development
         and is not yet generally available. You can read more about
@@ -48,6 +49,13 @@
         page</a>.
       </p>
       </tal:disabled>
+
+      <tal:already-derived condition="view/show_already_derived_message">
+      <p class="error message">
+        This series has already been derived.
+      </p>
+      </tal:already-derived>
+
     </div>
   </body>
 </html>
