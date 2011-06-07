@@ -67,12 +67,12 @@ change its text slightly to annouce this:
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Derives from: Sarge (3.1) is not derived from another series.
+    Derives from: Woody (3.0)
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 
-The series' derivation parents are also shown when derivation is
-enabled:
+The series' derivation parents - rather than the previous series - are
+shown when derivation is enabled:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.testing import celebrity_logged_in
