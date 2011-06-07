@@ -249,27 +249,6 @@ class TestBug(TestCaseWithFactory):
             subscriber not in duplicate_subscribers,
             "Subscriber should not be in duplicate_subscribers.")
 
-    def test_subscribers_from_dupes_includes_structural_subscribers(self):
-        # getSubscribersFromDuplicates() also returns subscribers
-        # from structural subscriptions.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug()
-        duplicate_bug = self.factory.makeBug(product=product)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(bug)
-            # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
-            duplicate_bug.unsubscribe(
-                duplicate_bug.owner, duplicate_bug.owner)
-
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            product.addSubscription(subscriber, subscriber)
-
-        self.assertEqual(
-            (subscriber,),
-            bug.getSubscribersFromDuplicates())
-
     def test_getSubscriptionInfo(self):
         # getSubscriptionInfo() returns a BugSubscriptionInfo object.
         bug = self.factory.makeBug()
@@ -282,75 +261,3 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
-
-    def test_personIsAlsoNotifiedSubscriber_direct_subscriber(self):
-        # personIsAlsoNotifiedSubscriber() returns false for
-        # direct subscribers.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug()
-
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            bug.subscribe(subscriber, subscriber)
-
-        self.assertFalse(
-            bug.personIsAlsoNotifiedSubscriber(subscriber))
-
-    def test_personIsAlsoNotifiedSubscriber_direct_subscriber_team(self):
-        # personIsAlsoNotifiedSubscriber() returns true for
-        # direct subscribers even if a team they are a member of
-        # is the direct subscriber to the bug.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug()
-
-        person = self.factory.makePerson()
-        subscriber = self.factory.makeTeam(members=[person])
-
-        with person_logged_in(subscriber.teamowner):
-            bug.subscribe(subscriber, subscriber.teamowner)
-
-        self.assertTrue(
-            bug.personIsAlsoNotifiedSubscriber(person))
-
-    def test_personIsAlsoNotifiedSubscriber_duplicate_subscriber(self):
-        # personIsAlsoNotifiedSubscriber() returns false for
-        # duplicate subscribers.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug()
-        duplicate_bug = self.factory.makeBug(product=product)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(bug)
-            # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
-            duplicate_bug.unsubscribe(
-                duplicate_bug.owner, duplicate_bug.owner)
-
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            duplicate_bug.subscribe(subscriber, subscriber)
-
-        self.assertFalse(
-            bug.personIsAlsoNotifiedSubscriber(subscriber))
-
-    def test_personIsAlsoNotifiedSubscriber_duplicate_subscriber_team(self):
-        # personIsAlsoNotifiedSubscriber() returns true for
-        # duplicate subscribers even if a team they are a member of
-        # is the direct subscriber to the duplicate bug.
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug()
-        duplicate_bug = self.factory.makeBug(product=product)
-        with person_logged_in(duplicate_bug.owner):
-            duplicate_bug.markAsDuplicate(bug)
-            # We unsubscribe the owner of the duplicate to avoid muddling
-            # the results retuned by getSubscribersFromDuplicates()
-            duplicate_bug.unsubscribe(
-                duplicate_bug.owner, duplicate_bug.owner)
-
-        person = self.factory.makePerson()
-        subscriber = self.factory.makeTeam(members=[person])
-
-        with person_logged_in(subscriber.teamowner):
-            duplicate_bug.subscribe(subscriber, subscriber.teamowner)
-
-        self.assertTrue(
-            bug.personIsAlsoNotifiedSubscriber(person))
