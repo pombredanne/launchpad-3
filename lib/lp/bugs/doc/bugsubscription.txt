@@ -423,7 +423,7 @@ indirect subscriptions.
     []
 
     >>> linux_source_bug.getSubscribersFromDuplicates()
-    []
+    ()
 
 Direct subscriptions always take precedence over indirect
 subscriptions. So, if we unmark the above bug as private,
