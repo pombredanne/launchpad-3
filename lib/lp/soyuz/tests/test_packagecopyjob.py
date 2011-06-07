@@ -57,6 +57,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.mail_helpers import pop_notifications
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -277,6 +278,12 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         published_sources = target_archive.getPublishedSources(
             name="libc", version="2.8-1")
         self.assertIsNot(None, published_sources.any())
+
+        # The copy should have sent an email too. (see
+        # soyuz/scripts/tests/test_copypackage.py for detailed
+        # notification tests)
+        emails = pop_notifications()
+        self.assertTrue(len(emails) > 0)
 
         # Switch back to a db user that has permission to clean up
         # featureflag.
@@ -717,7 +724,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # metadata.
         name = self.factory.makeSourcePackageName()
         component = self.factory.makeComponent()
-        section=self.factory.makeSection()
+        section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob()
         self.layer.txn.commit()
         self.layer.switchDbUser('sync_packages')
@@ -742,7 +749,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # the metadata.
         name = self.factory.makeSourcePackageName()
         component = self.factory.makeComponent()
-        section=self.factory.makeSection()
+        section = self.factory.makeSection()
         pcj = self.factory.makePlainPackageCopyJob(
             package_name=name.name, package_version="1.0")
         self.layer.txn.commit()
@@ -787,4 +794,3 @@ class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
         transaction.commit()
         self.layer.switchDbUser(self.dbuser)
         removeSecurityProxy(job).reportFailure(CannotCopy("Mommy it hurts"))
-

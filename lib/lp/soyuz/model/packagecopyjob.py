@@ -381,11 +381,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
         # The package is free to go right in, so just copy it now.
         override = self.getSourceOverride()
+        copy_policy = self.getPolicyImplementation()
         do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=False,
-            overrides=[override])
+            overrides=[override], send_email=copy_policy.send_email)
 
     def abort(self):
         """Abort work."""
