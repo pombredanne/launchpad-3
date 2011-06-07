@@ -506,6 +506,9 @@ class BugViewMixin:
 
     @property
     def current_user_subscription_class(self):
+        if not self.user:
+            return 'subscribed-false dup-subscribed-false'
+
         bug = self.context
 
         if bug.personIsSubscribedToDuplicate(self.user):
@@ -521,6 +524,10 @@ class BugViewMixin:
 
     @property
     def current_user_mute_class(self):
+        if not self.user:
+            return 'muted-false hidden %s' % (
+                self.current_user_subscription_class)
+
         bug = self.context
         subscription_class = self.current_user_subscription_class
         if self.user_should_see_mute_link:
@@ -536,14 +543,15 @@ class BugViewMixin:
     @cachedproperty
     def user_should_see_mute_link(self):
         """Return True if the user should see the Mute link."""
-        user_is_subscribed = False
         if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
             user_is_subscribed = self.user is not None and (
                 self.context.isMuted(self.user) or
                 self.context.isSubscribed(self.user) or
                 self.context.isSubscribedToDupes(self.user) or
                 self.context.personIsAlsoNotifiedSubscriber(self.user))
-        return user_is_subscribed
+            return user_is_subscribed
+        else:
+            return False
 
     @cachedproperty
     def _bug_attachments(self):
