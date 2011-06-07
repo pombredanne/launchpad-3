@@ -214,16 +214,17 @@ def find_stale(updated, cache, sourcecode_directory, quiet):
 
 def update_cache(cache, cache_filename, changed, sourcecode_directory, quiet):
     """Update the cache with the changed branches."""
-    if len(changed) == 0:
-        return
-    if not quiet:
-        print 'Cache updated.  Please commit "%s".' % cache_filename
+    old_cache = dict(cache)
     for project, (branch_url, revision, optional) in changed.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         branch = Branch.open(destination)
-        cache[project] = branch.last_revision_info()
+        cache[project] = list(branch.last_revision_info())
+    if cache == old_cache:
+        return
     with open(cache_filename, 'wb') as cache_file:
         json.dump(cache, cache_file, indent=4)
+    if not quiet:
+        print 'Cache updated.  Please commit "%s".' % cache_filename
 
 
 def update_branches(sourcecode_directory, update_branches,
