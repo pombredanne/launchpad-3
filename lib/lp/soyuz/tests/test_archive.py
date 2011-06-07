@@ -10,10 +10,9 @@ from datetime import (
     )
 import doctest
 
-from testtools.testcase import (
-    DocTestMatches,
-    ExpectedException,
-)
+from testtools.matchers import DocTestMatches
+from testtools.testcase import ExpectedException
+
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
