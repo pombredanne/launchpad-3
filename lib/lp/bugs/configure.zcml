@@ -645,6 +645,13 @@
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
 
+    <!-- BugMute -->
+    <class
+        class=".model.bug.BugMute">
+      <allow
+          interface=".interfaces.bug.IBugMute"/>
+    </class>
+
     <!-- BugSubscriptionFilterMute -->
     <class
         class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
