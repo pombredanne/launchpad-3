@@ -340,7 +340,7 @@ them what happened.
     ... Date: Fri Jun 17 10:10:23 BST 2005
     ... Subject: Not important
     ...
-    ...     summary "Even nicer summary" 
+    ...     summary "Even nicer summary"
     ... """
 
     >>> process_email(edit_mail)
@@ -2026,7 +2026,7 @@ Let's take a closer look at send_process_error_notification(), which is
 used to send the error messages. It needs the message that caused the
 error, so let's create one.
 
-    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    >>> test_msg = email.message_from_string("""From: foo.bar@canonical.com
     ... To: bugs@launchpad.net
     ... Message-Id: <original@msg>
     ... Subject: Original Message Subject
@@ -2043,7 +2043,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
-    ...     msg, failing_command=['foo bar'])
+    ...     test_msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -2095,6 +2095,23 @@ error to happen.
     >>> print msg.get_payload(decode=True)
     Original message body.
 
+Sometimes the original error was caused by the original message being
+too large.  In that case we cannot really return the entire original
+message as our outgoing message will be too big.  So, we can truncate
+the original message.
+
+    >>> max_return_size = len(str(test_msg)) / 2
+    >>> send_process_error_notification(
+    ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
+    ...     test_msg, failing_command=['foo bar'], max_return_size=max_return_size)
+    >>> commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> msg = original_msg.get_payload()[0]
+    >>> # Fudge due to new line added to the payload.
+    >>> len(str(msg)) <= (max_return_size + 1)
+    True
 
 Error handling
 --------------
