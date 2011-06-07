@@ -284,7 +284,7 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     if user is not None and not user.inTeam(admin_team):
         store = store.with_(SQL(
             "teams AS ("
-            "SELECT team from TeamParticipation WHERE person=%s)" % user.id))
+            "SELECT team from TeamParticipation WHERE person=?)", (user.id,)))
     where_conditions = [
         BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
         BugSummary.tag != None,

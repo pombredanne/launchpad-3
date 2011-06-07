@@ -1405,8 +1405,8 @@ class BugTargetBugTagsView(LaunchpadView):
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
         official_tags = self.context.official_bug_tags
-        tags = self.context.getUsedBugTagsWithOpenCounts(self.user, 10,
-            official_tags)
+        tags = self.context.getUsedBugTagsWithOpenCounts(
+            self.user, 10, official_tags)
         max_count = float(max([1] + tags.values()))
 
         return sorted(
