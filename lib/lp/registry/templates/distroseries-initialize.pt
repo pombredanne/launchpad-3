@@ -56,6 +56,13 @@
       </p>
       </tal:already-derived>
 
+      <tal:already-initializing
+          condition="view/show_already_initializing_message">
+      <p class="error message">
+        This series is already being initialized.
+      </p>
+      </tal:already-initializing>
+
     </div>
   </body>
 </html>

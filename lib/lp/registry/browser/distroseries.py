@@ -654,13 +654,20 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
-            not self.context.is_derived_series)
+            not self.context.is_derived_series and
+            not self.context.is_initialising)
 
     @property
     def show_already_derived_message(self):
         return (
             self.is_derived_series_feature_enabled and
             self.context.is_derived_series)
+
+    @property
+    def show_already_initializing_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.is_initialising)
 
     @property
     def next_url(self):

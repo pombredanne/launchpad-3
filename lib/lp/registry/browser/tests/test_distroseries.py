@@ -472,6 +472,24 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 u"This series has already been derived.",
                 message.text.strip())
 
+    def test_form_hidden_when_distroseries_is_being_initialized(self):
+        # The form is hidden when the feature flag is set but the series has
+        # already been derived.
+        distroseries = self.factory.makeDistroSeries()
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            distroseries, [self.factory.makeDistroSeries().id])
+        view = create_initialized_view(distroseries, "+initseries")
+        with feature_flags():
+            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertEqual(
+                u"This series is already being initialized.",
+                message.text.strip())
+
 
 class DistroSeriesDifferenceMixin:
     """A helper class for testing differences pages"""
