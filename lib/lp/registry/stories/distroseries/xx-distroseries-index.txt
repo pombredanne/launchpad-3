@@ -58,6 +58,21 @@ on the series' details.
 On series that have no source or binary packages, the portlet will
 change its text slightly to annouce this:
 
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.testing import celebrity_logged_in
+    >>> from zope.component import getUtility
+
+    >>> with celebrity_logged_in("admin"):
+    ...     debian = getUtility(IDistributionSet).getByName(u"debian")
+    ...     sarge = debian.getSeries(u"sarge")
+    ...     parents = [
+    ...         factory.makeDistroSeries(name=u"dobby"),
+    ...         factory.makeDistroSeries(name=u"knobby")]
+    ...     distro_series_parents = [
+    ...         factory.makeDistroSeriesParent(
+    ...             derived_series=sarge, parent_series=parent)
+    ...         for parent in parents]
+
     >>> with derivation_enabled:
     ...     anon_browser.open('http://launchpad.dev/debian/sarge')
     >>> print extract_text(
@@ -68,7 +83,7 @@ change its text slightly to annouce this:
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Derives from: Woody (3.0)
+    Derives from: Dobby (...), Knobby (...)
     Derived series:
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
