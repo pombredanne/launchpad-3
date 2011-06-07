@@ -916,6 +916,10 @@ class YUIUnitTestCase(TestCase):
 
     layer = None
     suite_name = ''
+    js_timeout = 30000
+
+    TIMEOUT = object()
+    MISSING_REPORT = object()
 
     _yui_results = None
 
@@ -937,16 +941,20 @@ class YUIUnitTestCase(TestCase):
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
         client = html5browser.Browser()
-        html_path = os.path.join(config.root, 'lib', self.test_path)
-        page = client.load_page(html_path)
+        html_uri = 'file://%s' % os.path.join(
+            config.root, 'lib', self.test_path)
+        page = client.load_page(html_uri, timeout=self.js_timeout)
         if page.return_code == page.CODE_FAIL:
+            self._yui_results = self.TIMEOUT
             return
-        # Data is a dict (type=report)
+        # Data['type'] is complete (an event).
+        # Data['results'] is a dict (type=report)
         # with 1 or more dicts (type=testcase)
         # with 1 for more dicts (type=test).
         report = simplejson.loads(page.content)
         if report.get('type', None) != 'complete':
             # Did not get a report back.
+            self._yui_results = self.MISSING_REPORT
             return
         self._yui_results = {}
         for key, value in report['results'].items():
@@ -966,13 +974,20 @@ class YUIUnitTestCase(TestCase):
         The tests are run during `setUp()`, but failures need to be reported
         from here.
         """
-        if self._yui_results is None or len(self._yui_results) == 0:
-            self.fail("Test harness or js failed.")
+        if self._yui_results == self.TIMEOUT:
+            self.fail("js timed out.")
+        elif self._yui_results == self.MISSING_REPORT:
+            self.fail("The data returned by js is not a test report.")
+        elif self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js report format changed.")
+        failures = []
         for test_name in self._yui_results:
             result = self._yui_results[test_name]
-            self.assertTrue('pass' == result['result'],
+            if result['result'] != 'pass':
+                failures.append(
                     'Failure in %s.%s: %s' % (
-                        self.test_path, test_name, result['message']))
+                    self.test_path, test_name, result['message']))
+        self.assertEqual([], failures, '\n'.join(failures))
 
 
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
