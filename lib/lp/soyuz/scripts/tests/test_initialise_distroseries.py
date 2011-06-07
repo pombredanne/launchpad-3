@@ -480,3 +480,54 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(1, distroseriesparent1.ordering)
         self.assertEqual(3, distroseriesparent2.ordering)
         self.assertEqual(2, distroseriesparent3.ordering)
+
+    def test_multiple_parent_packagesets_merge(self):
+        # Identical packagesets from the parents are merged as one
+        # packageset in the child.
+        self.parent1, self.parent_das1 = self.setupParent()
+        self.parent2, self.parent_das2 = self.setupParent()
+        uploader1 = self.factory.makePerson()
+        uploader2 = self.factory.makePerson()
+        test1_parent1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent1.owner,
+            distroseries=self.parent1)
+        test1_parent2 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent2.owner,
+            distroseries=self.parent2)
+        test1_parent1.addSources('chromium')
+        test1_parent1.addSources('udev')
+        test1_parent2.addSources('udev')
+        test1_parent2.addSources('libc6')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent1.main_archive, uploader1, test1_parent1)
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent2.main_archive, uploader2, test1_parent2)
+        child = self._fullInitialise([self.parent1, self.parent2])
+
+        # In the child, the identical packagesets are merged into one.
+        child_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=child)
+        child_srcs = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        parent1_srcs = test1_parent1.getSourcesIncluded(direct_inclusion=True)
+        parent2_srcs = test1_parent2.getSourcesIncluded(direct_inclusion=True)
+        self.assertContentEqual(
+            set(parent1_srcs).union(set(parent2_srcs)),
+            child_srcs)
+        # The uploaders can also upload to the new distroseries.
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent1.main_archive, 'udev', uploader1,
+                distroseries=self.parent1))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader1,
+                distroseries=child))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent2.main_archive, 'libc6', uploader2,
+                distroseries=self.parent2))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'libc6', uploader2,
+                distroseries=child))

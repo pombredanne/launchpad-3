@@ -31,7 +31,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.packageset import Packageset
 
 
@@ -356,21 +359,30 @@ class InitialiseDistroSeries:
             Packageset, DistroSeries.id.is_in(self.parent_ids))
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
-        parent_distribution_ids = [
+        parent_distro_ids = [
             parent.distribution.id for parent in self.parents]
         for parent_ps in packagesets:
             # Cross-distro initialisations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
             if self.packagesets and str(parent_ps.id) not in self.packagesets:
                 continue
-            if self.distroseries.distribution.id in parent_distribution_ids:
-                new_owner = parent_ps.owner
-            else:
-                new_owner = self.distroseries.owner
-            child_ps = getUtility(IPackagesetSet).new(
-                parent_ps.name, parent_ps.description,
-                new_owner, distroseries=self.distroseries,
-                related_set=parent_ps)
+            packageset_set = getUtility(IPackagesetSet)
+            # First, try to fetch an existing packageset with this name.
+            try:
+                child_ps = packageset_set.getByName(
+                    parent_ps.name, self.distroseries)
+                # XXX?? What about 'related_set' in this case?
+                # (We are in the case where the packageset has already
+                # been created from another parent)
+            except NoSuchPackageSet:
+                if self.distroseries.distribution.id in parent_distro_ids:
+                    new_owner = parent_ps.owner
+                else:
+                    new_owner = self.distroseries.owner
+                child_ps = getUtility(IPackagesetSet).new(
+                    parent_ps.name, parent_ps.description,
+                    new_owner, distroseries=self.distroseries,
+                    related_set=parent_ps)
             self._store.execute("""
                 INSERT INTO Archivepermission
                 (person, permission, archive, packageset, explicit)
@@ -380,7 +392,7 @@ class InitialiseDistroSeries:
                     self.distroseries.main_archive, child_ps.id,
                     parent_ps.id))
             parent_to_child[parent_ps] = child_ps
-        # Copy the relations between sets, and the contents
+        # Copy the relations between sets, and the contents.
         for old_series_ps, new_series_ps in parent_to_child.items():
             old_series_sets = old_series_ps.setsIncluded(
                 direct_inclusion=True)
