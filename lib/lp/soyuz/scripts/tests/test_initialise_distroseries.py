@@ -27,7 +27,6 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -46,12 +45,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def setupParent(self, packages=None):
         parent = self.factory.makeDistroSeries()
-        pf = getUtility(IProcessorFamilySet).getByName('x86')
-        if pf is None:
-            pf = self.factory.makeProcessorFamily(name='x86')
-            pf.addProcessor('x86', '', '')
-        parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf)
+        parent_das = self.factory.makeDistroArchSeries(distroseries=parent)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
@@ -457,17 +451,32 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
 
-
-class TestInitialiseDistroSeriesMultipleParents(TestInitialiseDistroSeries):
-
-    layer = LaunchpadZopelessLayer
+    def test_multiple_parents_initialize(self):
+        self.parent, self.parent_das = self.setupParent()
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'alpha': '0.1-1'})
+        child = self._fullInitialise([self.parent, self.parent2])
+        self.assertDistroSeriesInitialisedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_multiple_parents_ordering(self):
-        self.parent, self.parent_das = self.setupParent()
+        # The parents' order is stored.
+        self.parent1, self.parent_das = self.setupParent()
         self.parent2, self.parent_das2 = self.setupParent()
-        child = self.factory.makeDistroSeries()
-        self._fullInitialise([self.parent, self.parent2], child=child)
+        self.parent3, self.parent_das3 = self.setupParent()
+        child = self._fullInitialise(
+            [self.parent1, self.parent3, self.parent2])
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent1 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent1)
+        distroseriesparent2 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent2)
+        distroseriesparent3 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent3)
 
         self.assertContentEqual(
-            [self.parent, self.parent2],
+            [self.parent1, self.parent3, self.parent2],
             child.getParentSeries())
+        self.assertEqual(1, distroseriesparent1.ordering)
+        self.assertEqual(3, distroseriesparent2.ordering)
+        self.assertEqual(2, distroseriesparent3.ordering)
