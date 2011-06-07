@@ -976,6 +976,68 @@ class YUIUnitTestCase(WindmillTestCase):
                         self.test_path, test_name, result['message']))
 
 
+class YUIUnitTestCaseZeta(TestCase):
+
+    layer = None
+    suite_name = ''
+
+    _yui_results = None
+
+    def __init__(self):
+        """Create a new test case without a choice of test method name.
+
+        Preventing the choice of test method ensures that we can safely
+        provide a test ID based on the file path.
+        """
+        super(YUIUnitTestCaseZeta, self).__init__("checkResults")
+
+    def initialize(self, test_path):
+        self.test_path = test_path
+
+    def id(self):
+        """Return an ID for this test based on the file path."""
+        return self.test_path
+
+    def setUp(self):
+        super(YUIUnitTestCase, self).setUp()
+        import HTML5Browser
+        client = HTML5Browser.Browser()
+        page = client.load_page(self.test_path)
+        markup = page.content
+
+        self._yui_results = {}
+        # Maybe testing.pages should move to lp to avoid circular imports.
+        from canonical.launchpad.testing.pages import find_tags_by_class
+        entries = find_tags_by_class(
+            markup, 'yui3-console-entry-TestRunner')
+        for entry in entries:
+            category = entry.find(
+                attrs={'class': 'yui3-console-entry-cat'})
+            if category is None:
+                continue
+            result = category.string
+            if result not in ('pass', 'fail'):
+                continue
+            message = entry.pre.string
+            test_name, ignore = message.split(':', 1)
+            self._yui_results[test_name] = dict(
+                result=result, message=message)
+
+    def checkResults(self):
+        """Check the results.
+
+        The tests are run during `setUp()`, but failures need to be reported
+        from here.
+        """
+        if self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js failed.")
+        for test_name in self._yui_results:
+            result = self._yui_results[test_name]
+            self.assertTrue('pass' == result['result'],
+                    'Failure in %s.%s: %s' % (
+                        self.test_path, test_name, result['message']))
+
+
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
     suite = unittest.TestSuite()
     testing_path = os.path.join(config.root, 'lib', app_testing_path)
