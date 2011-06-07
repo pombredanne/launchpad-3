@@ -79,12 +79,8 @@
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
     var LPS = YUI({
-      // Don't try to fetch the loader module.
-      bootstrap: false,
       // Don't try to fetch CSS files.
       fetchCSS: false,
-      // Turn off combo loading.
-      combine: false,
       // For paranoia, set a low timeout to not wait on loading a resource.
       timeout: 50
       });
