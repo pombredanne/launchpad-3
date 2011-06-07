@@ -1431,9 +1431,8 @@ class TestBranchDeletionConsequences(TestCase):
             package.development_version.setBranch,
             pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
-        [link] = list(series_set.findForBranch(branch))
         self.assertEqual(
-            {link: ('alter',
+            {package: ('alter',
                     _('Branch is officially linked to a source package.'))},
             branch.deletionRequirements())
 
