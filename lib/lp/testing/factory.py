@@ -3372,7 +3372,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
         package_upload = distroseries.createQueueEntry(
-            pocket, changes_filename, changes_file_content, archive,
+            pocket, archive, changes_filename, changes_file_content,
             signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
             naked_package_upload = removeSecurityProxy(package_upload)
