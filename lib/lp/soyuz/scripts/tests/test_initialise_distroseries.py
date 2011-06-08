@@ -31,7 +31,9 @@ from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialise_distroseries import (
     InitialisationError,
     InitialiseDistroSeries,
@@ -43,7 +45,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setupParent(self, packages=None):
+    def setupParent(self, packages=None, format_selection=None):
         parent = self.factory.makeDistroSeries()
         parent_das = self.factory.makeDistroArchSeries(distroseries=parent)
         lf = self.factory.makeLibraryFileAlias()
@@ -51,8 +53,10 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         parent_das.addOrUpdateChroot(lf)
         parent_das.supports_virtualized = True
         parent.nominatedarchindep = parent_das
+        if format_selection is None:
+            format_selection = SourcePackageFormat.FORMAT_1_0
         getUtility(ISourcePackageFormatSelectionSet).add(
-            parent, SourcePackageFormat.FORMAT_1_0)
+            parent, format_selection)
         parent.backports_not_automatic = True
         self._populate_parent(parent, parent_das, packages)
         return parent, parent_das
@@ -431,25 +435,30 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def test_setup_overlays(self):
         # If the overlay parameter is passed, overlays are properly setup.
-        self.parent, self.parent_das = self.setupParent()
-        child = self.factory.makeDistroSeries()
-        overlays = [True]
-        overlay_pockets = ['Updates']
-        overlay_components = ['universe']
+        self.parent1, unused = self.setupParent()
+        self.parent2, unused = self.setupParent()
+
+        overlays = [False, True]
+        overlay_pockets = [None, 'Updates']
+        overlay_components = [None, 'universe']
         child = self._fullInitialise(
-            [self.parent], child=child, rebuild=True, overlays=overlays,
+            [self.parent1, self.parent2], rebuild=True,
+            overlays=overlays,
             overlay_pockets=overlay_pockets,
             overlay_components=overlay_components)
         dsp_set = getUtility(IDistroSeriesParentSet)
-        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
-            child, self.parent)
+        distroseriesparent1 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent1)
+        distroseriesparent2 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent2)
 
-        self.assertTrue(distroseriesparent.is_overlay)
+        self.assertFalse(distroseriesparent1.is_overlay)
+        self.assertTrue(distroseriesparent2.is_overlay)
         self.assertEqual(
             getUtility(IComponentSet)['universe'],
-            distroseriesparent.component)
+            distroseriesparent2.component)
         self.assertEqual(
-            PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
+            PackagePublishingPocket.UPDATES, distroseriesparent2.pocket)
 
     def test_multiple_parents_initialize(self):
         self.parent, self.parent_das = self.setupParent()
@@ -531,3 +540,57 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'libc6', uploader2,
                 distroseries=child))
+
+    def test_multiple_parents_format_selection_union(self):
+        # The format selection for the derived series is the union of
+        # the format selections of the parents.
+        format1 = SourcePackageFormat.FORMAT_1_0
+        format2 = SourcePackageFormat.FORMAT_3_0_QUILT
+        self.parent1, notused = self.setupParent(format_selection=format1)
+        self.parent2, notused = self.setupParent(format_selection=format2)
+        child = self._fullInitialise([self.parent1, self.parent2])
+
+        self.assertTrue(child.isSourcePackageFormatPermitted(format1))
+        self.assertTrue(child.isSourcePackageFormatPermitted(format2))
+
+    def test_multiple_parents_component_merge(self):
+        # The components from the parents are merged to create the
+        # child's components.
+        self.comp1 = self.factory.makeComponent()
+        self.comp2 = self.factory.makeComponent()
+        self.parent1, notused = self.setupParent()
+        self.parent2, notused = self.setupParent()
+        ComponentSelection(distroseries=self.parent1, component=self.comp1)
+        ComponentSelection(distroseries=self.parent2, component=self.comp1)
+        ComponentSelection(distroseries=self.parent2, component=self.comp2)
+        child = self._fullInitialise([self.parent1, self.parent2])
+
+        self.assertContentEqual(
+            [self.comp1, self.comp2],
+            child.components)
+
+    def test_multiple_parents_section_merge(self):
+        # The sections from the parents are merged to create the child's
+        # sections.
+        self.section1 = self.factory.makeSection()
+        self.section2 = self.factory.makeSection()
+        self.parent1, notused = self.setupParent()
+        self.parent2, notused = self.setupParent()
+        SectionSelection(distroseries=self.parent1, section=self.section1)
+        SectionSelection(distroseries=self.parent2, section=self.section1)
+        SectionSelection(distroseries=self.parent2, section=self.section2)
+        child = self._fullInitialise([self.parent1, self.parent2])
+
+        self.assertContentEqual(
+            [self.section1, self.section2],
+            child.sections)
+
+    def test_multiple_parents_same_package_version(self):
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'package': '0.1-1'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'package': '0.1-1'})
+        child = self._fullInitialise([self.parent1, self.parent2])
+
+        # XXX Test ... something (no package duplication? Is that
+        # important?)

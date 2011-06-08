@@ -197,7 +197,6 @@ class InitialiseDistroSeries:
         if self.arches:
             filtering += ' AND architecturetag IN %s ' % (
                 sqlvalues(self.arches))
-        # XXX?? bool_and(official) ??
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
@@ -373,9 +372,6 @@ class InitialiseDistroSeries:
             try:
                 child_ps = packageset_set.getByName(
                     parent_ps.name, self.distroseries)
-                # XXX?? What about 'related_set' in this case?
-                # (We are in the case where the packageset has already
-                # been created from another parent)
             except NoSuchPackageSet:
                 if self.distroseries.distribution.id in parent_distro_ids:
                     new_owner = parent_ps.owner
