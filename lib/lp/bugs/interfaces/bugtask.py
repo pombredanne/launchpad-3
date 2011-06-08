@@ -17,7 +17,6 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
-    'ConjoinedBugTaskEditError',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -400,11 +399,6 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
 DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     BugTaskStatusSearchDisplay.items.mapping[item.value]
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
-
-
-class ConjoinedBugTaskEditError(Exception):
-    """An error raised when trying to modify a conjoined bugtask."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class UserCannotEditBugTaskStatus(Unauthorized):

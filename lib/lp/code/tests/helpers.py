@@ -28,7 +28,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )

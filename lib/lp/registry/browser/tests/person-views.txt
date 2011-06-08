@@ -781,8 +781,7 @@ If the person is a member of teams with PPAs but doesn't own any
 himself, the section will still not appear for anyone but people with
 lp.edit.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> login("admin@canonical.com")
     >>> team = factory.makeTeam()

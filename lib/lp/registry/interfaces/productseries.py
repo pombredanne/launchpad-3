@@ -45,7 +45,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -66,7 +65,10 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
@@ -135,7 +137,7 @@ class IProductSeriesPublic(
 
     product = exported(
         ReferenceChoice(title=_('Project'), required=True,
-            vocabulary='Product', schema=Interface), # really IProduct
+            vocabulary='Product', schema=Interface),  # really IProduct
         exported_as='project')
     productID = Attribute('The product ID.')
 

@@ -23,8 +23,8 @@ from canonical.database.constants import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,

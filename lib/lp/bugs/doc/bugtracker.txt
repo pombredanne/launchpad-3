@@ -543,8 +543,7 @@ getBugFilingAndSearchLinks() will handle these cases too, returning the
 custom version of the bug filing URL for those bug trackers that don't
 use the default setup.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> gnome_bugzilla = getUtility(ILaunchpadCelebrities).gnome_bugzilla
 
     >>> links = gnome_bugzilla.getBugFilingAndSearchLinks(

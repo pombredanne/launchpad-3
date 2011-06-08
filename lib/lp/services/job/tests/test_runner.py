@@ -8,6 +8,7 @@ import sys
 from textwrap import dedent
 from time import sleep
 
+from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
@@ -21,6 +22,7 @@ from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
+    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -37,6 +39,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -116,6 +119,20 @@ class RaisingJobRaisingNotifyUserError(NullJob):
         raise RaisingJobException('oops notifying users')
 
 
+class RetryError(Exception):
+    pass
+
+
+class RaisingRetryJob(NullJob):
+
+    retry_error_types = (RetryError,)
+
+    max_retries = 1
+
+    def run(self):
+        raise RetryError()
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -161,6 +178,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -181,6 +199,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
         job_1, job_2 = self.makeTwoJobs()
+
         def handleError():
             reporter = errorlog.globalErrorUtility
             try:
@@ -216,6 +235,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_mails_oopses(self):
         """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -243,8 +263,10 @@ class TestJobRunner(TestCaseWithFactory):
         error messages are mailed to interested parties verbatim.
         """
         job_1, job_2 = self.makeTwoJobs()
+
         class ExampleError(Exception):
             pass
+
         def raiseError():
             raise ExampleError('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
@@ -272,6 +294,7 @@ class TestJobRunner(TestCaseWithFactory):
         """
         runner = JobRunner([object()])
         self.assertRaises(TypeError, runner.runAll)
+
         class Runnable:
             implements(IRunnableJob)
         runner = JobRunner([Runnable()])
@@ -301,6 +324,29 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(0, len(self.oopses))
 
+    def test_runJob_raising_retry_error(self):
+        """If a job raises a retry_error, it should be re-queued."""
+        job = RaisingRetryJob('completion')
+        runner = JobRunner([job])
+        with self.expectedLog('Scheduling retry due to RetryError'):
+            runner.runJob(job)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+
+    def test_runJob_exceeding_max_retries(self):
+        """If a job exceeds maximum retries, it should raise normally."""
+        job = RaisingRetryJob('completion')
+        JobRunner([job]).runJob(job)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        runner = JobRunner([job])
+        with self.expectedLog('Job execution raised an exception.'):
+            with ExpectedException(RetryError, ''):
+                runner.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""
         job = RaisingJobRaisingNotifyOops('boom')
@@ -318,6 +364,17 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job])
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
+
+    def test_runJob_with_SuspendJobException(self):
+        # A job that raises SuspendJobError should end up suspended.
+        job = NullJob('suspended')
+        job.run = FakeMethod(failure=SuspendJobException())
+        runner = JobRunner([job])
+        runner.runJob(job)
+
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
 
 
 class StuckJob(BaseRunnableJob):

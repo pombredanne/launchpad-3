@@ -6,16 +6,26 @@
   <metal:form-picker define-macro="form-picker">
     <tal:input replace="structure view/inputField" />
 
-    <tal:search_results condition="not: view/hasValidInput">
-      <select tal:condition="view/matches">
+    <tal:search_results condition="not: view/hasValidInput"
+      define="suggestion_id string:${view/name}-suggestions">
+      <select tal:condition="view/matches"
+        tal:attributes="id string:${suggestion_id}">
+        <option value="">Did you mean...</option>
         <option
             tal:repeat="match view/matches"
             tal:attributes="value match/token;
-                selected python:path('match/token') == path('view/formToken');
-                onclick string:this.form['${view/name}'].value = this.value"
-            tal:content="string:${match/token}: ${match/title}"
+                selected python:path('match/token') == path('view/formToken');"
+            tal:content="string:${match/title} (${match/token})"
             />
       </select>
+      <script type="text/javascript" tal:content="string:
+          LPS.use('node', 'lp.app.picker', function(Y) {
+              var text_input = Y.DOM.byId('${view/name}');
+              var select_menu = Y.DOM.byId('${suggestion_id}');
+              Y.lp.app.picker.connect_select_menu(
+                  select_menu, text_input);
+          });">
+      </script>
     </tal:search_results>
 
     <tal:chooseLink replace="structure view/chooseLink" />

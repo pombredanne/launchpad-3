@@ -82,10 +82,14 @@ It was not rejected.
   DEBUG Creating queue entry
   ...
   DEBUG Sent a mail:
-  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>
-  DEBUG     Body:
+  DEBUG   Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG   Sender: Root <root@localhost>
+  DEBUG   Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG   Bcc: Root <root@localhost>
+  DEBUG   Body:
+  DEBUG .
   DEBUG * Duhh
+  DEBUG
   DEBUG
   DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
@@ -102,10 +106,14 @@ It was not rejected.
   DEBUG You are receiving this email because you are the uploader, maintainer or
   DEBUG signer of the above package.
   DEBUG Sent a mail:
-  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG     Recipients: test@example.com
-  DEBUG     Body:
+  DEBUG   Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
+  DEBUG   Sender: Foo Bar <foo.bar@canonical.com>
+  DEBUG   Recipients: test@example.com
+  DEBUG   Bcc: Root <root@localhost>
+  DEBUG   Body:
+  DEBUG .
   DEBUG * Duhh
+  DEBUG
   DEBUG
   DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
   DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>

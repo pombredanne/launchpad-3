@@ -333,8 +333,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'bar')
@@ -408,8 +407,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'sample1')

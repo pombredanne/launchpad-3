@@ -60,7 +60,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -88,6 +87,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -97,7 +97,6 @@ from lp.app.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
-from lp.bugs.publisher import BugsLayer
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
@@ -135,6 +134,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -749,7 +749,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             else:
                 bug.subscribe(self.user, self.user)
                 self.request.response.addNotification(
-                    "You have been subscribed to this bug.")
+                    "You have subscribed to this bug report.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -1405,19 +1405,8 @@ class BugTargetBugTagsView(LaunchpadView):
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
         official_tags = self.context.official_bug_tags
-
-        # Construct a dict of official and top 10 tags.
-        # getUsedBugTagsWithOpenCounts is expensive, so do the union in
-        # SQL. Also preseed with 0 for all the official tags, as gUBTWOC
-        # won't return unused ones.
-        top_ten = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
-        official = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(
-                self.user, official_tags))
-        tags = dict((tag, 0) for tag in official_tags)
-        tags.update(dict(top_ten.union(official)))
-
+        tags = self.context.getUsedBugTagsWithOpenCounts(
+            self.user, 10, official_tags)
         max_count = float(max([1] + tags.values()))
 
         return sorted(
@@ -1462,8 +1451,11 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     @property
     def tags_js_data(self):
         """Return the JSON representation of the bug tags."""
-        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
-        official_tags = list(self.context.official_bug_tags)
+        # The model returns dict and list respectively but dumps blows up on
+        # security proxied objects.
+        used_tags = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = removeSecurityProxy(self.context.official_bug_tags)
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;

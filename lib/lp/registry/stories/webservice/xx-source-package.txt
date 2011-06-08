@@ -10,8 +10,7 @@ Prelude
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeriesSet)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lazr.restful.testing.webservice import pprint_entry

@@ -28,6 +28,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    And,
     Desc,
     Join,
     SQL,
@@ -38,7 +39,6 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import (
@@ -98,6 +98,9 @@ from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
     IDistroSeriesSet,
+    )
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
@@ -283,6 +286,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"]))
+
+    @cachedproperty
+    def component_names(self):
+        """See `IDistroSeries`."""
+        return [component.name for component in self.components]
+
+    @cachedproperty
+    def suite_names(self):
+        """See `IDistroSeries`."""
+        return [unicode(pocket) for pocket in PackagePublishingPocket.items]
 
     @property
     def answers_usage(self):
@@ -750,7 +763,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory']).count()
 
-
         # next update the binary count
         clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
@@ -787,9 +799,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def is_derived_series(self):
         """See `IDistroSeries`."""
-        # XXX rvb 2011-04-11 bug=754750: This should be cleaned up once
-        # the bug is fixed.
-        return self.previous_series is not None
+        return not self.getParentSeries() == []
 
     @property
     def is_initialising(self):
@@ -844,10 +854,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IHasBugs`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
+            And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                ),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):
@@ -1130,7 +1146,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            " AND ".join(queries), clauseTables=['SourcePackageRelease'],
             orderBy=['-id'])
 
         return published
@@ -1592,7 +1608,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None):
+                         archive, signing_key=None, package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1621,7 +1637,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key)
+            changesfile=changes_file, signing_key=signing_key,
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -1946,67 +1963,40 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
                 self, format) is not None
 
-    def deriveDistroSeries(self, user, name, distribution=None,
-                           displayname=None, title=None, summary=None,
-                           description=None, version=None,
-                           architectures=(), packagesets=(), rebuild=False):
+    def initDerivedDistroSeries(self, user, parents, architectures=(),
+                                packagesets=(), rebuild=False, overlays=(),
+                                overlay_pockets=(),
+                                overlay_components=()):
         """See `IDistroSeries`."""
-        if distribution is None:
-            distribution = self.distribution
-        child = IStore(self).find(
-            DistroSeries, name=name, distribution=distribution).one()
-        if child is None:
-            if not displayname:
-                raise DerivationError(
-                    "Display Name needs to be set when creating a "
-                    "distroseries.")
-            if not title:
-                raise DerivationError(
-                    "Title needs to be set when creating a distroseries.")
-            if not summary:
-                raise DerivationError(
-                    "Summary needs to be set when creating a "
-                    "distroseries.")
-            if not description:
-                raise DerivationError(
-                    "Description needs to be set when creating a "
-                    "distroseries.")
-            if not version:
-                raise DerivationError(
-                    "Version needs to be set when creating a "
-                    "distroseries.")
-            child = distribution.newSeries(
-                name=name, displayname=displayname, title=title,
-                summary=summary, description=description,
-                version=version, previous_series=None, registrant=user)
-            IStore(self).add(child)
-        else:
-            if child.previous_series is not None:
-                raise DerivationError(
-                    "DistroSeries %s parent series is %s, "
-                    "but it must not be set" % (
-                        child.name, self.name))
-        initialise_series = InitialiseDistroSeries(self, child)
+        if self.is_derived_series:
+            raise DerivationError(
+                "DistroSeries %s already has parent series." % self.name)
+        initialise_series = InitialiseDistroSeries(self, parents)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            self, child, architectures, packagesets, rebuild)
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
+
+    def getParentSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return [dsp.parent_series for dsp in dsps]
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
-        # XXX rvb 2011-04-08 bug=754750: The clause
-        # 'DistroSeries.distributionID!=self.distributionID' is only
-        # required because the previous_series attribute has been
-        # (mis-)used to denote other relations than proper derivation
-        # relashionships. We should be rid of this condition once
-        # the bug is fixed.
-        results = Store.of(self).find(
-            DistroSeries,
-            DistroSeries.previous_series==self.id,
-            DistroSeries.distributionID!=self.distributionID)
-        return results.order_by(Desc(DistroSeries.date_created))
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByParentSeries(self)
+        return [dsp.derived_series for dsp in dsps]
 
     def getBugTaskWeightFunction(self):
         """Provide a weight function to determine optimal bug task.
@@ -2027,6 +2017,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             else:
                 return OrderedBugTask(3, bugtask.id, bugtask)
         return weight_function
+
+    def getDifferencesTo(self, parent_series=None, difference_type=None,
+                         source_package_name_filter=None, status=None,
+                         child_version_higher=False):
+        """See `IDistroSeries`."""
+        return getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self,
+                difference_type=difference_type,
+                source_package_name_filter=source_package_name_filter,
+                status=status,
+                child_version_higher=child_version_higher)
 
 
 class DistroSeriesSet:

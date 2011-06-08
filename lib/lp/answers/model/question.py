@@ -60,23 +60,14 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.messages.model.message import (
-    Message,
-    MessageChunk,
-    )
 from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.messages.interfaces.message import IMessage
-from lp.answers.interfaces.faq import IFAQ
-from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionAction,
     QuestionParticipation,
     QuestionPriority,
     QuestionSort,
     QuestionStatus,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.errors import (
     AddAnswerContactError,
@@ -87,12 +78,16 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
@@ -114,6 +109,11 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.messages.interfaces.message import IMessage
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
@@ -908,10 +908,8 @@ class QuestionSearch:
         particular person."""
         joins = [
             ("""LEFT OUTER JOIN QuestionMessage
-                ON QuestionMessage.question = Question.id"""),
-            ("""LEFT OUTER JOIN Message
-                ON QuestionMessage.message = Message.id
-                AND Message.owner = %s""" % sqlvalues(person))]
+                ON QuestionMessage.question = Question.id
+                AND QuestionMessage.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -942,7 +940,7 @@ class QuestionSearch:
                     AND Question.status IN %(owner_status)s)
                 OR (Question.owner != %(person)s AND
                     Question.status = %(open_status)s AND
-                    Message.owner = %(person)s)
+                    QuestionMessage.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
                     owner_status=[
@@ -1153,7 +1151,7 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ANSWERER: "Question.answerer = %s",
         QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
         QuestionParticipation.OWNER: "Question.owner = %s",
-        QuestionParticipation.COMMENTER: "Message.owner = %s",
+        QuestionParticipation.COMMENTER: "QuestionMessage.owner = %s",
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):

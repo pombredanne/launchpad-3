@@ -576,3 +576,31 @@ Now builds in Celso's PPA will use the external dependencies.
         main restricted universe multiverse
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
+
+
+== Overlays ==
+
+An overlay distroseries is a derived distribution which works like a PPA.
+This means that the parent's details gets added to the sources.list passed to
+the builders.
+
+    >>> depdistro = factory.makeDistribution('depdistro',
+    ...     publish_base_url=u'http://archive.launchpad.dev/')
+    >>> depseries = factory.makeDistroSeries(
+    ...     name='depseries', distribution=depdistro)
+    >>> deparchseries = factory.makeDistroArchSeries(
+    ...     distroseries = depseries, architecturetag = 'i386')
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> dsp = factory.makeDistroSeriesParent(
+    ...     derived_series=hoary, parent_series=depseries,
+    ...     initialized=True, is_overlay=True,
+    ...     pocket=PackagePublishingPocket.SECURITY,
+    ...     component=universe_component)
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.1', archive=hoary.main_archive)
+    >>> [hoary_build] = pub_source.createMissingBuilds()
+    >>> print_building_sources_list(hoary_build)
+    deb http://archive.launchpad.dev/ubuntu hoary main
+    deb http://archive.launchpad.dev/depdistro depseries main universe
+    deb http://archive.launchpad.dev/depdistro depseries-security
+        main universe

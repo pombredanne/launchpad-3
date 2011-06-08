@@ -64,12 +64,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -81,6 +80,7 @@ from lp.answers.model.question import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -646,10 +646,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distribution == self, user, wanted_tags=wanted_tags)
+            And(BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""

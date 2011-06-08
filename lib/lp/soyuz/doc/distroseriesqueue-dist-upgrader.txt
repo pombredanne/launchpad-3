@@ -26,7 +26,7 @@ First, test the rejection of a missapplied changesfile name:
   >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
   ...     sync_policy, FakeLogger())
-  DEBUG Changes file can be unsigned.
+  DEBUG dist-upgrader_20060302.0120.changes can be unsigned.
   >>> upload.process()
   Traceback (most recent call last):
   ...
@@ -272,7 +272,7 @@ Remove the directory to keep the test working.
 Custom uploads for PPAs should works as expected, i.e, publish its
 files in the respective PPA location.
 
-  >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+  >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
   >>> from lp.registry.interfaces.person import IPersonSet
   >>> from lp.soyuz.enums import ArchivePurpose
   >>> from lp.soyuz.interfaces.archive import IArchiveSet

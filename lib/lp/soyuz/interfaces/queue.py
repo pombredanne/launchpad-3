@@ -45,6 +45,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
 
 
@@ -139,6 +140,12 @@ class IPackageUpload(Interface):
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
+
+    package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Package Copy Job"), required=False, readonly=True)
+
     archive = exported(
         Reference(
             # Really IArchive, patched in _schema_circular_imports.py
@@ -199,14 +206,6 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
-    def isAutoSyncUpload(changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
-
     def setNew():
         """Set queue state to NEW."""
 
@@ -246,7 +245,7 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
-    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+    def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -288,14 +287,11 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None,
-        changes_file_object=None, logger=None):
+    def notify(summary_text=None, changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
         This will send new, accept, announce and rejection messages as
         appropriate.
-
-        :param announce_list: The email address of the distro announcements
 
         :param summary_text: Any additional text to append to the auto-
             generated summary.  This is also the only text used if there is
