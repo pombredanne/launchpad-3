@@ -3368,9 +3368,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroSeries(
                 distribution=archive.distribution)
-        if package_copy_job is None and changes_filename is None:
+        if changes_filename is None:
             changes_filename = self.getUniqueString("changesfilename")
-        if package_copy_job is None and changes_file_content is None:
+        if changes_file_content is None:
             changes_file_content = self.getUniqueString("changesfilecontent")
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
