@@ -9,7 +9,6 @@ from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
-    BugPortletSubcribersIds,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
@@ -369,24 +368,6 @@ class BugSubscriptionAdvancedFeaturesPortletTestCase(TestCaseWithFactory):
         # "Also notified" portion of the portlet is shown.
         contents = self.get_contents(OFF)
         self.assertTrue('Also notified' in contents)
-
-
-class BugPortletSubcribersIdsTests(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_content_type(self):
-        bug = self.factory.makeBug()
-
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            harness = LaunchpadFormHarness(
-                bug.default_bugtask, BugPortletSubcribersIds)
-            harness.view.render()
-
-        self.assertEqual(
-            harness.request.response.getHeader('content-type'),
-            'application/json')
 
 
 class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
