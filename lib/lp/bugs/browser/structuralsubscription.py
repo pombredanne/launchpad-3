@@ -416,8 +416,8 @@ def expose_structural_subscription_data_to_js(context, request,
             # No subscriptions, which means we are on a target
             # subscriptions page. Let's at least provide target details.
             target_info = {}
-            target_info['title'] = target.title
-            target_info['url'] = canonical_url(target, rootsite='mainsite')
+            target_info['title'] = context.title
+            target_info['url'] = canonical_url(context, rootsite='mainsite')
             IJSONRequestCache(request).objects['target_info'] = target_info
         except NoCanonicalUrl:
             # We export nothing if the target implements no canonical URL.

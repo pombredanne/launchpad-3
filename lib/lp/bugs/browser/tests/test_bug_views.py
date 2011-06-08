@@ -236,15 +236,3 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
                 self.assertFalse(
                     self._hasCSSClass(
                         contents, 'mute-link-container', 'hidden'))
-
-    def test_mute_classes_work_for_anonymous_users(self):
-        # If a user is not logged in, the template shouldn't break
-        # horribly.
-        bug = self.factory.makeBug()
-        view = create_initialized_view(bug.default_bugtask, name="+index")
-        self.assertEqual(
-            'subscribed-false dup-subscribed-false',
-            view.current_user_subscription_class)
-        self.assertEqual(
-            'muted-false hidden subscribed-false dup-subscribed-false',
-            view.current_user_mute_class)
