@@ -607,7 +607,8 @@ class BugView(LaunchpadView, BugViewMixin):
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
 
-class BugSubscriptionPortletView(BugView):
+class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
+    """View class for the subscription portlet."""
 
     # We want these strings to be available for the template and for the
     # JavaScript.
