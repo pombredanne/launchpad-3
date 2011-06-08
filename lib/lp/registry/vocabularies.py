@@ -286,7 +286,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
-            return self._table.select(sql, orderBy=self._orderBy)
+            if getFeatureFlag('disclosure.picker_enhancements.enabled'):
+                order_by = (
+                    '(CASE name WHEN %s THEN 1 '
+                    ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
+                    % (fti_query, fti_query))
+            else:
+                order_by = self._orderBy
+            return self._table.select(sql, orderBy=order_by, limit=100)
         return self.emptySelectResults()
 
 
