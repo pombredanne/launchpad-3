@@ -78,10 +78,8 @@ from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
-    feature_flags,
     login_person,
     person_logged_in,
-    set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
     with_celebrity_logged_in,
@@ -416,17 +414,17 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # the soyuz.derived_series_ui.enabled flag.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             self.assertFalse(view.is_derived_series_feature_enabled)
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             self.assertTrue(view.is_derived_series_feature_enabled)
 
     def test_form_hidden_when_derived_series_feature_disabled(self):
         # The form is hidden when the feature flag is not set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             root = html.fromstring(view())
             self.assertEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -440,8 +438,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # The form is shown when the feature flag is set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             root = html.fromstring(view())
             self.assertNotEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -461,8 +459,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             root = html.fromstring(view())
             self.assertEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -479,8 +477,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         getUtility(IInitialiseDistroSeriesJobSource).create(
             distroseries, [self.factory.makeDistroSeries().id])
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             root = html.fromstring(view())
             self.assertEqual(
                 [], root.cssselect("#initseries-form-container"))
