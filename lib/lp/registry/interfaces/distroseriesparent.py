@@ -57,11 +57,11 @@ class IDistroSeriesParent(Interface):
         vocabulary='Component')
 
     ordering = Int(
-            title=_("Parent ordering"), required=False,
+            title=_("Parent build dependency ordering"), required=False,
             default=1,
             description=_(
-                "The parent ordering. Parents are ordered in "
-                "ascending order starting from 1."))
+                "Parents are ordered in decreasing order of preference "
+                "starting from 1."))
 
 
 class IDistroSeriesParentSet(Interface):
