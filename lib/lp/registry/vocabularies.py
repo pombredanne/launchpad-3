@@ -117,6 +117,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
@@ -155,7 +156,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonVisibility,
     )
-from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarName,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -195,6 +199,7 @@ class BasePersonVocabulary:
     _table = Person
 
     def __init__(self, context=None):
+        super(BasePersonVocabulary, self).__init__(context)
         self.enhanced_picker_enabled = bool(
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
 
@@ -496,6 +501,19 @@ class ValidPersonOrTeamVocabulary(
     def store(self):
         """The storm store."""
         return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    @cachedproperty
+    def _karma_context_constraint(self):
+        context = nearest(self.context, IPillar)
+        if IProduct.providedBy(context):
+            karma_context_column = 'product'
+        elif IDistribution.providedBy(context):
+            karma_context_column = 'distribution'
+        elif IProjectGroup.providedBy(context):
+            karma_context_column = 'project'
+        else:
+            return None
+        return '%s = %d' % (karma_context_column, context.id)
 
     def _privateTeamQueryAndTables(self):
         """Return query tables for private teams.
@@ -823,8 +841,19 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause),
                 )
             # Better ranked matches go first.
-            result.order_by(
-                SQL("rank desc"), Person.displayname, Person.name)
+            karma_context_constraint = self._karma_context_constraint
+            if (getFeatureFlag('disclosure.person_affiliation_rank.enabled')
+                and karma_context_constraint):
+                rank_order = SQL("""
+                    rank * COALESCE(
+                        (SELECT LOG(karmavalue) FROM KarmaCache
+                         WHERE person = Person.id AND
+                            %s
+                            AND category IS NULL AND karmavalue > 100),
+                        1) DESC""" % karma_context_constraint)
+            else:
+                rank_order = SQL("rank DESC")
+            result.order_by(rank_order, Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
 
         # We will be displaying the person's irc nick(s) and emails in the
