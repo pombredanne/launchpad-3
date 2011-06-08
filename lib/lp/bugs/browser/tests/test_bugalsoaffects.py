@@ -3,18 +3,16 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
@@ -23,12 +21,11 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugAlsoAffectsDistribution, self).setUp()
-        self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         self.distribution = self.factory.makeDistribution()
-        with person_logged_in(self.admin):
-           self.distribution.official_malone = True
+        removeSecurityProxy(self.distribution).official_malone = True
 
     def test_bug_alsoaffects_spn_exists(self):
+        # If the source package name exists, there is no error.
         bug = self.factory.makeBug()
         spn = self.factory.makeSourcePackageName()
         browser = self.getUserBrowser()
@@ -40,6 +37,8 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         self.assertEqual([], get_feedback_messages(browser.contents))
 
     def test_bug_alsoaffects_spn_not_exists_with_published_binaries(self):
+        # When the distribution has published binaries, we search both
+        # source and binary package names.
         bug = self.factory.makeBug()
         distroseries = self.factory.makeDistroSeries(
             distribution=self.distribution)
@@ -60,6 +59,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         self.assertEqual(expected, get_feedback_messages(browser.contents))
 
     def test_bug_alsoaffects_spn_not_exists_with_no_binaries(self):
+        # When the distribution has no binary packages published, we can't.
         bug = self.factory.makeBug()
         browser = self.getUserBrowser()
         browser.open(canonical_url(bug))
