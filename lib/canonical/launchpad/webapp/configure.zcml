@@ -396,7 +396,7 @@
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <!-- Define the widget used by PersonChoice fields. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="lp.services.fields.PersonChoice
