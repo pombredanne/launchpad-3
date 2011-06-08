@@ -418,11 +418,12 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             self.widgets['sourcepackagename'].name)
         if sourcepackagename is None and entered_package:
             # The entered package doesn't exist.
-            binary_tracking = ''
-            if not distribution.has_published_binaries:
+            if distribution.has_published_binaries:
+                binary_tracking = ''
+            else:
                 binary_tracking = structured(
                     ' Launchpad does not track binary package names '
-                    'in %s.' % distribution.displayname)
+                    'in %s.', distribution.displayname)
             error = structured(
                 'There is no package in %s named "%s".%s',
                 distribution.displayname, entered_package,
