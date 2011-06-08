@@ -542,6 +542,14 @@ class BugViewMixin:
         """The list of bug attachments that are patches."""
         return self._bug_attachments[BugAttachmentType.PATCH]
 
+    @property
+    def current_bugtask(self):
+        """Return the current `IBugTask`.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
 
 class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
@@ -554,14 +562,6 @@ class BugView(LaunchpadView, BugViewMixin):
     but it was the best solution we came up with when deciding to hang
     all the pages off IBugTask instead of IBug.
     """
-
-    @property
-    def current_bugtask(self):
-        """Return the current `IBugTask`.
-
-        'current' is determined by simply looking in the ILaunchBag utility.
-        """
-        return getUtility(ILaunchBag).bugtask
 
     @property
     def subscription(self):
@@ -631,7 +631,7 @@ class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
 
     def initialize(self):
         """Initialize the view to handle the request."""
-        BugView.initialize(self)
+        LaunchpadView.initialize(self)
         user = self.user
         # We are using "direct" to represent both direct and personal
         # (not team).
