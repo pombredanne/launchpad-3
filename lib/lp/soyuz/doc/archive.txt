@@ -101,7 +101,7 @@ As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
-    >>> cprov_archive.external_dependencies = "deb http://foo hardy bar"
+    >>> cprov_archive.external_dependencies = "test"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -1043,7 +1043,6 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
-    >>> login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 

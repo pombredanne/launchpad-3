@@ -63,6 +63,7 @@ from storm.expr import (
     Select,
     SQL,
     SQLRaw,
+    Sum,
     Union,
     )
 from storm.info import ClassAlias
@@ -242,11 +243,6 @@ class BugTag(SQLBase):
     tag = StringCol(notNull=True)
 
 
-# We need to always use the same Count instance or the
-# get_bug_tags_open_count is not UNIONable.
-tag_count_columns = (BugTag.tag, Count())
-
-
 def get_bug_tags(context_clause):
     """Return all the bug tags as a list of strings.
 
@@ -266,39 +262,56 @@ def get_bug_tags(context_clause):
     return shortlist([row[0] for row in cur.fetchall()])
 
 
-def get_bug_tags_open_count(context_condition, user, wanted_tags=None):
-    """Return all the used bug tags with their open bug count.
+def get_bug_tags_open_count(context_condition, user, tag_limit=0,
+    include_tags=None):
+    """Worker for IBugTarget.getUsedBugTagsWithOpenCounts.
 
+    See `IBugTarget` for details.
+
+    The only change is that this function takes a SQL expression for limiting
+    the found tags.
     :param context_condition: A Storm SQL expression, limiting the
         used tags to a specific context. Only the BugTask table may be
         used to choose the context.
-    :param user: The user performing the search.
-    :param wanted_tags: A set of tags within which to restrict the search.
-
-    :return: A list of tuples, (tag name, open bug count).
     """
-    tables = (
-        BugTag,
-        Join(BugTask, BugTask.bugID == BugTag.bugID),
-        )
+    # Circular fail.
+    from lp.bugs.model.bugsummary import BugSummary
+    tags = {}
+    if include_tags:
+        tags = dict((tag, 0) for tag in include_tags)
+    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    admin_team = getUtility(ILaunchpadCelebrities).admin
+    if user is not None and not user.inTeam(admin_team):
+        store = store.with_(SQL(
+            "teams AS ("
+            "SELECT team from TeamParticipation WHERE person=?)", (user.id,)))
     where_conditions = [
-        BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES),
+        BugSummary.tag != None,
         context_condition,
         ]
-    if wanted_tags is not None:
-        where_conditions.append(BugTag.tag.is_in(wanted_tags))
-    privacy_filter = get_bug_privacy_filter(user)
-    if privacy_filter:
-        # The EXISTS sub-select avoids a join against Bug, improving
-        # performance significantly.
+    if user is None:
+        where_conditions.append(BugSummary.viewed_by_id == None)
+    elif not user.inTeam(admin_team):
         where_conditions.append(
-            Exists(Select(
-                columns=[True], tables=[Bug],
-                where=And(Bug.id == BugTag.bugID, SQLRaw(privacy_filter)))))
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    return store.using(*tables).find(
-        tag_count_columns, *where_conditions).group_by(BugTag.tag).order_by(
-            Desc(Count()), BugTag.tag)
+            Or(
+                BugSummary.viewed_by_id == None,
+                BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                ))
+    tag_count_columns = (BugSummary.tag, Sum(BugSummary.count))
+    # Always query for used
+    def _query(*args):
+        return store.find(tag_count_columns, *(where_conditions + list(args))
+            ).group_by(BugSummary.tag).order_by(
+            Desc(Sum(BugSummary.count)), BugSummary.tag)
+    used = _query()
+    if tag_limit:
+        used = used[:tag_limit]
+    if include_tags:
+        # Union in a query for just include_tags.
+        used = used.union(_query(BugSummary.tag.is_in(include_tags)))
+    tags.update(dict(used))
+    return tags
 
 
 class BugBecameQuestionEvent:
@@ -967,30 +980,18 @@ BugMessage""" % sqlvalues(self.id))
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            # We short-circuit for private bugs, since actually
-            # returning something non-empty here causes things to break
-            # in fun and interesting ways (see bug 780248).
-            return []
-
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
         info = self.getSubscriptionInfo(level)
 
         if recipients is not None:
-            # Pre-load duplicates
+            # Pre-load duplicate bugs.
             list(self.duplicates)
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-            for subscription in info.structural_subscriptions_from_duplicates:
-                recipients.addDupeSubscriber(
-                    subscription.subscriber)
 
-        unified_subscribers = (
-            info.duplicate_only_subscriptions.subscribers.union(
-                info.structural_subscriptions_from_duplicates.subscribers))
-        return unified_subscribers.sorted
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -1055,16 +1056,12 @@ BugMessage""" % sqlvalues(self.id))
                                      include_master_dupe_subscribers=False):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
-        # Call getDirectSubscribers to update the recipients list with direct
-        # subscribers.  The results of the method call are not used.
         self.getDirectSubscribers(recipients, level=level)
         if self.private:
             assert self.getIndirectSubscribers() == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
         else:
-            # Call getIndirectSubscribers to update the recipients list with direct
-            # subscribers.  The results of the method call are not used.
             self.getIndirectSubscribers(recipients, level=level)
             if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
@@ -1931,22 +1928,6 @@ BugMessage""" % sqlvalues(self.id))
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
-        # This is here to avoid circular imports.
-        from lp.bugs.mail.bugnotificationrecipients import (
-            BugNotificationRecipients,
-            )
-
-        def check_person_in_team(person, list_of_people):
-            """Is the person in one of the teams?
-
-            Given a person and a list of people/teams, see if the person
-            belongs to one of the teams.
-            """
-            for subscriber in list_of_people:
-                if subscriber.is_team and person.inTeam(subscriber):
-                    return True
-            return False
-
         # We have to use getAlsoNotifiedSubscribers() here and iterate
         # over what it returns because "also notified subscribers" is
         # actually a composite of bug contacts, structural subscribers
@@ -1957,16 +1938,9 @@ BugMessage""" % sqlvalues(self.id))
             return True
         # Otherwise check to see if the person is a member of any of the
         # subscribed teams.
-        if check_person_in_team(person, also_notified_subscribers):
-            return True
-
-        direct_subscribers = self.getDirectSubscribers()
-        if check_person_in_team(person, direct_subscribers):
-            return True
-        duplicate_subscribers = self.getSubscribersFromDuplicates(
-            recipients=BugNotificationRecipients())
-        if check_person_in_team(person, duplicate_subscribers):
-            return True
+        for subscriber in also_notified_subscribers:
+            if subscriber.is_team and person.inTeam(subscriber):
+                return True
         return False
 
     def personIsSubscribedToDuplicate(self, person):
@@ -2328,24 +2302,6 @@ class BugSubscriptionInfo:
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
         return list(get_structural_subscriptions_for_bug(self.bug))
-
-    @cachedproperty
-    @freeze(StructuralSubscriptionSet)
-    def structural_subscriptions_from_duplicates(self):
-        """Structural subscriptions from the bug's duplicates."""
-        self.duplicate_subscriptions.subscribers # Pre-load subscribers.
-        higher_precedence = (
-            self.direct_subscriptions.subscribers.union(
-                self.also_notified_subscribers))
-        all_duplicate_structural_subscriptions = list()
-        for duplicate in self.bug.duplicates:
-            duplicate_struct_subs = get_structural_subscriptions_for_bug(
-                duplicate)
-            all_duplicate_structural_subscriptions += duplicate_struct_subs
-        return (
-            subscription for subscription in
-                all_duplicate_structural_subscriptions
-                if subscription.subscriber not in higher_precedence)
 
     @cachedproperty
     @freeze(BugSubscriberSet)

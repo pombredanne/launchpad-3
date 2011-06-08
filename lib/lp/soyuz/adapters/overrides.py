@@ -128,6 +128,12 @@ class BinaryOverride(Override):
             self.section == other.section and
             self.priority == other.priority)
 
+    def __repr__(self):
+        return ("<BinaryOverride at %x component=%r section=%r "
+            "binary_package_name=%r distro_arch_series=%r priority=%r>" % 
+            (id(self), self.component, self.section, self.binary_package_name,
+             self.distro_arch_series, self.priority))
+
 
 class IOverridePolicy(Interface):
     """Override policy.
