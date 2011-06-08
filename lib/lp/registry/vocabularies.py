@@ -841,16 +841,15 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause),
                 )
             # Better ranked matches go first.
-            karma_context_constraint = self._karma_context_constraint
             if (getFeatureFlag('disclosure.person_affiliation_rank.enabled')
-                and karma_context_constraint):
+                and self._karma_context_constraint):
                 rank_order = SQL("""
                     rank * COALESCE(
                         (SELECT LOG(karmavalue) FROM KarmaCache
                          WHERE person = Person.id AND
                             %s
                             AND category IS NULL AND karmavalue > 10),
-                        1) DESC""" % karma_context_constraint)
+                        1) DESC""" % self._karma_context_constraint)
             else:
                 rank_order = SQL("rank DESC")
             result.order_by(rank_order, Person.displayname, Person.name)
