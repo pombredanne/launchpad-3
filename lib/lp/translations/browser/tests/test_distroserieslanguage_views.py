@@ -90,14 +90,10 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
 
     def test_sourcepackagenames_bulk_loaded(self):
         # SourcePackageName records referenced by POTemplates
-        # are bulk loaded. Accessing sourcepackage name attribute
+        # are bulk loaded. Accessing the sourcepackagename attribute
         # of a potemplate does not require an additional SQL query.
         self.view.initialize()
         template = self.view.batchnav.currentBatch()[0]
         with StormStatementRecorder() as recorder:
             template.sourcepackagename
         self.assertThat(recorder, HasQueryCount(Equals(0)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
