@@ -799,10 +799,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.product == self, user, wanted_tags=wanted_tags)
+            BugSummary.product_id == self.id,
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
