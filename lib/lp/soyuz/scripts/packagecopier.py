@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
+from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -509,7 +510,8 @@ class CopyChecker:
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            allow_delayed_copies=True, person=None, check_permissions=True):
+            allow_delayed_copies=True, person=None, check_permissions=True,
+            send_email=False):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -534,6 +536,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param person: the requester `IPerson`.
     :param check_permissions: boolean indicating whether or not the
         requester's permissions to copy should be checked.
+    :param send_email: Should we notify for the copy performed?
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -569,11 +572,18 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             destination_series = series
         if source.delayed:
             delayed_copy = _do_delayed_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
             sub_copies = [delayed_copy]
         else:
             sub_copies = _do_direct_copy(
-                source, archive, destination_series, pocket, include_binaries)
+                source, archive, destination_series, pocket,
+                include_binaries)
+            if send_email:
+                notify(
+                    person, source.sourcepackagerelease, [], [], archive,
+                    destination_series, pocket, changes=None,
+                    action='accepted')
 
         copies.extend(sub_copies)
 
