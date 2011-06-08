@@ -9,6 +9,7 @@
 __metaclass__ = type
 
 from difflib import unified_diff
+from email import message_from_string
 from email.MIMEMessage import MIMEMessage
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
@@ -43,21 +44,25 @@ NotificationRecipientSet
 
 
 CC = "CC"
+MAX_RETURN_MESSAGE_SIZE = config.processmail.max_error_message_return_size
 
 
 def send_process_error_notification(to_address, subject, error_msg,
-                                    original_msg, failing_command=None):
+                                    original_msg, failing_command=None,
+                                    max_return_size=MAX_RETURN_MESSAGE_SIZE):
     """Send a mail about an error occurring while using the email interface.
 
     Tells the user that an error was encountered while processing his
     request and attaches the original email which caused the error to
-    happen.
+    happen.  The original message will be truncated to
+    max_return_size bytes.
 
         :to_address: The address to send the notification to.
         :subject: The subject of the notification.
         :error_msg: The error message that explains the error.
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
+        :max_return_size: The maximum size returned for the original message.
     """
     if isinstance(failing_command, list):
         failing_commands = failing_command
@@ -83,6 +88,10 @@ def send_process_error_notification(to_address, subject, error_msg,
     msg['From'] = get_bugmail_error_address()
     msg['Subject'] = subject
     msg.attach(error_part)
+    original_msg_str = str(original_msg)
+    if len(original_msg_str) > max_return_size:
+        truncated_msg_str = original_msg_str[:max_return_size]
+        original_msg = message_from_string(truncated_msg_str)
     msg.attach(MIMEMessage(original_msg))
     sendmail(msg)
 
@@ -145,7 +154,7 @@ def notify_specification_modified(spec, event):
         return
 
     subject = specification_notification_subject(spec)
-    indent = ' '*4
+    indent = ' ' * 4
     info_lines = []
     for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title

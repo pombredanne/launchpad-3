@@ -646,10 +646,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distribution == self, user, wanted_tags=wanted_tags)
+            And(BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
