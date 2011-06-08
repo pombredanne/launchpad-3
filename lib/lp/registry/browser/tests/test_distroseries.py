@@ -1049,6 +1049,9 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         # that need doing.
         dsd = self.makePackageUpgrade()
         series = dsd.derived_series
+        with celebrity_logged_in('admin'):
+            series.status = SeriesStatus.DEVELOPMENT
+            series.datereleased = UTC_NOW
         view = self.makeView(series)
         view.requestUpgrades()
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -1059,6 +1062,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         self.assertEquals(series, job.target_distroseries)
         self.assertEqual(dsd.source_package_name.name, job.package_name)
         self.assertEqual(dsd.parent_source_version, job.package_version)
+        self.assertEqual(PackagePublishingPocket.RELEASE, job.target_pocket)
 
     def test_upgrade_gives_feedback(self):
         # requestUpgrades doesn't instantly perform package upgrades,
