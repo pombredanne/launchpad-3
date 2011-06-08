@@ -161,23 +161,24 @@ class InitialiseDistroSeries:
         transaction.commit()
 
     def _set_parents(self):
-        count = 1
+        count = 0
         for parent in self.parents:
             dsp_set = getUtility(IDistroSeriesParentSet)
-            if self.overlays and self.overlays[0]:
+            if self.overlays and self.overlays[count]:
                 pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
-                    PackagePublishingPocket, self.overlay_pockets[0]).value
+                    PackagePublishingPocket,
+                    self.overlay_pockets[count]).value
                 component_set = getUtility(IComponentSet)
-                component = component_set[self.overlay_components[0]]
+                component = component_set[self.overlay_components[count]]
                 dsp_set.new(
                     self.distroseries, parent, initialized=False,
                     is_overlay=True, pocket=pocket, component=component,
-                    ordering=count)
+                    ordering=count + 1)
             else:
                 dsp_set.new(
                     self.distroseries, parent, initialized=False,
-                    is_overlay=False, ordering=count)
-            count = count + 1
+                    is_overlay=False, ordering=count + 1)
+            count += 1
 
     def _set_initialised(self):
         dsp_set = getUtility(IDistroSeriesParentSet)
@@ -207,7 +208,7 @@ class InitialiseDistroSeries:
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (filtering, )))
         self._store.flush()
-        # Take nominatedarchindep from the first parent. XXX??
+        # Take nominatedarchindep from the first parent.
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parents[0].nominatedarchindep.architecturetag]
 
