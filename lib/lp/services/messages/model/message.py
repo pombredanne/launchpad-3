@@ -62,7 +62,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasSet,
     )
@@ -76,7 +75,9 @@ from lp.services.messages.interfaces.message import (
     IUserToUserEmail,
     UnknownSender,
     )
-from canonical.launchpad.mail import signed_message_from_string
+from canonical.launchpad.mail import (
+    signed_message_from_string,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -306,14 +307,11 @@ class MessageSet:
         # already in there.
         file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
         if filealias is None:
-            # We generate a filename to avoid people guessing the URL.
-            # We don't want URLs to private bug messages to be guessable
-            # for example.
-            raw_filename = get_filename_from_message_id(
-                parsed_message['message-id'])
-            raw_email_message = file_alias_set.create(
-                    raw_filename, len(email_message),
-                    cStringIO(email_message), 'message/rfc822')
+            # Avoid circular import.
+            from canonical.launchpad.mail.helpers import (
+                save_mail_to_librarian,
+                )
+            raw_email_message = save_mail_to_librarian(email_message)
         else:
             raw_email_message = filealias
 
@@ -473,8 +471,7 @@ class MessageSet:
                         name=filename,
                         size=len(content),
                         file=cStringIO(content),
-                        contentType=content_type
-                        )
+                        contentType=content_type)
                     MessageChunk(message=message, sequence=sequence,
                                  blob=blob)
                     sequence += 1
@@ -551,8 +548,7 @@ class MessageChunk(SQLBase):
 
     blob = ForeignKey(
         foreignKey='LibraryFileAlias', dbName='blob', notNull=False,
-        default=None
-        )
+        default=None)
 
     def __unicode__(self):
         """Return a text representation of this chunk.
@@ -567,8 +563,7 @@ class MessageChunk(SQLBase):
             return (
                 "Attachment: %s\n"
                 "Type:       %s\n"
-                "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
-                )
+                "URL:        %s" % (blob.filename, blob.mimetype, blob.url))
 
 
 class UserToUserEmail(Storm):
