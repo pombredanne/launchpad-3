@@ -658,7 +658,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
             not self.context.is_initialising)
 
     @property
-    def show_already_derived_message(self):
+    def show_already_initialized_message(self):
         return (
             self.is_derived_series_feature_enabled and
             self.context.is_derived_series)

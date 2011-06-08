@@ -50,11 +50,12 @@
       </p>
       </tal:disabled>
 
-      <tal:already-derived condition="view/show_already_derived_message">
+      <tal:already-initialized condition="view/show_already_initialized_message">
       <p class="error message">
-        This series has already been derived.
+        This series already contains source packages and cannot be
+        initialized again.
       </p>
-      </tal:already-derived>
+      </tal:already-initialized>
 
       <tal:already-initializing
           condition="view/show_already_initializing_message">

@@ -85,7 +85,7 @@ from lp.testing import (
     with_celebrity_logged_in,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import HasQueryCount, EqualsIgnoringWhitespace
 from lp.testing.views import create_initialized_view
 
 
@@ -455,7 +455,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
 
     def test_form_hidden_when_distroseries_is_initialized(self):
         # The form is hidden when the feature flag is set but the series has
-        # already been derived.
+        # already been initialized.
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeDistroSeriesParent(derived_series=distroseries)
         view = create_initialized_view(distroseries, "+initseries")
@@ -466,9 +466,10 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 [], root.cssselect("#initseries-form-container"))
             # Instead an explanatory message is shown.
             [message] = root.cssselect("p.error.message")
-            self.assertEqual(
-                u"This series has already been derived.",
-                message.text.strip())
+            self.assertThat(
+                message.text.strip(), EqualsIgnoringWhitespace(
+                    u"This series already contains source packages "
+                    u"and cannot be initialized again."))
 
     def test_form_hidden_when_distroseries_is_being_initialized(self):
         # The form is hidden when the feature flag is set but the series has
@@ -484,9 +485,10 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 [], root.cssselect("#initseries-form-container"))
             # Instead an explanatory message is shown.
             [message] = root.cssselect("p.error.message")
-            self.assertEqual(
-                u"This series is already being initialized.",
-                message.text.strip())
+            self.assertThat(
+                message.text.strip(),
+                EqualsIgnoringWhitespace(
+                    u"This series is already being initialized."))
 
 
 class DistroSeriesDifferenceMixin:
