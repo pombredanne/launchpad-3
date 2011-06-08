@@ -11,7 +11,13 @@ __all__ = [
     'ISpecificationSubscription',
     ]
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    operation_for_version,
+    REQUEST_USER,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -49,3 +55,9 @@ class ISpecificationSubscription(Interface):
         'cause the meeting scheduler to try to ensure that this person '
         'attends meetings about this feature.'),
         default=False)
+
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber from the specification?"""

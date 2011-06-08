@@ -9,9 +9,15 @@ import transaction
 
 from zope.security.management import endInteraction
 
-from canonical.testing import AppServerLayer
-from canonical.launchpad.testing.pages import webservice_for_person
+from canonical.launchpad.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.testing import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.testing import (
     launchpadlib_for,
@@ -303,3 +309,23 @@ class TestSpecificationSubscription(SpecificationWebserviceTestCase):
 
         # Check the results.
         self.assertFalse(db_spec.isSubscribed(db_person))
+
+    def test_canBeUnsubscribedByUser(self):
+        # Test canBeUnsubscribedByUser() API.
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything',
+            domain='api.launchpad.dev:8085')
+
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+            spec = ws_object(launchpad, db_spec)
+            person = ws_object(launchpad, db_person)
+            subscription = spec.subscribe(person=person, essential=True)
+            transaction.commit()
+
+        result = webservice.named_get(
+            subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+        self.assertFalse(result)
