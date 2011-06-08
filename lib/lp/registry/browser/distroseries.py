@@ -809,11 +809,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
+        # When syncing we *must* do it asynchronously so that a package
+        # copy job is created.  This gives the job a chance to inspect
+        # the copy and create a PackageUpload if required.
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user):
+            person=self.user, force_async=True):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL

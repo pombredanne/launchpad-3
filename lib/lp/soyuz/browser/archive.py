@@ -1357,7 +1357,7 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True):
+                check_permissions=True, force_async=False):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1381,11 +1381,14 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
+        :param force_async: Force the copy to create package copy jobs and
+            perform the copy asynchronously.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            if self.canCopySynchronously(source_pubs):
+            if (force_async == False and
+                    self.canCopySynchronously(source_pubs)):
                 notification = copy_synchronously(
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,

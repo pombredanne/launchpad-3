@@ -74,6 +74,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.soyuz.model import distroseriesdifferencejob
 from lp.testing import (
     anonymous_logged_in,
@@ -1587,24 +1588,18 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             "component" in view.errors[0])
 
     def assertPackageCopied(self, series, src_name, version, view):
-        # Helper to check that a package has been copied.
-        # The new version should now be in the destination series.
-        pub = series.main_archive.getPublishedSources(
-            name=src_name, version=version,
-            distroseries=series).one()
-        self.assertIsNot(None, pub)
-        self.assertEqual(version, pub.sourcepackagerelease.version)
+        # Helper to check that a package has been copied by virtue of
+        # there being a package copy job ready to run.
+        pcj = PlainPackageCopyJob.getActiveJobs(series.main_archive).one()
+        self.assertEqual(version, pcj.package_version)
 
         # The view should show no errors, and the notification should
         # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        self.assertEqual(
-            '<p>Packages copied to '
-            '<a href="http://launchpad.dev/%s/%s"'
-            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
-            'derilucid</li>\n</ul>' % (series.parent.name, series.name),
+        self.assertIn(
+            "<p>Requested sync of 1 packages.</p>",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
@@ -1686,11 +1681,11 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         parent_pub = parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
-        pub = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
-            distroseries=derived_series).one()
-        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
-        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
+
+        # We look for a PackageCopyJob with the right metadata.
+        pcj = PlainPackageCopyJob.getActiveJobs(
+            derived_series.main_archive).one()
+        self.assertEqual(PackagePublishingPocket.UPDATES, pcj.target_pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
