@@ -494,12 +494,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugTask.distroseries == self.distroseries,
-                BugTask.sourcepackagename == self.sourcepackagename),
-            user, wanted_tags=wanted_tags)
+            And(BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def max_bug_heat(self):

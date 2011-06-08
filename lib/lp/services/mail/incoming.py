@@ -110,7 +110,7 @@ def _isDkimDomainTrusted(domain):
 
 
 def _authenticateDkim(signed_message):
-    """"Attempt DKIM authentication of email; return True if known authentic
+    """Attempt DKIM authentication of email; return True if known authentic
 
     :param signed_message: ISignedMessage
     """
@@ -368,9 +368,12 @@ def handleMail(trans=transaction,
                 log.exception(
                     "An exception was raised inside the handler:\n%s"
                     % (file_alias_url,))
+                # Delete the troublesome email before attempting to send the
+                # OOPS in case something goes wrong.  Retrying probably
+                # wouldn't work and we'd get stuck on the bad message.
+                mailbox.delete(mail_id)
                 _send_email_oops(trans, log, mail,
                     "Unhandled exception", file_alias_url)
-                mailbox.delete(mail_id)
     finally:
         log.info("Closing the mail box.")
         mailbox.close()
@@ -414,7 +417,7 @@ def save_mail_to_librarian(trans, log, raw_mail):
 
 
 def handle_one_mail(log, mail, file_alias, file_alias_url,
-    signature_timestamp_checker):
+                    signature_timestamp_checker):
     """Process one message.
 
     Returns None when the message has either been successfully processed, or
