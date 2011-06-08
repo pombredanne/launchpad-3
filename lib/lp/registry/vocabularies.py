@@ -849,7 +849,7 @@ class ValidPersonOrTeamVocabulary(
                         (SELECT LOG(karmavalue) FROM KarmaCache
                          WHERE person = Person.id AND
                             %s
-                            AND category IS NULL AND karmavalue > 100),
+                            AND category IS NULL AND karmavalue > 10),
                         1) DESC""" % karma_context_constraint)
             else:
                 rank_order = SQL("rank DESC")
