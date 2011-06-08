@@ -196,6 +196,7 @@ class InitialiseDistroSeries:
         if self.arches:
             filtering += ' AND architecturetag IN %s ' % (
                 sqlvalues(self.arches))
+        # XXX?? bool_and(official) ??
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
