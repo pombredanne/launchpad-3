@@ -362,7 +362,7 @@ class BaseLayer:
                 frame = frame.f_back
             BaseLayer.test_name = str(frame.f_locals['test'])
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     @profiled
@@ -438,7 +438,7 @@ class BaseLayer:
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
             del gc.garbage[:]
-            gc.collect() # Expensive, so only do if there might be garbage.
+            gc.collect()  # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
                         "Test left uncollectable garbage\n"
@@ -512,7 +512,7 @@ class BaseLayer:
                     return frame.f_locals['self']
                 frame = frame.f_back
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     def getCurrentTestCase(cls):
@@ -530,7 +530,7 @@ class BaseLayer:
                 frame = frame.f_back
             return frame.f_locals['test']
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     def appserver_config(cls):
@@ -636,7 +636,7 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     def purge(cls):
         "Purge everything from our memcached."
-        MemcachedLayer.client.flush_all() # Only do this in tests!
+        MemcachedLayer.client.flush_all()  # Only do this in tests!
 
 
 # We store a reference to the DB-API connect method here when we
@@ -770,16 +770,18 @@ class DatabaseLayer(BaseLayer):
 
         global _org_connect
         _org_connect = psycopg2.connect
+
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
             return cls.script.connect(_org_connect, *args, **kw)
+
         psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
         if cls.mockdb_mode is None:
-            return # Already uninstalled
+            return  # Already uninstalled
 
         # Store results if we are recording
         if cls.mockdb_mode == 'record':
