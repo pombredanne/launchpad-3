@@ -281,40 +281,7 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
-The authentication information gets added for private PPA
-dependencies. We'll create a private PPA and then update cprov's PPA,
-removing the dependency on Mark's public PPA and adding one for the
-new private PPA.
-
-    >>> private_ppa = factory.makeArchive(
-    ...     owner=mark, name='p3a', private=True, distribution=ubuntu)
-    >>> pub_binaries = test_publisher.getPubBinaries(
-    ...     binaryname='dep-bin', archive=private_ppa,
-    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> cprov.archive.removeArchiveDependency(mark.archive)
-    >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     private_ppa, PackagePublishingPocket.RELEASE,
-    ...     getUtility(IComponentSet)['main'])
-
-    >>> print_building_sources_list(a_build)
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://buildd:sekrit@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main
-    deb http://archive.launchpad.dev/ubuntu hoary
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-updates
-        main restricted universe multiverse
-
-Remove the private PPA dependency before continuing.
-
-    >>> cprov.archive.removeArchiveDependency(private_ppa)
-
-    >>> cprov.archive.external_dependencies is None
-    True
-    >>> cprov.archive.enabled
-    True
 
 What when we supply invalid dependencies, an exception is raised.
 

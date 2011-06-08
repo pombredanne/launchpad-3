@@ -10,7 +10,7 @@ from datetime import (
     )
 import doctest
 
-from testtools.matchers import DocTestMatches
+from testtools.matchers import DocTestMatches, MatchesRegex
 from testtools.testcase import ExpectedException
 
 import transaction
@@ -1337,6 +1337,32 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE)
             self.assertContentEqual(
                 archive.dependencies, [archive_dependency])
+
+
+class TestArchiveDependencies(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_sources_list(self):
+        """Entries for private dependencies include credentials."""
+        p3a = self.factory.makeArchive(name='p3a', private=True)
+        dependency = self.factory.makeArchive(
+            name='dependency', private=True, owner=p3a.owner)
+        with person_logged_in(p3a.owner):
+            bpph = self.factory.makeBinaryPackagePublishingHistory(
+                archive=dependency, status=PackagePublishingStatus.PUBLISHED)
+            p3a.addArchiveDependency(dependency,
+                PackagePublishingPocket.RELEASE)
+            build = self.factory.makeBinaryPackageBuild(archive=p3a,
+                distroarchseries=bpph.distroarchseries)
+            sources_list = get_sources_list_for_building(
+                build, build.distro_arch_series,
+                build.source_package_release.name)
+            sources_list_str = '\n'.join(sources_list)
+            matches = MatchesRegex(
+                "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
+                "person-name-.*/dependency/ubuntu distroseries-.* main")
+            self.assertThat(sources_list[0], matches)
 
 
 class TestFindDepCandidates(TestCaseWithFactory):

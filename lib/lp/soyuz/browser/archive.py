@@ -1873,9 +1873,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         refreshing. And render a page notification with the summary of the
         changes made.
         """
-        # Redirect after POST.
-        self.next_url = self.request.URL
-
         # Process the form.
         self._add_primary_dependencies(data)
         try:
@@ -1889,6 +1886,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         if len(self.messages) > 0:
             self.request.response.addNotification(
                 structured(self.messages))
+        # Redirect after POST.
+        self.next_url = self.request.URL
 
 
 class ArchiveActivateView(LaunchpadFormView):

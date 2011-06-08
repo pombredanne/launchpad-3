@@ -1059,8 +1059,7 @@ dependency is published in Mark's PPA.
     ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 'dependency' and target archive are the same.
 
@@ -1100,8 +1099,7 @@ Only one dependency per archive can be added.
     ...     getUtility(IComponentSet)['main'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 Thus archive dependency removal can be performed simply by passing the
 dependency target.
