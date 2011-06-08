@@ -1,11 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from cStringIO import StringIO as cStringIO
 import os.path
 import re
 import time
+from uuid import uuid1
 
 from zope.component import getUtility
 
@@ -18,10 +20,10 @@ from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
@@ -257,3 +259,20 @@ def ensure_sane_signature_timestamp(timestamp, context,
             or timestamp > ten_minutes_in_the_future):
         error_message = get_error_message(error_template, context=context)
         raise IncomingEmailError(error_message)
+
+
+def save_mail_to_librarian(raw_mail):
+    """Save the message to the librarian.
+
+    It can be referenced from errors, and also accessed by code that needs to
+    get back the exact original form.
+    """
+    # File the raw_mail in the Librarian.  We generate a filename to avoid
+    # people guessing the URL.  We don't want URLs to private bug messages to
+    # be guessable for example.
+    file_name = str(uuid1()) + '.txt'
+    file_alias = getUtility(ILibraryFileAliasSet).create(
+            file_name,
+            len(raw_mail),
+            cStringIO(raw_mail), 'message/rfc822')
+    return file_alias
