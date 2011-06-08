@@ -1600,8 +1600,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     version = None
                 get_property_cache(spph).newer_distroseries_version = version
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None, package_copy_job=None):
+    def createQueueEntry(self, pocket, archive, changesfilename=None,
+                         changesfilecontent=None, signing_key=None,
+                         package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1611,6 +1612,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
+
+        if package_copy_job is None and (
+            changesfilename is None or changesfilecontent is None):
+            raise AssertionError(
+                "changesfilename and changesfilecontent must be supplied "
+                "if there is no package_copy_job")
 
         # The PGP signature is stripped from all changesfiles
         # to avoid replay attacks (see bugs 159304 and 451396).
