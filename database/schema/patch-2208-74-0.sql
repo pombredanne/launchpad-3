@@ -1,4 +1,4 @@
--- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- Copyright 2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 
 SET client_min_messages=ERROR;
@@ -7,6 +7,6 @@ SET client_min_messages=ERROR;
 CREATE INDEX hwsubmission__date_created__idx ON hwsubmission USING btree (date_created);
 
 -- For IHWSubmissionSet, which can now search by date_submitted.
-CREATE INDEX hwsubmission__date_submitted_idx ON hwsubmission USING btree (date_submitted);
+CREATE INDEX hwsubmission__date_submitted__idx ON hwsubmission USING btree (date_submitted);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 74, 0);
