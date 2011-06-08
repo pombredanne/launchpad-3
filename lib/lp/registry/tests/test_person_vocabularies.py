@@ -34,6 +34,9 @@ class VocabularyTestBase:
         vocabulary = self.getVocabulary(context)
         return removeSecurityProxy(vocabulary)._doSearch(text)
 
+
+class TeamMemberVocabularyTestBase(VocabularyTestBase):
+
     def test_open_team_cannot_be_a_member_of_a_closed_team(self):
         context_team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
@@ -88,7 +91,8 @@ class VocabularyTestBase:
             vocabulary.step_title)
 
 
-class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
+class TestValidTeamMemberVocabulary(TeamMemberVocabularyTestBase,
+                                    TestCaseWithFactory):
     """Test that the ValidTeamMemberVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
@@ -109,7 +113,8 @@ class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
 
-class TestValidTeamOwnerVocabulary(VocabularyTestBase, TestCaseWithFactory):
+class TestValidTeamOwnerVocabulary(TeamMemberVocabularyTestBase,
+                                   TestCaseWithFactory):
     """Test that the ValidTeamOwnerVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
