@@ -1026,7 +1026,6 @@ will be returned.
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Technical Board', u'Techboard Owner'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
-     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'VCS imports', u'Robert Collins'),
      (u'Warty Gnome Team', u'Mark Shuttleworth'),
      (u'Warty Security Team', u'Mark Shuttleworth'),
@@ -1048,7 +1047,6 @@ teams back.
      (u'Ubuntu Team', u'Mark Shuttleworth'),
      (u'Ubuntu Technical Board', u'Techboard Owner'),
      (u'Ubuntu Translators', u'Rosetta Administrators'),
-     (u'Ubuntu branches', u'Ubuntu-branches-owner'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
     >>> sorted((team.displayname, team.teamowner.displayname)
