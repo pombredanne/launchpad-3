@@ -221,11 +221,10 @@ Stats can also be retrieved via HTTP in cricket-graph format:
 
 == No DB access required ==
 
-Accessing the opstats page as an anonymous user will make no database
-queries. This is important to make it as reliable as possible since we
-use this page for monitoring. Because of this property, the load
-balancers also use this page to determine if a Launchpad instance is
-responsive.
+Accessing the opstats page will make no database queries. This is important to
+make it as reliable as possible since we use this page for monitoring. Because
+of this property, the load balancers also use this page to determine if a
+Launchpad instance is responsive.
 
 To confirm this, we first point all our database connection information
 to somewhere that doesn't exist.
@@ -257,6 +256,19 @@ We can still access the opstats page.
     <BLANKLINE>
     1XXs:0@...
 
+This is also true if we are provide authentication.
+
+    >>> print http(r"""
+    ... GET /+opstats HTTP/1.1
+    ... Host: launchpad.dev
+    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=\n""")
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: text/plain; charset=US-ASCII
+    ...
+    <BLANKLINE>
+    1XXs:0@...
+    
 But our database connections are broken.
 
     >>> from canonical.launchpad.interfaces.lpstorm import IStore

@@ -330,7 +330,17 @@ class LaunchpadBrowserPublication(
         personless account, return the unauthenticated principal.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
+        principal = None
+        # +opstats and +haproxy are status URLs that must not query the DB at
+        # all.  This is enforced (see
+        # lib/canonical/launchpad/webapp/dbpolicy.py). If the request is for
+        # one of those two pages, don't even try to authenticate, because we
+        # may fail.  We haven't traversed yet, so we have to sniff the request
+        # this way.  Even though PATH_INFO is always present in real requests,
+        # we need to tread carefully (``get``) because of test requests in our
+        # automated tests.
+        if request.get('PATH_INFO') not in [u'/+opstats', u'/+haproxy']:
+            principal = auth_utility.authenticate(request)
         if principal is None or principal.person is None:
             # This is either an unauthenticated user or a user who
             # authenticated on our OpenID server using a personless account.
