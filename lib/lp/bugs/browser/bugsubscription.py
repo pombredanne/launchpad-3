@@ -582,7 +582,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
                 key=(lambda subscription: subscription.person.displayname))]
 
 
-class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
+class BugPortletSubcribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber IDs for a bug."""
 
     @property
