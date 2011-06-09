@@ -27,7 +27,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
@@ -222,22 +222,22 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
-    def test_is_initialising(self):
-        # The series is_initialising only if there is an initialisation
+    def test_is_initializing(self):
+        # The series is_initializing only if there is an initialization
         # job with a pending status attached to this series.
         distroseries = self.factory.makeDistroSeries()
         parent_distroseries = self.factory.makeDistroSeries()
-        self.assertEquals(False, distroseries.is_initialising)
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        self.assertEquals(False, distroseries.is_initializing)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job = job_source.create(distroseries, [parent_distroseries.id])
-        self.assertEquals(True, distroseries.is_initialising)
+        self.assertEquals(True, distroseries.is_initializing)
         job.start()
-        self.assertEquals(True, distroseries.is_initialising)
+        self.assertEquals(True, distroseries.is_initializing)
         job.queue()
-        self.assertEquals(True, distroseries.is_initialising)
+        self.assertEquals(True, distroseries.is_initializing)
         job.start()
         job.complete()
-        self.assertEquals(False, distroseries.is_initialising)
+        self.assertEquals(False, distroseries.is_initializing)
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

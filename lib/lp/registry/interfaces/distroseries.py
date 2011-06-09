@@ -239,9 +239,9 @@ class IDistroSeriesPublic(
     is_derived_series = Bool(
         title=u'Is this series a derived series?', readonly=True,
         description=(u"Whether or not this series is a derived series."))
-    is_initialising = Bool(
-        title=u'Is this series initialising?', readonly=True,
-        description=(u"Whether or not this series is initialising."))
+    is_initializing = Bool(
+        title=u'Is this series initializing?', readonly=True,
+        description=(u"Whether or not this series is initializing."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     previous_series = exported(

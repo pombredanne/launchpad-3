@@ -96,7 +96,7 @@ class TestQueueBase(TestCase):
                         suite_name='breezy-autotest', quiet=True):
         """Helper method to execute a queue command.
 
-        Initialise output buffer and execute a command according
+        Initialize output buffer and execute a command according
         given argument.
 
         Return the used QueueAction instance.

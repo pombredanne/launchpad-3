@@ -67,7 +67,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -296,22 +296,22 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
         self.assertThat(html_content, portlet_display)
 
-    def test_differences_portlet_initialising(self):
-        # The difference portlet displays 'The series is initialising.' if
-        # there is an initialising job for the series.
+    def test_differences_portlet_initializing(self):
+        # The difference portlet displays 'The series is initializing.' if
+        # there is an initializing job for the series.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         self.simple_user = self.factory.makePerson()
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job_source.create(derived_series, [parent_series.id])
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Series initialisation in progress'),
+                text='Series initialization in progress'),
             soupmatchers.Tag(
                 'Init message', True,
-                text=re.compile('\s*This series is initialising.\s*')),
+                text=re.compile('\s*This series is initializing.\s*')),
               )
 
         with person_logged_in(self.simple_user):
@@ -324,7 +324,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             view.request.features = get_relevant_feature_controller()
             html_content = view()
 
-        self.assertTrue(derived_series.is_initialising)
+        self.assertTrue(derived_series.is_initializing)
         self.assertThat(html_content, portlet_display)
 
 

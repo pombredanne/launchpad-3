@@ -3,7 +3,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Initialise a new distroseries from its parent series."""
+"""Initialize a new distroseries from its parent series."""
 
 from optparse import OptionParser
 import sys
@@ -21,9 +21,9 @@ from canonical.launchpad.scripts import (
 from canonical.lp import initZopeless
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.scripts.initialise_distroseries import (
-    InitialisationError,
-    InitialiseDistroSeries,
+from lp.soyuz.scripts.initialize_distroseries import (
+    InitializationError,
+    InitializeDistroSeries,
     )
 
 
@@ -47,20 +47,20 @@ def main():
 
     (options, args) = parser.parse_args()
 
-    log = logger(options, "initialise")
+    log = logger(options, "initialize")
 
     if len(args) != 1:
         log.error("Need to be given exactly one non-option argument. "
-                  "Namely the distroseries to initialise.")
+                  "Namely the distroseries to initialize.")
         return 1
 
     distroseries_name = args[0]
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-initialise.lock')
+    lock = GlobalLock('/var/lock/launchpad-initialize.lock')
     lock.acquire(blocking=True)
 
-    log.debug("Initialising connection.")
+    log.debug("Initializing connection.")
 
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
@@ -81,17 +81,17 @@ def main():
         arches = ()
         if options.arches is not None:
             arches = tuple(options.arches.split(','))
-        # InitialiseDistroSeries does not like it if the parent series is
+        # InitializeDistroSeries does not like it if the parent series is
         # specified on the child, so we must unset it and pass it in. This is
-        # a temporary hack until confidence in InitialiseDistroSeriesJob is
+        # a temporary hack until confidence in InitializeDistroSeriesJob is
         # good, at which point this script will be obsolete.
         parent, distroseries.previous_series = (
             distroseries.previous_series, None)
-        ids = InitialiseDistroSeries(distroseries, [parent.id], arches)
+        ids = InitializeDistroSeries(distroseries, [parent.id], arches)
         ids.check()
-        log.debug('initialising from parent(s), copying publishing records.')
-        ids.initialise()
-    except InitialisationError, e:
+        log.debug('initializing from parent(s), copying publishing records.')
+        ids.initialize()
+    except InitializationError, e:
         log.error(e)
         return 1
 
