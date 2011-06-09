@@ -1102,7 +1102,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         observed = map(vars, view.request.response.notifications)
         self.assertEqual([expected], observed)
 
-    def test_requestUpgrade_is_efficient(self):
+    def test_requestUpgrades_is_efficient(self):
         # A single web request may need to schedule large numbers of
         # package upgrades.  It must do so without issuing large numbers
         # of database queries.
@@ -1112,18 +1112,17 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         flush_database_caches()
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
-        # Creating Jobs and DistributionJobs takes 2 extra queries per
-        # requested sync.
-        requested_syncs = 3
-        for index in xrange(requested_syncs):
+        self.assertThat(recorder1, HasQueryCount(LessThan(12)))
+
+        # The query count does not increase with the number of upgrades.
+        for index in xrange(3):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(
             recorder2,
-            HasQueryCount(Equals(recorder1.count + 2 * requested_syncs)))
+            HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
