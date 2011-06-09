@@ -544,8 +544,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 'dupe_links_string': dupe_links_string})
 
 
-class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
-    """A view that returns a JSON dump of the subscriber IDs for a bug."""
+class BugPortletSubcribersWithDetails(LaunchpadView):
+    """A view that returns a JSON dump of the subscriber details for a bug."""
 
     @property
     def subscriber_data_js(self):
