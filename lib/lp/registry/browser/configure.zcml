@@ -201,8 +201,8 @@
         for="..interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
         template="../templates/distroseriesdifferencecomment-latest-comment-fragment.pt"
         class="canonical.launchpad.webapp.LaunchpadView"
-        permission="launchpad.View"
-        name="+fragment" />
+        permission="zope.Public"
+        name="+latest-comment-fragment" />
     <adapter
       factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
       name="lazr.restful.EntryResource" />

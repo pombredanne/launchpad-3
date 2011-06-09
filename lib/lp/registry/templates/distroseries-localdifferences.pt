@@ -167,8 +167,12 @@
                 </tal:derived>
               </td>
 
-              <td tal:content="structure difference/latest_comment/@@+fragment"
-                  tal:attributes="id string:latest-comment.{difference/id}" />
+              <td>
+                <tal:latest-comment-fragment
+                    define="comment difference/latest_comment"
+                    content="structure comment/@@+latest-comment-fragment"
+                    condition="comment" />
+              </td>
 
             </tr>
 

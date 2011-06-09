@@ -13,7 +13,7 @@ from lp.testing.views import create_initialized_view
 
 
 class TestDistroSeriesDifferenceCommentFragment(TestCaseWithFactory):
-    """Test the `IDistroSeriesDifferenceComment` +fragment view."""
+    """`IDistroSeriesDifferenceComment` +latest-comment-fragment view."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -21,7 +21,7 @@ class TestDistroSeriesDifferenceCommentFragment(TestCaseWithFactory):
         comment_text = "_123456789" * 10
         comment = self.factory.makeDistroSeriesDifferenceComment(
             comment=comment_text)
-        view = create_initialized_view(comment, '+fragment')
+        view = create_initialized_view(comment, '+latest-comment-fragment')
         root = html.fromstring(view())
         self.assertEqual("span", root.tag)
         self.assertEqual("%s..." % comment_text[:47], root.text.strip())
