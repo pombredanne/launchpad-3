@@ -1095,7 +1095,7 @@
             for="lp.bugs.interfaces.bug.IBug"
             name="+bug-portlet-subscribers-details"
             class="
-              lp.bugs.browser.bugsubscription.BugPortletSubcribersWithDetails"
+              lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"

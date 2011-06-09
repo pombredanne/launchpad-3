@@ -5,11 +5,16 @@
 
 __metaclass__ = type
 
+from simplejson import dumps
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
+    BugPortletSubscribersWithDetails,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
@@ -479,3 +484,146 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
                 self.bug.default_bugtask, name="+mute",
                 form={'field.actions.unmute': 'Unmute bug mail'})
             self.assertFalse(self.bug.isMuted(self.person))
+
+
+class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
+    """Tests for IBug:+bug-portlet-subscribers-details view."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_content_type(self):
+        bug = self.factory.makeBug()
+
+        # It works even for anonymous users, so no log-in is needed.
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        harness.view.render()
+
+        self.assertEqual(
+            harness.request.response.getHeader('content-type'),
+            'application/json')
+
+    def _makeBugWithNoSubscribers(self):
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe the bug reporter to ensure we have no subscribers.
+            bug.unsubscribe(bug.owner, bug.owner)
+        return bug
+
+    def test_data_no_subscriptions(self):
+        bug = self._makeBugWithNoSubscribers()
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        self.assertEqual(dumps([]), harness.view.subscriber_data_js)
+
+    def test_data_person_subscription(self):
+        # A subscriber_data_js returns JSON string of a list
+        # containing all subscriber information needed for
+        # subscribers_list.js subscribers loading.
+        bug = self._makeBugWithNoSubscribers()
+        subscriber = self.factory.makePerson(
+            name='user', displayname='Subscriber Name')
+        with person_logged_in(subscriber):
+            bug.subscribe(subscriber, subscriber,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+
+        expected_result = {
+            'subscriber' : {
+                'name': 'user',
+                'display_name': 'Subscriber Name',
+                'is_team': False,
+                'can_edit': False,
+                'web_link': canonical_url(subscriber),
+                },
+            'subscription_level': "Lifecycle",
+            }
+        self.assertEqual(
+            dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_team_subscription(self):
+        # For a team subscription, subscriber_data_js has is_team set
+        # to true.
+        bug = self._makeBugWithNoSubscribers()
+        subscriber = self.factory.makeTeam(
+            name='team', displayname='Team Name')
+        with person_logged_in(subscriber.teamowner):
+            bug.subscribe(subscriber, subscriber.teamowner,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+
+        expected_result = {
+            'subscriber' : {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': False,
+                'web_link': canonical_url(subscriber),
+                },
+            'subscription_level': "Lifecycle",
+            }
+        self.assertEqual(
+            dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_team_subscription_owner_looks(self):
+        # For a team subscription, subscriber_data_js has can_edit
+        # set to true for team owner.
+        bug = self._makeBugWithNoSubscribers()
+        subscriber = self.factory.makeTeam(
+            name='team', displayname='Team Name')
+        with person_logged_in(subscriber.teamowner):
+            bug.subscribe(subscriber, subscriber.teamowner,
+                          level=BugNotificationLevel.LIFECYCLE)
+            harness = LaunchpadFormHarness(
+                bug, BugPortletSubscribersWithDetails)
+
+        expected_result = {
+            'subscriber' : {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': True,
+                'web_link': canonical_url(subscriber),
+                },
+            'subscription_level': "Lifecycle",
+            }
+        with person_logged_in(subscriber.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_team_subscription_member_looks(self):
+        # For a team subscription, subscriber_data_js has can_edit
+        # set to true for team member.
+        bug = self._makeBugWithNoSubscribers()
+        member = self.factory.makePerson()
+        subscriber = self.factory.makeTeam(
+            name='team', displayname='Team Name', members=[member])
+        with person_logged_in(subscriber.teamowner):
+            bug.subscribe(subscriber, subscriber.teamowner,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(
+            bug, BugPortletSubscribersWithDetails)
+
+        expected_result = {
+            'subscriber' : {
+                'name': 'team',
+                'display_name': 'Team Name',
+                'is_team': True,
+                'can_edit': True,
+                'web_link': canonical_url(subscriber),
+                },
+            'subscription_level': "Lifecycle",
+            }
+        with person_logged_in(subscriber.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_person_subscription_user_excluded(self):
+        # With the subscriber logged in, he is not included in the results.
+        bug = self._makeBugWithNoSubscribers()
+        subscriber = self.factory.makePerson(
+            name='a-person', displayname='Subscriber Name')
+
+        with person_logged_in(subscriber):
+            bug.subscribe(subscriber, subscriber,
+                          level=BugNotificationLevel.LIFECYCLE)
+            harness = LaunchpadFormHarness(
+                bug, BugPortletSubscribersWithDetails)
+            self.assertEqual(dumps([]), harness.view.subscriber_data_js)
