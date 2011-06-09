@@ -70,4 +70,3 @@ class HAProxyIntegrationTest(TestCase):
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
         self.assertEquals(499, result.getStatus())
-

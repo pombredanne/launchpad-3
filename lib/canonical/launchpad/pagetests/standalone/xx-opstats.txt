@@ -1,4 +1,5 @@
-= Operational Statistics and Metrics =
+Operational Statistics and Metrics
+==================================
 
 We make Zope 3 give us real time statistics about Launchpad's operation.
 We can access them via XML-RPC:
@@ -25,7 +26,8 @@ Create a function to report our stats for these tests.
     ...     reset()
     ...
 
-== Number of requests and XML-RPC requests ==
+Number of requests and XML-RPC requests
+---------------------------------------
 
 Even though XML-RPC requests are technically HTTP requests, we do not
 count them as such. Note that the call to obtain statistics will increment
@@ -59,7 +61,8 @@ are adjusted after the request has been served:
     requests: 1
     xml-rpc requests: 1
 
-== Number of HTTP requests and success codes ==
+Number of HTTP requests and success codes
+-----------------------------------------
 
     >>> output = http("GET / HTTP/1.1\nHost: bugs.launchpad.dev\n")
     >>> output.getStatus()
@@ -69,7 +72,8 @@ are adjusted after the request has been served:
     http requests: 1
     requests: 1
 
-== Number of 404s ==
+Number of 404s
+--------------
 
 Note that retries is incremented too. As per the standard Launchpad
 database policy, this request first uses the slave DB. The requested
@@ -86,7 +90,8 @@ master DB in case the information is missing due to replication lag.
     requests: 1
     retries: 1
 
-== Number of 500 Internal Server Errors (unhandled exceptions) ==
+Number of 500 Internal Server Errors (unhandled exceptions)
+-----------------------------------------------------------
 
 This is normally the number of OOPS pages displayed to the user, but
 may also include the odd case where the OOPS system has failed and a
@@ -129,7 +134,8 @@ the site.
     http requests: 1
     requests: 1
 
-== Number of XML-RPC Faults ==
+Number of XML-RPC Faults
+------------------------
 
     >>> try:
     ...     opstats = lp_xmlrpc.invalid() # XXX: Need a HTTP test too
@@ -142,7 +148,8 @@ the site.
     xml-rpc requests: 1
 
 
-== Number of soft timeouts ==
+Number of soft timeouts
+-----------------------
 
     >>> from canonical.config import config
     >>> test_data = dedent("""
@@ -162,7 +169,8 @@ the site.
     requests: 1
     soft timeouts: 1
 
-== Number of Timeouts ==
+Number of Timeouts
+------------------
 
 We can't reliably track this using the 503 response code as other
 Launchpad code may well return this status and an XML-RPC request may
@@ -190,7 +198,8 @@ also return a timeout Fault:
     timeouts: 1
 
 
-== HTTP access for Cricket ==
+HTTP access for Cricket
+-----------------------
 
 Stats can also be retrieved via HTTP in cricket-graph format:
 
@@ -219,7 +228,8 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     xmlrpc_requests:0@...
     <BLANKLINE>
 
-== No DB access required ==
+No DB access required
+---------------------
 
 Accessing the opstats page will make no database queries. This is important to
 make it as reliable as possible since we use this page for monitoring. Because
@@ -261,14 +271,15 @@ This is also true if we are provide authentication.
     >>> print http(r"""
     ... GET /+opstats HTTP/1.1
     ... Host: launchpad.dev
-    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=\n""")
+    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... """)
     HTTP/1.1 200 Ok
     ...
     Content-Type: text/plain; charset=US-ASCII
     ...
     <BLANKLINE>
     1XXs:0@...
-    
+
 But our database connections are broken.
 
     >>> from canonical.launchpad.interfaces.lpstorm import IStore
@@ -283,4 +294,3 @@ But our database connections are broken.
 
     >>> IStore(Person).find(Person, name='janitor').one().name
     u'janitor'
-
