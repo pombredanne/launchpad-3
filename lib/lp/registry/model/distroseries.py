@@ -2023,6 +2023,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 status=status,
                 child_version_higher=child_version_higher)
 
+    def isInitializing(self):
+        """See `IDistroSeries`."""
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        pending_jobs = job_source.getPendingJobsForDistroseries(self)
+        return not pending_jobs.is_empty()
+
+    def isInitialized(self):
+        """See `IDistroSeries`."""
+        published = self.main_archive.getPublishedSources(distroseries=self)
+        return not published.is_empty()
+
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)

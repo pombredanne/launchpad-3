@@ -222,6 +222,7 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
+    # TODO: Your days are numbered pal.
     def test_is_initialising(self):
         # The series is_initialising only if there is an initialisation
         # job with a pending status attached to this series.
@@ -238,6 +239,32 @@ class TestDistroSeries(TestCaseWithFactory):
         job.start()
         job.complete()
         self.assertEquals(False, distroseries.is_initialising)
+
+    def test_isInitializing(self):
+        # The series method isInitializing() returns True only if there is an
+        # initialisation job with a pending status attached to this series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isInitializing())
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertTrue(distroseries.isInitializing())
+        job.start()
+        self.assertTrue(distroseries.isInitializing())
+        job.queue()
+        self.assertTrue(distroseries.isInitializing())
+        job.start()
+        job.complete()
+        self.assertFalse(distroseries.isInitializing())
+
+    def test_isInitialized(self):
+        # The series method isInitialized() returns True once the series has
+        # been initialized.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isInitialized())
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        self.assertTrue(distroseries.isInitialized())
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

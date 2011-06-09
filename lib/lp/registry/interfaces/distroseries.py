@@ -239,6 +239,7 @@ class IDistroSeriesPublic(
     is_derived_series = Bool(
         title=u'Is this series a derived series?', readonly=True,
         description=(u"Whether or not this series is a derived series."))
+    # TODO: You're on my shitlist.
     is_initialising = Bool(
         title=u'Is this series initialising?', readonly=True,
         description=(u"Whether or not this series is initialising."))
@@ -885,6 +886,13 @@ class IDistroSeriesPublic(
         :param child_version_higher: Only return differences for which the
             child's version is higher than the parent's version.
         """
+
+    def isInitializing(self):
+        """Is this series initializing?"""
+
+    def isInitialized(self):
+        """Has this series been initialized?"""
+
 
 
 class IDistroSeriesEditRestricted(Interface):
