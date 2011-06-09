@@ -55,9 +55,11 @@
             Y.on('domready', function() {
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
-                var sl = Y.lp.bugs.subscribers_list.getSubscribersList({
+                var sl = new Y.lp.bugs.subscribers_list.BugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
-                    bug: LP.cache.bug
+                    bug: LP.cache.bug,
+                    subscribers_details_view:
+                        '/+bug-portlet-subscribers-details'
                 });
             });
          });
