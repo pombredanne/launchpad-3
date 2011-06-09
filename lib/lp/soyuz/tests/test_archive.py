@@ -1341,7 +1341,7 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
 
 class TestArchiveDependencies(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def test_private_sources_list(self):
         """Entries for private dependencies include credentials."""
