@@ -44,6 +44,13 @@ class TestBugSummary(TestCaseWithFactory):
         # previous transactions.
         self.store.invalidate()
 
+        # And rollup the BugSummaryJournal into BugSummary
+        # so all the records are in one place - this checks the journal
+        # flushing logic is correct; the view is trivially defined so
+        # given a choice of testing without rollup or with rollup we get better
+        # coverage with.
+        self.store.execute("SELECT bugsummary_rollup_journal()")
+
         public_summaries = self.store.find(
             BugSummary,
             BugSummary.viewed_by == None,
