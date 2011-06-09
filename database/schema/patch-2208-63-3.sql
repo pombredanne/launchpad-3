@@ -18,7 +18,7 @@ CREATE TABLE BugSummaryJournal (
     distribution INTEGER REFERENCES Distribution ON DELETE CASCADE,
     distroseries INTEGER REFERENCES DistroSeries ON DELETE CASCADE,
     sourcepackagename INTEGER REFERENCES SourcePackageName ON DELETE CASCADE,
-    viewed_by INTEGER REFERENCES Person ON DELETE CASCADE,
+    viewed_by INTEGER,
     tag TEXT,
     status INTEGER NOT NULL,
     milestone INTEGER REFERENCES Milestone ON DELETE CASCADE);
