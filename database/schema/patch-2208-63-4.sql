@@ -160,7 +160,7 @@ BEGIN
     FOR d IN SELECT * FROM bugsummary_temp_journal LOOP
         PERFORM bugsummary_journal_ins(d);
     END LOOP;
-    DELETE FROM bugsummary_temp_journal;
+    TRUNCATE bugsummary_temp_journal;
 END;
 $$;
 
