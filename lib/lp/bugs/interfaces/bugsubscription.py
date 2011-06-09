@@ -38,6 +38,7 @@ from canonical.launchpad.components.apihelpers import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.services.fields import PersonChoice
 
+
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
