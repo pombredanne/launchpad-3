@@ -457,7 +457,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # The form is hidden when the feature flag is set but the series has
         # already been initialized.
         distroseries = self.factory.makeDistroSeries()
-        self.factory.makeDistroSeriesParent(derived_series=distroseries)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distroseries.main_archive)
         view = create_initialized_view(distroseries, "+initseries")
         flags = {u"soyuz.derived_series_ui.enabled": u"true"}
         with FeatureFixture(flags):
