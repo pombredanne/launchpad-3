@@ -1,3 +1,5 @@
+BEGIN;
+
 -- Copyright 2011 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -35,28 +37,6 @@ $$;
 COMMENT ON FUNCTION ensure_bugsummary_temp_journal() IS
 'Create a temporary table bugsummary_temp_journal if it does not exist.';
 
-CREATE OR REPLACE FUNCTION bug_summary_temp_journal_clean_row(d bugsummary) RETURNS VOID
-LANGUAGE plpgsql AS
-$$
-BEGIN
-    -- maybe gc the row (perhaps should be garbo but easy enough to add here:
-    DELETE FROM bugsummary_temp_journal
-    WHERE
-        count=0
-        AND product IS NOT DISTINCT FROM d.product
-        AND productseries IS NOT DISTINCT FROM d.productseries
-        AND distribution IS NOT DISTINCT FROM d.distribution
-        AND distroseries IS NOT DISTINCT FROM d.distroseries
-        AND sourcepackagename IS NOT DISTINCT FROM d.sourcepackagename
-        AND viewed_by IS NOT DISTINCT FROM d.viewed_by
-        AND tag IS NOT DISTINCT FROM d.tag
-        AND status IS NOT DISTINCT FROM d.status
-        AND milestone IS NOT DISTINCT FROM d.milestone;
-END;
-$$;
-
-COMMENT ON FUNCTION bug_summary_temp_journal_clean_row(bugsummary) IS
-'Remove a row from the temp journal if its count is 0';
 
 CREATE OR REPLACE FUNCTION bug_summary_temp_journal_dec(d bugsummary) RETURNS VOID
 LANGUAGE plpgsql AS
@@ -66,17 +46,25 @@ BEGIN
     -- fail - just decrement the row.
     UPDATE BugSummary_Temp_Journal SET count = count - 1
     WHERE
-        product IS NOT DISTINCT FROM d.product
-        AND productseries IS NOT DISTINCT FROM d.productseries
-        AND distribution IS NOT DISTINCT FROM d.distribution
-        AND distroseries IS NOT DISTINCT FROM d.distroseries
-        AND sourcepackagename IS NOT DISTINCT FROM d.sourcepackagename
-        AND viewed_by IS NOT DISTINCT FROM d.viewed_by
-        AND tag IS NOT DISTINCT FROM d.tag
-        AND status IS NOT DISTINCT FROM d.status
-        AND milestone IS NOT DISTINCT FROM d.milestone;
+        ((d.product IS NULL AND product IS NULL)
+            OR product = d.product)
+        AND ((d.productseries IS NULL AND productseries IS NULL)
+            OR productseries = d.productseries)
+        AND ((d.distribution IS NULL AND distribution IS NULL)
+            OR distribution = d.distribution)
+        AND ((d.distroseries IS NULL AND distroseries IS NULL)
+            OR distroseries = d.distroseries)
+        AND ((d.sourcepackagename IS NULL AND sourcepackagename IS NULL)
+            OR sourcepackagename = d.sourcepackagename)
+        AND ((d.viewed_by IS NULL AND viewed_by IS NULL)
+            OR viewed_by = d.viewed_by)
+        AND ((d.tag IS NULL AND tag IS NULL)
+            OR tag = d.tag)
+        AND ((d.status IS NULL AND status IS NULL)
+            OR status = d.status)
+        AND ((d.milestone IS NULL AND milestone IS NULL)
+            OR milestone = d.milestone);
     IF found THEN
-        PERFORM bug_summary_temp_journal_clean_row(d);
         RETURN;
     END IF;
     -- not there, so try to insert the key
@@ -102,17 +90,25 @@ BEGIN
     -- first try to update the row
     UPDATE BugSummary_Temp_Journal SET count = count + 1
     WHERE
-        product IS NOT DISTINCT FROM d.product
-        AND productseries IS NOT DISTINCT FROM d.productseries
-        AND distribution IS NOT DISTINCT FROM d.distribution
-        AND distroseries IS NOT DISTINCT FROM d.distroseries
-        AND sourcepackagename IS NOT DISTINCT FROM d.sourcepackagename
-        AND viewed_by IS NOT DISTINCT FROM d.viewed_by
-        AND tag IS NOT DISTINCT FROM d.tag
-        AND status IS NOT DISTINCT FROM d.status
-        AND milestone IS NOT DISTINCT FROM d.milestone;
+        ((d.product IS NULL AND product IS NULL)
+            OR product = d.product)
+        AND ((d.productseries IS NULL AND productseries IS NULL)
+            OR productseries = d.productseries)
+        AND ((d.distribution IS NULL AND distribution IS NULL)
+            OR distribution = d.distribution)
+        AND ((d.distroseries IS NULL AND distroseries IS NULL)
+            OR distroseries = d.distroseries)
+        AND ((d.sourcepackagename IS NULL AND sourcepackagename IS NULL)
+            OR sourcepackagename = d.sourcepackagename)
+        AND ((d.viewed_by IS NULL AND viewed_by IS NULL)
+            OR viewed_by = d.viewed_by)
+        AND ((d.tag IS NULL AND tag IS NULL)
+            OR tag = d.tag)
+        AND ((d.status IS NULL AND status IS NULL)
+            OR status = d.status)
+        AND ((d.milestone IS NULL AND milestone IS NULL)
+            OR milestone = d.milestone);
     IF found THEN
-        PERFORM bug_summary_temp_journal_clean_row($1);
         RETURN;
     END IF;
     -- not there, so try to insert the key
@@ -358,4 +354,11 @@ BEGIN
 END;
 $$;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 1);
+
+-- XXX: We want this too
+-- CREATE INDEX bugsummary__milestone__idx
+--    ON BugSummary(milestone) WHERE milestone IS NOT NULL;
+
+COMMIT;
+
+-- INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 1);
