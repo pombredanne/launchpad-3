@@ -85,7 +85,10 @@ from lp.testing import (
     with_celebrity_logged_in,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.matchers import HasQueryCount, EqualsIgnoringWhitespace
+from lp.testing.matchers import (
+    EqualsIgnoringWhitespace,
+    HasQueryCount,
+    )
 from lp.testing.views import create_initialized_view
 
 
