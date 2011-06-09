@@ -77,7 +77,7 @@ LANGUAGE SQL AS
 $$
     -- We own the row reference, so in the absence of bugs this cannot
     -- fail - just decrement the row.
-    UPDATE BugSummary SET count = count - $1.count
+    UPDATE BugSummary SET count = count + $1.count
     WHERE
         product IS NOT DISTINCT FROM $1.product
         AND productseries IS NOT DISTINCT FROM $1.productseries
