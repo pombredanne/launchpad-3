@@ -12,10 +12,11 @@ __all__ = [
     ]
 
 from email.Utils import parseaddr
-import re
 from httplib import BadStatusLine
 from urllib2 import URLError
 from xml.dom import minidom
+import re
+import string
 import xml.parsers.expat
 import xmlrpclib
 
@@ -59,7 +60,7 @@ from lp.services.database.isolation import ensure_no_transaction
 class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
-    batch_query_threshold = 0 # Always use the batch method.
+    batch_query_threshold = 0  # Always use the batch method.
     _test_xmlrpc_proxy = None
 
     def __init__(self, baseurl, version=None):
@@ -177,6 +178,15 @@ class Bugzilla(ExternalBugTracker):
         # encoding that page is in, and then encode() it into the utf-8
         # that minidom requires.
         contents = encoding.guess(contents).encode("utf-8")
+        # Since the string is utf-8 encoded and utf-8 encoded string have the
+        # high bit set for non-ASCII characters, we can now strip out any
+        # ASCII control characters without touching encoded Unicode
+        # characters.
+        bad_chars = ''.join(chr(i) for i in range(0, 32))
+        for char in '\n\r\t':
+            bad_chars = bad_chars.replace(char, '')
+        trans_map = string.maketrans(bad_chars, ' ' * len(bad_chars))
+        contents = contents.translate(trans_map)
         return minidom.parseString(contents)
 
     def _probe_version(self):
@@ -489,7 +499,7 @@ class Bugzilla(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         try:
             if bug_id not in self.remote_bug_importance:
-                return "Bug %s is not in remote_bug_importance" %(bug_id)
+                return "Bug %s is not in remote_bug_importance" % bug_id
             return self.remote_bug_importance[bug_id]
         except:
             return UNKNOWN_REMOTE_IMPORTANCE
