@@ -36,17 +36,20 @@ CREATE INDEX bugsummaryjournal__milestone__idx
 
 
 -- Combined view so we don't have to manually collate rows from both tables.
--- Note that we lose the id column - that only exists to keep replication
--- happy.
+-- Note that we flip the sign of the id column of BugSummaryJournal to avoid
+-- clashes. This is enough to keep Storm happy as it never needs to update
+-- this table, and there are no other suitable primary keys.
+-- We don't SUM() rows here to ensure PostgreSQL has the most hope of
+-- generating good query plans when we query this view.
 CREATE OR REPLACE VIEW CombinedBugSummary AS (
     SELECT
-        count, product, productseries, distribution, distroseries,
+        id, count, product, productseries, distribution, distroseries,
         sourcepackagename, viewed_by, tag, status, milestone
-    FROM BugSummaryJournal
+    FROM BugSummary
     UNION ALL
     SELECT
-        count, product, productseries, distribution, distroseries,
+        -id as id, count, product, productseries, distribution, distroseries,
         sourcepackagename, viewed_by, tag, status, milestone
-    FROM BugSummary);
+    FROM BugSummaryJournal);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 63, 3);
