@@ -128,8 +128,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # If the parent series has items in its queues, such as NEW and
         # UNAPPROVED, we can't initialise.
         self.parent.createQueueEntry(
-            PackagePublishingPocket.RELEASE,
-            'foo.changes', 'bar', self.parent.main_archive)
+            PackagePublishingPocket.RELEASE, self.parent.main_archive,
+            'foo.changes', 'bar')
         child = self.factory.makeDistroSeries()
         ids = InitialiseDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(

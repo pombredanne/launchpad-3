@@ -779,8 +779,8 @@ class IDistroSeriesPublic(
         DistroSeriesBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None, package_copy_job=None):
+    def createQueueEntry(pocket, archive, changesfilename, changesfilecontent,
+                         signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.
