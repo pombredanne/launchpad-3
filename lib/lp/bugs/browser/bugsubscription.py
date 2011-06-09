@@ -582,7 +582,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
                 key=(lambda subscription: subscription.person.displayname))]
 
 
-class BugPortletSubscribersWithDetails(LaunchpadView, BugViewMixin):
+class BugPortletSubscribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber details for a bug."""
 
     @property
@@ -591,6 +591,9 @@ class BugPortletSubscribersWithDetails(LaunchpadView, BugViewMixin):
         data = []
         details = list(self.context.getDirectSubscribersWithDetails())
         for person, subscription in details:
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
             can_edit = self.user is not None and self.user.inTeam(person)
             subscriber = {
                 'name' : person.name,
@@ -608,6 +611,9 @@ class BugPortletSubscribersWithDetails(LaunchpadView, BugViewMixin):
 
         others = list(self.context.getIndirectSubscribers())
         for person in others:
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
             subscriber = {
                 'name' : person.name,
                 'display_name' : person.displayname,
