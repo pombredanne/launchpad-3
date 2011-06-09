@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AdvancedSubscriptionMixin',
     'BugMuteSelfView',
+    'BugPortletSubscribersWithDetails',
     'BugSubscriptionAddView',
     'BugSubscriptionListView',
     ]
@@ -544,7 +545,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 'dupe_links_string': dupe_links_string})
 
 
-class BugPortletSubcribersWithDetails(LaunchpadView):
+class BugPortletSubscribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber details for a bug."""
 
     @property
