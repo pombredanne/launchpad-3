@@ -8,10 +8,7 @@ __metaclass__ = type
 from simplejson import dumps
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import (
-    LaunchpadFormHarness,
-    login,
-    )
+from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
@@ -397,8 +394,100 @@ class BugPortletSubcribersIdsTests(TestCaseWithFactory):
             'application/json')
 
 
-class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
+class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
+    """Tests for the BugSubscriptionsListView."""
 
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSubscriptionsListViewTestCase, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='widgetsrus', displayname='Widgets R Us')
+        self.bug = self.factory.makeBug(product=self.product)
+        self.subscriber = self.factory.makePerson()
+
+    def test_form_initializes(self):
+        # It's a start.
+        with person_logged_in(self.subscriber):
+            self.product.addBugSubscription(
+                self.subscriber, self.subscriber)
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionListView)
+            harness.view.initialize()
+
+
+class BugMuteSelfViewTestCase(TestCaseWithFactory):
+    """Tests for the BugMuteSelfView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugMuteSelfViewTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+
+    def test_is_muted_false(self):
+        # BugMuteSelfView initialization sets the is_muted property.
+        # When the person has not muted the bug, it's false.
+        with person_logged_in(self.person):
+            self.assertFalse(self.bug.isMuted(self.person))
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            self.assertFalse(view.is_muted)
+
+    def test_is_muted_true(self):
+        # BugMuteSelfView initialization sets the is_muted property.
+        # When the person has muted the bug, it's true.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            self.assertTrue(view.is_muted)
+
+    def test_label_nonmuted(self):
+        # Label to use for the button.
+        with person_logged_in(self.person):
+            self.assertFalse(self.bug.isMuted(self.person))
+            expected_label = "Mute bug mail for bug %s" % self.bug.id
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            self.assertEqual(expected_label, view.label)
+
+    def test_label_muted(self):
+        # Label to use for the button.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
+            expected_label = "Unmute bug mail for bug %s" % self.bug.id
+            view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            self.assertEqual(expected_label, view.label)
+
+    def test_bug_mute_self_view_mutes_bug(self):
+        # The BugMuteSelfView mutes bug mail for the current user when
+        # its form is submitted.
+        with person_logged_in(self.person):
+            self.assertFalse(self.bug.isMuted(self.person))
+            create_initialized_view(
+                self.bug.default_bugtask, name="+mute",
+                form={'field.actions.mute': 'Mute bug mail'})
+            self.assertTrue(self.bug.isMuted(self.person))
+
+    def test_bug_mute_self_view_unmutes_bug(self):
+        # The BugMuteSelfView unmutes bug mail for the current user when
+        # its form is submitted and the bug was already muted.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
+            create_initialized_view(
+                self.bug.default_bugtask, name="+mute",
+                form={'field.actions.unmute': 'Unmute bug mail'})
+            self.assertFalse(self.bug.isMuted(self.person))
+
+
+class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
+    """Tests for IBug:+bug-portlet-subscribers-details view."""
     layer = LaunchpadFunctionalLayer
 
     def test_content_type(self):
@@ -495,8 +584,9 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 },
             'subscription_level': "Lifecycle",
             }
-        self.assertEqual(
-            dumps([expected_result]), harness.view.subscriber_data_js)
+        with person_logged_in(subscriber.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
 
     def test_data_team_subscription_member_looks(self):
         # For a team subscription, subscriber_data_js has can_edit
@@ -521,111 +611,19 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 },
             'subscription_level': "Lifecycle",
             }
-        self.assertEqual(
-            dumps([expected_result]), harness.view.subscriber_data_js)
+        with person_logged_in(subscriber.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
 
     def test_data_person_subscription_user_excluded(self):
         # With the subscriber logged in, he is not included in the results.
         bug = self._makeBugWithNoSubscribers()
         subscriber = self.factory.makePerson(
-            name='user', displayname='Subscriber Name')
+            name='a-person', displayname='Subscriber Name')
+
         with person_logged_in(subscriber):
             bug.subscribe(subscriber, subscriber,
                           level=BugNotificationLevel.LIFECYCLE)
-            login(subscriber.preferredemail.email)
-            view = create_initialized_view(
-                bug, name="+bug-portlet-subscribers-details")
-
-        self.assertEqual(dumps([]), view.subscriber_data_js)
-
-
-class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
-    """Tests for the BugSubscriptionsListView."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(BugSubscriptionsListViewTestCase, self).setUp()
-        self.product = self.factory.makeProduct(
-            name='widgetsrus', displayname='Widgets R Us')
-        self.bug = self.factory.makeBug(product=self.product)
-        self.subscriber = self.factory.makePerson()
-
-    def test_form_initializes(self):
-        # It's a start.
-        with person_logged_in(self.subscriber):
-            self.product.addBugSubscription(
-                self.subscriber, self.subscriber)
             harness = LaunchpadFormHarness(
-                self.bug.default_bugtask, BugSubscriptionListView)
-            harness.view.initialize()
-
-
-class BugMuteSelfViewTestCase(TestCaseWithFactory):
-    """Tests for the BugMuteSelfView."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(BugMuteSelfViewTestCase, self).setUp()
-        self.bug = self.factory.makeBug()
-        self.person = self.factory.makePerson()
-
-    def test_is_muted_false(self):
-        # BugMuteSelfView initialization sets the is_muted property.
-        # When the person has not muted the bug, it's false.
-        with person_logged_in(self.person):
-            self.assertFalse(self.bug.isMuted(self.person))
-            view = create_initialized_view(
-                self.bug.default_bugtask, name="+mute")
-            self.assertFalse(view.is_muted)
-
-    def test_is_muted_true(self):
-        # BugMuteSelfView initialization sets the is_muted property.
-        # When the person has muted the bug, it's true.
-        with person_logged_in(self.person):
-            self.bug.mute(self.person, self.person)
-            self.assertTrue(self.bug.isMuted(self.person))
-            view = create_initialized_view(
-                self.bug.default_bugtask, name="+mute")
-            self.assertTrue(view.is_muted)
-
-    def test_label_nonmuted(self):
-        # Label to use for the button.
-        with person_logged_in(self.person):
-            self.assertFalse(self.bug.isMuted(self.person))
-            expected_label = "Mute bug mail for bug %s" % self.bug.id
-            view = create_initialized_view(
-                self.bug.default_bugtask, name="+mute")
-            self.assertEqual(expected_label, view.label)
-
-    def test_label_muted(self):
-        # Label to use for the button.
-        with person_logged_in(self.person):
-            self.bug.mute(self.person, self.person)
-            self.assertTrue(self.bug.isMuted(self.person))
-            expected_label = "Unmute bug mail for bug %s" % self.bug.id
-            view = create_initialized_view(
-                self.bug.default_bugtask, name="+mute")
-            self.assertEqual(expected_label, view.label)
-
-    def test_bug_mute_self_view_mutes_bug(self):
-        # The BugMuteSelfView mutes bug mail for the current user when
-        # its form is submitted.
-        with person_logged_in(self.person):
-            self.assertFalse(self.bug.isMuted(self.person))
-            create_initialized_view(
-                self.bug.default_bugtask, name="+mute",
-                form={'field.actions.mute': 'Mute bug mail'})
-            self.assertTrue(self.bug.isMuted(self.person))
-
-    def test_bug_mute_self_view_unmutes_bug(self):
-        # The BugMuteSelfView unmutes bug mail for the current user when
-        # its form is submitted and the bug was already muted.
-        with person_logged_in(self.person):
-            self.bug.mute(self.person, self.person)
-            self.assertTrue(self.bug.isMuted(self.person))
-            create_initialized_view(
-                self.bug.default_bugtask, name="+mute",
-                form={'field.actions.unmute': 'Unmute bug mail'})
-            self.assertFalse(self.bug.isMuted(self.person))
+                bug, BugPortletSubscribersWithDetails)
+            self.assertEqual(dumps([]), harness.view.subscriber_data_js)
