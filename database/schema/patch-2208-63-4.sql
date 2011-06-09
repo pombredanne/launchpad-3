@@ -26,12 +26,19 @@ COMMENT ON FUNCTION bugsummary_journal_ins(bugsummary) IS
 
 
 CREATE OR REPLACE FUNCTION bugsummary_rollup_journal() RETURNS VOID
-LANGUAGE plpgsql VOLATILE AS
+LANGUAGE plpgsql VOLATILE
+SECURITY DEFINER SET search_path TO public AS
 $$
 DECLARE
     d bugsummary%ROWTYPE;
     max_id integer;
 BEGIN
+    -- Lock so we don't content with other invokations of this
+    -- function. We can happily lock the BugSummary table for writes
+    -- as this function is the only thing that updates that table.
+    -- BugSummaryJournal remains unlocked so nothing should be blocked.
+    LOCK TABLE BugSummary IN ROW EXCLUSIVE MODE;
+
     SELECT MAX(id) INTO max_id FROM BugSummaryJournal;
 
     FOR d IN
