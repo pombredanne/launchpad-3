@@ -60,7 +60,6 @@ from zope.schema import (
     Object,
     Text,
     TextLine,
-    Tuple,
     )
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -283,7 +282,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     has_cves = Bool(title=u"True if the bug has cve entries.")
     cve_links = Attribute('Links between this bug and CVE entries.')
     subscriptions = exported(
-        (CollectionField(
+        doNotSnapshot(CollectionField(
             title=_('Subscriptions'),
             value_type=Reference(schema=Interface),
             readonly=True)))
