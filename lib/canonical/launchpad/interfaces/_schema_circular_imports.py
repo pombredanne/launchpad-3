@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -164,7 +164,11 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage,
+    ISourcePackageEdit,
+    ISourcePackagePublic,
+    )
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
@@ -320,17 +324,17 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'return_type'].value_type.schema = IBinaryPackageBuild
 
-ISourcePackage['distroseries'].schema = IDistroSeries
-ISourcePackage['productseries'].schema = IProductSeries
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['distroseries'].schema = IDistroSeries
+ISourcePackagePublic['productseries'].schema = IProductSeries
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
@@ -430,14 +434,6 @@ patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
-patch_plain_parameter_type(
-    IArchive, 'removeArchiveDependency', 'dependency', IArchive)
-patch_plain_parameter_type(
-    IArchive, '_addArchiveDependency', 'dependency', IArchive)
-patch_choice_parameter_type(
-    IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
-patch_entry_return_type(
-    IArchive, '_addArchiveDependency', IArchiveDependency)
 
 
 # IBuildFarmJob
@@ -632,6 +628,9 @@ patch_entry_return_type(
     IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
 patch_collection_return_type(
     IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentForDistroSourcePackageName',
+    IBugTrackerComponent)
 
 ## IBugTrackerComponent
 patch_reference_property(

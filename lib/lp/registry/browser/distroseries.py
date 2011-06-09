@@ -647,6 +647,13 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
+    def rebuilding_allowed(self):
+        """If the distribution has got any initialized series already,
+        rebuilding is not allowed.
+        """
+        return not self.context.distribution.has_published_sources
+
+    @property
     def next_url(self):
         return canonical_url(self.context)
 
@@ -809,11 +816,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
+        # When syncing we *must* do it asynchronously so that a package
+        # copy job is created.  This gives the job a chance to inspect
+        # the copy and create a PackageUpload if required.
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user):
+            person=self.user, force_async=True):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
@@ -1069,7 +1079,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                 dsd.parent_source_version,
                 dsd.parent_series.main_archive,
                 target_distroseries.main_archive,
-                PackagePublishingPocket.UPDATES,
+                PackagePublishingPocket.RELEASE,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(

@@ -81,9 +81,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import (
-    IVocabularyTokenized,
-    )
+from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -166,6 +164,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
@@ -201,12 +200,7 @@ class BasePersonVocabulary:
     def toTerm(self, obj):
         """Return the term for this object."""
         try:
-            if self.enhanced_picker_enabled:
-                # Display the person's Launchpad id next to their name.
-                title = "%s (%s)" % (obj.displayname, obj.name)
-            else:
-                title = obj.displayname
-            return SimpleTerm(obj, obj.name, title)
+            return SimpleTerm(obj, obj.name, obj.displayname)
         except Unauthorized:
             return None
 
@@ -1792,7 +1786,8 @@ class DistroSeriesDerivationVocabulary:
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
-                child.previous_seriesID == parent.id))
+                child.id == DistroSeriesParent.derived_series_id,
+                parent.id == DistroSeriesParent.parent_series_id))
         where.append(
             DistroSeries.distributionID.is_in(parent_distributions))
         terms = self.find_terms(where)

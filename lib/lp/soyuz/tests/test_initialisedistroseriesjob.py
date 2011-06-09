@@ -195,6 +195,18 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), 1)
 
+    def test_job_with_none_arguments(self):
+        parent, child = self._create_child()
+        job = self.job_source.create(
+            child, [parent.id], packagesets=None, arches=None,
+            overlays=None, overlay_pockets=None,
+            overlay_components=None, rebuild=True)
+        self.layer.switchDbUser('initialisedistroseries')
+        job.run()
+        child.updatePackageCount()
+
+        self.assertEqual(parent.sourcecount, child.sourcecount)
+
     def test_cronscript(self):
         run_script(
             'cronscripts/run_jobs.py', ['-v', 'initialisedistroseries'])
