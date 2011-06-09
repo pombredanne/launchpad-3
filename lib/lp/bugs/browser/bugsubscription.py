@@ -27,6 +27,8 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -551,16 +553,15 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
         data = []
         details = list(self.context.getDirectSubscribersWithDetails())
         api_request = IWebServiceClientRequest(self.request)
-        from zope.security.proxy import removeSecurityProxy
-        from zope.traversing.browser import absoluteURL
         for person, subscription in details:
+            can_edit = self.user is not None and self.user.inTeam(person)
             subscriber = {
                 'name' : person.name,
                 'display_name' : person.displayname,
                 'web_link' : canonical_url(person, rootsite='mainsite'),
                 'self_link' : absoluteURL(person, api_request),
                 'is_team' : person.is_team,
-                'can_edit' : self.user.inTeam(person),
+                'can_edit' : can_edit,
                 }
             record = {
                 'subscriber': subscriber,
@@ -569,6 +570,21 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
                 }
             data.append(record)
 
+        others = list(self.context.getIndirectSubscribers())
+        for person in others:
+            subscriber = {
+                'name' : person.name,
+                'display_name' : person.displayname,
+                'web_link' : canonical_url(person, rootsite='mainsite'),
+                'self_link' : absoluteURL(person, api_request),
+                'is_team' : person.is_team,
+                'can_edit' : False,
+                }
+            record = {
+                'subscriber': subscriber,
+                'subscription_level': 'Maybe',
+                }
+            data.append(record)
         return dumps(data)
 
     def render(self):
