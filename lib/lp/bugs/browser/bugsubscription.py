@@ -589,15 +589,15 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
     def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         data = []
-        details = list(
-            self.context.getDirectSubscribersWithDetails(self.user))
+        details = list(self.context.getDirectSubscribersWithDetails())
         for person, subscription in details:
+            can_edit = self.user is not None and self.user.inTeam(person)
             subscriber = {
                 'name' : person.name,
                 'display_name' : person.displayname,
                 'web_link' : canonical_url(person, rootsite='mainsite'),
                 'is_team' : person.is_team,
-                'can_edit' : self.user.inTeam(person),
+                'can_edit' : can_edit,
                 }
             record = {
                 'subscriber': subscriber,
