@@ -3,6 +3,110 @@
 
 SET client_min_messages=ERROR;
 
+CREATE OR REPLACE FUNCTION bug_summary_inc(d bugsummary) RETURNS VOID
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- Shameless adaption from postgresql manual
+    LOOP
+        -- first try to update the row
+        UPDATE BugSummary SET count = count + 1
+        WHERE
+            ((d.product IS NULL AND product IS NULL)
+                OR product = d.product)
+            AND ((d.productseries IS NULL AND productseries IS NULL)
+                OR productseries = d.productseries)
+            AND ((d.distribution IS NULL AND distribution IS NULL)
+                OR distribution = d.distribution)
+            AND ((d.distroseries IS NULL AND distroseries IS NULL)
+                OR distroseries = d.distroseries)
+            AND ((d.sourcepackagename IS NULL AND sourcepackagename IS NULL)
+                OR sourcepackagename = d.sourcepackagename)
+            AND ((d.viewed_by IS NULL AND viewed_by IS NULL)
+                OR viewed_by = d.viewed_by)
+            AND ((d.tag IS NULL AND tag IS NULL)
+                OR tag = d.tag)
+            AND ((d.status IS NULL AND status IS NULL)
+                OR status = d.status)
+            AND ((d.milestone IS NULL AND milestone IS NULL)
+                OR milestone = d.milestone);
+        IF found THEN
+            RETURN;
+        END IF;
+        -- not there, so try to insert the key
+        -- if someone else inserts the same key concurrently,
+        -- we could get a unique-key failure
+        BEGIN
+            INSERT INTO BugSummary(
+                count, product, productseries, distribution,
+                distroseries, sourcepackagename, viewed_by, tag,
+                status, milestone)
+            VALUES (
+                1, d.product, d.productseries, d.distribution,
+                d.distroseries, d.sourcepackagename, d.viewed_by, d.tag,
+                d.status, d.milestone);
+            RETURN;
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing, and loop to try the UPDATE again
+        END;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION bug_summary_inc(bugsummary) IS
+'UPSERT into bugsummary incrementing one row';
+
+CREATE OR REPLACE FUNCTION bug_summary_dec(bugsummary) RETURNS VOID
+LANGUAGE SQL AS
+$$
+    -- We own the row reference, so in the absence of bugs this cannot
+    -- fail - just decrement the row.
+    UPDATE BugSummary SET count = count - 1
+    WHERE
+        (($1.product IS NULL AND product IS NULL)
+            OR product = $1.product)
+        AND (($1.productseries IS NULL AND productseries IS NULL)
+            OR productseries = $1.productseries)
+        AND (($1.distribution IS NULL AND distribution IS NULL)
+            OR distribution = $1.distribution)
+        AND (($1.distroseries IS NULL AND distroseries IS NULL)
+            OR distroseries = $1.distroseries)
+        AND (($1.sourcepackagename IS NULL AND sourcepackagename IS NULL)
+            OR sourcepackagename = $1.sourcepackagename)
+        AND (($1.viewed_by IS NULL AND viewed_by IS NULL)
+            OR viewed_by = $1.viewed_by)
+        AND (($1.tag IS NULL AND tag IS NULL)
+            OR tag = $1.tag)
+        AND (($1.status IS NULL AND status IS NULL)
+            OR status = $1.status)
+        AND (($1.milestone IS NULL AND milestone IS NULL)
+            OR milestone = $1.milestone);
+    -- gc the row (perhaps should be garbo but easy enough to add here:
+    DELETE FROM bugsummary
+    WHERE
+        count=0
+        AND (($1.product IS NULL AND product IS NULL)
+            OR product = $1.product)
+        AND (($1.productseries IS NULL AND productseries IS NULL)
+            OR productseries = $1.productseries)
+        AND (($1.distribution IS NULL AND distribution IS NULL)
+            OR distribution = $1.distribution)
+        AND (($1.distroseries IS NULL AND distroseries IS NULL)
+            OR distroseries = $1.distroseries)
+        AND (($1.sourcepackagename IS NULL AND sourcepackagename IS NULL)
+            OR sourcepackagename = $1.sourcepackagename)
+        AND (($1.viewed_by IS NULL AND viewed_by IS NULL)
+            OR viewed_by = $1.viewed_by)
+        AND (($1.tag IS NULL AND tag IS NULL)
+            OR tag = $1.tag)
+        AND (($1.status IS NULL AND status IS NULL)
+            OR status = $1.status)
+        AND (($1.milestone IS NULL AND milestone IS NULL)
+            OR milestone = $1.milestone);
+    -- If its not found then someone else also dec'd and won concurrently.
+$$;
+
+
 -- bad comment fixup
 COMMENT ON FUNCTION bug_summary_dec(bugsummary) IS
 'UPSERT into bugsummary incrementing one row';
