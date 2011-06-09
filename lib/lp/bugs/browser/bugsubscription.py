@@ -606,6 +606,20 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
                 }
             data.append(record)
 
+        others = list(self.context.getIndirectSubscribers())
+        for person in others:
+            subscriber = {
+                'name' : person.name,
+                'display_name' : person.displayname,
+                'web_link' : canonical_url(person, rootsite='mainsite'),
+                'is_team' : person.is_team,
+                'can_edit' : False,
+                }
+            record = {
+                'subscriber': subscriber,
+                'subscription_level': 'Maybe',
+                }
+            data.append(record)
         return dumps(data)
 
     def render(self):
