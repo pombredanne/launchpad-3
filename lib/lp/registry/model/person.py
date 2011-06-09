@@ -271,6 +271,7 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
@@ -943,11 +944,30 @@ class Person(
     # rather than package bug supervisors.
     def getBugSubscriberPackages(self):
         """See `IPerson`."""
-        packages = [sub.target for sub in self.structural_subscriptions
-                    if (sub.distribution is not None and
-                        sub.sourcepackagename is not None)]
-        packages.sort(key=lambda x: x.name)
-        return packages
+        # Avoid circular imports.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        from lp.registry.model.distribution import Distribution
+        origin = (
+            StructuralSubscription,
+            Join(
+                Distribution,
+                StructuralSubscription.distributionID == Distribution.id),
+            Join(
+                SourcePackageName,
+                StructuralSubscription.sourcepackagenameID ==
+                    SourcePackageName.id)
+            )
+        result = Store.of(self).using(*origin).find(
+            (Distribution, SourcePackageName),
+            self.structural_subscriptions_clause)
+        result.order_by(SourcePackageName.name)
+
+        def decorator(row):
+            return DistributionSourcePackage(*row)
+
+        return DecoratedResultSet(result, decorator)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -2755,11 +2775,15 @@ class Person(
         return bugtask_count > 0
 
     @property
+    def structural_subscriptions_clause(self):
+        return StructuralSubscription.subscriberID == self.id
+
+    @property
     def structural_subscriptions(self):
         """See `IPerson`."""
         return IStore(self).find(
             StructuralSubscription,
-            StructuralSubscription.subscriberID == self.id).order_by(
+            self.structural_subscriptions_clause).order_by(
                 Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
