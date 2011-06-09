@@ -44,6 +44,7 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'YUITestLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -2107,5 +2108,5 @@ class BaseWindmillLayer(AppServerLayer):
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
 
 
-class BaseYUITestLayer(FunctionalLayer):
+class YUITestLayer(FunctionalLayer):
     """The base class for all YUITests cases."""

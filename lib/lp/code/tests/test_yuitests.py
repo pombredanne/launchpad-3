@@ -6,20 +6,16 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.testing.layers import BaseYUITestLayer
+from canonical.testing.layers import YUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
     )
 
 
-class CodeYUITestLayer(BaseYUITestLayer):
-    """Layer for Code YUI tests."""
-
-
 class CodeYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = CodeYUITestLayer
+    layer = YUITestLayer
     suite_name = 'CodeYUIUnitTests'
 
 
