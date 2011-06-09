@@ -46,8 +46,8 @@ from lp.bugs.model.bugtarget import (
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
@@ -202,8 +202,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
+        # We store the ID of the sourcepackagename and distroseries
+        # simply because Storm can break when accessing them
+        # with implicit flush is blocked (like in a permission check when
+        # storing the object in the permission cache).
+        self.sourcepackagenameID = sourcepackagename.id
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+        self.distroseriesID = distroseries.id
 
     @classmethod
     def new(cls, sourcepackagename, distroseries):
@@ -587,7 +593,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def __hash__(self):
         """See `ISourcePackage`."""
-        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+        return hash(self.distroseriesID) ^ hash(self.sourcepackagenameID)
 
     def __eq__(self, other):
         """See `ISourcePackage`."""
@@ -727,10 +733,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        series_set = getUtility(IMakeOfficialBranchLinks)
-        series_set.delete(self, pocket)
+        SeriesSourcePackageBranchSet.delete(self, pocket)
         if branch is not None:
-            series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
 

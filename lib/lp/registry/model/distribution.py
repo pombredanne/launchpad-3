@@ -29,7 +29,10 @@ from storm.locals import (
     Or,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -1835,10 +1838,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED).config(limit=1)
 
-        # XXX 2009-02-19 Julian
-        # Storm is not very useful for bool checking on the results,
-        # see: https://bugs.launchpad.net/soyuz/+bug/246200
-        return results.any() != None
+        return not results.is_empty()
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -1882,6 +1882,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @property
+    def has_published_sources(self):
+        archives_sources = EmptyResultSet()
+        for archive in self.all_distro_archives:
+            archives_sources = archives_sources.union(
+                archive.getPublishedSources())
+        return not archives_sources.is_empty()
 
 
 class DistributionSet:
