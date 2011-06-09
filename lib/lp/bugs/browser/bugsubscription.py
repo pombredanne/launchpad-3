@@ -554,6 +554,9 @@ class BugPortletSubcribersWithDetails(LaunchpadView):
         details = list(self.context.getDirectSubscribersWithDetails())
         api_request = IWebServiceClientRequest(self.request)
         for person, subscription in details:
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
             can_edit = self.user is not None and self.user.inTeam(person)
             subscriber = {
                 'name' : person.name,
@@ -572,6 +575,9 @@ class BugPortletSubcribersWithDetails(LaunchpadView):
 
         others = list(self.context.getIndirectSubscribers())
         for person in others:
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
             subscriber = {
                 'name' : person.name,
                 'display_name' : person.displayname,

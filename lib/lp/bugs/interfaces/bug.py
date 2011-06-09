@@ -525,6 +525,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def getDirectSubscribersWithDetails():
         """Get direct subscribers and their subscriptions for the bug.
 
+        Those with muted bug subscriptions are excluded from results.
+
         :returns: A ResultSet of tuples (Person, BugSubscription)
             representing a subscriber and their bug subscription.
         """
