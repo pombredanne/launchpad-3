@@ -107,7 +107,7 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
 
 
 class SpecificationPortletSubcribersIds(LaunchpadView):
-    """A view that returns a JSON dump of the subscriber IDs for a blueprint."""
+    """A view returning a JSON dump of the subscriber IDs for a blueprint."""
 
     @cachedproperty
     def subscriber_ids(self):

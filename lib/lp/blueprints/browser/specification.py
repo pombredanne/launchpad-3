@@ -1026,6 +1026,7 @@ class SpecGraph:
         transitively.
         """
         get_related_specs_fn = attrgetter('dependencies')
+
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
@@ -1033,6 +1034,7 @@ class SpecGraph:
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
         get_related_specs_fn = attrgetter('blocked_specs')
+
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
@@ -1106,7 +1108,7 @@ class SpecGraph:
             size='9.2,9',  # Width fits of 2 col layout, 1024x768.
             ratio='compress',
             ranksep=0.25,
-            nodesep=0.01 # Separation between nodes
+            nodesep=0.01  # Separation between nodes
             )
 
         # Global node and edge attributes.
@@ -1453,4 +1455,3 @@ def completer_xhtml_representation(context, field, request):
         return "%s %s" % (
             format_link(completer), date_formatter.displaydate())
     return render
-
