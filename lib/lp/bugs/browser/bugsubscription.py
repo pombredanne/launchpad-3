@@ -582,13 +582,14 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
                 key=(lambda subscription: subscription.person.displayname))]
 
 
-class BugPortletSubcribersWithDetails(LaunchpadView):
+class BugPortletSubscribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber details for a bug."""
 
     @property
     def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         data = []
+        import pdb; pdb.set_trace()
         details = list(self.context.getDirectSubscribersWithDetails())
         for person, subscription in details:
             can_edit = self.user is not None and self.user.inTeam(person)
