@@ -471,7 +471,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             # Instead an explanatory message is shown.
             [message] = root.cssselect("p.error.message")
             self.assertThat(
-                message.text.strip(), EqualsIgnoringWhitespace(
+                message.text, EqualsIgnoringWhitespace(
                     u"This series already contains source packages "
                     u"and cannot be initialized again."))
 
@@ -490,8 +490,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             # Instead an explanatory message is shown.
             [message] = root.cssselect("p.error.message")
             self.assertThat(
-                message.text.strip(),
-                EqualsIgnoringWhitespace(
+                message.text, EqualsIgnoringWhitespace(
                     u"This series is already being initialized."))
 
 
