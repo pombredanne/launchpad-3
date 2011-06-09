@@ -321,7 +321,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             view.request.features = get_relevant_feature_controller()
             html_content = view()
 
-        self.assertTrue(derived_series.is_initialising)
+        self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
 

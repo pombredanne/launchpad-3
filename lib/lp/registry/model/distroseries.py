@@ -801,13 +801,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return not self.getParentSeries() == []
 
     @property
-    def is_initialising(self):
-        """See `IDistroSeries`."""
-        return not getUtility(
-            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
-                self).is_empty()
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:

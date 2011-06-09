@@ -655,7 +655,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return (
             self.is_derived_series_feature_enabled and
             not self.context.is_derived_series and
-            not self.context.is_initialising)
+            not self.context.isInitializing())
 
     @property
     def show_already_initialized_message(self):
@@ -667,7 +667,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_already_initializing_message(self):
         return (
             self.is_derived_series_feature_enabled and
-            self.context.is_initialising)
+            self.context.isInitializing())
 
     @property
     def next_url(self):

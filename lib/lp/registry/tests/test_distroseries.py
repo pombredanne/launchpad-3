@@ -222,24 +222,6 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
-    # TODO: Your days are numbered pal.
-    def test_is_initialising(self):
-        # The series is_initialising only if there is an initialisation
-        # job with a pending status attached to this series.
-        distroseries = self.factory.makeDistroSeries()
-        parent_distroseries = self.factory.makeDistroSeries()
-        self.assertEquals(False, distroseries.is_initialising)
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
-        job = job_source.create(distroseries, [parent_distroseries.id])
-        self.assertEquals(True, distroseries.is_initialising)
-        job.start()
-        self.assertEquals(True, distroseries.is_initialising)
-        job.queue()
-        self.assertEquals(True, distroseries.is_initialising)
-        job.start()
-        job.complete()
-        self.assertEquals(False, distroseries.is_initialising)
-
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialisation job with a pending status attached to this series.
