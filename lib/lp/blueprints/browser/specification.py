@@ -413,7 +413,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     links = ['edit', 'people', 'status', 'priority',
              'whiteboard', 'proposegoal',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
-             'subscribeanother',
+             'addsubscriber',
              'linkbug', 'unlinkbug', 'linkbranch',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
@@ -464,7 +464,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         text = 'Change status'
         return Link('+status', text, icon='edit')
 
-    def subscribeanother(self):
+    def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
