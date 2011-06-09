@@ -26,6 +26,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -588,8 +589,8 @@ class BugPortletSubcribersWithDetails(LaunchpadView, BugViewMixin):
     def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         data = []
-        details = list(self.context.getDirectSubscribersWithDetails())
-        from zope.security.proxy import removeSecurityProxy
+        details = list(
+            self.context.getDirectSubscribersWithDetails(self.user))
         for person, subscription in details:
             subscriber = {
                 'name' : person.name,

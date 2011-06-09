@@ -523,10 +523,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """
 
     def getDirectSubscribersWithDetails():
-        """Get bug subscriptions and subscriber records for all subscribers.
+        """Get direct subscribers and their subscriptions for the bug.
 
-        Return a list of dicts with 'subscriber' (IPerson)
-        and 'subscription' fields (IBugSubscription).
+        :returns: A ResultSet of tuples (Person, BugSubscription)
+            representing a subscriber and their bug subscription.
         """
 
     def getIndirectSubscribers(recipients=None, level=None):
