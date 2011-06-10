@@ -220,8 +220,17 @@ class IDistroSeriesPublic(
     named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
+    # IComponent is not exported on the api.
+    component_names = exported(List(
+        value_type=TextLine(),
+        title=_(u'The series component names'),
+        readonly=True))
     upload_components = Attribute("The series components that can be "
                                   "uploaded to.")
+    suite_names = exported(List(
+        value_type=TextLine(),
+        title=_(u'The series pocket names'),
+        readonly=True))
     sections = Attribute("The series sections.")
     status = exported(
         Choice(
@@ -773,8 +782,8 @@ class IDistroSeriesPublic(
         DistroSeriesBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None, package_copy_job=None):
+    def createQueueEntry(pocket, archive, changesfilename, changesfilecontent,
+                         signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.
