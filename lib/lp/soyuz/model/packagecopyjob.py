@@ -24,6 +24,7 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -45,8 +46,10 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
@@ -54,6 +57,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -180,17 +184,23 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
 
     @classmethod
+    def _makeMetadata(cls, target_pocket, package_version, include_binaries):
+        """."""
+        return {
+            'target_pocket': target_pocket.value,
+            'package_version': package_version,
+            'include_binaries': bool(include_binaries),
+        }
+
+    @classmethod
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
-        metadata = {
-            'target_pocket': target_pocket.value,
-            'package_version': package_version,
-            'include_binaries': bool(include_binaries),
-            }
+        metadata = cls._makeMetadata(
+            target_pocket, package_version, include_binaries)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -201,6 +211,58 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             metadata=metadata)
         IMasterStore(PackageCopyJob).add(job)
         return cls(job)
+
+    @classmethod
+    def _composeJobInsertionTuple(cls, target_distroseries, copy_policy,
+                                  include_binaries, job_id, copy_task):
+        """Create an SQL fragment for inserting a job into the database.
+
+        :return: A string representing an SQL tuple containing initializers
+            for a `PackageCopyJob` in the database (minus `id`, which is
+            assigned automatically).  Contents are escaped for use in SQL.
+        """
+        (
+            package_name,
+            package_version,
+            source_archive,
+            target_archive,
+            target_pocket,
+        ) = copy_task
+        metadata = cls._makeMetadata(
+            target_pocket, package_version, include_binaries)
+        data = (
+            cls.class_job_type, target_distroseries, copy_policy,
+            source_archive, target_archive, package_name, job_id,
+            PackageCopyJob.serializeMetadata(metadata))
+        format_string = "(%s)" % ", ".join(["%s"] * len(data))
+        return format_string % sqlvalues(*data)
+
+    @classmethod
+    def createMultiple(cls, target_distroseries, copy_tasks,
+                       copy_policy=PackageCopyPolicy.INSECURE,
+                       include_binaries=False):
+        """See `IPlainPackageCopyJobSource`."""
+        store = IMasterStore(Job)
+        job_ids = Job.createMultiple(store, len(copy_tasks))
+        job_contents = [
+            cls._composeJobInsertionTuple(
+                target_distroseries, copy_policy, include_binaries, job_id,
+                task)
+            for job_id, task in zip(job_ids, copy_tasks)]
+        result = store.execute("""
+            INSERT INTO PackageCopyJob (
+                job_type,
+                target_distroseries,
+                copy_policy,
+                source_archive,
+                target_archive,
+                package_name,
+                job,
+                json_data)
+            VALUES %s
+            RETURNING id
+            """ % ", ".join(job_contents))
+        return [job_id for job_id, in result]
 
     @classmethod
     def getActiveJobs(cls, target_archive):
@@ -249,6 +311,25 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def include_binaries(self):
         return self.metadata['include_binaries']
+
+    def addSourceOverride(self, override):
+        """Add an `ISourceOverride` to the metadata."""
+        metadata_dict = dict(
+            component_override=override.component.name,
+            section_override=override.section.name)
+        self.context.extendMetadata(metadata_dict)
+
+    def getSourceOverride(self):
+        """Fetch an `ISourceOverride` from the metadata."""
+        # There's only one package per job; although the schema allows
+        # multiple we're not using that.
+        name = self.package_name
+        component_name = self.metadata.get("component_override")
+        section_name = self.metadata.get("section_override")
+        source_package_name = getUtility(ISourcePackageNameSet)[name]
+        component = getUtility(IComponentSet)[component_name]
+        section = getUtility(ISectionSet)[section_name]
+        return SourceOverride(source_package_name, component, section)
 
     def run(self):
         """See `IRunnableJob`."""
