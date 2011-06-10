@@ -596,27 +596,39 @@ class POTemplateAdminView(POTemplateEditView):
     label = 'Administer translation template'
     page_title = "Administer"
 
-    def validateName(self, name, similar_templates):
-        """Form submission changes template name.  Validate it."""
-        if name == self.context.name:
-            # Not changed.
-            return
-
+    def validateName(self, name, similar_templates,
+                     sourcepackage_changed, productseries_changed):
+        """Check that the name does not clash with an existing template."""
         if similar_templates.getPOTemplateByName(name) is not None:
-            self.setFieldError('name', "Name is already in use.")
-            return
+            if sourcepackage_changed:
+                self.setFieldError(
+                    'sourcepackagename',
+                    "Source package already has a template with "
+                    "that same name.")
+            elif productseries_changed:
+                self.setFieldError(
+                    'productseries',
+                    "Series already has a template with that same name.")
+            elif name != self.context.name:
+                self.setFieldError('name', "Name is already in use.")
 
-    def validateDomain(self, domain, similar_templates):
-        if domain == self.context.translation_domain:
-            # Not changed.
-            return
-
+    def validateDomain(self, domain, similar_templates,
+                       sourcepackage_changed, productseries_changed):
         other_template = similar_templates.getPOTemplateByTranslationDomain(
             domain)
         if other_template is not None:
-            self.setFieldError(
-                'translation_domain', "Domain is already in use.")
-            return
+            if sourcepackage_changed:
+                self.setFieldError(
+                    'sourcepackagename',
+                    "Source package already has a template with "
+                    "that same domain.")
+            elif productseries_changed:
+                self.setFieldError(
+                    'productseries',
+                    "Series already has a template with that same domain.")
+            elif domain != self.context.translation_domain:
+                self.setFieldError(
+                    'translation_domain', "Domain is already in use.")
 
     def validate(self, data):
         super(POTemplateAdminView, self).validate(data)
@@ -645,9 +657,17 @@ class POTemplateAdminView(POTemplateEditView):
         similar_templates = getUtility(IPOTemplateSet).getSubset(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             productseries=productseries)
+        sourcepackage_changed = (
+            distroseries != self.context.distroseries or
+            sourcepackagename != self.context.sourcepackagename)
+        productseries_changed = productseries != self.context.productseries
 
-        self.validateName(data.get('name'), similar_templates)
-        self.validateDomain(data.get('translation_domain'), similar_templates)
+        self.validateName(
+            data.get('name'), similar_templates,
+            sourcepackage_changed, productseries_changed)
+        self.validateDomain(
+            data.get('translation_domain'), similar_templates,
+            sourcepackage_changed, productseries_changed)
 
 
 class POTemplateExportView(BaseExportView):

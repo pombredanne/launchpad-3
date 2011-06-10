@@ -28,6 +28,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    And,
     Desc,
     Join,
     SQL,
@@ -285,6 +286,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"]))
+
+    @cachedproperty
+    def component_names(self):
+        """See `IDistroSeries`."""
+        return [component.name for component in self.components]
+
+    @cachedproperty
+    def suite_names(self):
+        """See `IDistroSeries`."""
+        return [unicode(pocket) for pocket in PackagePublishingPocket.items]
 
     @property
     def answers_usage(self):
@@ -843,10 +854,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IHasBugs`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
+            And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                ),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):

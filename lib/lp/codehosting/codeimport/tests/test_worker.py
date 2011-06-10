@@ -1000,19 +1000,9 @@ class PullingImportWorkerTests:
         worker = self.makeImportWorker(source_details)
         self.assertRaises(NotBranchError, worker.run)
 
-
-class PartialTest:
-    """A test case for incremental imports.
-
-    When all foreign branch plugins support incremental imports, this can go
-    into PullingImportWorkerTests.  For now though, bzr-hg still lacks the
-    needed support.
-    """
-
     def test_partial(self):
         # Only config.codeimport.revisions_import_limit will be imported in a
-        # given run.  When bzr-svn and bzr-hg support revision import limits,
-        # this test case can be moved up to PullingImportWorkerTests.
+        # given run.
         worker = self.makeImportWorker(self.makeSourceDetails(
             'trunk', [('README', 'Original contents')]))
         self.makeForeignCommit(worker.source_details)
@@ -1021,6 +1011,7 @@ class PartialTest:
             'codeimport',
             git_revisions_import_limit=self.foreign_commit_count-1,
             svn_revisions_import_limit=self.foreign_commit_count-1,
+            hg_revisions_import_limit=self.foreign_commit_count-1,
             )
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
@@ -1028,9 +1019,8 @@ class PartialTest:
             CodeImportWorkerExitCode.SUCCESS, worker.run())
 
 
-
 class TestGitImport(WorkerTest, TestActualImportMixin,
-                    PullingImportWorkerTests, PartialTest):
+                    PullingImportWorkerTests):
 
     rcstype = 'git'
 
@@ -1132,8 +1122,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
-                       TestActualImportMixin, PullingImportWorkerTests,
-                       PartialTest):
+                       TestActualImportMixin, PullingImportWorkerTests):
 
     rcstype = 'bzr-svn'
 
