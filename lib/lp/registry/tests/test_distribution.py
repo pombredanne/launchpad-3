@@ -15,6 +15,7 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -89,13 +90,10 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package')
-        binary_package_build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease)
-        binary_package_release = self.factory.makeBinaryPackageRelease(
-            build=binary_package_build, binarypackagename='binary-package')
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagerelease=binary_package_release)
+            binarypackagename='binary-package',
+            source_package_release=spph.sourcepackagerelease)
         self.assertEquals(
             spph.sourcepackagerelease.sourcepackagename,
             distroseries.distribution.guessPublishedSourcePackageName(
@@ -135,15 +133,9 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         my_spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package')
-        other_spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, sourcepackagename='other-package')
-        binary_package_build = self.factory.makeBinaryPackageBuild(
-            source_package_release=other_spph.sourcepackagerelease)
-        binary_package_release = self.factory.makeBinaryPackageRelease(
-            build=binary_package_build, binarypackagename='my-package')
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagerelease=binary_package_release)
+            binarypackagename='my-package', sourcepackagename='other-package')
         self.assertEquals(
             my_spph.sourcepackagerelease.sourcepackagename,
             distroseries.distribution.guessPublishedSourcePackageName(
@@ -153,28 +145,18 @@ class TestDistribution(TestCaseWithFactory):
         # If multiple binaries match, it will return the source of the latest
         # one published.
         distroseries = self.factory.makeDistroSeries()
-        old_spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, sourcepackagename='old-source-name')
-        new_spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, sourcepackagename='new-source-name')
-        old_package_build = self.factory.makeBinaryPackageBuild(
-            source_package_release=old_spph.sourcepackagerelease)
-        old_package_release = self.factory.makeBinaryPackageRelease(
-            build=old_package_build, binarypackagename='my-package')
-        self.factory.makeBinaryPackagePublishingHistory(
+        old_bpph = self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagerelease=old_package_release)
-        new_package_build = self.factory.makeBinaryPackageBuild(
-            source_package_release=new_spph.sourcepackagerelease)
-        new_package_release = self.factory.makeBinaryPackageRelease(
-            build=new_package_build, binarypackagename='my-package')
-        self.factory.makeBinaryPackagePublishingHistory(
+            sourcepackagename='old-source-name',
+            binarypackagename='my-package')
+        new_bpph = self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
-            binarypackagerelease=new_package_release)
+            sourcepackagename='new-source-name',
+            binarypackagename='my-package')
         self.assertEquals(
-            new_spph.sourcepackagerelease.sourcepackagename,
+            'new-source-name',
             distroseries.distribution.guessPublishedSourcePackageName(
-                'my-package'))
+                'my-package').name)
 
 
 class TestDistributionCurrentSourceReleases(
