@@ -446,7 +446,7 @@ class MatchesPickerText(Matcher):
 class EqualsIgnoringWhitespace(Equals):
     """Compare equality, ignoring whitespace in strings.
 
-    Whitespace in strings is normalized before comparison. All other objected
+    Whitespace in strings is normalized before comparison. All other objects
     are compared as they come.
     """
 
