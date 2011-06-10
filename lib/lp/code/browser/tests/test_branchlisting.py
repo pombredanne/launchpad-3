@@ -16,7 +16,6 @@ from storm.expr import (
     Desc,
     )
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import (
     extract_text,
@@ -32,8 +31,8 @@ from lp.code.browser.branchlisting import (
     SourcePackageBranchesView,
     )
 from lp.code.enums import BranchVisibilityRule
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import (
@@ -270,15 +269,12 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
             for i in range(branch_count)]
 
         official = []
-        # We don't care about who can make things official, so get rid of the
-        # security proxy.
-        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
         # Sort the pocket items so RELEASE is last, and thus first popped.
         pockets = sorted(PackagePublishingPocket.items, reverse=True)
         for i in range(official_count):
             branch = branches.pop()
             pocket = pockets.pop()
-            sspb = series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 distroseries, pocket, self.sourcepackagename,
                 branch, branch.owner)
             official.append(branch)
@@ -354,8 +350,7 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     def test_package_development_focus(self):
         # Check the bzr_identity of a development focus package branch.
         branch = self.factory.makePackageBranch()
-        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
-        sspb = series_set.new(
+        SeriesSourcePackageBranchSet.new(
             branch.distroseries, PackagePublishingPocket.RELEASE,
             branch.sourcepackagename, branch, branch.owner)
         identity = "lp://dev/%s/%s" % (
