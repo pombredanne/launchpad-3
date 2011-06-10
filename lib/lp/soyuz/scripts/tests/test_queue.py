@@ -91,10 +91,9 @@ class TestQueueBase(TestCase):
         self.test_output.append(text)
 
     def execute_command(self, argument, queue_name='new', no_mail=True,
-                        distribution_name='ubuntu',announcelist=None,
-                        component_name=None, section_name=None,
-                        priority_name=None, suite_name='breezy-autotest',
-                        quiet=True):
+                        distribution_name='ubuntu', component_name=None,
+                        section_name=None, priority_name=None,
+                        suite_name='breezy-autotest', quiet=True):
         """Helper method to execute a queue command.
 
         Initialise output buffer and execute a command according
@@ -105,7 +104,7 @@ class TestQueueBase(TestCase):
         self.test_output = []
         queue = name_queue_map[queue_name]
         runner = CommandRunner(
-            queue, distribution_name, suite_name, announcelist, no_mail,
+            queue, distribution_name, suite_name, no_mail,
             component_name, section_name, priority_name,
             display=self._test_display)
 

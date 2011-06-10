@@ -79,11 +79,20 @@ class TestCopyPolicy(TestCaseWithFactory):
 
     def test_insecure_sends_emails(self):
         cp = InsecureCopyPolicy()
-        self.assertTrue(cp.send_email)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertTrue(cp.send_email(archive))
+
+    def test_insecure_doesnt_send_emails_for_ppa(self):
+        cp = InsecureCopyPolicy()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertFalse(cp.send_email(archive))
 
     def test_sync_does_not_send_emails(self):
         cp = MassSyncCopyPolicy()
-        self.assertFalse(cp.send_email)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertFalse(cp.send_email(archive))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertFalse(cp.send_email(archive))
 
     def test_policies_implement_ICopyPolicy(self):
         for policy in PackageCopyPolicy.items:

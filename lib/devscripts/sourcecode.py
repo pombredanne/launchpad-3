@@ -63,6 +63,7 @@ def interpret_config_entry(entry):
         optional = False
     return branch_name, branch_url, revision, optional
 
+
 def load_cache(cache_filename):
     try:
         cache_file = open(cache_filename, 'rb')
@@ -73,6 +74,7 @@ def load_cache(cache_filename):
             raise
     with cache_file:
         return json.load(cache_file)
+
 
 def interpret_config(config_entries, public_only):
     """Interpret a configuration stream, as parsed by 'parse_config_file'.
@@ -214,16 +216,17 @@ def find_stale(updated, cache, sourcecode_directory, quiet):
 
 def update_cache(cache, cache_filename, changed, sourcecode_directory, quiet):
     """Update the cache with the changed branches."""
-    if len(changed) == 0:
-        return
-    if not quiet:
-        print 'Cache updated.  Please commit "%s".' % cache_filename
+    old_cache = dict(cache)
     for project, (branch_url, revision, optional) in changed.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         branch = Branch.open(destination)
-        cache[project] = branch.last_revision_info()
+        cache[project] = list(branch.last_revision_info())
+    if cache == old_cache:
+        return
     with open(cache_filename, 'wb') as cache_file:
         json.dump(cache, cache_file, indent=4)
+    if not quiet:
+        print 'Cache updated.  Please commit "%s".' % cache_filename
 
 
 def update_branches(sourcecode_directory, update_branches,
@@ -258,10 +261,10 @@ def update_branches(sourcecode_directory, update_branches,
                 remote_branch, stop_revision=revision_id, overwrite=True,
                 possible_transports=possible_transports)
         except IncompatibleRepositories:
-            # XXX JRV 20100407: Ideally remote_branch.bzrdir._format 
+            # XXX JRV 20100407: Ideally remote_branch.bzrdir._format
             # should be passed into upgrade() to ensure the format is the same
-            # locally and remotely. Unfortunately smart server branches 
-            # have their _format set to RemoteFormat rather than an actual 
+            # locally and remotely. Unfortunately smart server branches
+            # have their _format set to RemoteFormat rather than an actual
             # format instance.
             upgrade(destination)
             # Upgraded, repoen working tree

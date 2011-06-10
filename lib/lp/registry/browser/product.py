@@ -1150,7 +1150,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.name).css_id(),
             edit_view='+review-license',
             tag='span',
-            false_text='Deactivted',
+            false_text='Deactivated',
             true_text='Active',
             header='Is this project active and usable by the community?')
 
