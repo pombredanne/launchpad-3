@@ -3390,8 +3390,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution=distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
 
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
 
         if component is None:
             component = self.makeComponent()
@@ -3689,8 +3691,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
-        if binarypackagename is None:
-            binarypackagename = self.makeBinaryPackageName()
+        if (binarypackagename is None or
+            isinstance(binarypackagename, basestring)):
+            binarypackagename = self.getOrMakeBinaryPackageName(
+                binarypackagename)
         if version is None:
             version = build.source_package_release.version
         if binpackageformat is None:
