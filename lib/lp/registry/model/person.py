@@ -961,7 +961,7 @@ class Person(
             )
         result = Store.of(self).using(*origin).find(
             (Distribution, SourcePackageName),
-            self.structural_subscriptions_clause)
+            StructuralSubscription.subscriberID == self.id)
         result.order_by(SourcePackageName.name)
 
         def decorator(row):
@@ -2775,15 +2775,11 @@ class Person(
         return bugtask_count > 0
 
     @property
-    def structural_subscriptions_clause(self):
-        return StructuralSubscription.subscriberID == self.id
-
-    @property
     def structural_subscriptions(self):
         """See `IPerson`."""
         return IStore(self).find(
             StructuralSubscription,
-            self.structural_subscriptions_clause).order_by(
+            StructuralSubscription.subscriberID == self.id).order_by(
                 Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):

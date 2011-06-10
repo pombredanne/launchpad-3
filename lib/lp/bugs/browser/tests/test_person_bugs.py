@@ -89,6 +89,8 @@ class TestBugSubscriberPackageBugsSearchListingView(TestCaseWithFactory):
             status=BugTaskStatus.INPROGRESS)
         with person_logged_in(self.person):
             self.dsp.addSubscription(self.person, subscribed_by=self.person)
+        # Monkey-patch the version of canonical_url used by the registry
+        # person browser module.
         fake_canonical_url = FakeMethod(result='')
         real_canonical_url = person.canonical_url
         person.canonical_url = fake_canonical_url
