@@ -802,13 +802,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return not self.getParentSeries() == []
 
     @property
-    def is_initialising(self):
-        """See `IDistroSeries`."""
-        return not getUtility(
-            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
-                self).is_empty()
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -2036,6 +2029,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
+
+    def isInitializing(self):
+        """See `IDistroSeries`."""
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        pending_jobs = job_source.getPendingJobsForDistroseries(self)
+        return not pending_jobs.is_empty()
+
+    def isInitialized(self):
+        """See `IDistroSeries`."""
+        published = self.main_archive.getPublishedSources(distroseries=self)
+        return not published.is_empty()
 
 
 class DistroSeriesSet:
