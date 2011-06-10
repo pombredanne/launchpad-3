@@ -167,7 +167,7 @@
                 </tal:derived>
               </td>
 
-              <td>
+              <td class="latest-comment-fragment">
                 <tal:latest-comment-fragment
                     define="comment difference/latest_comment"
                     content="structure comment/@@+latest-comment-fragment"
