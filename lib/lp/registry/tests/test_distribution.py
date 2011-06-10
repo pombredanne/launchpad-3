@@ -77,6 +77,16 @@ class TestDistribution(TestCaseWithFactory):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'a-package')
 
+    def test_guessPublishedSourcePackageName_ignored_removed(self):
+        # Removed binary package are ignored.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagename='binary-package', dateremoved=UTC_NOW)
+        with ExpectedException(NotFoundError, ".*Binary package.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'binary-package')
+
     def test_guessPublishedSourcePackageName_sourcepackage_name(self):
         distroseries = self.factory.makeDistroSeries()
         spph = self.factory.makeSourcePackagePublishingHistory(
