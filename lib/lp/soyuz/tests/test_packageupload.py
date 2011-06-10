@@ -366,6 +366,13 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
         self.assertEqual(pcj, pu.package_copy_job)
 
+    def test_getByPackageCopyJobIDs(self):
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs([pcj.id])
+        self.assertEqual(pu, result.one())
+
     def test_overrideSource_with_copy_job(self):
         # The overrides should be stored in the job's metadata.
         plain_copy_job = self.factory.makePlainPackageCopyJob()

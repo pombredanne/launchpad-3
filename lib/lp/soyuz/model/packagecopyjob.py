@@ -17,6 +17,7 @@ from storm.locals import (
     Unicode,
     )
 import transaction
+
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -44,10 +45,17 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import (
+    JobStatus,
+    SuspendJobException,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.soyuz.adapters.overrides import SourceOverride
+from lp.soyuz.adapters.overrides import (
+    FromExistingOverridePolicy,
+    SourceOverride,
+    UnknownOverridePolicy,
+    )
 from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
@@ -58,6 +66,7 @@ from lp.soyuz.interfaces.packagecopyjob import (
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
     )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
@@ -313,24 +322,82 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def include_binaries(self):
         return self.metadata['include_binaries']
 
+    def _createPackageUpload(self, unapproved=False):
+        pu = self.target_distroseries.createQueueEntry(
+            pocket=self.target_pocket, archive=self.target_archive,
+            package_copy_job=self.context)
+        if unapproved:
+            pu.setUnapproved()
+
     def addSourceOverride(self, override):
         """Add an `ISourceOverride` to the metadata."""
+        component = ""
+        section = ""
+        if override.component is not None:
+            component = override.component.name
+        if override.section is not None:
+            section = override.section.name
         metadata_dict = dict(
-            component_override=override.component.name,
-            section_override=override.section.name)
+            component_override=component,
+            section_override=section)
         self.context.extendMetadata(metadata_dict)
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
-        # There's only one package per job; although the schema allows
-        # multiple we're not using that.
         name = self.package_name
         component_name = self.metadata.get("component_override")
         section_name = self.metadata.get("section_override")
         source_package_name = getUtility(ISourcePackageNameSet)[name]
-        component = getUtility(IComponentSet)[component_name]
-        section = getUtility(ISectionSet)[section_name]
+        try:
+            component = getUtility(IComponentSet)[component_name]
+        except NotFoundError:
+            component = None
+        try:
+            section = getUtility(ISectionSet)[section_name]
+        except NotFoundError:
+            section = None
+
         return SourceOverride(source_package_name, component, section)
+
+    def _checkPolicies(self, source_name):
+        # This helper will only return if it's safe to carry on with the
+        # copy, otherwise it raises SuspendJobException to tell the job
+        # runner to suspend the job.
+        override_policy = FromExistingOverridePolicy()
+        ancestry = override_policy.calculateSourceOverrides(
+            self.target_archive, self.target_distroseries,
+            self.target_pocket, [source_name])
+
+        copy_policy = self.getPolicyImplementation()
+
+        if len(ancestry) == 0:
+            # We need to get the default overrides and put them in the
+            # metadata.
+            defaults = UnknownOverridePolicy().calculateSourceOverrides(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket, [source_name])
+            self.addSourceOverride(defaults[0])
+
+            approve_new = copy_policy.autoApproveNew(
+                self.target_archive, self.target_distroseries,
+                self.target_pocket)
+
+            if not approve_new:
+                # There's no existing package with the same name and the
+                # policy says unapproved, so we poke it in the NEW queue.
+                self._createPackageUpload()
+                raise SuspendJobException
+        else:
+            # Put the existing override in the metadata.
+            self.addSourceOverride(ancestry[0])
+
+        # The package is not new (it has ancestry) so check the copy
+        # policy for existing packages.
+        approve_existing = copy_policy.autoApprove(
+            self.target_archive, self.target_distroseries, self.target_pocket)
+        if not approve_existing:
+            self._createPackageUpload(unapproved=True)
+            raise SuspendJobException
 
     def run(self):
         """See `IRunnableJob`."""
@@ -357,11 +424,26 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             name=name, version=version, exact_match=True).first()
         if source_package is None:
             raise CannotCopy("Package %r %r not found." % (name, version))
+        source_name = getUtility(ISourcePackageNameSet)[name]
 
+        # If there's a PackageUpload associated with this job then this
+        # job has just been released by an archive admin from the queue.
+        # We don't need to check any policies, but the admin may have
+        # set overrides which we will get from the job's metadata.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [self.context.id])
+        if not pu.any():
+            self._checkPolicies(source_name)
+
+        # The package is free to go right in, so just copy it now.
+        override = self.getSourceOverride()
+        copy_policy = self.getPolicyImplementation()
+        send_email = copy_policy.send_email(self.target_archive)
         do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
-            include_binaries=self.include_binaries, check_permissions=False)
+            include_binaries=self.include_binaries, check_permissions=False,
+            overrides=[override], send_email=send_email)
 
     def abort(self):
         """Abort work."""
