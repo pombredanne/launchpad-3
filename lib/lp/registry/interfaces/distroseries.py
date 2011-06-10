@@ -245,7 +245,7 @@ class IDistroSeriesPublic(
         ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True, schema=Interface,  # Really IDistroSeries, see below
+            required=True, schema=Interface,  # Really IDistroSeries
             vocabulary='DistroSeries'),
         ("devel", dict(exported_as="previous_series")),
         ("1.0", dict(exported_as="parent_series")),
@@ -883,10 +883,10 @@ class IDistroSeriesPublic(
             child's version is higher than the parent's version.
         """
 
-    def isInitializing(self):
+    def isInitializing():
         """Is this series initializing?"""
 
-    def isInitialized(self):
+    def isInitialized():
         """Has this series been initialized?"""
 
 
