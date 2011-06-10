@@ -130,6 +130,50 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEquals(False, job.include_binaries)
         self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
 
+    def test_createMultiple_creates_one_job_per_copy(self):
+        mother = self.factory.makeDistroSeriesParent()
+        derived_series = mother.derived_series
+        father = self.factory.makeDistroSeriesParent(
+            derived_series=derived_series)
+        mother_package = self.factory.makeSourcePackageName()
+        father_package = self.factory.makeSourcePackageName()
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_tasks = [
+            (
+                mother_package.name,
+                "1.5mother1",
+                mother.parent_series.main_archive,
+                derived_series.main_archive,
+                PackagePublishingPocket.RELEASE,
+                ),
+            (
+                father_package.name,
+                "0.9father1",
+                father.parent_series.main_archive,
+                derived_series.main_archive,
+                PackagePublishingPocket.UPDATES,
+                ),
+            ]
+        job_ids = list(
+            job_source.createMultiple(mother.derived_series, copy_tasks))
+        jobs = list(job_source.getActiveJobs(derived_series.main_archive))
+        self.assertContentEqual(job_ids, [job.id for job in jobs])
+        self.assertEqual(len(copy_tasks), len(set([job.job for job in jobs])))
+        # Get jobs into the same order as copy_tasks, for ease of
+        # comparison.
+        if jobs[0].package_name != mother_package.name:
+            jobs = reversed(jobs)
+        requested_copies = [
+            (
+                job.package_name,
+                job.package_version,
+                job.source_archive,
+                job.target_archive,
+                job.target_pocket,
+                )
+            for job in jobs]
+        self.assertEqual(copy_tasks, requested_copies)
+
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.
         distroseries = self.factory.makeDistroSeries()

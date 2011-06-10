@@ -734,8 +734,8 @@ breezy-autotest context. It also becomes part of the lookup results.
 
   >>> candidate_queue = breezy_autotest.createQueueEntry(
   ...     PackagePublishingPocket.RELEASE,
-  ...     'pmount_0.1-1_source.changes', 'some content',
-  ...     breezy_autotest.main_archive)
+  ...     breezy_autotest.main_archive,
+  ...     'pmount_0.1-1_source.changes', 'some content')
   >>> matching_pmount = pmount.getVersion('0.1-1')
   >>> unused = candidate_queue.addSource(
   ...     matching_pmount.sourcepackagerelease)
@@ -1075,8 +1075,9 @@ by checking IPackageUpload.is_delayed_copy.
    True
 
    >>> normal_upload = breezy_autotest.createQueueEntry(
-   ...     PackagePublishingPocket.RELEASE, 'foo.changes',
-   ...     'something', ubuntu.main_archive)
+   ...     PackagePublishingPocket.RELEASE,
+   ...     ubuntu.main_archive, 'foo.changes',
+   ...     'something')
 
    >>> normal_upload.is_delayed_copy
    False

@@ -112,9 +112,6 @@ class IPersonRoles(Interface):
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
         required=True, readonly=True)
-    in_ubuntu_branches = Bool(
-        title=_("True if this person is on the Ubuntu branches team."),
-        required=True, readonly=True)
     in_ubuntu_security = Bool(
         title=_("True if this person is on the Ubuntu security team."),
         required=True, readonly=True)
