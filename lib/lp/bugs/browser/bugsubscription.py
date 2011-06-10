@@ -328,7 +328,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if self._use_advanced_features:
             self.widgets['bug_notification_level'].widget_class = (
                 'bug-notification-level-field')
-            if (len(self.form_fields['subscription'].field.vocabulary)==1):
+            if (len(self.form_fields['subscription'].field.vocabulary) == 1):
                 # We hide the subscription widget if the user isn't
                 # subscribed, since we know who the subscriber is and we
                 # don't need to present them with a single radio button.
@@ -596,11 +596,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 continue
             can_edit = self.user is not None and self.user.inTeam(person)
             subscriber = {
-                'name' : person.name,
-                'display_name' : person.displayname,
-                'web_link' : canonical_url(person, rootsite='mainsite'),
-                'is_team' : person.is_team,
-                'can_edit' : can_edit,
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'is_team': person.is_team,
+                'can_edit': can_edit,
                 }
             record = {
                 'subscriber': subscriber,
@@ -615,11 +615,11 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 # Skip the current user viewing the page.
                 continue
             subscriber = {
-                'name' : person.name,
-                'display_name' : person.displayname,
-                'web_link' : canonical_url(person, rootsite='mainsite'),
-                'is_team' : person.is_team,
-                'can_edit' : False,
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'is_team': person.is_team,
+                'can_edit': False,
                 }
             record = {
                 'subscriber': subscriber,

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from simplejson import dumps
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
@@ -526,7 +525,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
 
         expected_result = {
-            'subscriber' : {
+            'subscriber': {
                 'name': 'user',
                 'display_name': 'Subscriber Name',
                 'is_team': False,
@@ -550,7 +549,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
 
         expected_result = {
-            'subscriber' : {
+            'subscriber': {
                 'name': 'team',
                 'display_name': 'Team Name',
                 'is_team': True,
@@ -575,7 +574,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 bug, BugPortletSubscribersWithDetails)
 
         expected_result = {
-            'subscriber' : {
+            'subscriber': {
                 'name': 'team',
                 'display_name': 'Team Name',
                 'is_team': True,
@@ -602,7 +601,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             bug, BugPortletSubscribersWithDetails)
 
         expected_result = {
-            'subscriber' : {
+            'subscriber': {
                 'name': 'team',
                 'display_name': 'Team Name',
                 'is_team': True,
