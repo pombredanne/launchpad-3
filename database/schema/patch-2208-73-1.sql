@@ -8,4 +8,4 @@ SET client_min_messages=ERROR;
 ALTER INDEX distribution_job__initialise_series__distroseries
   RENAME TO distribution_job__initialize_series__distroseries;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 73, 1);
