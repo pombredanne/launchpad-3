@@ -52,7 +52,6 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadApplication,
     IStoreSelector,
@@ -618,24 +617,21 @@ class OpenIDConsumerThatFailsDiscovery:
             'Got status 500', FakeHTTPResponse)
 
 
-class TestMissingServerDoesNotOops(TestCase):
+class TestMissingServerShowsNiceErrorPage(TestCase):
     layer = DatabaseFunctionalLayer
 
-    def test_missing_openid_server_does_not_cause_oops(self):
+    def test_missing_openid_server_shows_nice_error_page(self):
         fixture = ZopeViewReplacementFixture('+login', ILaunchpadApplication)
         class OpenIDLoginThatFailsDiscovery(fixture.original):
             def _getConsumer(self):
                 return OpenIDConsumerThatFailsDiscovery()
         fixture.replacement = OpenIDLoginThatFailsDiscovery
         self.useFixture(fixture)
-        last_oops = globalErrorUtility.getLastOopsReport()
         browser = TestBrowser()
         self.assertRaises(urllib2.HTTPError,
                           browser.open, 'http://launchpad.dev/+login')
         self.assertEquals('503 Service Unavailable',
                           browser.headers.get('status'))
-        # No OOPS was generated as a result of the exception
-        self.assertNoNewOops(last_oops)
         self.assertTrue(
             'OpenID Provider Is Unavailable at This Time' in browser.contents)
 

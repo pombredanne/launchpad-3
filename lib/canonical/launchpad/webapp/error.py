@@ -294,3 +294,12 @@ class NoReferrerErrorView(SystemErrorView):
     """View rendered when a POST request does not include a REFERER header."""
 
     response_code = 403 # Forbidden.
+
+
+class OpenIdDiscoveryFailureView(SystemErrorView):
+
+    response_code = 503 # Service Unavailable.
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False

@@ -22,7 +22,6 @@ from openid.fetchers import (
     setDefaultFetcher,
     Urllib2Fetcher,
     )
-from openid.yadis.discover import DiscoveryFailure
 import transaction
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
@@ -183,9 +182,6 @@ class OpenIDLogin(LaunchpadView):
     """A view which initiates the OpenID handshake with our provider."""
     _openid_session_ns = 'OPENID'
 
-    _discovery_failure_template = ViewPageTemplateFile(
-        '../../../lp/app/templates/launchpad-discoveryfailure.pt')
-
     def _getConsumer(self):
         session = ISession(self.request)[self._openid_session_ns]
         openid_store = getUtility(IOpenIDConsumerStore)
@@ -208,9 +204,6 @@ class OpenIDLogin(LaunchpadView):
         try:
             self.openid_request = consumer.begin(
                 allvhosts.configs[openid_vhost].rooturl)
-        except DiscoveryFailure:
-            self.request.response.setStatus(503) # Service Unavailable
-            return self._discovery_failure_template()
         finally:
             timeline_action.finish()
         self.openid_request.addExtension(
