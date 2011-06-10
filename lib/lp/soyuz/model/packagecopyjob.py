@@ -324,11 +324,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
-            pocket=self.target_pocket, changesfilename="changes",
-            changesfilecontent="changes", archive=self.target_archive,
+            pocket=self.target_pocket, archive=self.target_archive,
             package_copy_job=self.context)
-        # TODO: Fix PackageUpload to cope with a lack of changesfile
-        # when it has a package_copy_job.
         if unapproved:
             pu.setUnapproved()
 
