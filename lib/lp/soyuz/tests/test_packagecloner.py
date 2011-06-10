@@ -58,9 +58,9 @@ class PackageClonerTests(TestCaseWithFactory):
                 (source.source_package_name, source.source_package_version))
         self.assertEqual(expected_set, actual_set)
 
-    def createSourceDistribution(self, package_infos):
+    def createSourceDistribution(self, package_infos, distro_name=None):
         """Create a distribution to be the source of a copy archive."""
-        distroseries = self.createSourceDistroSeries()
+        distroseries = self.createSourceDistroSeries(distro_name=distro_name)
         self.createSourcePublications(package_infos, distroseries)
         return distroseries
 
@@ -114,9 +114,10 @@ class PackageClonerTests(TestCaseWithFactory):
 
     def makeCopyArchive(self, package_infos, component="main",
                         source_pocket=None, target_pocket=None,
-                        proc_families=None):
+                        proc_families=None, distro_name=None):
         """Make a copy archive based on a new distribution."""
-        distroseries = self.createSourceDistribution(package_infos)
+        distroseries = self.createSourceDistribution(
+            package_infos, distro_name)
         copy_archive = self.getTargetArchive(distroseries.distribution)
         to_component = getUtility(IComponentSet).ensure(component)
         self.copyArchive(
@@ -145,7 +146,8 @@ class PackageClonerTests(TestCaseWithFactory):
 
     def copyArchive(self, to_archive, to_distroseries, from_archive=None,
                     from_distroseries=None, from_pocket=None, to_pocket=None,
-                    to_component=None, packagesets=None, proc_families=None):
+                    to_component=None, packagesets=None, proc_families=None,
+                    no_duplicates=False):
         """Use a PackageCloner to copy an archive."""
         if from_distroseries is None:
             from_distroseries = to_distroseries
@@ -169,7 +171,7 @@ class PackageClonerTests(TestCaseWithFactory):
         cloner = getUtility(IPackageCloner)
         cloner.clonePackages(
             origin, destination, distroarchseries_list=None,
-            proc_families=proc_families)
+            proc_families=proc_families, no_duplicates=no_duplicates)
         return cloner
 
     def testCopiesPublished(self):
@@ -398,7 +400,6 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive, distroseries, proc_families=proc_families)
         self.checkBuilds(copy_archive, [package_info, package_info])
 
-
     def diffArchives(self, target_archive, target_distroseries,
                      source_archive=None, source_distroseries=None):
         """Run a packageSetDiff of two archives."""
@@ -503,7 +504,6 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkPackageDiff(
             [package_infos[0]], [package_infos[1]], diff,
             distroseries.distribution.main_archive)
-
 
     def mergeCopy(self, target_archive, target_distroseries,
                   source_archive=None, source_distroseries=None):
@@ -663,39 +663,61 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive,
             package_infos + package_infos + package_infos2 + package_infos2)
 
-    def testCopyDuplicates(self):
-        """Test XXX."""
-        package_info = PackageInfo(
-            "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
+    def testCopyNoDuplicates(self):
+        # No duplicate SourcePackagePublishingHistory is created by the
+        # packagecloner if no_duplicates=True is passed to
+        # cloner.clonePackages.
+        package_infos = [
+            PackageInfo(
+                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
+            PackageInfo(
+                "bzr", "2.3", status=PackagePublishingStatus.PUBLISHED)]
         proc_families = [ProcessorFamilySet().getByName("x86")]
-        # Create SPPH, BPPH and copy them.
-        copy_archive, distroseries = self.makeCopyArchive(
-            [package_info], proc_families=proc_families)
+        # Create bzr 2.1 (superseeded) and 2.2 (published) in archive1.
+        archive1, distroseries1 = self.makeCopyArchive(
+            package_infos[:2], proc_families=proc_families)
         self.checkCopiedSources(
-            copy_archive, distroseries, [package_info])
-        self.checkBuilds(copy_archive, [package_info])
+            archive1, distroseries1, package_infos[1:2])
+        self.checkBuilds(archive1, package_infos[1:2])
 
-        # Copy into a new archive from the two duplicated archives we
-        # just created.
-        dest_series = self.createSourceDistroSeries(distro_name="foo2")
+        # Create bzr 2.2 (superseeded) and 2.3 (published) in archive2.
+        archive2, distroseries2 = self.makeCopyArchive(
+            package_infos, proc_families=proc_families,
+            distro_name="foo2")
+        self.checkCopiedSources(
+            archive2, distroseries2, package_infos[2:])
+        self.checkBuilds(archive2, package_infos[2:])
+
+        # Copy into a new archive from the two archives we just created.
+        dest_series = self.createSourceDistroSeries(distro_name="foo3")
         dest_archive = self.getTargetArchive(dest_series.distribution)
         self.copyArchive(
-            dest_archive, dest_series, from_archive=copy_archive,
-            from_distroseries=distroseries, proc_families=proc_families)
+            dest_archive, dest_series, from_archive=archive1,
+            from_distroseries=distroseries1, proc_families=proc_families,
+            no_duplicates=True)
         self.copyArchive(
-            dest_archive, dest_series, from_archive=distroseries.main_archive,
-            from_distroseries=distroseries, proc_families=proc_families)
-        published_sources = dest_archive.getPublishedSources(
-            name='bzr', version="2.1")
+            dest_archive, dest_series, from_archive=archive2,
+            from_distroseries=distroseries2, proc_families=proc_families,
+            no_duplicates=True)
 
-        # Fetch published sources and builds in the new archive.
+       # Fetch published sources and builds in the new archive.
+        published_sources = dest_archive.getPublishedSources(
+            name='bzr')
         naked_published_sources = removeSecurityProxy(published_sources)
         binarypackagebuild_set = getUtility(IBinaryPackageBuildSet)
         builds = binarypackagebuild_set.getBuildsForArchive(
             dest_archive, status=BuildStatus.NEEDSBUILD)
         naked_builds = removeSecurityProxy(builds)
 
-        self.assertEquals(2, naked_published_sources.count())
+        # Since we passed no_duplicates=True to the packagecloner, the
+        # second copy has not created another SourcePackagePublishingHistory
+        # for bzr.
+        self.assertEquals(1, naked_published_sources.count())
+        self.assertEquals(
+            u"2.2",
+            naked_published_sources[0].sourcepackagerelease.version)
         # Only *missing builds* are created by the packagecloner so only
         # the first copy creates a build.
         self.assertEquals(1, naked_builds.count())

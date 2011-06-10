@@ -62,7 +62,7 @@ class PackageCloner:
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
                       proc_families=None, sourcepackagenames=None,
-                      always_create=False):
+                      always_create=False, no_duplicates=False):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -84,10 +84,13 @@ class PackageCloner:
         @param always_create: if we should create builds for every source
             package copied, useful if no binaries are to be copied.
         @type always_create: Boolean
+        @param no_duplicates: if we should prevent the duplication of packages
+            with the identical sourcepackagename in the destination.
+        @type no_duplicates: Boolean
         """
         # First clone the source packages.
         self._clone_source_packages(
-            origin, destination, sourcepackagenames)
+            origin, destination, sourcepackagenames, no_duplicates)
 
         # Are we also supposed to clone binary packages from origin to
         # destination distroarchseries pairs?
@@ -399,7 +402,7 @@ class PackageCloner:
         store.execute(pop_query)
 
     def _clone_source_packages(
-            self, origin, destination, sourcepackagenames):
+            self, origin, destination, sourcepackagenames, no_duplicates):
         """Copy source publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -410,7 +413,9 @@ class PackageCloner:
             to be copied.
         @type sourcepackagenames: Iterable
         @param sourcepackagenames: List of source packages to restrict
-            the copy to
+            the copy to.
+        @param no_duplicates: if we should prevent the duplication of packages
+            with the identical sourcepackagename in the destination.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
@@ -453,7 +458,28 @@ class PackageCloner:
                      ''' % sqlvalues([p.id for p in origin.packagesets])
 
         if origin.component:
-            query += "and spph.component = %s" % sqlvalues(origin.component)
+            query += "AND spph.component = %s" % sqlvalues(origin.component)
+
+        if no_duplicates:
+            query += '''AND spph.sourcepackagerelease NOT IN
+                            (SELECT origin_spr.id
+                             FROM SourcePackageRelease as origin_spr,
+                                  SourcePackageRelease as dest_spr,
+                                  SourcePackagePublishingHistory as
+                                      dest_spph
+                             WHERE dest_spph.sourcepackagerelease =
+                                 dest_spr.id
+                             AND dest_spr.sourcepackagename =
+                                 origin_spr.sourcepackagename
+                             AND dest_spph.distroseries = %s
+                             AND dest_spph.status in (%s, %s)
+                             AND dest_spph.pocket = %s
+                             AND dest_spph.archive = %s)
+                      ''' % sqlvalues(
+                          destination.distroseries,
+                          PackagePublishingStatus.PENDING,
+                          PackagePublishingStatus.PUBLISHED,
+                          destination.pocket, destination.archive)
 
         store.execute(query)
 
