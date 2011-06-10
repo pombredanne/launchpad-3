@@ -10,7 +10,7 @@
     essentiality indicator needs to be clickable to edit, otherwise not.
     Hence all the duplication.
   </tal:comment>
-  <div tal:define="subscription view/subscription">
+  <div tal:define="subscription view/subscription" class="subscriber">
     <a tal:condition="subscription/required:launchpad.Edit"
        tal:attributes="href subscription/fmt:url">
       <img
