@@ -484,7 +484,7 @@ class PackageUpload(SQLBase):
     @property
     def is_delayed_copy(self):
         """See `IPackageUpload`."""
-        return self.changesfile is None
+        return self.changesfile is None and self.package_copy_job is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
