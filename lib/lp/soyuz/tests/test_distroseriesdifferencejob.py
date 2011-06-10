@@ -704,3 +704,17 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
 
         # The test is that we get here without exceptions.
         pass
+
+    def test_getDerivedSeries(self):
+        script_users = ['queued']
+        dsp = self.factory.makeDistroSeriesParent()
+        transaction.commit()
+        for user in script_users:
+            self.layer.switchDbUser(user)
+            try:
+                children = list(dsp.parent_series.getDerivedSeries())
+            except ProgrammingError, e:
+                self.assertTrue(
+                    False, "Database role %s is unable to query DSP. "
+                    "Erorr was: %s." % (user, e))
+        
