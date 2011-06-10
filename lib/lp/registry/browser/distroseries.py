@@ -647,6 +647,29 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
 
     @property
+    def show_derivation_not_yet_available(self):
+        return not self.is_derived_series_feature_enabled
+
+    @property
+    def show_derivation_form(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            not self.context.isInitializing() and
+            not self.context.isInitialized())
+
+    @property
+    def show_already_initialized_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.isInitialized())
+
+    @property
+    def show_already_initializing_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.isInitializing())
+
+    @property
     def rebuilding_allowed(self):
         """If the distribution has got any initialized series already,
         rebuilding is not allowed.
@@ -1073,16 +1096,18 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     def requestUpgrades(self):
         """Request sync of packages that can be easily upgraded."""
         target_distroseries = self.context
-        target_archive = target_distroseries.main_archive
-        job_source = getUtility(IPlainPackageCopyJobSource)
-
-        for dsd in self.getUpgrades():
-            job_source.create(
+        copies = [
+            (
                 dsd.source_package_name.name,
-                dsd.parent_series.main_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.RELEASE,
-                package_version=dsd.parent_source_version,
-                copy_policy=PackageCopyPolicy.MASS_SYNC)
+                dsd.parent_source_version,
+                dsd.parent_series.main_archive,
+                target_distroseries.main_archive,
+                PackagePublishingPocket.RELEASE,
+            )
+            for dsd in self.getUpgrades()]
+        getUtility(IPlainPackageCopyJobSource).createMultiple(
+            target_distroseries, copies,
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

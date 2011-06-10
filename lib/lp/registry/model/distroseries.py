@@ -90,7 +90,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -802,13 +801,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return not self.getParentSeries() == []
 
     @property
-    def is_initializing(self):
-        """See `IDistroSeries`."""
-        return not getUtility(
-            IInitializeDistroSeriesJobSource).getPendingJobsForDistroseries(
-                self).is_empty()
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -854,7 +846,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
@@ -2036,6 +2029,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
+
+    def isInitializing(self):
+        """See `IDistroSeries`."""
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        pending_jobs = job_source.getPendingJobsForDistroseries(self)
+        return not pending_jobs.is_empty()
+
+    def isInitialized(self):
+        """See `IDistroSeries`."""
+        published = self.main_archive.getPublishedSources(distroseries=self)
+        return not published.is_empty()
 
 
 class DistroSeriesSet:
