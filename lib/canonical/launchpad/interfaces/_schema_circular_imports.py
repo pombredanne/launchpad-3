@@ -112,6 +112,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -160,7 +164,11 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage,
+    ISourcePackageEdit,
+    ISourcePackagePublic,
+    )
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
@@ -226,9 +234,9 @@ IBranch['getSubscription'].queryTaggedValue(
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 IBranch['product'].schema = IProduct
 
 patch_plain_parameter_type(
@@ -243,9 +251,9 @@ IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
@@ -316,17 +324,17 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'return_type'].value_type.schema = IBinaryPackageBuild
 
-ISourcePackage['distroseries'].schema = IDistroSeries
-ISourcePackage['productseries'].schema = IProductSeries
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['distroseries'].schema = IDistroSeries
+ISourcePackagePublic['productseries'].schema = IProductSeries
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
@@ -482,10 +490,20 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
-patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistroSeries, 'getParentSeries', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'status', DistroSeriesDifferenceStatus)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'difference_type',
+    DistroSeriesDifferenceType)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+
 
 # IDistroSeriesDifference
 patch_reference_property(
@@ -610,6 +628,9 @@ patch_entry_return_type(
     IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
 patch_collection_return_type(
     IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentForDistroSourcePackageName',
+    IBugTrackerComponent)
 
 ## IBugTrackerComponent
 patch_reference_property(
@@ -841,9 +862,9 @@ patch_entry_explicit_version(IDistroArchSeries, 'beta')
 # IDistroSeries
 patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
-    IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
-    "getDistroArchSeries", "getPackageUploads", "getSourcePackage",
-    "newMilestone")
+    IDistroSeries, 'beta', "initDerivedDistroSeries", "getDerivedSeries",
+    "getParentSeries", "getDistroArchSeries", "getPackageUploads",
+    "getSourcePackage", "newMilestone")
 
 # IDistroSeriesDifference
 patch_entry_explicit_version(IDistroSeriesDifference, 'beta')

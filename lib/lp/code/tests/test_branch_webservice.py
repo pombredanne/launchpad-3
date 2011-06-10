@@ -7,7 +7,6 @@ from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -78,9 +77,8 @@ class TestBranchDeletes(TestCaseWithFactory):
         # When trying to delete a branch that cannot be deleted, the
         # error is raised across the webservice instead of oopsing.
         login_person(self.branch_owner)
-        stacked_branch = self.factory.makeBranch(
-            stacked_on=self.branch,
-            owner=self.branch_owner)
+        self.factory.makeBranch(
+            stacked_on=self.branch, owner=self.branch_owner)
         logout()
         target_branch = self.lp.branches.getByUniqueName(
             unique_name='~jimhenson/fraggle/rock')
@@ -101,14 +99,12 @@ class TestSlashBranches(TestCaseWithFactory):
             distroseries=dev, sourcepackagename='choc', name='tip',
             owner=eric)
         dsp = self.factory.makeDistributionSourcePackage('choc', mint)
-        distro_link = ICanHasLinkedBranch(dsp)
         development_package = dsp.development_version
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)

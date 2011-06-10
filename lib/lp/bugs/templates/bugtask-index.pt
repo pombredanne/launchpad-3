@@ -80,6 +80,7 @@
       <div tal:replace="structure context/bug/@@+portlet-privacy" />
       <div tal:replace="structure context/bug/@@+portlet-actions" />
       <div tal:replace="structure context/bug/@@+portlet-duplicates" />
+      <div tal:replace="structure context/bug/@@+portlet-subscription" />
       <div tal:replace="structure context/bug/@@+portlet-subscribers" />
       <div tal:replace="structure context/bug/@@+portlet-questions" />
       <div tal:replace="structure context/bug/@@+portlet-specs" />

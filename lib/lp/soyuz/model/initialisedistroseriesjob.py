@@ -11,11 +11,12 @@ from zope.interface import (
     classProvides,
     implements,
     )
+
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.registry.model.distroseries import DistroSeries
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitialiseDistroSeriesJob,
@@ -26,7 +27,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
-from lp.services.job.model.job import Job
 
 
 class InitialiseDistroSeriesJob(DistributionJobDerived):
@@ -37,13 +37,18 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     classProvides(IInitialiseDistroSeriesJobSource)
 
     @classmethod
-    def create(cls, parent, child, arches=(), packagesets=(), rebuild=False):
+    def create(cls, child, parents, arches=(), packagesets=(),
+               rebuild=False, overlays=(), overlay_pockets=(),
+               overlay_components=()):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
-            'parent': parent.id,
+            'parents': parents,
             'arches': arches,
             'packagesets': packagesets,
             'rebuild': rebuild,
+            'overlays': overlays,
+            'overlay_pockets': overlay_pockets,
+            'overlay_components': overlay_components,
             }
         job = DistributionJob(
             child.distribution, child, cls.class_job_type,
@@ -63,17 +68,43 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
             Job._status.is_in(Job.PENDING_STATUSES))
 
     @property
-    def parent(self):
-        return IStore(DistroSeries).get(
-            DistroSeries, self.metadata["parent"])
+    def parents(self):
+        return tuple(self.metadata['parents'])
+
+    @property
+    def overlays(self):
+        if self.metadata['overlays'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlays'])
+
+    @property
+    def overlay_pockets(self):
+        if self.metadata['overlay_pockets'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlay_pockets'])
+
+    @property
+    def overlay_components(self):
+        if self.metadata['overlay_components'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlay_components'])
 
     @property
     def arches(self):
-        return tuple(self.metadata['arches'])
+        if self.metadata['arches'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['arches'])
 
     @property
     def packagesets(self):
-        return tuple(self.metadata['packagesets'])
+        if self.metadata['packagesets'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['packagesets'])
 
     @property
     def rebuild(self):
@@ -82,13 +113,14 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def run(self):
         """See `IRunnableJob`."""
         ids = InitialiseDistroSeries(
-            self.parent, self.distroseries, self.arches,
-            self.packagesets, self.rebuild)
+            self.distroseries, self.parents, self.arches,
+            self.packagesets, self.rebuild, self.overlays,
+            self.overlay_pockets, self.overlay_components)
         ids.check()
         ids.initialise()
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = super(InitialiseDistroSeriesJob, self).getOopsVars()
-        vars.append(('parent_distroseries_id', self.metadata.get("parent")))
+        vars.append(('parent_distroseries_ids', self.metadata.get("parents")))
         return vars

@@ -134,6 +134,7 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -148,7 +149,7 @@ from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -1285,30 +1286,6 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         dest_display_name)
 
 
-def partition_pubs_by_archive(source_pubs):
-    """Group `source_pubs` by archive.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A dict mapping `Archive`s to the list of entries from
-        `source_pubs` that are in that archive.
-    """
-    by_source_archive = {}
-    for spph in source_pubs:
-        by_source_archive.setdefault(spph.archive, []).append(spph)
-    return by_source_archive
-
-
-def name_pubs_with_versions(source_pubs):
-    """Annotate each entry from `source_pubs` with its version.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A list of tuples (name, version), one for each respective
-        entry in `source_pubs`.
-    """
-    sprs = [spph.sourcepackagerelease for spph in source_pubs]
-    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
@@ -1327,12 +1304,14 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         check_copy_permissions(
             person, dest_archive, dest_series, dest_pocket, spns)
 
-    job_source = getUtility(IPackageCopyJobSource)
-    archive_pubs = partition_pubs_by_archive(source_pubs)
-    for source_archive, spphs in archive_pubs.iteritems():
+    job_source = getUtility(IPlainPackageCopyJobSource)
+    for spph in source_pubs:
         job_source.create(
-            name_pubs_with_versions(spphs), source_archive, dest_archive,
-            dest_series, dest_pocket, include_binaries=include_binaries)
+            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            dest_pocket, include_binaries=include_binaries,
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE)
+
     return structured("""
         <p>Requested sync of %s packages.</p>
         <p>Please allow some time for these to be processed.</p>
@@ -1378,7 +1357,7 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True):
+                check_permissions=True, force_async=False):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1402,11 +1381,14 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
+        :param force_async: Force the copy to create package copy jobs and
+            perform the copy asynchronously.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            if self.canCopySynchronously(source_pubs):
+            if (force_async == False and
+                    self.canCopySynchronously(source_pubs)):
                 notification = copy_synchronously(
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,

@@ -17,13 +17,11 @@ from lp.soyuz.browser.archive import (
     copy_asynchronously,
     copy_synchronously,
     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
-    name_pubs_with_versions,
     PackageCopyingMixin,
-    partition_pubs_by_archive,
     render_cannotcopy_as_html,
     )
 from lp.soyuz.interfaces.archive import CannotCopy
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -104,39 +102,6 @@ class TestPackageCopyingMixinLight(TestCase):
         packages = [self.getUniqueString() for counter in range(300)]
         self.assertFalse(PackageCopyingMixin().canCopySynchronously(packages))
 
-    def test_partition_pubs_by_archive_maps_archives_to_pubs(self):
-        # partition_pubs_by_archive returns a dict mapping each archive
-        # to a list of SPPHs on that archive.
-        spph = FakeSPPH()
-        self.assertEqual(
-            {spph.archive: [spph]}, partition_pubs_by_archive([spph]))
-
-    def test_partition_pubs_by_archive_splits_by_archive(self):
-        # partition_pubs_by_archive keeps SPPHs for different archives
-        # separate.
-        spphs = [FakeSPPH() for counter in xrange(2)]
-        mapping = partition_pubs_by_archive(spphs)
-        self.assertEqual(
-            dict((spph.archive, [spph]) for spph in spphs), mapping)
-
-    def test_partition_pubs_by_archive_clusters_by_archive(self):
-        # partition_pubs_by_archive bundles SPPHs for the same archive
-        # into a single dict entry.
-        archive = FakeArchive()
-        spphs = [FakeSPPH(archive=archive) for counter in xrange(2)]
-        mapping = partition_pubs_by_archive(spphs)
-        self.assertEqual([archive], mapping.keys())
-        self.assertContentEqual(spphs, mapping[archive])
-
-    def test_name_pubs_with_versions_lists_packages_and_versions(self):
-        # name_pubs_with_versions returns a list of tuples of source
-        # package name and source package version, one per SPPH.
-        spph = FakeSPPH()
-        spr = spph.sourcepackagerelease
-        self.assertEqual(
-            [(spr.sourcepackagename.name, spr.version)],
-            name_pubs_with_versions([spph]))
-
     def test_render_cannotcopy_as_html_lists_errors(self):
         # render_cannotcopy_as_html includes a CannotCopy error message
         # into its HTML notice.
@@ -207,10 +172,13 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
 
     def makeDerivedSeries(self):
         """Create a derived `DistroSeries`, quickly."""
-        series = self.makeDistroSeries(previous_series=self.makeDistroSeries())
+        parent_series = self.makeDistroSeries()
+        derived_series = self.makeDistroSeries()
+        self.factory.makeDistroSeriesParent(
+            parent_series=parent_series, derived_series=derived_series)
         getUtility(ISourcePackageFormatSelectionSet).add(
-            series, SourcePackageFormat.FORMAT_1_0)
-        return series
+            derived_series, SourcePackageFormat.FORMAT_1_0)
+        return derived_series
 
     def makeView(self):
         """Create a `PackageCopyingMixin`-based view."""
@@ -276,12 +244,13 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         copy_asynchronously(
             [spph], archive, dest_series, pocket, include_binaries=False,
             check_permissions=False)
-        jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
+        jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+            archive))
         self.assertEqual(1, len(jobs))
+        job = jobs[0]
         spr = spph.sourcepackagerelease
-        self.assertEqual(
-            [[spr.sourcepackagename.name, spr.version]],
-            jobs[0].metadata['source_packages'])
+        self.assertEqual(spr.sourcepackagename.name, job.package_name)
+        self.assertEqual(spr.version, job.package_version)
 
     def test_do_copy_goes_async_if_canCopySynchronously_says_so(self):
         # The view opts for asynchronous copying if canCopySynchronously
@@ -295,7 +264,8 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         view.do_copy(
             'selected_differences', [spph], archive, dest_series, pocket,
             False, check_permissions=False)
-        jobs = list(getUtility(IPackageCopyJobSource).getActiveJobs(archive))
+        jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
+            archive))
         self.assertNotEqual([], jobs)
 
     def test_copy_synchronously_may_allow_copy(self):

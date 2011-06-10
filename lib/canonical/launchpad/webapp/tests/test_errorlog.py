@@ -967,5 +967,29 @@ class TestOopsLoggingHandler(TestCase):
         self.assertIs(None, self.error_utility.getLastOopsReport())
 
 
+class Test404Oops(testtools.TestCase):
+
+    def test_offsite_404_ignored(self):
+        # A request originating from another site that generates a NotFound
+        # (404) is ignored (i.e., no OOPS is logged).
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='example.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_onsite_404_not_ignored(self):
+        # A request originating from a local site that generates a NotFound
+        # (404) produces an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='canonical.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_404_without_referer_is_ignored(self):
+        # If a 404 is generated and there is no HTTP referer, we don't produce
+        # an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict()
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

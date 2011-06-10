@@ -403,15 +403,17 @@ class IHasOfficialBugTags(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
-    def getUsedBugTagsWithOpenCounts(user, wanted_tags=None):
+    def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
-
-        If wanted_tags is specified, only those tags will be returned.
+        :param user: The user who wants the report.
+        :param tag_limit: The number of tags to return (excludes those found by
+            matching include_tags). If 0 then all tags are returned. If
+            non-zero then the most frequently used tags are returned.
+        :param include_tags: A list of string tags to return irrespective of
+            usage. Tags in this list that have no open bugs are returned with a
+            count of 0. May be None if there are tags to require inclusion of.
+        :return: A dict from tag -> count.
         """
 
     def _getOfficialTagClause():
