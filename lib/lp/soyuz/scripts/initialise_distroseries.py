@@ -278,7 +278,7 @@ class InitialiseDistroSeries:
                     distroarchseries_list = ()
                 getUtility(IPackageCloner).clonePackages(
                     origin, destination, distroarchseries_list,
-                    proc_families, spns, self.rebuild)
+                    proc_families, spns, self.rebuild, no_duplicates=True)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents

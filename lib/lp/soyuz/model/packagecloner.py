@@ -85,7 +85,7 @@ class PackageCloner:
             package copied, useful if no binaries are to be copied.
         @type always_create: Boolean
         @param no_duplicates: if we should prevent the duplication of packages
-            with the identical sourcepackagename in the destination.
+            with identical sourcepackagename in the destination.
         @type no_duplicates: Boolean
         """
         # First clone the source packages.
@@ -415,7 +415,7 @@ class PackageCloner:
         @param sourcepackagenames: List of source packages to restrict
             the copy to.
         @param no_duplicates: if we should prevent the duplication of packages
-            with the identical sourcepackagename in the destination.
+            with identical sourcepackagename in the destination.
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''

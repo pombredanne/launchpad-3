@@ -20,7 +20,7 @@ class IPackageCloner(Interface):
     def clonePackages(
         origin, destination, distroarchseries_list=None,
         proc_families=None, sourcepackagenames=None,
-        always_create=False):
+        always_create=False, no_duplicates=False):
         """Copies the source packages from origin to destination as
         well as the binary packages for the DistroArchSeries specified.
 
@@ -33,6 +33,8 @@ class IPackageCloner(Interface):
         :param sourcepackagenames: the source packages which are to be
             copied.
         :param always_create: if builds should always be created.
+        :param no_duplicates: if we should prevent the duplication of packages
+            with identical sourcepackagename in the destination.
         """
 
     def mergeCopy(origin, destination):

@@ -585,12 +585,17 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             [self.section1, self.section2],
             child.sections)
 
-    def test_multiple_parents_same_package_version(self):
+    def test_multiple_parents_same_package(self):
+        # If the same package is published in different parents, the package
+        # in the first parents takes precedence.
         self.parent1, self.parent_das1 = self.setupParent(
-            packages={'package': '0.1-1'})
+            packages={'package': '0.3-1'})
         self.parent2, self.parent_das2 = self.setupParent(
             packages={'package': '0.1-1'})
         child = self._fullInitialise([self.parent1, self.parent2])
+        published_sources = child.main_archive.getPublishedSources()
 
-        # XXX Test ... something (no package duplication? Is that
-        # important?)
+        self.assertEquals(1, published_sources.count())
+        self.assertEquals(
+            u'0.3-1',
+            published_sources[0].sourcepackagerelease.version)
