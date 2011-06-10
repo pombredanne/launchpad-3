@@ -704,3 +704,12 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
 
         # The test is that we get here without exceptions.
         pass
+
+    def test_getDerivedSeries(self):
+        # Check that DB users can query derived series.
+        script_users = ['queued']
+        dsp = self.factory.makeDistroSeriesParent()
+        transaction.commit()
+        for user in script_users:
+            self.layer.switchDbUser(user)
+            list(dsp.parent_series.getDerivedSeries())
