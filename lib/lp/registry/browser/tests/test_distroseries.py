@@ -381,7 +381,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
         self.assertInitSeriesLinkNotPresent(series, person)
 
-    def test_differences_init_link_initialised(self):
+    def test_differences_init_link_initialized(self):
         # The link to +initseries is not displayed if the series is
         # already initialized.
         set_derived_series_ui_feature_flag(self)
@@ -392,7 +392,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
     def test_differences_init_link_series_initializing(self):
         # The link to +initseries is not displayed if the series is
-        # initialising.
+        # initializing.
         set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
