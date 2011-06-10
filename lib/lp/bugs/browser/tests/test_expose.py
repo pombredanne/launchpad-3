@@ -20,6 +20,7 @@ from testtools.matchers import (
 from zope.interface import implements
 from zope.traversing.browser import absoluteURL
 
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -116,6 +117,27 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
     def _sort(self, team_info, key='title'):
         return sorted(team_info, key=itemgetter(key))
 
+    def test_teams_preferredemail(self):
+        # The function includes information about whether the team has a
+        # preferred email.  This gives us information in JavaScript that tells
+        # us whether the subscription can be muted for a particular member of
+        # the team.  (If the team has a preferredemail, muting is not
+        # possible).
+        context = self.factory.makeProduct(owner=self.user)
+        team1 = self.factory.makeTeam(name='team-1', owner=self.user)
+        team2 = self.factory.makeTeam(name='team-2', owner=self.user)
+        self.factory.makeEmail('foo@example.net',
+                               team2,
+                               email_status=EmailAddressStatus.PREFERRED)
+
+        expose_user_administered_teams_to_js(self.request, self.user, context,
+            absoluteURL=fake_absoluteURL)
+        team_info = self._sort(self.request.objects['administratedTeams'])
+        self.assertThat(team_info[0]['title'], Equals(u'Team 1'))
+        self.assertThat(team_info[0]['has_preferredemail'], Equals(False))
+        self.assertThat(team_info[1]['title'], Equals(u'Team 2'))
+        self.assertThat(team_info[1]['has_preferredemail'], Equals(True))
+
     def test_teams_for_non_distro(self):
         # The expose_user_administered_teams_to_js function loads some data
         # about the teams the requesting user administers into the response to
@@ -136,7 +158,9 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
+            self.assertThat(
+                team_info[i],
+                KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
@@ -208,7 +232,9 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
+            self.assertThat(
+                team_info[i],
+                KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
@@ -236,7 +262,9 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
+            self.assertThat(
+                team_info[i],
+                KeysEqual('has_preferredemail', 'link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))

@@ -163,7 +163,8 @@ ${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
 
 sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
 
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
 # We absolutely do not want to include the lazr.testing module and

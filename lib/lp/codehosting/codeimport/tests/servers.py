@@ -12,9 +12,11 @@ __all__ = [
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import shutil
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -26,8 +28,10 @@ from bzrlib.urlutils import (
     join as urljoin,
     )
 import CVS
+import dulwich.index
+from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
-import pysvn
+import subvertpy.ra
 import svn_oo
 
 from lp.services.log.logger import BufferLogger
@@ -73,6 +77,10 @@ class SubversionServer(Server):
         self.repository_path = os.path.abspath(repository_path)
         self._use_svn_serve = use_svn_serve
 
+    def _get_ra(self, url):
+        return subvertpy.ra.RemoteAccess(url,
+            auth=subvertpy.ra.Auth([subvertpy.ra.get_username_provider()]))
+
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
         svn_oo.Repository.Create(path, BufferLogger())
@@ -98,9 +106,8 @@ class SubversionServer(Server):
             delay = 0.1
             for i in range(10):
                 try:
-                    client = pysvn.Client()
-                    client.ls(self.get_url())
-                except pysvn.ClientError, e:
+                    ra = self._get_ra(self.get_url())
+                except subvertpy.SubversionException, e:
                     if 'Connection refused' in str(e):
                         time.sleep(delay)
                         delay *= 1.5
@@ -117,7 +124,6 @@ class SubversionServer(Server):
             os.kill(self._svnserve.pid, signal.SIGINT)
             self._svnserve.communicate()
 
-    @run_in_temporary_directory
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
 
@@ -126,27 +132,31 @@ class SubversionServer(Server):
             tuples of (relative filename, file contents).
         """
         branch_url = self.makeDirectory(branch_name)
-        client = pysvn.Client()
-        branch_path = os.path.abspath(branch_name)
-        client.checkout(branch_url, branch_path)
-        build_tree_contents(
-            [(os.path.join(branch_path, filename), content)
-             for filename, content in tree_contents])
-        client.add(
-            [os.path.join(branch_path, filename)
-             for filename in os.listdir(branch_path)
-             if not filename.startswith('.')], recurse=True)
-        client.checkin(branch_path, 'Import', recurse=True)
+        ra = self._get_ra(branch_url)
+        editor = ra.get_commit_editor({"svn:log": "Import"})
+        root = editor.open_root()
+        for filename, content in tree_contents:
+            f = root.add_file(filename)
+            try:
+                subvertpy.delta.send_stream(StringIO(content),
+                    f.apply_textdelta())
+            finally:
+                f.close()
+        root.close()
+        editor.close()
         return branch_url
 
     def makeDirectory(self, directory_name, commit_message=None):
         """Make a directory on the repository."""
         if commit_message is None:
             commit_message = 'Make %r' % (directory_name,)
-        url = urljoin(self.get_url(), directory_name)
-        client = pysvn.Client()
-        client.mkdir(url, commit_message)
-        return url
+        ra = self._get_ra(self.get_url())
+        editor = ra.get_commit_editor({"svn:log": commit_message})
+        root = editor.open_root()
+        root.add_directory(directory_name).close()
+        root.close()
+        editor.close()
+        return urljoin(self.get_url(), directory_name)
 
 
 class CVSServer(Server):
@@ -201,16 +211,19 @@ class GitServer(Server):
         self.repo_url = repo_url
 
     def makeRepo(self, tree_contents):
-        from bzrlib.plugins.git.tests import GitBranchBuilder
         wd = os.getcwd()
         try:
             os.chdir(self.repo_url)
-            GitRepo.init(".")
-            builder = GitBranchBuilder()
-            for filename, contents in tree_contents:
-                builder.set_file(filename, contents, False)
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.finish()
+            repo = GitRepo.init(".")
+            blobs = [
+                (Blob.from_string(contents), filename) for (filename, contents)
+                in tree_contents]
+            repo.object_store.add_objects(blobs)
+            root_id = dulwich.index.commit_tree(repo.object_store, [
+                (filename, b.id, stat.S_IFREG | 0644)
+                for (b, filename) in blobs])
+            repo.do_commit(committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>', tree=root_id)
         finally:
             os.chdir(wd)
 

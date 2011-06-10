@@ -524,6 +524,14 @@ class BugViewMixin:
         """The list of bug attachments that are patches."""
         return self._bug_attachments[BugAttachmentType.PATCH]
 
+    @property
+    def current_bugtask(self):
+        """Return the current `IBugTask`.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
 
 class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
@@ -536,14 +544,6 @@ class BugView(LaunchpadView, BugViewMixin):
     but it was the best solution we came up with when deciding to hang
     all the pages off IBugTask instead of IBug.
     """
-
-    @property
-    def current_bugtask(self):
-        """Return the current `IBugTask`.
-
-        'current' is determined by simply looking in the ILaunchBag utility.
-        """
-        return getUtility(ILaunchBag).bugtask
 
     @property
     def subscription(self):
@@ -589,7 +589,8 @@ class BugView(LaunchpadView, BugViewMixin):
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
 
-class BugSubscriptionPortletView(BugView):
+class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
+    """View class for the subscription portlet."""
 
     # We want these strings to be available for the template and for the
     # JavaScript.
@@ -612,7 +613,7 @@ class BugSubscriptionPortletView(BugView):
 
     def initialize(self):
         """Initialize the view to handle the request."""
-        BugView.initialize(self)
+        LaunchpadView.initialize(self)
         user = self.user
         # We are using "direct" to represent both direct and personal
         # (not team).
@@ -626,8 +627,8 @@ class BugSubscriptionPortletView(BugView):
         self.muted = False
         if user is not None:
             bug = self.context
-            structural_subscription_count = (
-                get_structural_subscriptions_for_bug(bug, user).count())
+            has_structural_subscriptions = not (
+                get_structural_subscriptions_for_bug(bug, user).is_empty())
             cache = IJSONRequestCache(self.request).objects
             cache['notifications_text'] = self.notifications_text
             self.muted = bug.isMuted(user)
@@ -645,7 +646,7 @@ class BugSubscriptionPortletView(BugView):
                     assert level == BugNotificationLevel.LIFECYCLE
                     self.direct_lifecycle_notifications = True
             self.other_subscription_notifications = bool(
-                structural_subscription_count or
+                has_structural_subscriptions or
                 psi.from_duplicate.count or
                 psi.as_owner.count or
                 psi.as_assignee.count or
@@ -658,7 +659,7 @@ class BugSubscriptionPortletView(BugView):
                 not self.direct_notifications)
             self.any_subscription_notifications = (
                 self.other_subscription_notifications or
-                structural_subscription_count)
+                self.direct_notifications)
         self.user_should_see_mute_link = (
             self.any_subscription_notifications or self.muted)
 

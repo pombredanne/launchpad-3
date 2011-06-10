@@ -18,6 +18,7 @@ from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -25,6 +26,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     """Wrapper for the lazr-js picker/picker.js widget."""
 
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
+
+    picker_type = 'default'
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -157,6 +160,16 @@ class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
 
+    @property
+    def picker_type(self):
+        # This is a method for now so we can block the use of the new
+        # person picker js behind our picker_enhancments feature flag.
+        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
+            picker_type = 'person'
+        else:
+            picker_type = 'default'
+        return picker_type
+
     def chooseLink(self):
         link = super(PersonPickerWidget, self).chooseLink()
         if self.include_create_team_link:
@@ -172,7 +185,6 @@ class PersonPickerWidget(VocabularyPickerWidget):
 class BugTrackerPickerWidget(VocabularyPickerWidget):
 
     __call__ = ViewPageTemplateFile('templates/bugtracker-picker.pt')
-
     link_template = """
         or (<a id="create-bugtracker-link"
         href="/bugs/bugtrackers/+newbugtracker"
