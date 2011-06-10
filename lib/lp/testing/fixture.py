@@ -38,7 +38,7 @@ class ZopeEventHandlerFixture(Fixture):
 
 class ZopeViewReplacementFixture(Fixture):
     """A fixture that allows you to temporarily replace one view with another.
-    
+
     This will not work with the AppServerLayer.
     """
 
