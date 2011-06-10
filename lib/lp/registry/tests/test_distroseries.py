@@ -224,7 +224,7 @@ class TestDistroSeries(TestCaseWithFactory):
 
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
-        # initialisation job with a pending status attached to this series.
+        # initialization job with a pending status attached to this series.
         distroseries = self.factory.makeDistroSeries()
         parent_distroseries = self.factory.makeDistroSeries()
         self.assertFalse(distroseries.isInitializing())
