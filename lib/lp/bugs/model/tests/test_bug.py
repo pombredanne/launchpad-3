@@ -226,7 +226,7 @@ class TestBug(TestCaseWithFactory):
             bug.unsubscribe(bug.owner, bug.owner)
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
-            subscription = bug.subscribe(
+            bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
             bug.mute(subscriber, subscriber)
 

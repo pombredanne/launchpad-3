@@ -933,7 +933,7 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id,
             Not(In(BugSubscription.person_id,
-                   Select(BugMute.person_id, BugMute.bug_id==self.id)))
+                   Select(BugMute.person_id, BugMute.bug_id == self.id)))
             ).order_by(Person.displayname)
         return results
 
