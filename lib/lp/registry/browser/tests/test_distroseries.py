@@ -343,7 +343,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Initialize series', 'a',
                 text='Initialize series',
-                attrs={'href': re.compile('.*/\+initseries')}))
+                attrs={'href': '%s/+initseries' %canonical_url(series)}))
 
         with person_logged_in(person):
             view = create_initialized_view(
