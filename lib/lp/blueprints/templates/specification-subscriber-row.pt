@@ -10,7 +10,8 @@
     essentiality indicator needs to be clickable to edit, otherwise not.
     Hence all the duplication.
   </tal:comment>
-  <div tal:define="subscription view/subscription" class="subscriber">
+  <div tal:define="subscription view/subscription" class="subscriber"
+       tal:attributes="id string:subscription-${subscription/css_name}">
     <a tal:condition="subscription/required:launchpad.Edit"
        tal:attributes="href subscription/fmt:url">
       <img
@@ -48,10 +49,10 @@
        href="+subscribe"
        tal:attributes="
          title string:Unsubscribe ${subscription/person/fmt:displayname};
-         id string:unsubscribe-icon-${subscription/css_name};"
+         id string:unsubscribe-${subscription/css_name};"
     >
       <img class="unsub-icon" src="/@@/remove" alt="Remove"
-        tal:attributes="id string:unsubscribe-icon-subscribed-true" />
+        tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />
     </a>
   </div>
 </tal:root>
