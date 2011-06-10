@@ -3,7 +3,8 @@
 
 """Helper functions for logintoken-related tests."""
 
-import email, re
+import email
+import re
 
 
 def get_token_url_from_email(email_msg):

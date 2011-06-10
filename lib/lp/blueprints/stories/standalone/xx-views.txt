@@ -1,6 +1,22 @@
-== Blueprint views ==
+Blueprint views
+===============
 
-=== Viewing current blueprints ===
+Set Up
+------
+A number of tests in this need a product with blueprints enabled, so we'll
+enable them on firefox.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.blueprints_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
+Viewing current blueprints
+--------------------------
 
 We should be able to see a "+specs" and a "+portlet-latestspecs" view
 on sprint, product, person, project and distribution.
@@ -143,7 +159,8 @@ spec there using a badge:
     ...Activating Usplash...
 
 
-=== Viewing all blueprints ===
+Viewing all blueprints
+----------------------
 
 From time to time it's useful to review the complete list of all blueprints
 associated with a blueprint target, including those blueprints that have
@@ -188,7 +205,7 @@ Let's mark the ''second'' blueprint as ''implemented'':
     >>> browser.getLink('blueprint-2').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2'
-    >>> browser.getLink('Change status').click()
+    >>> browser.getLink(url='+status').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/blueprint-2/+status'
     >>> browser.getControl('Implementation Status').value = ['IMPLEMENTED']

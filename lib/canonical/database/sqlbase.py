@@ -2,37 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import warnings
-from datetime import datetime
-import re
-from textwrap import dedent
-
-import psycopg2
-from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE)
-import pytz
-import storm
-from storm.databases.postgres import compile as postgres_compile
-from storm.expr import State
-from storm.expr import compile as storm_compile
-from storm.locals import Storm, Store
-from storm.zope.interfaces import IZStorm
-
-from sqlobject.sqlbuilder import sqlrepr
-import transaction
-
-from twisted.python.util import mergeFunctionMetadata
-
-from zope.component import getUtility
-from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.config import config
-from canonical.database.interfaces import ISQLBase
-
-
 __all__ = [
     'alreadyInstalledMsg',
     'begin',
@@ -58,10 +27,51 @@ __all__ = [
     'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
+    'session_store',
     'SQLBase',
     'sqlvalues',
     'StupidCache',
-    'ZopelessTransactionManager',]
+    'ZopelessTransactionManager',
+    ]
+
+
+from datetime import datetime
+import re
+from textwrap import dedent
+import warnings
+
+from lazr.restful.interfaces import IRepresentationCache
+import psycopg2
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE,
+    )
+import pytz
+from sqlobject.sqlbuilder import sqlrepr
+import storm
+from storm.databases.postgres import compile as postgres_compile
+from storm.expr import (
+    compile as storm_compile,
+    State,
+    )
+from storm.locals import (
+    Store,
+    Storm,
+    )
+from storm.zope.interfaces import IZStorm
+import transaction
+from twisted.python.util import mergeFunctionMetadata
+from zope.component import getUtility
+from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.interfaces import ISQLBase
+from lp.services.propertycache import clear_property_cache
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
@@ -173,7 +183,11 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         We refetch any parameters from different stores from the
         correct master Store.
         """
-        from canonical.launchpad.interfaces import IMasterStore
+        from canonical.launchpad.interfaces.lpstorm import IMasterStore
+        # Make it simple to write dumb-invalidators - initialised
+        # _cached_properties to a valid list rather than just-in-time
+        # creation.
+        self._cached_properties = []
         store = IMasterStore(self.__class__)
 
         # The constructor will fail if objects from a different Store
@@ -206,7 +220,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     @classmethod
     def _get_store(cls):
-        from canonical.launchpad.interfaces import IStore
+        from canonical.launchpad.interfaces.lpstorm import IStore
         return IStore(cls)
 
     def __repr__(self):
@@ -216,7 +230,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
     def destroySelf(self):
-        from canonical.launchpad.interfaces import IMasterObject
+        from canonical.launchpad.interfaces.lpstorm import IMasterObject
         my_master = IMasterObject(self)
         if self is my_master:
             super(SQLBase, self).destroySelf()
@@ -247,6 +261,19 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         """Inverse of __eq__."""
         return not (self == other)
 
+    def __storm_flushed__(self):
+        """Invalidate the web service cache."""
+        cache = getUtility(IRepresentationCache)
+        cache.delete(self)
+
+    def __storm_invalidated__(self):
+        """Flush cached properties."""
+        # XXX: RobertCollins 2010-08-16 bug=622648: Note this is not directly
+        # tested, but the entire test suite blows up awesomely if it's broken.
+        # It's entirely unclear where tests for this should be.
+        clear_property_cache(self)
+
+
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
 
@@ -268,8 +295,10 @@ class ZopelessTransactionManager(object):
     @classmethod
     def _get_zopeless_connection_config(self, dbname, dbhost):
         # This method exists for testability.
-        main_connection_string = config.database.main_master
-        auth_connection_string = config.database.auth_master
+
+        # This is only used by scripts, so we must connect to the read-write
+        # DB here -- that's why we use rw_main_master directly.
+        main_connection_string = dbconfig.rw_main_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
@@ -288,7 +317,7 @@ class ZopelessTransactionManager(object):
             match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
-        return main_connection_string, auth_connection_string, dbname, dbhost
+        return main_connection_string, dbname, dbhost
 
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
@@ -296,7 +325,7 @@ class ZopelessTransactionManager(object):
         # Connect to the auth master store as well, as some scripts might need
         # to create EmailAddresses and Accounts.
 
-        main_connection_string, auth_connection_string, dbname, dbhost = (
+        main_connection_string, dbname, dbhost = (
             cls._get_zopeless_connection_config(dbname, dbhost))
 
         assert dbuser is not None, '''
@@ -312,8 +341,7 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            main_master: %(main_connection_string)s
-            auth_master: %(auth_connection_string)s
+            rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
 
@@ -341,27 +369,17 @@ class ZopelessTransactionManager(object):
             cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
-            cls._reset_store()
+            cls._reset_stores()
             cls._installed = cls
         return cls._installed
 
     @staticmethod
-    def _reset_store():
-        """Reset the MAIN DEFAULT store.
+    def _reset_stores():
+        """Reset the active stores.
 
         This is required for connection setting changes to be made visible.
-
-        Other stores do not need to be reset, as code using other stores
-        or explicit flavors isn't using this compatibility layer.
         """
-        main_store = _get_sqlobject_store()
-        # XXX: salgado, 2009-11-06, bug=253542: The import is here to work
-        # around a particularly convoluted circular import.
-        from canonical.launchpad.webapp.interfaces import (
-            IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
-        auth_store = getUtility(IStoreSelector).get(
-            AUTH_STORE, DEFAULT_FLAVOR)
-        for store in [main_store, auth_store]:
+        for name, store in getUtility(IZStorm).iterstores():
             connection = store._connection
             if connection._state == storm.database.STATE_CONNECTED:
                 if connection._raw_connection is not None:
@@ -392,7 +410,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         config.pop(cls._CONFIG_OVERLAY_NAME)
-        cls._reset_store()
+        cls._reset_stores()
         cls._installed = None
 
     @classmethod
@@ -434,6 +452,16 @@ class ZopelessTransactionManager(object):
     def abort():
         """Abort the current transaction."""
         transaction.abort()
+
+    @staticmethod
+    def registerSynch(synch):
+        """Register an ISynchronizer."""
+        transaction.manager.registerSynch(synch)
+
+    @staticmethod
+    def unregisterSynch(synch):
+        """Unregister an ISynchronizer."""
+        transaction.manager.unregisterSynch(synch)
 
 
 def clear_current_connection_cache():
@@ -552,7 +580,7 @@ def quote_like(x):
 
     """
     if not isinstance(x, basestring):
-        raise TypeError, 'Not a string (%s)' % type(x)
+        raise TypeError('Not a string (%s)' % type(x))
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
 
@@ -616,7 +644,7 @@ def quote_identifier(identifier):
     >>> print quoteIdentifier('\\"')
     "\"""
     '''
-    return '"%s"' % identifier.replace('"','""')
+    return '"%s"' % identifier.replace('"', '""')
 
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
@@ -667,6 +695,7 @@ def convert_storm_clause_to_string(storm_clause):
         clause = clause.replace('?', '%s') % sqlvalues(*parameters)
     return clause
 
+
 def flush_database_updates():
     """Flushes all pending database updates.
 
@@ -715,8 +744,13 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
+
     def block_implicit_flushes_decorator(*args, **kwargs):
-        store = _get_sqlobject_store()
+        from canonical.launchpad.webapp.interfaces import DisallowedStore
+        try:
+            store = _get_sqlobject_store()
+        except DisallowedStore:
+            return func(*args, **kwargs)
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
@@ -727,6 +761,7 @@ def block_implicit_flushes(func):
 
 def reset_store(func):
     """Function decorator that resets the main store."""
+
     def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -761,20 +796,25 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
-    con_str = connect_string(user, dbname)
-    con = psycopg2.connect(con_str)
+    con = psycopg2.connect(connect_string(user, dbname))
     con.set_isolation_level(isolation)
     return con
 
 
 def connect_string(user, dbname=None):
-    """Return a PostgreSQL connection string."""
+    """Return a PostgreSQL connection string.
+
+    Allows you to pass the generated connection details to external
+    programs like pg_dump or embed in slonik scripts.
+    """
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
-    con_str = config.database.main_master
     con_str_overrides = []
+    # We must connect to the read-write DB here, so we use rw_main_master
+    # directly.
+    con_str = dbconfig.rw_main_master
     assert 'user=' not in con_str, (
             'Connection string already contains username')
     if user is not None:
@@ -783,12 +823,13 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
         con_str_overrides.append('host=%s' % lp.dbhost)
     if dbname is None:
-        dbname = lp.dbname # Note that lp.dbname may be None.
+        dbname = lp.get_dbname() # Note that lp.dbname may be None.
     if dbname is not None:
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    return ' '.join([con_str] + con_str_overrides)
+    con_str = ' '.join([con_str] + con_str_overrides)
+    return con_str
 
 
 class cursor:
@@ -797,6 +838,7 @@ class cursor:
     DEPRECATED - use of this class is deprecated in favour of using
     Store.execute().
     """
+
     def __init__(self):
         self._connection = _get_sqlobject_store()._connection
         self._result = None
@@ -813,6 +855,10 @@ class cursor:
     def rowcount(self):
         return self._result._raw_cursor.rowcount
 
+    @property
+    def description(self):
+        return self._result._raw_cursor.description
+
     def fetchone(self):
         assert self._result is not None, "No results to fetch"
         return self._result.get_one()
@@ -825,3 +871,8 @@ class cursor:
         if self._result is not None:
             self._result.close()
             self._result = None
+
+
+def session_store():
+    """Return a store connected to the session DB."""
+    return getUtility(IZStorm).get('session', 'launchpad-session:')

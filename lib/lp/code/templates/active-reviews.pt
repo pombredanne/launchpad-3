@@ -77,6 +77,12 @@
      No reviews
   </em>
 
+  <div class="related">
+    <ul>
+      <li><a href="+merges">See all merge proposals</a></li>
+    </ul>
+  </div>
+
 </div>
 
 </body>

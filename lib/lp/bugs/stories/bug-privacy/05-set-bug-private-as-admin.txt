@@ -22,7 +22,6 @@ explicit. There are two implicit subscribers.
     From duplicates:
     >>> print_also_notified(browser.contents)
     Also notified:
-    Mark Shuttleworth
     Sample Person
     Ubuntu Team
 
@@ -44,7 +43,6 @@ All the implicit subscribers have been made explicit.
   ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
   >>> print_direct_subscribers(browser.contents)
   Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
-  Mark Shuttleworth (Subscribed by Foo Bar)
   Sample Person (Subscribed by Foo Bar)
   Steve Alexander (Subscribed by Launchpad Janitor)
 

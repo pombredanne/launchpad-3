@@ -18,7 +18,7 @@
   <div class="gridflow"
        tal:define="current_batch nocall:view/members/currentBatch">
 
-    <ul>
+    <ul tal:content="cache:public, 60 minute">
     <tal:per_member repeat="member current_batch">
       <li>
         <span>

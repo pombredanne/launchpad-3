@@ -6,8 +6,10 @@ list is available as a portlet on the project home page, as well as on a
 dedicated batched page showing all announcements, and as an RSS/Atom
 news feed.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> from BeautifulSoup import SoupStrainer
+    >>> from BeautifulSoup import (
+    ...     BeautifulSoup,
+    ...     SoupStrainer,
+    ...     )
     >>> from canonical.launchpad.ftests.feeds_helper import (
     ...     parse_ids, parse_links, validate_feed)
 
@@ -619,7 +621,7 @@ not be able to move it.
 Atom/RSS Feeds
 --------------
 
-We publish a feed of news for every IProject, IProduct and
+We publish a feed of news for every IProjectGroup, IProduct and
 IDistribution.
 
 The feeds are published even when there are no announcements.

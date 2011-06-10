@@ -14,7 +14,8 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.soyuz.enums import ArchivePurpose
 
 
 class PackageLocation:
@@ -28,22 +29,25 @@ class PackageLocation:
     distroseries = None
     pocket = None
     component = None
+    packagesets = None
 
     def __init__(self, archive, distribution, distroseries, pocket,
-                 component=None):
+                 component=None, packagesets=None):
         """Initialize the PackageLocation from the given parameters."""
         self.archive = archive
         self.distribution = distribution
         self.distroseries = distroseries
         self.pocket = pocket
         self.component = component
+        self.packagesets = packagesets or []
 
     def __eq__(self, other):
         if (self.distribution == other.distribution and
             self.archive == other.archive and
             self.distroseries == other.distroseries and
             self.component == other.component and
-            self.pocket == other.pocket):
+            self.pocket == other.pocket and
+            self.packagesets == other.packagesets):
             return True
         return False
 
@@ -63,6 +67,10 @@ class PackageLocation:
         if self.component is not None:
             result += ' (%s)' % self.component.name
 
+        if len(self.packagesets) > 0:
+            result += ' [%s]' % (
+                ", ".join([str(p.name) for p in self.packagesets]),)
+
         return result
 
 
@@ -71,7 +79,8 @@ class PackageLocationError(Exception):
 
 
 def build_package_location(distribution_name, suite=None, purpose=None,
-                           person_name=None, archive_name=None):
+                           person_name=None, archive_name=None,
+                           packageset_names=None):
     """Convenience function to build PackageLocation objects."""
 
     # XXX kiko 2007-10-24:
@@ -86,7 +95,8 @@ def build_package_location(distribution_name, suite=None, purpose=None,
 
     # Avoid circular imports.
     from lp.registry.interfaces.distribution import IDistributionSet
-    from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    from lp.soyuz.interfaces.archive import IArchiveSet
+    from lp.soyuz.interfaces.packageset import IPackagesetSet
     from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     try:
@@ -144,4 +154,17 @@ def build_package_location(distribution_name, suite=None, purpose=None,
         distroseries = distribution.currentseries
         pocket = PackagePublishingPocket.RELEASE
 
-    return PackageLocation(archive, distribution, distroseries, pocket)
+    packagesets = []
+    if packageset_names:
+        packageset_set = getUtility(IPackagesetSet)
+        for packageset_name in packageset_names:
+            try:
+                packageset = packageset_set.getByName(
+                    packageset_name, distroseries=distroseries)
+            except NotFoundError, err:
+                raise PackageLocationError(
+                    "Could not find packageset %s" % err)
+            packagesets.append(packageset)
+
+    return PackageLocation(archive, distribution, distroseries, pocket,
+            packagesets=packagesets)

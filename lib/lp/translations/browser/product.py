@@ -6,20 +6,25 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductChangeTranslatorsView',
+    'ProductSettingsView',
     'ProductTranslationsMenu',
     'ProductView',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadView, Link, canonical_url, enabled_with_permission)
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.enums import service_uses_launchpad
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.product import IProduct
-from lp.registry.model.productseries import ProductSeries
-from lp.registry.browser.product import ProductEditView
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -36,22 +41,26 @@ class ProductTranslationsMenu(NavigationMenu):
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        text = 'Configure translations'
+        return Link(
+            '+configure-translations', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download'
         preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
+        enabled = (service_uses_launchpad(self.context.translations_usage)
+            and preferred_series is not None)
         link = ''
         if enabled:
-            link = '%s/+export' % preferred_series.name
+            link = canonical_url(
+                preferred_series,
+                rootsite='translations',
+                view_name='+export')
             text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
@@ -62,59 +71,68 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Set permissions and policies"
-    page_title = "Permissions and policies"
-    field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return self.cancel_url
+class ProductSettingsView(TranslationsMixin, ProductConfigureBase):
+    label = "Configure translations"
+    page_title = "Configure translations"
+    usage_fieldname = "translations_usage"
+    field_names = [
+            usage_fieldname,
+            "translation_focus",
+            "translationgroup",
+            "translationpermission",
+            ]
 
 
 class ProductView(LaunchpadView):
-
-    __used_for__ = IProduct
 
     label = "Translation overview"
 
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is not None)
+
+    @cachedproperty
+    def no_translations_available(self):
+        """Has no translation templates but does support translations."""
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is None)
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
 
     @cachedproperty
     def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
+        """Return the context's primary translatable if it's a product series.
         """
         translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
 
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
+        if not IProductSeries.providedBy(translatable):
+            return None
 
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
+        return translatable
 
     @cachedproperty
     def untranslatable_series(self):
-        """Return series which are not yet set up for translations."""
-        all_series = set(self.context.series)
-        translatable = set(self.context.translatable_series)
-        return all_series - translatable
+        """Return series which are not yet set up for translations.
+
+        The list is sorted in alphabetically order and obsolete series
+        are excluded.
+        """
+
+        translatable = self.context.translatable_series
+        return [series for series in self.context.series if (
+            series.status != SeriesStatus.OBSOLETE and
+            series not in translatable)]

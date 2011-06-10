@@ -42,11 +42,62 @@ ISourcePackageNameSet.queryByName:
     >>> print firefox.name
     mozilla-firefox
 
+Source packages have useful string representations containing their name in
+quotes.
+
+    >>> firefox
+    <SourcePackageName 'mozilla-firefox'>
+
 If the package doesn't exist, queryByName returns None:
 
     >>> biscoito = sourcepackagenameset.queryByName("biscoito")
     >>> print biscoito
     None
+
+
+Source package meta object
+--------------------------
+
+A SourcePackage is a meta representation of a source package that is published
+in a distroseries. It provides access to the current and historic information
+about the package in the series. Since a SourcePackage is a meta object, it
+can be constructed from a SourcePackageName and a distroseries.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.model.sourcepackage import SourcePackage
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
+    >>> firefox_warty_package = SourcePackage(sourcepackagename=firefox,
+    ...     distroseries=ubuntu_warty)
+    >>> firefox_warty_package
+    <SourcePackage ...'Ubuntu'...'warty'...'mozilla-firefox'...>
+
+An instance is commonly retrieved from a distroseries.
+
+    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_warty == firefox_warty_package
+    True
+
+
+Descriptive attributes
+......................
+
+A source package has a name, displayname, title, and a summary.
+
+    >>> print firefox_warty.name
+    mozilla-firefox
+
+    >>> print firefox_warty.displayname
+    mozilla-firefox in Ubuntu Warty
+
+    >>> print firefox_warty.title.encode('ascii', 'ignore')
+    mozilla-firefox source package in Warty
+
+    >>> print firefox_warty.summary
+    mozilla-firefox: Mozilla Firefox Web Browser
+    mozilla-firefox-data: No summary available for mozilla-firefox-data
+    in ubuntu warty.
 
 
 Latest published component
@@ -55,10 +106,6 @@ Latest published component
 The 'latest_published_component' attribute indicates the component where
 the package was last published.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getSeries('warty')
-    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> firefox_warty.latest_published_component.name
     u'main'
 
@@ -81,16 +128,12 @@ upload, even though it gets changed in the publishing record.
     PUBLISHED main
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.database import Component
-    >>> from canonical.launchpad.database import (
-    ...     SecureSourcePackagePublishingHistory)
+    >>> from lp.soyuz.model.component import Component
+    >>> from lp.soyuz.model.publishing import (
+    ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 
-    # SourcePackagePublishingHistory is just a view on
-    # SecureSourcePackagePublishingHistory with some rows removed, so need
-    # to update the SecureSourcePackagePublishingHistory table.
-
-    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    >>> latest_publishing = SourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
     >>> latest_publishing.component = universe
@@ -107,7 +150,7 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
     >>> syncUpdate(latest_publishing)
@@ -136,20 +179,19 @@ SourcePackage context will be reachable.
 
 'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
 
-    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    >>> pub = SourcePackagePublishingHistory.get(
     ...     pmount_hoary['0.1-1'].publishing_history[0].id)
-    >>> secure_pub.datesuperseded is not None
+    >>> pub.datesuperseded is not None
     True
-
-    >>> secure_pub.dateremoved is None
+    >>> pub.dateremoved is None
     True
 
 We will emulate disk-removal to ensure it will continue to be reachable.
 See bug #179028 for further information.
 
     >>> from datetime import timedelta
-    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
-    >>> syncUpdate(secure_pub)
+    >>> pub.dateremoved = pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(pub)
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
@@ -178,10 +220,8 @@ something quite different, but is outside the scope of this document.)
 To retrieve a distribution source package, use the getSourcePackage
 method on a distribution:
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distributionsourcepackage import (
     ...     IDistributionSourcePackage)
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> ubuntu_firefox = ubuntu.getSourcePackage(firefox)
     >>> IDistributionSourcePackage.providedBy(ubuntu_firefox)
     True
@@ -193,7 +233,7 @@ method on a distribution:
     \u201cmozilla-firefox\u201d package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
 
     >>> ubuntu_firefox.distribution == ubuntu
     True
@@ -203,7 +243,7 @@ method on a distribution:
 
 Distro sourcepackages know how to compare to each other:
 
-    >>> debian = getUtility(IDistributionSet).get(3)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> ubuntu_firefox_also = ubuntu.getSourcePackage(firefox)
     >>> debian_firefox = debian.getSourcePackage(firefox)
 
@@ -255,86 +295,65 @@ package.
 
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> sp = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> sp.productseries.name
-    u'1.0'
+    >>> print sp.productseries.name
+    1.0
 
-Now we make sure there is no Packaging data for a52dec in hoary.
+A source package's product series is None when it does not have a
+Packaging entry. Historical packaging does not affect the state of the
+productseries attribute.
 
     >>> from lp.registry.model.packaging import PackagingUtil
-    >>> a52decsp = SourcePackage(sourcepackagename=a52dec,
+    >>> hoary_a52dec = SourcePackage(sourcepackagename=a52dec,
     ...     distroseries=hoary)
-    >>> a52decsp.productseries.name
-    u'trunk'
-
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
+    ...     productseries=hoary_a52dec.productseries,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary)
     False
 
-So far so good.
+    >>> print hoary_a52dec.productseries
+    None
 
-Now verify we still get a product for that source package, thanks to the
-fact that we have Warty data for it
-
-    >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=warty)
-    True
-
-    >>> a52decsp.productseries.product.name
-    u'a52dec'
-
-Similarly, we should be able to get the packaging information from a
-parent distroseries, on the basis that a derivative is highly unlikely
-to change the packaging drastically without changing the name of the
-package.
-
-First, show there is no packging data for a52dec in g2k5:
-
-    >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=a52decsp.productseries,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
-    False
-
-Now verify we still get a product for that source package
-
-    >>> sp = SourcePackage(sourcepackagename=a52dec, distroseries=g2k5)
-    >>> sp.productseries.product.name
-    u'a52dec'
-
-And if we want to link that productseries to a source package in that
-distroseries
+Once a Packaging entry is created to link a distro series source package name
+to a product series, the source package does have a product series.
 
     >>> from lp.registry.interfaces.packaging import PackagingType
-    >>> from lp.registry.model.person import Person
-    >>> foobar = Person.byName('name16')
-    >>> PackagingUtil().createPackaging(
-    ...     productseries=sp.productseries,
+
+    >>> user = factory.makePerson()
+    >>> a52dec_series = factory.makeProductSeries(name='ratty')
+    >>> packaging = PackagingUtil().createPackaging(
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5,
+    ...     distroseries=hoary,
     ...     packaging=PackagingType.PRIME,
-    ...     owner=foobar)
+    ...     owner=user)
 
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+    ...     distroseries=hoary)
     True
 
-Packaging entries can be deleted using PackagingUtil.deletePackaging.
+    >>> print hoary_a52dec.productseries.name
+    ratty
 
-    >>> PackagingUtil().deletePackaging(
-    ...     productseries=sp.productseries,
-    ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+Packaging entries can be deleted using PackagingUtil.deletePackaging. That
+also removes the source package product series.
+
+    >>> from lp.testing import person_logged_in
+    >>> with person_logged_in(user):
+    ...     PackagingUtil().deletePackaging(
+    ...         productseries=a52dec_series,
+    ...         sourcepackagename=a52dec,
+    ...         distroseries=hoary)
     >>> PackagingUtil().packagingEntryExists(
-    ...     productseries=sp.productseries,
+    ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
-    ...     distroseries=g2k5)
+    ...     distroseries=hoary)
     False
+
+    >>> print hoary_a52dec.productseries
+    None
 
 Linkified changelogs are available through SourcePackageReleaseView: XXX
 julian 2007-09-17 This is duplicating the page test. Instead it should
@@ -373,32 +392,10 @@ Zero or more spaces may appear between the ":" and the "#".
     >>> from lp.soyuz.browser.sourcepackagerelease import (
     ...     linkify_bug_numbers)
     >>> linkify_bug_numbers("LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
+    'LP: <a href="/bugs/10">#10</a>'
 
-    >>> linkify_bug_numbers("LP:         #10")
-    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP:#10")
-    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
-
-    >>> linkify_bug_numbers("LP: #999")
-    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
-
-    >>> linkify_bug_numbers("garbage")
-    'garbage'
-
-    >>> linkify_bug_numbers("LP: #10, #7")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
-    <a href="/bugs/7" title="A test bug">#7</a>'
-
-    >>> linkify_bug_numbers("LP: #10 LP: #10")
-    u'LP: <a href="/bugs/10" title="another test bug">#10</a>
-      LP: <a href="/bugs/10" title="another test bug">#10</a>'
-
-The regex is case-insensitive, so "lp: #nnn" also works.
-
-    >>> linkify_bug_numbers("lp: #10")
-    u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
+More complete examples of the bug linkification can be found in the doctest
+displaying-paragraphs-of-text.
 
 
 Comparing Sourcepackages
@@ -548,7 +545,7 @@ Interface implementation
 SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True

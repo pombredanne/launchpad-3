@@ -32,6 +32,28 @@ consumer's request to access Launchpad on his behalf.
     ...         if tag.attrMap['value']:
     ...             print tag.attrMap['name'], tag.attrMap['value']
 
+When the client doesn't specify a duration, the resulting request
+token will have no expiration date set.
+
+    >>> from datetime import datetime
+    >>> view, token = get_view_with_fresh_token({})
+    >>> view.reviewToken(OAuthPermission.READ_PRIVATE, None)
+    >>> print token.date_expires
+    None
+
+When the client specifies a duration, the resulting request
+token will have an appropriate expiration date set.
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> from canonical.launchpad.browser.oauth import (
+    ...     TemporaryIntegrations)
+    >>> view, token = get_view_with_fresh_token({})
+    >>> view.reviewToken(
+    ...     OAuthPermission.READ_PRIVATE, TemporaryIntegrations.HOUR)
+    >>> token.date_expires > datetime.now(pytz.timezone('UTC'))
+    True
+
 When the consumer doesn't specify a context, the token will not have a
 context either.
 
@@ -45,7 +67,7 @@ context either.
     loggingout...
     oauth_token...
 
-    >>> view.reviewToken(OAuthPermission.READ_PRIVATE)
+    >>> view.reviewToken(OAuthPermission.READ_PRIVATE, None)
     >>> token.person.name
     u'salgado'
     >>> print token.context
@@ -69,7 +91,7 @@ over to the token once it's reviewed.
     oauth_token...
     lp.context firefox
 
-    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC, None)
     >>> token.context.name
     u'firefox'
 
@@ -86,7 +108,7 @@ Likewise for a project.
     oauth_token...
     lp.context mozilla
 
-    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC, None)
     >>> token.context.name
     u'mozilla'
 
@@ -103,7 +125,7 @@ And a distribution.
     oauth_token...
     lp.context ubuntu
 
-    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC, None)
     >>> token.context.name
     u'ubuntu'
 
@@ -122,7 +144,7 @@ package, it must specify the distribution and the package's name.
     oauth_token...
     lp.context ubuntu/evolution
 
-    >>> view.reviewToken(OAuthPermission.READ_PUBLIC)
+    >>> view.reviewToken(OAuthPermission.READ_PUBLIC, None)
     >>> token.context.title
     u'...evolution... package in Ubuntu'
 

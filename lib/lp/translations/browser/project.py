@@ -1,38 +1,44 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Project-related View Classes"""
+"""ProjectGroup-related View Classes"""
 
 __metaclass__ = type
 
 __all__ = [
-    'ProjectChangeTranslatorsView',
+    'ProjectSettingsView',
     'ProjectTranslationsMenu',
     'ProjectView',
     ]
 
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, Link, LaunchpadView)
+    action,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.project import IProject
 from lp.registry.browser.project import ProjectEditView
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
 class ProjectTranslationsMenu(NavigationMenu):
 
-    usedfor = IProject
+    usedfor = IProjectGroup
     facet = 'translations'
     links = ['products', 'settings', 'overview']
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        text = 'Change permissions'
+        return Link('+settings', text, icon='edit', site='translations')
 
     def products(self):
         text = 'Products'
-        return Link('', text)
+        return Link('', text, site='translations')
 
     def overview(self):
         text = 'Overview'
@@ -41,7 +47,7 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 
 class ProjectView(LaunchpadView):
-    """A view for `IProject` in the translations context."""
+    """A view for `IProjectGroup` in the translations context."""
 
     label = "Translatable applications"
 
@@ -52,18 +58,16 @@ class ProjectView(LaunchpadView):
         return list(all_products - translatables)
 
 
-class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):
+class ProjectSettingsView(TranslationsMixin, ProjectEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
 
     @property
     def cancel_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.context, rootsite="translations")
 
-    @property
-    def next_url(self):
-        return self.cancel_url
+    next_url = cancel_url
 
     @action('Change', name='change')
     def edit(self, action, data):

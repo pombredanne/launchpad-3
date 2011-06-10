@@ -10,14 +10,22 @@ __all__ = [
     'OpenIDPersistentIdentity',
     ]
 
-from zope.component import adapter, adapts
-from zope.interface import implementer, implements
+from zope.component import (
+    adapter,
+    adapts,
+    )
+from zope.interface import (
+    implementer,
+    implements,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
 class CurrentOpenIDEndPoint:
@@ -47,17 +55,25 @@ class OpenIDPersistentIdentity:
     @property
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
+        openid_identifier = self.openid_identifier
+        if openid_identifier is None:
+            return None
         identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + self.openid_identifier.encode('ascii')
+        return identity_root_url + openid_identifier.encode('ascii')
 
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        # The account is very restricted.
-        token = removeSecurityProxy(self.account).openid_identifier
-        if token is None:
+        # We might have multiple OpenID identifiers linked to an
+        # account. We just use the first one which is good enough
+        # for our purposes.
+        identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier, account=self.account).order_by(
+                OpenIdIdentifier.date_created).first()
+        if identifier is None:
             return None
-        return '+id/' + token
+        else:
+            return '+id/' + identifier.identifier
 
 
 @adapter(IPerson)

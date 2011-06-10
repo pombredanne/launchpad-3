@@ -7,16 +7,20 @@
 
 __metaclass__ = type
 
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_factory_operation,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Attribute
 
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_factory_operation, operation_parameters, REQUEST_USER)
 
 
 __all__ = [
@@ -28,7 +32,7 @@ class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
     export_as_webservice_collection(IBug)
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, prejoins=[]):
         """Search IBugTasks with the given search parameters."""
 
     bug_count = Attribute("The number of bugs recorded in Launchpad")
@@ -69,7 +73,7 @@ class IMaloneApplication(ILaunchpadApplication):
           * the owner will be subscribed to the bug
 
           * distribution, product and package contacts (whichever ones are
-            applicable based on the bug report target) will bug subscribed to
+            applicable based on the bug report target) will be subscribed to
             all *public bugs only*
 
           * for public upstreams bugs where there is no upstream bug contact,

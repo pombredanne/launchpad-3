@@ -1,7 +1,8 @@
 <tal:uses-launchpad
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:condition="context/@@+get-involved/has_involvement">
+  tal:condition="context/@@+get-involved/has_involvement"
+  tal:content="cache:public, 1 hour">
   <div class="portlet" id="portlet-top-contributors"
     tal:define="contributors view/getTopFiveContributors"
     tal:condition="contributors">

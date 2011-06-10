@@ -19,38 +19,53 @@ __all__ = [
     'SyncSourceError',
     ]
 
-import apt_pkg
 import commands
-import md5
+import hashlib
 import os
 import stat
 import sys
 import tempfile
+import time
 
+import apt_pkg
+from debian.deb822 import Changes
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import re_extract_src_version
-from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
+    re_extract_src_version,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
-from canonical.librarian.utils import copy_and_close
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -58,6 +73,7 @@ class ArchiveCruftCheckerError(Exception):
 
     Mostly used to describe errors in the initialisation of this object.
     """
+
 
 class TagFileNotFound(Exception):
     """Raised when an archive tag file could not be found."""
@@ -72,10 +88,7 @@ class ArchiveCruftChecker:
     """
 
     # XXX cprov 2006-05-15: the default archive path should come
-    # from the IDistroSeries.lucilleconfig. But since it's still
-    # not optimal and we have real plans to migrate it from DB
-    # text field to default XML config or a more suitable/reliable
-    # method it's better to not add more obsolete code to handle it.
+    # from the config.
     def __init__(self, logger, distribution_name='ubuntu', suite=None,
                  archive_path='/srv/launchpad.net/ubuntu-archive'):
         """Store passed arguments.
@@ -110,6 +123,7 @@ class ArchiveCruftChecker:
     def architectures(self):
         return dict([(a.architecturetag, a)
                      for a in self.distroseries.architectures])
+
     @property
     def components(self):
         return dict([(c.name, c) for c in self.distroseries.components])
@@ -207,7 +221,6 @@ class ArchiveCruftChecker:
             for architecture in self.architectures:
                 self.buildArchNBS(component, architecture)
 
-
     def buildArchNBS(self, component, architecture):
         """Build NBS per architecture.
 
@@ -241,7 +254,7 @@ class ArchiveCruftChecker:
                     source = m.group(1)
                     version = m.group(2)
 
-                if not self.bin_pkgs.has_key(package):
+                if package not in self.bin_pkgs:
                     self.nbs.setdefault(source, {})
                     self.nbs[source].setdefault(package, {})
                     self.nbs[source][package][version] = ""
@@ -249,7 +262,7 @@ class ArchiveCruftChecker:
                 if architecture != "all":
                     self.arch_any.setdefault(package, "0")
                     if apt_pkg.VersionCompare(
-                        version,self.arch_any[package]) < 1:
+                        version, self.arch_any[package]) < 1:
                         self.arch_any[package] = version
         finally:
             # close fd and remove temporary file used to store uncompressed
@@ -257,14 +270,12 @@ class ArchiveCruftChecker:
             temp_fd.close()
             os.unlink(temp_filename)
 
-
     def buildASBA(self):
         """Build the group of 'all superseded by any' binaries."""
         self.logger.debug("Building all superseded by any list (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchASBA(component, architecture)
-
 
     def buildArchASBA(self, component, architecture):
         """Build ASBA per architecture.
@@ -299,7 +310,7 @@ class ArchiveCruftChecker:
                     version = m.group(2)
 
                 if architecture == "all":
-                    if (self.arch_any.has_key(package) and
+                    if (package in self.arch_any and
                         apt_pkg.VersionCompare(
                         version, self.arch_any[package]) > -1):
                         self.asba.setdefault(source, {})
@@ -317,9 +328,7 @@ class ArchiveCruftChecker:
 
         Ensure the package is still published in the suite before add.
         """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
+        result = self.distroseries.getBinaryPackagePublishing(name=package)
 
         if len(list(result)) == 0:
             return
@@ -448,14 +457,15 @@ class ArchiveCruftChecker:
                 dasbp = distroarchseries.getBinaryPackage(binarypackagename)
                 dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = dasbpr.current_publishing_record.supersede()
+                    bpph = dasbpr.current_publishing_record
+                    bpph.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
                     pass
                 else:
-                    version = sbpph.binarypackagerelease.version
-                    self.logger.info ("Removed %s_%s from %s/%s ... "
+                    version = bpph.binarypackagerelease.version
+                    self.logger.info("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,
                                          distroarchseries.architecturetag))
@@ -466,6 +476,7 @@ class PubBinaryContent:
 
     Currently used for auxiliary storage in PubSourceChecker.
     """
+
     def __init__(self, name, version, arch, component, section, priority):
         self.name = name
         self.version = version
@@ -504,6 +515,7 @@ class PubBinaryContent:
 
         return "\n".join(report)
 
+
 class PubBinaryDetails:
     """Store the component, section and priority of binary packages and, for
     each binary package the most frequent component, section and priority.
@@ -520,6 +532,7 @@ class PubBinaryDetails:
     - correct_sections: same as correct_components, but for sections
     - correct_priorities: same as correct_components, but for priorities
     """
+
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -574,6 +587,7 @@ class PubSourceChecker:
     Receive the source publication data and its binaries and perform
     a group of heuristic consistency checks.
     """
+
     def __init__(self, name, version, component, section, urgency):
         self.name = name
         self.version = version
@@ -638,7 +652,8 @@ class PubSourceChecker:
     def renderReport(self):
         """Render a formatted report for the publication group.
 
-        Return None if no issue was annotated or an formatted string including:
+        Return None if no issue was annotated or an formatted string
+        including:
 
           SourceName_Version Component/Section/Urgency | # bin
           <BINREPORTS>
@@ -702,7 +717,7 @@ class ChrootManager:
         ftype = filenameToContentType(filename)
 
         try:
-            alias_id  = getUtility(ILibrarianClient).addFile(
+            alias_id = getUtility(ILibrarianClient).addFile(
                 filename, flen, fd, contentType=ftype)
         except UploadFailed, info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
@@ -803,11 +818,13 @@ class ChrootManager:
         pocket_chroot.chroot.open()
         copy_and_close(pocket_chroot.chroot, local_file)
 
+
 class SyncSourceError(Exception):
     """Raised when an critical error occurs inside SyncSource.
 
     The entire procedure should be aborted in order to avoid unknown problems.
     """
+
 
 class SyncSource:
     """Sync Source procedure helper class.
@@ -818,25 +835,28 @@ class SyncSource:
     'aptMD5Sum' is provided as a classmethod during the integration time.
     """
 
-    def __init__(self, files, origin, debug, downloader):
+    def __init__(self, files, origin, logger, downloader, todistro):
         """Store local context.
 
         files: a dictionary where the keys are the filename and the
                value another dictionary with the file informations.
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
-        debug: a debug function, 'debug(message)'
-        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        logger: a logger
+        downloader: a callable that fetchs URLs,
+                    'downloader(url, destination)'
+        todistro: target distribution object
         """
         self.files = files
         self.origin = origin
-        self.debug = debug
+        self.logger = logger
         self.downloader = downloader
+        self.todistro = todistro
 
     @classmethod
     def generateMD5Sum(self, filename):
         file_handle = open(filename)
-        md5sum = md5.md5(file_handle.read()).hexdigest()
+        md5sum = hashlib.md5(file_handle.read()).hexdigest()
         file_handle.close()
         return md5sum
 
@@ -847,19 +867,14 @@ class SyncSource:
         Return the fetched filename if it was present in Librarian or None
         if it wasn't.
         """
-        # XXX cprov 2007-01-10 bug=78683: Looking for files within ubuntu
-        # only. It doesn't affect the usual sync-source procedure. However
-        # it needs to be revisited for derivation, we probably need
-        # to pass the target distribution in order to make proper lookups.
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            libraryfilealias = ubuntu.getFileByName(
+            libraryfilealias = self.todistro.getFileByName(
                 filename, source=True, binary=False)
         except NotFoundError:
             return None
 
-        self.debug(
-            "\t%s: already in distro - downloading from librarian" %
+        self.logger.info(
+            "%s: already in distro - downloading from librarian" %
             filename)
 
         output_file = open(filename, 'w')
@@ -871,23 +886,23 @@ class SyncSource:
         """Try to fetch files from Librarian.
 
         It raises SyncSourceError if anything else then an
-        'orig.tar.gz' was found in Librarian.
-        Return a boolean indicating whether or not the 'orig.tar.gz' is
-        required in the upload.
+        orig tarball was found in Librarian.
+        Return the names of the files retrieved from the librarian.
         """
-        orig_filename = None
+        retrieved = []
         for filename in self.files.keys():
             if not self.fetchFileFromLibrarian(filename):
                 continue
+            file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if filename.endswith("orig.tar.gz"):
-                orig_filename = filename
-            else:
+            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
+                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
                 raise SyncSourceError(
-                    'Oops, only orig.tar.gz can be retrieved from librarian')
+                    'Oops, only orig tarball can be retrieved from librarian.')
+            retrieved.append(filename)
 
-        return orig_filename
+        return retrieved
 
     def fetchSyncFiles(self):
         """Fetch files from the original sync source.
@@ -896,21 +911,19 @@ class SyncSource:
         """
         dsc_filename = None
         for filename in self.files.keys():
+            file_type = determine_source_file_type(filename)
+            if file_type == SourcePackageFileType.DSC:
+                dsc_filename = filename
             if os.path.exists(filename):
+                self.logger.info("  - <%s: cached>" % (filename))
                 continue
-            self.debug(
+            self.logger.info(
                 "  - <%s: downloading from %s>" %
                 (filename, self.origin["url"]))
             download_f = ("%s%s" % (self.origin["url"],
                                     self.files[filename]["remote filename"]))
             sys.stdout.flush()
             self.downloader(download_f, filename)
-            # only set the dsc_filename if the DSC was really downloaded.
-            # this loop usually includes the other files for the upload,
-            # DIFF and ORIG.
-            if filename.endswith(".dsc"):
-                dsc_filename = filename
-
         return dsc_filename
 
     def checkDownloadedFiles(self):
@@ -1036,23 +1049,6 @@ class LpQueryDistro(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Action does not accept defined suite.")
 
-    # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution.
-    def getSeriesByStatus(self, status):
-        """Query context distribution for a distroseries in a given status.
-
-        I may raise LaunchpadScriptError if no suitable distroseries in a
-        given status was found.
-        """
-        # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
-        # multiple series with the desired status?
-        for series in self.location.distribution.series:
-            if series.status == status:
-                return series
-        raise NotFoundError(
-                "Could not find a %s distroseries in %s"
-                % (status.name, self.location.distribution.name))
-
     @property
     def current(self):
         """Return the name of the CURRENT distroseries.
@@ -1063,12 +1059,12 @@ class LpQueryDistro(LaunchpadScript):
         command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        try:
-            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
-        except NotFoundError, err:
-            raise LaunchpadScriptFailure(err)
+        series = self.location.distribution.getSeriesByStatus(
+            SeriesStatus.CURRENT)
+        if not series:
+            raise LaunchpadScriptFailure("No CURRENT series.")
 
-        return series.name
+        return series[0].name
 
     @property
     def development(self):
@@ -1087,20 +1083,17 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         series = None
-        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
-                         DistroSeriesStatus.FROZEN)
+        wanted_status = (SeriesStatus.DEVELOPMENT,
+                         SeriesStatus.FROZEN)
         for status in wanted_status:
-            try:
-                series = self.getSeriesByStatus(status)
-            except NotFoundError:
-                pass
-
-        if series is None:
+            series = self.location.distribution.getSeriesByStatus(status)
+            if series.count() > 0:
+                break
+        else:
             raise LaunchpadScriptFailure(
                 'There is no DEVELOPMENT distroseries for %s' %
                 self.location.distribution.name)
-
-        return series.name
+        return series[0].name
 
     @property
     def supported(self):
@@ -1118,8 +1111,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.checkNoSuiteDefined()
         supported_series = []
-        unsupported_status = (DistroSeriesStatus.EXPERIMENTAL,
-                              DistroSeriesStatus.OBSOLETE)
+        unsupported_status = (SeriesStatus.EXPERIMENTAL,
+                              SeriesStatus.OBSOLETE)
         for distroseries in self.location.distribution:
             if distroseries.status not in unsupported_status:
                 supported_series.append(distroseries.name)
@@ -1268,10 +1261,10 @@ class PackageRemover(SoyuzScript):
 
         removals = []
         for removable in removables:
-            removed = removable.requestDeletion(
+            removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
-            removals.append(removed)
+            removals.append(removable)
 
         if len(removals) == 1:
             self.logger.info(
@@ -1361,7 +1354,7 @@ class ObsoleteDistroseries(SoyuzScript):
                 "and which is not the most recent distroseries.")
 
         # Is the distroseries in an obsolete state?  Bail out now if not.
-        if distroseries.status != DistroSeriesStatus.OBSOLETE:
+        if distroseries.status != SeriesStatus.OBSOLETE:
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 
@@ -1424,3 +1417,56 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
+
+
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
+                     lp_closes, section, priority, description,
+                     files_from_librarian, requested_by, origin):
+    """Generate a Changes object.
+
+    :param dsc: A `Dsc` instance for the related source package.
+    :param suite: Distribution name
+    :param changelog: Relevant changelog data
+    :param urgency: Urgency string (low, medium, high, etc)
+    :param closes: Sequence of Debian bug numbers (as strings) fixed by
+        this upload.
+    :param section: Debian section
+    :param priority: Package priority
+    """
+
+    # XXX cprov 2007-07-03:
+    # Changed-By can be extracted from most-recent changelog footer,
+    # but do we care?
+
+    changes = Changes()
+    changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
+    changes["Format"] = "1.7"
+    changes["Date"] = time.strftime("%a,  %d %b %Y %H:%M:%S %z")
+    changes["Source"] = dsc["source"]
+    changes["Binary"] = dsc["binary"]
+    changes["Architecture"] = "source"
+    changes["Version"] = dsc["version"]
+    changes["Distribution"] = suite
+    changes["Urgency"] = urgency
+    changes["Maintainer"] = dsc["maintainer"]
+    changes["Changed-By"] = requested_by
+    if description:
+        changes["Description"] = "\n %s" % description
+    if closes:
+        changes["Closes"] = " ".join(closes)
+    if lp_closes:
+        changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
+    files = []
+    for filename in dsc_files:
+        if filename in files_from_librarian:
+            continue
+        files.append({"md5sum": dsc_files[filename]["md5sum"],
+                      "size": dsc_files[filename]["size"],
+                      "section": section,
+                      "priority": priority,
+                      "name": filename,
+                     })
+
+    changes["Files"] = files
+    changes["Changes"] = "\n%s" % changelog
+    return changes

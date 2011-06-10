@@ -8,14 +8,15 @@ __metaclass__ = type
 __all__ = ['process_dist_upgrader']
 
 import os
-import tarfile
-import stat
-import shutil
 
 from lp.archivepublisher.customupload import (
-    CustomUpload, CustomUploadError)
+    CustomUpload,
+    CustomUploadError,
+    )
 from lp.archivepublisher.debversion import (
-    BadUpstreamError, Version as make_version)
+    BadUpstreamError,
+    Version as make_version,
+    )
 
 
 class DistUpgraderAlreadyExists(CustomUploadError):

@@ -14,8 +14,12 @@ __all__ = [
     'PersonLocation',
     ]
 
-from sqlobject import BoolCol, FloatCol, ForeignKey, StringCol
-
+from sqlobject import (
+    BoolCol,
+    FloatCol,
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW

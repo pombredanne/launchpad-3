@@ -12,36 +12,76 @@ __all__ = [
     'RevisionProperty',
     'RevisionSet']
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 
+from bzrlib.revision import NULL_REVISION
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
-from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Asc,
+    Desc,
+    Join,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import (
+    Bool,
+    Int,
+    Min,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, IMasterStore)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.revision import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
-    IRevisionSet)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+    IRevision,
+    IRevisionAuthor,
+    IRevisionParent,
+    IRevisionProperty,
+    IRevisionSet,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.person import ValidPersonCache
 
 
 class Revision(SQLBase):
@@ -53,8 +93,9 @@ class Revision(SQLBase):
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
 
-    revision_author = ForeignKey(
-        dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
+    revision_author_id = Int(name='revision_author', allow_none=False)
+    revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
+
     revision_id = StringCol(notNull=True, alternateID=True,
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
@@ -78,6 +119,13 @@ class Revision(SQLBase):
         """
         return [parent.parent_id for parent in self.parents]
 
+    def getLefthandParent(self):
+        if len(self.parent_ids) == 0:
+            parent_id = NULL_REVISION
+        else:
+            parent_id = self.parent_ids[0]
+        return RevisionSet().getByRevisionId(parent_id)
+
     def getProperties(self):
         """See `IRevision`."""
         return dict((prop.name, prop.value) for prop in self.properties)
@@ -86,10 +134,7 @@ class Revision(SQLBase):
         """See `IRevision`."""
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
-        if (author is not None and branch.product is not None):
-            # No karma for junk branches as we need a product to link
-            # against.
-            karma = author.assignKarma('revisionadded', branch.product)
+        if author is not None:
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
@@ -97,9 +142,14 @@ class Revision(SQLBase):
             # events is both wrong, as the revision has been created (and it
             # is lying), and a problem with the way the Launchpad code
             # currently does its karma degradation over time.
+            karma_date = min(self.revision_date, self.date_created)
+            karma = branch.target.assignKarma(
+                author, 'revisionadded', karma_date)
             if karma is not None:
-                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
+            return karma
+        else:
+            return None
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
@@ -109,8 +159,8 @@ class Revision(SQLBase):
         store = Store.of(self)
 
         query = And(
-            self.id == BranchRevision.revisionID,
-            BranchRevision.branchID == Branch.id)
+            self.id == BranchRevision.revision_id,
+            BranchRevision.branch_id == Branch.id)
         if not allow_private:
             query = And(query, Not(Branch.private))
         if not allow_junk:
@@ -121,7 +171,7 @@ class Revision(SQLBase):
                 Or(
                     (Branch.product != None),
                     And(
-                        Branch.sourcepackagename != None, 
+                        Branch.sourcepackagename != None,
                         Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
@@ -218,16 +268,20 @@ class RevisionSet:
         return author
 
     def new(self, revision_id, log_body, revision_date, revision_author,
-            parent_ids, properties):
+            parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}
+        if _date_created is None:
+            _date_created = UTC_NOW
         author = self.acquireRevisionAuthor(revision_author)
 
-        revision = Revision(revision_id=revision_id,
-                            log_body=log_body,
-                            revision_date=revision_date,
-                            revision_author=author)
+        revision = Revision(
+            revision_id=revision_id,
+            log_body=log_body,
+            revision_date=revision_date,
+            revision_author=author,
+            date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
             revision.revision_date = revision.date_created
@@ -368,33 +422,30 @@ class RevisionSet:
             BranchRevision.branch == Branch.id,
             Branch.product == product,
             Branch.lifecycle_status.is_in(DEFAULT_BRANCH_STATUS_IN_LISTING),
-            BranchRevision.revisionID >= revision_subselect)
+            BranchRevision.revision_id >= revision_subselect)
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
     @staticmethod
-    def getRevisionsNeedingKarmaAllocated():
+    def getRevisionsNeedingKarmaAllocated(limit=None):
         """See `IRevisionSet`."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.code.model.branchrevision import BranchRevision
-        from lp.registry.model.person import ValidPersonCache
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        # XXX: Tim Penhey 2008-08-12, bug 244768
-        # Using Not(column == None) rather than column != None.
-        return store.find(
+        store = IStore(Revision)
+        results_with_dupes = store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
             RevisionAuthor.person == ValidPersonCache.id,
             Not(Revision.karma_allocated),
-            Exists(
-                Select(True,
-                       And(BranchRevision.revision == Revision.id,
-                           BranchRevision.branch == Branch.id,
-                           Not(Branch.product == None)),
-                       (Branch, BranchRevision))))
+            BranchRevision.revision == Revision.id,
+            BranchRevision.branch == Branch.id,
+            Or(Branch.product != None, Branch.distroseries != None))[:limit]
+        # Eliminate duplicate rows, returning <= limit rows
+        return store.find(
+            Revision, Revision.id.is_in(
+                results_with_dupes.get_select_expr(Revision.id)))
 
     @staticmethod
     def getPublicRevisionsForPerson(person, day_limit=30):
@@ -433,7 +484,7 @@ class RevisionSet:
 
     @staticmethod
     def _getPublicRevisionsHelper(obj, day_limit):
-        """Helper method for Products and Projects."""
+        """Helper method for Products and ProjectGroups."""
         # Here to stop circular imports.
         from lp.code.model.branch import Branch
         from lp.registry.model.product import Product
@@ -450,12 +501,12 @@ class RevisionSet:
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
-        elif IProject.providedBy(obj):
+        elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
             conditions = And(conditions, Product.project == obj)
         else:
             raise AssertionError(
-                "obj parameter must be an IProduct or IProject: %r" % obj)
+                "Not an IProduct or IProjectGroup: %r" % obj)
 
         result_set = Store.of(obj).using(*origin).find(
             Revision, conditions)
@@ -468,7 +519,7 @@ class RevisionSet:
         return cls._getPublicRevisionsHelper(product, day_limit)
 
     @classmethod
-    def getPublicRevisionsForProject(cls, project, day_limit=30):
+    def getPublicRevisionsForProjectGroup(cls, project, day_limit=30):
         """See `IRevisionSet`."""
         return cls._getPublicRevisionsHelper(project, day_limit)
 
@@ -565,8 +616,7 @@ class RevisionCache(Storm):
     revision_author_id = Int(name='revision_author', allow_none=False)
     revision_author = Reference(revision_author_id, 'RevisionAuthor.id')
 
-    revision_date = DateTime(
-        name='revision_date', allow_none=False, tzinfo=pytz.UTC)
+    revision_date = UtcDateTimeCol(notNull=True)
 
     product_id = Int(name='product', allow_none=True)
     product = Reference(product_id, 'Product.id')

@@ -6,24 +6,36 @@
 __all__ = [
     'CVSServer',
     'GitServer',
+    'MercurialServer',
     'SubversionServer',
     ]
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import os
 import shutil
+import signal
+import stat
+import subprocess
 import tempfile
+import time
 
+from bzrlib.tests.treeshape import build_tree_contents
+from bzrlib.transport import Server
+from bzrlib.urlutils import (
+    escape,
+    join as urljoin,
+    )
 import CVS
-import pysvn
+import dulwich.index
+from dulwich.objects import Blob
+from dulwich.repo import Repo as GitRepo
+import subvertpy.ra
 import svn_oo
 
-from bzrlib.urlutils import escape, join as urljoin
-from bzrlib.transport import Server
-from bzrlib.tests.treeshape import build_tree_contents
+from lp.services.log.logger import BufferLogger
 
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 
 def local_path_to_url(local_path):
     """Return a file:// URL to `local_path`.
@@ -60,23 +72,58 @@ def run_in_temporary_directory(function):
 class SubversionServer(Server):
     """A controller for an Subversion repository, used for testing."""
 
-    def __init__(self, repository_path):
+    def __init__(self, repository_path, use_svn_serve=False):
         super(SubversionServer, self).__init__()
         self.repository_path = os.path.abspath(repository_path)
+        self._use_svn_serve = use_svn_serve
+
+    def _get_ra(self, url):
+        return subvertpy.ra.RemoteAccess(url,
+            auth=subvertpy.ra.Auth([subvertpy.ra.get_username_provider()]))
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, QuietFakeLogger())
+        svn_oo.Repository.Create(path, BufferLogger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
-        return local_path_to_url(self.repository_path)
+        if self._use_svn_serve:
+            return 'svn://localhost/'
+        else:
+            return local_path_to_url(self.repository_path)
 
-    def setUp(self):
-        super(SubversionServer, self).setUp()
+    def start_server(self):
+        super(SubversionServer, self).start_server()
         self.createRepository(self.repository_path)
+        if self._use_svn_serve:
+            conf_path = os.path.join(
+                self.repository_path, 'conf/svnserve.conf')
+            with open(conf_path , 'w') as conf_file:
+                conf_file.write('[general]\nanon-access = write\n')
+            self._svnserve = subprocess.Popen(
+                ['svnserve', '--daemon', '--foreground', '--root',
+                 self.repository_path])
+            delay = 0.1
+            for i in range(10):
+                try:
+                    ra = self._get_ra(self.get_url())
+                except subvertpy.SubversionException, e:
+                    if 'Connection refused' in str(e):
+                        time.sleep(delay)
+                        delay *= 1.5
+                        continue
+                else:
+                    break
+            else:
+                raise AssertionError(
+                    "svnserve didn't start accepting connections")
 
-    @run_in_temporary_directory
+    def stop_server(self):
+        super(SubversionServer, self).stop_server()
+        if self._use_svn_serve:
+            os.kill(self._svnserve.pid, signal.SIGINT)
+            self._svnserve.communicate()
+
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
 
@@ -85,27 +132,31 @@ class SubversionServer(Server):
             tuples of (relative filename, file contents).
         """
         branch_url = self.makeDirectory(branch_name)
-        client = pysvn.Client()
-        branch_path = os.path.abspath(branch_name)
-        client.checkout(branch_url, branch_path)
-        build_tree_contents(
-            [(os.path.join(branch_path, filename), content)
-             for filename, content in tree_contents])
-        client.add(
-            [os.path.join(branch_path, filename)
-             for filename in os.listdir(branch_path)
-             if not filename.startswith('.')], recurse=True)
-        client.checkin(branch_path, 'Import', recurse=True)
+        ra = self._get_ra(branch_url)
+        editor = ra.get_commit_editor({"svn:log": "Import"})
+        root = editor.open_root()
+        for filename, content in tree_contents:
+            f = root.add_file(filename)
+            try:
+                subvertpy.delta.send_stream(StringIO(content),
+                    f.apply_textdelta())
+            finally:
+                f.close()
+        root.close()
+        editor.close()
         return branch_url
 
     def makeDirectory(self, directory_name, commit_message=None):
         """Make a directory on the repository."""
         if commit_message is None:
             commit_message = 'Make %r' % (directory_name,)
-        url = urljoin(self.get_url(), directory_name)
-        client = pysvn.Client()
-        client.mkdir(url, commit_message)
-        return url
+        ra = self._get_ra(self.get_url())
+        editor = ra.get_commit_editor({"svn:log": commit_message})
+        root = editor.open_root()
+        root.add_directory(directory_name).close()
+        root.close()
+        editor.close()
+        return urljoin(self.get_url(), directory_name)
 
 
 class CVSServer(Server):
@@ -126,7 +177,7 @@ class CVSServer(Server):
         :param path: The local path to create a repository in.
         :return: A CVS.Repository`.
         """
-        return CVS.init(path, QuietFakeLogger())
+        return CVS.init(path, BufferLogger())
 
     def getRoot(self):
         """Return the CVS root for this server."""
@@ -147,9 +198,9 @@ class CVSServer(Server):
             module=module_name, log="import", vendor="vendor",
             release=['release'], dir='.')
 
-    def setUp(self):
+    def start_server(self):
         # Initialize the repository.
-        super(CVSServer, self).setUp()
+        super(CVSServer, self).start_server()
         self._repository = self.createRepository(self._repository_path)
 
 
@@ -160,15 +211,38 @@ class GitServer(Server):
         self.repo_url = repo_url
 
     def makeRepo(self, tree_contents):
-        from bzrlib.plugins.git.tests import GitBranchBuilder, run_git
         wd = os.getcwd()
         try:
             os.chdir(self.repo_url)
-            run_git('init')
-            builder = GitBranchBuilder()
-            for filename, contents in tree_contents:
-                builder.set_file(filename, contents, False)
-            builder.commit('Joe Foo <joe@foo.com>', u'<The commit message>')
-            builder.finish()
+            repo = GitRepo.init(".")
+            blobs = [
+                (Blob.from_string(contents), filename) for (filename, contents)
+                in tree_contents]
+            repo.object_store.add_objects(blobs)
+            root_id = dulwich.index.commit_tree(repo.object_store, [
+                (filename, b.id, stat.S_IFREG | 0644)
+                for (b, filename) in blobs])
+            repo.do_commit(committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>', tree=root_id)
         finally:
             os.chdir(wd)
+
+
+class MercurialServer(Server):
+
+    def __init__(self, repo_url):
+        super(MercurialServer, self).__init__()
+        self.repo_url = repo_url
+
+    def makeRepo(self, tree_contents):
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        repo = localrepository(ui(), self.repo_url, create=1)
+        for filename, contents in tree_contents:
+            f = open(os.path.join(self.repo_url, filename), 'w')
+            try:
+                f.write(contents)
+            finally:
+                f.close()
+            repo[None].add([filename])
+        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')

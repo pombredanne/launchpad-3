@@ -13,10 +13,13 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Bool, Int
+from zope.schema import (
+    Bool,
+    Int,
+    )
 
+from lp.services.messages.interfaces.message import IMessage
 from lp.blueprints.interfaces.specification import ISpecification
-from canonical.launchpad.interfaces.message import IMessage
 
 
 class ISpecificationMessage(Interface):

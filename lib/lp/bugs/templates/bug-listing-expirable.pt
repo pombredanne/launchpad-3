@@ -25,9 +25,9 @@
 
         <tal:expirable-bugs condition="view/can_show_expirable_bugs">
           <p>
-            Incomplete bug reports can expire if they are unattended and they
-            become inactive. These bugs are not confirmed, or in a status
-            that indicates they were confirmed. An Incomplete bug can remain
+            Incomplete bug reports can expire if they are unattended and are
+            inactive. These bugs are not confirmed, or in a status that
+            indicates they were confirmed. An Incomplete bug can remain
             in this list indefinitely, so long as the bug is regularly updated.
             See <a href="https://help.launchpad.net/Bugs/Expiry">Bugs/Expiry.
             </a>

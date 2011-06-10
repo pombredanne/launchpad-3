@@ -12,12 +12,19 @@ __all__ = [
     'ICodeImportEventToken',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 from lp.code.enums import CodeImportEventType
+from lp.services.fields import PublicPersonChoice
 
 
 class ICodeImportEvent(Interface):

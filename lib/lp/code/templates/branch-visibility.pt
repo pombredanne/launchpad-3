@@ -41,7 +41,7 @@
   </div>
 
   <div style="padding-left: 1em" id="policy-actions">
-  <tal:using-inhertied-policy condition="context/isUsingInheritedBranchVisibilityPolicy">
+  <tal:using-inherited-policy condition="context/isUsingInheritedBranchVisibilityPolicy">
       <p>
         <img src="/@@/edit" alt="edit" />
         <a tal:define="inherited_url context/project/fmt:url"
@@ -56,7 +56,7 @@
           </tal:displayname>
         </a>
       </p>
-  </tal:using-inhertied-policy>
+  </tal:using-inherited-policy>
 
   <tal:no-inhertied-policy condition="not: context/isUsingInheritedBranchVisibilityPolicy">
       <p>

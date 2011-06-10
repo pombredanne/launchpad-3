@@ -5,12 +5,12 @@
 
 __metaclass__ = type
 
+from cgi import escape
 import unittest
 
-from cgi import escape
-
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.utilities.xpi_header import XpiHeader
 
 

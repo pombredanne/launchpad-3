@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -10,138 +10,207 @@ __metaclass__ = type
 __all__ = [
     'DistroSeries',
     'DistroSeriesSet',
-    'SeriesMixin',
     ]
 
-import logging
+import collections
 from cStringIO import StringIO
+import logging
+from operator import attrgetter
 
+import apt_pkg
 from sqlobject import (
-    BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
-    SQLObjectNotFound, SQLRelatedJoin)
-
-from storm.locals import And, Desc, Join, SQL
-from storm.store import Store
-
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    And,
+    Desc,
+    Join,
+    SQL,
+    )
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, quote_like,
-    quote, SQLBase, sqlvalues)
+    flush_database_caches,
+    flush_database_updates,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from lp.translations.model.pofiletranslator import (
-    POFileTranslator)
-from lp.translations.model.pofile import POFile
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import (
-        BinaryPackageRelease)
+from canonical.launchpad.mail import signed_message_from_string
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.enums import (
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtarget import BugTargetBase
+    get_bug_tags,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries, DistroArchSeriesSet, PocketChroot)
-from lp.soyuz.model.distroseriesbinarypackage import (
-    DistroSeriesBinaryPackage)
-from lp.translations.model.distroserieslanguage import (
-    DistroSeriesLanguage, DummyDistroSeriesLanguage)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.translations.model.distroseries_translations_copy import (
-    copy_active_translations)
-from lp.services.worlddata.model.language import Language
-from lp.translations.model.languagepack import LanguagePack
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.registry.interfaces.distroseries import (
+    DerivationError,
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
+from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage,
+    ISourcePackageFactory,
+    )
+from lp.registry.interfaces.sourcepackagename import (
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
 from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from lp.soyuz.model.packagecloner import clone_packages
+    HasMilestonesMixin,
+    Milestone,
+    )
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
-from canonical.launchpad.database.librarian import LibraryFileAlias
-from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    POTemplate)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
-from lp.soyuz.model.queue import PackageUpload, PackageUploadQueue
-from lp.soyuz.model.section import Section
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.archive import (
-    ALLOW_RELEASE_BUILDS, ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
-from lp.soyuz.interfaces.build import IBuildSet
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.worlddata.model.language import Language
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import ALLOW_RELEASE_BUILDS
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageName)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
-from lp.translations.interfaces.languagepack import LanguagePackType
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
+from lp.soyuz.interfaces.distributionjob import (
+    IInitialiseDistroSeriesJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, ICanPublishPackages, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import IHasQueueItems, IPackageUploadSet
-from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, ISourcePackageFactory)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationImplementationStatus, SpecificationSort)
-from canonical.launchpad.mail import signed_message_from_string
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
-    TranslationUnavailable)
-
-
-class SeriesMixin:
-    """See `ISeriesMixin`."""
-    implements(ISeriesMixin)
-
-    @property
-    def active(self):
-        return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
-            ]
+    active_publishing_status,
+    ICanPublishPackages,
+    )
+from lp.soyuz.interfaces.queue import (
+    IHasQueueItems,
+    IPackageUploadSet,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroarchseries import (
+    DistroArchSeries,
+    DistroArchSeriesSet,
+    PocketChroot,
+    )
+from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.queue import (
+    PackageUpload,
+    PackageUploadQueue,
+    )
+from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.initialise_distroseries import (
+    InitialisationError,
+    InitialiseDistroSeries,
+    )
+from lp.translations.enums import LanguagePackType
+from lp.translations.model.distroseries_translations_copy import (
+    copy_active_translations,
+    )
+from lp.translations.model.distroserieslanguage import (
+    DistroSeriesLanguage,
+    DummyDistroSeriesLanguage,
+    )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
+from lp.translations.model.languagepack import LanguagePack
+from lp.translations.model.pofile import POFile
+from lp.translations.model.pofiletranslator import POFileTranslator
+from lp.translations.model.potemplate import (
+    POTemplate,
+    TranslationTemplatesCollection,
+    )
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                    HasMilestonesMixin, SeriesMixin,
-                   StructuralSubscriptionTargetMixin):
+                   StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBuildRecords, IHasQueueItems,
-        IHasTranslationTemplates)
+        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
+        IHasQueueItems, IServiceUsage)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -151,25 +220,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
-        dbName='releasestatus', notNull=True, schema=DistroSeriesStatus)
+        dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
-    parent_series =  ForeignKey(
+    previous_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
         storm_validator=validate_public_person, notNull=False, default=None)
-    lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
-        dbName='nominatedarchindep',foreignKey='DistroArchSeries',
+        dbName='nominatedarchindep', foreignKey='DistroArchSeries',
         notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
@@ -186,6 +253,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -206,18 +274,63 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % self.id,
             clauseTables=["ComponentSelection"])
 
-    @property
+    @cachedproperty
     def components(self):
         """See `IDistroSeries`."""
         # XXX julian 2007-06-25
         # This is filtering out the partner component for now, until
         # the second stage of the partner repo arrives in 1.1.8.
-        return Component.select("""
+        return list(Component.select("""
             ComponentSelection.distroseries = %s AND
             Component.id = ComponentSelection.component AND
             Component.name != 'partner'
             """ % self.id,
-            clauseTables=["ComponentSelection"])
+            clauseTables=["ComponentSelection"]))
+
+    @cachedproperty
+    def component_names(self):
+        """See `IDistroSeries`."""
+        return [component.name for component in self.components]
+
+    @cachedproperty
+    def suite_names(self):
+        """See `IDistroSeries`."""
+        return [unicode(pocket) for pocket in PackagePublishingPocket.items]
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return self.distribution.answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return self.distribution.blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        return self.distribution.translations_usage
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return self.distribution.codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return self.distribution.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
 
     # DistroArchSeries lookup properties/methods.
     architectures = SQLMultipleJoin(
@@ -228,6 +341,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return self.getDistroArchSeries(archtag)
 
+    def __repr__(self):
+        return '<%s %r>' % (self.__class__.__name__, self.name)
+
+    def __str__(self):
+        return '%s %s' % (self.distribution.name, self.name)
+
     def getDistroArchSeries(self, archtag):
         """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
@@ -237,8 +356,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def getDistroArchSeriesByProcessor(self, processor):
+        """See `IDistroSeries`."""
+        # XXX: JRV 2010-01-14: This should ideally use storm to find the
+        # distroarchseries rather than iterating over all of them, but
+        # I couldn't figure out how to do that - and a trivial for loop
+        # isn't expensive given there's generally less than a dozen
+        # architectures.
+        for architecture in self.architectures:
+            if architecture.processorfamily == processor.family:
+                return architecture
+        return None
+
     @property
     def enabled_architectures(self):
+        store = Store.of(self)
+        results = store.find(
+            DistroArchSeries,
+            DistroArchSeries.distroseries == self,
+            DistroArchSeries.enabled == True)
+        return results.order_by(DistroArchSeries.architecturetag)
+
+    @property
+    def buildable_architectures(self):
         store = Store.of(self)
         origin = [
             DistroArchSeries,
@@ -268,23 +408,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution
 
     @property
-    def drivers(self):
+    def owner(self):
         """See `IDistroSeries`."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.distribution.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda driver: driver.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See `IDistroSeries`."""
-        return self.distribution.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See `IDistroSeries`."""
-        return self.distribution.security_contact
+        return self.distribution.owner
 
     @property
     def sortkey(self):
@@ -299,27 +425,253 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         result += self.distribution.name + self.name
         return result
 
+    @cachedproperty
+    def _all_packagings(self):
+        """Get an unordered list of all packagings.
+
+        :return: A ResultSet which can be decorated or tuned further. Use
+            DistroSeries._packaging_row_to_packaging to extract the
+            packaging objects out.
+        """
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implicitly needed to work with a
+        # Packaging object.
+        # NB: precaching objects like this method tries to do has a very poor
+        # hit rate with storm - many queries will still be executed; consider
+        # ripping this out and instead allowing explicit inclusion of things
+        # like Person._members does - returning a cached object graph.
+        # -- RBC 20100810
+        # Avoid circular import failures.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
+        origin = [
+            Packaging,
+            Join(
+                SourcePackageName,
+                Packaging.sourcepackagename == SourcePackageName.id),
+            Join(
+                ProductSeries,
+                Packaging.productseries == ProductSeries.id),
+            Join(
+                Product,
+                ProductSeries.product == Product.id)]
+        condition = Packaging.distroseries == self.id
+        results = IStore(self).using(*origin).find(find_spec, condition)
+        return results
+
+    @staticmethod
+    def _packaging_row_to_packaging(row):
+        # each row has:
+        #  (packaging, spn, product_series, product)
+        return row[0]
+
     @property
     def packagings(self):
-        # We join through sourcepackagename to be able to ORDER BY it,
-        # and this code also uses prejoins to avoid fetching data later
-        # on.
-        packagings = Packaging.select(
-            "Packaging.sourcepackagename = SourcePackageName.id "
-            "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % self.id,
-            prejoinClauseTables=["SourcePackageName", ],
-            clauseTables=["SourcePackageName", "DistroSeries"],
-            prejoins=["productseries", "productseries.product"],
-            orderBy=["SourcePackageName.name"]
-            )
-        return packagings
+        """See `IDistroSeries`."""
+        results = self._all_packagings
+        results = results.order_by(SourcePackageName.name)
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
+
+    def getPrioritizedUnlinkedSourcePackages(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using bug heat,
+        translatable messages, and the source package release's component.
+        """
+        find_spec = (
+            SourcePackageName,
+            SQL("""
+                coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
+                CASE WHEN component = 1 THEN 1000 ELSE 0 END AS score"""),
+            SQL("coalesce(bug_count, 0) AS bug_count"),
+            SQL("coalesce(total_messages, 0) AS total_messages"))
+        # This does not use _current_sourcepackage_joins_and_conditions
+        # because the two queries are working on different data sets -
+        # +needs-packaging was timing out and +packaging wasn't, and
+        # destabilising things unnecessarily is not good.
+        origin = SQL("""
+            SourcePackageName, (SELECT
+        spr.sourcepackagename,
+        spr.component,
+        bug_count,
+        total_bug_heat,
+        SUM(POTemplate.messagecount) * %(po_message_weight)s AS po_messages,
+        SUM(POTemplate.messagecount) AS total_messages
+    FROM
+        SourcePackageRelease AS spr
+        JOIN SourcePackagePublishingHistory AS spph
+            ON spr.id = spph.sourcepackagerelease
+        JOIN Archive
+            ON spph.archive = Archive.id
+        JOIN Section
+            ON spph.section = Section.id
+        JOIN DistroSeries
+            ON spph.distroseries = DistroSeries.id
+        LEFT OUTER JOIN DistributionSourcePackage AS dsp
+            ON dsp.sourcepackagename = spr.sourcepackagename
+                AND dsp.distribution = DistroSeries.distribution
+        LEFT OUTER JOIN POTemplate
+            ON POTemplate.sourcepackagename = spr.sourcepackagename
+                AND POTemplate.distroseries = DistroSeries.id
+    WHERE
+        DistroSeries.id = %(distroseries)s
+        AND spph.status IN %(active_status)s
+        AND Archive.purpose = %(primary)s
+        AND Section.name <> 'translations'
+        AND NOT EXISTS (
+            SELECT TRUE FROM Packaging
+            WHERE
+                Packaging.sourcepackagename = spr.sourcepackagename
+                AND Packaging.distroseries = spph.distroseries)
+    GROUP BY
+        spr.sourcepackagename, spr.component, bug_count, total_bug_heat
+    ) AS spn_info""" % sqlvalues(
+            po_message_weight=self._current_sourcepackage_po_weight,
+            distroseries=self,
+            active_status=active_publishing_status,
+            primary=ArchivePurpose.PRIMARY))
+        condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC', SourcePackageName.name)
+        results = results.config(distinct=('score', SourcePackageName.name))
+
+        def decorator(row):
+            spn, score, bug_count, total_messages = row
+            return {
+                'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                'bug_count': bug_count,
+                'total_messages': total_messages,
+                }
+        return DecoratedResultSet(results, decorator)
+
+    def getPrioritizedPackagings(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using the branch, bug heat,
+        translatable messages, and the source package release's component.
+        """
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        # XXX: EdwinGrubbs 2010-07-29 bug=374777
+        # Storm doesn't support DISTINCT ON.
+        origin = SQL('''
+            (
+            SELECT DISTINCT ON (Packaging.id)
+                Packaging.*,
+                spr.component AS spr_component,
+                SourcePackageName.name AS spn_name,
+                total_bug_heat,
+                po_messages
+            FROM %(joins)s
+            WHERE %(conditions)s
+                AND packaging.id IS NOT NULL
+            ) AS Packaging
+            JOIN ProductSeries
+                ON Packaging.productseries = ProductSeries.id
+            JOIN Product
+                ON ProductSeries.product = Product.id
+            ''' % dict(joins=joins, conditions=conditions))
+        return IStore(self).using(origin).find(Packaging).order_by('''
+                (CASE WHEN spr_component = 1 THEN 1000 ELSE 0 END
+                + CASE WHEN Product.bugtracker IS NULL
+                    THEN coalesce(total_bug_heat, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                    THEN coalesce(po_messages, 10) ELSE 0 END
+                + CASE WHEN ProductSeries.branch IS NULL THEN 500 ELSE 0 END
+                ) DESC,
+                spn_name ASC
+                ''')
+
+    @property
+    def _current_sourcepackage_po_weight(self):
+        """See getPrioritized*."""
+        # Bugs and PO messages are heuristically scored. These queries
+        # can easily timeout so filters and weights are used to create
+        # an acceptable prioritization of packages that is fast to excecute.
+        return .5
+
+    @property
+    def _current_sourcepackage_joins_and_conditions(self):
+        """The SQL joins and conditions to prioritize source packages.
+
+        Used for getPrioritizedPackagings only.
+        """
+        # Bugs and PO messages are heuristically scored. These queries
+        # can easily timeout so filters and weights are used to create
+        # an acceptable prioritization of packages that is fast to excecute.
+        po_message_weight = self._current_sourcepackage_po_weight
+        message_score = ("""
+            LEFT JOIN (
+                SELECT
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries,
+                    SUM(POTemplate.messagecount) * %(po_message_weight)s
+                        AS po_messages,
+                    SUM(POTemplate.messagecount) AS total_messages
+                FROM POTemplate
+                WHERE
+                    POTemplate.sourcepackagename is not NULL
+                    AND POTemplate.distroseries = %(distroseries)s
+                GROUP BY
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries
+                ) messages
+                ON SourcePackageName.id = messages.sourcepackagename
+                AND DistroSeries.id = messages.distroseries
+            """ % sqlvalues(
+                distroseries=self,
+                po_message_weight=po_message_weight))
+        joins = ("""
+            SourcePackageName
+            JOIN SourcePackageRelease spr
+                ON SourcePackageName.id = spr.sourcepackagename
+            JOIN SourcePackagePublishingHistory spph
+                ON spr.id = spph.sourcepackagerelease
+            JOIN archive
+                ON spph.archive = Archive.id
+            JOIN section
+                ON spph.section = section.id
+            JOIN DistroSeries
+                ON spph.distroseries = DistroSeries.id
+            LEFT JOIN Packaging
+                ON SourcePackageName.id = Packaging.sourcepackagename
+                AND Packaging.distroseries = DistroSeries.id
+            LEFT JOIN DistributionSourcePackage dsp
+                ON dsp.sourcepackagename = spr.sourcepackagename
+                    AND dsp.distribution = DistroSeries.distribution
+            """ + message_score)
+        conditions = ("""
+            DistroSeries.id = %(distroseries)s
+            AND spph.status IN %(active_status)s
+            AND archive.purpose = %(primary)s
+            AND section.name != 'translations'
+            """ % sqlvalues(
+                distroseries=self,
+                active_status=active_publishing_status,
+                primary=ArchivePurpose.PRIMARY))
+        return (joins, conditions)
+
+    def getMostRecentlyLinkedPackagings(self):
+        """See `IDistroSeries`."""
+        results = self._all_packagings
+        # Order by creation date with a secondary ordering by sourcepackage
+        # name to ensure the ordering for test data where many packagings have
+        # identical creation dates.
+        results = results.order_by(Desc(Packaging.datecreated),
+                                   SourcePackageName.name)[:5]
+        return DecoratedResultSet(results,
+            DistroSeries._packaging_row_to_packaging)
 
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
             ]
 
     @property
@@ -334,8 +686,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_series_cached')
-    def previous_series(self):
+    @cachedproperty
+    def prior_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
@@ -356,6 +708,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
+    @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reported_acknowledgement
+
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.distroseries == self)
@@ -363,12 +720,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
         # Allow everything for distroseries in FROZEN state.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # Define stable/released states.
-        stable_states = (DistroSeriesStatus.SUPPORTED,
-                         DistroSeriesStatus.CURRENT)
+        stable_states = (SeriesStatus.SUPPORTED,
+                         SeriesStatus.CURRENT)
 
         # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
@@ -406,7 +763,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory']).count()
 
-
         # next update the binary count
         clauseTables = ['DistroArchSeries', 'BinaryPackagePublishingHistory',
                         'BinaryPackageRelease']
@@ -441,17 +797,34 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
+    def is_derived_series(self):
+        """See `IDistroSeries`."""
+        return not self.getParentSeries() == []
+
+    @property
+    def is_initialising(self):
+        """See `IDistroSeries`."""
+        return not getUtility(
+            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
+                self).is_empty()
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return self.fullseriesname
         # XXX mpt 2007-07-10 bugs 113258, 113262:
         # The distribution's and series' names should be used instead
         # of fullseriesname.
+        return self.fullseriesname
 
     @property
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def max_bug_heat(self):
+        """See `IHasBugs`."""
+        return self.distribution.max_bug_heat
 
     @property
     def last_full_language_pack_exported(self):
@@ -469,6 +842,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """Customize `search_params` for this distribution series."""
         search_params.setDistroSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
@@ -478,9 +854,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IHasBugs`."""
-        return get_bug_tags_open_count(BugTask.distroseries == self, user)
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return get_bug_tags_open_count(
+            And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                ),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):
@@ -571,7 +954,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -679,55 +1062,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistroSeries`."""
-        source_package_ids = [
-            package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
-                FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn
-                WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
-                    spph.sourcepackagerelease = spr.id AND
-                    spph.archive IN %s AND
-                    spph.status IN %s AND
-                    spph.distroseries = %s)
-            """ % sqlvalues(
-                source_package_ids, self.distribution.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
-        return dict(
-            (self.getSourcePackage(release.sourcepackagename),
-             DistroSeriesSourcePackageRelease(self, release))
-            for release in releases)
-
-    def checkTranslationsViewable(self):
-        """See `IDistroSeries`."""
-        if not self.hide_all_translations:
-            # Yup, viewable.
-            return
-
-        future = [
-            DistroSeriesStatus.EXPERIMENTAL,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FUTURE,
-            ]
-        if self.status in future:
-            raise TranslationUnavailable(
-                "Translations for this release series are not available yet.")
-        elif self.status == DistroSeriesStatus.OBSOLETE:
-            raise TranslationUnavailable(
-                "This release series is obsolete.  Its translations are no "
-                "longer available.")
-        else:
-            raise TranslationUnavailable(
-                "Translations for this release series are not currently "
-                "available.  Please come back soon.")
+        return getUtility(IDistroSeriesSet).getCurrentSourceReleases(
+            {self: source_package_names})
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
@@ -763,10 +1099,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+    def getPublishedSources(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See `IDistroSeries`."""
+        # Deprecated.  Use IArchive.getPublishedSources instead.
+
         # XXX cprov 2006-02-13 bug 31317:
         # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -779,7 +1117,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spns = getUtility(ISourcePackageNameSet)
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
-                return []
+                return EmptyResultSet()
 
         queries = ["""
         sourcepackagerelease=sourcepackagerelease.id AND
@@ -808,17 +1146,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), clauseTables = ['SourcePackageRelease'],
+            " AND ".join(queries), clauseTables=['SourcePackageRelease'],
             orderBy=['-id'])
 
-        return shortlist(published)
+        return published
 
     def isUnstable(self):
         """See `IDistroSeries`."""
         return self.status in [
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.EXPERIMENTAL,
+            SeriesStatus.FROZEN,
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.EXPERIMENTAL,
         ]
 
     def getAllPublishedSources(self):
@@ -889,13 +1227,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self, archives, status, pocket)
+            """ % sqlvalues(self, archives, status, pocket)
 
         if component:
             clause += (
                 " AND SourcePackagePublishingHistory.component=%s"
-                % sqlvalues(component)
-                )
+                % sqlvalues(component))
 
         orderBy = ['SourcePackageName.name']
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
@@ -917,8 +1254,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageRelease.build =
-            Build.id AND
-        Build.sourcepackagerelease =
+            BinaryPackageBuild.id AND
+        BinaryPackageBuild.source_package_release =
             SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
@@ -955,59 +1292,57 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = " AND ".join(query)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+                        'BinaryPackageRelease', 'BinaryPackageName',
+                        'BinaryPackageBuild', 'SourcePackageRelease',
+                        'SourcePackageName']
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
 
         return result
 
-    def publishedBinaryPackages(self, component=None):
-        """See `IDistroSeries`."""
-        # XXX sabdfl 2005-07-04: This can become a utility when that works
-        # this is used by the debbugs import process, mkdebwatches
-        pubpkgset = getUtility(IPublishedPackageSet)
-        result = pubpkgset.query(distroseries=self, component=component)
-        return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
-                for pubrecord in result]
-
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
-        # now).
+        # now). We also ignore binary_only and always return binaries.
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
             self.architectures, arch_tag)
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
+            self.distribution, arch_ids, build_state, name, pocket)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog_entry, dsc, dscsigningkey, section,
+        urgency, changelog, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
-        build_conflicts_indep, dateuploaded=DEFAULT):
+        build_conflicts_indep, dateuploaded=DEFAULT,
+        source_package_recipe_build=None, user_defined_fields=None,
+        homepage=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
-            creator=creator, urgency=urgency, changelog_entry=changelog_entry,
-            dsc=dsc, dscsigningkey=dscsigningkey, section=section,
-            copyright=copyright, upload_archive=archive,
+            creator=creator, urgency=urgency, changelog=changelog,
+            changelog_entry=changelog_entry, dsc=dsc,
+            dscsigningkey=dscsigningkey, section=section, copyright=copyright,
+            upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format, dsc_binaries=dsc_binaries,
             build_conflicts=build_conflicts,
-            build_conflicts_indep=build_conflicts_indep)
+            build_conflicts_indep=build_conflicts_indep,
+            source_package_recipe_build=source_package_recipe_build,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""
@@ -1093,7 +1428,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 BinaryPackageRelease.id,
             BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
             BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True)
+                distinct=True).order_by(BinaryPackageName.name)
 
         number_of_updates = 0
         chunk_size = 0
@@ -1169,15 +1504,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
-            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text))
-            )
+            SQL('rank(fti, ftq(%s)) AS rank' % sqlvalues(text)))
         origin = [
             DistroSeriesPackageCache,
             Join(
                 BinaryPackageName,
                 DistroSeriesPackageCache.binarypackagename ==
-                    BinaryPackageName.id
-                )
+                    BinaryPackageName.id),
             ]
 
         # Note: When attempting to convert the query below into straight
@@ -1191,10 +1524,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
                    quote(self.distribution.all_distro_archive_ids),
-                   quote(text), quote_like(text))
+                   quote(text), quote_like(text)),
             ).config(distinct=True)
-
-        ranked_package_caches = package_caches.order_by('rank DESC')
 
         # Create a function that will decorate the results, converting
         # them from the find_spec above into a DSBP:
@@ -1209,12 +1540,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
-            supports_virtualized=supports_virtualized)
+            supports_virtualized=supports_virtualized, enabled=enabled)
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, summary=None,
@@ -1250,8 +1581,35 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return distro_sprs
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None):
+    @staticmethod
+    def setNewerDistroSeriesVersions(spphs):
+        """Set the newer_distroseries_version attribute on the spph entries.
+
+        :param spphs: The SourcePackagePublishingHistory objects to set the
+            newer_distroseries_version attribute on.
+        """
+        # Partition by distro series to use getCurrentSourceReleases
+        distro_series = collections.defaultdict(list)
+        for spph in spphs:
+            distro_series[spph.distroseries].append(spph)
+        for series, spphs in distro_series.items():
+            packagenames = set()
+            for spph in spphs:
+                packagenames.add(spph.sourcepackagerelease.sourcepackagename)
+            latest_releases = series.getCurrentSourceReleases(
+                packagenames)
+            for spph in spphs:
+                latest_release = latest_releases.get(spph.meta_sourcepackage)
+                if latest_release is not None and apt_pkg.VersionCompare(
+                    latest_release.version, spph.source_package_version) > 0:
+                    version = latest_release
+                else:
+                    version = None
+                get_property_cache(spph).newer_distroseries_version = version
+
+    def createQueueEntry(self, pocket, archive, changesfilename=None,
+                         changesfilecontent=None, signing_key=None,
+                         package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1262,16 +1620,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles for PPAs
-        # to avoid replay attacks (see bug 159304).
-        if archive.is_ppa:
-            signed_message = signed_message_from_string(changesfilecontent)
-            if signed_message is not None:
-                # Overwrite `changesfilecontent` with the text stripped
-                # of the PGP signature.
-                new_content = signed_message.signedContent
-                if new_content is not None:
-                    changesfilecontent = signed_message.signedContent
+        if package_copy_job is None and (
+            changesfilename is None or changesfilecontent is None):
+            raise AssertionError(
+                "changesfilename and changesfilecontent must be supplied "
+                "if there is no package_copy_job")
+
+        # The PGP signature is stripped from all changesfiles
+        # to avoid replay attacks (see bugs 159304 and 451396).
+        signed_message = signed_message_from_string(changesfilecontent)
+        if signed_message is not None:
+            # Overwrite `changesfilecontent` with the text stripped
+            # of the PGP signature.
+            new_content = signed_message.signedContent
+            if new_content is not None:
+                changesfilecontent = signed_message.signedContent
 
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
@@ -1281,7 +1644,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key)
+            changesfile=changes_file, signing_key=signing_key,
+            package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
         """See `IDistroSeries`."""
@@ -1436,6 +1800,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
 
+        # XXX StuartBishop 2010-03-11 bug=537335
+        # This method is attempting to return ordered results but
+        # failing. It is also referencing non-existing documentation
+        # in the docstring - this method does not exist in the IDistroSeries
+        # interface.
+
         return source_results.union(build_results.union(custom_results))
 
     def createBug(self, bug_params):
@@ -1455,168 +1825,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return 'BugTask.distroseries = %s' % sqlvalues(self)
-
-    def initialiseFromParent(self):
-        """See `IDistroSeries`."""
-        archives = self.distribution.all_distro_archive_ids
-        assert self.parent_series is not None, "Parent series must be present"
-        assert SourcePackagePublishingHistory.select("""
-            Distroseries = %s AND
-            Archive IN %s""" % sqlvalues(self.id, archives)).count() == 0, (
-            "Source Publishing must be empty")
-        for arch in self.architectures:
-            assert BinaryPackagePublishingHistory.select("""
-            DistroArchSeries = %s AND
-            Archive IN %s""" % sqlvalues(arch, archives)).count() == 0, (
-                "Binary Publishing must be empty")
-            try:
-                parent_arch = self.parent_series[arch.architecturetag]
-                assert parent_arch.processorfamily == arch.processorfamily, (
-                       "The arch tags must match the processor families.")
-            except KeyError:
-                raise AssertionError("Parent series lacks %s" % (
-                    arch.architecturetag))
-        assert self.nominatedarchindep is not None, (
-               "Must have a nominated archindep architecture.")
-        assert self.components.count() == 0, (
-               "Component selections must be empty.")
-        assert self.sections.count() == 0, (
-               "Section selections must be empty.")
-
-        # MAINTAINER: dsilvers: 20051031
-        # Here we go underneath the SQLObject caching layers in order to
-        # generate what will potentially be tens of thousands of rows
-        # in various tables. Thus we flush pending updates from the SQLObject
-        # layer, perform our work directly in the transaction and then throw
-        # the rest of the SQLObject cache away to make sure it hasn't cached
-        # anything that is no longer true.
-
-        # Prepare for everything by flushing updates to the database.
-        flush_database_updates()
-        cur = cursor()
-
-        # Perform the copies
-        self._copy_component_and_section_selections(cur)
-
-        # Prepare the list of distroarchseries for which binary packages
-        # shall be copied.
-        distroarchseries_list = []
-        for arch in self.architectures:
-            parent_arch = self.parent_series[arch.architecturetag]
-            distroarchseries_list.append((parent_arch, arch))
-        # Now copy source and binary packages.
-        self._copy_publishing_records(distroarchseries_list)
-        self._copy_lucille_config(cur)
-        self._copy_packaging_links(cur)
-
-        # Finally, flush the caches because we've altered stuff behind the
-        # back of sqlobject.
-        flush_database_caches()
-
-    def _copy_lucille_config(self, cur):
-        """Copy all lucille related configuration from our parent series."""
-        cur.execute('''
-            UPDATE DistroSeries SET lucilleconfig=(
-                SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
-                WHERE pdr.id = %s)
-            WHERE id = %s
-            ''' % sqlvalues(self.parent_series.id, self.id))
-
-    def _copy_publishing_records(self, distroarchseries_list):
-        """Copy the publishing records from the parent arch series
-        to the given arch series in ourselves.
-
-        We copy all PENDING and PUBLISHED records as PENDING into our own
-        publishing records.
-
-        We copy only the RELEASE pocket in the PRIMARY and PARTNER
-        archives.
-        """
-        archive_set = getUtility(IArchiveSet)
-
-        for archive in self.parent_series.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-                continue
-
-            # XXX cprov 20080612: Implicitly creating a PARTNER archive for
-            # the destination distroseries is bad. Why are we copying
-            # partner to a series in another distribution anyway ?
-            # See bug #239807 for further information.
-            target_archive = archive_set.getByDistroPurpose(
-                self.distribution, archive.purpose)
-            if target_archive is None:
-                target_archive = archive_set.new(
-                    distribution=self.distribution, purpose=archive.purpose,
-                    owner=self.distribution.owner)
-
-            origin = PackageLocation(
-                archive, self.parent_series.distribution, self.parent_series,
-                PackagePublishingPocket.RELEASE)
-            destination = PackageLocation(
-                target_archive, self.distribution, self,
-                PackagePublishingPocket.RELEASE)
-            clone_packages(origin, destination, distroarchseries_list)
-
-    def _copy_component_and_section_selections(self, cur):
-        """Copy the section and component selections from the parent distro
-        series into this one.
-        """
-        # Copy the component selections
-        cur.execute('''
-            INSERT INTO ComponentSelection (distroseries, component)
-            SELECT %s AS distroseries, cs.component AS component
-            FROM ComponentSelection AS cs WHERE cs.distroseries = %s
-            ''' % sqlvalues(self.id, self.parent_series.id))
-        # Copy the section selections
-        cur.execute('''
-            INSERT INTO SectionSelection (distroseries, section)
-            SELECT %s as distroseries, ss.section AS section
-            FROM SectionSelection AS ss WHERE ss.distroseries = %s
-            ''' % sqlvalues(self.id, self.parent_series.id))
-
-    def _copy_packaging_links(self, cur):
-        """Copy the packaging links from the parent series to this one."""
-        cur.execute("""
-            INSERT INTO
-                Packaging(
-                    distroseries, sourcepackagename, productseries,
-                    packaging, owner)
-            SELECT
-                ChildSeries.id,
-                Packaging.sourcepackagename,
-                Packaging.productseries,
-                Packaging.packaging,
-                Packaging.owner
-            FROM
-                Packaging
-                -- Joining the parent distroseries permits the query to build
-                -- the data set for the series being updated, yet results are
-                -- in fact the data from the original series.
-                JOIN Distroseries ChildSeries
-                    ON Packaging.distroseries = ChildSeries.parent_series
-            WHERE
-                -- Select only the packaging links that are in the parent
-                -- that are not in the child.
-                ChildSeries.id = %s
-                AND Packaging.sourcepackagename in (
-                    SELECT sourcepackagename
-                    FROM Packaging
-                    WHERE distroseries in (
-                        SELECT id
-                        FROM Distroseries
-                        WHERE id = ChildSeries.parent_series
-                        )
-                    EXCEPT
-                    SELECT sourcepackagename
-                    FROM Packaging
-                    WHERE distroseries in (
-                        SELECT id
-                        FROM Distroseries
-                        WHERE id = ChildSeries.id
-                        )
-                    )
-            """ % self.id)
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
@@ -1713,7 +1921,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return True
 
         # FROZEN state also allow all pockets to be published.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # If we're not republishing, we want to make sure that
@@ -1741,40 +1949,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def main_archive(self):
         return self.distribution.main_archive
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(distroseries=self,
-                                     orderBy=['-priority', 'name'])
-        return shortlist(result, 2000)
+        return TranslationTemplatesCollection().restrictDistroSeries(self)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getSharingPartner(self):
         """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.distribution.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.distroseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            distroseries = %s AND
-            distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
-            (iscurrent IS FALSE OR Distribution.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            clauseTables = ['DistroSeries', 'Distribution'],
-            orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        # No sharing partner is defined for DistroSeries.
+        return None
 
     def getSuite(self, pocket):
         """See `IDistroSeries`."""
@@ -1782,6 +1964,78 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return self.name
         else:
             return '%s%s' % (self.name, pocketsuffix[pocket])
+
+    def isSourcePackageFormatPermitted(self, format):
+        return getUtility(
+            ISourcePackageFormatSelectionSet).getBySeriesAndFormat(
+                self, format) is not None
+
+    def initDerivedDistroSeries(self, user, parents, architectures=(),
+                                packagesets=(), rebuild=False, overlays=(),
+                                overlay_pockets=(),
+                                overlay_components=()):
+        """See `IDistroSeries`."""
+        if self.is_derived_series:
+            raise DerivationError(
+                "DistroSeries %s already has parent series." % self.name)
+        initialise_series = InitialiseDistroSeries(self, parents)
+        try:
+            initialise_series.check()
+        except InitialisationError, e:
+            raise DerivationError(e)
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
+
+    def getParentSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        return [dsp.parent_series for dsp in dsps]
+
+    def getDerivedSeries(self):
+        """See `IDistroSeriesPublic`."""
+        # Circular imports.
+        from lp.registry.interfaces.distroseriesparent import (
+            IDistroSeriesParentSet,
+            )
+        dsps = getUtility(IDistroSeriesParentSet).getByParentSeries(self)
+        return [dsp.derived_series for dsp in dsps]
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distro series.
+
+        If the series isn't found, the distribution task is better than
+        others.
+        """
+        seriesID = self.id
+        distributionID = self.distributionID
+
+        def weight_function(bugtask):
+            if bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
+
+    def getDifferencesTo(self, parent_series=None, difference_type=None,
+                         source_package_name_filter=None, status=None,
+                         child_version_higher=False):
+        """See `IDistroSeries`."""
+        return getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self,
+                difference_type=difference_type,
+                source_package_name_filter=source_package_name_filter,
+                status=status,
+                child_version_higher=child_version_higher)
 
 
 class DistroSeriesSet:
@@ -1799,13 +2053,9 @@ class DistroSeriesSet:
         result_set = store.using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID
-            ).config(distinct=True)
-        # XXX: henninge 2009-02-11 bug=217644: Convert to sequence right here
-        # because ResultSet reports a wrong count() when using DISTINCT. Also
-        # ResultSet does not implement __len__(), which would make it more
-        # like a sequence.
-        return list(result_set)
+            DistroSeries.id == POTemplate.distroseriesID)
+        result_set = result_set.config(distinct=True)
+        return result_set
 
     def findByName(self, name):
         """See `IDistroSeriesSet`."""
@@ -1839,6 +2089,58 @@ class DistroSeriesSet:
         series = distribution.getSeries(series_name)
         return series, pocket
 
+    def getCurrentSourceReleases(self, distro_series_source_packagenames):
+        """See `IDistroSeriesSet`."""
+        # Builds one query for all the distro_series_source_packagenames.
+        # This may need tuning: its possible that grouping by the common
+        # archives may yield better efficiency: the current code is
+        # just a direct push-down of the previous in-python lookup to SQL.
+        series_clauses = []
+        distroseries_lookup = {}
+        for distroseries, package_names in \
+            distro_series_source_packagenames.items():
+            source_package_ids = map(attrgetter('id'), package_names)
+            # all_distro_archive_ids is just a list of ints, but it gets
+            # wrapped anyway - and sqlvalues goes boom.
+            archives = removeSecurityProxy(
+                distroseries.distribution.all_distro_archive_ids)
+            clause = """(spr.sourcepackagename IN %s AND
+                spph.archive IN %s AND
+                spph.distroseries = %s)
+                """ % sqlvalues(source_package_ids, archives, distroseries.id)
+            series_clauses.append(clause)
+            distroseries_lookup[distroseries.id] = distroseries
+        if not len(series_clauses):
+            return {}
+        combined_clause = "(" + " OR ".join(series_clauses) + ")"
+
+        releases = IStore(SourcePackageRelease).find(
+            (SourcePackageRelease, DistroSeries.id), SQL("""
+                (SourcePackageRelease.id, DistroSeries.id) IN (
+                    SELECT
+                        DISTINCT ON (spr.sourcepackagename, spph.distroseries)
+                        spr.id, spph.distroseries
+                    FROM
+                        SourcePackageRelease AS spr,
+                        SourcePackagePublishingHistory AS spph
+                    WHERE
+                        spph.sourcepackagerelease = spr.id
+                        AND spph.status IN %s
+                        AND %s
+                    ORDER BY
+                        spr.sourcepackagename, spph.distroseries, spph.id DESC
+                    )
+                """
+                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+        result = {}
+        for sp_release, distroseries_id in releases:
+            distroseries = distroseries_lookup[distroseries_id]
+            sourcepackage = distroseries.getSourcePackage(
+                sp_release.sourcepackagename)
+            result[sourcepackage] = DistroSeriesSourcePackageRelease(
+                distroseries, sp_release)
+        return result
+
     def search(self, distribution=None, isreleased=None, orderBy=None):
         """See `IDistroSeriesSet`."""
         where_clause = ""
@@ -1850,14 +2152,14 @@ class DistroSeriesSet:
             if isreleased:
                 # The query is filtered on released releases.
                 where_clause += "releasestatus in (%s, %s)" % sqlvalues(
-                    DistroSeriesStatus.CURRENT,
-                    DistroSeriesStatus.SUPPORTED)
+                    SeriesStatus.CURRENT,
+                    SeriesStatus.SUPPORTED)
             else:
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
-                    DistroSeriesStatus.EXPERIMENTAL,
-                    DistroSeriesStatus.DEVELOPMENT,
-                    DistroSeriesStatus.FROZEN)
+                    SeriesStatus.EXPERIMENTAL,
+                    SeriesStatus.DEVELOPMENT,
+                    SeriesStatus.FROZEN)
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:

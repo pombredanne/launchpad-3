@@ -11,20 +11,30 @@ __all__ = [
     'UndeletableEmailAddress',
     ]
 
-import operator
-import sha
 
+import hashlib
+import operator
+
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
-    EmailAddressStatus, InvalidEmailAddress)
-from canonical.launchpad.validators.email import valid_email
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.app.validators.email import valid_email
 
 
 class HasOwnerMixin:
@@ -57,6 +67,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.
+        from lp.registry.interfaces.mailinglist import MailingListStatus
         from lp.registry.model.mailinglist import (
             MailingListSubscription)
 
@@ -64,7 +75,9 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
         mailing_list = self.person and self.person.mailing_list
-        if mailing_list is not None and mailing_list.address == self.email:
+        if (mailing_list is not None
+            and mailing_list.status != MailingListStatus.PURGED
+            and mailing_list.address == self.email):
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")
@@ -80,7 +93,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     @property
     def rdf_sha1(self):
         """See `IEmailAddress`."""
-        return sha.new('mailto:' + self.email).hexdigest().upper()
+        return hashlib.sha1('mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:

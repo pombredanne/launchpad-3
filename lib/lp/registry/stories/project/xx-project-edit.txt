@@ -1,5 +1,5 @@
-Editing a Project
-=================
+Editing a ProjectGroup
+======================
 
 The maintainer of a project can edit its details.
 
@@ -10,17 +10,16 @@ The maintainer of a project can edit its details.
     Change project group details...
 
     >>> soup = find_main_content(browser.contents)
-    >>> browser.getControl(name='field.name').value = 'new-name'
     >>> browser.getControl('Display Name').value = 'New Name'
     >>> browser.getControl('Title').value = 'New Title'
     >>> browser.getControl('Project Group Summary').value = 'New Summary.'
     >>> browser.getControl('Description').value = 'New Description.'
     >>> browser.getControl('Homepage URL').value = 'http://new-url.com/'
-    >>> browser.getControl(name='field.bugtracker').value = ['1']
+    >>> browser.getControl(name='field.bugtracker').value = 'mozilla.org'
     >>> browser.getControl('Change Details').click()
 
-    >>> browser.url
-    'http://launchpad.dev/new-name'
+    >>> print browser.url
+    http://launchpad.dev/gnome
 
 Regular users can't access the +review page.
 
@@ -31,22 +30,23 @@ Regular users can't access the +review page.
 
 But administrators can access the page:
 
-    >>> admin_browser.open('http://launchpad.dev/new-name')
+    >>> admin_browser.open('http://launchpad.dev/gnome')
     >>> admin_browser.getLink('Administer').click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/new-name/+review'
+    >>> print admin_browser.url
+    http://launchpad.dev/gnome/+review
 
     >>> print admin_browser.title
-    Review upstream project group...
+    Change project group details : New Name
 
-Mark the project as reviewed.
+Mark the project as reviewed and change the name.
 
     >>> admin_browser.getControl('Reviewed').selected = True
+    >>> admin_browser.getControl(name='field.name').value = 'new-name'
     >>> admin_browser.getControl('Change').click()
 
-    >>> admin_browser.url
-    'http://launchpad.dev/new-name'
+    >>> print admin_browser.url
+    http://launchpad.dev/new-name
 
 The project summary shows the status as reviewed for admins only.
 
@@ -78,8 +78,8 @@ of each other, as well as adding aliases to the project group.
     >>> admin_browser.getControl('Change').click()
 
     >>> admin_browser.getLink('Administer').click()
-    >>> admin_browser.getControl('Aliases').value
-    'old-name'
+    >>> print admin_browser.getControl('Aliases').value
+    old-name
 
     >>> admin_browser.goBack()
 
@@ -106,3 +106,56 @@ teams as registrants.
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'registration'))
     Registered ... by Registry Administrators
+
+Registry experts
+----------------
+
+Registry experts are not allowed access to the +edit page.
+
+    >>> email = "expert@example.com"
+    >>> password = "test"
+    >>> registry_expert= factory.makeRegistryExpert(email=email,
+    ...                                             password=password)
+    >>> logout()
+    >>> expert_browser = setupBrowser(auth='Basic %s:%s' % (email, password))
+
+    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.getLink('Change details').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+And going directly to the URL is not allowed.
+
+    >>> expert_browser.open('http://launchpad.dev/new-name/+edit')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+Registry experts do have access to administer project groups, though
+there are fewer fields available.
+
+    >>> expert_browser.open('http://launchpad.dev/new-name')
+    >>> expert_browser.getLink('Administer').click()
+    >>> print expert_browser.url
+    http://launchpad.dev/new-name/+review
+
+    >>> expert_browser.getControl('Maintainer')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Maintainer'
+    >>> expert_browser.getControl('Registrant')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Registrant'
+
+    >>> expert_browser.getControl('Name').value = 'newer-name'
+    >>> expert_browser.getControl('Aliases').value = 'sleepy'
+    >>> expert_browser.getControl('Active').selected = False
+    >>> expert_browser.getControl('Reviewed').selected = False
+    >>> expert_browser.getControl('Change').click()
+
+    >>> expert_browser.open('http://launchpad.dev/newer-name')
+    >>> expert_browser.getLink('Administer').click()
+    >>> print expert_browser.getControl('Aliases').value
+    sleepy

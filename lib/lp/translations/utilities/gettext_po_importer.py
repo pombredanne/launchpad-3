@@ -1,22 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
-    'GettextPOImporter'
+    'GettextPOImporter',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.utilities.gettext_po_parser import (
-    POParser, POHeader)
 from canonical.librarian.interfaces import ILibrarianClient
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationimporter import (
+    ITranslationFormatImporter,
+    )
+from lp.translations.utilities.gettext_po_parser import (
+    POHeader,
+    POParser,
+    )
 
 
 class GettextPOImporter:
@@ -28,7 +32,7 @@ class GettextPOImporter:
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
-        self.is_published = False
+        self.by_maintainer = False
         self.content = None
 
     def getFormat(self, file_contents):
@@ -51,7 +55,7 @@ class GettextPOImporter:
         self.distroseries = translation_import_queue_entry.distroseries
         self.sourcepackagename = (
             translation_import_queue_entry.sourcepackagename)
-        self.is_published = translation_import_queue_entry.is_published
+        self.by_maintainer = translation_import_queue_entry.by_maintainer
 
         librarian_client = getUtility(ILibrarianClient)
         self.content = librarian_client.getFileByAlias(

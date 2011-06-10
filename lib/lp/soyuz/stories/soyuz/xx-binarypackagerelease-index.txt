@@ -21,16 +21,17 @@ build:
 XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> from lp.soyuz.model.queue import PackageUploadBuild
-  >>> from lp.soyuz.interfaces.build import IBuildSet
+  >>> from lp.soyuz.interfaces.binarypackagebuild import (
+  ...     IBinaryPackageBuildSet)
   >>> from lp.registry.interfaces.pocket import (
   ...     PackagePublishingPocket)
   >>> from zope.component import getUtility
 
   >>> login('foo.bar@canonical.com')
-  >>> build = getUtility(IBuildSet).getByBuildID(2)
-  >>> package_upload = build.distroseries.createQueueEntry(
-  ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
-  ...     build.archive)
+  >>> build = getUtility(IBinaryPackageBuildSet).getByID(2)
+  >>> package_upload = build.distro_series.createQueueEntry(
+  ...     PackagePublishingPocket.UPDATES, build.archive,
+  ...    'changes.txt', 'my changes')
   >>> package_upload_build = PackageUploadBuild(
   ...     packageupload =package_upload,
   ...     build=build)

@@ -25,7 +25,7 @@
           Please paste a clear-signed copy of the following paragraph into the box beneath it. (<a href="/+help/pgp-key-clearsign.html" target="help">How do I do that?</a>)
         </p>
 
-        <pre tal:content="view/validationphrase">
+        <pre tal:content="context/validation_phrase">
           Please register ABCDEF... to the Launchpad user joe
           2005-04-01 10:30:42 UTC
         </pre>

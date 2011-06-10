@@ -1,28 +1,40 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
 
+from email import message_from_string
 import os
 import shutil
-import unittest
+
+from storm.store import Store
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
-from email import message_from_string
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import BufferLogger
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.mail import stub
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -57,8 +69,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         delayed_copy = self.createEmptyDelayedCopy()
         self.assertRaisesWithContent(
             AssertionError,
-            'Cannot process delayed copies.',
-            delayed_copy.acceptFromQueue, 'some-announce-list')
+            'Cannot process delayed copies.', delayed_copy.acceptFromQueue)
 
     def test_acceptFromCopy_refuses_empty_copies(self):
         # Empty delayed-copies cannot be accepted.
@@ -107,7 +118,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
             self.test_publisher.ubuntutest.main_archive,
             self.test_publisher.breezy_autotest,
             PackagePublishingPocket.SECURITY,
-            self.test_publisher.person.gpgkeys[0])
+            self.test_publisher.person.gpg_keys[0])
 
         delayed_copy.addSource(source.sourcepackagerelease)
 
@@ -153,22 +164,26 @@ class PackageUploadTestCase(TestCaseWithFactory):
             self.assertEqual(
                 restricted, pub_file.libraryfilealias.restricted)
 
-    def removeRepository(self):
+    def removeRepository(self, distro):
         """Remove the testing repository root if it exists."""
-        if os.path.exists(config.archivepublisher.root):
-            shutil.rmtree(config.archivepublisher.root)
+        root = getUtility(
+            IPublisherConfigSet).getByDistribution(distro).root_dir
+        if os.path.exists(root):
+            shutil.rmtree(root)
 
     def test_realiseUpload_for_delayed_copies(self):
         # Delayed-copies result in published records that were overridden
         # and has their files privacy adjusted according test destination
         # context.
 
-        # Add a cleanup for removing the repository where the custom upload
-        # was published.
-        self.addCleanup(self.removeRepository)
-
         # Create the default delayed-copy context.
         delayed_copy = self.createDelayedCopy()
+
+        # Add a cleanup for removing the repository where the custom upload
+        # was published.
+        self.addCleanup(
+            self.removeRepository,
+            self.test_publisher.breezy_autotest.distribution)
 
         # Delayed-copies targeted to unreleased pockets cannot be accepted.
         self.assertRaisesWithContent(
@@ -180,7 +195,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Release ubuntutest/breezy-autotest, so delayed-copies to
         # SECURITY pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         # Create an ancestry publication in 'multiverse'.
         ancestry_source = self.test_publisher.getPubSource(
@@ -211,6 +226,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # production.  The user's environment might have a different umask, so
         # just force it to what the test expects.
         old_umask = os.umask(022)
+
         try:
             pub_records = delayed_copy.realiseUpload(logger=logger)
         finally:
@@ -266,12 +282,18 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertFalse(package_diff.diff_content.restricted)
 
         # The custom file was also published.
+        root_dir = getUtility(IPublisherConfigSet).getByDistribution(
+            self.test_publisher.breezy_autotest.distribution).root_dir
         custom_path = os.path.join(
-            config.archivepublisher.root,
+            root_dir,
             'ubuntutest/dists/breezy-autotest-security',
             'main/dist-upgrader-all')
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
+
+        # The custom files were also copied to the public librarian
+        for customfile in delayed_copy.customfiles:
+            self.assertFalse(customfile.libraryfilealias.restricted)
 
     def test_realiseUpload_for_source_only_delayed_copies(self):
         # Source-only delayed-copies results in the source published
@@ -281,7 +303,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Create the default delayed-copy context.
         delayed_copy = self.createDelayedCopy(source_only=True)
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
         self.layer.txn.commit()
 
         # Accept and publish the delayed-copy.
@@ -295,8 +317,100 @@ class PackageUploadTestCase(TestCaseWithFactory):
         [pub_record] = pub_records
         [build] = pub_record.getBuilds()
         self.assertEquals(
-            BuildStatus.NEEDSBUILD, build.buildstate)
+            BuildStatus.NEEDSBUILD, build.status)
+
+    def test_realiseUpload_for_overridden_component_archive(self):
+        # If the component of an upload is overridden to 'Partner' for
+        # example, then the new publishing record should be for the
+        # partner archive.
+        self.test_publisher.prepareBreezyAutotest()
+
+        # Get some sample changes file content for the new upload.
+        changes_file = open(
+            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
+        changes_file_content = changes_file.read()
+        changes_file.close()
+
+        main_upload_release = self.test_publisher.getPubSource(
+            sourcename='main-upload', spr_only=True,
+            component='main', changes_file_content=changes_file_content)
+        package_upload = main_upload_release.package_upload
+
+        self.assertEqual("primary", main_upload_release.upload_archive.name)
+
+        # Override the upload to partner and verify the change.
+        partner_component = getUtility(IComponentSet)['partner']
+        main_component = getUtility(IComponentSet)['main']
+        package_upload.overrideSource(
+            partner_component, None, [partner_component, main_component])
+        self.assertEqual(
+            "partner", main_upload_release.upload_archive.name)
+
+        # Now realise the upload and verify that the publishing is for
+        # the partner archive.
+        pub = package_upload.realiseUpload()[0]
+        self.assertEqual("partner", pub.archive.name)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def test_package_copy_job_property(self):
+        # Test that we can set and get package_copy_job.
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        Store.of(pu).flush()
+
+        self.assertEqual(pcj, pu.package_copy_job)
+
+    def test_overrideSource_with_copy_job(self):
+        # The overrides should be stored in the job's metadata.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        component = getUtility(IComponentSet)['restricted']
+        section = getUtility(ISectionSet)['games']
+
+        expected_metadata = {
+            'component_override': component.name,
+            'section_override': section.name
+        }
+        expected_metadata.update(plain_copy_job.metadata)
+
+        pu.overrideSource(component, section, allowed_components=[component])
+
+        self.assertEqual(
+            expected_metadata, plain_copy_job.metadata)
+
+    def test_acceptFromQueue_with_copy_job(self):
+        # acceptFromQueue should accept the upload and resume the copy
+        # job.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+        plain_copy_job.suspend()
+
+        pu.acceptFromQueue()
+
+        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+        self.assertEqual(JobStatus.WAITING, plain_copy_job.status)
+
+    def test_rejectFromQueue_with_copy_job(self):
+        # rejectFromQueue will reject the upload and fail the copy job.
+        plain_copy_job = self.factory.makePlainPackageCopyJob()
+        pcj = removeSecurityProxy(plain_copy_job).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        plain_copy_job.suspend()
+
+        pu.rejectFromQueue()
+
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
+        self.assertEqual(JobStatus.FAILED, plain_copy_job.status)
+
+        # It cannot be resurrected after rejection.
+        self.assertRaises(
+            QueueInconsistentStateError, pu.acceptFromQueue, None)

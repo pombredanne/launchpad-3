@@ -1,26 +1,18 @@
 Say hello to Bugs. :)
 
-  >>> browser.open('http://bugs.launchpad.dev/')
-  >>> browser.url
-  'http://bugs.launchpad.dev/'
+    >>> browser.open('http://bugs.launchpad.dev/')
+    >>> browser.url
+    'http://bugs.launchpad.dev/'
 
-  >>> print_location(browser.contents)
-  Hierarchy: None displayed
-  Tabs:
-  * Launchpad Home - http://launchpad.dev/
-  * Branches - http://code.launchpad.dev/
-  * Bugs (selected) - http://bugs.launchpad.dev/
-  * Blueprints - http://blueprints.launchpad.dev/
-  * Translations - http://translations.launchpad.dev/
-  * Answers - http://answers.launchpad.dev/
-  Main heading: Bug tracking
+    >>> print browser.title
+    Launchpad Bugs
 
 There are a few related pages linked in a portlet:
 
-  >>> related_pages = find_portlet(browser.contents, 'Related pages')
-  >>> for link in related_pages.findAll('a'):
-  ...     print "%s\n  --> %s" % (extract_text(link), link.get('href'))
-  Bug trackers
+    >>> related_pages = find_portlet(browser.contents, 'Related pages')
+    >>> for link in related_pages.findAll('a'):
+    ...     print "%s\n  --> %s" % (extract_text(link), link.get('href'))
+    Bug trackers
     --> http://bugs.launchpad.dev/bugs/bugtrackers
-  CVE tracker
+    CVE tracker
     --> http://bugs.launchpad.dev/bugs/cve

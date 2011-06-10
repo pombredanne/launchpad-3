@@ -11,20 +11,27 @@ __all__ = [
     'IArchiveDependency',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.archive import IArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+from lp.soyuz.interfaces.archive import IArchive
 
 
 class IArchiveDependency(Interface):
     """ArchiveDependency interface."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=_("The archive ID."), readonly=True)
 

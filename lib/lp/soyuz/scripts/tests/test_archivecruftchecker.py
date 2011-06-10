@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveCruftChecker tests.
@@ -18,12 +18,14 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.scripts.ftpmaster import (
-    ArchiveCruftChecker, ArchiveCruftCheckerError)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
+    ArchiveCruftChecker,
+    ArchiveCruftCheckerError,
+    )
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -50,7 +52,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
     def setUp(self):
         """Setup the test environment."""
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        self.log = QuietFakeLogger()
+        self.log = BufferLogger()
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.archive_path = "/var/tmp/archive"
@@ -59,7 +61,6 @@ class TestArchiveCruftChecker(unittest.TestCase):
     def tearDown(self):
         """Clean up test environment and remove the test archive."""
         removeTestArchive()
-
 
     def testInitializeSuccess(self):
         """Test ArchiveCruftChecker initialization process.
@@ -86,8 +87,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
         # based on the given 'archive_path'.
         self.assertEqual(
             checker.dist_archive,
-            '/var/tmp/archive/ubuntutest/dists/breezy-autotest'
-            )
+            '/var/tmp/archive/ubuntutest/dists/breezy-autotest')
 
         # The 'components' dictionary contains all components selected
         # for the given distroseries organized as:
@@ -111,7 +111,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
             'restricted',
             'restricted/debian-installer',
             'universe',
-            'universe/debian-installer'
+            'universe/debian-installer',
             ]
         self.assertEqual(sorted(checker.components_and_di), expected)
 
@@ -125,8 +125,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
 
         self.assertEqual(
             checker.dist_archive,
-            '/var/tmp/archive/ubuntutest/dists/breezy-autotest-security'
-            )
+            '/var/tmp/archive/ubuntutest/dists/breezy-autotest-security')
 
     def testInitializeFailure(self):
         """ArchiveCruftCheck initialization failures.
@@ -149,7 +148,3 @@ class TestArchiveCruftChecker(unittest.TestCase):
             self.log, distribution_name='ubuntu', suite='breezy-autotest',
             archive_path=self.archive_path)
         self.assertRaises(ArchiveCruftCheckerError, checker.initialize)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

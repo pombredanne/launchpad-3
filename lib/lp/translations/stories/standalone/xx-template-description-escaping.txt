@@ -1,12 +1,14 @@
     >>> import re
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
 
     >>> login('foo.bar@canonical.com')
     >>> package = factory.makeSourcePackage()
     >>> template = removeSecurityProxy(factory.makePOTemplate(
     ...     distroseries=package.distroseries,
     ...     sourcepackagename=package.sourcepackagename))
-    >>> template.distroseries.distribution.official_rosetta = True
+    >>> distribution = template.distroseries.distribution
+    >>> distribution.translations_usage = ServiceUsage.LAUNCHPAD
     >>> template.distroseries.hide_all_translations = False
     >>> template.description = "See http://example.com/ for an example!"
     >>> package_url = canonical_url(package, rootsite='translations')

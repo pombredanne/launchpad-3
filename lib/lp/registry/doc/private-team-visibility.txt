@@ -1,0 +1,109 @@
+=========================
+ Private team visibility
+=========================
+
+Private teams restrict the visibility of their attributes to select
+sets of users in order to prevent leaking confidential data.
+
+Private teams restrict the viewing of the membership list
+to team administrators, other members of the team, and Launchpad
+administrators .
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> from lp.testing import login_celebrity
+
+    >>> priv_owner = factory.makePerson(name="priv-owner")
+    >>> priv_member = factory.makePerson(name="priv-member")
+    >>> commercial_admin = login_celebrity('commercial_admin')
+    >>> priv_team = factory.makeTeam(owner=priv_owner, name="priv-team",
+    ...                              visibility=PersonVisibility.PRIVATE)
+    >>> login_person(priv_owner)
+    >>> ignored = priv_team.addMember(priv_member, reviewer=priv_owner)
+
+The team owner can see the membership.
+
+    >>> members = priv_team.activemembers
+    >>> for member in members:
+    ...     print member.name
+    priv-member
+    priv-owner
+
+A team member can access the membership.
+
+    >>> login_person(priv_member)
+    >>> members = priv_team.activemembers
+
+A commercial admin can view private teams and private team memberships.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> commercial_admin = login_celebrity('commercial_admin')
+    >>> check_permission('launchpad.View', priv_team)
+    True
+    >>> team_membership = priv_member.team_memberships[0]
+    >>> check_permission('launchpad.View', team_membership)
+    True
+
+A person who is not in the team cannot see the membership and cannot
+see other details of the team, such as the name.
+
+    >>> login('no-priv@canonical.com')
+    >>> members = priv_team.activemembers
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>,
+        'activemembers', 'launchpad.View')
+
+    >>> print priv_team.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>,
+        'name', 'launchpad.View')
+
+Public teams can join private teams.  When adding one team to another
+the team is invited to join and that invitation must be accepted by
+one of the invited team's admins.  Normally the admin of the invited
+team is not a member of the private team and therefore cannot even see
+the page to accept the invitation!  To resolve that situation the
+rules for viewing a private team include admins of invited teams.
+
+    >>> pub_owner = factory.makePerson(name="pub-owner")
+    >>> pub_member = factory.makePerson(name="pub-member")
+    >>> pub_team = factory.makeTeam(owner=pub_owner, name="pubteam")
+    >>> login_person(pub_owner)
+    >>> ignored = pub_team.addMember(pub_member, reviewer=pub_owner)
+
+At this point the public team owner cannot see the priv-team's bits.
+
+    >>> print priv_team.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>,
+        'name', 'launchpad.View')
+
+    >>> login_person(priv_owner)
+    >>> ignored = priv_team.addMember(pub_team, reviewer=priv_owner)
+
+The public team is not yet a member of the priv-team.
+
+    >>> pub_team in priv_team.activemembers
+    False
+    >>> pub_owner in priv_team.activemembers
+    False
+
+The public team's owner can now see the priv-team's bits since his team
+has been invited to join.
+
+    >>> login_person(pub_owner)
+    >>> print priv_team.name
+    priv-team
+
+But a non-admin member of the public team still cannot see anything
+about the team.
+
+    >>> login_person(pub_member)
+    >>> print priv_team.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>,
+        'name', 'launchpad.View')

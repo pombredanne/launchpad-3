@@ -1,66 +1,123 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'distribution_from_distributionsourcepackage',
+    'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
+    'DistributionSourcePackageChangelogView',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
+    'DistributionSourcePackageHelpView',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
-    'DistributionSourcePackageView',
-    'DistributionSourcePackageChangelogView',
     'DistributionSourcePackagePublishingHistoryView',
+    'DistributionSourcePackageView',
     ]
 
 from datetime import datetime
 import itertools
 import operator
-import pytz
-
-from zope.component import getUtility
-from zope.interface import implements, Interface
 
 from lazr.delegates import delegates
+import pytz
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.interface import (
+    implementer,
+    implements,
+    Interface,
+    )
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
-from canonical.launchpad.interfaces import IBugSet
-from canonical.launchpad.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadView, Navigation, StandardLaunchpadFacets,
-    action, canonical_url, redirection)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
-
+from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
-        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.answers.interfaces.questionenums import QuestionStatus
+    QuestionTargetAnswersMenu,
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
+from lp.answers.enums import QuestionStatus
+from lp.app.browser.tales import CustomizableFormatter
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser import add_subscribe_link
+from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers, extract_email_addresses, linkify_changelog)
+    extract_bug_numbers,
+    extract_email_addresses,
+    linkify_changelog,
+    )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
+    IDistributionSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.registry.browser.packaging import PackagingDeleteView
-from lp.registry.interfaces.pocket import pocketsuffix
-from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.translations.browser.customlanguagecode import (
-    HasCustomLanguageCodesTraversalMixin)
+    HasCustomLanguageCodesTraversalMixin,
+    )
 
 
+class DistributionSourcePackageFormatterAPI(CustomizableFormatter):
+    """Adapt IDistributionSourcePackage objects to a formatted string."""
+
+    _link_permission = 'zope.Public'
+    _link_summary_template = '%(displayname)s'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
+@adapter(IDistributionSourcePackage)
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+    implements(IBreadcrumb)
 
     @property
     def text(self):
         return smartquote('"%s" package') % (
             self.context.sourcepackagename.name)
+
+
+@adapter(IDistributionSourcePackage)
+@implementer(IServiceUsage)
+def distribution_from_distributionsourcepackage(dsp):
+    return dsp.distribution
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
@@ -72,18 +129,15 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
 class DistributionSourcePackageLinksMixin:
 
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.BugSupervisor')
     def edit(self):
         """Edit the details of this source package."""
         # This is titled "Edit bug reporting guidelines" because that
         # is the only editable property of a source package right now.
-        return Link('+edit', 'Edit bug reporting guidelines', icon='edit')
+        return Link('+edit', 'Configure bug tracker', icon='edit')
 
     def new_bugs(self):
         base_path = "+bugs"
@@ -101,21 +155,33 @@ class DistributionSourcePackageOverviewMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = [
-        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions']
+    links = ['new_bugs', 'open_questions']
 
 
 class DistributionSourcePackageBugsMenu(
-        DistributionSourcePackageOverviewMenu):
+    PillarBugsMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['filebug', 'subscribe']
 
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='bug')
+    @cachedproperty
+    def links(self):
+        links = ['filebug']
+        add_subscribe_link(links)
+        return links
+
+
+class DistributionSourcePackageAnswersMenu(QuestionTargetAnswersMenu):
+
+    usedfor = IDistributionSourcePackage
+    facet = 'answers'
+
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -170,12 +236,20 @@ class IDistributionSourcePackageActionMenu(Interface):
 
 
 class DistributionSourcePackageActionMenu(
-    NavigationMenu, DistributionSourcePackageLinksMixin):
+    NavigationMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
     """Action menu for distro source packages."""
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('publishing_history', 'change_log', 'subscribe', 'edit')
+
+    @cachedproperty
+    def links(self):
+        links = ['publishing_history', 'change_log']
+        add_subscribe_link(links)
+        links.append('edit')
+        return links
 
     def publishing_history(self):
         text = 'View full publishing history'
@@ -213,7 +287,8 @@ class DistributionSourcePackageBaseView:
              if not_empty(spr.changelog_entry)])
         unique_bugs = extract_bug_numbers(the_changelog)
         self._bug_data = list(
-            getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
+            getUtility(IBugSet).getByNumbers(
+                [int(key) for key in unique_bugs.keys()]))
         # Preload email/person data only if user is logged on. In the opposite
         # case the emails in the changelog will be obfuscated anyway and thus
         # cause no database lookups.
@@ -228,7 +303,8 @@ class DistributionSourcePackageBaseView:
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+            sprs, preload_for_display=True)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
@@ -242,9 +318,14 @@ class DistributionSourcePackageBaseView:
 
 
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
-                                    PackagingDeleteView):
+                                    LaunchpadView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
+
+    def initialize(self):
+        super(DistributionSourcePackageView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def label(self):
@@ -254,14 +335,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    @property
-    def all_packaging(self):
-        """See `PackagingDeleteView`."""
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
-            if packaging is not None:
-                yield packaging
 
     @property
     def all_published_in_active_distroseries(self):
@@ -371,7 +444,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             packages_dict[package.distroseries] = package
         return packages_dict
 
-    @property
+    @cachedproperty
     def active_series(self):
         """Return active distroseries where this package is published.
 
@@ -391,13 +464,20 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
 
         :param sourcepackage: ISourcePackage
         """
-        publications = sourcepackage.distroseries.getPublishedReleases(
+        publications = sourcepackage.distroseries.getPublishedSources(
             sourcepackage.sourcepackagename)
         pocket_dict = {}
-        for pub in publications:
+        for pub in shortlist(publications):
             version = pub.source_package_version
             pocket_dict.setdefault(version, []).append(pub)
         return pocket_dict
+
+    @property
+    def latest_sourcepackage(self):
+        if len(self.active_series) == 0:
+            return None
+        return self.active_series[0].getSourcePackage(
+            self.context.sourcepackagename)
 
     @property
     def version_table(self):
@@ -407,17 +487,17 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         for distroseries in self.active_series:
             # The first row for each series is the "title" row.
             packaging = packages_by_series[distroseries].direct_packaging
-            if packaging is None:
-                delete_packaging_form_id = None
-                hidden_packaging_field = None
-            else:
-                delete_packaging_form_id = "delete_%s_%s_%s" % (
-                    packaging.distroseries.name,
-                    packaging.productseries.product.name,
-                    packaging.productseries.name)
-                hidden_packaging_field = self._renderHiddenPackagingField(
-                    packaging)
             package = packages_by_series[distroseries]
+            # Don't show the "Set upstream link" action for older series
+            # without packaging info, so the user won't feel required to
+            # fill it in.
+            show_set_upstream_link = (
+                packaging is None
+                and distroseries.status in (
+                    SeriesStatus.CURRENT,
+                    SeriesStatus.DEVELOPMENT,
+                    )
+                )
             title_row = {
                 'blank_row': False,
                 'title_row': True,
@@ -425,8 +505,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                 'distroseries': distroseries,
                 'series_package': package,
                 'packaging': packaging,
-                'hidden_packaging_field': hidden_packaging_field,
-                'delete_packaging_form_id': delete_packaging_form_id,
+                'show_set_upstream_link': show_set_upstream_link,
                 }
             rows.append(title_row)
 
@@ -470,6 +549,20 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         """Return result set containing open questions for this package."""
         return self.context.searchQuestions(status=QuestionStatus.OPEN)
 
+    @cachedproperty
+    def bugs_answers_usage(self):
+        """Return a  dict of uses_bugs, uses_answers, uses_both, uses_either.
+        """
+        service_usage = IServiceUsage(self.context)
+        uses_bugs = (
+            service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+        uses_answers = service_usage.answers_usage == ServiceUsage.LAUNCHPAD
+        uses_both = uses_bugs and uses_answers
+        uses_either = uses_bugs or uses_answers
+        return dict(
+            uses_bugs=uses_bugs, uses_answers=uses_answers,
+            uses_both=uses_both, uses_either=uses_either)
+
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
@@ -498,6 +591,8 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     schema = IDistributionSourcePackage
     field_names = [
         'bug_reporting_guidelines',
+        'bug_reported_acknowledgement',
+        'enable_bugfiling_duplicate_search',
         ]
 
     @property
@@ -519,3 +614,9 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class DistributionSourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

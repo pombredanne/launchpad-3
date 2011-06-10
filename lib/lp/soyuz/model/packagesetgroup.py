@@ -8,9 +8,12 @@ __all__ = [
     ]
 
 import pytz
-
-from storm.locals import DateTime, Int, Reference, Storm
-
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
 from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup

@@ -1,4 +1,5 @@
-= Merging people or teams =
+Merging people or teams
+=======================
 
 Launchpad admins can merge any two people or teams, without the need of
 any email address confirmation or something like that.  There's one page
@@ -35,17 +36,6 @@ If the user confirms, spiv will be merged into salgado.
     >>> admin_browser.url
     'http://launchpad.dev/~salgado'
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.interfaces import IMailingListSet, IPersonSet
-    >>> login(ANONYMOUS)
-    >>> person_set = getUtility(IPersonSet)
-    >>> person_set.getByEmail('andrew.bennetts@ubuntulinux.com').name
-    u'salgado'
-
-    >>> spiv = person_set.getByName('spiv-merged', ignore_merged=False)
-    >>> spiv.merged.name
-    u'salgado'
-
-    >>> logout()
+    >>> print get_feedback_messages(admin_browser.contents)[0]
+    A merge is queued and is expected to complete in a few minutes.
 

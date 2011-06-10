@@ -18,10 +18,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, List, TextLine
+from zope.schema import (
+    Bool,
+    Int,
+    List,
+    TextLine,
+    )
 
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
 
 
 class OutdatedTranslationError(TranslationImportExportBaseException):
@@ -125,6 +131,14 @@ class ITranslationImporter(Interface):
             extension, is not considered a translation.
         """
 
+    def isHidden(path):
+        """Based on filename, is this a hidden file?
+
+        :param path: file name, possibly including directory component.
+        :return: Boolean: True if `path` contains either a hidden file
+            or a hidden directory.
+        """
+
     def getTranslationFileFormat(file_extension, file_contents):
         """Return the translation file format for the given file extension.
 
@@ -150,8 +164,8 @@ class ITranslationImporter(Interface):
         :raise OutdatedTranslationError: If the entry is older than the
             previously imported file.
         :raise NotExportedFromLaunchpad: If the entry imported is not
-            published and doesn't have the tag added by Launchpad on export
-            time.
+            from upstream and doesn't have the tag added by Launchpad on
+            export time.
         :return: a tuple of two lists: error descriptors, and warnings.
 
         The errors list contains dictionaries describing messages that

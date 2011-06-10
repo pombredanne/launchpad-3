@@ -5,13 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'QuestionFactory'
+    'QuestionFactory',
     ]
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IQuestionTarget, IPillarNameSet)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class QuestionFactory:
@@ -63,7 +64,7 @@ class QuestionFactory:
         owner = getUtility(ILaunchBag).user
         created_questions = []
         for index in range(question_count):
-            replacements = {'index' : index, 'target': target.displayname}
+            replacements = {'index': index, 'target': target.displayname}
             created_questions.append(target.newQuestion(
                 owner,
                 'Question %(index)s on %(target)s' % replacements,

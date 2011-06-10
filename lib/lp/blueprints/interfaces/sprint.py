@@ -18,18 +18,33 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    PublicPersonChoice)
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.app.interfaces.headings import IRootContext
-from lp.registry.interfaces.role import IHasOwner
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PublicPersonChoice,
+    )
 
 
 class SprintNameField(ContentNameField):
@@ -199,4 +214,3 @@ class ISprintSet(Interface):
             summary, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
         """Create a new sprint."""
-

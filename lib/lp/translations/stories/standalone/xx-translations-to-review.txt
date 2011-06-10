@@ -46,7 +46,7 @@ Xowxz is a Khmer reviewer.
     ...     """Let `user` add a suggestion to `pofile`."""
     ...     potmsgset = factory.makePOTMsgSet(
     ...         potemplate=pofile.potemplate, singular='x', sequence=1)
-    ...     factory.makeTranslationMessage(
+    ...     factory.makeCurrentTranslationMessage(
     ...         potmsgset=potmsgset, pofile=pofile, translator=user,
     ...         translations=['y'])
 
@@ -90,8 +90,8 @@ suggestions that xowxz could review.  They show up in the list.
 
     >>> browser.open(homepage)
     >>> list_reviewables(browser)
-    <a ...>...</a> needs <a ...> 1 string reviewed </a>
-    <a ...>...</a> needs <a ...> 1 string reviewed </a>
+    <a ...>...</a> needs <a ...> 1 string reviewed </a> in Khmer
+    <a ...>...</a> needs <a ...> 1 string reviewed </a> in Khmer
     Listing contains 2 translation(s).
 
 These are translations that xowxz has not worked on.  They are not ones

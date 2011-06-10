@@ -1,37 +1,39 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BranchRevision', 'BranchRevisionSet']
+__all__ = [
+    'BranchRevision',
+    ]
 
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from lp.code.interfaces.branchrevision import IBranchRevision
 
-from canonical.database.sqlbase import SQLBase
-from lp.code.interfaces.branchrevision import IBranchRevision, IBranchRevisionSet
-class BranchRevision(SQLBase):
-    """See IBranchRevision."""
+
+class BranchRevision(Storm):
+    """See `IBranchRevision`."""
+    __storm_table__ = 'BranchRevision'
+    __storm_primary__ = ("branch_id", "revision_id")
 
     implements(IBranchRevision)
 
-    _table = 'BranchRevision'
+    branch_id = Int(name='branch', allow_none=False)
+    branch = Reference(branch_id, 'Branch.id')
 
-    branch = ForeignKey(
-        dbName='branch', foreignKey='Branch', notNull=True)
+    revision_id = Int(name='revision', allow_none=False)
+    revision = Reference(revision_id, 'Revision.id')
 
-    sequence = IntCol()
-    revision = ForeignKey(
-        dbName='revision', foreignKey='Revision', notNull=True)
+    sequence = Int(name='sequence', allow_none=True)
 
-
-class BranchRevisionSet:
-    """See IBranchRevisionSet."""
-
-    implements(IBranchRevisionSet)
-
-    def delete(self, branch_revision_id):
-        """See `IBranchRevisionSet`."""
-        BranchRevision.delete(branch_revision_id)
+    def __init__(self, branch, revision, sequence=None):
+        self.branch = branch
+        self.revision = revision
+        self.sequence = sequence

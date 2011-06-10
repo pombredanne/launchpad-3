@@ -1,11 +1,12 @@
 = Bazaar Revisions =
 
 Branches are collection of revisions, and a revision can exist independently
-from any branch. Revisions are created automatically by scanning branches, they
-have no creation interface and Launchpad cannot create or modify them.
+from any branch. Revisions are created automatically by scanning branches,
+they have no creation interface and Launchpad cannot create or modify them.
 
 == Interfaces ==
 
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.code.interfaces.revision import (
     ...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)
@@ -21,14 +22,16 @@ have no creation interface and Launchpad cannot create or modify them.
     True
     >>> verifyObject(IRevisionSet, RevisionSet())
     True
-    >>> verifyObject(IBranchRevision, BranchRevision.get(1))
+    >>> verifyObject(
+    ...     IBranchRevision,
+    ...     IStore(BranchRevision).find(BranchRevision).any())
     True
 
 == Creating revisions ==
 
 The creator of a revision is identified by a RevisionAuthor. A RevisionAuthor
-is not a person because that is only an informational attribute, and even if we
-trust it, there's really no simple way to map that reliably to persons.
+is not a person because that is only an informational attribute, and even if
+we trust it, there's really no simple way to map that reliably to persons.
 
     >>> from lp.code.model.revision import RevisionAuthor
     >>> author = RevisionAuthor(name='ddaa@localhost')
@@ -55,7 +58,8 @@ while the date_created is the time when the database record was created.
     >>> date = datetime(2005, 3, 8, 12, 0, tzinfo=UTC)
     >>> from lp.code.model.revision import Revision
     >>> revision_1 = Revision(log_body=log_body_1,
-    ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
+    ...     revision_author=author, revision_id=revision_id_1,
+    ...     revision_date=date)
 
 == Parents ==
 
@@ -67,7 +71,8 @@ Parents are accessed through their revision_id without using a foreign key so
 we can represent revisions whose at least one parent is a ghost revision.
 
     >>> revision_2 = Revision(log_body=log_body_2,
-    ...     revision_author=author, revision_id=revision_id_2, revision_date=date)
+    ...     revision_author=author, revision_id=revision_id_2,
+    ...     revision_date=date)
 
     >>> from lp.code.model.revision import RevisionParent
     >>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
@@ -86,8 +91,10 @@ Bazaar converge-on-pull logic.
 
 BranchRevision rows are created using `Branch.createBranchRevision`.
 
-    >>> rev_no_1 = branch.createBranchRevision(sequence=1, revision=revision_1)
-    >>> rev_no_2 = branch.createBranchRevision(sequence=2, revision=revision_2)
+    >>> rev_no_1 = branch.createBranchRevision(
+    ...     sequence=1, revision=revision_1)
+    >>> rev_no_2 = branch.createBranchRevision(
+    ...     sequence=2, revision=revision_2)
     >>> rev_no_1.branch == rev_no_2.branch == branch
     True
 
@@ -96,13 +103,14 @@ BranchRevision rows are created using `Branch.createBranchRevision`.
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/+junk/junk.contrib')
 
-The full ancestry of a branch is recorded. That includes the history commits on
-this branch, but also revisions that were merged into this branch. Such merged
-revisions are associated to the branch using BranchRevision whose sequence
-attribute is None.
+The full ancestry of a branch is recorded. That includes the history commits
+on this branch, but also revisions that were merged into this branch. Such
+merged revisions are associated to the branch using BranchRevision whose
+sequence attribute is None.
 
     >>> from lp.code.model.branchrevision import BranchRevision
-    >>> ancestry = BranchRevision.selectBy(branch=branch)
+    >>> ancestry = IStore(BranchRevision).find(
+    ...     BranchRevision, BranchRevision.branch == branch)
     >>> for branch_revision in sorted(ancestry,
     ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
     ...     print branch_revision.sequence, branch_revision.revision.id
@@ -116,16 +124,16 @@ attribute is None.
     None 6
 
 If you need to operate on the ancestry of a branch, you should write a focused
-query to avoid creating the tens of thousands of objects necessary to represent
-the ancestry of a large branch.
+query to avoid creating the tens of thousands of objects necessary to
+represent the ancestry of a large branch.
 
 In particular, IBranch.getScannerData efficiently retrieves the BranchRevision
 data needed by the branch-scanner script.
 
-    >>> ancestry, history, mapping = branch.getScannerData()
+    >>> ancestry, history = branch.getScannerData()
 
-The first return value is a set of revision_id strings for the full ancestry of
-the branch.
+The first return value is a set of revision_id strings for the full ancestry
+of the branch.
 
     >>> for revision_id in sorted(ancestry):
     ...     print revision_id
@@ -150,19 +158,6 @@ history of the branch.
     foo@localhost-20051031170239-5fce7d6bd3f01efc
     foo@localhost-20051031170357-1301ad6d387feb23
 
-The third return value is a mapping from revision_id strings to database ids
-integers of the corresponding BranchRevision rows for this branch.
-
-    >>> for revision_id, db_id in sorted(mapping.iteritems()):
-    ...     print revision_id, db_id
-    foo@localhost-20051031165758-48acedf2b6a2e898 12
-    foo@localhost-20051031170008-098959758bf79803 13
-    foo@localhost-20051031170239-5fce7d6bd3f01efc 14
-    foo@localhost-20051031170357-1301ad6d387feb23 15
-    test@canonical.com-20051031165248-6f1bb97973c2b4f4 10
-    test@canonical.com-20051031165338-5f2f3d6b10bb3bf0 11
-    test@canonical.com-20051031165532-3113df343e494daa 18
-    test@canonical.com-20051031165901-43b9644ec2eacc4e 19
 
 === Deleting BranchRevisions ===
 
@@ -172,7 +167,7 @@ branch. If the bzr branch now has fewer revisions than Launchpad's view
 of the branch, then some of BranchRevision records will need to be
 removed.
 
-BranchRevision records are deleted using the `BranchRevisionSet.delete`
+BranchRevision records are deleted using the `Branch.removeBranchRevisions`
 method.
 
 
@@ -189,14 +184,14 @@ The last commit on this branch has the revision number 6.
     6
     >>> revno_6.branch == branch
     True
-    >>> print revno_6.revision.revision_id
+    >>> rev_id = revno_6.revision.revision_id
+    >>> print rev_id
     foo@localhost-20051031170357-1301ad6d387feb23
 
 We remove the last revision from the branch. This is similar to what
 "bzr uncommit" does.
 
-    >>> from lp.code.interfaces.branchrevision import IBranchRevisionSet
-    >>> getUtility(IBranchRevisionSet).delete(revno_6.id)
+    >>> branch.removeBranchRevisions(rev_id)
 
 Afterwards, the last commit on the branch has revision number 5.
 

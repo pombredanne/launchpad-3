@@ -8,6 +8,7 @@ __metaclass__ = type
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import reset_logging
 
+
 def setUp(test):
     # Suck this modules environment into the test environment
     reset_logging()

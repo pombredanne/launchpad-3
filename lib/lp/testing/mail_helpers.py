@@ -7,9 +7,17 @@ __metaclass__ = type
 
 import email
 import operator
+
 import transaction
 
+from zope.component import getUtility
+
+from lp.registry.interfaces.persontransferjob import (
+    IMembershipNotificationJobSource,
+    )
+from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
+from lp.services.log.logger import DevNullLogger
 
 
 def pop_notifications(sort_key=None, commit=True):
@@ -90,8 +98,25 @@ def print_emails(include_reply_to=False, group_similar=False,
         print body
         print "-"*40
 
+
 def print_distinct_emails(include_reply_to=False, include_rationale=True):
     """A convenient shortcut for `print_emails`(group_similar=True)."""
     return print_emails(group_similar=True,
                         include_reply_to=include_reply_to,
                         include_rationale=include_rationale)
+
+
+def run_mail_jobs():
+    """Process job queues that send out emails.
+
+    If a new job type is added that sends emails, this function can be
+    extended to run those jobs, so that testing emails doesn't require a
+    bunch of different function calls to process different queues.
+    """
+    # Commit the transaction to make sure that the JobRunner can find
+    # the queued jobs.
+    transaction.commit()
+    job_source = getUtility(IMembershipNotificationJobSource)
+    logger = DevNullLogger()
+    runner = JobRunner.fromReady(job_source, logger)
+    runner.runAll()

@@ -1,15 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BugBranches."""
 
 __metaclass__ = type
 
-import unittest
-
-from lp.testing import login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestBugBranchPrimaryContext(TestCaseWithFactory):
@@ -27,7 +28,3 @@ class TestBugBranchPrimaryContext(TestCaseWithFactory):
         self.assertEqual(
             IPrimaryContext(bugbranch).context,
             IPrimaryContext(bugbranch.branch).context)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

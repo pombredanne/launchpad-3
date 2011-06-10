@@ -21,4 +21,10 @@
 
     </ul>
   </div>
+  <div tal:define="link context/menu:overview/view_recipes"
+       tal:condition="link/enabled">
+    <a tal:replace="structure link/fmt:link" />
+  </div>
+
+
 </tal:root>

@@ -11,7 +11,11 @@ __all__ = [
     'IDistributionSourcePackageCache',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IDistributionSourcePackageCache(Interface):
 

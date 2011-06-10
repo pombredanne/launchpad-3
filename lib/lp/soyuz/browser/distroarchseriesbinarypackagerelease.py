@@ -9,10 +9,14 @@ __all__ = [
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
-from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
-    IDistroArchSeriesBinaryPackageRelease)
-from canonical.launchpad.webapp import ApplicationMenu, Navigation
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    Navigation,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
+    IDistroArchSeriesBinaryPackageRelease,
+    )
 
 
 class DistroArchSeriesBinaryPackageReleaseBreadcrumb(Breadcrumb):

@@ -57,21 +57,21 @@ by the librarian.
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../icon
+    Location: http://.../icon
     ...
 
     >>> result = webservice.get(project['logo_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../logo
+    Location: http://.../logo
     ...
 
     >>> result = webservice.get(project['brand_link'])
     >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/.../brand
+    Location: http://.../brand
     ...
 
 

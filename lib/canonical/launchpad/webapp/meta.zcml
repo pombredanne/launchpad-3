@@ -26,6 +26,13 @@
       />
 
   <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="call"
+      schema="canonical.launchpad.webapp.metazcml.ICallDirective"
+      handler="canonical.launchpad.webapp.metazcml.call"
+      />
+
+  <directive
       namespace="http://namespaces.zope.org/browser"
       name="feeds"
       schema="canonical.launchpad.webapp.metazcml.IFeedsDirective"
@@ -67,6 +74,13 @@
       name="authorizations"
       schema="canonical.launchpad.webapp.metazcml.IAuthorizationsDirective"
       handler="canonical.launchpad.webapp.metazcml.authorizations"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="publisher"
+      schema="zope.app.publication.metadirectives.IRequestPublicationDirective"
+      handler="canonical.launchpad.webapp.metazcml.launchpadPublisher"
       />
 
   <groupingDirective

@@ -43,8 +43,8 @@
       <tbody>
         <tr tal:repeat="code_import batch">
           <td>
-            <a tal:attributes="href code_import/product/fmt:url"
-               tal:content="code_import/product/displayname"
+            <a tal:attributes="href code_import/branch/target/fmt:url"
+               tal:content="code_import/branch/target/displayname"
               >$Product.name</a>
           </td>
           <td><a tal:attributes="href code_import/branch/fmt:url"

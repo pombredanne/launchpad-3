@@ -1,8 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""
-The One True Way to send mail from the Launchpad application.
+"""The One True Way to send mail from the Launchpad application.
 
 Uses zope.sendmail.interfaces.IMailer, so you can subscribe to
 IMailSentEvent or IMailErrorEvent to record status.
@@ -15,36 +14,47 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'append_footer',
+    'do_paranoid_envelope_to_validation',
     'format_address',
+    'format_address_for_person',
     'get_msgid',
     'MailController',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
-    'raw_sendmail',
-    'validate_message']
+    'validate_message',
+    ]
+
 
 from binascii import b2a_qp
-import sha
-import sets
-from email.Encoders import encode_base64
-from email.Utils import getaddresses, make_msgid, formatdate, formataddr
-from email.Message import Message
-from email.Header import Header
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
 from email import Charset
+from email.Encoders import encode_base64
+from email.Header import Header
+from email.Message import Message
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formataddr,
+    formatdate,
+    getaddresses,
+    make_msgid,
+    )
+import hashlib
 from smtplib import SMTP
 
+from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
-from zope.sendmail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as zisinstance
+from zope.security.proxy import removeSecurityProxy
+from zope.sendmail.interfaces import IMailDelivery
 
 from canonical.config import config
 from canonical.lp import isZopeless
-from canonical.launchpad.helpers import is_ascii_only
+from lp.app import versioninfo
+from lp.services.encoding import is_ascii_only
 from lp.services.mail.stub import TestMailer
-from canonical.launchpad import versioninfo
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 # email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -80,13 +90,33 @@ def do_paranoid_envelope_to_validation(to_addrs):
     to header.  The to header and envelope_to addresses may vary
     independently, and the to header cannot break Z3.
     """
-    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
         assert '\n' not in addr, (
             "Address contains carriage returns: %r" % (addr,))
+
+
+def append_footer(main, footer):
+    """Append a footer to an email, following signature conventions.
+
+    If there is no footer, do nothing.
+    If there is already a signature, append an additional footer.
+    If there is no existing signature, append '-- \n' and a footer.
+
+    :param main: The main content, which may have a signature.
+    :param footer: An additional footer to append.
+    :return: a new version of main that includes the footer.
+    """
+    if footer == '':
+        footer_separator = ''
+    elif '\n-- \n' in main:
+        footer_separator = '\n'
+    else:
+        footer_separator = '\n-- \n'
+    return ''.join((main, footer_separator, footer))
 
 
 def format_address(name, address):
@@ -122,6 +152,12 @@ def format_address(name, address):
     # names are folded, so let's unfold it again.
     name = ''.join(name.splitlines())
     return str(formataddr((name, address)))
+
+
+def format_address_for_person(person):
+    """Helper function to call format_address for a person."""
+    email_address = removeSecurityProxy(person.preferredemail).email
+    return format_address(person.displayname, email_address)
 
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers=None,
@@ -375,17 +411,19 @@ def sendmail(message, to_addrs=None, bulk=True):
     # helps security, but still exposes us to a replay attack; we consider the
     # risk low.
     del message['X-Launchpad-Hash']
-    hash = sha.new(config.mailman.shared_secret)
+    hash = hashlib.sha1(config.mailman.shared_secret)
     hash.update(str(message['message-id']))
     message['X-Launchpad-Hash'] = hash.hexdigest()
 
     raw_message = message.as_string()
+    message_detail = message['Subject']
     if isZopeless():
         # Zopeless email sending is not unit tested, and won't be.
         # The zopeless specific stuff is pretty simple though so this
         # should be fine.
+        # TODO: Store a timeline action for zopeless mail.
 
-        if config.instance_name == 'testrunner':
+        if config.isTestRunner():
             # when running in the testing environment, store emails
             TestMailer().send(
                 config.canonical.bounce_address, to_addrs, raw_message)
@@ -409,14 +447,17 @@ def sendmail(message, to_addrs=None, bulk=True):
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.
         return raw_sendmail(
-            config.canonical.bounce_address, to_addrs, raw_message)
+            config.canonical.bounce_address,
+            to_addrs,
+            raw_message,
+            message_detail)
 
 
 def get_msgid():
     return make_msgid('launchpad')
 
 
-def raw_sendmail(from_addr, to_addrs, raw_message):
+def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
     """Send a raw RFC8222 email message.
 
     All headers and encoding should already be done, as the message is
@@ -427,12 +468,21 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
 
     Returns the message-id.
 
+    :param message_detail: Information about the message to include in the
+        request timeline.
     """
+    # Note that raw_sendail has no tests, unit or otherwise.
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
-    return mailer.send(from_addr, to_addrs, raw_message)
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
+    action = timeline.start("sendmail", message_detail)
+    try:
+        return mailer.send(from_addr, to_addrs, raw_message)
+    finally:
+        action.finish()
 
 
 if __name__ == '__main__':

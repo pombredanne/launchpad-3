@@ -6,12 +6,13 @@
 __all__ = [
     'AuthServerApplication',
     'BazaarApplication',
-    'CodeImportScheduler',
+    'CodeImportSchedulerApplication',
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
     'PrivateMaloneApplication',
     'RosettaApplication',
+    'TestOpenIDApplication',
     ]
 
 __metaclass__ = type
@@ -19,37 +20,69 @@ __metaclass__ = type
 import codecs
 import os
 
+from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IWebServiceApplication)
-from lp.translations.interfaces.translationgroup import ITranslationGroupSet
-from lp.translations.interfaces.translationsoverview import (
-    ITranslationsOverview)
-from canonical.launchpad.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
-    IHWVendorIDSet, ParameterError)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IBazaarApplication,
+    IFeedsApplication,
+    IPrivateMaloneApplication,
+    IRosettaApplication,
+    IWebServiceApplication,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot,
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
+from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import (
-    IBranchFileSystemApplication, IBranchPullerApplication)
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
-    ICodeImportSchedulerApplication)
-from lp.registry.interfaces.product import IProduct
+    ICodeImportSchedulerApplication,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDBApplication,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    ParameterError,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lazr.restful import ServiceRootResource
-from lazr.restful.interfaces import ITopLevelEntryLink
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview,
+    )
 
 
 class AuthServerApplication:
@@ -59,18 +92,11 @@ class AuthServerApplication:
     title = "Auth Server"
 
 
-class BranchFileSystemApplication:
-    """BranchFileSystem End-Point."""
-    implements(IBranchFileSystemApplication)
+class CodehostingApplication:
+    """Codehosting End-Point."""
+    implements(ICodehostingApplication)
 
-    title = "Branch File System"
-
-
-class BranchPullerApplication:
-    """BranchPuller End-Point."""
-    implements(IBranchPullerApplication)
-
-    title = "Puller API"
+    title = "Codehosting API"
 
 
 class CodeImportSchedulerApplication:
@@ -101,9 +127,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, prejoins=[]):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(
+            search_params, prejoins=prejoins)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
@@ -141,7 +168,7 @@ class MaloneApplication:
 
     @property
     def bugtracker_count(self):
-        return getUtility(IBugTrackerSet).search().count()
+        return getUtility(IBugTrackerSet).count
 
     @property
     def projects_with_bugs_count(self):
@@ -159,7 +186,7 @@ class MaloneApplication:
     def latest_bugs(self):
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
-            user=user, orderBy='-datecreated', limit=5)
+            user=user, orderBy=['-datecreated'], limit=5)
 
     def default_bug_list(self, user=None):
         return getUtility(IBugSet).searchAsUser(user)
@@ -209,8 +236,10 @@ class RosettaApplication:
         """See `IRosettaApplication`."""
         projects = getUtility(ITranslationsOverview)
         for project in projects.getMostTranslatedPillars():
-            yield { 'pillar' : project['pillar'],
-                    'font_size' : project['weight'] * 10 }
+            yield {
+                'pillar': project['pillar'],
+                'font_size': project['weight'] * 10,
+                }
 
     def translatable_distroseriess(self):
         """See `IRosettaApplication`."""
@@ -341,15 +370,8 @@ class HWDBApplication:
 class WebServiceApplication(ServiceRootResource):
     """See `IWebServiceApplication`.
 
-    This implementation adds a 'cached_wadl' attribute.  If set, it will be
-    served by `toWADL` rather than calculating the toWADL result.
-
-    On import, the class tries to load a file to populate this attribute.  By
-    doing it on import, this makes it easy to clear, as is needed by
-    utilities/create-lp-wadl.py.
-
-    If the attribute is not set, toWADL will set the attribute on the class
-    once it is calculated.
+    This implementation adds a 'cached_wadl' attribute, which starts
+    out as an empty dict and is populated as needed.
     """
     implements(IWebServiceApplication, ICanonicalUrlData)
 
@@ -357,28 +379,55 @@ class WebServiceApplication(ServiceRootResource):
     path = ''
     rootsite = None
 
-    _wadl_filename = os.path.join(
-        os.path.dirname(os.path.normpath(__file__)),
-        'apidoc', 'wadl-%s.xml' % config.instance_name)
+    cached_wadl = {}
 
-    cached_wadl = None
-
-    # Attempt to load the WADL.
-    _wadl_fd = None
-    try:
-        _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
-        try:
-            cached_wadl = _wadl_fd.read()
-        finally:
-            _wadl_fd.close()
-    except IOError:
-        pass
-    del _wadl_fd
+    @classmethod
+    def cachedWADLPath(cls, instance_name, version):
+        """Helper method to calculate the path to a cached WADL file."""
+        return os.path.join(
+            os.path.dirname(os.path.normpath(__file__)),
+            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
 
     def toWADL(self):
-        """See `IWebServiceApplication`."""
-        if self.cached_wadl is not None:
-            return self.cached_wadl
-        wadl = super(WebServiceApplication, self).toWADL()
-        self.__class__.cached_wadl = wadl
-        return wadl
+        """See `IWebServiceApplication`.
+
+        Look for a cached WADL file for the request version at the
+        location used by the script
+        utilities/create-launchpad-wadl.py. If the file is present,
+        load the file and cache its contents rather than generating
+        new WADL. Otherwise, generate new WADL and cache it.
+        """
+        version = self.request.version
+        if self.__class__.cached_wadl is None:
+            # The cache has been disabled for testing
+            # purposes. Generate the WADL.
+            return super(WebServiceApplication, self).toWADL()
+        if  version not in self.__class__.cached_wadl:
+            # It's not cached. Look for it on disk.
+            _wadl_filename = self.cachedWADLPath(
+                config.instance_name, version)
+            _wadl_fd = None
+            try:
+                _wadl_fd = codecs.open(_wadl_filename, encoding='UTF-8')
+                try:
+                    wadl = _wadl_fd.read()
+                finally:
+                    _wadl_fd.close()
+            except IOError:
+                # It's not on disk; generate it.
+                wadl = super(WebServiceApplication, self).toWADL()
+            del _wadl_fd
+            self.__class__.cached_wadl[version] = wadl
+        return self.__class__.cached_wadl[version]
+
+
+class TestOpenIDApplication:
+    implements(ITestOpenIDApplication)
+
+
+class APIDocRoot:
+    implements(IAPIDocRoot)
+    __parent__ = None
+    __name__ = None
+
+apidocroot = APIDocRoot()

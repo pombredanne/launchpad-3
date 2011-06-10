@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -14,14 +14,16 @@ containing the archive mirrors for that country.
 import _pythonpath
 
 import os
+import shutil
 import tempfile
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet, MirrorContent)
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (
-    ICountrySet, IDistributionMirrorSet, MirrorContent)
+from lp.services.worlddata.interfaces.country import ICountrySet
 
 
 class CacheCountryMirrors(LaunchpadScript):
@@ -51,7 +53,8 @@ class CacheCountryMirrors(LaunchpadScript):
                 "\n".join(mirror.base_url for mirror in mirrors))
             mirrors_file.close()
             filename = os.path.join(dir_name, '%s.txt' % country.iso3166code2)
-            os.rename(tmpfile, filename)
+            shutil.move(tmpfile, filename)
+            os.chmod(filename, 0644)
 
 
 if __name__ == '__main__':

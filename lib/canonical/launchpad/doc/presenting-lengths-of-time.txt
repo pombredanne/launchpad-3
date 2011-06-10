@@ -3,8 +3,8 @@ Presenting Lengths of Time
 
 First, let's bring in some dependencies:
 
-   >>> from datetime import timedelta
    >>> from canonical.launchpad.ftests import test_tales
+   >>> from datetime import timedelta
 
 Exact Duration
 --------------

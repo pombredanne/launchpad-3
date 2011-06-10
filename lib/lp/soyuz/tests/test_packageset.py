@@ -5,13 +5,14 @@
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.packageset import (
-    DuplicatePackagesetName, IPackagesetSet)
+    DuplicatePackagesetName,
+    IPackagesetSet,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestPackagesetSet(TestCaseWithFactory):
@@ -26,7 +27,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         self.distroseries_current = self.distribution.currentseries
         self.distroseries_experimental = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
 
         self.person1 = self.factory.makePerson(
             name='hacker', displayname=u'Happy Hacker')
@@ -120,6 +121,20 @@ class TestPackagesetSet(TestCaseWithFactory):
             'kernel', distroseries=self.distroseries_experimental)
         self.assertEqual(pset2, pset_found)
 
+    def test_get_by_distroseries(self):
+        # IPackagesetSet.getBySeries() will return those package sets
+        # associated with the given distroseries.
+        pset1 = self.packageset_set.new(
+            u'timmy', u'Timmy Mallett', self.person1)
+        pset2 = self.packageset_set.new(
+            u'savile', u'Jimmy Savile', self.person1)
+        self.packageset_set.new(
+            u'hoskins', u'Bob Hoskins', self.person1,
+            distroseries=self.distroseries_experimental)
+        self.assertContentEqual(
+            [pset1, pset2],
+            self.packageset_set.getBySeries(self.distroseries_current))
+
 
 class TestPackageset(TestCaseWithFactory):
 
@@ -133,10 +148,10 @@ class TestPackageset(TestCaseWithFactory):
         self.distroseries_current = self.distribution.currentseries
         self.distroseries_experimental = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
         self.distroseries_experimental2 = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental2",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
 
         self.person1 = self.factory.makePerson(
             name='hacker', displayname=u'Happy Hacker')

@@ -11,8 +11,9 @@ Here are examples of each transition that we record. First, let's create
 a new bug to work with:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchBag, CreateBugParams)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login("foo.bar@canonical.com")
     >>> foobar = getUtility(ILaunchBag).user
@@ -51,7 +52,7 @@ Only its datecreated value will be set. All other dates will be None.
 The bug status cannot be set directly, but the value can be retrieved
 directly.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
     >>> ubuntu_firefox_task.status = BugTaskStatus.CONFIRMED
     Traceback (most recent call last):
@@ -145,7 +146,7 @@ date_inprogress is set to None, similar to the logic behind date_confirmed:
     >>> ubuntu_firefox_task.date_inprogress is None
     True
 
-Marking the bug Triaged sets `date_triged`.
+Marking the bug Triaged sets `date_triaged`.
 
     >>> print ubuntu_firefox_task.date_triaged
     None
@@ -165,7 +166,7 @@ But rolling it back to a previous status unsets `date_triaged` to None.
     None
 
 If the status is changed from any unresolved status to any resolved
-status (Invalid or Fix Released), the date_closed property is
+status (Invalid, Expired or Fix Released), the date_closed property is
 set. The date_closed is always set to None when the task's status is
 set to an open status. Note in the transition to FIXRELEASED the
 date_inprogress is also set, when it had previously been None.
@@ -181,6 +182,23 @@ date_inprogress is also set, when it had previously been None.
     >>> ubuntu_firefox_task.date_closed is None
     True
 
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.EXPIRED, getUtility(ILaunchBag).user)
+    >>> ubuntu_firefox_task.date_closed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    >>> ubuntu_firefox_task.date_closed is None
+    True
+
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.OPINION, getUtility(ILaunchBag).user)
+    >>> ubuntu_firefox_task.date_closed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> ubuntu_firefox_task.date_inprogress is None
     True
     >>> ubuntu_firefox_task.transitionToStatus(
@@ -258,7 +276,7 @@ unassigned, to assigned, but not if the assignee changes from one person
 to another. Like status, assignee cannot be set directly, because
 setting an assignee has "side effects".
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
 
     >>> ubuntu_firefox_task.assignee = foobar

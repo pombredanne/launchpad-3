@@ -6,14 +6,6 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad" >
   <body>
-    <div metal:fill-slot="head_epilogue">
-      <style type="text/css">
-        h2.adminlabel {
-          margin: 1.5em 0 0 0;
-        }
-      </style>
-    </div>
-
     <div metal:fill-slot="main">
      <div id="language_packs">
 
@@ -33,47 +25,92 @@
              Peter Langomat
            </tal:admin><a
                tal:condition="context/distribution/required:launchpad.Edit"
-               tal:attributes="href string:${context/distribution/fmt:url}/+select-language-pack-admin"
+               tal:attributes="href context/distribution/fmt:url:translations/+select-language-pack-admin"
                title="Change language pack administrator"><img
                class="edit sprite"/></a>.
          </p>
        </div>
        <div class="yui-g">
-         <div class="yui-u first portlet">
+         <div class="yui-u first portlet" id="active-language-packs">
            <h2>Active language packs</h2>
            <dl>
              <dt>
                Base pack:
-               <a tal:condition="context/language_pack_base"
+               <a class="sprite download"
+                  tal:condition="context/language_pack_base"
                   tal:attributes="href context/language_pack_base/file/http_url">
                  <tal:export-date
                     replace="context/language_pack_base/date_exported/fmt:datetime" />
-                 <img tal:condition="context/language_pack_base"
-                      alt="download icon" src="/@@/download" />
                </a>
                <tal:not-export-date condition="not: context/language_pack_base">
                  none yet
                </tal:not-export-date>
              </dt>
-             <dd>A complete set of translations for the OS.</dd>
+             <dd>
+                Archive containing a complete set of translations for this
+                operating system.
+             </dd>
              <dt>
-               Delta pack:
-               <a tal:condition="context/language_pack_delta"
+               Update pack:
+               <a class="sprite download"
+                  tal:condition="context/language_pack_delta"
                   tal:attributes="href context/language_pack_delta/file/http_url">
                  <tal:export-date
                     replace="context/language_pack_delta/date_exported/fmt:datetime" />
-                 <img tal:condition="context/language_pack_delta"
-                      alt="download icon" src="/@@/download" />
                </a>
                <tal:not-export-date condition="not: context/language_pack_delta">
+                 no update
+               </tal:not-export-date>
+             </dt>
+             <dd>
+                Archive containing translation updates, applied on top of the
+                base pack.
+             </dd>
+           </dl>
+         </div>
+
+         <div class="yui-u">
+           <div>
+            <div id="latest-language-packs" class="portlet">
+            <h2>Latest language packs</h2>
+            <dl>
+             <dt>
+               Base pack:
+               <a class="sprite download"
+                  tal:condition="view/have_latest_full_pack"
+                  tal:attributes="href context/menu:navigation/latest_full_language_pack/url">
+                 <tal:export-date
+                    replace="context/last_full_language_pack_exported/date_exported/fmt:datetime" />
+               </a>
+               <tal:not-export-date
+                    condition="not: view/have_latest_full_pack">
                  none yet
                </tal:not-export-date>
              </dt>
-             <dd>Translation updates, applied on top of the base pack.</dd>
-           </dl>
-         </div>
-         <div class="yui-u">
-           <div class="portlet">
+             <dd>
+                Latest archive containing a complete set of translations for
+                this operating system.
+             </dd>
+             <dt>
+               Update pack:
+               <a class="sprite download"
+                  tal:condition="view/have_latest_delta_pack"
+                  tal:attributes="href context/menu:navigation/latest_delta_language_pack/url">
+                 <tal:export-date
+                    replace="context/last_delta_language_pack_exported/date_exported/fmt:datetime" />
+               </a>
+               <tal:not-export-date
+                    condition="not: view/have_latest_delta_pack">
+                 no update
+               </tal:not-export-date>
+             </dt>
+             <dd>
+                Latest archive containing translation updates, applied on top
+                 of the base pack.
+             </dd>            
+            </dl>
+            </div>
+            <div id="testing-language-packs">
              <h2>Language pack being tested</h2>
              <dl tal:condition="context/language_pack_proposed">
                <dt>
@@ -96,14 +133,14 @@
              <p tal:condition="not:context/language_pack_proposed">
                No pack is being tested right now.
              </p>
+            </div> 
            </div>
          </div>
        </div>
 
        <div class="yui-g">
          <div class="yui-u first portlet" tal:condition="view/is_admin">
-           <h2 class="adminlabel"
-               tal:content="view/adminlabel">Language pack settings</h2>
+           <h2 tal:content="view/adminlabel">Language pack settings</h2>
            <div metal:use-macro="context/@@launchpad_form/form"> </div>
          </div>
          <div class="yui-u" tal:condition="view/unused_language_packs">

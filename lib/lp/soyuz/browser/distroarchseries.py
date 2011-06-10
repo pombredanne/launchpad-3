@@ -13,21 +13,30 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView)
+    GetitemNavigation,
+    LaunchpadEditFormView,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    enabled_with_permission, Link, NavigationMenu)
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
@@ -74,14 +83,9 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchBinaryPackages(self.text)
 
 
-class DistroArchSeriesView(BuildRecordsView,
-                           DistroArchSeriesPackageSearchView):
+class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
-
-
-class DistroArchSeriesBuildsView(BuildRecordsView):
-    """View for +builds on a distro arch series."""
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):
@@ -120,7 +124,8 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
     schema = IDistroArchSeries
 
     field_names = [
-        'architecturetag', 'official', 'supports_virtualized'
+        'architecturetag', 'official', 'supports_virtualized',
+        'enabled',
         ]
 
     @action(_('Change'), name='update')

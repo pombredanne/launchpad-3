@@ -69,7 +69,7 @@ Trying to edit a poll that's already open isn't possible.
 
     >>> team_admin_browser.getLink('A random poll that never closes').click()
     >>> team_admin_browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
+    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote'
 
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+edit')

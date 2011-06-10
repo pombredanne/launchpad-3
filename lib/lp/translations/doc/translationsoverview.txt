@@ -1,4 +1,5 @@
-= TranslationsOverview =
+TranslationsOverview
+====================
 
 This class provides a basic overview of the Launchpad Translations component.
 It includes data such as projects which have so far received the most
@@ -12,14 +13,15 @@ test too much.
 
     >>> import transaction
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.karma import IKarmaCacheManager
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.model.karma import KarmaCategory
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IKarmaCacheManager, IPersonSet,
-    ...     IProductSet)
     >>> from lp.translations.interfaces.translationsoverview import (
     ...     ITranslationsOverview)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
@@ -45,14 +47,16 @@ contribution weights.
     18
 
 
-== _normalizeSizes ==
+_normalizeSizes
+---------------
 
 This private method accepts a list of tuples (object, size) and
 normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
 
     >>> test_list = [('one', 3), ('two', 0), ('three', 1)]
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> result = removeSecurityProxy(overview)._normalizeSizes(test_list, 0, 3)
+    >>> naked_overview = removeSecurityProxy(overview)
+    >>> result = naked_overview._normalizeSizes(test_list, 0, 3)
     >>> for pillar in result:
     ...     print "%s: %d" % (pillar['pillar'], pillar['weight'])
     one: 18
@@ -60,7 +64,26 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
     three: 13
 
 
-== Getting the most translated pillars ==
+Getting the most translated pillars
+-----------------------------------
+
+Set Up
+......
+
+The following demo assumes the test data has official_translations set.
+Let's set that up.
+
+    >>> from lp.app.enums import ServiceUsage
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+
+Using getMostTranslatedPillars
+..............................
 
 Method getMostTranslatedPillars() returns a list of dicts listing
 pillars with most translations karma so far, along with a relative
@@ -104,10 +127,13 @@ Evolution.
 
 Adding a little bit of karma to upstart will put it in the list as well.
 
+    >>> from lp.app.enums import ServiceUsage
+
     >>> start_karma_update()
     >>> upstart = product_set.getByName('upstart')
     >>> upstart_id = upstart.id
-    >>> removeSecurityProxy(upstart).official_rosetta = True
+    >>> naked_upstart = removeSecurityProxy(upstart)
+    >>> naked_upstart.translations_usage = ServiceUsage.LAUNCHPAD
     >>> cache_entry = karmacachemanager.new(
     ...     50, carlos.id, translations.id, product_id=upstart_id)
     >>> finish_karma_update()
@@ -153,7 +179,8 @@ we change the default maximum number of returned entries.
     Ubuntu: 24
 
 
-== Zero karma ==
+Zero karma
+----------
 
 Sometimes a pillar appears to be listed in the karma cache with zero
 karma.  Our algorithm takes the logarithm of its karma, but it's

@@ -1,25 +1,29 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Test for timeline graph widget."""
+
+__metaclass__ = type
+__all__ = []
+
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
 
-class TestTimelineGraph(TestCaseWithFactory):
+
+class TestTimelineGraph(WindmillTestCase):
+    """Test timeline graph widget."""
 
     layer = RegistryWindmillLayer
-
-    def setUp(self):
-        self.client = WindmillTestClient('TimelineGraph')
+    suite_name = 'TimelineGraph'
 
     def test_timeline_graph(self):
         """Test timeline graph on /$project/+timeline-graph page."""
 
         self.client.open(
-            url=u'http://launchpad.dev:8085/firefox/+timeline-graph')
+            url=u'%s/firefox/+timeline-graph'
+                % RegistryWindmillLayer.base_url)
         self.client.waits.forElement(id=u'spinner', timeout=u'20000')
         self.client.waits.forElementProperty(
             id=u'spinner',
@@ -32,7 +36,7 @@ class TestTimelineGraph(TestCaseWithFactory):
     def test_project_timeline_graph(self):
         """Test that the timeline graph loads on /$project page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox')
+        self.client.open(url=u'%s/firefox' % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElementProperty(
             id=u'timeline-loading',
@@ -46,7 +50,8 @@ class TestTimelineGraph(TestCaseWithFactory):
     def test_series_timeline_graph(self):
         """Test that the timeline graph loads on /$project/$series page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/trunk')
+        self.client.open(url=u'%s/firefox/trunk'
+                        % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElementProperty(
             id=u'timeline-iframe',
@@ -61,7 +66,8 @@ class TestTimelineGraph(TestCaseWithFactory):
     def test_all_series_timeline_graph(self):
         """Test that the timeline graph loads on /$project/+series page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/+series')
+        self.client.open(url=u'%s/firefox/+series'
+                        % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElement(
             id=u'timeline-loading',

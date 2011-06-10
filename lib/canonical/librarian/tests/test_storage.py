@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import sha
 import shutil
 import tempfile
 import unittest
@@ -14,7 +13,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.librarian.storage import LibrarianStorage
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class LibrarianStorageTestCase(unittest.TestCase):

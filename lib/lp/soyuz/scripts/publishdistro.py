@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script functions."""
@@ -8,19 +8,24 @@ __all__ = [
     'run_publisher',
     ]
 
-import gc
-
 from zope.component import getUtility
 
+from canonical.launchpad.scripts import (
+    logger,
+    logger_options,
+    )
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import getPublisher
-from canonical.database.sqlbase import (
-    clear_current_connection_cache, flush_database_updates)
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.scripts import logger, logger_options
 from lp.services.scripts.base import LaunchpadScriptFailure
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    MAIN_ARCHIVE_PURPOSES,
+    )
 
 # XXX Julian 2008-02-07 bug=189866:
 # These functions should be in a LaunchpadScript.
@@ -42,7 +47,7 @@ def add_options(parser):
 
     parser.add_option("-A", "--careful-apt", action="store_true",
                       dest="careful_apt", metavar="", default=False,
-                      help="Make the apt-ftparchive run careful.")
+                      help="Make index generation (e.g. apt-ftparchive) careful.")
 
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRO", default="ubuntu",
@@ -59,20 +64,25 @@ def add_options(parser):
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
-                      help="Run only over private PPA archives.")
+                      help="Only run over PPA archives.")
 
     parser.add_option("--private-ppa", action="store_true",
                       dest="private_ppa", metavar="PRIVATEPPA", default=False,
-                      help="Run only over PPA archives.")
+                      help="Only run over private PPA archives.")
 
     parser.add_option("--partner", action="store_true",
                       dest="partner", metavar="PARTNER", default=False,
-                      help="Run only over the partner archive.")
+                      help="Only run over the partner archive.")
+
+    parser.add_option("--copy-archive", action="store_true",
+                      dest="copy_archive", metavar="COPYARCHIVE",
+                      default=False,
+                      help="Only run over the copy archives.")
 
     parser.add_option(
         "--primary-debug", action="store_true", default=False,
         dest="primary_debug", metavar="PRIMARYDEBUG",
-        help="Run only over the debug-symbols for primary archive.")
+        help="Only run over the debug-symbols for primary archive.")
 
 
 def run_publisher(options, txn, log=None):
@@ -87,33 +97,20 @@ def run_publisher(options, txn, log=None):
             return "Careful"
         return "Normal"
 
-    def try_and_commit(description, func, *args):
-        try:
-            func(*args)
-            log.debug("Committing.")
-            flush_database_updates()
-            txn.commit()
-            log.debug("Flushing caches.")
-            clear_current_connection_cache()
-            gc.collect()
-        except:
-            log.exception("Unexpected exception while %s" % description)
-            txn.abort()
-            raise
-
     exclusive_options = (
         options.partner, options.ppa, options.private_ppa,
-        options.primary_debug)
+        options.primary_debug, options.copy_archive)
+
     num_exclusive = [flag for flag in exclusive_options if flag]
     if len(num_exclusive) > 1:
         raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa, private-ppa and "
-            "primary-debug.")
+            "Can only specify one of partner, ppa, private-ppa, copy-archive"
+            " and primary-debug.")
 
     log.debug("  Distribution: %s" % options.distribution)
     log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
     log.debug("    Domination: %s" % careful_msg(options.careful_domination))
-    if num_exclusive == 0 :
+    if num_exclusive == 0:
         log.debug("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
     else:
         log.debug("      Indexing: %s" % careful_msg(options.careful_apt))
@@ -161,11 +158,19 @@ def run_publisher(options, txn, log=None):
             raise LaunchpadScriptFailure(
                 "Could not find DEBUG archive for %s" % distribution.name)
         archives = [debug_archive]
+    elif options.copy_archive:
+        archives = getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, purposes=[ArchivePurpose.COPY])
+        if not bool(archives):
+            raise LaunchpadScriptFailure("Could not find any COPY archives")
     else:
         archives = [distribution.main_archive]
 
-    # Consider only archives that have their "to be published" flag turned on.
-    archives = [archive for archive in archives if archive.publish]
+    # Consider only archives that have their "to be published" flag turned on
+    # or are pending deletion.
+    archives = [
+        archive for archive in archives
+        if archive.publish or archive.status == ArchiveStatus.DELETING]
 
     for archive in archives:
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -178,23 +183,38 @@ def run_publisher(options, txn, log=None):
             log.info("Processing %s" % archive.archive_url)
             publisher = getPublisher(archive, allowed_suites, log)
 
-        try_and_commit("publishing", publisher.A_publish,
-                       options.careful or options.careful_publishing)
-        # Flag dirty pockets for any outstanding deletions.
-        publisher.A2_markPocketsWithDeletionsDirty()
-        try_and_commit("dominating", publisher.B_dominate,
-                       options.careful or options.careful_domination)
-
-        # The primary archive uses apt-ftparchive to generate the indexes,
-        # everything else uses the newer internal LP code.
-        if archive.purpose == ArchivePurpose.PRIMARY:
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                           options.careful or options.careful_apt)
+        # Do we need to delete the archive or publish it?
+        if archive.status == ArchiveStatus.DELETING:
+            if archive.purpose == ArchivePurpose.PPA:
+                publisher.deleteArchive()
+                txn.commit()
+            else:
+                # Other types of archives do not currently support deletion.
+                log.warning(
+                    "Deletion of %s skipped: operation not supported on %s"
+                    % archive.displayname)
         else:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
-                           options.careful or options.careful_apt)
+            publisher.A_publish(options.careful or options.careful_publishing)
+            txn.commit()
 
-        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                       options.careful or options.careful_apt)
+            # Flag dirty pockets for any outstanding deletions.
+            publisher.A2_markPocketsWithDeletionsDirty()
+            publisher.B_dominate(
+                options.careful or options.careful_domination)
+            txn.commit()
+
+            # The primary and copy archives use apt-ftparchive to generate the
+            # indexes, everything else uses the newer internal LP code.
+            if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+                publisher.C_doFTPArchive(
+                    options.careful or options.careful_apt)
+            else:
+                publisher.C_writeIndexes(
+                    options.careful or options.careful_apt)
+            txn.commit()
+
+            publisher.D_writeReleaseFiles(
+                options.careful or options.careful_apt)
+            txn.commit()
 
     log.debug("Ciao")

@@ -7,9 +7,9 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestBranchNavigation(TestCaseWithFactory):

@@ -9,7 +9,11 @@ __metaclass__ = type
 import os
 import re
 from StringIO import StringIO
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import textwrap
 import unittest
 
@@ -19,20 +23,27 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
-
 from lazr.uri import URI
-
 import transaction
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
-
-from lp.codehosting.branchdistro import DistroBrancher, switch_branches
+from lp.code.enums import BranchLifecycleStatus
+from lp.code.interfaces.branchjob import IBranchScanJobSource
+from lp.codehosting.branchdistro import (
+    DistroBrancher,
+    switch_branches,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import (
+    FakeLogger,
+    BufferLogger,
+    )
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
-
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
 # each time.
@@ -59,14 +70,17 @@ class TestSwitchBranches(TestCaseWithTransport):
         # location.
 
         chroot_server = ChrootServer(self.get_transport())
-        chroot_server.setUp()
-        self.addCleanup(chroot_server.tearDown)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
         scheme = chroot_server.get_url().rstrip('/:')
 
         old_branch = FakeBranch(1)
         self.get_transport(old_branch.unique_name).create_prefix()
         tree = self.make_branch_and_tree(old_branch.unique_name)
-        tree.commit(message='.')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(message='.')
 
         new_branch = FakeBranch(2)
 
@@ -108,22 +122,25 @@ class TestDistroBrancher(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useBzrBranches(real_server=True, direct_database=True)
+        self.useBzrBranches(direct_database=True)
 
-    def makeOfficialPackageBranch(self, distroseries=None):
+    def makeOfficialPackageBranch(self, distroseries=None,
+                                  make_revisions=True):
         """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
+        if make_revisions:
+            self.factory.makeRevisionsForBranch(db_branch, count=1)
 
         transaction.commit()
 
         _, tree = self.create_branch_and_tree(
-            tree_location=self.factory.getUniqueString(), db_branch=db_branch,
-            hosted=True)
-        tree.commit('')
-        mirrored_branch = BzrDir.create_branch_convenience(
-            db_branch.warehouse_url)
-        mirrored_branch.pull(tree.branch)
+            tree_location=self.factory.getUniqueString(), db_branch=db_branch)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        if make_revisions:
+            with override_environ(BZR_EMAIL='me@example.com'):
+                tree.commit('')
 
         return db_branch
 
@@ -222,6 +239,50 @@ class TestDistroBrancher(TestCaseWithFactory):
              db_branch.sourcepackagename, brancher.new_distroseries.name],
             [new_branch.owner, new_branch.distribution,
              new_branch.sourcepackagename, new_branch.name])
+        # The new branch is set in the development state, and the old one is
+        # mature.
+        self.assertEqual(
+            BranchLifecycleStatus.DEVELOPMENT, new_branch.lifecycle_status)
+        self.assertEqual(
+            BranchLifecycleStatus.MATURE, db_branch.lifecycle_status)
+
+    def test_makeOneNewBranch_avoids_need_for_scan(self):
+        # makeOneNewBranch sets the appropriate properties of the new branch
+        # so a scan is unnecessary.  This can be done because we are making a
+        # copy of the source branch.
+        db_branch = self.makeOfficialPackageBranch()
+        self.factory.makeRevisionsForBranch(db_branch, count=10)
+        tip_revision_id = db_branch.last_mirrored_id
+        self.assertIsNot(None, tip_revision_id)
+        # The makeRevisionsForBranch will create a scan job for the db_branch.
+        # We don't really care about that, but what we do care about is that
+        # no new jobs are created.
+        existing_scan_job_count = len(
+            list(getUtility(IBranchScanJobSource).iterReady()))
+
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+
+        self.assertEqual(tip_revision_id, new_branch.last_mirrored_id)
+        self.assertEqual(tip_revision_id, new_branch.last_scanned_id)
+        # Make sure that the branch revisions have been copied.
+        old_ancestry, old_history = removeSecurityProxy(
+            db_branch).getScannerData()
+        new_ancestry, new_history = removeSecurityProxy(
+            new_branch).getScannerData()
+        self.assertEqual(old_ancestry, new_ancestry)
+        self.assertEqual(old_history, new_history)
+        self.assertFalse(new_branch.pending_writes)
+        self.assertIs(None, new_branch.stacked_on)
+        self.assertEqual(new_branch, db_branch.stacked_on)
+        # The script doesn't have permission to create branch jobs, but just
+        # to be insanely paradoid.
+        transaction.commit()
+        self.layer.switchDbUser('launchpad')
+        scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(existing_scan_job_count, len(scan_jobs))
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
@@ -239,6 +300,12 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .* is not an official branch$',
              '^WARNING Skipping branch$'])
 
+    def test_makeOnewNewBranch_empty_branch(self):
+        # Branches with no commits work.
+        db_branch = self.makeOfficialPackageBranch(make_revisions=False)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+
     def test_makeNewBranches(self):
         # makeNewBranches calls makeOneNewBranch for each official branch in
         # the old distroseries.
@@ -250,7 +317,7 @@ class TestDistroBrancher(TestCaseWithFactory):
             distribution=db_branch.distribution)
 
         brancher = DistroBrancher(
-            QuietFakeLogger(), db_branch.distroseries, new_distroseries)
+            BufferLogger(), db_branch.distroseries, new_distroseries)
 
         brancher.makeNewBranches()
 
@@ -396,228 +463,125 @@ class TestDistroBrancher(TestCaseWithFactory):
             ['^WARNING .*/.*/.* is the official branch for .*/.*/.* but not '
              'its sourcepackage$'])
 
-    def checkOneBranch_new_branch_missing(self, branch_type):
+    def test_checkOneBranch_new_branch_missing(self):
         # checkOneBranch returns False when there is no bzr branch for the
         # database branch in the new distroseries.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = new_db_branch.getPullURL()
-        else:
-            url = new_db_branch.warehouse_url
+        url = 'lp-internal:///' + new_db_branch.unique_name
         get_transport(url).delete_tree('.bzr')
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         # Deleting the new branch will break the old branch, as that's stacked
         # on the new one.
         self.assertLogMessages([
-            '^WARNING No bzr branch at new location lp-%s:///.*/.*/.*/.*$'
-            % branch_type,
-            '^WARNING No bzr branch at old location lp-%s:///.*/.*/.*/.*$'
-            % branch_type,
+            '^WARNING No bzr branch at new location '
+            'lp-internal:///.*/.*/.*/.*$',
+            '^WARNING No bzr branch at old location '
+            'lp-internal:///.*/.*/.*/.*$',
             ])
 
-    def test_checkOneBranch_new_hosted_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # hosted area for the database branch in the new distroseries.
-        self.checkOneBranch_new_branch_missing('hosted')
-
-    def test_checkOneBranch_new_mirrored_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # mirrored area for the database branch in the new distroseries.
-        self.checkOneBranch_new_branch_missing('mirrored')
-
-    def checkOneBranch_old_branch_missing(self, branch_type):
+    def test_checkOneBranch_old_branch_missing(self):
         # checkOneBranch returns False when there is no bzr branchfor the
         # database branch in old distroseries.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = db_branch.getPullURL()
-        else:
-            url = db_branch.warehouse_url
+        url = 'lp-internal:///' + db_branch.unique_name
         get_transport(url).delete_tree('.bzr')
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages([
-            '^WARNING No bzr branch at old location lp-%s:///.*/.*/.*/.*$'
-            % branch_type,
+            '^WARNING No bzr branch at old location '
+            'lp-internal:///.*/.*/.*/.*$'
             ])
 
-    def test_checkOneBranch_old_hosted_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # hosted area for the database branch in old distroseries.
-        self.checkOneBranch_old_branch_missing('hosted')
-
-    def test_checkOneBranch_old_mirrored_branch_missing(self):
-        # checkOneBranch returns False when there is no bzr branch in the
-        # mirrored area for the database branch in old distroseries.
-        self.checkOneBranch_old_branch_missing('mirrored')
-
-    def checkOneBranch_new_stacked(self, branch_type):
+    def test_checkOneBranch_new_stacked(self):
         # checkOneBranch returns False when the bzr branch for the database
         # branch in new distroseries is stacked.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
-        b, _ = self.create_branch_and_tree(
-            self.factory.getUniqueString(), hosted=(branch_type == 'hosted'))
+        b, _ = self.create_branch_and_tree(self.factory.getUniqueString())
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         new_db_branch = brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = new_db_branch.getPullURL()
-        else:
-            url = new_db_branch.warehouse_url
+        url = 'lp-internal:///' + new_db_branch.unique_name
         Branch.open(url).set_stacked_on_url('/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
         self.assertFalse(ok)
         self.assertLogMessages([
-            '^WARNING New branch at lp-%s:///.*/.*/.*/.* is stacked on '
-            '/.*/.*/.*, should be unstacked.$' % branch_type,
+            '^WARNING New branch at lp-internal:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be unstacked.$',
             ])
 
-    def test_checkOneBranch_new_hosted_stacked(self):
-        # checkOneBranch returns False when the bzr branch in the hosted area
-        # for the database branch in new distroseries is stacked.
-        self.checkOneBranch_new_stacked('hosted')
-
-    def test_checkOneBranch_new_mirrored_stacked(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored
-        # area for the database branch in new distroseries is stacked.
-        self.checkOneBranch_new_stacked('mirrored')
-
-    def checkOneBranch_old_unstacked(self, branch_type):
+    def test_checkOneBranch_old_unstacked(self):
         # checkOneBranch returns False when the bzr branch for the database
         # branch in old distroseries is not stacked.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = db_branch.getPullURL()
-        else:
-            url = db_branch.warehouse_url
+        url = 'lp-internal:///' + db_branch.unique_name
         old_bzr_branch = Branch.open(url)
         old_bzr_branch.set_stacked_on_url(None)
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
-            '^WARNING Old branch at lp-%s:///.*/.*/.*/.* is not stacked, '
-            'should be stacked on /.*/.*/.*.$' % branch_type,
+            '^WARNING Old branch at lp-internal:///.*/.*/.*/.* is not '
+            'stacked, should be stacked on /.*/.*/.*.$',
             '^.*has .* revisions.*$',
             ])
         self.assertFalse(ok)
 
-    def test_checkOneBranch_old_hosted_unstacked(self):
-        # checkOneBranch returns False when the bzr branch in the hosted area
-        # for the database branch in old distroseries is not stacked.
-        self.checkOneBranch_old_unstacked('hosted')
-
-    def test_checkOneBranch_old_mirrored_unstacked(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored
-        # area for the database branch in old distroseries is not stacked.
-        self.checkOneBranch_old_unstacked('mirrored')
-
-    def checkOneBranch_old_misstacked(self, branch_type):
+    def test_checkOneBranch_old_misstacked(self):
         # checkOneBranch returns False when the bzr branch for the database
         # branch in old distroseries stacked on some other branch than the
         # branch in the new distroseries.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
-        b, _ = self.create_branch_and_tree(
-            self.factory.getUniqueString(), hosted=(branch_type == 'hosted'))
+        b, _ = self.create_branch_and_tree(self.factory.getUniqueString())
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = db_branch.getPullURL()
-        else:
-            url = db_branch.warehouse_url
+        url = 'lp-internal:///' + db_branch.unique_name
         Branch.open(url).set_stacked_on_url('/' + b.unique_name)
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
-            '^WARNING Old branch at lp-%s:///.*/.*/.*/.* is stacked on '
-            '/.*/.*/.*, should be stacked on /.*/.*/.*.$' % branch_type,
+            '^WARNING Old branch at lp-internal:///.*/.*/.*/.* is stacked on '
+            '/.*/.*/.*, should be stacked on /.*/.*/.*.$',
             ])
         self.assertFalse(ok)
 
-    def test_checkOneBranch_old_hosted_misstacked(self):
-        # checkOneBranch returns False when the bzr branch in the hosted area
-        # for the database branch in old distroseries stacked on some other
-        # branch than the branch in the new distroseries.
-        self.checkOneBranch_old_misstacked('hosted')
-
-    def test_checkOneBranch_old_mirrored_misstacked(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored
-        # area for the database branch in old distroseries stacked on some
-        # other branch than the branch in the new distroseries.
-        self.checkOneBranch_old_misstacked('mirrored')
-
-    def checkOneBranch_old_has_revisions(self, branch_type):
+    def test_checkOneBranch_old_has_revisions(self):
         # checkOneBranch returns False when the bzr branch for the database
         # branch in old distroseries has a repository that contains revisions.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = db_branch.getPullURL()
-        else:
-            url = db_branch.warehouse_url
+        url = 'lp-internal:///' + db_branch.unique_name
         old_bzr_branch = Branch.open(url)
-        old_bzr_branch.create_checkout(
-            self.factory.getUniqueString()).commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            old_bzr_branch.create_checkout(
+                self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
-            '^WARNING Repository at lp-%s:///.*/.*/.*/.* has 1 revisions.'
-            % branch_type
+            '^WARNING Repository at lp-internal:///.*/.*/.*/.* has 1 '
+            'revisions.'
             ])
         self.assertFalse(ok)
 
-    def test_checkOneBranch_old_hosted_has_revisions(self):
-        # checkOneBranch returns False when the bzr branch in the hosted area
-        # for the database branch in old distroseries has a repository that
-        # contains revisions.
-        self.checkOneBranch_old_has_revisions('hosted')
-
-    def test_checkOneBranch_old_mirrored_has_revisions(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored
-        # area for the database branch in old distroseries has a repository
-        # that contains revisions.
-        self.checkOneBranch_old_has_revisions('mirrored')
-
-    def checkOneBranch_old_has_null_tip(self, branch_type):
+    def test_checkOneBranch_old_has_null_tip(self):
         # checkOneBranch returns False when the bzr branch for the database
         # branch in old distroseries has tip revision of 'null:'.
-        assert branch_type in ('hosted', 'mirrored')
         db_branch = self.makeOfficialPackageBranch()
         brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
         brancher.makeOneNewBranch(db_branch)
-        if branch_type == 'hosted':
-            url = db_branch.getPullURL()
-        else:
-            url = db_branch.warehouse_url
+        url = 'lp-internal:///' + db_branch.unique_name
         old_bzr_branch = Branch.open(url)
         old_bzr_branch.set_last_revision_info(0, 'null:')
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
-            '^WARNING Old branch at lp-%s:///.*/.*/.*/.* has null tip '
-            'revision.' % branch_type
+            '^WARNING Old branch at lp-internal:///.*/.*/.*/.* has null tip '
+            'revision.'
             ])
         self.assertFalse(ok)
-
-    def test_checkOneBranch_old_hosted_has_null_tip(self):
-        # checkOneBranch returns False when the bzr branch in the hosted area
-        # for the database branch in old distroseries has tip revision of
-        # 'null:'.
-        self.checkOneBranch_old_has_null_tip('hosted')
-
-    def test_checkOneBranch_old_mirrored_has_null_tip(self):
-        # checkOneBranch returns False when the bzr branch in the mirrored
-        # area for the database branch in old distroseries has tip revision of
-        # 'null:'.
-        self.checkOneBranch_old_has_null_tip('mirrored')
 
     def runBranchDistroScript(self, args):
         """Run the branch-distro.py script with the given arguments.
@@ -683,4 +647,3 @@ class TestDistroBrancher(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

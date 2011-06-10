@@ -5,6 +5,8 @@
 
 """Feeds symbols."""
 
-from lp.registry.feed.announcement import *
 from lp.bugs.feed.bug import *
 from lp.code.feed.branch import *
+from lp.registry.feed.announcement import *
+
+

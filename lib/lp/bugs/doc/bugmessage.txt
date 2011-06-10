@@ -11,7 +11,7 @@ always associated with exactly one bug.
 IBugMessageSet represents the set of all IBugMessages in the
 system.
 
-    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> bugmessageset = getUtility(IBugMessageSet)
 
 An individual IBugMessage can be retrieved with
@@ -25,7 +25,7 @@ You can get all the imported comments for a bug using
 getImportedBugMessages. Imported comments are comments being linked to a
 bug watch.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_15 = getUtility(IBugSet).get(15)
     >>> bug_15.messages.count()
     7
@@ -51,7 +51,7 @@ bug watch.
 
 To create a bug message, use IBugMessageSet.createMessage:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -67,6 +67,11 @@ The parent gets set to the initial message of the bug:
 
     >>> test_message.message.parent == bug_one.initial_message
     True
+
+And the index of the bugmessage is set:
+
+    >>> test_message.index
+    2
 
 
 == Links and CVEs in bug messages ==
@@ -109,10 +114,20 @@ scores.
     http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
     http://some.bugzilla/show_bug.cgi?id=9876
 
+Note that although the watch was created when the Message was added to
+the bug, the message and the watch are not linked because the message
+was not imported by the bug watch.
+
+    >>> bug_message = bug_one.bug_messages[-1]
+    >>> print bug_message.message == test_message
+    True
+    >>> print bug_message.bugwatch
+    None
+
 CVE watches and bug watches are also created, when a message is imported from
 an external bug tracker.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> message = getUtility(IMessageSet).fromText(
     ...    'subject',
     ...    """This is a comment from an external tracker. It has a link
@@ -121,8 +136,11 @@ an external bug tracker.
     ...        CVE-1991-3333
     ...    """,
     ...    bug_watch_updater)
-    >>> bug_one.linkMessage(message)
+    >>> bugmsg = bug_one.linkMessage(message)
+    >>> bugmsg
     <BugMessage at...
+    >>> bugmsg.index
+    4
     >>> for cve in bug_one.cves:
     ...     print cve.displayname
     CVE-1991-3333
@@ -141,7 +159,7 @@ an external bug tracker.
 == Last message date ==
 
 For each bug, we cache the date of the last message linked to it using
-the sttribute `date_last_message` in order to optimize searches the need
+the attribute `date_last_message` in order to optimize searches the need
 to compare this value for every bug in a large set.
 
     >>> test_message = bug_one.newMessage(

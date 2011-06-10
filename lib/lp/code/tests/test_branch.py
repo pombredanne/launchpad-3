@@ -1,26 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of Branch and BranchSet."""
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.archiveuploader.permission import verify_upload
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.interfaces.codehosting import SUPPORTED_SCHEMES
+from lp.code.tests.helpers import make_official_package_branch
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class PermissionTest(TestCaseWithFactory):
@@ -57,6 +57,14 @@ class PermissionTest(TestCaseWithFactory):
         :param can_access: Whether we expect to access it anonymously.
         """
         self.assertAuthenticatedView(branch, None, can_access)
+
+    def assertCanView(self, person, secured_object):
+        """Assert 'person' can view 'secured_object'."""
+        self.assertPermission(True, person, secured_object, 'launchpad.View')
+
+    def assertCannotView(self, person, secured_object):
+        """Assert 'person' cannot view 'secured_object'."""
+        self.assertPermission(False, person, secured_object, 'launchpad.View')
 
     def assertCanEdit(self, person, secured_object):
         """Assert 'person' can edit 'secured_object'.
@@ -136,7 +144,7 @@ class TestAccessBranch(PermissionTest):
         removeSecurityProxy(branch).subscribe(
             person, BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
-            CodeReviewNotificationLevel.NOEMAIL)
+            CodeReviewNotificationLevel.NOEMAIL, person)
         self.assertAuthenticatedView(branch, person, True)
 
     def test_privateBranchAnyoneElse(self):
@@ -243,24 +251,7 @@ class TestWriteToBranch(PermissionTest):
 
     def makeOfficialPackageBranch(self):
         """Make a branch linked to the pocket of a source package."""
-        branch = self.factory.makePackageBranch()
-        # Make sure the (distroseries, pocket) combination used allows us to
-        # upload to it.
-        stable_states = (
-            DistroSeriesStatus.SUPPORTED, DistroSeriesStatus.CURRENT)
-        if branch.distroseries.status in stable_states:
-            pocket = PackagePublishingPocket.BACKPORTS
-        else:
-            pocket = PackagePublishingPocket.RELEASE
-        sourcepackage = branch.sourcepackage
-        suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
-        registrant = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            ICanHasLinkedBranch(suite_sourcepackage).setBranch,
-            branch, registrant)
-        return branch
+        return make_official_package_branch(self.factory)
 
     def test_owner_can_write_to_official_package_branch(self):
         # The owner of an official package branch can write to it, just like a
@@ -276,8 +267,8 @@ class TestWriteToBranch(PermissionTest):
             distroseries = archive.distribution.currentseries
         self.assertIs(
             None,
-            verify_upload(
-                person, spn, archive, component, distroseries,
+            archive.verifyUpload(
+                person, spn, component, distroseries,
                 strict_component))
 
     def assertCannotUpload(
@@ -294,8 +285,8 @@ class TestWriteToBranch(PermissionTest):
         """
         if distroseries is None:
             distroseries = archive.distribution.currentseries
-        exception = verify_upload(
-            person, spn, archive, component, distroseries)
+        exception = archive.verifyUpload(
+            person, spn, component, distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_package_upload_permissions_grant_branch_edit(self):
@@ -305,7 +296,7 @@ class TestWriteToBranch(PermissionTest):
         permission_set = getUtility(IArchivePermissionSet)
         # Only admins or techboard members can add permissions normally. That
         # restriction isn't relevant to these tests.
-        self.permission_set = removeSecurityProxy(permission_set)
+        permission_set = removeSecurityProxy(permission_set)
         branch = self.makeOfficialPackageBranch()
         package = branch.sourcepackage
         person = self.factory.makePerson()
@@ -316,7 +307,7 @@ class TestWriteToBranch(PermissionTest):
         # Now give 'person' permission to upload to 'package'.
         archive = branch.distroseries.distribution.main_archive
         spn = package.sourcepackagename
-        self.permission_set.newPackageUploader(archive, person, spn)
+        permission_set.newPackageUploader(archive, person, spn)
         # Make sure person *is* authorised to upload the source package
         # targeted by the branch at hand.
         self.assertCanUpload(person, spn, archive, None)
@@ -348,5 +339,47 @@ class TestWriteToBranch(PermissionTest):
         self.assertCanEdit(registrant, branch)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestComposePublicURL(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestComposePublicURL, self).setUp('admin@canonical.com')
+
+    def test_composePublicURL_accepts_supported_schemes(self):
+        # composePublicURL accepts all schemes that PublicCodehostingAPI
+        # supports.
+        branch = self.factory.makeAnyBranch()
+
+        url_pattern = '%%s://bazaar.launchpad.dev/~%s/%s/%s' % (
+            branch.owner.name, branch.product.name, branch.name)
+        for scheme in SUPPORTED_SCHEMES:
+            public_url = branch.composePublicURL(scheme)
+            self.assertEqual(url_pattern % scheme, public_url)
+
+        # sftp support is also grandfathered in.
+        sftp_url = branch.composePublicURL('sftp')
+        self.assertEqual(url_pattern % 'sftp', sftp_url)
+
+    def test_composePublicURL_default_http(self):
+        # The default scheme for composePublicURL is http.
+        branch = self.factory.makeAnyBranch()
+        prefix = 'http://'
+        public_url = branch.composePublicURL()
+        self.assertEqual(prefix, public_url[:len(prefix)])
+
+    def test_composePublicURL_unknown_scheme(self):
+        # Schemes that aren't known to be supported are not accepted.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'irc')
+
+    def test_composePublicURL_http_private(self):
+        # Private branches don't have public http URLs.
+        branch = self.factory.makeAnyBranch(private=True)
+        self.assertRaises(AssertionError, branch.composePublicURL, 'http')
+
+    def test_composePublicURL_no_https(self):
+        # There's no https support.  If there were, it should probably
+        # not work for private branches.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, branch.composePublicURL, 'https')

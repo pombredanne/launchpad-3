@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="context_menu context/menu:context">
+  tal:define="context_menu view/context/menu:context">
 
   <div tal:condition="not: context/revision_count">
     <div tal:condition="context/branch_type/enumvalue:IMPORTED">
@@ -39,7 +39,11 @@
         <tal:can-upload tal:condition="view/user_can_upload">
           <dl id="upload-url">
             <dt>Update this branch:</dt>
-            <dd>bzr push <span class="branch-url" tal:content="context/bzr_identity" /></dd>
+            <dd>bzr push
+              <tal:use-existing condition="view/is_empty_directory">
+              --use-existing
+              </tal:use-existing>
+            <span class="branch-url" tal:content="context/bzr_identity" /></dd>
           </dl>
           <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
             To authenticate with the Launchpad branch upload service, you need

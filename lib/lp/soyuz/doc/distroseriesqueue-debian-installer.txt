@@ -42,12 +42,11 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
   >>> anything_policy = getPolicy(
   ...     name='anything', distro='ubuntutest', distroseries=None)
@@ -57,10 +56,11 @@ Set the email address for annoucements emails:
 
   >>> anything_policy.distroseries.changeslist = 'announce@example.com'
 
-  >>> upload = NascentUpload(
+  >>> from lp.services.log.logger import DevNullLogger
+  >>> upload = NascentUpload.from_changesfile_path(
   ...     datadir(
   ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
-  ...     anything_policy, mock_logger_quiet)
+  ...     anything_policy, DevNullLogger())
   >>> upload.process()
   >>> success = upload.do_accept()
   >>> success
@@ -96,9 +96,10 @@ Let's force an error simulating a conflict in archive:
 Try to publish the custom upload, but it will be skipped due the disk
 conflict and the queue item will remain in ACCEPTED
 
-  >>> pub_records = upload.queue_root.realiseUpload(mock_logger)
-  DEBUG: Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
-  ERROR: Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
+  >>> from lp.services.log.logger import FakeLogger
+  >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
+  DEBUG Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
+  ERROR Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
   >>> upload.queue_root.status.name
   'ACCEPTED'
 
@@ -111,8 +112,9 @@ The upload task requires that the umask be 022, otherwise things will end up
 with the wrong permission.
 
   >>> old_mask = os.umask(002)
-  >>> pub_records = upload.queue_root.realiseUpload(mock_logger_quiet)
-  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+  >>> pub_records = upload.queue_root.realiseUpload(FakeLogger())
+  DEBUG ...
+  ERROR Queue item ignored: Bad umask; expected 022, got 002
 
 Reset the umask, remove any residual directories, and try again.
 
@@ -122,7 +124,7 @@ Reset the umask, remove any residual directories, and try again.
 
 Process (publish) the custom upload:
 
-  >>> pub_records = upload.queue_root.realiseUpload(mock_logger_quiet)
+  >>> pub_records = upload.queue_root.realiseUpload(DevNullLogger())
   >>> upload.queue_root.status.name
   'DONE'
 

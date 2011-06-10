@@ -6,13 +6,13 @@ are related by their need, shipment condition and/or license.
 
 Zope auxiliary test toolchain:
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
+ >>> from canonical.launchpad.webapp.testing import verifyObject
 
 Importing Component content class and its interface:
 
- >>> from lp.soyuz.model.component import Component
  >>> from lp.soyuz.interfaces.component import IComponent
+ >>> from lp.soyuz.model.component import Component
 
 Get an Component instance from the current sampledata:
 
@@ -77,8 +77,8 @@ Ensuring a component (if not found, create it):
 
 Importing Section content class and its interface:
 
- >>> from lp.soyuz.model.section import Section
  >>> from lp.soyuz.interfaces.section import ISection
+ >>> from lp.soyuz.model.section import Section
 
 Get a Section instance from the current sampledata:
 

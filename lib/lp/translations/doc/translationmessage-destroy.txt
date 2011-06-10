@@ -1,4 +1,5 @@
-== destroySelf ==
+destroySelf
+===========
 
 (Note: this test runs as rosettaadmin to obtain the necessary
 privileges)
@@ -26,7 +27,8 @@ It should not exist now.
     SQLObjectNotFound:...
 
 
-== POFileTranslator update on remove ==
+POFileTranslator update on remove
+=================================
 
 In two sharing POTemplates with one shared POTMsgSet with one shared
 translation, we get two POFileTranslator records for each of the POFiles.
@@ -35,16 +37,17 @@ translation, we get two POFileTranslator records for each of the POFiles.
     >>> # a global 'postgres' permission which allows everything.
     >>> LaunchpadZopelessLayer.switchDbUser('postgres')
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from lp.translations.model.pofiletranslator import POFileTranslator
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> from lp.translations.model.pofiletranslator import POFileTranslator
     >>> factory = LaunchpadObjectFactory()
 
-    >>> foo = factory.makeProduct()
+    >>> foo = factory.makeProduct(
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> foo_devel = factory.makeProductSeries(
     ...     name='devel', product=foo)
     >>> foo_stable = factory.makeProductSeries(
     ...     name='stable', product=foo)
-    >>> foo.official_rosetta = True
     >>> devel_potemplate = factory.makePOTemplate(
     ...     productseries=foo_devel, name="messages")
     >>> stable_potemplate = factory.makePOTemplate(foo_stable,
@@ -54,9 +57,11 @@ translation, we get two POFileTranslator records for each of the POFiles.
     >>> stable_sr_pofile = factory.makePOFile(
     ...     'sr', stable_potemplate)
     >>> potmsgset = factory.makePOTMsgSet(devel_potemplate, sequence=1)
-    >>> potmsgset.setSequence(stable_potemplate, 1)
-    >>> tm = factory.makeTranslationMessage(
-    ...     pofile=devel_sr_pofile, potmsgset=potmsgset, translations=[u"blah"])
+    >>> item = potmsgset.setSequence(stable_potemplate, 1)
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=devel_sr_pofile,
+    ...     potmsgset=potmsgset,
+    ...     translations=[u"blah"])
     >>> print POFileTranslator.select(
     ...     "latest_message=%s" % sqlvalues(tm)).count()
     2

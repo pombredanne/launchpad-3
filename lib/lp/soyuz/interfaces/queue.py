@@ -16,23 +16,37 @@ __all__ = [
     'IPackageUploadCustom',
     'IPackageUploadSet',
     'NonBuildableSourceUploadError',
-    'PackageUploadStatus',
-    'PackageUploadCustomFormat',
     'QueueBuildAcceptError',
     'QueueInconsistentStateError',
     'QueueSourceAcceptError',
     'QueueStateWriteProtectedError',
     ]
 
-from zope.schema import Choice, Datetime, Int, List, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    )
+
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import Reference
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
+from lp.soyuz.enums import PackageUploadStatus
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -83,64 +97,10 @@ class IPackageUploadQueue(Interface):
     """
 
 
-class PackageUploadStatus(DBEnumeratedType):
-    """Distro Release Queue Status
-
-    An upload has various stages it must pass through before becoming part
-    of a DistroSeries. These are managed via the Upload table
-    and related tables and eventually (assuming a successful upload into the
-    DistroSeries) the effects are published via the PackagePublishing and
-    SourcePackagePublishing tables.
-    """
-
-    NEW = DBItem(0, """
-        New
-
-        This upload is either a brand-new source package or contains a
-        binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroSeries checks
-        and either accepts or rejects the upload. If the upload is accepted
-        then entries will be made in the overrides tables and further
-        uploads will bypass this state. """)
-
-    UNAPPROVED = DBItem(1, """
-        Unapproved
-
-        If a DistroSeries is frozen or locked out of ordinary updates then
-        this state is used to mean that while the package is correct from a
-        technical point of view; it has yet to be approved for inclusion in
-        this DistroSeries. One use of this state may be for security
-        releases where you want the security team of a DistroSeries to
-        approve uploads.""")
-
-    ACCEPTED = DBItem(2, """
-        Accepted
-
-        An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.""")
-
-    DONE = DBItem(3, """
-        Done
-
-        An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroSeries. This state
-        exists so that a logging and/or auditing tool can pick up accepted
-        uploads and create entries in a journal or similar before removing
-        the queue item.""")
-
-    REJECTED = DBItem(4, """
-        Rejected
-
-        An upload which reaches this state has, for some reason or another
-        not passed the requirements (technical or human) for entry into the
-        DistroSeries it was targetting. As for the 'done' state, this state
-        is present to allow logging tools to record the rejection and then
-        clean up any subsequently unnecessary records.""")
-
-
 class IPackageUpload(Interface):
-    """A Queue item for Lucille"""
-    export_as_webservice_entry()
+    """A Queue item for the archive uploader."""
+
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -180,6 +140,12 @@ class IPackageUpload(Interface):
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
+
+    package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Package Copy Job"), required=False, readonly=True)
+
     archive = exported(
         Reference(
             # Really IArchive, patched in _schema_circular_imports.py
@@ -240,14 +206,6 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
-    def isAutoSyncUpload(changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
-
     def setNew():
         """Set queue state to NEW."""
 
@@ -287,7 +245,7 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
-    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+    def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -329,14 +287,11 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None,
-        changes_file_object=None, logger=None):
+    def notify(summary_text=None, changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
         This will send new, accept, announce and rejection messages as
         appropriate.
-
-        :param announce_list: The email address of the distro announcements
 
         :param summary_text: Any additional text to append to the auto-
             generated summary.  This is also the only text used if there is
@@ -395,7 +350,7 @@ class IPackageUpload(Interface):
 
 
 class IPackageUploadBuild(Interface):
-    """A Queue item's related builds (for Lucille)"""
+    """A Queue item's related builds."""
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -410,23 +365,6 @@ class IPackageUploadBuild(Interface):
     build = Int(
             title=_("The related build"), required=True, readonly=False,
             )
-
-    def verifyBeforeAccept():
-        """Perform overall checks before accepting a binary upload.
-
-        Ensure each uploaded binary file can be published in the targeted
-        archive.
-
-        If any of the uploaded binary files are already published a
-        QueueInconsistentStateError is raised containing all filenames
-        that cannot be published.
-
-        This check is very similar to the one we do for source upload and
-        was designed to prevent the creation of binary publications that
-        will never reach the archive.
-
-        See bug #227184 for further details.
-        """
 
     def publish(logger=None):
         """Publish this queued source in the distroseries referred to by
@@ -447,8 +385,9 @@ class IPackageUploadBuild(Interface):
         process will be logged to it.
         """
 
+
 class IPackageUploadSource(Interface):
-    """A Queue item's related sourcepackagereleases (for Lucille)"""
+    """A Queue item's related sourcepackagereleases."""
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -575,7 +514,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DEBIAN_INSTALLER(logger=None):
+    def publishDebianInstaller(logger=None):
         """Publish this custom item as a raw installer tarball.
 
         This will write the installer tarball out to the right part of
@@ -585,7 +524,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DIST_UPGRADER(logger=None):
+    def publishDistUpgrader(logger=None):
         """Publish this custom item as a raw dist-upgrader tarball.
 
         This will write the dist-upgrader tarball out to the right part of
@@ -595,7 +534,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DDTP_TARBALL(logger=None):
+    def publishDdtpTarball(logger=None):
         """Publish this custom item as a raw ddtp-tarball.
 
         This will write the ddtp-tarball out to the right part of
@@ -605,7 +544,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_ROSETTA_TRANSLATIONS(logger=None):
+    def publishRosettaTranslations(logger=None):
         """Publish this custom item as a rosetta tarball.
 
         Essentially this imports the tarball into rosetta.
@@ -614,11 +553,22 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_STATIC_TRANSLATIONS(logger):
+    def publishStaticTranslations(logger):
         """Publish this custom item as a static translations tarball.
 
         This is currently a no-op as we don't publish these files, they only
         reside in the librarian for later retrieval using the webservice.
+        """
+
+    def publishMetaData(logger):
+        """Publish this custom item as a meta-data file.
+
+        This method writes the meta-data custom file to the archive in
+        the location matching this schema:
+        /<person>/meta/<ppa_name>/<filename>
+
+        It's not written to the main archive location because that could be
+        protected by htaccess in the case of private archives.
         """
 
 
@@ -709,52 +659,8 @@ class IHasQueueItems(Interface):
         return all pockets.  It supports multiple pockets as a list.
 
         If 'archive' is specified return only queue items targeted to this
-        archive, if not restrict the results to the IDistribution.main_archive.
+        archive, if not restrict the results to the
+        IDistribution.main_archive.
 
         Use 'exact_match' argument for precise results.
         """
-
-# If you change this (add items, change the meaning, whatever) search for
-# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
-# update the stuff marked with it.
-class PackageUploadCustomFormat(DBEnumeratedType):
-    """Custom formats valid for the upload queue
-
-    An upload has various files potentially associated with it, from source
-    package releases, through binary builds, to specialist upload forms such
-    as a debian-installer tarball or a set of translations.
-    """
-
-    DEBIAN_INSTALLER = DBItem(0, """
-        raw-installer
-
-        A raw-installer file is a tarball. This is processed as a version
-        of the debian-installer to be unpacked into the archive root.
-        """)
-
-    ROSETTA_TRANSLATIONS = DBItem(1, """
-        raw-translations
-
-        A raw-translations file is a tarball. This is passed to the rosetta
-        import queue to be incorporated into that package's translations.
-        """)
-
-    DIST_UPGRADER = DBItem(2, """
-        raw-dist-upgrader
-
-        A raw-dist-upgrader file is a tarball. It is simply published into
-        the archive.
-        """)
-
-    DDTP_TARBALL = DBItem(3, """
-        raw-ddtp-tarball
-
-        A raw-ddtp-tarball contains all the translated package description
-        indexes for a component.
-        """)
-
-    STATIC_TRANSLATIONS = DBItem(4, """
-        raw-translations-static
-
-        A tarball containing raw (Gnome) help file translations.
-        """)

@@ -10,12 +10,12 @@ Let's prepare a few things we'll need for the subsequent tests.
     >>> from lp.soyuz.adapters.packagelocation import (
     ...     build_package_location)
     >>> from lp.soyuz.interfaces.packagecopyrequest import (
-    ...     IPackageCopyRequest, IPackageCopyRequestSet, PackageCopyStatus)
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IDistributionSet)
+    ...     IPackageCopyRequest, IPackageCopyRequestSet)
+    >>> from lp.soyuz.enums import ArchivePurpose, PackageCopyStatus
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
 In order to instantiate a package copy request we require a source and
 target package location.

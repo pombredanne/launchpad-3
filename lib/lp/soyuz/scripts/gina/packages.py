@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -12,41 +12,43 @@ the sources and binarypackages.
 __metaclass__ = type
 
 
-__all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
+__all__ = [
+    'AbstractPackageData',
+    'BinaryPackageData',
+    'get_dsc_path',
+    'PoolFileNotFound',
+    'prioritymap',
+    'SourcePackageData',
+    ]
 
-import re
-import os
 import glob
-import tempfile
-import shutil
+import os
+import re
 import rfc822
-
-from canonical import encoding
-
-from lp.archivepublisher.diskpool import poolify
-from lp.soyuz.scripts.gina.changelog import parse_changelog
+import shutil
+import tempfile
 
 from canonical.database.constants import UTC_NOW
-
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
 from canonical.launchpad.scripts import log
-from lp.soyuz.scripts.gina import call
-
-from canonical.launchpad.validators.version import valid_debian_version
-
+from lp.app.validators.version import valid_debian_version
+from lp.archivepublisher.diskpool import poolify
+from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
+from lp.registry.interfaces.gpg import GPGKeyAlgorithm
+from lp.services import encoding
+from lp.soyuz.enums import PackagePublishingPriority
+from lp.soyuz.scripts.gina import (
+    call,
+    ExecutionError,
+    )
+from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 #
 # Data setup
 #
-
-urgencymap = {
-    "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.MEDIUM,
-    "high": SourcePackageUrgency.HIGH,
-    "emergency": SourcePackageUrgency.EMERGENCY,
-    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,
@@ -72,6 +74,8 @@ def stripseq(seq):
 
 
 epoch_re = re.compile(r"^\d+:")
+
+
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
     version = epoch_re.sub("", version)
@@ -101,7 +105,10 @@ def get_dsc_path(name, version, component, archive_root):
 def unpack_dsc(package, version, component, archive_root):
     dsc_name, dsc_path, component = get_dsc_path(package, version,
                                                  component, archive_root)
-    call("dpkg-source -sn -x %s" % dsc_path)
+    try:
+        extract_dpkg_source(dsc_path, ".")
+    except DpkgSourceError, e:
+        raise ExecutionError("Error %d unpacking source" % e.result)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
@@ -118,9 +125,7 @@ def read_dsc(package, version, component, archive_root):
     fullpath = os.path.join(source_dir, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
-        clfile = open(fullpath)
-        changelog = parse_changelog(clfile)
-        clfile.close()
+        changelog = open(fullpath).read().strip()
     else:
         log.warn("No changelog file found for %s in %s" %
                  (package, source_dir))
@@ -140,12 +145,13 @@ def read_dsc(package, version, component, archive_root):
 
     return dsc, changelog, copyright
 
+
 def parse_person(val):
     if "," in val:
         # Some emails have ',' like "Adam C. Powell, IV
         # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
         # handle this properly, so we munge them here
-        val = val.replace(',','')
+        val = val.replace(',', '')
     return rfc822.parseaddr(val)
 
 
@@ -175,12 +181,6 @@ def get_person_by_key(keyrings, key):
 
         line = line.split(":")
         algo = int(line[3])
-        if GPGALGOS.has_key(algo):
-            algochar = GPGALGOS[algo]
-        else:
-            algochar = "?" % algo
-        # STRIPPED GPGID Support by cprov 20041004
-        #          id = line[2] + algochar + "/" + line[4][-8:]
         id = line[4][-8:]
         algorithm = algo
         keysize = line[2]
@@ -380,7 +380,6 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-
     def do_package(self, archive_root):
         """Get the Changelog and urgency from the package on archive.
 
@@ -392,19 +391,24 @@ class SourcePackageData(AbstractPackageData):
 
         self.dsc = encoding.guess(dsc)
         self.copyright = encoding.guess(copyright)
+        parsed_changelog = None
+        if changelog:
+            parsed_changelog = parse_changelog(changelog.split('\n'))
 
         self.urgency = None
         self.changelog = None
-        if changelog and changelog[0]:
-            cldata = changelog[0]
-            if cldata.has_key("changes"):
+        self.changelog_entry = None
+        if parsed_changelog and parsed_changelog[0]:
+            cldata = parsed_changelog[0]
+            if 'changes' in cldata:
                 if cldata["package"] != self.package:
                     log.warn("Changelog package %s differs from %s" %
                              (cldata["package"], self.package))
                 if cldata["version"] != self.version:
                     log.warn("Changelog version %s differs from %s" %
                              (cldata["version"], self.version))
-                self.changelog = encoding.guess(cldata["changes"])
+                self.changelog_entry = encoding.guess(cldata["changes"])
+                self.changelog = changelog
                 self.urgency = cldata["urgency"]
             else:
                 log.warn("Changelog empty for source %s (%s)" %
@@ -418,7 +422,7 @@ class SourcePackageData(AbstractPackageData):
                      (self.package, "1.0"))
             self.format = "1.0"
 
-        if self.urgency not in urgencymap:
+        if self.urgency not in ChangesFile.urgency_map:
             log.warn("Invalid urgency in %s, %r, assumed %r" %
                      (self.package, self.urgency, "low"))
             self.urgency = "low"
@@ -464,6 +468,7 @@ class BinaryPackageData(AbstractPackageData):
     is_created = False
     #
     source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
+
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":

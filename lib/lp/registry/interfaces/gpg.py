@@ -18,10 +18,24 @@ __all__ = [
 
 import re
 
-from zope.schema import Bool, Int, TextLine, Choice
-from zope.interface import Interface, Attribute
-
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
@@ -89,14 +103,19 @@ class GPGKeyAlgorithm(DBEnumeratedType):
 
 class IGPGKey(IHasOwner):
     """OpenPGP support"""
+
+    export_as_webservice_entry('gpg_key')
+
     id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
-    keyid = TextLine(title=_("OpenPGP key ID"), required=True,
-            constraint=valid_keyid)
-    fingerprint = TextLine(title=_("User Fingerprint"), required=True,
-            constraint=valid_fingerprint)
+    keyid = exported(
+        TextLine(title=_("OpenPGP key ID"), required=True,
+                 constraint=valid_keyid, readonly=True))
+    fingerprint = exported(
+        TextLine(title=_("User Fingerprint"), required=True,
+                 constraint=valid_fingerprint, readonly=True))
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     keyserverURL = Attribute(
@@ -113,6 +132,13 @@ class IGPGKeySet(Interface):
     def new(ownerID, keyid, fingerprint, keysize,
             algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
+
+    def activate(requester, key, can_encrypt):
+        """Activate 'key' for 'requester'.
+
+        :return: A tuple of (IGPGKey, new), where 'new' is False if we have
+            reactivated an existing key.
+        """
 
     def get(key_id, default=None):
         """Return the GPGKey object for the given id.
@@ -133,4 +159,3 @@ class IGPGKeySet(Interface):
 
     def getGPGKeysForPeople(self, people):
         """Return OpenPGP keys for a set of people."""
-

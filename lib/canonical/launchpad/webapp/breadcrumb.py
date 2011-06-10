@@ -17,7 +17,9 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ICanonicalUrlData)
+    IBreadcrumb,
+    ICanonicalUrlData,
+    )
 
 
 class Breadcrumb:

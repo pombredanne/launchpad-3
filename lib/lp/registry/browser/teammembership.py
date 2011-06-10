@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,9 +10,9 @@ __all__ = [
     ]
 
 
-import pytz
 from datetime import datetime
 
+import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
@@ -20,13 +20,15 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
-from canonical.widgets import DateWidget
-
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import UnexpectedFormData
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.date import DateWidget
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 
@@ -301,9 +303,12 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
+        silent = self.request.form.get('silent', False)
+
         self.context.setExpirationDate(expires, self.user)
         self.context.setStatus(
-            status, self.user, self.request.form_ng.getOne('comment'))
+            status, self.user, self.request.form_ng.getOne('comment'),
+            silent)
         return True
 
     def _getExpirationDate(self):

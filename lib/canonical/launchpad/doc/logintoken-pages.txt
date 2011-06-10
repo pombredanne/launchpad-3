@@ -1,372 +1,9 @@
 = LoginToken pages =
 
-Users interact with login tokens for operations that require the user to
-prove he has access to a resource that is external to Launchpad. For
-example, claiming an email address or resetting a password require the
-user to use the login token sent to him in an email.
-
-
-== Reset password view ==
-
-A user can reset his password if he forgets it. A link for a LoginToken
-is sent to the email address that the user claims is his. The view
-displays a form asking the user to confirm his email address and provide
-a new password.
-
-    >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
-    >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet)
-    >>> from lp.registry.model.person import PersonSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    # To simplify our tests we'll use the PersonSet() class directly instead
-    # of gettint it as a zope secured utility. If we don't do that we'd have
-    # to remove the security proxy of the person objects all the time.
-    >>> person_set = PersonSet()
-    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
-    >>> old_password = no_priv.account.password
-
-    >>> login_token_set = getUtility(ILoginTokenSet)
-    >>> login_token = login_token_set.new(
-    ...     no_priv, 'no-priv@canonical.com',
-    ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.email': 'no-priv@canonical.com',
-    ...         'field.password': 'test1',
-    ...         'field.password_dupe': 'test1',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> resetpassword_view = getMultiAdapter(
-    ...     (login_token, request), name="+resetpassword")
-    >>> resetpassword_view.initialize()
-    >>> old_password == no_priv.account.password
-    False
-
-If the user submits the wrong email address for the token, an error is
-stored. The password is not reset.
-
-    >>> login_token = login_token_set.new(
-    ...     no_priv, 'no-priv@canonical.com',
-    ...     'no-priv@canonical.com', LoginTokenType.PASSWORDRECOVERY)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.email': 'wrong@canonical.com',
-    ...         'field.password': 'test2',
-    ...         'field.password_dupe': 'test2',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> resetpassword_view = getMultiAdapter(
-    ...     (login_token, request), name="+resetpassword")
-    >>> resetpassword_view.initialize()
-    >>> resetpassword_view.errors
-    [u"The email address ... didn't match ... the password reset."]
-
-    >>> old_password == no_priv.account.password
-    True
-
-
-=== Reactivating an account using reset password ===
-
-A user with a DEACTIVATED account does not have a password--he must use
-the +resetpassword view to set his account to ACTIVE and add a password.
-
-    >>> from canonical.launchpad.interfaces import IMasterObject
-    >>> former_user = IMasterObject(
-    ...     person_set.getByEmail('former-user@canonical.com'))
-    >>> former_user.name
-    u'former-user-deactivatedaccount'
-
-    >>> former_user.account.status
-    <DBItem AccountStatus.DEACTIVATED, ...>
-    >>> print former_user.account.password
-    None
-
-    >>> login_token = login_token_set.new(
-    ...     former_user, 'former-user@canonical.com',
-    ...     'former-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
-    >>> transaction.commit()
-
-If the user provides the correct email address for the token, the
-password is reset, and the account status is set ACTIVE.
-
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.email': 'former-user@canonical.com',
-    ...         'field.password': 'test3',
-    ...         'field.password_dupe': 'test3',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> resetpassword_view = getMultiAdapter(
-    ...     (login_token, request), name="+resetpassword")
-    >>> resetpassword_view.initialize()
-    >>> transaction.commit()
-
-    >>> former_user.name
-    u'former-user'
-    >>> former_user.account.status
-    <DBItem AccountStatus.ACTIVE, ...>
-    >>> former_user.is_valid_person
-    True
-
-
-== Reset password cannot reactivate a Suspended account ==
-
-A user with a SUSPENDED account cannot use +resetpassword view to set his
-account to ACTIVE, nor will it reset his password.
-
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-
-    # Admins can suspend an account and access the user's password.
-    >>> login('foo.bar@canonical.com')
-    >>> suspended_user =  factory.makePerson(
-    ...     email='suspended-user@canonical.com',
-    ...     name='suspended-user',
-    ...     password='invalid')
-    >>> suspended_account = IMasterObject(suspended_user.account)
-    >>> suspended_account.status = AccountStatus.SUSPENDED
-    >>> original_password = suspended_account.password
-    >>> transaction.commit()
-    >>> suspended_user.is_valid_person
-    False
-    >>> suspended_account.status
-    <DBItem AccountStatus.SUSPENDED, ...>
-
-    >>> login_token = login_token_set.new(
-    ...     suspended_user, 'suspended-user@canonical.com',
-    ...     'suspended-user@canonical.com', LoginTokenType.PASSWORDRECOVERY)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+resetpassword' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.email': 'suspended-user@canonical.com',
-    ...         'field.password': 'bad-intentions',
-    ...         'field.password_dupe': 'bad-intentions',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> resetpassword_view = getMultiAdapter(
-    ...     (login_token, request), name="+resetpassword")
-    >>> resetpassword_view.initialize()
-
-    >>> login('foo.bar@canonical.com')
-    >>> suspended_user.is_valid_person
-    False
-    >>> suspended_user.account.password == original_password
-    True
-    >>> suspended_user.account.status
-    <DBItem AccountStatus.SUSPENDED, ...>
-
-
-== Claiming a profile ==
-
-The ClaimProfileView allows users to claim accounts created by Launchpad
-processes. The user profile for Matsubara was created during an import.
-The user profile does not have a preferred email address or a password.
-
-    >>> matsubara = person_set.getByEmail('matsubara@async.com.br')
-    >>> matsubara.name
-    u'matsubara'
-    >>> matsubara.displayname
-    u'Diogo Matsubara'
-    >>> print matsubara.preferredemail
-    None
-
-    >>> matsubara.account.status
-    <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> print matsubara.account.password
-    None
-    >>> matsubara.is_valid_person
-    False
-
-The user can claim his profile by providing the email address that
-is associated with the profile. If the correct address is provided,
-the user is sent an email with a link to a LoginToken.
-
-    >>> login_token = login_token_set.new(
-    ...     matsubara, 'matsubara@async.com.br',
-    ...     'matsubara@async.com.br', LoginTokenType.PROFILECLAIM)
-
-The user is asked to provide a display name and password, and to
-indicate if his email address can be shown to other Launchpad users.
-
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+claimprofile' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.displayname': 'D. Matsubara',
-    ...         'field.hide_email_addresses': 'on',
-    ...         'field.password': 'test4',
-    ...         'field.password_dupe': 'test4',
-    ...         'field.actions.confirm': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> claimprofile_view = getMultiAdapter(
-    ...     (login_token, request), name="+claimprofile")
-    >>> claimprofile_view.initialize()
-    >>> claimprofile_view.errors
-    []
-    >>> transaction.commit()
-
-The user's Person, EmailAddress, and Account objects are updated.
-
-    >>> matsubara.displayname
-    u'D. Matsubara'
-    >>> matsubara.hide_email_addresses
-    True
-    >>> matsubara.account.preferredemail.email
-    u'matsubara@async.com.br'
-
-    >>> matsubara.account.status
-    <DBItem AccountStatus.ACTIVE, ...>
-    >>> matsubara.account.status_comment
-    u'Activated by claim profile.'
-    >>> matsubara.is_valid_person
-    True
-
-
-== Creating a new ordinary account ==
-
-Unlike accounts created using OpenID, which don't have an associated Person
-(as shown in sso-workflow-register.txt), ordinary accounts will always have
-a Person entry associated with them.
-
-    >>> login_token = login_token_set.new(
-    ...     None, 'foo@debian.org', 'foo@debian.org',
-    ...     LoginTokenType.NEWACCOUNT)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.displayname': 'Andre Lopes',
-    ...         'field.hide_email_addresses.used': '',
-    ...         'field.password': 'test',
-    ...         'field.password_dupe': 'test',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> newaccount_view = getMultiAdapter(
-    ...     (login_token, request), name="+newaccount")
-    >>> newaccount_view.initialize()
-    >>> newaccount_view.errors
-    []
-    >>> person_set.getByEmail('foo@debian.org')
-    <Person...
-
-
-== Creating a new account from an existing profile ==
-
-If a user's email address matches the email address of an unclaimed
-account, the existing profile is activated and given to the user.
-Andre Lopes (andrelop) has an account created via an automated process.
-
-    >>> andrelop = person_set.getByEmail('andrelop@debian.org')
-    >>> andrelop.name
-    u'andrelop'
-    >>> print andrelop.preferredemail
-    None
-
-    >>> andrelop.account.status
-    <DBItem AccountStatus.NOACCOUNT, ...>
-    >>> andrelop.is_valid_person
-    False
-
-Andre would normally create a new account by claiming a LoginToken
-that verifies his access to the email address his provided.
-
-    >>> login_token = login_token_set.new(
-    ...     andrelop, 'andrelop@debian.org',
-    ...     'andrelop@debian.org', LoginTokenType.NEWACCOUNT)
-    >>> transaction.commit()
-
-The NewAccountView will activate the existing account and update
-the Person object.
-
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.displayname': 'Andre Lopes',
-    ...         'field.hide_email_addresses.used': '',
-    ...         'field.password': 'test5',
-    ...         'field.password_dupe': 'test5',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> claimprofile_view = getMultiAdapter(
-    ...     (login_token, request), name="+newaccount")
-    >>> claimprofile_view.initialize()
-    >>> claimprofile_view.errors
-    []
-    >>> transaction.commit()
-
-The existing Account, Person and EmailAddress are updated.
-
-    >>> andrelop.displayname
-    u'Andre Lopes'
-    >>> andrelop.hide_email_addresses
-    False
-    >>> andrelop.account.preferredemail.email
-    u'andrelop@debian.org'
-
-    >>> andrelop.account.status
-    <DBItem AccountStatus.ACTIVE, ...>
-    >>> andrelop.account.status_comment
-    u'Activated by new account.'
-    >>> andrelop.is_valid_person
-    True
-
-
-== Creating a new account cannot reactivate a suspended profile ==
-
-An existing account that is SUSPENDED cannot be reactivated by claiming
-the email address during account creation.
-
-    >>> login_token = login_token_set.new(
-    ...     suspended_user, 'suspended-user@canonical.com',
-    ...     'suspended-user@canonical.com', LoginTokenType.NEWACCOUNT)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/token/%s/+newaccount' % login_token.token,
-    ...     method='POST',
-    ...     form={
-    ...         'field.displayname': 'Bad User',
-    ...         'field.hide_email_addresses.used': '',
-    ...         'field.password': 'bad-intentions',
-    ...         'field.password_dupe': 'bad-intentions',
-    ...         'field.actions.continue': 'Continue',
-    ...         })
-    >>> login(ANONYMOUS, request)
-    >>> claimprofile_view = getMultiAdapter(
-    ...     (login_token, request), name="+newaccount")
-    >>> claimprofile_view.initialize()
-    >>> claimprofile_view.errors
-    []
-
-    >>> login('foo.bar@canonical.com')
-    >>> suspended_user.is_valid_person
-    False
-    >>> suspended_user.account.password == original_password
-    True
-    >>> suspended_user.account.status
-    <DBItem AccountStatus.SUSPENDED, ...>
+Users interact with login tokens for operations that require the user to prove
+he has access to a resource that is external to Launchpad. For example,
+claiming an email address or a OpenPGP key require the user to use the login
+token sent to him in an email.
 
 
 == Validating GPG keys ==
@@ -380,6 +17,19 @@ is not logged in and the requester has chosen to hide his email
 addresses, so here we'll make sure that even non-logged-in users can
 perform the last step of the workflow for adding a GPG key.
 
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
+    >>> from canonical.launchpad.interfaces.logintoken import (
+    ...     ILoginTokenSet)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.model.person import PersonSet
+
+    # To simplify our tests we'll use the PersonSet() class directly instead
+    # of gettint it as a zope secured utility. If we don't do that we'd have
+    # to remove the security proxy of the person objects all the time.
+    >>> person_set = PersonSet()
+    >>> login_token_set = getUtility(ILoginTokenSet)
+
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> sample_person.hide_email_addresses
     True
@@ -390,9 +40,9 @@ perform the last step of the workflow for adding a GPG key.
     ...     fingerprint='A419AE861E88BC9E04B9C26FBA2B9389DFD20543')
 
     # Start our stub GPG keyserver so that the key can be fetched by the page.
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev',
@@ -408,6 +58,4 @@ perform the last step of the workflow for adding a GPG key.
     ...     notification.message
     ...     for notification in validategpg_view.request.notifications)
     The key 1024D/DFD20543 was successfully validated...
-
-    # Tear down the stub keyserver.
-    >>> z.tearDown()
+    >>> tac.tearDown()

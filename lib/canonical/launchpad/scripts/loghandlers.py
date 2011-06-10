@@ -21,7 +21,10 @@ __all__ = [
 import codecs
 import logging
 import os
-from stat import ST_DEV, ST_INO
+from stat import (
+    ST_DEV,
+    ST_INO,
+    )
 
 
 class WatchedFileHandler(logging.FileHandler):

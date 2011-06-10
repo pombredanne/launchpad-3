@@ -11,12 +11,22 @@ __all__ = [
     "ISpecificationBranchSet",
     ]
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_operation_as,
+    export_write_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import Interface
-
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (call_with, export_as_webservice_entry,
-    exported, export_operation_as, export_write_operation,
-    operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
@@ -36,6 +46,7 @@ class IHasLinkedBranches(Interface):
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
+    @operation_for_version('beta')
     def linkBranch(branch, registrant):
         """Associate a branch with this bug.
 
@@ -47,6 +58,7 @@ class IHasLinkedBranches(Interface):
     @operation_parameters(
         branch=Reference(schema=IBranch))
     @export_write_operation()
+    @operation_for_version('beta')
     def unlinkBranch(branch, user):
         """Unlink a branch from this bug.
 

@@ -1,0 +1,56 @@
+===============
+Commercial PPAs
+===============
+
+Commercial PPAs are to all intents and purposes identical to private PPAs.
+They contain a 'commercial' flag which indicates that the PPA is actively
+selling software and should be more discoverable.
+
+We have a private PPA for demonstration purposes:
+
+    >>> ppa = factory.makeArchive(private=True, name="pppa")
+
+
+Discovering Commercial PPAs
+---------------------------
+
+IArchive.getCommercialPPAs() retrieves the subset of all private PPAs that are
+marked for commercial usage.
+
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> archive_set = getUtility(IArchiveSet)
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.name
+
+There are none yet - if we mark "ppa" as commercial it will be
+returned:
+
+    >>> # Setting 'commercial' is restricted to admins but we don't want to
+    >>> # worry about that here. See lib/lp/soyuz/tests/test_archive.py
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(ppa).commercial = True
+    >>> for commercial_ppa in archive_set.getCommercialPPAs():
+    ...     print commercial_ppa.name
+    pppa
+
+
+Security
+--------
+
+Anyone is allowed to retrieve the list of commercial PPAs.  Normal security
+restrictions apply to individual PPA access though.
+
+    >>> login(ANONYMOUS)
+    >>> ppas = archive_set.getCommercialPPAs()
+
+'name is a public attribute:
+
+    >>> print ppas[0].name
+    pppa
+
+'description' is not, however.
+
+    >>> ppas[0].description
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...

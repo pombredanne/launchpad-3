@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,47 +9,83 @@ __all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
 import cgi
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.lifecycle.event import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import MissingInputError, WidgetsError
+from zope.app.form.interfaces import (
+    MissingInputError,
+    WidgetsError,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from z3c.ptcompat import ViewPageTemplateFile
-from lazr.enum import EnumeratedType, Item
-from lazr.lifecycle.event import ObjectCreatedEvent
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.browser.multistep import MultiStepView, StepView
-from canonical.launchpad.fields import StrippedTextLine
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask, validate_new_distrotask)
+    valid_upstreamtask,
+    validate_new_distrotask,
+    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
-    IAddBugTaskWithProductCreationForm, valid_remote_bug_url)
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
-from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lp.registry.interfaces.product import (IProductSet, License)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.webapp import (
-    custom_widget, action, canonical_url, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
-
-from canonical.widgets.bugtask import (
-    BugTaskAlsoAffectsSourcePackageNameWidget)
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
-from canonical.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
+from lp.bugs.browser.widgets.bugtask import (
+    BugTaskAlsoAffectsSourcePackageNameWidget,
+    )
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IAddBugTaskForm,
+    IAddBugTaskWithProductCreationForm,
+    valid_remote_bug_url,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
+from lp.registry.interfaces.product import (
+    IProductSet,
+    License,
+    )
+from lp.services.fields import StrippedTextLine
+from lp.services.propertycache import cachedproperty
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
@@ -73,16 +109,33 @@ class AlsoAffectsStep(StepView):
     schema = IAddBugTaskForm
 
 
-class ChooseProductStep(AlsoAffectsStep):
+class LinkPackgingMixin:
+
+    @property
+    def can_link_package(self):
+        bugtask = self.context
+        is_package_bugtask = IDistributionSourcePackage.providedBy(
+            bugtask.target)
+        return is_package_bugtask and bugtask.target.upstream_product is None
+
+
+class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     """View for choosing a product that is affected by a given bug."""
 
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
     custom_widget('product', SearchForUpstreamPopupWidget)
-    _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
+
+    @property
+    def _field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['product']
+        if self.can_link_package:
+            names.append('add_packaging')
+        return names
 
     def initialize(self):
         super(ChooseProductStep, self).initialize()
@@ -103,26 +156,6 @@ class ChooseProductStep(AlsoAffectsStep):
         bugtask = self.context
         upstream = bugtask.target.upstream_product
         if upstream is not None:
-            if not upstream.active:
-                # XXX: Guilherme Salgado 2007-09-18 bug=140526: This is only
-                # possible because of bug 140526, which allows packages to
-                # be linked to inactive products.
-                series = bugtask.distribution.currentseries
-                assert series is not None, (
-                    "This package is linked to a product series so this "
-                    "package's distribution must have at least one distro "
-                    "series.")
-                sourcepackage = series.getSourcePackage(
-                    bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(
-                    structured(
-                    _("""
-                    This package is linked to an inactive upstream.  You
-                    can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future."""),
-                    package_url=canonical_url(sourcepackage)))
-                return
-
             try:
                 valid_upstreamtask(bugtask.bug, upstream)
             except WidgetsError:
@@ -133,26 +166,9 @@ class ChooseProductStep(AlsoAffectsStep):
                 # so we can go straight to the page asking for the remote
                 # bug URL.
                 self.request.form['field.product'] = upstream.name
+                self.request.form['field.add_packaging'] = 'off'
                 self.next_step = ProductBugTaskCreationStep
             return
-
-        distroseries = bugtask.distribution.currentseries
-        if distroseries is not None:
-            sourcepackage = distroseries.getSourcePackage(
-                bugtask.sourcepackagename)
-
-            self.request.response.addInfoNotification(
-                self._needProjectNotice(bugtask, sourcepackage))
-
-    def _needProjectNotice(self, bugtask, sourcepackage):
-        return structured(
-            _("""
-                Please select the appropriate upstream project. This step can
-                be avoided by <a href="%(package_url)s/+edit-packaging"
-                >updating the packaging information for
-                %(full_package_name)s</a>."""),
-            full_package_name=bugtask.bugtargetdisplayname,
-            package_url=canonical_url(sourcepackage))
 
     def validateStep(self, data):
         if data.get('product'):
@@ -175,9 +191,9 @@ class ChooseProductStep(AlsoAffectsStep):
         self.setFieldError(
             'product',
             structured("""
-                There is no project in Launchpad named "%s". Please 
+                There is no project in Launchpad named "%s". Please
                 <a href="/projects"
-                onclick="YUI().use('event').Event.simulate(
+                onclick="LPS.use('event').Event.simulate(
                          document.getElementById('%s'), 'click');
                          return false;"
                 >search for it</a> as it may be
@@ -189,6 +205,10 @@ class ChooseProductStep(AlsoAffectsStep):
         # Inject the selected product into the form and set the next_step to
         # be used by our multistep controller.
         self.request.form['field.product'] = data['product'].name
+        if data.get('add_packaging', False):
+            self.request.form['field.add_packaging'] = 'on'
+        else:
+            self.request.form['field.add_packaging'] = 'off'
         self.next_step = ProductBugTaskCreationStep
 
 
@@ -254,7 +274,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
             except NoBugTrackerFound:
                 # Delegate to another view which will ask the user if (s)he
                 # wants to create the bugtracker now.
-                if list(self.target_field_names) == ['product']:
+                if 'product' in self.target_field_names:
                     self.next_step = UpstreamBugTrackerCreationStep
                 else:
                     assert 'distribution' in self.target_field_names
@@ -300,10 +320,11 @@ class BugTaskCreationStep(AlsoAffectsStep):
             if bug_watch is None:
                 bug_watch = task_added.bug.addWatch(
                     extracted_bugtracker, extracted_bug, self.user)
-            if not target.official_malone:
+            if target.bug_tracking_usage != ServiceUsage.LAUNCHPAD:
                 task_added.bugwatch = bug_watch
 
-        if (not target.official_malone and task_added.bugwatch is not None
+        if (target.bug_tracking_usage != ServiceUsage.LAUNCHPAD
+            and task_added.bugwatch is not None
             and (task_added.bugwatch.bugtracker.bugtrackertype !=
                  BugTrackerType.EMAILADDRESS)):
             # A remote bug task gets its status from a bug watch, so
@@ -352,7 +373,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
         if (not bug_url and
             not self.request.get('ignore_missing_remote_bug') and
-            not target.official_malone):
+            target.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
             # We have no URL for the remote bug and the target does not use
             # Launchpad for bug tracking, so we warn the user this is not
             # optimal and ask for his confirmation.
@@ -372,7 +393,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                          cgi.escape(target.displayname),
                          confirm_button))))
             return None
-
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
 
@@ -385,7 +405,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         """
         target = self.getTarget(data)
         bug_url = data.get('bug_url')
-        if bug_url and target.official_malone:
+        if bug_url and target.bug_tracking_usage == ServiceUsage.LAUNCHPAD:
             self.addError(
                 "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
@@ -398,16 +418,17 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             self.widgets['sourcepackagename'].name)
         if sourcepackagename is None and entered_package:
             # The entered package doesn't exist.
-            filebug_url = "%s/+filebug" % canonical_url(
-                getUtility(ILaunchpadCelebrities).launchpad)
-            self.setFieldError(
-                'sourcepackagename',
-                structured(
-                'There is no package in %s named "%s". If it should'
-                ' be here, <a href="%s">report this as a bug</a>.',
-                distribution.displayname,
-                entered_package,
-                filebug_url))
+            if distribution.has_published_binaries:
+                binary_tracking = ''
+            else:
+                binary_tracking = structured(
+                    ' Launchpad does not track binary package names '
+                    'in %s.', distribution.displayname)
+            error = structured(
+                'There is no package in %s named "%s".%s',
+                distribution.displayname, entered_package,
+                binary_tracking)
+            self.setFieldError('sourcepackagename', error)
         else:
             try:
                 validate_new_distrotask(
@@ -508,7 +529,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         '../templates/bugtask-requestfix-upstream.pt')
 
     label = "Confirm project"
-    target_field_names = ('product',)
+    target_field_names = ('product', 'add_packaging')
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
@@ -543,8 +564,7 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
             LinkUpstreamHowOptions.LINK_UPSTREAM:
                 'bug_url',
             LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
-                'upstream_email_address_done'
-            }
+                'upstream_email_address_done'}
 
         # Examine the radio group if it has valid input.
         link_upstream_how = self.widgets['link_upstream_how']
@@ -613,10 +633,18 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
         elif link_upstream_how == LinkUpstreamHowOptions.EMAIL_UPSTREAM_DONE:
             # Ensure there's a bug tracker for this email address.
             bug_url = 'mailto:' + data['upstream_email_address_done']
-            bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+            getUtility(IBugTrackerSet).ensureBugTracker(
                 bug_url, self.user, BugTrackerType.EMAILADDRESS)
             data['bug_url'] = bug_url
-
+        if data.get('add_packaging', False):
+            # Create a packaging link so that Launchpad will suggest the
+            # upstream project to the user.
+            packaging_util = getUtility(IPackagingUtil)
+            packaging_util.createPackaging(
+                productseries=data['product'].development_focus,
+                sourcepackagename=self.context.target.sourcepackagename,
+                distroseries=self.context.target.distribution.currentseries,
+                packaging=PackagingType.PRIME, owner=self.user)
         return super(ProductBugTaskCreationStep, self).main_action(data)
 
     @property
@@ -689,7 +717,8 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
         '../templates/bugtask-confirm-bugtracker-creation.pt')
 
 
-class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
+class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
+                                                   LaunchpadFormView):
     """Register a product and indicate this bug affects it.
 
     If there's no bugtracker with the given URL registered in Launchpad, then
@@ -700,10 +729,17 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     schema = IAddBugTaskWithProductCreationForm
     custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
     custom_widget('existing_product', LaunchpadRadioWidget)
-    field_names = ['bug_url', 'displayname', 'name', 'summary']
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
     licenses = [License.DONT_KNOW]
+
+    @property
+    def field_names(self):
+        """The fields needed to choose an existing project."""
+        names = ['bug_url', 'displayname', 'name', 'summary']
+        if self.can_link_package:
+            names.append('add_packaging')
+        return names
 
     def _loadProductsUsingBugTracker(self):
         """Find products using the bugtracker wich runs on the given URL.
@@ -732,10 +768,10 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             # Use a local import as we don't want removeSecurityProxy used
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
-            name_matches = getUtility(IProductSet).search(
-                self.request.form.get('field.name'))
-            products = bugtracker.products.intersect(
-                removeSecurityProxy(name_matches))
+            name_matches = removeSecurityProxy(
+                getUtility(IProductSet).search_sqlobject(
+                self.request.form.get('field.name')))
+            products = bugtracker.products.intersect(name_matches)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:
@@ -811,8 +847,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             name=data['name'],
             displayname=data['displayname'], title=data['displayname'],
             summary=data['summary'], licenses=self.licenses,
-            registrant=self.user
-            )
+            registrant=self.user)
         data['product'] = product
         self._createBugTaskAndWatch(data, set_bugtracker=True)
         # Now that the product is configured set the owner to be the registry

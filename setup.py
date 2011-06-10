@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
+
+
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
@@ -24,9 +26,16 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
+        'BeautifulSoup',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'cssutils',
+        # Required for pydkim
+        'dnspython',
+        'fixtures',
+        'FeedParser',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -37,34 +46,50 @@ setup(
         'lazr.lifecycle',
         'lazr.restful',
         'lazr.smtptest',
+        'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        # Required for launchpadlib
+        'keyring',
+        'manuel',
         'mechanize',
+        'meliae',
+        'mercurial',
         'mocker',
         'oauth',
         'paramiko',
+        'psycopg2',
+        'python-memcached',
         'pyasn1',
+        'pydkim',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'setproctitle',
         'setuptools',
+        'Sphinx',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
+        'testtools',
         'transaction',
-        'Twisted', 
+        'Twisted',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
         'zc.zservertracelog',
+        'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.dav', # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',
         'zope.app.form',
+        'zope.app.onlinehelp',
         'zope.app.pagetemplate',
+        'zope.app.preference',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
@@ -72,6 +97,7 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.tree',
         'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
@@ -88,6 +114,7 @@ setup(
         'zope.hookable', # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
+        'zope.login',
         'zope.pagetemplate',
         'zope.publisher',
         'zope.proxy',
@@ -129,6 +156,9 @@ setup(
             'twistd = twisted.scripts.twistd:run',
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'ec2 = devscripts.ec2test.entrypoint:main',
+            'compile_templates '
+                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

@@ -32,8 +32,8 @@
             <td style="text-align: left">
               <span tal:replace="structure member/fmt:link" />
               <br />
-              <span class="extra-discreet">
-                (Applied on 
+              <span class="lesser">
+                (Applied on
                 <span tal:replace="membership/date_proposed/fmt:date" />)
               </span>
             </td>

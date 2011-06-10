@@ -1,24 +1,48 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E1002
+
 __metaclass__ = type
 
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 import StringIO
 import unittest
 
-from zope.publisher.base import DefaultPublication
-from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.interface import implements, Interface
-
-from lp.testing import TestCase
+from lazr.restful.interfaces import (
+    IServiceRootResource,
+    IWebServiceConfiguration,
+    )
+from lazr.restful.simple import RootResource
+from lazr.restful.testing.webservice import (
+    IGenericCollection,
+    IGenericEntry,
+    WebServiceTestCase,
+    )
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.launchpad.webapp.servers import (
-    AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
-    BugsBrowserRequest, BugsPublication, LaunchpadBrowserRequest,
-    TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
-    VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
-    WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
-from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
+    ApplicationServerSettingRequestFactory,
+    LaunchpadBrowserRequest,
+    VHostWebServiceRequestPublicationFactory,
+    VirtualHostRequestPublicationFactory,
+    WebServiceClientRequest,
+    WebServicePublication,
+    WebServiceRequestPublicationFactory,
+    WebServiceTestRequest,
+    )
+from lp.testing import TestCase
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -90,36 +114,44 @@ class TestApplicationServerSettingRequestFactory(TestCase):
             "factory should not have set HTTPS env")
 
 
-class TestVhostWebserviceFactory(DummyConfigurationTestCase):
+class TestVhostWebserviceFactory(WebServiceTestCase):
+
+    class VHostTestBrowserRequest(LaunchpadBrowserRequest):
+        pass
+
+    class VHostTestPublication(LaunchpadBrowserRequest):
+        pass
 
     def setUp(self):
         super(TestVhostWebserviceFactory, self).setUp()
+        # XXX We have to use a real hostname.
         self.factory = VHostWebServiceRequestPublicationFactory(
-            'bugs', BugsBrowserRequest, BugsPublication)
+            'bugs', self.VHostTestBrowserRequest, self.VHostTestPublication)
 
     def wsgi_env(self, path, method='GET'):
         """Simulate a WSGI application environment."""
         return {
             'PATH_INFO': path,
             'HTTP_HOST': 'bugs.launchpad.dev',
-            'REQUEST_METHOD': method
+            'REQUEST_METHOD': method,
             }
 
     @property
-    def working_api_path(self):
-        """A path to the webservice API that should work every time."""
-        return '/' + self.config.path_override
+    def api_path(self):
+        """Requests to this path should be treated as webservice requests."""
+        return '/' + getUtility(IWebServiceConfiguration).path_override
 
     @property
-    def failing_api_path(self):
-        """A path that should not work with the webservice API."""
+    def non_api_path(self):
+        """Requests to this path should not be treated as webservice requests.
+        """
         return '/foo'
 
     def test_factory_produces_webservice_objects(self):
         """The factory should produce WebService request and publication
         objects for requests to the /api root URL.
         """
-        env = self.wsgi_env('/' + self.config.path_override)
+        env = self.wsgi_env(self.api_path)
 
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
@@ -145,7 +177,7 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         specified in it's constructor if the request is not bound for the
         web service.
         """
-        env = self.wsgi_env('/foo')
+        env = self.wsgi_env(self.non_api_path)
         self.assert_(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
@@ -154,12 +186,12 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         # We need to unwrap the real request factory.
         request_factory = wrapped_factory.requestfactory
 
-        self.assertEqual(request_factory, BugsBrowserRequest,
-            "Requests to normal paths should return a Bugs "
+        self.assertEqual(request_factory, self.VHostTestBrowserRequest,
+            "Requests to normal paths should return a VHostTest "
             "request object.")
         self.assertEqual(
-            publication_factory, BugsPublication,
-            "Requests to normal paths should return a Bugs "
+            publication_factory, self.VHostTestPublication,
+            "Requests to normal paths should return a VHostTest "
             "publication object.")
 
     def test_factory_processes_webservice_http_methods(self):
@@ -169,7 +201,7 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         allowed_methods = WebServiceRequestPublicationFactory.default_methods
 
         for method in allowed_methods:
-            env = self.wsgi_env(self.working_api_path, method)
+            env = self.wsgi_env(self.api_path, method)
             self.assert_(self.factory.canHandle(env),
                 "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
@@ -190,7 +222,7 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         denied_methods = set(ws_methods) - set(vhost_methods)
 
         for method in denied_methods:
-            env = self.wsgi_env(self.failing_api_path, method)
+            env = self.wsgi_env(self.non_api_path, method)
             self.assert_(self.factory.canHandle(env),
                 "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
@@ -206,14 +238,12 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
         # This is a sanity check, so I can write '/api/foo' instead
         # of PATH_OVERRIDE + '/foo' in my tests.  The former's
         # intention is clearer.
-        self.assertEqual(self.config.path_override, 'api',
+        self.assertEqual(
+            getUtility(IWebServiceConfiguration).path_override, 'api',
             "Sanity check: The web service path override should be 'api'.")
 
         self.assert_(
             self.factory.isWebServicePath('/api'),
-            "The factory should handle URLs that start with /api.")
-        self.assert_(
-            self.factory.isWebServicePath('/api/'),
             "The factory should handle URLs that start with /api.")
 
         self.assert_(
@@ -241,7 +271,25 @@ class TestVhostWebserviceFactory(DummyConfigurationTestCase):
             "/api.")
 
 
-class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
+class TestWebServiceRequestTraversal(WebServiceTestCase):
+
+    testmodule_objects = [IGenericEntry, IGenericCollection]
+
+    def setUp(self):
+        super(TestWebServiceRequestTraversal, self).setUp()
+        # For this test we need to make the URL "/foo" resolve to a
+        # resource.  To this end, we'll define a top-level collection
+        # named 'foo'.
+        class GenericCollection:
+            implements(IGenericCollection)
+
+        class MyRootResource(RootResource):
+
+            def _build_top_level_objects(self):
+                return ({'foo': (IGenericEntry, GenericCollection())}, {})
+
+        getGlobalSiteManager().registerUtility(
+            MyRootResource(), IServiceRootResource)
 
     def test_traversal_of_api_path_urls(self):
         """Requests that have /api at the root of their path should trim
@@ -249,35 +297,26 @@ class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
         """
         # First, we need to forge a request to the API.
         data = ''
-        api_url = ('/' + self.config.path_override +
-                   '/' + 'beta' + '/' + 'foo')
+        config = getUtility(IWebServiceConfiguration)
+        api_url = ('/' + config.path_override +
+                   '/' + '1.0' + '/' + 'foo')
         env = {'PATH_INFO': api_url}
-        request = WebServiceClientRequest(data, env)
-
-        # And we need a mock publication object to use during traversal.
-        class WebServicePublicationStub(DefaultPublication):
-            def getResource(self, request, obj):
-                pass
-
-        request.setPublication(WebServicePublicationStub(None))
-
-        # And we need a traversible object that knows about the 'foo' name.
-        root = {'foo': object()}
+        request = config.createRequest(data, env)
 
         stack = request.getTraversalStack()
-        self.assert_(self.config.path_override in stack,
+        self.assert_(config.path_override in stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
-        request.traverse(root)
+        request.traverse(None)
 
         stack = request.getTraversalStack()
-        self.failIf(self.config.path_override in stack,
+        self.failIf(config.path_override in stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 
 
-class TestWebServiceRequest(TestCase):
+class TestWebServiceRequest(WebServiceTestCase):
 
     def test_application_url(self):
         """Requests to the /api path should return the original request's
@@ -286,21 +325,20 @@ class TestWebServiceRequest(TestCase):
         # Simulate a request to bugs.launchpad.net/api
         server_url = 'http://bugs.launchpad.dev'
         env = {
-            'PATH_INFO': '/api/beta',
+            'PATH_INFO': '/api/devel',
             'SERVER_URL': server_url,
             'HTTP_HOST': 'bugs.launchpad.dev',
             }
 
         # WebServiceTestRequest will suffice, as it too should conform to
         # the Same Origin web browser policy.
-        request = WebServiceTestRequest(environ=env)
+        request = WebServiceTestRequest(environ=env, version="1.0")
         self.assertEqual(request.getApplicationURL(), server_url)
 
     def test_response_should_vary_based_on_content_type(self):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
         self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept')
+            request.response.getHeader('Vary'), 'Accept')
 
 
 class TestBasicLaunchpadRequest(TestCase):
@@ -319,6 +357,20 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
+
+    def test_is_ajax_false(self):
+        """Normal requests do not define HTTP_X_REQUESTED_WITH."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+
+        self.assertFalse(request.is_ajax)
+
+    def test_is_ajax_true(self):
+        """Requests with HTTP_X_REQUESTED_WITH set are ajax requests."""
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
+            'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
+            })
+
+        self.assertTrue(request.is_ajax)
 
 
 class IThingSet(Interface):
@@ -370,26 +422,6 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         self.assertEquals(self.request.getNearest(IThing), (None, None))
 
 
-class TestAnswersBrowserRequest(TestCase):
-    """Tests for the Answers request class."""
-
-    def test_response_should_vary_based_on_language(self):
-        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept-Language')
-
-
-class TestTranslationsBrowserRequest(TestCase):
-    """Tests for the Translations request class."""
-
-    def test_response_should_vary_based_on_language(self):
-        request = TranslationsBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
-            request.response.getHeader('Vary'),
-            'Cookie, Authorization, Accept-Language')
-
-
 class TestLaunchpadBrowserRequest(TestCase):
 
     def prepareRequest(self, form):
@@ -418,7 +450,7 @@ class TestLaunchpadBrowserRequest(TestCase):
             {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            {'a':['1'], 'b': ['2'], 'c': ['3']},
+            {'a': ['1'], 'b': ['2'], 'c': ['3']},
             request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
@@ -461,4 +493,3 @@ def test_suite():
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS))
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-

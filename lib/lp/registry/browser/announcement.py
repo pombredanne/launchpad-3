@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement views."""
@@ -17,27 +17,47 @@ __all__ = [
     'AnnouncementView',
     ]
 
-from zope.interface import implements, Interface
-from zope.schema import Choice, TextLine
-
-from canonical.cachedproperty import cachedproperty
-
-from lp.registry.interfaces.announcement import IAnnouncement
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    TextLine,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
-    AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.interfaces.validation import valid_webref
+    AnnouncementsFeedLink,
+    FeedsMixin,
+    RootAnnouncementsFeedLink,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
-from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
-from canonical.widgets import AnnouncementDateWidget
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.validators.url import valid_webref
+from lp.app.widgets.announcementdate import AnnouncementDateWidget
+from lp.registry.interfaces.announcement import IAnnouncement
+from lp.services.fields import (
+    AnnouncementDate,
+    Summary,
+    Title,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class AnnouncementMenuMixin:
@@ -182,7 +202,7 @@ class AnnouncementRetargetForm(Interface):
     target = Choice(
         title=_("For"),
         description=_("The project where this announcement is being made."),
-        required=True, vocabulary='DistributionOrProductOrProject')
+        required=True, vocabulary='DistributionOrProductOrProjectGroup')
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):

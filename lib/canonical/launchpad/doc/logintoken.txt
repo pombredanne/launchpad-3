@@ -18,12 +18,12 @@ follows:
     4) The token is now marked as consumed, together with any other
        tokens of the same type and for the same email address.
 
-    >>> from lp.registry.model.person import Person
     >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
+    >>> from lp.registry.model.person import Person
     >>> from canonical.launchpad.interfaces.logintoken import (
     ...     ILoginTokenSet)
-    >>> from lp.services.mail import stub
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.mail import stub
     >>> import transaction
     >>> foobar = Person.byName('name16')
 
@@ -96,8 +96,8 @@ token so that we can force its date_consumed attribute to something of
 our own making.
 
     >>> import pytz
-    >>> from datetime import datetime
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime
 
     >>> token = removeSecurityProxy(token)
     >>> token.date_consumed = datetime(

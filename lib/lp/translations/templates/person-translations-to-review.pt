@@ -39,7 +39,10 @@
                   1 string
                 </tal:stringcount>
                 reviewed
-              </a>
+              </a> in
+              <tal:languages replace="target_info/languages">
+                Spanish
+              </tal:languages>
             </td>
           </tr>
         </table>

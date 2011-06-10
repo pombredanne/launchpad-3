@@ -23,8 +23,8 @@ COMMENT ON FUNCTION assert_patch_applied(integer, integer, integer) IS
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40)
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    import sha
-    return sha.new(args[0]).hexdigest()
+    import hashlib
+    return hashlib.sha1(args[0]).hexdigest()
 $$;
 
 COMMENT ON FUNCTION sha1(text) IS
@@ -47,11 +47,34 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION null_count(anyarray) IS 'Return the number of NULLs in the first row of the given array.';
+COMMENT ON FUNCTION null_count(anyarray) IS
+'Return the number of NULLs in the first row of the given array.';
+
+
+CREATE OR REPLACE FUNCTION cursor_fetch(cur refcursor, n integer)
+RETURNS SETOF record LANGUAGE plpgsql AS
+$$
+DECLARE
+    r record;
+    count integer;
+BEGIN
+    FOR count IN 1..n LOOP
+        FETCH FORWARD FROM cur INTO r;
+        IF NOT FOUND THEN
+            RETURN;
+        END IF;
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION cursor_fetch(refcursor, integer) IS
+'Fetch the next n items from a cursor. Work around for not being able to use FETCH inside a SELECT statement.';
+
 
 
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -72,7 +95,7 @@ COMMENT ON FUNCTION replication_lag() IS
 
 
 CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -94,8 +117,218 @@ COMMENT ON FUNCTION replication_lag(integer) IS
 'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
 
 
+CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
+    BEGIN
+        DELETE FROM DatabaseReplicationLag;
+        INSERT INTO DatabaseReplicationLag (node, lag)
+            SELECT st_received, st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl');
+        RETURN TRUE;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN FALSE;
+        WHEN undefined_table THEN
+            RETURN FALSE;
+    END;
+$$;
+
+COMMENT ON FUNCTION update_replication_lag_cache() IS
+'Updates the DatabaseReplicationLag materialized view.';
+
+CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
+    import re
+    import subprocess
+
+    # Prune DatabaseTableStats and insert current data.
+    # First, detect if the statistics have been reset.
+    stats_reset = plpy.execute("""
+        SELECT *
+        FROM
+            pg_catalog.pg_stat_user_tables AS NowStat,
+            DatabaseTableStats AS LastStat
+        WHERE
+            LastStat.date_created = (
+                SELECT max(date_created) FROM DatabaseTableStats)
+            AND NowStat.schemaname = LastStat.schemaname
+            AND NowStat.relname = LastStat.relname
+            AND (
+                NowStat.seq_scan < LastStat.seq_scan
+                OR NowStat.idx_scan < LastStat.idx_scan
+                OR NowStat.n_tup_ins < LastStat.n_tup_ins
+                OR NowStat.n_tup_upd < LastStat.n_tup_upd
+                OR NowStat.n_tup_del < LastStat.n_tup_del
+                OR NowStat.n_tup_hot_upd < LastStat.n_tup_hot_upd)
+        LIMIT 1
+        """, 1).nrows() > 0
+    if stats_reset:
+        # The database stats have been reset. We cannot calculate
+        # deltas because we do not know when this happened. So we trash
+        # our records as they are now useless to us. We could be more
+        # sophisticated about this, but this should only happen
+        # when an admin explicitly resets the statistics or if the
+        # database is rebuilt.
+        plpy.notice("Stats wraparound. Purging DatabaseTableStats")
+        plpy.execute("DELETE FROM DatabaseTableStats")
+    else:
+        plpy.execute("""
+            DELETE FROM DatabaseTableStats
+            WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('21 days' AS interval));
+            """)
+    # Insert current data.
+    plpy.execute("""
+        INSERT INTO DatabaseTableStats
+            SELECT
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+                schemaname, relname, seq_scan, seq_tup_read,
+                coalesce(idx_scan, 0), coalesce(idx_tup_fetch, 0),
+                n_tup_ins, n_tup_upd, n_tup_del,
+                n_tup_hot_upd, n_live_tup, n_dead_tup, last_vacuum,
+                last_autovacuum, last_analyze, last_autoanalyze
+            FROM pg_catalog.pg_stat_user_tables;
+        """)
+
+    # Prune DatabaseCpuStats. Calculate CPU utilization information
+    # and insert current data.
+    plpy.execute("""
+        DELETE FROM DatabaseCpuStats
+        WHERE date_created < (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('21 days' AS interval));
+        """)
+    dbname = plpy.execute(
+        "SELECT current_database() AS dbname", 1)[0]['dbname']
+    ps = subprocess.Popen(
+        ["ps", "-C", "postgres", "--no-headers", "-o", "cp,args"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    stdout, stderr = ps.communicate()
+    cpus = {}
+    # We make the username match non-greedy so the trailing \d eats
+    # trailing digits from the database username. This collapses
+    # lpnet1, lpnet2 etc. into just lpnet.
+    ps_re = re.compile(
+        r"(?m)^\s*(\d+)\spostgres:\s(\w+?)\d*\s%s\s" % dbname)
+    for ps_match in ps_re.finditer(stdout):
+        cpu, username = ps_match.groups()
+        cpus[username] = int(cpu) + cpus.setdefault(username, 0)
+    cpu_ins = plpy.prepare(
+        "INSERT INTO DatabaseCpuStats (username, cpu) VALUES ($1, $2)",
+        ["text", "integer"])
+    for cpu_tuple in cpus.items():
+        plpy.execute(cpu_ins, cpu_tuple)
+$$;
+
+COMMENT ON FUNCTION update_database_stats() IS
+'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
+
+SET check_function_bodies=false; -- Handle forward references
+CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
+    INSERT INTO DatabaseDiskUtilization
+    SELECT
+        CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+        namespace, name,
+        sub_namespace, sub_name,
+        kind,
+        (namespace || '.' ||  name || COALESCE(
+                '/' || sub_namespace || '.' || sub_name, '')) AS sort,
+        (stat).table_len,
+        (stat).tuple_count,
+        (stat).tuple_len,
+        (stat).tuple_percent,
+        (stat).dead_tuple_count,
+        (stat).dead_tuple_len,
+        (stat).dead_tuple_percent,
+        (stat).free_space,
+        (stat).free_percent
+    FROM (
+        SELECT
+            pg_namespace.nspname AS namespace,
+            pg_class.relname AS name,
+            NULL AS sub_namespace,
+            NULL AS sub_name,
+            pg_class.relkind AS kind,
+            pgstattuple(pg_class.oid) AS stat
+        FROM pg_class, pg_namespace
+        WHERE
+            pg_class.relnamespace = pg_namespace.oid
+            AND pg_class.relkind = 'r'
+
+        UNION ALL
+        
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_index
+        WHERE
+            pg_class_index.relkind = 'i'
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_index.indexrelid = pg_class_index.oid
+            AND pg_index.indrelid = pg_class_table.oid
+
+        UNION ALL
+
+        -- TOAST tables
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_toast.nspname AS sub_namespace,
+            pg_class_toast.relname AS sub_name,
+            pg_class_toast.relkind AS kind,
+            pgstattuple(pg_class_toast.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_toast,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_toast.relnamespace = pg_namespace_toast.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_toast.oid = pg_class_table.reltoastrelid
+
+        UNION ALL
+
+        -- TOAST indexes
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.reltoastrelid = pg_class_toast.oid
+            AND pg_class_index.oid = pg_class_toast.reltoastidxid
+        ) AS whatever;
+$$;
+SET check_function_bodies=true; -- Handle forward references
+
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_node_id integer;
@@ -114,7 +347,7 @@ COMMENT ON FUNCTION getlocalnodeid() IS
 
 CREATE OR REPLACE FUNCTION activity()
 RETURNS SETOF pg_catalog.pg_stat_activity
-LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+LANGUAGE SQL VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     SELECT
         datid, datname, procpid, usesysid, usename,
@@ -152,7 +385,7 @@ COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
 
     Names must contain only lowercase letters, numbers, ., & -. They
-    must start with an alphanumeric. They are ASCII only. Names are useful 
+    must start with an alphanumeric. They are ASCII only. Names are useful
     for mneumonic identifiers such as nicknames and as URL components.
     This specification is the same as the Debian product naming policy.
 
@@ -252,15 +485,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number a
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    from urlparse import urlparse
+    from urlparse import urlparse, uses_netloc
+    # Extend list of schemes that specify netloc. We can drop sftp
+    # with Python 2.5 in the DB.
+    if 'git' not in uses_netloc:
+        uses_netloc.insert(0, 'sftp')
+        uses_netloc.insert(0, 'bzr')
+        uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
+        uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    # urlparse in the stdlib does not correctly parse the netloc from
-    # sftp and bzr+ssh schemes, so we have to manually check those
-    if scheme in ("sftp", "bzr+ssh"):
-        return 1
-    if not (scheme and netloc):
-        return 0
-    return 1
+    return bool(scheme and netloc)
 $$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
@@ -334,7 +569,7 @@ COMMENT ON FUNCTION is_team(integer) IS
 
 
 CREATE OR REPLACE FUNCTION is_team(text) returns boolean
-LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS 
+LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT AS
 $$
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
 $$;
@@ -351,7 +586,7 @@ $$;
 
 COMMENT ON FUNCTION is_person(text) IS
     'True if the given name identifies a person in the Person table';
-    
+
 SET check_function_bodies=true;
 
 
@@ -373,7 +608,7 @@ COMMENT ON FUNCTION is_printable_ascii(text) IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -391,7 +626,7 @@ COMMENT ON FUNCTION mv_pillarname_distribution() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -410,7 +645,8 @@ COMMENT ON FUNCTION mv_pillarname_product() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, project, active)
@@ -428,8 +664,8 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
-RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+RETURNS TRIGGER VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 DECLARE
     v_trash_old BOOLEAN;
 BEGIN
@@ -470,16 +706,14 @@ BEGIN
               JOIN TranslationTemplateItem AS old_template_item
                 ON OLD.potmsgset = old_template_item.potmsgset AND
                    old_template_item.potemplate = pofile.potemplate AND
-                   pofile.language = OLD.language AND
-                   pofile.variant IS NOT DISTINCT FROM OLD.variant
+                   pofile.language = OLD.language
               JOIN TranslationTemplateItem AS new_template_item
                 ON (old_template_item.potemplate =
                      new_template_item.potemplate)
               JOIN TranslationMessage AS new_latest_message
                 ON new_latest_message.potmsgset =
                        new_template_item.potmsgset AND
-                   new_latest_message.language = OLD.language AND
-                   new_latest_message.variant IS NOT DISTINCT FROM OLD.variant
+                   new_latest_message.language = OLD.language
               LEFT OUTER JOIN POfileTranslator AS ExistingEntry
                 ON ExistingEntry.person = OLD.submitter AND
                    ExistingEntry.pofile = POFile.id
@@ -508,7 +742,6 @@ BEGIN
               TranslationTemplateItem.potmsgset=NEW.potmsgset AND
               TranslationTemplateItem.potemplate=pofile.potemplate AND
               pofile.language=NEW.language AND
-              pofile.variant IS NOT DISTINCT FROM NEW.variant AND
               POFileTranslator.pofile = pofile.id;
         IF found THEN
             RETURN NULL; -- Return value ignored as this is an AFTER trigger
@@ -521,7 +754,6 @@ BEGIN
               FROM TranslationTemplateItem
               JOIN POFile
                 ON pofile.language = NEW.language AND
-                   pofile.variant IS NOT DISTINCT FROM NEW.variant AND
                    pofile.potemplate = translationtemplateitem.potemplate
               WHERE
                 TranslationTemplateItem.potmsgset = NEW.potmsgset;
@@ -632,19 +864,61 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER AS
+SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
-    if not SD.has_key("select_plan"):
-        SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp FROM NameBlacklist ORDER BY id
-            """)
+    user_id = args[1]
+
+    # Initialize shared storage, shared between invocations.
+    if not SD.has_key("regexp_select_plan"):
+
+        # All the blacklist regexps except the ones we are an admin
+        # for. These we do not check since they are not blacklisted to us.
+        SD["regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL OR admin NOT IN (
+                SELECT team FROM TeamParticipation
+                WHERE person = $1)
+            ORDER BY id
+            """, ["integer"])
+
+        # Storage for compiled regexps
         SD["compiled"] = {}
+
+        # admins is a celebrity and its id is immutable.
+        admins_id = plpy.execute(
+            "SELECT id FROM Person WHERE name='admins'")[0]["id"]
+
+        SD["admin_select_plan"] = plpy.prepare("""
+            SELECT TRUE FROM TeamParticipation
+            WHERE
+                TeamParticipation.team = %d
+                AND TeamParticipation.person = $1
+            LIMIT 1
+            """ % admins_id, ["integer"])
+
+        # All the blacklist regexps except those that have an admin because
+        # members of ~admin can use any name that any other admin can use.
+        SD["admin_regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL
+            ORDER BY id
+            """, ["integer"])
+
+
     compiled = SD["compiled"]
-    for row in plpy.execute(SD["select_plan"]):
+
+    # Names are never blacklisted for Lauchpad admins.
+    if user_id is not None and plpy.execute(
+        SD["admin_select_plan"], [user_id]).nrows() > 0:
+        blacklist_plan = "admin_regexp_select_plan"
+    else:
+        blacklist_plan = "regexp_select_plan"
+
+    for row in plpy.execute(SD[blacklist_plan], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
         if (compiled.get(regexp_id) is None
@@ -660,23 +934,24 @@ $$
     return None
 $$;
 
-COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
-LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
+RETURNS boolean LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT
+SECURITY DEFINER SET search_path TO public AS
 $$
-    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+    SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
 
-COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+COMMENT ON FUNCTION is_blacklisted_name(text, integer) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 
 
 CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        NEW.normalized_address = 
+        NEW.normalized_address =
             lower(
                 -- Strip off everything that's not alphanumeric
                 -- characters.
@@ -774,7 +1049,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -1189,7 +1464,7 @@ BEGIN
         needs_update := TRUE;
     END IF;
 
-    IF needs_update THEN   
+    IF needs_update THEN
         SELECT
             Person.name AS owner_name,
             COALESCE(Product.name, SPN.name) AS target_suffix,
@@ -1296,3 +1571,537 @@ $$;
 COMMENT ON FUNCTION mv_branch_distribution_update() IS
 'Maintain Branch name cache when Distribution is modified.';
 
+
+-- Mirror tables for the login service.
+-- We maintain a duplicate of a few tables which are replicated
+-- in a seperate replication set.
+-- Insert triggers
+CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    INSERT INTO lp_TeamParticipation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    INSERT INTO lp_PersonLocation SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    INSERT INTO lp_Person (
+        id, displayname, teamowner, teamdescription, name, language, fti,
+        defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy,
+        merged, datecreated, homepage_content, icon, mugshot,
+        hide_email_addresses, creation_rationale, creation_comment,
+        registrant, logo, renewal_policy, personal_standing,
+        personal_standing_reason, mail_resumption_date,
+        mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates,
+        visibility, verbose_bugnotifications, account)
+        SELECT NEW.*;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Obsolete. Remove next cycle.
+CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    INSERT INTO lp_Account (id, openid_identifier)
+    VALUES (NEW.id, NEW.openid_identifier);
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    -- Support obsolete lp_Account.openid_identifier as best we can
+    -- until ISD migrates to using lp_OpenIdIdentifier.
+    UPDATE lp_account SET openid_identifier = NEW.identifier
+    WHERE id = NEW.account;
+    IF NOT found THEN
+        INSERT INTO lp_account (id, openid_identifier)
+        VALUES (NEW.account, NEW.identifier);
+    END IF;
+
+    INSERT INTO lp_OpenIdIdentifier (identifier, account, date_created)
+    VALUES (NEW.identifier, NEW.account, NEW.date_created);
+
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- UPDATE triggers
+CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    UPDATE lp_TeamParticipation
+    SET id = NEW.id,
+        team = NEW.team,
+        person = NEW.person
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    UPDATE lp_PersonLocation
+    SET id = NEW.id,
+        date_created = NEW.date_created,
+        person = NEW.person,
+        latitude = NEW.latitude,
+        longitude = NEW.longitude,
+        time_zone = NEW.time_zone,
+        last_modified_by = NEW.last_modified_by,
+        date_last_modified = NEW.date_last_modified,
+        visible = NEW.visible,
+        locked = NEW.locked
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    UPDATE lp_Person
+    SET id = NEW.id,
+        displayname = NEW.displayname,
+        teamowner = NEW.teamowner,
+        teamdescription = NEW.teamdescription,
+        name = NEW.name,
+        language = NEW.language,
+        fti = NEW.fti,
+        defaultmembershipperiod = NEW.defaultmembershipperiod,
+        defaultrenewalperiod = NEW.defaultrenewalperiod,
+        subscriptionpolicy = NEW.subscriptionpolicy,
+        merged = NEW.merged,
+        datecreated = NEW.datecreated,
+        homepage_content = NEW.homepage_content,
+        icon = NEW.icon,
+        mugshot = NEW.mugshot,
+        hide_email_addresses = NEW.hide_email_addresses,
+        creation_rationale = NEW.creation_rationale,
+        creation_comment = NEW.creation_comment,
+        registrant = NEW.registrant,
+        logo = NEW.logo,
+        renewal_policy = NEW.renewal_policy,
+        personal_standing = NEW.personal_standing,
+        personal_standing_reason = NEW.personal_standing_reason,
+        mail_resumption_date = NEW.mail_resumption_date,
+        mailing_list_auto_subscribe_policy
+            = NEW.mailing_list_auto_subscribe_policy,
+        mailing_list_receive_duplicates = NEW.mailing_list_receive_duplicates,
+        visibility = NEW.visibility,
+        verbose_bugnotifications = NEW.verbose_bugnotifications,
+        account = NEW.account
+    WHERE id = OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
+        UPDATE lp_Account
+        SET id = NEW.id, openid_identifier = NEW.openid_identifier
+        WHERE id = OLD.id;
+    END IF;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_upd() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF OLD.identifier <> NEW.identifier THEN
+        UPDATE lp_Account SET openid_identifier = NEW.identifier
+        WHERE openid_identifier = OLD.identifier;
+    END IF;
+    UPDATE lp_OpenIdIdentifier
+    SET
+        identifier = NEW.identifier,
+        account = NEW.account,
+        date_created = NEW.date_created
+    WHERE identifier = OLD.identifier;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+-- Delete triggers
+CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_del() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+DECLARE
+    next_identifier text;
+BEGIN
+    SELECT INTO next_identifier identifier FROM OpenIdIdentifier
+    WHERE account = OLD.account AND identifier <> OLD.identifier
+    ORDER BY date_created DESC LIMIT 1;
+
+    IF next_identifier IS NOT NULL THEN
+        UPDATE lp_account SET openid_identifier = next_identifier
+        WHERE openid_identifier = OLD.identifier;
+    ELSE
+        DELETE FROM lp_account WHERE openid_identifier = OLD.identifier;
+    END IF;
+
+    DELETE FROM lp_OpenIdIdentifier WHERE identifier = OLD.identifier;
+
+    RETURN NULL; -- Ignored for AFTER triggers.
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION add_test_openid_identifier(account_ integer)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    -- The generated OpenIdIdentifier is not a valid OpenId Identity URL
+    -- and does not match tokens generated by the Canonical SSO. They
+    -- are only useful to the test suite, and access to this stored
+    -- procedure on production does not allow you to compromise
+    -- accounts.
+    INSERT INTO OpenIdIdentifier (identifier, account)
+    VALUES ('test' || CAST(account_ AS text), account_);
+    RETURN TRUE;
+EXCEPTION
+    WHEN unique_violation THEN
+        RETURN FALSE;
+END;
+$$;
+
+COMMENT ON FUNCTION add_test_openid_identifier(integer) IS
+'Add an OpenIdIdentifier to an account that can be used to login in the test environment. These identifiers are not usable on production or staging.';
+
+-- Update the (redundant) column bug.latest_patch_uploaded when a
+-- a bug attachment is added or removed or if its type is changed.
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    UPDATE bug SET latest_patch_uploaded =
+        (SELECT max(message.datecreated)
+            FROM message, bugattachment
+            WHERE bugattachment.message=message.id AND
+                bugattachment.bug=$1 AND
+                bugattachment.type=1)
+        WHERE bug.id=$1;
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(NEW.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    PERFORM bug_update_latest_patch_uploaded(OLD.bug);
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION calculate_bug_heat(bug_id integer) RETURNS integer
+LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
+    from datetime import datetime
+
+    class BugHeatConstants:
+        PRIVACY = 150
+        SECURITY = 250
+        DUPLICATE = 6
+        AFFECTED_USER = 4
+        SUBSCRIBER = 2
+
+
+    def get_max_heat_for_bug(bug_id):
+        results = plpy.execute("""
+            SELECT MAX(
+                GREATEST(Product.max_bug_heat, Distribution.max_bug_heat))
+                    AS max_heat
+            FROM BugTask
+            LEFT OUTER JOIN ProductSeries ON
+                BugTask.productseries = ProductSeries.id
+            LEFT OUTER JOIN Product ON (
+                BugTask.product = Product.id
+                OR ProductSeries.product = Product.id)
+            LEFT OUTER JOIN DistroSeries ON
+                BugTask.distroseries = DistroSeries.id
+            LEFT OUTER JOIN Distribution ON (
+                BugTask.distribution = Distribution.id
+                OR DistroSeries.distribution = Distribution.id)
+            WHERE
+                BugTask.bug = %s""" % bug_id)
+
+        return results[0]['max_heat']
+
+    # It would be nice to be able to just SELECT * here, but we need the
+    # timestamps to be in a format that datetime.fromtimestamp() will
+    # understand.
+    bug_data = plpy.execute("""
+        SELECT
+            duplicateof,
+            private,
+            security_related,
+            number_of_duplicates,
+            users_affected_count,
+            EXTRACT(epoch from datecreated)
+                AS timestamp_date_created,
+            EXTRACT(epoch from date_last_updated)
+                AS timestamp_date_last_updated,
+            EXTRACT(epoch from date_last_message)
+                AS timestamp_date_last_message
+        FROM Bug WHERE id = %s""" % bug_id)
+
+    if bug_data.nrows() == 0:
+        raise Exception("Bug %s doesn't exist." % bug_id)
+
+    bug = bug_data[0]
+    if bug['duplicateof'] is not None:
+        return None
+
+    heat = {}
+    heat['dupes'] = (
+        BugHeatConstants.DUPLICATE * bug['number_of_duplicates'])
+    heat['affected_users'] = (
+        BugHeatConstants.AFFECTED_USER *
+        bug['users_affected_count'])
+
+    if bug['private']:
+        heat['privacy'] = BugHeatConstants.PRIVACY
+    if bug['security_related']:
+        heat['security'] = BugHeatConstants.SECURITY
+
+    # Get the heat from subscribers, both direct and via duplicates.
+    subs_from_dupes = plpy.execute("""
+        SELECT COUNT(DISTINCT BugSubscription.person) AS sub_count
+        FROM BugSubscription, Bug
+        WHERE Bug.id = BugSubscription.bug
+            AND (Bug.id = %s OR Bug.duplicateof = %s)"""
+        % (bug_id, bug_id))
+
+    heat['subcribers'] = (
+        BugHeatConstants.SUBSCRIBER
+        * subs_from_dupes[0]['sub_count'])
+
+    total_heat = sum(heat.values())
+
+    # Bugs decay over time. Every day the bug isn't touched its heat
+    # decreases by 1%.
+    date_last_updated = datetime.fromtimestamp(
+        bug['timestamp_date_last_updated'])
+    days_since_last_update = (datetime.utcnow() - date_last_updated).days
+    total_heat = int(total_heat * (0.99 ** days_since_last_update))
+
+    if days_since_last_update > 0:
+        # Bug heat increases by a quarter of the maximum bug heat
+        # divided by the number of days since the bug's creation date.
+        date_created = datetime.fromtimestamp(
+            bug['timestamp_date_created'])
+
+        if bug['timestamp_date_last_message'] is not None:
+            date_last_message = datetime.fromtimestamp(
+                bug['timestamp_date_last_message'])
+            oldest_date = max(date_last_updated, date_last_message)
+        else:
+            date_last_message = None
+            oldest_date = date_last_updated
+
+        days_since_last_activity = (datetime.utcnow() - oldest_date).days
+        days_since_created = (datetime.utcnow() - date_created).days
+        max_heat = get_max_heat_for_bug(bug_id)
+        if max_heat is not None and days_since_created > 0:
+            total_heat = (
+                total_heat + (max_heat * 0.25 / days_since_created))
+
+    return int(total_heat)
+$$;
+
+CREATE OR REPLACE FUNCTION bugmessage_copy_owner_from_message()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.owner is NULL THEN
+            UPDATE BugMessage
+            SET owner = Message.owner FROM
+            Message WHERE
+            Message.id = NEW.message AND
+            BugMessage.id = NEW.id;
+        END IF;
+    ELSIF NEW.message != OLD.message THEN
+        UPDATE BugMessage
+        SET owner = Message.owner FROM
+        Message WHERE
+        Message.id = NEW.message AND
+        BugMessage.id = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bugmessage_copy_owner_from_message() IS
+'Copies the message owner into bugmessage when bugmessage changes.';
+
+CREATE OR REPLACE FUNCTION message_copy_owner_to_bugmessage()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.owner != OLD.owner THEN
+        UPDATE BugMessage
+        SET owner = NEW.owner
+        WHERE
+        BugMessage.message = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION message_copy_owner_to_bugmessage() IS
+'Copies the message owner into bugmessage when message changes.';
+
+
+CREATE OR REPLACE FUNCTION questionmessage_copy_owner_from_message()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.owner is NULL THEN
+            UPDATE QuestionMessage
+            SET owner = Message.owner FROM
+            Message WHERE
+            Message.id = NEW.message AND
+            QuestionMessage.id = NEW.id;
+        END IF;
+    ELSIF NEW.message != OLD.message THEN
+        UPDATE QuestionMessage
+        SET owner = Message.owner FROM
+        Message WHERE
+        Message.id = NEW.message AND
+        QuestionMessage.id = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION questionmessage_copy_owner_from_message() IS
+'Copies the message owner into QuestionMessage when QuestionMessage changes.';
+
+CREATE OR REPLACE FUNCTION message_copy_owner_to_questionmessage()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.owner != OLD.owner THEN
+        UPDATE QuestionMessage
+        SET owner = NEW.owner
+        WHERE
+        QuestionMessage.message = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION message_copy_owner_to_questionmessage() IS
+'Copies the message owner into questionmessage when message changes.';
+
+
+CREATE OR REPLACE FUNCTION bug_update_heat_copy_to_bugtask()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.heat != OLD.heat THEN
+        UPDATE bugtask SET heat=NEW.heat WHERE bugtask.bug=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bug_update_heat_copy_to_bugtask() IS
+'Copies bug heat to bugtasks when the bug is changed. Runs on UPDATE only because INSERTs do not have bugtasks at the point of insertion.';
+
+-- This function is not STRICT, since it needs to handle
+-- dateexpected when it is NULL.
+CREATE OR REPLACE FUNCTION milestone_sort_key(
+    dateexpected timestamp, name text)
+    RETURNS text
+AS $_$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+    import datetime
+
+    date_expected, name = args
+
+    def substitute_filled_numbers(match):
+        return match.group(0).zfill(5)
+
+    name = re.sub(u'\d+', substitute_filled_numbers, name)
+    if date_expected is None:
+        # NULL dates are considered to be in the future.
+        date_expected = datetime.datetime(datetime.MAXYEAR, 1, 1)
+    return '%s %s' % (date_expected, name)
+$_$
+LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION milestone_sort_key(timestamp, text) IS
+'Sort by the Milestone dateexpected and name. If the dateexpected is NULL, then it is converted to a date far in the future, so it will be sorted as a milestone in the future.';
+
+
+CREATE OR REPLACE FUNCTION version_sort_key(version text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    # If this method is altered, then any functional indexes using it
+    # need to be rebuilt.
+    import re
+
+    [version] = args
+
+    def substitute_filled_numbers(match):
+        # Prepend "~" so that version numbers will show up first
+        # when sorted descending, i.e. [3, 2c, 2b, 1, c, b, a] instead
+        # of [c, b, a, 3, 2c, 2b, 1]. "~" has the highest ASCII value
+        # of visible ASCII characters.
+        return '~' + match.group(0).zfill(5)
+
+    return re.sub(u'\d+', substitute_filled_numbers, version)
+$$;
+
+COMMENT ON FUNCTION version_sort_key(text) IS
+'Sort a field as version numbers that do not necessarily conform to debian package versions (For example, when "2-2" should be considered greater than "1:1"). debversion_sort_key() should be used for debian versions. Numbers will be sorted after letters unlike typical ASCII, so that a descending sort will put the latest version number that starts with a number instead of a letter will be at the top. E.g. ascending is [a, z, 1, 9] and descending is [9, 1, z, a].';

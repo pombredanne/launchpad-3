@@ -8,8 +8,12 @@
 >
 <body>
 
-  <div metal:fill-slot="main">
-    <tal:vars define="auto_resize string:true; include_inactive string:true">
+  <div metal:fill-slot="main"
+       tal:define="batch view/batched_series/currentBatch">
+    <tal:vars define="auto_resize string:true;
+                      include_inactive string:true;
+                      start batch/start | nothing;
+                      size batch/size | nothing">
       <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
     </tal:vars>
 
@@ -21,16 +25,27 @@
       </li>
     </ul>
 
-    <div tal:repeat="series view/sorted_series_list">
-      <div style="margin-top: 1em;
-                  border-bottom: 1px solid #ccc; max-width: 60em;"
-        tal:define="is_focus series/is_development_focus"
-        tal:attributes="class string:${series/css_class} series;
-                        id series/name/fmt:css-id/series-;">
-        <tal:status replace="structure series/series/@@+status" />
+    <tal:series-list condition="batch">
+      <div class="lesser" id="active-top-navigation">
+        <tal:navigation
+          content="structure view/batched_series/@@+navigation-links-upper" />
       </div>
-    </div>
-
+      <div tal:repeat="series batch">
+        <tal:cache content="cache:public, 1 hour, series/name">
+          <div style="margin-top: 1em;
+                      border-bottom: 1px solid #ccc; max-width: 60em;"
+            tal:define="is_focus series/is_development_focus"
+            tal:attributes="class string:${series/css_class} series;
+                            id series/name/fmt:css-id/series-;">
+            <tal:status replace="structure series/series/@@+status" />
+          </div>
+        </tal:cache>
+      </div>
+      <div class="lesser">
+        <tal:navigation
+          content="structure view/batched_series/@@+navigation-links-lower" />
+      </div>
+    </tal:series-list>
   </div>
 </body>
 </html>

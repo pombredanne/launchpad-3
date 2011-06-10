@@ -18,10 +18,11 @@ threshold.
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 5
-    ... comments_list_truncate_to: 3
+    ... comments_list_truncate_oldest_to: 1
+    ... comments_list_truncate_newest_to: 2
     ... ''')
 
-Now only 3 comments will be displayed.
+Now only 3 comments will be displayed; the oldest and the 2 newest.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
     >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
@@ -32,7 +33,11 @@ With a warning telling the user where the comments have gone:
 
     >>> print extract_text(first_tag_by_class(
     ...     user_browser.contents, 'informational message'))
-    Displaying first 3 comments. View all 6 comments or add a comment.
+    Displaying first 1
+    and last 2
+    comments.
+    View all 6
+    comments or add a comment.
 
 The add comment box is not present so people don't accidentally reply
 to the wrong message.

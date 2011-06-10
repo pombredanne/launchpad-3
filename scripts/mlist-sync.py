@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -37,10 +37,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IEmailAddressSet, IMailingListSet, IPersonSet)
-from canonical.launchpad.mailman.config import configure_prefix
-from lp.services.scripts.base import LaunchpadCronScript
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.mailman.config import configure_prefix
+from lp.services.scripts.base import LaunchpadScript
 
 
 RSYNC_OPTIONS = ('-avz', '--delete')
@@ -49,7 +50,7 @@ RSYNC_SUBDIRECTORIES = ('archives', 'backups', 'lists', 'mhonarc')
 SPACE = ' '
 
 
-class MailingListSyncScript(LaunchpadCronScript):
+class MailingListSyncScript(LaunchpadScript):
     """
     %prog [options] source_url
 
@@ -166,10 +167,8 @@ class MailingListSyncScript(LaunchpadCronScript):
             mlist_addresses = email_address_set.getByPerson(team)
             if mlist_addresses.count() == 0:
                 self.logger.error('No LP email address for: %s', list_name)
-            elif mlist_addresses.count() > 1:
-                # This team has both a mailing list and a contact address.  We
-                # only want to change the former, but we need some heuristics
-                # to figure out which is which.
+            else:
+                # Teams can have both a mailing list and a contact address.
                 old_address = '%s@%s' % (list_name, self.options.hostname)
                 for email_address in mlist_addresses:
                     if email_address.email == old_address:
@@ -180,12 +179,6 @@ class MailingListSyncScript(LaunchpadCronScript):
                 else:
                     self.logger.error('No change to LP email address for: %s',
                                       list_name)
-            else:
-                email_address = removeSecurityProxy(mlist_addresses[0])
-                old_address = email_address.email
-                email_address.email = lp_mailing_list.address
-                self.logger.info('%s -> %s',
-                                 old_address, lp_mailing_list.address)
 
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""
@@ -205,7 +198,7 @@ class MailingListSyncScript(LaunchpadCronScript):
             # Keep going.
 
     def main(self):
-        """See `LaunchpadCronScript`."""
+        """See `LaunchpadScript`."""
         source_url = None
         if len(self.args) == 0:
             self.parser.error('Missing source_url')

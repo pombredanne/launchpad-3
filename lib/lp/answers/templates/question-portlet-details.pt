@@ -4,10 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-details" xml:lang="en" lang="en" dir="ltr">
-
-  <h2>Question information</h2>
-
+<div id="portlet-details" xml:lang="en" lang="en" dir="ltr">
   <div class="two-column-list">
     <dl id="question-lang">
       <dt>Language:</dt>
@@ -16,7 +13,7 @@
         <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
       </dd>
     </dl>
-    
+
     <dl id="question-status">
       <dt>Status:</dt>
       <dd>
@@ -31,13 +28,13 @@
       <dt>For:</dt>
       <dd>
         <a tal:condition="context/product"
-          tal:replace="structure context/product/fmt:link">Firefox</a>
+          tal:replace="structure context/product/fmt:link">UFOs</a>
         <a tal:condition="context/distribution"
-          tal:replace="structure context/distribution/fmt:link">ubuntu</a>
+          tal:replace="structure context/distribution/fmt:link">Illumanati</a>
         <a tal:condition="context/sourcepackagename"
           tal:attributes="href
-          string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}">
-          mozilla-firefox</a>
+          string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}"
+          tal:content="context/sourcepackagename/name">fnord</a>
         <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
       </dd>
     </dl>

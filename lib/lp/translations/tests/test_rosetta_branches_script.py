@@ -12,18 +12,23 @@ __metaclass__ = type
 from unittest import TestLoader
 
 from bzrlib.revision import NULL_REVISION
-from canonical.testing import ZopelessAppServerLayer
 import transaction
 from zope.component import getUtility
 
-from lp.code.model.branchjob import RosettaUploadJob
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
 from canonical.launchpad.scripts.tests import run_script
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.code.model.branchjob import RosettaUploadJob
+from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
+
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
     """Testing the rosetta-bazaar cronscript."""
@@ -38,12 +43,15 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
             queue.remove(entry)
 
     def _setup_series_branch(self, pot_path):
-        self.useTempBzrHome()
+        self.useBzrBranches()
         pot_content = self.factory.getUniqueString()
-        branch, tree = self.createMirroredBranchAndTree()
+        branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes(pot_path, pot_content)
         tree.add(pot_path)
-        revision_id = tree.commit("first commit")
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revision_id = tree.commit("first commit")
         branch.last_scanned_id = revision_id
         branch.last_mirrored_id = revision_id
         series = self.factory.makeProductSeries()

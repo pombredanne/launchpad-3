@@ -1,14 +1,15 @@
-= PO Import test with a .po file that lacks X-Rosetta-Export-Date header =
+PO Import test with a .po file that lacks X-Rosetta-Export-Date header
+======================================================================
 
-When we import a .po file as not 'published', it needs to have a header
-named 'X-Rosetta-Export-Date' to be able to detect conflicts with other
-translations done for the same POFile while we do translations offline.
+When we import a .po file as not coming from upstream, it needs to have a
+header named 'X-Rosetta-Export-Date' to be able to detect conflicts with
+other translations done for the same POFile while we do translations offline.
 Without that header, we cannot detect conflicts, so we don't accept that
 file. We should notify the user about that error so they have a chance
 to fix it.
 
-If the file being imported is 'published', we don't care about
-X-Rosetta-Export-Date header. That's because published translations
+If the file being imported is from upstream, we don't care about
+X-Rosetta-Export-Date header. That's because upstream translations
 don't change translations being used in Rosetta, it's just a reference
 of what upstream has and they only add active translations if there
 isn't one already so there aren't conflicts to solve.
@@ -19,10 +20,11 @@ warn the uploader about this.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -60,9 +62,9 @@ We create the POFile object where we are going to attach the .po file.
 
     >>> pofile = potemplate.newPOFile('cy')
 
-And now, we import a .po file, as not published, that lacks the header
-'X-Rosetta-Export-Date'. That header is the one that notes that the file
-comes from a previous export from Rosetta and when did it happen.
+And now, we import a .po file, not uploaded by the maintainer, that lacks the
+header 'X-Rosetta-Export-Date'. That header is the one that notes that the
+file comes from a previous export from Rosetta and when did it happen.
 
     >>> pofile_contents = r'''
     ... msgid ""
@@ -74,9 +76,9 @@ comes from a previous export from Rosetta and when did it happen.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 
@@ -115,7 +117,7 @@ And the method returned an email with a notification of the error.
     apply your changes and upload the merged file.
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -128,9 +130,9 @@ error_output.
     >>> print entry.error_output
     File was not exported from Launchpad.
 
-We should also be sure that we don't block any import 'published'. That
-kind of import is not blocked if they lack the 'X-Rosetta-Export-Date'
-header.
+We should also be sure that we don't block any import that is coming from
+upstream. That kind of import is not blocked if they lack the
+'X-Rosetta-Export-Date' header.
 
 We need to fetch again some SQLObjects because we did a transaction
 commit.
@@ -142,11 +144,11 @@ commit.
     >>> pofile = potemplate.getPOFileByLang('cy')
     >>> person = person_set.getByName('mark')
 
-Now, attach the file again, but this time as published.
+Now, attach the file again, but this time as coming from upstream.
 
-    >>> published = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_contents, published, person,
+    ...     pofile.path, pofile_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
     >>> transaction.commit()
 

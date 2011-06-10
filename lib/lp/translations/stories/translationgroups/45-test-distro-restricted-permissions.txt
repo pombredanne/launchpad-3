@@ -8,7 +8,8 @@ he is not a designated translator.
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
 
     >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/+settings')
+    ...     'http://translations.launchpad.dev/ubuntu/'
+    ...     '+configure-translations')
 
     >>> admin_browser.getControl(
     ...     'Translation permissions policy').value = ['RESTRICTED']

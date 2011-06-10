@@ -9,34 +9,65 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
 import re
-import transaction
-import sys
 import unittest
-
-from BeautifulSoup import (
-    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
-    ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
 
-from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from BeautifulSoup import (
+    BeautifulSoup,
+    CData,
+    Comment,
+    Declaration,
+    NavigableString,
+    PageElement,
+    ProcessingInstruction,
+    SoupStrainer,
+    Tag,
+    )
+from contrib.oauth import (
+    OAuthConsumer,
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
+    )
+from lazr.restful.interfaces import IRepresentationCache
+from lazr.restful.testing.webservice import WebServiceCaller
+import transaction
+from zope.app.testing.functional import (
+    HTTPCaller,
+    SimpleCookie,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 
-from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    OAUTH_REALM,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+    LayeredDocFileSuite,
+    stop,
+    strip_prefix,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
-from lazr.restful.testing.webservice import WebServiceCaller
-from lp.testing import ANONYMOUS, login, login_person, logout
+from canonical.testing.layers import PageTestLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.errors import NameAlreadyTaken
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.testing import (
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -48,6 +79,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     sending both Basic Auth and cookie credentials raises an exception
     (Bug 39881).
     """
+
     def __init__(self, *args, **kw):
         if kw.get('debug'):
             self._debug = True
@@ -95,10 +127,33 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
-            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
-                oauth_consumer_key)
-            self.access_token = self.consumer.getAccessToken(
-                oauth_access_key)
+            consumers = getUtility(IOAuthConsumerSet)
+            self.consumer = consumers.getByKey(oauth_consumer_key)
+            if oauth_access_key == '':
+                # The client wants to make an anonymous request.
+                self.access_token = OAuthToken(oauth_access_key, '')
+                if self.consumer is None:
+                    # The client is trying to make an anonymous
+                    # request with a previously unknown consumer. This
+                    # is fine: we manually create a "fake"
+                    # OAuthConsumer (it's "fake" because it's not
+                    # really an IOAuthConsumer as returned by
+                    # IOAuthConsumerSet.getByKey) to be used in the
+                    # requests we make.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            else:
+                if self.consumer is None:
+                    # Requests using this caller will be rejected by
+                    # the server, but we have a test that verifies
+                    # such requests _are_ rejected, so we'll create a
+                    # fake OAuthConsumer object.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
+                    self.access_token = OAuthToken(oauth_access_key, '')
+                else:
+                    # The client wants to make an authorized request
+                    # using a recognized consumer key.
+                    self.access_token = self.consumer.getAccessToken(
+                        oauth_access_key)
             logout()
         else:
             self.consumer = None
@@ -106,6 +161,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
 
         self.handle_errors = handle_errors
         WebServiceCaller.__init__(self, handle_errors, domain, protocol)
+
+    default_api_version = "beta"
 
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
@@ -177,7 +234,9 @@ def extract_all_script_and_style_links(content):
 
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
+
     match_classes = set(class_.split())
+
     def class_matcher(value):
         if value is None:
             return False
@@ -237,6 +296,7 @@ def print_feedback_messages(content):
     for message in get_feedback_messages(content):
         print message
 
+
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
     """Given a <table> print the content of each row.
 
@@ -257,6 +317,28 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
         if len(row_content) > 0:
             print sep.join(row_content)
 
+
+def get_radio_button_text_for_field(soup, name):
+    """Find the input called field.name, and return an iterable of strings.
+
+    The resulting output will look something like:
+    ['(*) A checked option', '( ) An unchecked option']
+    """
+    buttons = soup.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                soup.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        yield "%s %s" % (radio, label)
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -265,19 +347,8 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
-        'input', {'name': 'field.%s' % name})
-    for button in buttons:
-        if button.parent.name == 'label':
-            label = extract_text(button.parent)
-        else:
-            label = extract_text(
-                main.find('label', attrs={'for': button['id']}))
-        if button.get('checked', None):
-            radio = '(*)'
-        else:
-            radio = '( )'
-        print radio, label
+    for field in get_radio_button_text_for_field(main, name):
+        print field
 
 
 def strip_label(label):
@@ -350,9 +421,10 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
             #
             # The CData class does not override slicing though, so by slicing
             # node first, we're effectively turning it into a concrete unicode
-            # instance, which does not wrap the contents when its __unicode__()
-            # is called of course.  We could remove the unicode() call
-            # here, but we keep it for consistency and clarity purposes.
+            # instance, which does not wrap the contents when its
+            # __unicode__() is called of course.  We could remove the
+            # unicode() call here, but we keep it for consistency and clarity
+            # purposes.
             result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
@@ -430,7 +502,7 @@ def print_action_links(content):
 
 def print_navigation_links(content):
     """Print navigation menu urls."""
-    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    navigation_links = find_tag_by_id(content, 'navigation-tabs')
     if navigation_links is None:
         print "No navigation links"
         return
@@ -500,7 +572,7 @@ def print_comments(page):
 
 def print_batch_header(soup):
     """Print the batch navigator header."""
-    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    navigation = soup.find('td', {'class': 'batch-navigation-index'})
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
@@ -607,6 +679,21 @@ def setupBrowser(auth=None):
     return browser
 
 
+def setupBrowserForUser(user, password='test'):
+    """Setup a browser grabbing details from a user.
+
+    :param user: The user to use.
+    :param password: The password to use.
+    """
+    naked_user = removeSecurityProxy(user)
+    email = naked_user.preferredemail.email
+    if hasattr(naked_user, '_password_cleartext_cached'):
+        password = naked_user._password_cleartext_cached
+    logout()
+    return setupBrowser(
+        auth="Basic %s:%s" % (str(email), password))
+
+
 def safe_canonical_url(*args, **kwargs):
     """Generate a bytestring URL for an object"""
     return str(canonical_url(*args, **kwargs))
@@ -634,14 +721,59 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
-def stop():
-    # Temporarily restore the real stdout.
-    old_stdout = sys.stdout
-    sys.stdout = sys.__stdout__
+def ws_uncache(obj):
+    """Manually remove an object from the web service representation cache.
+
+    Directly modifying a data model object during a test may leave
+    invalid data in the representation cache.
+    """
+    cache = getUtility(IRepresentationCache)
+    cache.delete(obj)
+
+
+def setupDTCBrowser():
+    """Testbrowser configured for Distribution Translations Coordinators.
+
+    Ubuntu is the configured distribution.
+    """
+    login('foo.bar@canonical.com')
     try:
-        pdb.set_trace()
-    finally:
-        sys.stdout = old_stdout
+        dtg_member = LaunchpadObjectFactory().makePerson(
+            name='ubuntu-translations-coordinator',
+            email="dtg-member@ex.com", password="test")
+    except NameAlreadyTaken:
+        # We have already created the translations coordinator
+        pass
+    else:
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(
+            name="ubuntu-translators",
+            title="Ubuntu Translators",
+            owner=dtg_member)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu.translationgroup = dtg
+    logout()
+    return setupBrowser(auth='Basic dtg-member@ex.com:test')
+
+
+def setupRosettaExpertBrowser():
+    """Testbrowser configured for Rosetta Experts."""
+
+    login('admin@canonical.com')
+    try:
+        rosetta_expert = LaunchpadObjectFactory().makePerson(
+            name='rosetta-experts-member',
+            email='re@ex.com', password='test')
+    except NameAlreadyTaken:
+        # We have already created an Rosetta expert
+        pass
+    else:
+        rosetta_experts_team = removeSecurityProxy(getUtility(
+            ILaunchpadCelebrities).rosetta_experts)
+        rosetta_experts_team.addMember(
+            rosetta_expert, reviewer=rosetta_experts_team,
+            status=TeamMembershipStatus.ADMIN)
+    logout()
+    return setupBrowser(auth='Basic re@ex.com:test')
 
 
 def setUpGlobs(test):
@@ -653,7 +785,11 @@ def setUpGlobs(test):
         'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
+    test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
+        'launchpad-library', '')
     test.globs['setupBrowser'] = setupBrowser
+    test.globs['setupDTCBrowser'] = setupDTCBrowser
+    test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
@@ -678,6 +814,7 @@ def setUpGlobs(test):
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['login'] = login
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
@@ -698,6 +835,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
+    test.globs['ws_uncache'] = ws_uncache
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -731,7 +869,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -793,20 +931,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
+    suite = unittest.TestSuite()
+    checker = doctest.OutputChecker()
     # Add unnumbered tests to the suite individually.
-    checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

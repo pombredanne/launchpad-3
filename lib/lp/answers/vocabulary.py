@@ -12,8 +12,9 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.webapp.vocabulary import (
-    CountableIterator, IHugeVocabulary)
-
+    CountableIterator,
+    IHugeVocabulary,
+    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 
@@ -23,6 +24,7 @@ class FAQVocabulary:
     implements(IHugeVocabulary)
 
     displayname = 'Select a FAQ'
+    step_title = 'Search'
 
     def __init__(self, context):
         """Create a new vocabulary for the context.
@@ -71,5 +73,3 @@ class FAQVocabulary:
         """See `IHugeVocabulary`."""
         results = self.context.findSimilarFAQs(query)
         return CountableIterator(results.count(), results, self.toTerm)
-
-

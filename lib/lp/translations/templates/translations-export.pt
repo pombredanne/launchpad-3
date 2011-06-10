@@ -38,6 +38,11 @@
         This message will tell you where you can download your file.
       </p>
 
+      <p tal:content="view/export_queue_status">
+        There are 201 file reequests on the export queue.  The backlog is
+        approximately 25 minutes.
+      </p>
+
       <div class="actions">
         <p>
          <input type="submit" value="Request Download" />

@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+
 __metaclass__ = type
 __all__ = []
 
@@ -12,7 +13,10 @@ import re
 import subprocess
 import sys
 
-from storm.locals import Or, Not
+from storm.expr import (
+    Join,
+    Or,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -38,7 +42,7 @@ class SanitizeDb(LaunchpadScript):
             "-n", "--dry-run", action="store_true", default=False,
             help="Don't commit changes.")
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         if len(self.args) == 0:
             self.parser.error("PostgreSQL connection string required.")
         elif len(self.args) > 1:
@@ -58,7 +62,6 @@ class SanitizeDb(LaunchpadScript):
             dbname=self.pg_connection_string.dbname,
             dbhost=self.pg_connection_string.host,
             dbuser=self.pg_connection_string.user,
-            implicitBegin=implicit_begin,
             isolation=isolation)
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -88,11 +91,10 @@ class SanitizeDb(LaunchpadScript):
             'oauthnonce',
             'oauthrequesttoken',
             'openidassociation',
-            'openidauthorization',
             'openidconsumerassociation',
             'openidconsumernonce',
-            'openidnonce',
             'openidrpsummary',
+            'openididentifier',
             'requestedcds',
             'scriptactivity',
             'shipitreport',
@@ -130,7 +132,6 @@ class SanitizeDb(LaunchpadScript):
         self.removeInvalidEmailAddresses()
         self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
-        self.scrambleOpenIDIdentifiers()
 
         self.removeDeactivatedPeopleAndAccounts()
 
@@ -160,14 +161,6 @@ class SanitizeDb(LaunchpadScript):
             ('nameblacklist', ['comment']),
             ('person', [
                 'personal_standing_reason',
-                'addressline1',
-                'addressline2',
-                'organization',
-                'city',
-                'province',
-                'country',
-                'postcode',
-                'phone',
                 'mail_resumption_date']),
             ('product', ['reviewer_whiteboard']),
             ('project', ['reviewer_whiteboard']),
@@ -196,8 +189,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.account import Account
         from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
-        from canonical.launchpad.interfaces.launchpad import (
-            ILaunchpadCelebrities)
+        from lp.app.interfaces.launchpad import ILaunchpadCelebrities
         from lp.registry.model.person import Person
         celebrities = getUtility(ILaunchpadCelebrities)
         # This is a slow operation due to the huge amount of cascading.
@@ -264,8 +256,14 @@ class SanitizeDb(LaunchpadScript):
     def removePrivateBugMessages(self):
         """Remove all hidden bug messages."""
         from lp.bugs.model.bugmessage import BugMessage
+        from lp.services.messages.model.message import Message
+        message_ids = list(self.store.using(*[
+            BugMessage,
+            Join(Message, BugMessage.messageID == Message.id),
+            ]).find(BugMessage.id, Message.visible == False))
+        self.store.flush()
         count = self.store.find(
-            BugMessage, BugMessage.visible == False).remove()
+            BugMessage, BugMessage.id.is_in(message_ids)).remove()
         self.store.flush()
         self.logger.info("Removed %d private bug messages.", count)
 
@@ -278,7 +276,7 @@ class SanitizeDb(LaunchpadScript):
 
     def removePrivateHwSubmissions(self):
         """Remove all private hardware submissions."""
-        from canonical.launchpad.database.hwdb import HWSubmission
+        from lp.hardwaredb.model.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
         self.store.flush()
@@ -334,9 +332,9 @@ class SanitizeDb(LaunchpadScript):
 
     def removeInactiveProjects(self):
         """Remove inactive projects."""
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         count = self.store.find(
-            Project, Project.active == False).remove()
+            ProjectGroup, ProjectGroup.active == False).remove()
         self.store.flush()
         self.logger.info("Removed %d inactive product groups.", count)
 
@@ -389,14 +387,14 @@ class SanitizeDb(LaunchpadScript):
                 EmailAddress.status == EmailAddressStatus.NEW,
                 EmailAddress.status == EmailAddressStatus.OLD,
                 EmailAddress.email.lower().like(
-                    '%@example.com', case_sensitive=True))).remove()
+                    u'%@example.com', case_sensitive=True))).remove()
         self.store.flush()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)
 
     def removePPAArchivePermissions(self):
         """Remove ArchivePermission records for PPAs."""
-        from lp.soyuz.interfaces.archive import ArchivePurpose
+        from lp.soyuz.enums import ArchivePurpose
         count = self.store.execute("""
             DELETE FROM ArchivePermission
             USING Archive
@@ -426,17 +424,6 @@ class SanitizeDb(LaunchpadScript):
             """).rowcount
         self.logger.info(
             "Replaced %d hidden email addresses with @example.com", count)
-
-    def scrambleOpenIDIdentifiers(self):
-        """Replace OpenIDIdentifiers with random strings"""
-        count = self.store.execute("""
-            UPDATE Account SET
-                openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000)),
-                old_openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000))
-            """).rowcount
-        self.logger.info("Randomized %d openid identifiers.", count)
 
     def removeUnlinkedEmailAddresses(self):
         """Remove EmailAddresses not linked to a Person.
@@ -529,7 +516,7 @@ class SanitizeDb(LaunchpadScript):
             sql = match.group(0)
 
             # Drop the existing constraint so we can recreate it.
-            drop_sql =  'ALTER TABLE %s DROP CONSTRAINT %s;' % (
+            drop_sql = 'ALTER TABLE %s DROP CONSTRAINT %s;' % (
                 table, constraint)
             restore_sql.append(drop_sql)
             cascade_sql.append(drop_sql)
@@ -599,9 +586,12 @@ class SanitizeDb(LaunchpadScript):
         # deletes because they fail (attempting to change a mutating table).
         # We can repair these caches by forcing the triggers to run for
         # every row.
-        self.store.execute("UPDATE BugMessage SET visible=visible")
+        self.store.execute("""
+            UPDATE Message SET visible=visible
+            FROM BugMessage
+            WHERE BugMessage.message = Message.id
+            """)
 
     def _fail(self, error_message):
         self.logger.fatal(error_message)
         sys.exit(1)
-

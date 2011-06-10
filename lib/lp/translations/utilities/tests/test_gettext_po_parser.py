@@ -6,9 +6,12 @@ import re
 import unittest
 
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 import lp.translations.utilities.gettext_po_parser as gettext_po_parser
+
 
 DEFAULT_HEADER = '''
 msgid ""

@@ -2,7 +2,7 @@
 
   >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.launchpad.database import BinaryPackageRelease
+  >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
   >>> pmount_bin = BinaryPackageRelease.get(15)
   >>> pmount_bin.name
@@ -26,8 +26,8 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
+  >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)
   True

@@ -6,28 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'filter_tests',
-    'list_tests',
     'patch_find_tests',
-    'patch_zope_testresult',
     ]
 
 from unittest import TestSuite
-from testtools import MultiTestResult, iterate_tests
-from zope.testing.testrunner import find, runner
-
-
-class NullOutputFormatter:
-    """A Zope test result OutputFormatter that prints *nothing*.
-
-    This is used to suppress much of the output from the Zope testrunner.
-    """
-
-    # Ideally, this would implement the interface of OutputFormatter and
-    # override all of the methods. Sadly, the interface is massive and not
-    # well-defined.
-
-    def __getattr__(self, name):
-        return lambda *args, **kwargs: None
+from testtools import iterate_tests
+from zope.testing.testrunner import find
 
 
 def patch_find_tests(hook):
@@ -43,14 +27,6 @@ def patch_find_tests(hook):
     def find_tests(*args):
         return hook(real_find_tests(*args))
     find.find_tests = find_tests
-
-
-def list_tests(tests_by_layer_name):
-    """Print all test ids in the result of `testrunner.find_tests`."""
-    for suite in tests_by_layer_name.itervalues():
-        for test in iterate_tests(suite):
-            print test.id()
-    return {}
 
 
 def filter_tests(list_name):
@@ -73,23 +49,3 @@ def filter_tests(list_name):
                 result[layer_name] = new_suite
         return result
     return do_filter
-
-
-def patch_zope_testresult(result):
-    """Patch the Zope test result factory so that our test result is used.
-
-    We need to keep using the Zope test result object since it does all sorts
-    of crazy things to make layers work. So that the output of our result
-    object is used, we disable the output of the Zope test result object.
-
-    :param result: A TestResult instance.
-    """
-    old_zope_factory = runner.TestResult
-    def zope_result_factory(options, tests, layer_name=None):
-        zope_result = old_zope_factory(options, tests, layer_name=layer_name)
-        if isinstance(zope_result, MultiTestResult):
-            return zope_result
-        else:
-            zope_result.options.output = NullOutputFormatter()
-            return MultiTestResult(result, zope_result)
-    runner.TestResult = zope_result_factory

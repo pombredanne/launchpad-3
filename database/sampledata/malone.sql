@@ -196,10 +196,11 @@ INSERT INTO BugSystem (bugsystemtype, name, title, shortdesc, baseurl, owner,
     (SELECT id FROM Person WHERE displayname='Sample Person'),
     'Carrier pidgeon only'
     );
-INSERT INTO BugWatch (bug, bugsystem, remotebug, remotestatus, owner) VALUES (
+INSERT INTO BugWatch (bug, bugsystem, remotebug, remotestatus, remote_importance, owner) VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),
     (SELECT id FROM BugSystem WHERE name='mozilla.org'),
     '42',
     'FUBAR',
+    'BAZBAZ',
     (SELECT id FROM Person WHERE displayname='Sample Person')
     );

@@ -3,13 +3,13 @@
 
 """Tests for error logging & OOPS reporting."""
 
-from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
 import logging
 import os
 import shutil
+import stat
 import StringIO
 import sys
 import tempfile
@@ -17,25 +17,37 @@ from textwrap import dedent
 import traceback
 import unittest
 
+from lazr.batchnavigator.interfaces import InvalidBatchSizeError
+from lazr.restful.declarations import webservice_error
 import pytz
-
+import testtools
 from zope.app.publication.tests.test_zopepublication import (
-    UnauthenticatedPrincipal)
+    UnauthenticatedPrincipal,
+    )
 from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
-from canonical.testing import reset_logging
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.errorlog import (
-    ErrorReport, ErrorReportingUtility, OopsLoggingHandler, ScriptRequest,
-    _is_sensitive)
-from canonical.launchpad.webapp.interfaces import TranslationUnavailable
-from lazr.restful.declarations import webservice_error
+    _is_sensitive,
+    ErrorReport,
+    ErrorReportingUtility,
+    OopsLoggingHandler,
+    ScriptRequest,
+    )
+from canonical.launchpad.webapp.interfaces import NoReferrerError
+from canonical.testing import reset_logging
+from lp.app.errors import (
+    GoneError,
+    TranslationUnavailable,
+    )
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
 
@@ -47,10 +59,11 @@ class ArbitraryException(Exception):
     """Used to test handling of exceptions in OOPS reports."""
 
 
-class TestErrorReport(unittest.TestCase):
+class TestErrorReport(testtools.TestCase):
 
     def tearDown(self):
         reset_logging()
+        super(TestErrorReport, self).tearDown()
 
     def test___init__(self):
         """Test ErrorReport.__init__()"""
@@ -96,7 +109,7 @@ class TestErrorReport(unittest.TestCase):
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
                             [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10,'store_b', 'SELECT\n2')], False)
+                             (5, 10, 'store_b', 'SELECT\n2')], False)
         fp = StringIO.StringIO()
         entry.write(fp)
         self.assertEqual(fp.getvalue(), dedent("""\
@@ -165,7 +178,6 @@ class TestErrorReport(unittest.TestCase):
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
 
-
     def test_read_no_store_id(self):
         """Test ErrorReport.read() for old logs with no store_id."""
         fp = StringIO.StringIO(dedent("""\
@@ -207,8 +219,10 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.db_statements[1], (5, 10, None, 'SELECT 2'))
 
 
-class TestErrorReportingUtility(unittest.TestCase):
+class TestErrorReportingUtility(testtools.TestCase):
+
     def setUp(self):
+        super(TestErrorReportingUtility, self).setUp()
         # ErrorReportingUtility reads the global config to get the
         # current error directory.
         test_data = dedent("""
@@ -223,151 +237,80 @@ class TestErrorReportingUtility(unittest.TestCase):
         shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
         config.pop('test_data')
         reset_logging()
+        super(TestErrorReportingUtility, self).tearDown()
+
+    def test_sets_log_namer_to_a_UniqueFileAllocator(self):
+        utility = ErrorReportingUtility()
+        self.assertIsInstance(utility.log_namer, UniqueFileAllocator)
 
     def test_configure(self):
         """Test ErrorReportingUtility.setConfigSection()."""
         utility = ErrorReportingUtility()
         # The ErrorReportingUtility uses the config.error_reports section
         # by default.
-        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
-        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(config.error_reports.oops_prefix,
+            utility.oops_prefix)
+        self.assertEqual(config.error_reports.error_dir,
+            utility.log_namer._output_root)
         self.assertEqual(
             config.error_reports.copy_to_zlog, utility.copy_to_zlog)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
-        self.assertEqual(config.branchscanner.oops_prefix, utility.prefix)
-        self.assertEqual(config.branchscanner.error_dir, utility.error_dir)
+        self.assertEqual(config.branchscanner.oops_prefix,
+            utility.oops_prefix)
+        self.assertEqual(config.branchscanner.error_dir,
+            utility.log_namer._output_root)
         self.assertEqual(
             config.branchscanner.copy_to_zlog, utility.copy_to_zlog)
 
         # The default error section can be restored.
         utility.configure()
-        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
-        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(config.error_reports.oops_prefix,
+            utility.oops_prefix)
+        self.assertEqual(config.error_reports.error_dir,
+            utility.log_namer._output_root)
         self.assertEqual(
             config.error_reports.copy_to_zlog, utility.copy_to_zlog)
 
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""
         utility = ErrorReportingUtility()
-        default_prefix = config.error_reports.oops_prefix
-        self.assertEqual('T', default_prefix)
-        self.assertEqual('T', utility.prefix)
-
-        # Some scripts will append a string token to the prefix.
-        utility.setOopsToken('CW')
-        self.assertEqual('TCW', utility.prefix)
-
+        utility.setOopsToken('foo')
+        self.assertEqual('Tfoo', utility.oops_prefix)
         # Some scripts run multiple processes and append a string number
         # to the prefix.
         utility.setOopsToken('1')
-        self.assertEqual('T1', utility.prefix)
-
-    def test_newOopsId(self):
-        """Test ErrorReportingUtility.newOopsId()"""
-        utility = ErrorReportingUtility()
-
-        errordir = config.error_reports.error_dir
-
-        # first oops of the day
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-        oopsid, filename = utility.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-91T1')
-        self.assertEqual(filename,
-                         os.path.join(errordir, '2006-04-01/01800.T1'))
-        self.assertEqual(utility.lastid, 1)
-        self.assertEqual(
-            utility.lasterrordir, os.path.join(errordir, '2006-04-01'))
-
-        # second oops of the day
-        now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
-        oopsid, filename = utility.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-91T2')
-        self.assertEqual(filename,
-                         os.path.join(errordir, '2006-04-01/43200.T2'))
-        self.assertEqual(utility.lastid, 2)
-        self.assertEqual(
-            utility.lasterrordir, os.path.join(errordir, '2006-04-01'))
-
-        # first oops of following day
-        now = datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC)
-        oopsid, filename = utility.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-92T1')
-        self.assertEqual(filename,
-                         os.path.join(errordir, '2006-04-02/01800.T1'))
-        self.assertEqual(utility.lastid, 1)
-        self.assertEqual(
-            utility.lasterrordir, os.path.join(errordir, '2006-04-02'))
-
-        # The oops_prefix honours setOopsToken().
-        utility.setOopsToken('XXX')
-        oopsid, filename = utility.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-92TXXX2')
-
-        # Another oops with a native datetime.
-        now = datetime.datetime(2006, 04, 02, 00, 30, 00)
-        self.assertRaises(ValueError, utility.newOopsId, now)
-
-    def test_changeErrorDir(self):
-        """Test changing the error dir using the global config."""
-        utility = ErrorReportingUtility()
-        errordir = utility.error_dir
-
-        # First an oops in the original error directory.
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-        oopsid, filename = utility.newOopsId(now)
-        self.assertEqual(utility.lastid, 1)
-        self.assertEqual(
-            utility.lasterrordir, os.path.join(errordir, '2006-04-01'))
-
-        # ErrorReportingUtility uses the error_dir attribute to
-        # get the current error directory.
-        new_errordir = tempfile.mkdtemp()
-        utility.error_dir = new_errordir
-
-        # Now an oops on the same day, in the new directory.
-        now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
-        oopsid, filename = utility.newOopsId(now)
-
-        # Since it's a new directory, with no previous oops reports, the
-        # id is 1 again, rather than 2.
-        self.assertEqual(oopsid, 'OOPS-91T1')
-        self.assertEqual(utility.lastid, 1)
-        self.assertEqual(
-            utility.lasterrordir, os.path.join(new_errordir, '2006-04-01'))
-
-        shutil.rmtree(new_errordir, ignore_errors=True)
-
-    def test_findLastOopsId(self):
-        """Test ErrorReportingUtility._findLastOopsId()"""
-        utility = ErrorReportingUtility()
-
-        self.assertEqual(config.error_reports.oops_prefix, 'T')
-
-        errordir = utility.errordir()
-        # write some files
-        open(os.path.join(errordir, '12343.T1'), 'w').close()
-        open(os.path.join(errordir, '12342.T2'), 'w').close()
-        open(os.path.join(errordir, '12345.T3'), 'w').close()
-        open(os.path.join(errordir, '1234567.T0010'), 'w').close()
-        open(os.path.join(errordir, '12346.A42'), 'w').close()
-        open(os.path.join(errordir, '12346.B100'), 'w').close()
-
-        self.assertEqual(utility._findLastOopsId(errordir), 10)
+        self.assertEqual('T1', utility.oops_prefix)
 
     def test_raising(self):
         """Test ErrorReportingUtility.raising() with no request"""
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
+        # Set up default file creation mode to rwx------.
+        umask_permission = stat.S_IRWXG | stat.S_IRWXO
+        old_umask = os.umask(umask_permission)
+
         try:
             raise ArbitraryException('xyz')
         except ArbitraryException:
             utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
+
+        # Check errorfile is set with the correct permission: rw-r--r--
+        st = os.stat(errorfile)
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        # Get only the permission bits for this file.
+        file_permission = stat.S_IMODE(st.st_mode)
+        self.assertEqual(file_permission, wanted_permission)
+        # Restore the umask to the original value.
+        os.umask(old_umask)
+
         lines = open(errorfile, 'r').readlines()
 
         # the header
@@ -377,7 +320,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -411,8 +354,7 @@ class TestErrorReportingUtility(unittest.TestCase):
                     'name1': 'value3 \xa7',
                     'name2': 'value2',
                     u'\N{BLACK SQUARE}': u'value4',
-                    }
-                )
+                    })
         request.setInWSGIEnvironment('launchpad.pageid', 'IFoo:+foo-template')
 
         try:
@@ -420,7 +362,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -482,7 +425,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
         self.assertEqual(lines[16], 'xmlrpc args=(1, 2)\n')
@@ -537,7 +481,8 @@ class TestErrorReportingUtility(unittest.TestCase):
                 ('name1', 'value3')], URL='https://launchpad.net/example')
             utility.raising(sys.exc_info(), request, now=now)
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -548,7 +493,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: https://launchpad.net/example\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -579,8 +524,10 @@ class TestErrorReportingUtility(unittest.TestCase):
         now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
 
         class UnprintableException(Exception):
+
             def __str__(self):
                 raise RuntimeError('arrgh')
+            __repr__ = __str__
 
         log = InstalledHandler('SiteError')
         try:
@@ -589,7 +536,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             utility.raising(sys.exc_info(), now=now)
         log.uninstall()
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -632,7 +580,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_unauthorized_without_principal(self):
@@ -645,7 +594,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_unauthorized_with_unauthenticated_principal(self):
@@ -658,7 +608,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failIf(os.path.exists(errorfile))
 
     def test_raising_unauthorized_with_authenticated_principal(self):
@@ -671,7 +622,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             raise Unauthorized('xyz')
         except Unauthorized:
             utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.failUnless(os.path.exists(errorfile))
 
     def test_raising_translation_unavailable(self):
@@ -689,7 +641,105 @@ class TestErrorReportingUtility(unittest.TestCase):
         except TranslationUnavailable:
             utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(
+            TranslationUnavailable.__name__ in utility._ignored_exceptions,
+            'TranslationUnavailable is not in _ignored_exceptions.')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_offsite_referer(self):
+        # Exceptions caused by bad URLs that may not be an Lp code issue.
+        utility = ErrorReportingUtility()
+        errors = set([
+            GoneError.__name__, InvalidBatchSizeError.__name__,
+            NotFound.__name__])
+        self.assertEqual(
+            errors, utility._ignored_exceptions_for_offsite_referer)
+
+    def test_ignored_exceptions_for_offsite_referer_reported(self):
+        # Oopses are reported when Launchpad is the referer for a URL
+        # that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_cross_vhost_referer_reported(self):
+        # Oopses are reported when a Launchpad  vhost is the referer for a URL
+        # that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://bazaar.launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_criss_cross_vhost_referer_reported(self):
+        # Oopses are reported when a Launchpad referer for a bad URL on a
+        # vhost that caused an exception.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        request = TestRequest(
+            environ={
+                'SERVER_URL': 'http://bazaar.launchpad.dev/fnord',
+                'HTTP_REFERER': 'http://launchpad.dev/snarf'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+
+    def test_ignored_exceptions_for_offsite_referer_not_reported(self):
+        # Oopses are not reported when Launchpad is not the referer.
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        # There is no HTTP_REFERER header in this request
+        request = TestRequest(
+            environ={'SERVER_URL': 'http://launchpad.dev/fnord'})
+        try:
+            raise GoneError('fnord')
+        except GoneError:
+            utility.raising(sys.exc_info(), request, now=now)
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_no_referrer_error(self):
+        """Test ErrorReportingUtility.raising() with a NoReferrerError
+        exception.
+
+        An OOPS is not recorded when a NoReferrerError exception is
+        raised.
+        """
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise NoReferrerError('xyz')
+        except NoReferrerError:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
 
     def test_raising_with_string_as_traceback(self):
@@ -709,7 +759,8 @@ class TestErrorReportingUtility(unittest.TestCase):
             exc_tb = traceback.format_exc()
 
         utility.raising((exc_type, exc_value, exc_tb), now=now)
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
 
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
@@ -721,7 +772,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -747,7 +798,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         except ArbitraryException:
             utility.handling(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        errorfile = os.path.join(
+            utility.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -758,7 +810,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
@@ -780,18 +832,18 @@ class TestErrorReportingUtility(unittest.TestCase):
     def test_oopsMessage(self):
         """oopsMessage pushes and pops the messages."""
         utility = ErrorReportingUtility()
-        with utility.oopsMessage({'a':'b', 'c':'d'}):
+        with utility.oopsMessage({'a': 'b', 'c': 'd'}):
             self.assertEqual(
-                {0: {'a':'b', 'c':'d'}}, utility._oops_messages)
+                {0: {'a': 'b', 'c': 'd'}}, utility._oops_messages)
             # An additional message doesn't supplant the original message.
             with utility.oopsMessage(dict(e='f', a='z', c='d')):
                 self.assertEqual({
-                    0: {'a':'b', 'c':'d'},
+                    0: {'a': 'b', 'c': 'd'},
                     1: {'a': 'z', 'e': 'f', 'c': 'd'},
                     }, utility._oops_messages)
             # Messages are removed when out of context.
             self.assertEqual(
-                {0: {'a':'b', 'c':'d'}},
+                {0: {'a': 'b', 'c': 'd'}},
                 utility._oops_messages)
 
     def test__makeErrorReport_includes_oops_messages(self):
@@ -822,7 +874,7 @@ class TestErrorReportingUtility(unittest.TestCase):
                     oops.req_vars)
 
 
-class TestSensitiveRequestVariables(unittest.TestCase):
+class TestSensitiveRequestVariables(testtools.TestCase):
     """Test request variables that should not end up in the stored OOPS.
 
     The _is_sensitive() method will return True for any variable name that
@@ -845,6 +897,7 @@ class TestRequestWithUnauthenticatedPrincipal(TestRequest):
 
 
 class TestRequestWithPrincipal(TestRequest):
+
     def setInWSGIEnvironment(self, key, value):
         self._orig_env[key] = value
 
@@ -884,17 +937,18 @@ class TestOopsLoggingHandler(TestCase):
         TestCase.setUp(self)
         self.logger = logging.getLogger(self.factory.getUniqueString())
         self.error_utility = ErrorReportingUtility()
-        self.error_utility.error_dir = tempfile.mkdtemp()
+        self.error_utility.log_namer._output_root = tempfile.mkdtemp()
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
-        self.addCleanup(remove_tree, self.error_utility.error_dir)
+        self.addCleanup(
+            remove_tree, self.error_utility.log_namer._output_root)
 
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions
         # logged will have OOPS reports generated for them.
         error_message = self.factory.getUniqueString()
         try:
-            ignored = 1/0
+            1 / 0
         except ZeroDivisionError:
             self.logger.exception(error_message)
         oops_report = self.error_utility.getLastOopsReport()
@@ -913,9 +967,29 @@ class TestOopsLoggingHandler(TestCase):
         self.assertIs(None, self.error_utility.getLastOopsReport())
 
 
+class Test404Oops(testtools.TestCase):
+
+    def test_offsite_404_ignored(self):
+        # A request originating from another site that generates a NotFound
+        # (404) is ignored (i.e., no OOPS is logged).
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='example.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_onsite_404_not_ignored(self):
+        # A request originating from a local site that generates a NotFound
+        # (404) produces an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='canonical.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_404_without_referer_is_ignored(self):
+        # If a 404 is generated and there is no HTTP referer, we don't produce
+        # an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict()
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

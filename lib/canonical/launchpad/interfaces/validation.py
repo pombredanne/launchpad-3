@@ -7,9 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'can_be_nominated_for_series',
-    'validate_url',
-    'valid_webref',
-    'valid_branch_url',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
@@ -19,24 +16,28 @@ __all__ = [
     'validate_new_distrotask',
     'valid_upstreamtask',
     'valid_password',
-    'validate_date_interval'
+    'validate_date_interval',
     ]
 
 from cgi import escape
-import urllib
 from textwrap import dedent
 
-from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
+from zope.component import getUtility
+
+from lazr.restful.error import expose
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import NotFoundError
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.cve import valid_cve
+from lp.app.validators.email import valid_email
 
 
 def can_be_nominated_for_series(series):
@@ -54,100 +55,6 @@ def can_be_nominated_for_series(series):
             "series: ${series}", mapping={'series': series_str}))
 
     return True
-
-
-# XXX matsubara 2006-03-15 bug=35077:
-# The validations functions that deals with URLs should be in
-# validators/ and we should have them as separete constraints in trusted.sql.
-def validate_url(url, valid_schemes):
-    """Returns a boolean stating whether 'url' is a valid URL.
-
-       A URL is valid if:
-           - its URL scheme is in the provided 'valid_schemes' list, and
-           - it has a non-empty host name.
-
-       None and an empty string are not valid URLs::
-
-           >>> validate_url(None, [])
-           False
-           >>> validate_url('', [])
-           False
-
-       The valid_schemes list is checked::
-
-           >>> validate_url('http://example.com', ['http'])
-           True
-           >>> validate_url('http://example.com', ['https', 'ftp'])
-           False
-
-       A URL without a host name is not valid:
-
-           >>> validate_url('http://', ['http'])
-           False
-
-      """
-    if not url:
-        return False
-    scheme, host = urllib.splittype(url)
-    if not scheme in valid_schemes:
-        return False
-    if not valid_absolute_url(url):
-        return False
-    return True
-
-
-def valid_webref(web_ref):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_webref('http://example.com')
-    True
-    >>> valid_webref('https://example.com/foo/bar')
-    True
-    >>> valid_webref('ftp://example.com/~ming')
-    True
-    >>> valid_webref('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_webref('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
-        # Allow ftp so valid_webref can be used for download_url, and so
-        # it doesn't lock out weird projects where the site or
-        # screenshots are kept on ftp.
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses either http, https or ftp.""")))
-
-def valid_branch_url(branch_url):
-    """Returns True if web_ref is a valid download URL, or raises a
-    LaunchpadValidationError.
-
-    >>> valid_branch_url('http://example.com')
-    True
-    >>> valid_branch_url('https://example.com/foo/bar')
-    True
-    >>> valid_branch_url('ftp://example.com/~ming')
-    True
-    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
-    True
-    >>> valid_branch_url('other://example.com/moo')
-    Traceback (most recent call last):
-    ...
-    LaunchpadValidationError: ...
-    """
-    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid URL. Please enter the full URL, including the
-            scheme (for instance, http:// for a web URL), and ensure the
-            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 
 def non_duplicate_branch(value):
@@ -188,23 +95,35 @@ def _validate_email(email):
             "${email} isn't a valid email address.",
             mapping={'email': email}))
 
+def _check_email_availability(email):
+    email_address = getUtility(IEmailAddressSet).getByEmail(email)
+    if email_address is not None:
+        # The email already exists; determine what has it.
+        if email_address.person is not None:
+            person = email_address.person
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with <a href="${url}">${person}</a>.',
+                        mapping={'email': escape(email),
+                                'url': canonical_url(person),
+                                'person': escape(person.displayname)})
+        elif email_address.account is not None:
+            account = email_address.account
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with the ${account} account.',
+                        mapping={'email': escape(email),
+                                'account': escape(account.displayname)})
+        else:
+            message = _('${email} is already registered in Launchpad.',
+                        mapping={'email': escape(email)})
+        raise LaunchpadValidationError(structured(message))
+
 
 def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IEmailAddressSet
     _validate_email(email)
-    email_address = getUtility(IEmailAddressSet).getByEmail(email)
-    if email_address is not None:
-        person = email_address.person
-        message = _('${email} is already registered in Launchpad and is '
-                    'associated with <a href="${url}">${team}</a>.',
-                    mapping={'email': escape(email),
-                             'url': canonical_url(person),
-                             'team': escape(person.displayname)})
-        raise LaunchpadValidationError(structured(message))
+    _check_email_availability(email)
     return True
 
 
@@ -217,8 +136,8 @@ def validate_new_person_email(email):
     user that the profile he's trying to create already exists, so there's no
     need to create another one.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IPersonSet
+    from canonical.launchpad.webapp.publisher import canonical_url
+    from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
     if owner is not None:
@@ -302,8 +221,8 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         pass
 
 
-def valid_upstreamtask(bug, product):
-    """Check if a product bugtask already exists for a given bug.
+def valid_upstreamtask(bug, bug_target):
+    """Check if a bugtask already exists for a given bug/target.
 
     If it exists, WidgetsError will be raised.
     """
@@ -312,13 +231,13 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if product.searchTasks(params):
+    if not bug_target.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for ${product}',
-            mapping={'product': product.displayname})))
+                    'A fix for this bug has already been requested for ${target}',
+                    mapping={'target': bug_target.displayname})))
 
-    if errors:
-        raise WidgetsError(errors)
+    if len(errors) > 0:
+        raise expose(WidgetsError(errors), 400)
 
 
 def valid_password(password):

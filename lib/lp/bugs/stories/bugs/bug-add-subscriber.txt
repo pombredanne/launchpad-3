@@ -176,3 +176,21 @@ list.
     Landscape Developers (Subscribed by No Privileges Person)
     Sample Person (Subscribed by Launchpad Janitor)
     Steve Alexander (Subscribed by Launchpad Janitor)
+
+The activity log also does not show subscribed private teams.  If we
+look at the activity log for the bug used above, we'll see that David Allouche
+and Landscape Developers have been subscribed, but we will not see an
+entry in the activity log for Private Team.
+
+    >>> def print_row(row):
+    ...     print ' | '.join(
+    ...         extract_text(cell) for cell in row(('th', 'td')))
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+activity')
+    >>> main_content = find_main_content(user_browser.contents)
+    >>> for row in main_content.table('tr'):
+    ...     print_row(row)
+    Date | Who | What changed | Old value | New value | Message
+    ...
+    ... | ... | ... |  |  | added subscriber David Allouche
+    ... | ... | ... |  |  | added subscriber Landscape Developers

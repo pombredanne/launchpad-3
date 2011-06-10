@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchMergeProposalNeedsReviewEvent',
     'BranchMergeProposalStatusChangeEvent',
     'NewBranchMergeProposalEvent',
     'NewCodeReviewCommentEvent',
@@ -16,7 +17,8 @@ __all__ = [
 from zope.component.interfaces import ObjectEvent
 from zope.interface import implements
 
-from canonical.launchpad.event.interfaces import (
+from lp.code.interfaces.event import (
+    IBranchMergeProposalNeedsReviewEvent,
     IBranchMergeProposalStatusChangeEvent,
     INewBranchMergeProposalEvent,
     INewCodeReviewCommentEvent,
@@ -39,6 +41,11 @@ class BranchMergeProposalStatusChangeEvent(ObjectEvent):
 class NewBranchMergeProposalEvent(ObjectEvent):
     """A new merge has been proposed."""
     implements(INewBranchMergeProposalEvent)
+
+
+class BranchMergeProposalNeedsReviewEvent(ObjectEvent):
+    """The merge proposal has moved from work in progress to needs reivew."""
+    implements(IBranchMergeProposalNeedsReviewEvent)
 
 
 class ReviewerNominatedEvent(ObjectEvent):

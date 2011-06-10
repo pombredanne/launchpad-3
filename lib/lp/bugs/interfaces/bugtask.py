@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -9,13 +9,15 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBlueprintSearch',
+    'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
-    'ConjoinedBugTaskEditError',
+    'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
     'IBugTask',
@@ -26,52 +28,102 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
-    'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
-    'valid_remote_bug_url']
+    'valid_remote_bug_url',
+    ]
 
+import httplib
+
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    use_template,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    List,
+    Text,
+    TextLine,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
-from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BugField, ParticipatingPersonChoice, ProductNameField, SearchTag,
-    StrippedTextLine, Summary)
-from lp.bugs.interfaces.bugwatch import (
-    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
-from lp.soyuz.interfaces.component import IComponent
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
-from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.searchbuilder import all, any, NULL
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.launchpad import (
+    IHasBug,
+    IHasDateCreated,
+    )
+from canonical.launchpad.searchbuilder import (
+    all,
+    any,
+    NULL,
+    )
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_read_operation, export_write_operation, exported,
-    operation_returns_collection_of, operation_parameters, mutator_for,
-    rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
+from lp.bugs.interfaces.bugwatch import (
+    IBugWatch,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.services.fields import (
+    BugField,
+    PersonChoice,
+    ProductNameField,
+    SearchTag,
+    StrippedTextLine,
+    Summary,
+    )
+from lp.soyuz.interfaces.component import IComponent
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -151,29 +203,44 @@ class BugTaskStatus(DBEnumeratedType):
     INCOMPLETE = DBItem(15, """
         Incomplete
 
-        More info is required before making further progress on this bug, likely
-        from the reporter. E.g. the exact error message the user saw, the URL
-        the user was visiting when the bug occurred, etc.
+        More info is required before making further progress on this bug,
+        likely from the reporter. E.g. the exact error message the user saw,
+        the URL the user was visiting when the bug occurred, etc.
+        """)
+
+    OPINION = DBItem(16, """
+        Opinion
+
+        The bug remains open for discussion only. This status is usually
+        used where there is disagreement over whether the bug is relevant
+        to the current target and whether it should be fixed.
         """)
 
     INVALID = DBItem(17, """
         Invalid
 
-        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        This is not a bug. It could be a support request, spam, or a
+        misunderstanding.
         """)
 
     WONTFIX = DBItem(18, """
         Won't Fix
 
-        This will not be fixed. For example, this might be a bug but it's not considered worth
-        fixing, or it might not be fixed in this release.
+        This will not be fixed. For example, this might be a bug but it's not
+        considered worth fixing, or it might not be fixed in this release.
+        """)
+
+    EXPIRED = DBItem(19, """
+        Expired
+
+        This bug is expired. There was no activity for a long time.
         """)
 
     CONFIRMED = DBItem(20, """
         Confirmed
 
-        This bug has been reviewed, verified, and confirmed as something needing
-        fixing. Anyone can set this status.
+        This bug has been reviewed, verified, and confirmed as something
+        needing fixing. Anyone can set this status.
         """)
 
     TRIAGED = DBItem(21, """
@@ -226,8 +293,8 @@ class BugTaskStatusSearch(DBEnumeratedType):
 
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
-        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
+        'INCOMPLETE', 'OPINION', 'INVALID', 'WONTFIX', 'EXPIRED',
+        'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
     INCOMPLETE_WITH_RESPONSE = DBItem(35, """
         Incomplete (with response)
@@ -272,13 +339,34 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
-# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
-# semantics of our current reports would break if it were added to the
-# list below.
+class BugBranchSearch(EnumeratedType):
+    """Bug branch search option.
 
-# XXX: matsubara 2006-02-02 bug=4201:
-# I added the INCOMPLETE as a short-term solution.
+    The possible values to search for bugs having branches attached
+    or not having branches attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BRANCHES = Item("Show only Bugs with linked Branches")
+
+    BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
+
+
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
+
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
@@ -289,11 +377,14 @@ UNRESOLVED_BUGTASK_STATUSES = (
 
 RESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.FIXRELEASED,
+    BugTaskStatus.OPINION,
     BugTaskStatus.INVALID,
-    BugTaskStatus.WONTFIX)
+    BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED)
 
 BUG_SUPERVISOR_BUGTASK_STATUSES = (
     BugTaskStatus.WONTFIX,
+    BugTaskStatus.EXPIRED,
     BugTaskStatus.TRIAGED)
 
 DEFAULT_SEARCH_BUGTASK_STATUSES = (
@@ -305,8 +396,9 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
     BugTaskStatusSearch.INPROGRESS,
     BugTaskStatusSearch.FIXCOMMITTED)
 
-class ConjoinedBugTaskEditError(Exception):
-    """An error raised when trying to modify a conjoined bugtask."""
+DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
+    BugTaskStatusSearchDisplay.items.mapping[item.value]
+    for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
 class UserCannotEditBugTaskStatus(Unauthorized):
@@ -315,7 +407,7 @@ class UserCannotEditBugTaskStatus(Unauthorized):
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskImportance(Unauthorized):
@@ -324,7 +416,7 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     Raised when a user tries to transition to a new importance who
     doesn't have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskMilestone(Unauthorized):
@@ -333,14 +425,30 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
+
+
+class UserCannotEditBugTaskAssignee(Unauthorized):
+    """User not permitted to change bugtask assignees.
+
+    Raised when a user with insufficient prilieges tries to set
+    the assignee of a bug task.
+    """
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-    webservice_error(400) #Bad request.
+    webservice_error(httplib.BAD_REQUEST)
 
-class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
+
+class IllegalRelatedBugTasksParams(Exception):
+    """Exception raised when trying to overwrite all relevant parameters
+    in a search for related bug tasks"""
+    webservice_error(httplib.BAD_REQUEST)
+
+
+class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
@@ -349,22 +457,28 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         BugField(title=_("Bug"), readonly=True))
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product')
+    productID = Attribute('The product ID')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
+    productseriesID = Attribute('The product series ID')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
+    sourcepackagenameID = Attribute('The sourcepackagename ID')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distributionID = Attribute('The distribution ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
+    distroseriesID = Attribute('The distroseries ID')
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
         readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
+    milestoneID = Attribute('The id of the milestone.')
 
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
@@ -381,10 +495,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
+    assigneeID = Attribute('The assignee ID (for eager loading)')
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -423,6 +538,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                "Confirmed."),
                  readonly=True,
                  required=False))
+    date_incomplete = exported(
+        Datetime(title=_("Date Incomplete"),
+                 description=_("The date on which this task was marked "
+                               "Incomplete."),
+                 readonly=True,
+                 required=False))
     date_inprogress = exported(
         Datetime(title=_("Date In Progress"),
                  description=_("The date on which this task was marked "
@@ -433,7 +554,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released."),
+                               "either Won't Fix, Invalid or Fix Released."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
@@ -455,7 +576,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                  readonly=True,
                  required=False))
     date_fix_released = exported(
-        Datetime(title=_("Date Fix Relesaed"),
+        Datetime(title=_("Date Fix Released"),
                  description=_("The date on which this task was marked "
                                "Fix Released."),
                  readonly=True,
@@ -470,8 +591,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
+    task_age = Int(title=_("Age of the bug task"),
+            description=_("The age of this task in seconds, a delta between "
+                         "now and the date the bug task was created."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+        Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         readonly=True,
@@ -516,7 +640,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = exported(
         Bool(description=_(
                 "True or False depending on whether or not there is more "
-                " work required on this bug task."),
+                "work required on this bug task."),
              readonly=True))
 
     @operation_returns_collection_of(Interface) # Actually IBug.
@@ -524,6 +648,28 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     @export_read_operation()
     def findSimilarBugs(user, limit=10):
         """Return the list of possible duplicates for this BugTask."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(person=copy_field(assignee))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getContributorInfo(user, person):
+        """Is the person a contributor to bugs in this task's pillar?
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the search.
+        :param person: The person to check to see if they are a contributor.
+
+        Return a dict with the following values:
+        is_contributor: True if the user has any bugs assigned to him in the
+        context of this bug task's pillar, either directly or by team
+        participation.
+        person_name: the displayname of the person
+        pillar_name: the displayname of the bug task's pillar
+
+        This API call is provided for use by the client Javascript where the
+        calling context does not have access to the person or pillar names.
+        """
 
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
@@ -543,20 +689,23 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole reason
+        this method should be deletable. When we move to context-less bug
+        presentation (where the bug is at /bugs/n?task=ubuntu) then we can
+        eliminate this if it is no longer useful.
         """
 
     def isSubscribed(person):
         """Return True if the person is an explicit subscriber to the
         underlying bug for this bugtask.
 
-        This method is required here so that MentorshipOffers can happen on
-        IBugTask. When we move to context-less bug presentation (where the
-        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
-        no longer useful.
+        This method was documented as being required here so that
+        MentorshipOffers could happen on IBugTask. If that was the sole
+        reason then this method should be deletable.  When we move to
+        context-less bug presentation (where the bug is at
+        /bugs/n?task=ubuntu) then we can eliminate this if it is no
+        longer useful.
         """
 
     @mutator_for(milestone)
@@ -622,6 +771,22 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    def userCanSetAnyAssignee(user):
+        """Check if the current user can set anybody sa a bugtask assignee.
+
+        Owners, drivers, bug supervisors and Launchpad admins can always
+        assign to someone else.  Other users can assign to someone else if a
+        bug supervisor is not defined.
+        """
+
+    def userCanUnassign(user):
+        """Check if the current user can set assignee to None.
+
+        Project owner, project drivers, series drivers, bug supervisors
+        and Launchpad admins can do this always; other users can do this
+        only if they or their reams are the assignee.
+        """
+
     @mutator_for(assignee)
     @operation_parameters(
         assignee=copy_field(assignee))
@@ -653,8 +818,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def asEmailHeaderValue():
         """Return a value suitable for an email header value for this bugtask.
 
-        The return value is a single line of arbitrary length, so header folding
-        should be done by the callsite, as needed.
+        The return value is a single line of arbitrary length, so header
+        folding should be done by the callsite, as needed.
 
         For an upstream task, this value might look like:
 
@@ -697,16 +862,6 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 IBugWatch['bugtasks'].value_type.schema = IBugTask
 
 
-class INullBugTask(IBugTask):
-    """A marker interface for an IBugTask that doesn't exist in a context.
-
-    An INullBugTask is useful when wanting to view a bug in a context
-    where that bug hasn't yet been reported. This might happen, for
-    example, when searching to see if a bug you want to report has
-    already been filed and finding matching reports that don't yet
-    have tasks reported in your context.
-    """
-
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
         "pending_bugwatch",
@@ -733,11 +888,14 @@ UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
         title="Show bugs that are resolved elsewhere"),
     ])
 
+
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
-    searchtext = TextLine(title=_("Bug ID or text:"), required=False)
+    searchtext = TextLine(title=_("Bug ID or search text."), required=False)
     status = List(
         title=_('Status'),
+        description=_('Show only bugs with the given status value '
+                      'or list of values.'),
         value_type=Choice(
             title=_('Status'),
             vocabulary=BugTaskStatusSearch,
@@ -746,22 +904,28 @@ class IBugTaskSearchBase(Interface):
         required=False)
     importance = List(
         title=_('Importance'),
+        description=_('Show only bugs with the given importance '
+                      'or list of importances.'),
         value_type=IBugTask['importance'],
         required=False)
     assignee = Choice(
-        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
+        title=_('Assignee'),
+        description=_('Person entity assigned for this bug.'),
+        vocabulary='ValidAssignee', required=False)
     bug_reporter = Choice(
-        title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
+        title=_('Bug reporter'),
+        description=_('Person entity that filed the bug report.'),
+        vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
-        title=_('Omit duplicate bugs'), required=False,
+        title=_('Omit bugs marked as duplicate,'), required=False,
         default=True)
     omit_targeted = Bool(
-        title=_('Omit bugs targeted to series'), required=False,
+        title=_('Omit bugs targeted to a series'), required=False,
         default=True)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     has_patch = Bool(
-        title=_('Show only bugs with patches available'), required=False,
+        title=_('Show only bugs with patches available.'), required=False,
         default=False)
     has_no_package = Bool(
         title=_('Exclude bugs with packages specified'),
@@ -769,25 +933,53 @@ class IBugTaskSearchBase(Interface):
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+        title=_('Milestone'),
+        description=_('Show only bug tasks targeted to this milestone.'),
+        value_type=IBugTask['milestone'], required=False)
     component = List(
-        title=_('Component'), value_type=IComponent['name'], required=False)
+        title=_('Component'),
+        description=_('Distribution package archive grouping. '
+                      'E.g. main, universe, multiverse'),
+        value_type=IComponent['name'], required=False)
     tag = List(title=_("Tag"), value_type=SearchTag(), required=False)
     status_upstream = List(
-        title=_('Status Upstream'),
+        title=_('Status upstream'),
+        description=_('Indicates the status of any remote watches '
+                      'associated with the bug.  Possible values '
+                      'include: pending_bugwatch, hide_upstream, '
+                      'resolved_upstream, and open_upstream.'),
         value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_supervisor = Choice(
         title=_('Bug supervisor'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs in packages this person or team '
+                      'is subscribed to.'),
         required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs commented on by this person.'),
         required=False)
     subscriber = Choice(
         title=_('Bug subscriber'), vocabulary='ValidPersonOrTeam',
+        description=_('Show only bugs this person or team '
+                      'is directly subscribed to.'),
         required=False)
+    affects_me = Bool(
+        title=_('Show only bugs affecting me'), required=False)
+    has_branches = Bool(
+        title=_('Show bugs with linked branches'), required=False,
+        default=True)
+    has_no_branches = Bool(
+        title=_('Show bugs without linked branches'), required=False,
+        default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -800,7 +992,9 @@ class IBugTaskSearch(IBugTaskSearchBase):
     one value can be selected.)
     """
     tag = List(
-        title=_("Tags"), description=_("Separated by whitespace."),
+        title=_("Tags"),
+        description=_("String or list of strings for tags to search. "
+                      "To exclude, prepend a '-', e.g. '-unwantedtag'"),
         value_type=SearchTag(), required=False)
     tags_combinator = Choice(
         title=_("Tags combination"),
@@ -818,6 +1012,11 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
@@ -837,7 +1036,7 @@ class IFrontPageBugTaskSearch(IBugTaskSearchBase):
     """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
-        vocabulary="DistributionOrProductOrProject")
+        vocabulary="DistributionOrProductOrProjectGroup")
 
 
 class IBugTaskDelta(Interface):
@@ -879,10 +1078,10 @@ class IBugTaskDelta(Interface):
     milestone = Attribute("The milestone for which this task is scheduled.")
 
 
-# XXX Brad Bollenbach 2006-08-03 bugs=55089:
-# This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
+    # XXX Brad Bollenbach 2006-08-03 bugs=55089:
+    # This interface should be renamed.
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
 
 
@@ -898,7 +1097,7 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, or a specific package."""
+    """A bug needing fixing in a distrorelease, or a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
@@ -957,24 +1156,27 @@ class BugTaskSearchParams:
     distribution = None
     distroseries = None
     productseries = None
+
     def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
-                 statusexplanation=None, attachmenttype=None,
-                 orderby=None, omit_dupes=False, subscriber=None,
-                 component=None, pending_bugwatch_elsewhere=False,
-                 resolved_upstream=False, open_upstream=False,
-                 has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_supervisor=None, bug_reporter=None, nominated_for=None,
-                 bug_commenter=None, omit_targeted=False,
-                 date_closed=None, affected_user=None, hardware_bus=None,
-                 hardware_vendor_id=None, hardware_product_id=None,
-                 hardware_driver_name=None, hardware_driver_package_name=None,
+                 attachmenttype=None, orderby=None, omit_dupes=False,
+                 subscriber=None, component=None,
+                 pending_bugwatch_elsewhere=False, resolved_upstream=False,
+                 open_upstream=False, has_no_upstream_bugtask=False, tag=None,
+                 has_cve=False, bug_supervisor=None, bug_reporter=None,
+                 nominated_for=None, bug_commenter=None, omit_targeted=False,
+                 date_closed=None, affected_user=None, affects_me=False,
+                 hardware_bus=None, hardware_vendor_id=None,
+                 hardware_product_id=None, hardware_driver_name=None,
+                 hardware_driver_package_name=None,
                  hardware_owner_is_bug_reporter=None,
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
-                 hardware_is_linked_to_bug=False
-                 ):
+                 hardware_is_linked_to_bug=False,
+                 linked_branches=None, linked_blueprints=None,
+                 structural_subscriber=None, modified_since=None,
+                 created_since=None, exclude_conjoined_tasks=False, cve=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -985,7 +1187,6 @@ class BugTaskSearchParams:
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
         self.owner = owner
-        self.statusexplanation = statusexplanation
         self.attachmenttype = attachmenttype
         self.user = user
         self.orderby = orderby
@@ -1005,6 +1206,7 @@ class BugTaskSearchParams:
         self.bug_commenter = bug_commenter
         self.date_closed = date_closed
         self.affected_user = affected_user
+        self.affects_me = affects_me
         self.hardware_bus = hardware_bus
         self.hardware_vendor_id = hardware_vendor_id
         self.hardware_product_id = hardware_product_id
@@ -1016,6 +1218,13 @@ class BugTaskSearchParams:
         self.hardware_owner_is_subscribed_to_bug = (
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
+        self.linked_branches = linked_branches
+        self.linked_blueprints = linked_blueprints
+        self.structural_subscriber = structural_subscriber
+        self.modified_since = modified_since
+        self.created_since = created_since
+        self.exclude_conjoined_tasks = exclude_conjoined_tasks
+        self.cve = cve
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1042,6 +1251,30 @@ class BugTaskSearchParams:
         # Import this here to avoid circular dependencies
         from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
+        if isinstance(sourcepackage, any):
+            # Unwrap the source package.
+            self.sourcepackagename = any(*[
+                pkg.sourcepackagename for pkg in sourcepackage.query_values])
+            distroseries = any(*[pkg.distroseries for pkg in
+                sourcepackage.query_values if ISourcePackage.providedBy(pkg)])
+            distributions = any(*[pkg.distribution for pkg in
+                sourcepackage.query_values
+                if not ISourcePackage.providedBy(pkg)])
+            if distroseries.query_values and not distributions.query_values:
+                self.distroseries = distroseries
+            elif not distroseries.query_values and distributions.query_values:
+                self.distributions = distributions
+            else:
+                # At this point we have determined that either we have both
+                # distroseries and distributions, or we have neither of them.
+                # We will set both.  Doing so will give us the cross-product,
+                # because searching source packages is
+                # sourcepackagename-specific rather than actually
+                # context-specific. This is not ideal but is tolerable given
+                # no actual use of mixed-type any() exists today.
+                self.distroseries = distroseries
+                self.distributions = distributions
+            return
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
@@ -1049,6 +1282,53 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    def setTarget(self, target):
+        """Constrain the search to only return items in target.
+
+        This is equivalent to calling setProduct etc but the type of target
+        does not need to be known to the caller.
+
+        :param target: A `IHasBug`, or some search term like all/any/none on
+            `IHasBug`. If using all/any all the targets must be of the
+            same type due to implementation limitations. Currently only
+            distroseries and productseries `IHasBug` implementations are
+            supported.
+        """
+        # Yay circular deps.
+        from lp.registry.interfaces.distribution import IDistribution
+        from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.product import IProduct
+        from lp.registry.interfaces.productseries import IProductSeries
+        from lp.registry.interfaces.milestone import IMilestone
+        from lp.registry.interfaces.projectgroup import IProjectGroup
+        from lp.registry.interfaces.sourcepackage import ISourcePackage
+        from lp.registry.interfaces.distributionsourcepackage import \
+            IDistributionSourcePackage
+        if isinstance(target, (any, all)):
+            assert len(target.query_values), \
+                'cannot determine target with no targets'
+            instance = target.query_values[0]
+        else:
+            instance = target
+        if IDistribution.providedBy(instance):
+            self.setDistribution(target)
+        elif IDistroSeries.providedBy(instance):
+            self.setDistroSeries(target)
+        elif IProduct.providedBy(instance):
+            self.setProduct(target)
+        elif IProductSeries.providedBy(instance):
+            self.setProductSeries(target)
+        elif IMilestone.providedBy(instance):
+            self.milestone = target
+        elif ISourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IDistributionSourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IProjectGroup.providedBy(instance):
+            self.setProject(target)
+        else:
+            raise AssertionError("unknown target type %r" % target)
 
     @classmethod
     def _anyfy(cls, value):
@@ -1066,15 +1346,15 @@ class BugTaskSearchParams:
         else:
             return value
 
-
     @classmethod
     def fromSearchForm(cls, user,
-                       order_by=('-importance',), search_text=None,
+                       order_by=('-importance', ), search_text=None,
                        status=list(UNRESOLVED_BUGTASK_STATUSES),
                        importance=None,
                        assignee=None, bug_reporter=None, bug_supervisor=None,
                        bug_commenter=None, bug_subscriber=None, owner=None,
-                       affected_user=None, has_patch=None, has_cve=None,
+                       affected_user=None, affects_me=False,
+                       has_patch=None, has_cve=None,
                        distribution=None, tags=None,
                        tags_combinator=BugTagsSearchCombinator.ALL,
                        omit_duplicates=True, omit_targeted=None,
@@ -1087,7 +1367,9 @@ class BugTaskSearchParams:
                        hardware_owner_is_bug_reporter=None,
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
-                       hardware_is_linked_to_bug=False):
+                       hardware_is_linked_to_bug=False, linked_branches=None,
+                       linked_blueprints=None, structural_subscriber=None,
+                       modified_since=None, created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1107,7 +1389,6 @@ class BugTaskSearchParams:
             from lp.bugs.interfaces.bugattachment import (
                 BugAttachmentType)
             search_params.attachmenttype = BugAttachmentType.PATCH
-            search_params.has_patch = has_patch
         search_params.has_cve = has_cve
         if zope_isinstance(tags, (list, tuple)):
             if len(tags) > 0:
@@ -1154,6 +1435,11 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
+        search_params.linked_branches = linked_branches
+        search_params.linked_blueprints = linked_blueprints
+        search_params.structural_subscriber = structural_subscriber
+        search_params.modified_since = modified_since
+        search_params.created_since = created_since
 
         return search_params
 
@@ -1208,26 +1494,40 @@ class IBugTaskSet(Interface):
         Only BugTasks that the user has access to will be returned.
         """
 
-    def search(params, *args):
+    def search(params, *args, **kwargs):
         """Search IBugTasks with the given search parameters.
 
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
 
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
+        :param search_params: a BugTaskSearchParams object
+        :param args: any number of BugTaskSearchParams objects
+        :param prejoins: (keyword) A sequence of tuples
+            (table, table_join) which should be pre-joined in addition
+            to the default prejoins.
 
         If more than one BugTaskSearchParams is given, return the union of
         IBugTasks which match any of them, with the results ordered by the
         orderby specified in the first BugTaskSearchParams object.
         """
 
-    def getAssignedMilestonesFromSearch(search_results):
-        """Returns distinct milestones for the given tasks.
+    def searchBugIds(params):
+        """Search bug ids.
 
-        :param search_results: A result set yielding BugTask objects,
-            typically the result of calling `BugTaskSet.search()`.
+        This is a variation on IBugTaskSet.search that returns only bug ids.
+
+        :param params: the BugTaskSearchParams to search on.
+        """
+
+    def countBugs(params, group_on):
+        """Count bugs that match params, grouping by group_on.
+
+        :param param: A BugTaskSearchParams object.
+        :param group_on: The column(s) group on - .e.g (
+            Bugtask.distroseriesID, BugTask.milestoneID) will cause
+            grouping by distro series and then milestone.
+        :return: A dict {group_instance: count, ...}
         """
 
     def getStatusCountsForProductSeries(user, product_series):
@@ -1255,7 +1555,8 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None,
+                              limit=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
@@ -1268,6 +1569,7 @@ class IBugTaskSet(Interface):
         :param target: An `IBugTarget`. If a target is provided, only
             bugtasks that belong to the target may be returned. If target
             is None, all bugtargets are searched.
+        :param limit: An int for limiting the number of bugtasks returned.
         :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug
@@ -1287,8 +1589,8 @@ class IBugTaskSet(Interface):
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
-        If minimportance is not None, return only the bug tasks with importance
-        greater than minimportance.
+        If minimportance is not None, return only the bug tasks with
+        importance greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
@@ -1304,19 +1606,6 @@ class IBugTaskSet(Interface):
         """Get the database name for col_name.
 
         If the col_name is unrecognized, a KeyError is raised.
-        """
-
-    # XXX kiko 2006-03-23:
-    # get rid of this kludge when we have proper security for scripts.
-    def dangerousGetAllTasks():
-        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
-
-        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
-        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
-
-        This method exists solely for the purpose of scripts that need
-        to do gardening over all bug tasks; the current example is
-        update-bugtask-targetnamecaches.
         """
 
     def getBugCountsForPackages(user, packages):
@@ -1338,6 +1627,24 @@ class IBugTaskSet(Interface):
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
 
+    def getPrecachedNonConjoinedBugTasks(user, milestone):
+        """List of non-conjoined bugtasks targeted to the milestone.
+
+        The assignee and the assignee's validity are precached.
+        """
+
+    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+        """Get all the milestones for the selected bugtasks' targets."""
+
+    open_bugtask_search = Attribute("A search returning open bugTasks.")
+
+    def buildUpstreamClause(params):
+        """Create a SQL clause to do upstream checks in a bug search.
+        
+        :return: A string SQL expression.
+        """
+
+
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
@@ -1351,7 +1658,16 @@ def valid_remote_bug_url(value):
     return True
 
 
-class IAddBugTaskForm(Interface):
+class ILinkPackaging(Interface):
+    """Form for linking a source package to a project."""
+    add_packaging = Bool(
+        title=_('Link the package to the upstream project?'),
+        description=_('Always suggest this project when adding an '
+                      'upstream bug for this package.'),
+        required=True, default=False)
+
+
+class IAddBugTaskForm(ILinkPackaging):
     """Form for adding an upstream bugtask."""
     # It is tempting to replace the first three attributes here with their
     # counterparts from IUpstreamBugTask and IDistroBugTask.
@@ -1370,7 +1686,7 @@ class IAddBugTaskForm(Interface):
         description=_("The URL of this bug in the remote bug tracker."))
 
 
-class IAddBugTaskWithProductCreationForm(Interface):
+class IAddBugTaskWithProductCreationForm(ILinkPackaging):
 
     bug_url = StrippedTextLine(
         title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,

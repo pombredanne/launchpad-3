@@ -9,7 +9,7 @@ if the site list is set up correctly, otherwise it returns 1.
 
     >>> import subprocess, os
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mailman.config import configure_prefix
+    >>> from lp.services.mailman.config import configure_prefix
     >>> def withlist(callable, *options):
     ...     callable_path = 'lp.services.mailman.testing.' + callable
     ...     args = ' '.join(options)
@@ -113,8 +113,4 @@ The message was delivered to Anne and the archiver.
     X-RcptTo: anne.person@example.com
     <BLANKLINE>
     This is a test message.
-    _______________________________________________
-    Mailing list: http://launchpad.dev/~alpha
-    Post to     : alpha@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/~alpha
-    More help   : http://help.launchpad.dev/ListHelp
+    ...

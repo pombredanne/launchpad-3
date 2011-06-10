@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -13,8 +13,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 
 
@@ -101,6 +100,6 @@ class PackageCacheUpdater(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = PackageCacheUpdater(
-        'update-cache', dbuser=config.statistician.dbuser)
+        'update-cache', dbuser="update-pkg-cache")
     script.lock_and_run()
 

@@ -12,19 +12,19 @@ The MailmanErrorUtility is a ErrorReportingUtility that is configured
 in the [mailman] section of config.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
+    >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     ...     MailmanErrorUtility)
 
     >>> error_utility = MailmanErrorUtility()
     >>> print error_utility._default_config_section
     mailman
 
-    >>> print error_utility.prefix
+    >>> print error_utility.oops_prefix
     TMMX
     >>> print config.mailman.oops_prefix
     TMMX
 
-    >>> print error_utility.error_dir
+    >>> print error_utility.log_namer._output_root
     /var/tmp/mailman-xmlrpc.test
     >>> print config.mailman.error_dir
     /var/tmp/mailman-xmlrpc.test
@@ -36,7 +36,7 @@ Error logging
 The log_exception() function is used by XMLRPCRunner to report known
 exceptions. It reports the OOPS.
 
-    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
+    >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     ...     log_exception)
 
     >>> def test_log_exception():

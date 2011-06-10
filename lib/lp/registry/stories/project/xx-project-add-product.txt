@@ -1,5 +1,5 @@
-Adding a Product to a Project
------------------------------
+Adding a Product to a ProjectGroup
+----------------------------------
 
 A project registrant can add products to a project. Let's add an
 Eye of GNOME product to the GNOME project.  There is a link at the

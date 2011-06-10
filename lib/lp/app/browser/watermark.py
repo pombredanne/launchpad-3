@@ -14,13 +14,18 @@ import cgi
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.traversing.interfaces import (
-    IPathAdapter, ITraversable, TraversalError)
+    IPathAdapter,
+    ITraversable,
+    TraversalError,
+    )
 
-from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 from canonical.launchpad.webapp.publisher import canonical_url
-
+from canonical.lazr.canonicalurl import nearest_provides_or_adapted
 from lp.app.interfaces.headings import (
-    IEditableContextTitle, IMajorHeadingView, IRootContext)
+    IEditableContextTitle,
+    IMajorHeadingView,
+    IRootContext,
+    )
 
 
 class WatermarkTalesAdapter:

@@ -9,9 +9,8 @@
     tal:condition="contributions">
     <h2>
       <span class="see-all">
-        <a tal:attributes="href context/menu:overview/karma/url">
-          All activities
-        </a>
+        <a tal:attributes="href context/menu:overview/karma/url"
+          >Recent activities</a>
       </span>
       Most active in
     </h2>

@@ -13,7 +13,7 @@
   <p>
     This page lists the specifications that
     <tal:name replace="context/displayname" /> is expected to work on, or
-    or is its creator.
+    is its creator.
   </p>
 
   <tal:team_definition define="is_team context/isTeam" >
@@ -31,7 +31,7 @@
 
       <h2>Team member workload</h2>
 
-      <p class="discreet">
+      <p>
         The following people are all members of the
         <span tal:replace="context/displayname">Admins</span> team in
         Launchpad. We list each of their specification workloads so that you

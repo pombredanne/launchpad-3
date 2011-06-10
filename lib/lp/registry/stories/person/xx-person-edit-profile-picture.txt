@@ -16,7 +16,7 @@ or logo.
     >>> find_tag_by_id(browser.contents, 'field.mugshot_current_img').get('src')
     u'/@@/person-mugshot'
 
-    >>> from canonical.launchpad.ftests import set_branding
+    >>> from lp.testing.branding import set_branding
     >>> set_branding(browser, icon=False, logo=False)
 
     >>> browser.getControl('Save Changes').click()

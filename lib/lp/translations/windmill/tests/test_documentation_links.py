@@ -6,18 +6,23 @@
 __metaclass__ = type
 __all__ = []
 
-from windmill.authoring import WindmillTestClient
-
-from canonical.launchpad.windmill.testing import lpuser
-from lp.translations.windmill.testing import TranslationsWindmillLayer
-from lp.testing import TestCaseWithFactory
-
 from zope.security.proxy import removeSecurityProxy
 
-class DocumentationLinksTest(TestCaseWithFactory):
+from lp.app.enums import ServiceUsage
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    )
+from lp.translations.windmill.testing import TranslationsWindmillLayer
+
+
+class DocumentationLinksTest(WindmillTestCase):
     """Test that the documentation links on translation pages work."""
 
     layer = TranslationsWindmillLayer
+    suite_name = "Translation documentation links"
 
     def createPOTemplateWithPOTMsgSets(self, productseries, name,
                                        number_of_potmsgsets):
@@ -37,11 +42,6 @@ class DocumentationLinksTest(TestCaseWithFactory):
         * makes sure it's hidden when you stay on the same translation;
         * makes sure it's shown again when you go to a different translation.
         """
-        client = WindmillTestClient("Translation documentation links")
-
-        start_url = 'http://translations.launchpad.dev:8085/'
-        user = lpuser.TRANSLATIONS_ADMIN
-
 
         # Create a translation group with documentation to use in the test.
         group = self.factory.makeTranslationGroup(
@@ -54,7 +54,7 @@ class DocumentationLinksTest(TestCaseWithFactory):
         project = self.factory.makeProduct(
             name='test-product',
             displayname='Test Product',
-            official_rosetta=True)
+            translations_usage=ServiceUsage.LAUNCHPAD)
         removeSecurityProxy(project).translationgroup = group
 
         potemplate = self.createPOTemplateWithPOTMsgSets(
@@ -64,30 +64,27 @@ class DocumentationLinksTest(TestCaseWithFactory):
         transaction.commit()
 
         # Go to Evolution translations page logged in as translations admin.
-        user.ensure_login(client)
-
-        client.open(
-            url=(u'http://translations.launchpad.dev:8085/test-product/trunk'
-                 u'/+pots/template/es/'))
-        client.waits.forPageLoad(timeout=u'20000')
+        client, start_url = self.getClientFor(
+            '/test-product/trunk/+pots/template/es/',
+            user=lpuser.TRANSLATIONS_ADMIN)
 
         # Make sure notification box is shown.
         client.waits.forElement(classname=u'important-notice-container',
-                                timeout=u'8000')
+                                timeout=FOR_ELEMENT)
         # Click the hide button.
         client.waits.forElement(classname=u'important-notice-cancel-button',
-                                timeout=u'8000')
+                                timeout=FOR_ELEMENT)
         client.click(classname=u'important-notice-cancel-button')
         # Hiding entire container looks ugly, so only the ballon itself
         # is hidden.
         client.waits.forElementProperty(classname=u'important-notice-balloon',
                                         option=u'style.display|none',
-                                        timeout=u'8000')
+                                        timeout=FOR_ELEMENT)
 
         # Navigating to the next page of this translation doesn't show
         # the notification box.
         client.click(classname=u'next')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertProperty(classname=u'important-notice-container',
                                       validator=u'style.display|none')
 
@@ -95,9 +92,9 @@ class DocumentationLinksTest(TestCaseWithFactory):
         # notification box is visible even though user dismissed Spanish
         # translation notification.
         client.open(
-            url=(u'http://translations.launchpad.dev:8085/test-product/trunk'
-                 u'/+pots/template/ca/'))
-        client.waits.forPageLoad(timeout=u'20000')
+            url=(u'%s/test-product/trunk/+pots/template/ca/'
+                 % TranslationsWindmillLayer.base_url))
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertNotProperty(
             classname=u'important-notice-container',
             validator=u'style.display|none')

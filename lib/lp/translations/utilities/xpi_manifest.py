@@ -9,6 +9,10 @@ __all__ = ['make_jarpath', 'XpiManifest']
 import logging
 import re
 
+from lp.translations.interfaces.translationimporter import (
+    TranslationFormatSyntaxError,
+    )
+
 
 def normalize_path(path):
     """Normalize filesystem path within XPI file."""
@@ -127,6 +131,10 @@ class XpiManifest:
 
     def __init__(self, content):
         """Initialize: parse `content` as a manifest file."""
+        if content.startswith('\n'):
+            raise TranslationFormatSyntaxError(
+                message="Manifest begins with newline.")
+
         locales = []
         for line in content.splitlines():
             words = line.split()

@@ -27,7 +27,6 @@
       <metal:advanced_form
         use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
     </tal:show_advanced>
-    <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>

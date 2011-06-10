@@ -1,4 +1,5 @@
-= PO Import test with a .pot file that has a syntax error =
+PO Import test with a .pot file that has a syntax error
+=======================================================
 
 When we import a .pot file with a syntax error, we should notify
 the user about that error so they have a chance to fix it.
@@ -7,8 +8,8 @@ In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -23,8 +24,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-    >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     RosettaImportStatus)
+    >>> from lp.translations.enums import RosettaImportStatus
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -56,9 +56,9 @@ TranslationFormatSyntaxError
     ... msgid "foo"
     ... msgstr ""
     ... '''
-    >>> published = True
+    >>> by_maintainer = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -93,7 +93,7 @@ And the code composed email with a notification of the error.
     answer or file a question at https://answers.launchpad.net/rosetta/
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox.pot
+    http://.../firefox.pot
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -101,7 +101,8 @@ And the code composed email with a notification of the error.
     <BLANKLINE>
 
 
-== Encoding errors ==
+Encoding errors
+===============
 
     >>> potemplate = subset.new(
     ...     name='nonascii',
@@ -117,9 +118,9 @@ And the code composed email with a notification of the error.
     ... msgid "\xa9 Yoyodine Industries"
     ... msgstr ""
     ... '''.encode('utf-8')
-    >>> published = False
+    >>> by_maintainer = False
     >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     potemplate.path, potemplate_contents, published, person,
+    ...     potemplate.path, potemplate_contents, by_maintainer, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
@@ -149,7 +150,7 @@ The uploader receives an email about the encoding problem.
     'ascii' codec can't decode byte ...
     <BLANKLINE>
     For your convenience, you can find the file you uploaded at:
-    http://localhost:58000/.../nonascii.pot
+    http://.../nonascii.pot
     <BLANKLINE>
     Thank you,
     <BLANKLINE>

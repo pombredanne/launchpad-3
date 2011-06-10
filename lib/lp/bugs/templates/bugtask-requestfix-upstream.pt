@@ -36,6 +36,8 @@
 
       <tal:visited_steps
           replace="structure view/widgets/__visited_steps__/hidden" />
+      <tal:add_packaging
+          replace="structure view/widgets/add_packaging/hidden" />
 
       <div class="field">
 
@@ -48,7 +50,7 @@
         </div>
       </div>
 
-      <div id="upstream-text" tal:condition="not: product/official_malone"
+      <div id="upstream-text" tal:condition="not: product/bug_tracking_usage/enumvalue:LAUNCHPAD"
           tal:define="widgets view/bugwatch_widgets;
                       bugtracker product/getExternalBugTracker">
         <p tal:condition="bugtracker">
@@ -154,14 +156,14 @@
       </p>
 
       <tal:no_bug_supervisor tal:condition="not:product/bug_supervisor">
-        <p tal:condition="product/official_malone">
+        <p tal:condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
           <a tal:replace="structure product/owner/fmt:link">Sample Person</a>, the
              <tal:product tal:replace="product/displayname">Firefox</tal:product>
              registrant, will be notified about this bug.
 
         </p>
 
-        <p tal:condition="not: product/official_malone">
+        <p tal:condition="not: product/bug_tracking_usage/enumvalue:LAUNCHPAD">
           There is no bug supervisor for
           <tal:product tal:replace="product/displayname">Firefox</tal:product>.
           This means that there is nobody upstream we can notify about

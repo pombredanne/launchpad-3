@@ -7,9 +7,9 @@ __metaclass__ = type
 
 import unittest
 
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):

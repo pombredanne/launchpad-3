@@ -5,21 +5,29 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
-    ANONYMOUS, login, logout, syncUpdate)
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus)
+    ANONYMOUS,
+    login,
+    logout,
+    syncUpdate,
+    )
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.product import (
-    IProductSet, License)
-from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import LaunchpadFunctionalLayer
-
+    IProductSet,
+    License,
+    )
 from lp.registry.vocabularies import CommercialProjectsVocabulary
+from lp.testing.factory import LaunchpadObjectFactory
+
 
 class TestCommProjVocabulary(TestCase):
     """Test that the CommercialProjectsVocabulary behaves as expected."""

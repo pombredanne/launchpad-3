@@ -8,13 +8,14 @@
 #
 # This script must be called like so:
 #
-# bin/withlist -r canonical.launchpad.mailman.tests.withlist_2.can_import
+# bin/withlist -r lp.services.mailman.tests.withlist_2.can_import
 
 import sys
 
+
 def can_import(mlist):
     try:
-        import canonical.launchpad.mailman
+        import lp.services.mailman
     except ImportError:
         sys.exit(1)
     else:

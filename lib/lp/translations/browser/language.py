@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Language table."""
@@ -14,23 +14,43 @@ __all__ = [
     'LanguageView',
     ]
 
-from zope.lifecycleevent import ObjectCreatedEvent
+from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import Interface
+from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import TextLine
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.browser.translations import TranslationsMixin
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
-from lp.translations.utilities.pluralforms import make_friendly_plural_forms
-
-from canonical.widgets import LabeledMultiCheckBoxWidget
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import LanguageFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
+from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.utilities.pluralforms import (
+    BadPluralExpression,
+    make_friendly_plural_forms,
+    )
 
 
 def describe_language(language):
@@ -44,6 +64,7 @@ def describe_language(language):
 
 class LanguageBreadcrumb(Breadcrumb):
     """`Breadcrumb` for `ILanguage`."""
+
     @property
     def text(self):
         return self.context.englishname
@@ -79,16 +100,38 @@ class LanguageNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class LanguageSetView:
+def _format_language(language):
+    """Format a language as a link."""
+    return LanguageFormatterAPI(language).link(None)
+
+
+class ILanguageSetSearch(Interface):
+    """The collection of languages."""
+
+    search_lang = TextLine(
+        title=u'Name of the language to search for.',
+        required=True)
+
+
+class LanguageSetView(LaunchpadFormView):
     """View class to render main ILanguageSet page."""
     label = "Languages in Launchpad"
     page_title = "Languages"
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.language_search = form.get('find')
+    schema = ILanguageSetSearch
+
+    custom_widget('search_lang', TextWidget, displayWidth=30)
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.initialize(self)
+
+        self.language_search = None
+
+        search_lang_widget = self.widgets.get('search_lang')
+        if (search_lang_widget is not None and
+            search_lang_widget.hasValidInput()):
+            self.language_search = search_lang_widget.getInputValue()
         self.search_requested = self.language_search is not None
 
     @cachedproperty
@@ -102,10 +145,15 @@ class LanguageSetView:
         else:
             return 0
 
+    @cachedproperty
+    def user_languages(self):
+        """The user's preferred languages, or English if none are set."""
+        languages = list(self.user.languages)
+        if len(languages) == 0:
+            languages = [getUtility(ILaunchpadCelebrities).english]
+        return ", ".join(map(_format_language, languages))
 
-# There is no easy way to remove an ILanguage from the database due all the
-# dependencies that ILanguage would have. That's the reason why we don't have
-# such functionality here.
+
 class LanguageAddView(LaunchpadFormView):
     """View to handle ILanguage creation form."""
 
@@ -179,8 +227,32 @@ class LanguageView(TranslationsMixin, LaunchpadView):
                 })
         return translation_teams
 
-    def getTopContributors(self):
-        return self.context.translators[:20]
+    @property
+    def top_contributors(self):
+        """
+        Get the top contributors for a language.
+
+        If an account has been merged, the account into which it was
+        merged will be returned.
+        """
+        top_translators = []
+        for translator in self.context.translators[:30]:
+            # Get only the top 20 contributors
+            if (len(top_translators) >= 20):
+                break
+
+            # For merged account add the target account
+            if translator.merged != None:
+                translator_target = translator.merged
+            else:
+                translator_target = translator
+
+            # Add translator only if it was not previouly added as a
+            # merged account
+            if translator_target not in top_translators:
+                top_translators.append(translator_target)
+
+        return top_translators
 
     @property
     def friendly_plural_forms(self):
@@ -201,6 +273,14 @@ class LanguageView(TranslationsMixin, LaunchpadView):
             item['examples'] = examples
 
         return pluralforms_list
+
+    @property
+    def add_question_url(self):
+        launchpad = getUtility(ILaunchpadCelebrities).launchpad
+        return canonical_url(
+            launchpad,
+            view_name='+addquestion',
+            rootsite='answers')
 
 
 class LanguageAdminView(LaunchpadEditFormView):
@@ -236,14 +316,26 @@ class LanguageAdminView(LaunchpadEditFormView):
     def admin_action(self, action, data):
         self.updateContextFromData(data)
 
-    def validate(self, data):
-        new_code = data.get('code')
-        if new_code == self.context.code:
-            # The code didn't change.
-            return
-
+    def _validateCode(self, new_code):
+        """Validate a change in language code."""
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
 
+    def _validatePluralData(self, pluralforms, pluralexpression):
+        """Validate plural expression and number of plural forms."""
+        try:
+            make_friendly_plural_forms(pluralexpression, pluralforms)
+        except BadPluralExpression, e:
+            self.setFieldError('pluralexpression', str(e))
+
+    def validate(self, data):
+        new_code = data.get('code')
+        if new_code != self.context.code:
+            self._validateCode(new_code)
+
+        pluralexpression = data.get('pluralexpression')
+        pluralforms = data.get('pluralforms')
+        if pluralexpression is not None:
+            self._validatePluralData(pluralforms, pluralexpression)

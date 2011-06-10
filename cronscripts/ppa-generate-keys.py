@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,6 +10,10 @@
 __metaclass__ = type
 
 import _pythonpath
+
+# Avoid crappy circular imports caused by
+# canonical.launchpad.interfaces.__init__
+import canonical.launchpad.interfaces
 
 from canonical.config import config
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator

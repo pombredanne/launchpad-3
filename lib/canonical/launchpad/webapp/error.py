@@ -16,22 +16,24 @@ __all__ = [
 import sys
 import traceback
 
-from zope.interface import implements
-from zope.exceptions.exceptionformatter import format_exception
-from zope.component import getUtility
-from zope.app.exception.interfaces import ISystemErrorView
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.exception.interfaces import ISystemErrorView
+from zope.component import getUtility
+from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.adapter import (
-    clear_request_started, set_request_started)
+    clear_request_started,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
-class SystemErrorView:
+class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
@@ -42,7 +44,7 @@ class SystemErrorView:
     override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
-        '../templates/oops-veryplain.pt')
+        'templates/oops-veryplain.pt')
 
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500
@@ -64,8 +66,7 @@ class SystemErrorView:
     safe_to_show_in_restricted_mode = False
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(SystemErrorView, self).__init__(context, request)
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
@@ -114,8 +115,9 @@ class SystemErrorView:
     def inside_div(self, html):
         """Returns the given HTML inside a div of an appropriate class."""
 
-        return ('<div class="highlighted" '
-                'style="font-family: monospace; font-size: smaller;">'
+        return ('<div class="highlight" style="'
+                "font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;"
+                ' font-size: smaller;">'
                 '%s'
                 '</div>') % html
 
@@ -166,7 +168,7 @@ class SystemErrorView:
     @property
     def layer_help(self):
         if canonical.launchpad.layers.FeedsLayer.providedBy(self.request):
-            return '''<a href="http://help.launchpad.net/Feeds">
+            return '''<a href="https://help.launchpad.net/Feeds">
                       Help with Launchpad feeds</a>'''
         else:
             return None
@@ -207,9 +209,23 @@ class NotFoundView(SystemErrorView):
         """
         referrer = self.request.get('HTTP_REFERER')
         if referrer:
-            return referrer
+            # Since this is going to be included in the page template it will
+            # be coerced into unicode.  The byte string representation
+            # 'should' be ascii, but often it isn't.  The only use for this is
+            # to show a link back to the referring site, so we can't use
+            # replace or ignore.  Best to just pretent it doesn't exist.
+            try:
+                return unicode(referrer)
+            except UnicodeDecodeError:
+                return None
         else:
             return None
+
+
+class GoneView(NotFoundView):
+    """The page is gone, such as a page belonging to a suspended user."""
+    page_title = 'Error: Page gone'
+    response_code = 410
 
 
 class RequestExpiredView(SystemErrorView):
@@ -225,10 +241,6 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
-        # Reset the timeout timer, so that we can issue db queries when
-        # rendering the page.
-        clear_request_started()
-        set_request_started()
 
 
 class InvalidBatchSizeView(SystemErrorView):
@@ -277,3 +289,8 @@ class ReadOnlyErrorView(SystemErrorView):
     def __call__(self):
         return self.index()
 
+
+class NoReferrerErrorView(SystemErrorView):
+    """View rendered when a POST request does not include a REFERER header."""
+
+    response_code = 403 # Forbidden.

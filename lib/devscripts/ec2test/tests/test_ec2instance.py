@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E0702
 
@@ -8,57 +8,15 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from lp.testing.fakemethod import FakeMethod
+
 from devscripts.ec2test.instance import EC2Instance
-
-
-class Stub:
-    """Generic recipient of invocations.
-
-    Use this to:
-     - Stub methods that should do nothing.
-     - Inject failures into methods.
-     - Record whether a method is being called.
-    """
-    # XXX JeroenVermeulen 2009-11-26: This probably exists somewhere
-    # already.  Or if not, maybe it should.  But with a name that won't
-    # turn Stuart Bishop's IRC client into a disco simulator. 
-
-    call_count = 0
-
-    def __init__(self, return_value=None, simulated_failure=None):
-        """Define what to do when this stub gets invoked.
-
-        :param return_value: Something to return from the invocation.
-        :parma simulated_failure: Something to raise in the invocation.
-        """
-        assert return_value is None or simulated_failure is None, (
-            "Stub can raise an exception or return a value, but not both.")
-        self.return_value = return_value
-        self.simulated_failure = simulated_failure
-
-    def __call__(self, *args, **kwargs):
-        """Catch a call.
-
-        Records the fact that an invocation was made in
-        `call_count`.
-
-        If you passed a `simulated_failure` to the constructor, that
-        object is raised.
-
-        :return: The `return_value` you passed to the constructor.
-        """
-        self.call_count += 1
-
-        if self.simulated_failure is not None:
-            raise self.simulated_failure
-
-        return self.return_value
 
 
 class FakeAccount:
     """Helper for setting up an `EC2Instance` without EC2."""
-    acquire_private_key = Stub()
-    acquire_security_group = Stub()
+    acquire_private_key = FakeMethod()
+    acquire_security_group = FakeMethod()
 
 
 class FakeOutput:
@@ -72,8 +30,8 @@ class FakeBotoInstance:
     state = 'running'
     public_dns_name = 'fake-instance'
 
-    update = Stub()
-    stop = Stub()
+    update = FakeMethod()
+    stop = FakeMethod()
     get_console_output = FakeOutput
 
 
@@ -85,7 +43,7 @@ class FakeReservation:
 
 class FakeImage:
     """Helper for setting up an `EC2Instance` without EC2."""
-    run = Stub(return_value=FakeReservation())
+    run = FakeMethod(result=FakeReservation())
 
 
 class FakeFailure(Exception):
@@ -98,8 +56,8 @@ class TestEC2Instance(TestCase):
     def _makeInstance(self):
         """Set up an `EC2Instance`, with stubbing where needed.
 
-        `EC2Instance.shutdown` is replaced with a `Stub`, so check its
-        call_count to see whether it's been invoked.
+        `EC2Instance.shutdown` is replaced with a `FakeMethod`, so check
+        its call_count to see whether it's been invoked.
         """
         session_name = None
         image = FakeImage()
@@ -114,16 +72,16 @@ class TestEC2Instance(TestCase):
             session_name, image, instance_type, demo_networks, account,
             from_scratch, user_key, login)
 
-        instance.shutdown = Stub()
-        instance._report_traceback = Stub()
-        instance.log = Stub()
+        instance.shutdown = FakeMethod()
+        instance._report_traceback = FakeMethod()
+        instance.log = FakeMethod()
 
         return instance
 
     def _runInstance(self, instance, runnee=None, headless=False):
         """Set up and run an `EC2Instance` (but without EC2)."""
         if runnee is None:
-            runnee = Stub()
+            runnee = FakeMethod()
 
         instance.set_up_and_run(False, not headless, runnee)
 
@@ -133,7 +91,7 @@ class TestEC2Instance(TestCase):
         # Not a very useful test, except it establishes the basic
         # assumptions for the other tests.
         instance = self._makeInstance()
-        runnee = Stub()
+        runnee = FakeMethod()
 
         self.assertEqual(0, runnee.call_count)
         self.assertEqual(0, instance.shutdown.call_count)
@@ -164,7 +122,7 @@ class TestEC2Instance(TestCase):
         # If the test runner barfs, the instance swallows the exception
         # and shuts down.
         instance = self._makeInstance()
-        runnee = Stub(simulated_failure=FakeFailure("Headful barfage."))
+        runnee = FakeMethod(failure=FakeFailure("Headful barfage."))
 
         self._runInstance(instance, runnee=runnee, headless=False)
 
@@ -174,7 +132,7 @@ class TestEC2Instance(TestCase):
         # If the instance's test runner fails to set up for a headless
         # run, the instance swallows the exception and shuts down.
         instance = self._makeInstance()
-        runnee = Stub(simulated_failure=FakeFailure("Headless boom."))
+        runnee = FakeMethod(failure=FakeFailure("Headless boom."))
 
         self._runInstance(instance, runnee=runnee, headless=True)
 

@@ -1,4 +1,5 @@
-= DistroSeriesLanguage = 
+DistroSeriesLanguage
+====================
 
 This is a special class which encapsulates the information associated with a
 particular language and distroseries.
@@ -7,8 +8,9 @@ First we need to know which distroserieslanguage we are working with. We
 will work with spanish in Hoary first.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeriesSet, IDistributionSet, ILanguageSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.interfaces.distroserieslanguage import (
     ...     IDistroSeriesLanguage)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
@@ -87,17 +89,16 @@ listing.
 
 This is the one obsolete template.
 
-    >>> for potemplate in hoary.getObsoleteTranslationTemplates():
-    ...     print potemplate.name
-    disabled-template
+    >>> potemplate = hoary.getTranslationTemplateByName('disabled-template')
+    >>> print potemplate.iscurrent
+    False
 
 Also, we can see that the template has an Spanish translation that
-hoary_spanish.pofiles is hidding as expected.
+hoary_spanish.pofiles is hiding as expected.
 
-    >>> for potemplate in hoary.getTranslationTemplates():
-    ...     if potemplate.name == 'disabled-template':
-    ...         print potemplate.getPOFileByLang('es').title
-    Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
+    >>> print potemplate.getPOFileByLang('es').title
+    Spanish (es) translation of disabled-template in Ubuntu Hoary package
+    "evolution"
 
 We also have DummyDistroSeriesLanguages.
 
@@ -113,7 +114,7 @@ as English. Thus English cannot be a DummyDistroSeriesLanguage.
     >>> hoary_english = hoary.getDistroSeriesLanguageOrDummy(english)
     Traceback (most recent call last):
     ...
-    AssertionError: English is not a translatable language.    
+    AssertionError: English is not a translatable language.
 
 A DummyDistroSeriesLanguage gives you the same set of templates to
 translate as a regular DistroSeriesLanguage would.
@@ -132,11 +133,12 @@ NB IF THIS FAILS then it means that the DistroSeriesLanguage object has
 been extended, and the DummyDistroSeriesLanguage has not been similarly
 extended.
 
-   >>> print IDistroSeriesLanguage.providedBy(hoary_amharic)
-   True
+    >>> print IDistroSeriesLanguage.providedBy(hoary_amharic)
+    True
 
 
-= POTemplate Sorting =
+POTemplate Sorting
+------------------
 
 In general, potemplates should be sorted by priority (descending) then name.
 The sample data all has priority 0. So it's all sorted by name (the above

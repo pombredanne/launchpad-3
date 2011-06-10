@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -15,7 +15,8 @@ from zope.component import getUtility
 
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import AccountStatus, IPersonSet
+from canonical.launchpad.interfaces.account import AccountStatus
+from lp.registry.interfaces.person import IPersonSet
 
 
 class ConvertPersonToTeamScript(LaunchpadScript):

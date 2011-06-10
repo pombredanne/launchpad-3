@@ -6,9 +6,10 @@ __metaclass__ = type
 import unittest
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.blueprints.browser.specification import (
-    SpecificationActionMenu, SpecificationContextMenu)
+    SpecificationActionMenu,
+    SpecificationContextMenu,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.menu import check_menu_links
 

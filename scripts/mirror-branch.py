@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
 branch_type_map = {
-    BranchType.HOSTED: 'upload',
     BranchType.MIRRORED: 'mirror',
     BranchType.IMPORTED: 'import'
     }

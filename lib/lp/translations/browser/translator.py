@@ -10,11 +10,19 @@ __all__ = [
 
 import cgi
 
-from lp.translations.interfaces.translator import (
-    ITranslator, IEditTranslator)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    canonical_url,
+    )
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.translations.interfaces.translator import (
+    IEditTranslator,
+    ITranslator,
+    )
 
 
 class TranslatorAdminView(LaunchpadEditFormView):
@@ -37,14 +45,12 @@ class TranslatorAdminView(LaunchpadEditFormView):
             existing_translator is not None):
             # The language changed but it already exists so we cannot accept
             # this edit.
-            existing_translator_link = '<a href="%s">%s</a>' % (
-                canonical_url(existing_translator.translator),
-                cgi.escape(existing_translator.translator.displayname))
-
             self.setFieldError('language',
                 structured(
-                    '%s is already a translator for this language' %
-                    existing_translator_link))
+                    '<a href="%s">%s</a> '
+                    'is already a translator for this language',
+                    canonical_url(existing_translator.translator),
+                    existing_translator.translator.displayname))
 
     @property
     def label(self):

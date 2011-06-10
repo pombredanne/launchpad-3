@@ -11,6 +11,13 @@ bazaar branch.
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
     >>> link.click()
+    
+This page allows the user to import code from various source control systems  
+
+    >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')
+    >>> print extract_text(external_code)
+    If the code is in Git, Mercurial, CVS or Subversion you can
+    request that the branch be imported to Bazaar.
 
 This link is only shown to those that have edit permissions on the
 product series.
@@ -47,7 +54,9 @@ The only field shown is the branch field.
     >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
     >>> sample_browser.getControl('Update').click()
 
-Updating the branch takes the user back to the product series page.
+Updating the branch takes Sample Person back to the product series page,
+where he can see the link to the branch and a link to see the content
+of the branch
 
     >>> print sample_browser.title
     Series trunk : Mozilla Firefox
@@ -56,12 +65,15 @@ Updating the branch takes the user back to the product series page.
     lp://dev/firefox - Sample Person
     Change branch
 
+    >>> print sample_browser.getLink('Browse the code').url
+    http://bazaar.launchpad.dev/~name12/firefox/main/files
+
 The total and recent revision counts for the branch are displayed to
 give an idea of overall and recent activity on the project.
 
     >>> revisions = find_tag_by_id(sample_browser.contents, 'branch-revision-details')
     >>> print extract_text(revisions)
-    15 revisions, 5 in the past month.
+    15 revisions.
 
 A helpful informational message is also shown to the user.
 

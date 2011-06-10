@@ -9,28 +9,44 @@ import StringIO
 import unittest
 
 import transaction
-
-from zope.app.testing import ztapi
-from zope.component import provideAdapter
-from zope.interface import classProvides, implements, Interface
+from zope.component import (
+    provideAdapter,
+    provideUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    Interface,
+    )
 from zope.testing.cleanup import CleanUp
 
-from canonical.lazr.interfaces import IObjectPrivacy
-
 from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
-    check_permission, LaunchpadSecurityPolicy,
-    precache_permission_for_objects)
+    check_permission,
+    LaunchpadSecurityPolicy,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, IAuthorization, ILaunchpadPrincipal, ILaunchpadContainer,
-    IStoreSelector)
+    AccessLevel,
+    ILaunchpadContainer,
+    ILaunchpadPrincipal,
+    IStoreSelector,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, LaunchpadTestRequest)
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, TestCase
+    LaunchpadBrowserRequest,
+    LaunchpadTestRequest,
+    )
+from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.security import IAuthorization
+from lp.app.security import AuthorizationBase
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCase,
+    )
 from lp.testing.factory import ObjectFactory
 
 
@@ -136,7 +152,7 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         """Register a new permission and a fake store selector."""
         super(TestCheckPermissionCaching, self).setUp()
         self.factory = ObjectFactory()
-        ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
+        provideUtility(FakeStoreSelector, IStoreSelector)
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
@@ -152,11 +168,11 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
             `Checker` created by ``checker_factory``.
         """
         permission = self.factory.getUniqueString()
-        ztapi.provideUtility(
-            ILaunchpadPermission, PermissionAccessLevel(), permission)
+        provideUtility(
+            PermissionAccessLevel(), ILaunchpadPermission, permission)
         checker_factory = CheckerFactory()
-        ztapi.provideAdapter(
-            Object, IAuthorization, checker_factory, name=permission)
+        provideAdapter(
+            checker_factory, [Object], IAuthorization, name=permission)
         return Object(), permission, checker_factory
 
     def test_checkPermission_cache_unauthenticated(self):

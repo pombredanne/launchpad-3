@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing XML-RPC services."""
@@ -14,23 +14,28 @@ __all__ = [
     'print_actions',
     'print_dispositions',
     'print_info',
-    'print_review_table',
     'review_list',
     ]
 
 
 import xmlrpclib
 
-from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.database.sqlbase import flush_database_updates
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
-    IMailingListSet, IMessageApprovalSet, MailingListStatus,
-    PostedMessageStatus)
-from lp.registry.interfaces.person import IPersonSet, TeamSubscriptionPolicy
+    IMailingListSet,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    )
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
+from lp.registry.xmlrpc.mailinglist import MailingListAPIView
 
 
 COMMASPACE = ', '
@@ -47,6 +52,7 @@ def fault_catcher(func):
     used which prints faults to match the output of ServerProxy (proper
     exceptions aren't really necessary).
     """
+
     def caller(self, *args, **kws):
         result = func(self, *args, **kws)
         if isinstance(result, xmlrpclib.Fault):
@@ -126,37 +132,6 @@ def print_info(info, full=False):
                 print '    %-25s %-15s' % (address, realname), flags, status
 
 
-def print_review_table(content):
-    """Print a +mailinglists table in a nice format."""
-    table = BeautifulSoup(
-        content,
-        parseOnlyThese=SoupStrainer(attrs=dict(id='mailing-lists')))
-    for tr in table.findAll('tr'):
-        for index, thtd in enumerate(tr.findAll(['th', 'td'])):
-            if thtd.name == 'th':
-                # This is a heading.  To enable the page test to keep
-                # everything on one line with no wrapping, we'll abbreviate
-                # the first three headings.
-                if index < 3:
-                    print thtd.string[:3],
-                else:
-                    print thtd.string,
-            else:
-                # Either there's a radio button here, or a team name, or a
-                # person name.  In the former two cases, print a
-                # representation of whether the button is checked or not.  In
-                # the latter two cases, just print the text.
-                if thtd.input is None:
-                    text = thtd.a.contents[0]
-                    print '%s <%s>' % (text, thtd.a.get('href')),
-                else:
-                    if thtd.input.get('checked', None):
-                        print '(*)',
-                    else:
-                        print '( )',
-        print
-
-
 def print_dispositions(dispositions):
     """Pretty print `IMailingListAPIView.getMessageDispositions()`."""
     for message_id in sorted(dispositions):
@@ -206,11 +181,10 @@ def new_list_for_team(team):
     """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    experts = getUtility(ILaunchpadCelebrities).registry_experts
     reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
-    team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     flush_database_updates()
@@ -228,7 +202,7 @@ def apply_for_list(browser, team_name, rooturl='http://launchpad.dev/',
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
     if private:
-        browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+        browser.getControl('Visibility').value = ['PRIVATE']
         browser.getControl(name='field.subscriptionpolicy').value = [
             'RESTRICTED']
     else:
@@ -264,14 +238,8 @@ def review_list(list_name, status=None):
     """
     if status is None:
         status = MailingListStatus.APPROVED
-    # Any Mailing List Expert will suffice for approving the registration.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    lpadmin = list(experts.allmembers)[0]
-    # Review and approve the mailing list registration.
     list_set = getUtility(IMailingListSet)
-    mailing_list = list_set.get(list_name)
-    mailing_list.review(lpadmin, status)
-    return mailing_list
+    return list_set.get(list_name)
 
 
 class MailmanStub:
@@ -295,15 +263,36 @@ class MailmanStub:
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
         # Simulate acknowledging held messages.
         message_set = getUtility(IMessageApprovalSet)
-        message_ids = set()
         for status in (PostedMessageStatus.APPROVAL_PENDING,
                        PostedMessageStatus.REJECTION_PENDING,
                        PostedMessageStatus.DISCARD_PENDING):
-            for message in message_set.getHeldMessagesWithStatus(status):
-                message_ids.add(message.message_id)
-        for message_id in message_ids:
-            message = message_set.getMessageByMessageID(message_id)
-            message.acknowledge()
+            message_set.acknowledgeMessagesWithStatus(status)
 
 
 mailman = MailmanStub()
+
+
+class MailingListXMLRPCTestProxy(MailingListAPIView):
+    """A low impedance test proxy for code that uses MailingListAPIView."""
+
+    @fault_catcher
+    def getPendingActions(self):
+        return super(MailingListXMLRPCTestProxy, self).getPendingActions()
+
+    @fault_catcher
+    def reportStatus(self, statuses):
+        return super(MailingListXMLRPCTestProxy, self).reportStatus(statuses)
+
+    @fault_catcher
+    def getMembershipInformation(self, teams):
+        return super(
+            MailingListXMLRPCTestProxy, self).getMembershipInformation(teams)
+
+    @fault_catcher
+    def isLaunchpadMember(self, address):
+        return super(MailingListXMLRPCTestProxy, self).isLaunchpadMember(
+            address)
+
+    @fault_catcher
+    def isTeamPublic(self, team_name):
+        return super(MailingListXMLRPCTestProxy, self).isTeamPublic(team_name)

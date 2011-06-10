@@ -16,29 +16,36 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
-from zope.lifecycleevent import ObjectCreatedEvent
+import pytz
 from zope.event import notify
 from zope.interface import implements
+from zope.lifecycleevent import ObjectCreatedEvent
 
-from lp.archivepublisher.debversion import Version
 from canonical.launchpad import _
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from canonical.cachedproperty import cachedproperty
-from lp.registry.interfaces.distribution import (
-    IDistributionMirrorMenuMarker)
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirror)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
-    canonical_url, enabled_with_permission)
+    canonical_url,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.archivepublisher.debversion import Version
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.interfaces.distribution import IDistributionMirrorMenuMarker
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
 
 
 class DistributionMirrorOverviewMenu(NavigationMenu):
@@ -174,7 +181,8 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
             self.next_url = canonical_url(self.context)
             return
 
-        self.next_url = canonical_url(self.context.distribution)
+        self.next_url = canonical_url(self.context.distribution,
+            view_name='+pendingreviewmirrors')
         self.request.response.addInfoNotification(
             "Mirror %s has been deleted." % self.context.title)
         self.context.destroySelf()
@@ -189,7 +197,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
 
     implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
-    field_names = ["displayname", "description", "http_base_url",
+    field_names = ["displayname", "description", "whiteboard", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
     @property
@@ -213,6 +221,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
             owner=self.user, speed=data['speed'], country=data['country'],
             content=data['content'], displayname=data['displayname'],
             description=data['description'],
+            whiteboard=data['whiteboard'],
             http_base_url=data['http_base_url'],
             ftp_base_url=data['ftp_base_url'],
             rsync_base_url=data['rsync_base_url'],
@@ -255,9 +264,9 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 class DistributionMirrorEditView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ["name", "displayname", "description", "http_base_url",
-                   "ftp_base_url", "rsync_base_url", "speed", "country",
-                   "content", "official_candidate"]
+    field_names = ["name", "displayname", "description", "whiteboard",
+                   "http_base_url", "ftp_base_url", "rsync_base_url", "speed",
+                   "country", "content", "official_candidate"]
     @property
     def label(self):
         """See `LaunchpadFormView`."""

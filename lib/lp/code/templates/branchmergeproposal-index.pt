@@ -12,14 +12,41 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
+    .menu-link-set_commit_message {
+    margin-top: 1em;
+    }
     #code-review-votes {
-      margin: 2em 0;
+      margin: 1em 0;
     }
-    #edit-description {
-      margin: 1em 0 0 0;
+    #add-comment-form {
+      max-width: 60em;
+      padding-bottom: 3em;
     }
-    /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
+    #add-comment-form textarea{
+      width: 100%;
+      max-width: inherit;
+    }
+    #add-comment-form .actions {
+      float: right;
+      margin: 0 -0.5em;
+    }
+    #add-comment-review-fields {
+      margin-top: 1em;
+    }
+    #add-comment-review-fields div {
+      display: inline;
+    }
+    #proposal-summary th {
+      font-weight: bold;
+      color: #717171;
+    }
+    #proposal-summary td {
+      padding-left: 0.5em;
+    }
+    .related-bugs-list {
+      padding-left: 20px;
+      padding-bottom: 10px;
+    }
   </style>
 </metal:block>
 
@@ -38,7 +65,8 @@
 </metal:side>
 
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="menu context/menu:context">
 
   <div class="yui-g first">
     <tal:summary replace="structure context/@@+pagelet-summary" />
@@ -66,67 +94,101 @@
     </p>
   </div>
 
-  <div class="yui-g">
-    <div tal:define="link context/menu:context/add_comment"
+  <div id="commit-message" class="yui-g">
+    <div tal:define="link menu/set_commit_message"
          tal:condition="link/enabled"
-         tal:content="structure link/render">
-         Add comment
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_commit_message_link_class">
+      Set commit message
     </div>
-
-    <div id="edit-description" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
-
-    <div id="conversation"
-         tal:content="structure view/conversation/@@+render"/>
-  </div>
-  <!-- Hide inline commenting if YUI isn't used. -->
-  <div id="inline-add-comment" style="display: none">
-  <tal:comment replace="structure context/@@+comment/++form++" />
-      <div class="actions" id="launchpad-form-actions">
-        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
-      </div>
+    <tal:widget replace="structure view/commit_message_html"/>
   </div>
 
-  <script type="text/javascript">
-    YUI().use('lp.comment', function(Y) {
-    var comment = new Y.lp.CodeReviewComment();
-    comment.render();
-    })
-  </script>
-  <div class="yui-g">
-    <div class="yui-u first">
-      <div id="source-revisions"
-           tal:condition="not: context/queue_status/enumvalue:MERGED">
-
-        <tal:history-available condition="context/source_branch/revision_count"
-                               define="branch context/source_branch;
-                                       revisions view/unlanded_revisions">
-          <h2>Unmerged revisions</h2>
-          <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
-        </tal:history-available>
-
-        <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
-          <h2>Unmerged revisions</h2>
-          <p>Recent revisions are not available due to the source branch being remote.</p>
-        </tal:remote-branch>
-      </div>
+  <div id="description" class="yui-g">
+    <div tal:define="link menu/set_description"
+         tal:condition="link/enabled"
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_description_link_class">
+      Set description
     </div>
+    <tal:widget replace="structure view/description_html"/>
+  </div>
 
-    <div class="yui-u" tal:condition="view/has_bug_or_spec">
-      <div id="related-bugs-and-blueprints"
+  <div class="yui-g" tal:condition="view/has_bug_or_spec">
+      <div id="related-bugs-and-blueprints" class="related-bugs-list"
         tal:define="branch context/source_branch">
-        <h2>Linked bug reports and blueprints</h2>
         <div class="actions">
-
           <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
         </div>
         <div class="actions">
           <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
         </div>
       </div>
+  </div>
+
+  <div class="yui-g">
+    <tal:not-logged-in condition="not: view/user">
+      <div align="center" id="add-comment-login-first">
+        To post a comment you must <a href="+login">log in</a>.
+      </div>
+    </tal:not-logged-in>
+
+    <div tal:define="link menu/add_comment"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+         Add comment
+    </div>
+
+    <div id="conversation"
+         tal:content="structure view/conversation/@@+render"/>
+  </div>
+
+  <tal:logged-in condition="view/user">
+    <div tal:define="comment_form nocall:context/@@+comment;
+                     dummy comment_form/initialize">
+      <h2 id="add-comment">Add comment</h2>
+      <form action="+comment"
+            method="post"
+            enctype="multipart/form-data"
+            accept-charset="UTF-8"
+            id="add-comment-form">
+        <tal:comment-input replace="structure comment_form/widgets/comment"/>
+        <div id="add-comment-review-fields">
+            Review: <tal:review replace="structure comment_form/widgets/vote"/>
+            Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
+            <div class="actions"
+                 tal:content="structure comment_form/actions/field.actions.add/render" />
+        </div>
+      </form>
+    </div>
+  </tal:logged-in>
+
+  <div class="yui-g">
+    <div id="source-revisions"
+         tal:condition="not: context/queue_status/enumvalue:MERGED">
+
+      <tal:history-available condition="context/source_branch/revision_count"
+                             define="branch context/source_branch;
+                                     revisions view/unlanded_revisions">
+        <h2>Unmerged revisions</h2>
+        <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+      </tal:history-available>
+      <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+        <h2>Unmerged revisions</h2>
+        <p>Recent revisions are not available due to the source branch being remote.</p>
+      </tal:remote-branch>
     </div>
   </div>
 
+  <div class="yui-g" tal:condition="view/pending_diff">
+    <div class="pending-update" id="diff-pending-update">
+      <h3>Updating diff...</h3>
+      <p>
+        An updated diff will be available in a few minutes.  Reload to see the
+        changes.
+      </p>
+    </div>
+  </div>
   <div id="review-diff" tal:condition="view/preview_diff">
     <h2>Preview Diff</h2>
     <div tal:replace="structure context/@@++diff"/>
@@ -137,21 +199,26 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
-            function(Y) {
+  LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
+          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
 
+    Y.on('load', function() {
+        var logged_in = LP.links['me'] !== undefined;
 
-  if(Y.UA.ie) {
-      return;
-  }
+        if (logged_in) {
+            var comment = new Y.lp.app.comment.CodeReviewComment();
+            comment.render();
 
-  Y.on('domready', function() {
-      Y.code.codereview.connect_links();
-      Y.code.branchmergeproposal.connect_status(conf);
-  });
+            if(Y.UA.ie) {
+                return;
+            }
 
-  (new Y.codereview.NumberToggle()).render();
-
+            Y.lp.code.branchmergeproposal.status.connect_status(conf);
+        }
+        Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
+        (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
+            ).render();
+      }, window);
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

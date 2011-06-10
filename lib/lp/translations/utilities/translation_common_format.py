@@ -12,10 +12,13 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationFileData, ITranslationMessageData)
+    ITranslationFileData,
+    ITranslationMessageData,
+    )
+from lp.translations.interfaces.translationimporter import (
+    TranslationFormatSyntaxError,
+    )
 
 
 class TranslationFileData:

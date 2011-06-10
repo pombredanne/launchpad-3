@@ -19,11 +19,9 @@
 
     <div metal:fill-slot="main">
       There are currently
-      <strong class="registry-stat"
-              tal:content="view/number_of_people">7</strong>
+      <strong tal:content="view/number_of_people">7</strong>
       people and
-      <strong class="registry-stat"
-              tal:content="view/number_of_teams">7</strong>
+      <strong tal:content="view/number_of_teams">7</strong>
       teams registered in Launchpad.
       <tal:search define="batch view/searchPeopleBatchNavigator">
         <div>
@@ -145,12 +143,12 @@
             <tal:navigation
              replace="structure batch/@@+navigation-links-upper"/>
           </tal:multipage>
-          <table class="listing">
+          <table id="people-results" class="listing sortable">
             <thead>
               <tr>
                 <th>Name</th>
                 <th>Launchpad ID</th>
-                <th>Karma</th>
+                <th tal:condition="not: view/is_teams_only">Karma</th>
               </tr>
             </thead>
             <tbody>
@@ -159,7 +157,14 @@
                        tal:attributes="href person/fmt:url"/>
                 </td>
                 <td tal:content="person/name">foobar</td>
-                <td class="amount" tal:content="person/karma">34</td>
+                <td class="amount"
+                  tal:condition="not: view/is_teams_only">
+                  <tal:user
+                    condition="not: person/is_team"
+                    content="person/karma">34</tal:user>
+                  <tal:team
+                    condition="person/is_team">&mdash;</tal:team>
+                </td>
               </tr>
             </tbody>
           </table>

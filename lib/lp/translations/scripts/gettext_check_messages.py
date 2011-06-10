@@ -1,21 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = ['GettextCheckMessages']
 
-from datetime import timedelta, datetime
-
-import gettextpo
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.translationmessage import (
-    ITranslationMessageSet)
-from canonical.launchpad.helpers import validate_translation
 from lp.services.scripts.base import LaunchpadScript
+from lp.translations.interfaces.translationmessage import (
+    ITranslationMessageSet,
+    )
+from lp.translations.utilities.validate import (
+    GettextValidationError,
+    validate_translation,
+    )
 
 
 class GettextCheckMessages(LaunchpadScript):
@@ -32,14 +37,12 @@ class GettextCheckMessages(LaunchpadScript):
 
     This script takes a given set of messages (specified as an SQL
     "WHERE" clause) and checks each of them.  Messages that are found
-    faulty are deactivated, and where appropriate, imported messages
-    they were overriding are activated instead.
+    faulty are deactivated.
     """
 
     _check_count = 0
     _error_count = 0
     _disable_count = 0
-    _unmask_count = 0
     _commit_count = 0
 
     _commit_interval = timedelta(0, 3)
@@ -70,23 +73,19 @@ class GettextCheckMessages(LaunchpadScript):
         self.logger.info("Messages checked: %d" % self._check_count)
         self.logger.info("Validation errors: %d" % self._error_count)
         self.logger.info("Messages disabled: %d" % self._disable_count)
-        self.logger.info("Messages unmasked: %d" % self._unmask_count)
         self.logger.info("Commit points: %d" % self._commit_count)
 
-    def _log_bad_message(self, bad_message, unmasked_message, error):
+    def _log_bad_message(self, bad_message, error):
         """Report gettext validation error for active message."""
         currency_markers = []
-        if bad_message.is_current:
-            currency_markers.append('current')
-        if bad_message.is_imported:
-            currency_markers.append('imported')
+        if bad_message.is_current_ubuntu:
+            currency_markers.append('ubuntu')
+        if bad_message.is_current_upstream:
+            currency_markers.append('upstream')
         if currency_markers == []:
             currency_markers.append('unused')
         currency = ', '.join(currency_markers)
         self.logger.info("%d (%s): %s" % (bad_message.id, currency, error))
-        if unmasked_message is not None:
-            self.logger.info(
-                "%s: unmasked %s." % (bad_message.id, unmasked_message.id))
 
     def _check_message_for_error(self, translationmessage):
         """Return error message for `translationmessage`, if any.
@@ -94,26 +93,18 @@ class GettextCheckMessages(LaunchpadScript):
         :return: Error message string if there is an error, or None otherwise.
         """
         potmsgset = translationmessage.potmsgset
-        msgids = potmsgset._list_of_msgids()
-        msgstrs = translationmessage.translations
+        # validate_translation takes a dict but translations are a list.
+        msgstrs = dict(enumerate(translationmessage.translations))
 
         try:
-            validate_translation(msgids, msgstrs, potmsgset.flags)
-        except gettextpo.error, error:
+            validate_translation(
+                potmsgset.singular_text, potmsgset.plural_text,
+                msgstrs, potmsgset.flags)
+        except GettextValidationError, error:
             self._error_count += 1
             return unicode(error)
 
         return None
-
-    def _get_imported_alternative(self, translationmessage):
-        """Look for a valid, imported alternative for this message."""
-        if translationmessage.is_imported:
-            return None
-
-        potmsgset = translationmessage.potmsgset
-        pofile = translationmessage.pofile
-        return potmsgset.getImportedTranslationMessage(
-            pofile.potemplate, pofile.language, pofile.variant)
 
     def _check_and_fix(self, translationmessage):
         """Check message against gettext, and fix it if necessary."""
@@ -121,23 +112,17 @@ class GettextCheckMessages(LaunchpadScript):
         if error is None:
             return
 
-        imported = self._get_imported_alternative(translationmessage)
-        if imported is not None:
-            # There is also an imported message that the current message
-            # was previously masking.  If that one passes checks, we can
-            # activate it instead.  Disabling the current message
-            # "unmasks" the imported one.
-            imported_error = self._check_message_for_error(imported)
-            if imported_error is not None:
-                imported = None
+        # Here would be the place to check if another message can be used
+        # instead of the bad one.
 
-        self._log_bad_message(translationmessage, imported, error)
-        if translationmessage.is_current:
-            translationmessage.is_current = False
+        self._log_bad_message(translationmessage, error)
+        is_current_anywhere = (
+            translationmessage.is_current_ubuntu or
+            translationmessage.is_current_upstream)
+        if is_current_anywhere:
+            translationmessage.is_current_ubuntu = False
+            translationmessage.is_current_upstream = False
             self._disable_count += 1
-            if imported is not None:
-                imported.is_current = True
-                self._unmask_count += 1
 
     def _do_commit(self):
         """Commit ongoing transaction, start a new one."""

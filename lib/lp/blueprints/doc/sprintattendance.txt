@@ -15,8 +15,9 @@ and they must be UTC
     >>> time_starts = datetime.datetime(2019, 6, 21, 0, 0, 0, 0, UTC)
     >>> time_ends = datetime.datetime(2019, 7, 4, 0, 0, 0, 0, UTC)
     >>> sprint_attendance = SprintAttendance(
-    ...     sprint=sprint, attendee=person,
-    ...     time_starts=time_starts, time_ends=time_ends)
+    ...     sprint=sprint, attendee=person)
+    >>> sprint_attendance.time_starts = time_starts
+    >>> sprint_attendance.time_ends = time_ends
 
 The SprintAttendance object implements ISprintAttendance.
 
@@ -47,14 +48,3 @@ is true.
 
     >>> sprint_attendance.is_physical
     True
-
-The is_physical value can be specified when a SprintAttendance instance is
-created.
-
-    >>> person_2 = factory.makePerson(name='plum')
-    >>> sprint_attendance_2 = SprintAttendance(
-    ...     sprint=sprint, attendee=person_2,
-    ...     time_starts=time_starts, time_ends=time_ends,
-    ...     is_physical=False)
-    >>> sprint_attendance_2.is_physical
-    False

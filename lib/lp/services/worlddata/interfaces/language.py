@@ -13,11 +13,34 @@ __all__ = [
     'TextDirection',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field, Set
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_returns_collection_of,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Set,
+    TextLine,
+    )
 
 
 class TextDirection(DBEnumeratedType):
@@ -42,33 +65,48 @@ class ILanguage(Interface):
 
     id = Attribute("This Language ID.")
 
-    code = TextLine(
+    code = exported(TextLine(
         title=u'The ISO 639 code',
-        required=True)
+        required=True))
 
-    englishname = TextLine(
-        title=u'The English name',
-        required=True)
+    englishname = exported(
+        TextLine(
+            title=u'The English name',
+            required=True),
+        exported_as='english_name')
 
     nativename = TextLine(
         title=u'Native name',
         description=u'The name of this language in the language itself.',
         required=False)
 
-    pluralforms = Int(
-        title=u'Number of plural forms',
-        description=u'The number of plural forms this language has.',
-        required=False)
+    pluralforms = exported(
+        Int(
+            title=u'Number of plural forms',
+            description=u'The number of plural forms this language has.',
+            required=False),
+        exported_as='plural_forms')
 
-    pluralexpression = TextLine(
-        title=u'Plural form expression',
-        description=(u'The expression that relates a number of items to the'
-                     u' appropriate plural form.'),
-        required=False)
+    guessed_pluralforms = Int(
+        title=u"Number of plural forms, or a reasonable guess",
+        required=False, readonly=True)
 
-    translators = Field(
+    pluralexpression = exported(
+        TextLine(
+            title=u'Plural form expression',
+            description=(u'The expression that relates a number of items'
+                         u' to the appropriate plural form.'),
+            required=False),
+        exported_as='plural_expression')
+
+    translators = doNotSnapshot(Field(
         title=u'List of Person/Team that translate into this language.',
-        required=True)
+        required=True))
+
+    translators_count = exported(
+        Int(
+            title=u"Total number of translators for this language.",
+            readonly=True))
 
     translation_teams = Field(
         title=u'List of Teams that translate into this language.',
@@ -92,17 +130,20 @@ class ILanguage(Interface):
         Provided by SQLObject.
         """
 
-    visible = Bool(
-        title=u'Visible',
-        description=(
-            u'Whether this language should ususally be visible or not.'),
-        required=True)
+    visible = exported(
+        Bool(
+            title=u'Visible',
+            description=(
+                u'Whether this language is visible by default.'),
+            required=True))
 
-    direction = Choice(
-        title=u'Text direction',
-        description=u'The direction of text in this language.',
-        required=True,
-        vocabulary=TextDirection)
+    direction = exported(
+        Choice(
+            title=u'Text direction',
+            description=u'The direction of text in this language.',
+            required=True,
+            vocabulary=TextDirection),
+        exported_as='text_direction')
 
     displayname = TextLine(
         title=u'The displayname of the language',
@@ -120,23 +161,42 @@ class ILanguage(Interface):
         readonly=True)
 
     abbreviated_text_dir = TextLine(
-        title=(u'The abbreviated form of the text direction, suitable for use'
-               u' in HTML files.'),
+        title=(u'The abbreviated form of the text direction, suitable'
+               u' for use in HTML files.'),
         required=True,
         readonly=True)
 
-    def getFullCode(variant=None):
-        """Compose full language code for this language."""
-
-    def getFullEnglishName(variant=None):
-        """Compose full English name for this language."""
+    @invariant
+    def validatePluralData(form_language):
+        pair = (form_language.pluralforms, form_language.pluralexpression)
+        if None in pair and pair != (None, None):
+            raise Invalid(
+                'The number of plural forms and the plural form expression '
+                'must be set together, or not at all.')
 
 
 class ILanguageSet(Interface):
-    """The collection of languages."""
+    """The collection of languages.
 
-    common_languages = Attribute("An iterator over languages that are "
-        "not hidden.")
+    The standard get method will return only the visible languages.
+    If you want to access all languages known to Launchpad, use
+    the getAllLanguages method.
+    """
+
+    export_as_webservice_collection(ILanguage)
+
+    @export_read_operation()
+    @operation_returns_collection_of(ILanguage)
+    @call_with(want_translators_count=True)
+    def getAllLanguages(want_translators_count=False):
+        """Return a result set of all ILanguages from Launchpad."""
+
+    @collection_default_content(want_translators_count=True)
+    def getDefaultLanguages(want_translators_count=False):
+        """An API wrapper for `common_languages`"""
+
+    common_languages = Attribute(
+        "An iterator over languages that are not hidden.")
 
     def __iter__():
         """Returns an iterator over all languages."""
@@ -164,12 +224,6 @@ class ILanguageSet(Interface):
         """Convert a list of ISO language codes to language objects.
 
         Unrecognised language codes are ignored.
-        """
-
-    def getLanguageAndVariantFromString(language_string):
-        """Return the ILanguage and variant that language_string represents.
-
-        If language_string doesn't represent a know language, return None.
         """
 
     def createLanguage(code, englishname, nativename=None, pluralforms=None,

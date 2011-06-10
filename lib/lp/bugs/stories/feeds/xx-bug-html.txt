@@ -4,8 +4,10 @@ HTML feeds produce snippets of html for inclusion in user's own web pages.
 The content of an HTML feed is very similar to an Atom feed, but is formatted
 as HTML instead of Atom.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> from BeautifulSoup import SoupStrainer
+    >>> from BeautifulSoup import (
+    ...     BeautifulSoup,
+    ...     SoupStrainer,
+    ...     )
 
 Define a helper function for parsing the entries:
 
@@ -72,7 +74,7 @@ as the latest bugs feed for a product.
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html?'
     ...              'show_column=bugtargetdisplayname')
     >>> browser.title
-    'Bugs in the Mozilla Project'
+    'Bugs in The Mozilla Project'
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 

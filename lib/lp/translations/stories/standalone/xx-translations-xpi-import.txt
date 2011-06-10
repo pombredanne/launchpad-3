@@ -36,7 +36,7 @@ Lets check the import queue to edit this entry and set the name.
 
   >>> browser.getLink('Translation Import Queue').click()
   >>> print browser.getLink(url='en-US.xpi').url
-  http://localhost:58000/.../en-US.xpi
+  http://.../en-US.xpi
   >>> browser.getLink(url='imports/3').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports/3

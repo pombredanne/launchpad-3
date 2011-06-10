@@ -3,18 +3,29 @@
 
 __metaclass__ = type
 
-from zope.component.zcml import handler, utility
+from zope.component.zcml import (
+    handler,
+    utility,
+    )
+from zope.interface import Interface
+from zope.schema import (
+    ASCII,
+    Bool,
+    )
 from zope.sendmail.interfaces import IMailer
 from zope.sendmail.zcml import IMailerDirective
-from zope.interface import Interface
-from zope.schema import ASCII, Bool
 
-from canonical.launchpad.interfaces import IMailBox
-from lp.services.mail.stub import StubMailer, TestMailer
+from canonical.launchpad.interfaces.mailbox import IMailBox
 from lp.services.mail.mailbox import (
-    DirectoryMailBox, POP3MailBox, TestMailBox)
+    DirectoryMailBox,
+    POP3MailBox,
+    TestMailBox,
+    )
 from lp.services.mail.mbox import MboxMailer
-
+from lp.services.mail.stub import (
+    StubMailer,
+    TestMailer,
+    )
 
 
 class ITestMailBoxDirective(Interface):

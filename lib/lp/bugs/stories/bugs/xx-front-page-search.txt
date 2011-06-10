@@ -111,14 +111,14 @@ in the Launchpad.
 
 If the user doesn't know what name to write, he can use the 'Choose'
 link if the browser supports javascript. The test browser does not
-support javascript, so a 'Find' link pointing to /people is displayed.
+support javascript, so a 'Find' link pointing to /bugs is displayed.
 
     >>> find_link = anon_browser.getLink('Find')
     >>> find_link.url
-    'http://bugs.launchpad.dev/people/'
+    'http://bugs.launchpad.dev/bugs...'
 
 'Project' in this context means either a product, distribution or a
-project.
+project group.
 
 === Searching a product ===
 
@@ -142,8 +142,8 @@ project.
     >>> anon_browser.getControl(name='field.scope.target').value = 'gnome'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in The GNOME Project'
+    >>> print anon_browser.title
+    Bugs : GNOME
     >>> anon_browser.url
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)

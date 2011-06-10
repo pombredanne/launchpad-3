@@ -9,11 +9,13 @@ __all__ = ["AppointDriverView"]
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.productseries import IProductSeries
-
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadEditFormView, action)
+    action,
+    canonical_url,
+    LaunchpadEditFormView,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IHasAppointedDriver
 
 
 class AppointDriverView(LaunchpadEditFormView):

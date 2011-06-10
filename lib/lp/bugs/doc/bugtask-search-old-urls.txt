@@ -10,7 +10,7 @@ opportunity to update bookmarks and so forth.
     ...     BugTaskSearchListingView, rewrite_old_bugtask_status_query_string)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> server_url = 'http://foobar/'

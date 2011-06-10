@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Support for reading Amazon Web Service credentials from '~/.ec2/aws_id'."""
@@ -12,21 +12,19 @@ __all__ = [
 import os
 
 import boto
-
 from bzrlib.errors import BzrCommandError
-
 from devscripts.ec2test.account import EC2Account
+
 
 class CredentialsError(BzrCommandError):
     """Raised when AWS credentials could not be loaded."""
 
+    _fmt = (
+        "Please put your aws access key identifier and secret access "
+        "key identifier in %(filename)s. (On two lines).  %(extra)s" )
+
     def __init__(self, filename, extra=None):
-        message = (
-            "Please put your aws access key identifier and secret access "
-            "key identifier in %s. (On two lines)." % (filename,))
-        if extra:
-            message += extra
-        Exception.__init__(self, message)
+        super(CredentialsError, self).__init__(filename=filename, extra=extra)
 
 
 class EC2Credentials:
@@ -62,3 +60,10 @@ class EC2Credentials:
         """
         conn = boto.connect_ec2(self.identifier, self.secret)
         return EC2Account(name, conn)
+
+    def connect_s3(self):
+        """Connect to S3 with these credentials.
+
+        :return: A `boto.s3.connection.S3Connection` with these credentials.
+        """
+        return boto.connect_s3(self.identifier, self.secret)

@@ -14,7 +14,7 @@ For instance, we have an auto-created profile for Matsubara, which
 definitely doesn't seem to be a team.
 
     >>> browser.open('http://launchpad.dev/~matsubara')
-    >>> browser.getLink(url='+claim')
+    >>> browser.getLink(url='+requestmerge')
     <Link text='Are you Diogo Matsubara?'...
 
 If a profile does look like a team and there is a logged in user, the link
@@ -25,15 +25,13 @@ is different...
     >>> [email.email for email in doc_team.guessedemails]
     [u'doc@lists.ubuntu.com']
 
-Non-logged-in users see only a link to claim the profile..
+Non-logged-in users must log in to claim a team.
 
     >>> browser.open('http://launchpad.dev/~doc')
-    >>> browser.getLink(url='+claimteam')
+    >>> browser.getLink(url='+claimteam').click()
     Traceback (most recent call last):
     ...
-    LinkNotFoundError
-    >>> browser.getLink(url='+claim')
-    <Link text='Are you Ubuntu Doc Team?'...
+    Unauthorized:...
 
 While logged-in users get a link to claim that profile and turn it into a
 team. This works even if the profile's email addresses would normally be

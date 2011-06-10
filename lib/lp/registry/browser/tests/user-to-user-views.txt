@@ -1,7 +1,8 @@
-= User-to-user direct email contact =
+User-to-user direct email contact
+=================================
 
-A Launchpad user can contact another Launchpad user directly, even if the
-recipient is hiding their email addresses.
+A Launchpad user can contact another Launchpad user directly, even if
+the recipient is hiding their email addresses.
 
     >>> def create_view(sender, recipient, form=None):
     ...     return create_initialized_view(
@@ -23,13 +24,14 @@ For example, let's say No Privileges Person wants to contact Salgado...
 ...No Priv would start by going to Salgado's +contactuser page.
 
     >>> from canonical.launchpad.ftests import login
-    >>> login(no_priv.preferredemail.email)
+    >>> login_person(no_priv)
     >>> view = create_view(no_priv, salgado)
 
 This contact is allowed.
 
     >>> print view.label
-    Contact Guilherme Salgado
+    Contact user
+
     >>> view.contact_is_allowed
     True
 
@@ -51,8 +53,9 @@ No Priv decides, what the heck, let's contact Salgado after all.
     Message sent to Guilherme Salgado
 
     # Capture the date of the last contact for later.
+
     >>> from canonical.config import config
-    >>> from canonical.launchpad.database.message import UserToUserEmail
+    >>> from lp.services.messages.model.message import UserToUserEmail
     >>> from lazr.config import as_timedelta
     >>> from storm.locals import Store
     >>> first_contact = Store.of(no_priv).find(
@@ -61,7 +64,8 @@ No Priv decides, what the heck, let's contact Salgado after all.
     >>> expires = first_contact.date_sent + as_timedelta(
     ...     config.launchpad.user_to_user_throttle_interval)
 
-No Priv sends two more messages to Salgado.  Each of these are allowed too.
+No Priv sends two more messages to Salgado.  Each of these are allowed
+too.
 
     >>> view = create_view(
     ...     no_priv, salgado, {
@@ -83,8 +87,8 @@ No Priv sends two more messages to Salgado.  Each of these are allowed too.
     >>> print_notifications(view)
     Message sent to Guilherme Salgado
 
-Now however, No Priv had reached her quota for direct user-to-user contact and
-is not allowed to send a fourth message today.
+Now however, No Priv had reached her quota for direct user-to-user
+contact and is not allowed to send a fourth message today.
 
     >>> view = create_view(no_priv, salgado)
     >>> view.contact_is_allowed
@@ -95,13 +99,13 @@ No Priv can try again later.
     >>> view.next_try == expires
     True
 
-As a corner case, let's say the number of notifications allowed was greater
-yesterday than it was today.
+As a corner case, let's say the number of notifications allowed was
+greater yesterday than it was today.
 
     >>> config.push('seven_allowed', """\
-    ... [launchpad]
-    ... user_to_user_max_messages: 7
-    ... """)
+    ...    [launchpad]
+    ...    user_to_user_max_messages: 7
+    ...    """)
 
 No Priv can actually try again right now.
 
@@ -133,6 +137,7 @@ No Priv has once again reached her limit of emails.
     >>> view = create_view(no_priv, salgado)
     >>> view.contact_is_allowed
     False
+
     >>> view.next_try == expires
     True
 
@@ -140,6 +145,7 @@ The configuration changes back to allow only three emails.
 
     >>> config.pop('seven_allowed')
     (...)
+
     >>> contacts = Store.of(no_priv).find(
     ...     UserToUserEmail,
     ...     UserToUserEmail.sender == no_priv)
@@ -148,10 +154,11 @@ The configuration changes back to allow only three emails.
     ...     config.launchpad.user_to_user_throttle_interval)
 
 
-== Non-ASCII names ==
+Non-ASCII names
+---------------
 
-Carlos has non-ASCII characters in his name.  When he sends a message to a
-user, his real name will be properly RFC 2047 encoded.
+Carlos has non-ASCII characters in his name.  When he sends a message to
+a user, his real name will be properly RFC 2047 encoded.
 
     >>> transaction.abort()
     >>> from lp.services.mail import stub
@@ -172,6 +179,7 @@ user, his real name will be properly RFC 2047 encoded.
 
     >>> len(stub.test_emails)
     1
+
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> print raw_msg
     Content-Type: text/plain; charset="us-ascii"
@@ -180,8 +188,8 @@ user, his real name will be properly RFC 2047 encoded.
     To: No Privileges Person <no-priv@canonical.com>
     ...
 
-Similarly, if Carlos is the recipient of a message, his real name will be
-properly RFC 2047 encoded as well.
+Similarly, if Carlos is the recipient of a message, his real name will
+be properly RFC 2047 encoded as well.
 
     >>> del stub.test_emails[:]
 
@@ -197,6 +205,7 @@ properly RFC 2047 encoded as well.
 
     >>> len(stub.test_emails)
     1
+
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> print raw_msg
     Content-Type: text/plain; charset="us-ascii"
@@ -206,7 +215,8 @@ properly RFC 2047 encoded as well.
     ...
 
 
-== Hidden addresses ==
+Hidden addresses
+----------------
 
 Salgado decides to hide his email addresses.
 
@@ -230,13 +240,15 @@ Anne contacts Salgado even though his email addresses are hidden.
     Message sent to Guilherme Salgado
 
 
-== Contacting teams ==
+Contacting teams
+----------------
 
 Teams can also be contacted directly, regardless of whether they have no
-official contact address, use a Launchpad mailing list, or have the contact
-address set to an explicit address.
+official contact address, use a Launchpad mailing list, or have the
+contact address set to an explicit address.
 
     # Clear out left over crud.
+
     >>> transaction.commit()
     >>> del stub.test_emails[:]
 
@@ -266,7 +278,8 @@ address set to an explicit address.
     ...         print '   ', recipient
 
 
-=== Non-member to team ===
+Non-member to team
+..................
 
 Non-members may only contact the team owner.
 
@@ -291,9 +304,10 @@ Non-members may only contact the team owner.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Bart (http://launchpad.dev/~bart)
-    using the "Contact this team" owner link on the GuadaMen team page.
+    using the "Contact this team's owner" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 1
@@ -301,7 +315,8 @@ Non-members may only contact the team owner.
         Foo Bar <foo.bar@canonical.com>
 
 
-=== Member to team ===
+Member to team
+..............
 
 Foo Bar is a member of Guadamen team, he is not restricted to contacting
 the team owner. The Guadamen team has no contact address, so contacting
@@ -319,9 +334,9 @@ them contacts all its members directly.
     >>> print_notifications(view)
     Message sent to GuadaMen
 
-There are 10 members of the team, so exactly 10 unique copies of the message
-are sent, one to each team member. Everyone gets a message with the same
-subject and body from the same sender.
+There are 10 members of the team, so exactly 10 unique copies of the
+message are sent, one to each team member. Everyone gets a message with
+the same subject and body from the same sender.
 
     >>> transaction.commit()
     >>> print_messages()
@@ -330,10 +345,10 @@ subject and body from the same sender.
     Bodies:
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    to each member of the GuadaMen team using the "Contact this team" link on
+    the GuadaMen team page (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -356,12 +371,13 @@ contact address. The mailing list will not be used.
     ...     guadamen.name, guadamen.teamowner.name)
 
     # Ignore the 'new mailing list message'
+
     >>> transaction.commit()
     >>> del stub.test_emails[:]
 
-Foo Bar now contacts them again, which he can do because his quota is still
-not met. This message includes a "%s" combination; it is not a interpolation
-instruction.
+Foo Bar now contacts them again, which he can do because his quota is
+still not met. This message includes a "%s" combination; it is not a
+interpolation instruction.
 
     >>> view = create_view(
     ...     foo_bar, guadamen, {
@@ -382,10 +398,11 @@ Foo Bar's message gets sent to each individual member of he team.
     Bodies:
     Can one of you help me with "%s" usage!
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
+    to each member of the GuadaMen team
     using the "Contact this team" link on the GuadaMen
-    team page to each member directly.
+    team page (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
     # of Messages: 10
@@ -410,9 +427,9 @@ have also used their Launchpad mailing list address).
     >>> address = email_set.new('guadamen@example.com', guadamen)
     >>> guadamen.setContactAddress(address)
 
-Foo Bar contacts the Guadamen team again, which is allowed because his quota
-was not met by his first message.  This time only one message is sent, and
-that to the new contact address.
+Foo Bar contacts the Guadamen team again, which is allowed because his
+quota was not met by his first message.  This time only one message is
+sent, and that to the new contact address.
 
     >>> view = create_view(
     ...     foo_bar, guadamen, {
@@ -427,9 +444,11 @@ that to the new contact address.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
+
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> print from_addr, to_addrs
     bounces@canonical.com [u'GuadaMen <guadamen@example.com>']
+
     >>> print raw_msg
     Content-Type: text/plain; charset="us-ascii"
     ...
@@ -442,21 +461,25 @@ that to the new contact address.
     <BLANKLINE>
     Can one of you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Foo Bar (http://launchpad.dev/~name16)
-    using the "Contact this team" link on the GuadaMen team page.
+    using the "Contact this team" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
-== Message quota ==
+Message quota
+-------------
 
 The EmailToPersonView provides two properties that check that the user
-is_allowed to send emails because he has not exceeded the daily quota. The
-next_try property is the date when the user will be allowed to send emails
-again. The is_possible property will be False if is_allowed is False.
+is_allowed to send emails because he has not exceeded the daily quota.
+The next_try property is the date when the user will be allowed to send
+emails again. The is_possible property will be False if is_allowed is
+False.
 
-Foo Bar has now reached his quota and can send no more contact messages today.
+Foo Bar has now reached his quota and can send no more contact messages
+today.
 
     >>> view = create_view(
     ...     foo_bar, guadamen, {
@@ -467,10 +490,13 @@ Foo Bar has now reached his quota and can send no more contact messages today.
     ...         })
     >>> view.contact_is_allowed
     False
+
     >>> view.next_try
     datetime.datetime...
+
     >>> view.contact_is_possible
     False
+
     >>> print_notifications(view)
     Your message was not sent because you have exceeded your daily quota of
     3 messages to contact users. Try again in ...
@@ -481,15 +507,17 @@ Bart has sent 1 message, he may send more messages.
     >>> view = create_view(bart, guadamen)
     >>> view.contact_is_allowed
     True
+
     >>> view.contact_is_possible
     True
 
 
-== Identifying information ==
+Identifying information
+-----------------------
 
-Every contact message has a special Launchpad header so that people can tell
-that the message came to them through Launchpad. It has a footer that
-contains an explanation as well.
+Every contact message has a special Launchpad header so that people can
+tell that the message came to them through Launchpad. It has a footer
+that contains an explanation as well.
 
     >>> cris = factory.makePerson(email='cris@example.com', name='cris')
     >>> dave = factory.makePerson(email='dave@example.com', name='dave')
@@ -516,18 +544,20 @@ contains an explanation as well.
     <BLANKLINE>
     Can you help me?
     --
-    This message was sent from Launchpad by the user
+    This message was sent from Launchpad by
     Cris (http://launchpad.dev/~cris)
-    using the "Contact this user" link on your profile page.
+    using the "Contact this user" link on your profile page
+    (http://launchpad.dev/~dave).
     For more information see
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
-== Message wrapping ==
+Message wrapping
+----------------
 
-The message body is wrapped at 72 characters. The footer is not wrapped, but
-a new line is started after the names of the sender and the recient to
-minimise long lines.
+The message body is wrapped at 72 characters. The footer is not wrapped,
+but a new line is started after the names of the sender and the recient
+to minimise long lines.
 
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
@@ -547,10 +577,12 @@ minimise long lines.
     ^Can you help me? Can you help me? Can you help me? Can you help me? Can$
     ^you help me? Can you help me? Can you help me? Can you help me?$
     ^-- $
-    ^This message was sent from Launchpad by the user$
+    ^This message was sent from Launchpad by$
     ^Sample Person (http://launchpad.dev/~name12)$
-    ^using the "Contact this team" link on the Landscape Developers$
-    ^team page to each member directly.$
+    ^to each member of the Landscape Developers team using the "Contact this$
+    ^team" link on the Landscape Developers team page$
+    ^(http://launchpad.dev/~landscape-developers).$
     ^For more information see$
     ^https://help.launchpad.net/YourAccount/ContactingPeople$
+
 

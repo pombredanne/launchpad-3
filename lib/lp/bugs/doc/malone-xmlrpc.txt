@@ -3,7 +3,7 @@
 Malone provides an XML-RPC interface for filing bugs.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> filebug_api = xmlrpclib.ServerProxy(
     ...     'http://test@canonical.com:test@xmlrpc.launchpad.dev/bugs/',
     ...     transport=XMLRPCTestTransport())
@@ -46,9 +46,9 @@ First, let's define a simple event listener to show that the
 IObjectCreatedEvent is being published when a bug is reported through
 the XML-RPC interface.
 
-    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
+    >>> from lp.bugs.interfaces.bug import IBug
 
     >>> def on_created_event(obj, event):
     ...     print "ObjectCreatedEvent: %r" % obj
@@ -72,7 +72,7 @@ return value.)
     http://bugs.launchpad.dev/bugs/...
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
@@ -233,8 +233,10 @@ Launchpad Bugs also provides an XML-RPC API for generating login tokens
 for authentication with external bug trackers.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPrivateMaloneApplication, IPrivateApplication)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IPrivateApplication,
+    ...     IPrivateMaloneApplication,
+    ...     )
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
@@ -245,9 +247,9 @@ for authentication with external bug trackers.
 The API provides a single method, newBugTrackerToken(), which returns
 the ID of the new LoginToken.
 
+    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IExternalBugTrackerTokenAPI, ILoginTokenSet)
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTrackerTokenAPI
     >>> from lp.bugs.xmlrpc.bug import (
     ...     ExternalBugTrackerTokenAPI)
 

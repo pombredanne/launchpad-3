@@ -1,6 +1,21 @@
 = Creating new distributions =
 
-This can be done only by launchpad admins.
+A non launchpad admin doesn't see the link to create a new distribution on 
+the distributions page:
+
+  >>> user_browser.open("http://launchpad.dev/distros")
+  >>> user_browser.getLink("Register a distribution")
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+A launchpad admin sees the link to create a new distribution:
+
+  >>> admin_browser.open("http://launchpad.dev/distros")
+  >>> admin_browser.getLink("Register a distribution").url
+  'http://launchpad.dev/distros/+add'
+
+A launchpad admin can create a new distribution:
 
   >>> user_browser.open("http://launchpad.dev/distros/+add")
   Traceback (most recent call last):

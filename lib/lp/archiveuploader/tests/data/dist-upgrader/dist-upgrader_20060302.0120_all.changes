@@ -13,16 +13,15 @@ Urgency: low
 Maintainer: Foo Bar <foo.bar@canonical.com>
 Changed-By: Foo Bar <foo.bar@canonical.com>
 Changes:
-
+ .
  * Test version.
- 
+ .
 Files:
  98c20cb3b3a828b73c95d119e0b6f6e7 378 raw-dist-upgrader - dist-upgrader_20060302.0120_all.tar.gz
-
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.3 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iD8DBQFF2dqHjn63CGxkqMURAgzEAJwK6t0n6NdKPNY16SKDPusK07g1lwCgl1BX
-0bb+ldiFv/GPcIscb+31RTA=
-=IwNJ
+iEYEARECAAYFAk3Wa5cACgkQjn63CGxkqMXRQwCghGlE1wqATufn1Xwj8TNEk/Ik
+A90Anjqd9ddwBhph92Ng/Sf7D7VoDJEC
+=Ivw3
 -----END PGP SIGNATURE-----

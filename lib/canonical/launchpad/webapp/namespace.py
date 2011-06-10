@@ -1,21 +1,21 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.app.pagetemplate.viewpagetemplatefile import (
-    BoundPageTemplate)
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.pagetemplate.viewpagetemplatefile import BoundPageTemplate
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
-from z3c.ptcompat import ViewPageTemplateFile
 
-from canonical.launchpad.webapp.launchpadform import LaunchpadFormView
+from lp.app.browser.launchpadform import LaunchpadFormView
+
 
 class FormNamespaceView(view):
     """A namespace view to handle traversals with ++form++."""
 
     # Use a class variable for the template so that it does not need
     # to be created during the traverse.
-    template = ViewPageTemplateFile('../templates/launchpad-form-body.pt')
+    template = ViewPageTemplateFile('templates/launchpad-form-body.pt')
 
     def traverse(self, name, ignored):
         """Form traversal adapter.

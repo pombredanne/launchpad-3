@@ -11,15 +11,28 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp, lobotomize_stevea, uploadQueueSetUp, uploaderSetUp,
-    uploaderTearDown)
+    branchscannerSetUp,
+    lobotomize_stevea,
+    uploaderSetUp,
+    uploaderTearDown,
+    uploadQueueSetUp,
+    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import (
-    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -84,10 +97,28 @@ def bugtaskExpirationSetUp(test):
     login('test@canonical.com')
 
 
+def updateRemoteProductSetup(test):
+    """Setup to use the 'updateremoteproduct' db user."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.updateremoteproduct.dbuser)
+
+
+def updateRemoteProductTeardown(test):
+    # Mark the DB as dirty, since we run a script in a sub process.
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
+
+
 special = {
     'cve-update.txt': LayeredDocFileSuite(
         '../doc/cve-update.txt',
         setUp=cveSetUp, tearDown=tearDown, layer=LaunchpadZopelessLayer
+        ),
+    'bug-heat.txt': LayeredDocFileSuite(
+        '../doc/bug-heat.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
         ),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
@@ -100,11 +131,6 @@ special = {
         setUp=uploadQueueSetUp,
         tearDown=uploadQueueTearDown,
         layer=LaunchpadZopelessLayer
-        ),
-    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
-        '../doc/bugnotification-comment-syncing-team.txt',
-        layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
-        tearDown=bugNotificationSendingTearDown
         ),
     'bugnotificationrecipients.txt-branchscanner': LayeredDocFileSuite(
         '../doc/bugnotificationrecipients.txt',
@@ -200,6 +226,12 @@ special = {
         LayeredDocFileSuite(
         '../doc/bugwatch.txt',
         setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'bug-watch-activity.txt':
+        LayeredDocFileSuite(
+        '../doc/bug-watch-activity.txt',
+        setUp=checkwatchesSetUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugtracker.txt':
@@ -365,7 +397,23 @@ special = {
         layer=LaunchpadZopelessLayer
         ),
     'filebug-data-parser.txt': LayeredDocFileSuite(
-    '../doc/filebug-data-parser.txt'),
+        '../doc/filebug-data-parser.txt'),
+    'product-update-remote-product.txt': LayeredDocFileSuite(
+        '../doc/product-update-remote-product.txt',
+        setUp=updateRemoteProductSetup,
+        tearDown=updateRemoteProductTeardown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'product-update-remote-product-script.txt': LayeredDocFileSuite(
+        '../doc/product-update-remote-product-script.txt',
+        setUp=updateRemoteProductSetup,
+        tearDown=updateRemoteProductTeardown,
+        layer=LaunchpadZopelessLayer
+        ),
+    'sourceforge-remote-products.txt': LayeredDocFileSuite(
+        '../doc/sourceforge-remote-products.txt',
+        layer=LaunchpadZopelessLayer,
+        ),
     }
 
 

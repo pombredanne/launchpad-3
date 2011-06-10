@@ -3,34 +3,34 @@
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
-    PAGE_LOAD, FOR_ELEMENT, SLEEP)
 from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
 
-BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/%s'
+
 SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
 PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
 
-class TestInlineSubscribing(TestCaseWithFactory):
+
+class TestInlineSubscribing(WindmillTestCase):
 
     layer = BugsWindmillLayer
+    suite_name = 'Inline bug page subscribers test'
 
     def test_inline_subscriber(self):
+        # This test fails intermittently.  See bug #516781.
         """Test inline subscribing on bugs pages.
 
         This test makes sure that subscribing and unsubscribing
         from a bug works inline on a bug page.
         """
-        client = WindmillTestClient('Inline bug page subscribers test')
-
-        # Open a bug page and wait for it to finish loading.
-        client.open(url=BUG_URL % 11)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor('/bugs/11',
+            user=lpuser.SAMPLE_PERSON)
 
         # Ensure the subscriber's portlet has finished loading.
         client.waits.forElement(
@@ -85,22 +85,25 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.click(link=u'Subscribe someone else')
         client.waits.forElement(
             name=u'search', timeout=FOR_ELEMENT)
-        client.type(text=u'ubuntu-team', name=u'search')
+        client.type(
+            text=u'ubuntu-team',
+            xpath=u'//div[contains(@class, "yui3-picker ") '
+                   'and not(contains(@class, "yui3-picker-hidden"))]'
+                   '//div[@class="yui3-picker-search-box"]'
+                   '/input[@name="search"]')
         client.click(
-            xpath=u'//table[contains(@class, "yui-picker") '
-                   'and not(contains(@class, "yui-picker-hidden"))]'
-                   '//div[@class="yui-picker-search-box"]/button')
+            xpath=u'//div[contains(@class, "yui3-picker ") '
+                   'and not(contains(@class, "yui3-picker-hidden"))]'
+                   '//div[@class="yui3-picker-search-box"]/button')
         search_result_xpath = (
-            u'//table[contains(@class, "yui-picker") '
-            'and not(contains(@class, "yui-picker-hidden"))]'
-            '//ul[@class="yui-picker-results"]/li[1]/span')
-        # sleep() seems to be the only way to get this section to pass 
-        # when running all of BugsWindmillLayer.
-        client.waits.sleep(milliseconds=SLEEP)
+            u'//div[contains(@class, "yui3-picker ") '
+            'and not(contains(@class, "yui3-picker-hidden"))]'
+            '//ul[@class="yui3-picker-results"]/li[1]/span')
+        client.waits.forElement(
+            xpath=search_result_xpath, timeout=FOR_ELEMENT)
         client.click(xpath=search_result_xpath)
         client.waits.forElement(
-            id=u'subscribers-links', timeout=FOR_ELEMENT)
-        client.asserts.assertNode(xpath=PERSON_LINK % u'Ubuntu Team')
+            xpath=PERSON_LINK % u'Ubuntu Team', timeout=FOR_ELEMENT)
 
         # If we subscribe the user again,
         # the icon should still be the person icon.
@@ -117,8 +120,8 @@ class TestInlineSubscribing(TestCaseWithFactory):
 
         # Login Foo Bar who is a member of Ubuntu Team.
         # After login, wait for the page load and subscribers portlet.
-        lpuser.FOO_BAR.ensure_login(client)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor('/bugs/11',
+            user=lpuser.FOO_BAR)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
 
@@ -133,9 +136,11 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=SUBSCRIPTION_LINK,
             validator=u'className|remove')
 
+        bug_url = u'%s/bugs/%%s' % BugsWindmillLayer.base_url
+
         # Test unsubscribing via the remove icon for duplicates.
         # First, go to bug 6 and subscribe.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -145,7 +150,7 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         client.asserts.assertNode(xpath=PERSON_LINK % u'Foo Bar')
         # Bug 6 is a dupe of bug 5, so go to bug 5 to unsubscribe.
-        client.open(url=BUG_URL % 5)
+        client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -155,7 +160,7 @@ class TestInlineSubscribing(TestCaseWithFactory):
             xpath=SUBSCRIPTION_LINK, validator=u'Subscribe')
         client.asserts.assertNotNode(xpath=PERSON_LINK % u'Foo Bar')
         # Then back to bug 6 to confirm the duplicate is also unsubscribed.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -168,10 +173,9 @@ class TestInlineSubscribing(TestCaseWithFactory):
         #
         # First test case, ensure unsubscribing works when
         # dealing with a duplicate and an indirect subscription.
-        lpuser.SAMPLE_PERSON.ensure_login(client)
         # Go to bug 6, the dupe, and subscribe.
-        client.open(url=BUG_URL % 6)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientFor('/bugs/6',
+            user=lpuser.SAMPLE_PERSON)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         client.click(xpath=SUBSCRIPTION_LINK)
@@ -179,12 +183,13 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Now back to bug 5.
-        client.open(url=BUG_URL % 5)
+        client.open(url=bug_url % 5)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
         # Confirm there are 2 subscriber links: one in duplicate subscribers,
         # and one in indirect subscribers.
+        client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertNode(
             xpath=(u'//div[@id="subscribers-from-duplicates"]'
                    '/div/a[@name="Sample Person"]'))
@@ -209,7 +214,7 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Go to bug 6, the dupe, and subscribe.
-        client.open(url=BUG_URL % 6)
+        client.open(url=bug_url % 6)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
@@ -218,15 +223,10 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertText(
             xpath=SUBSCRIPTION_LINK, validator=u'Unsubscribe')
         # Now back to bug 5. Confirm there are 2 subscriptions.
-        client.open(url=BUG_URL % 5)
-        client.asserts.assertNode(
-            xpath=(u'//div[@id="subscribers-links"]'
-                   '/div/a[@name="Sample Person"]'),
-                    timeout=FOR_ELEMENT)
-        client.asserts.assertNode(
-            xpath=(u'//div[@id="subscribers-from-duplicates"]'
-                   '/div/a[@name="Sample Person"]'),
-                    timeout=FOR_ELEMENT)
+        client.open(url=bug_url % 5)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client.waits.forElement(
+            id='direct-subscriber-12', timeout=FOR_ELEMENT)
         # The first click unsubscribes the direct subscription, leaving
         # the duplicate subscription.
         client.click(xpath=SUBSCRIPTION_LINK)
@@ -243,6 +243,7 @@ class TestInlineSubscribing(TestCaseWithFactory):
         client.asserts.assertNotNode(
             xpath=(u'//div[@id="subscribers-from-duplicates"]'
                    '/div/a[@name="Sample Person"]'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

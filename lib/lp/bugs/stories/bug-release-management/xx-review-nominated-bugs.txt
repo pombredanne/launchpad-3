@@ -8,7 +8,7 @@ all the bugs nominated for this series.
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
     >>> anon_browser.getLink('Review nominations').click()
     >>> print anon_browser.title
-    Bugs nominated for Hoary...
+    Bugs in The Hoary Hedgehog Release : Bugs : Hoary (5.04) : Ubuntu
 
 All the basic bug details are displayed.
 
@@ -22,7 +22,7 @@ user don't have permissions to do it.
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Review nominations').click()
     >>> print anon_browser.title
-    Bugs nominated for Hoary...
+    Bugs in The Hoary Hedgehog Release : Bugs : Hoary (5.04) : Ubuntu
 
     >>> print_bugtasks(user_browser.contents)
     1  Firefox does not support SVG  mozilla-firefox  Medium  New
@@ -63,7 +63,7 @@ nominations.
     >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
     >>> admin_browser.getLink('Review nominations').click()
     >>> print anon_browser.title
-    Bugs nominated for Hoary...
+    Bugs in The Hoary Hedgehog Release : Bugs : Hoary (5.04) : Ubuntu
 
     >>> print_bugtasks(admin_browser.contents)
     1  Firefox does not support SVG  mozilla-firefox  Medium  New
@@ -84,7 +84,7 @@ After approving the nominated bugs, the listing is empty.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> from lp.registry.model.distribution import Distribution
     >>> login('admin@canonical.com')
     >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
@@ -114,7 +114,7 @@ A product series has the same nomination listing as a distro series.
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/1.0')
     >>> user_browser.getLink('Review nominations').click()
     >>> print user_browser.title
-    Bugs nominated for 1.0...
+     Bugs in Mozilla Firefox 1.0 series : Bugs : Series 1.0 : Mozilla Firefox
 
     >>> print_bugtasks(user_browser.contents)
     1  Firefox does not support SVG Low  New

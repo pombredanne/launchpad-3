@@ -18,9 +18,20 @@ __all__ = [
     'ICodeOfConductConf',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, Bool, Choice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
+
 from canonical.launchpad import _
+
 
 class ICodeOfConduct(Interface):
     """Pristine Code of Conduct content."""

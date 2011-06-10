@@ -4,9 +4,10 @@
 # pylint: disable-msg=W0404
 # (Suppress warning about two datetimes being imported)
 #
-# Contains code from msgfmt.py (available from python source code),
-#     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
-#     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
+# Originally based on code from msgfmt.py (available from python source
+# code), written by Martin v. Loewis and changed by Christian 'Tiran'
+# Heimes.  The code is no longer recognizably similar though, so don't
+# blame these people for any mistakes.
 
 __metaclass__ = type
 
@@ -15,30 +16,34 @@ __all__ = [
     'POParser',
     ]
 
-import datetime
-import re
 import codecs
-import logging
-import pytz
+import datetime
 from email.Utils import parseaddr
-from zope.interface import implements
-from zope import datetime as zope_datetime
+import logging
+import re
 
+import pytz
+from zope import datetime as zope_datetime
+from zope.interface import implements
+
+from lp.app.versioninfo import revno
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationHeaderData,
+    )
 from lp.translations.interfaces.translationimporter import (
     TooManyPluralFormsError,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
-from lp.translations.interfaces.translationcommonformat import (
-    ITranslationHeaderData)
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
+    TranslationFormatSyntaxError,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.pluralforms import (
+    make_plurals_identity_map,
+    plural_form_mapper,
+    )
 from lp.translations.utilities.translation_common_format import (
     TranslationFileData,
-    TranslationMessageData)
-from canonical.launchpad.versioninfo import revno
-from lp.translations.utilities.pluralforms import (make_plurals_identity_map,
-    plural_form_mapper)
-
+    TranslationMessageData,
+    )
 
 
 class POSyntaxWarning(Warning):

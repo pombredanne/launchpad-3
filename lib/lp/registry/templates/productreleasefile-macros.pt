@@ -10,7 +10,7 @@
       - 'file': The ProductReleaseFile
       - 'has_edit': A boolean saying whether the user has edit rights on this
                     ProductReleaseFile.
-      - checkbox_index: A unique integer to be appended to the name of the
+      - checkbox_index: A unique string to be appended to the name of the
                         checkbox included in this macro.
   </tal:comment>
 
@@ -26,7 +26,7 @@
                       define="last_downloaded lfa/last_downloaded">
         <span tal:replace="lfa/hits/fmt:intcomma">10</span>
         <br />
-        <span class="extra-discreet greyed-out">
+        <span class="lesser greyed-out">
           last downloaded
           <strong tal:condition="not:last_downloaded/days">
             today

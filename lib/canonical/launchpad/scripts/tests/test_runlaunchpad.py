@@ -6,22 +6,25 @@
 __metaclass__ = type
 __all__ = [
     'CommandLineArgumentProcessing',
-    'ServersToStart'
+    'ServersToStart',
     ]
 
 
 import os
 import shutil
 import tempfile
-import unittest
+
+import testtools
 
 import canonical.config
-import lp.testing
-
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    SERVICES, get_services_to_run, process_config_arguments,
-    split_out_runlaunchpad_arguments)
+    get_services_to_run,
+    process_config_arguments,
+    SERVICES,
+    split_out_runlaunchpad_arguments,
+    )
+import lp.testing
 
 
 class CommandLineArgumentProcessing(lp.testing.TestCase):
@@ -68,11 +71,11 @@ class CommandLineArgumentProcessing(lp.testing.TestCase):
             split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
 
 
-
 class TestDefaultConfigArgument(lp.testing.TestCase):
     """Tests for the processing of the -C argument."""
 
     def setUp(self):
+        super(TestDefaultConfigArgument, self).setUp()
         self.config_root = tempfile.mkdtemp('configs')
         self.saved_instance = config.instance_name
         self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS
@@ -117,28 +120,22 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         self.assertEquals('test', config.instance_name)
 
 
-class ServersToStart(unittest.TestCase):
+class ServersToStart(testtools.TestCase):
     """Test server startup control."""
 
     def setUp(self):
         """Make sure that only the Librarian is configured to launch."""
-        unittest.TestCase.setUp(self)
+        testtools.TestCase.setUp(self)
         launch_data = """
             [librarian_server]
             launch: True
-            [buildsequencer]
-            launch: False
             [codehosting]
             launch: False
             [launchpad]
             launch: False
             """
         config.push('launch_data', launch_data)
-
-    def tearDown(self):
-        """Restore the default configuration."""
-        config.pop('launch_data')
-        unittest.TestCase.tearDown(self)
+        self.addCleanup(config.pop, 'launch_data')
 
     def test_nothing_explictly_requested(self):
         """Implicitly start services based on the config.*.launch property.
@@ -167,7 +164,3 @@ class ServersToStart(unittest.TestCase):
 
     def test_launchpad_systems_red(self):
         self.failIf(config.launchpad.launch)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

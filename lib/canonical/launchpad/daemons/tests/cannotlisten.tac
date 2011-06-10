@@ -11,14 +11,14 @@ __metaclass__ = type
 from twisted.application import service, internet, strports
 from twisted.internet import protocol
 
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 
 application = service.Application('CannotListen')
 serviceCollection = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(serviceCollection)
+readyservice.ReadyService().setServiceParent(serviceCollection)
 
 # We almost certainly can't listen on port 1 (usually it requires root
 # permissions), so this should fail.

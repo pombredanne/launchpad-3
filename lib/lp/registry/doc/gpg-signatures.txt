@@ -8,7 +8,7 @@ OpenPGP Signature Verification
     >>> transaction.commit()
 
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> bag = getUtility(ILaunchBag)
 
@@ -19,11 +19,9 @@ OpenPGP Signature Verification
     >>> bag.user.name
     u'name12'
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
-
-    >>> from canonical.launchpad.interfaces import GPGVerificationError
 
 The text below was "clear signed" by 0xDFD20543 master key:
 
@@ -41,8 +39,8 @@ The text below was "clear signed" by 0xDFD20543 master key:
     ... """
 
     >>> master_sig = gpghandler.verifySignature(content)
-    >>> master_sig.fingerprint	
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print master_sig.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
 
@@ -61,8 +59,8 @@ The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
     >>>
 
     >>> subkey_sig = gpghandler.verifySignature(content)
-    >>> subkey_sig.fingerprint
-    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+    >>> print subkey_sig.fingerprint
+    A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 
    >>> master_sig.fingerprint == subkey_sig.fingerprint
@@ -86,7 +84,7 @@ The text below was "clear signed" by 0xDFD20543 master key but tampered with:
     >>> master_sig = gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 8, 'Bad signature')
+    GPGVerificationError: (7, 8, u'Bad signature')
 
 If no signed content is found, an exception is raised:
 
@@ -111,22 +109,22 @@ signed text can not be attributed solely to either key:
     >>> content = """
     ... -----BEGIN PGP SIGNED MESSAGE-----
     ... Hash: SHA1
-    ... 
+    ...
     ... Test Message.
     ... -----BEGIN PGP SIGNATURE-----
     ... Version: GnuPG v1.4.1 (GNU/Linux)
-    ... 
+    ...
     ... iD8DBQFD3xV52yWXVgK6XvYRAtJQAJ4ojuLC4aap4R9T0og17RkPYoND+ACfbCA3
     ... yrZD6MZcqzyaGNy1s28Co2Q=
     ... =5QGd
     ... -----END PGP SIGNATURE-----
     ... -----BEGIN PGP SIGNED MESSAGE-----
     ... Hash: SHA1
-    ... 
+    ...
     ... Some data appended by foo.bar@canonical.com
     ... -----BEGIN PGP SIGNATURE-----
     ... Version: GnuPG v1.4.1 (GNU/Linux)
-    ... 
+    ...
     ... iD8DBQFD3xWpjn63CGxkqMURAmi6AJ4yHAnhIpt49VlYDG1uxpGy9BmHwwCeKbFM
     ... aHIJLqhWVf8bGLHZBIH5odw=
     ... =iUSC
@@ -166,7 +164,7 @@ the GPGME error codes (they may be helpful).
     >>> gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 9, 'No public key')
+    GPGVerificationError: (7, 9, u'No public key')
 
 Due to unpredictable behaviour between the production system and
 the external keyserver, we have a resilient signature verifier,
@@ -179,4 +177,7 @@ information for the 3 failures.
     >>> gpghandler.getVerifiedSignatureResilient(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: Verification failed 3 times: ["(7, 9, 'No public key')", "(7, 9, 'No public key')", "(7, 9, 'No public key')"]
+    GPGVerificationError: Verification failed 3 times:
+    ["(7, 9, u'No public key')",
+     "(7, 9, u'No public key')",
+     "(7, 9, u'No public key')"]

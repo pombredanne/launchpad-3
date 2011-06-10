@@ -15,47 +15,122 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In, Join, Lower
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    Join,
+    Max,
+    Sum,
+    )
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    Store,
+    Storm,
+    Unicode,
+    )
 from storm.store import EmptyResultSet
-from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase
+from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.model.bug import (
+    Bug,
+    BugSet,
+    get_bug_tags_open_count,
+    )
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
-    SourcePackage, SourcePackageQuestionTargetMixin)
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    SourcePackage,
+    SourcePackageQuestionTargetMixin,
+    )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.customlanguagecode import (
-    IHasCustomLanguageCodes)
+    IHasCustomLanguageCodes,
+    )
 from lp.translations.model.customlanguagecode import (
-    CustomLanguageCode, HasCustomLanguageCodesMixin)
+    CustomLanguageCode,
+    HasCustomLanguageCodesMixin,
+    )
+
+
+def is_upstream_link_allowed(spph):
+    """Metapackages shouldn't have upstream links.
+
+    Metapackages normally are in the 'misc' section.
+    """
+    if spph is None:
+        return True
+    return spph.section.name == 'misc'
+
+
+class DistributionSourcePackageProperty:
+
+    def __init__(self, attrname, default=None):
+        self.attrname = attrname
+        self.default = default
+
+    def __get__(self, obj, class_):
+        return getattr(obj._self_in_database, self.attrname, self.default)
+
+    def __set__(self, obj, value):
+        if obj._self_in_database is None:
+            spph = Store.of(obj.distribution).find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id,
+                DistroSeries.distributionID == obj.distribution.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagenameID ==
+                    obj.sourcepackagename.id).order_by(
+                        Desc(SourcePackagePublishingHistory.id)).first()
+            obj._new(obj.distribution, obj.sourcepackagename,
+                     is_upstream_link_allowed(spph))
+        setattr(obj._self_in_database, self.attrname, value)
 
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, 
+                                HasBranchesMixin,
                                 HasCustomLanguageCodesMixin,
-                                HasMergeProposalsMixin):
+                                HasMergeProposalsMixin,
+                                HasBugHeatMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -64,7 +139,20 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
+        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes)
+
+    bug_reporting_guidelines = DistributionSourcePackageProperty(
+        'bug_reporting_guidelines')
+    bug_reported_acknowledgement = DistributionSourcePackageProperty(
+        'bug_reported_acknowledgement')
+    max_bug_heat = DistributionSourcePackageProperty('max_bug_heat')
+    total_bug_heat = DistributionSourcePackageProperty('total_bug_heat')
+    bug_count = DistributionSourcePackageProperty('bug_count')
+    po_message_count = DistributionSourcePackageProperty('po_message_count')
+    is_upstream_link_allowed = DistributionSourcePackageProperty(
+        'is_upstream_link_allowed')
+    enable_bugfiling_duplicate_search = DistributionSourcePackageProperty(
+        'enable_bugfiling_duplicate_search', default=True)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -79,7 +167,7 @@ class DistributionSourcePackage(BugTargetBase,
     def displayname(self):
         """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
-            self.sourcepackagename.name, self.distribution.name)
+            self.sourcepackagename.name, self.distribution.displayname)
 
     @property
     def bugtargetdisplayname(self):
@@ -98,6 +186,13 @@ class DistributionSourcePackage(BugTargetBase,
             self.sourcepackagename.name, self.distribution.displayname)
 
     @property
+    def summary(self):
+        """See `IDistributionSourcePackage`."""
+        if self.development_version is None:
+            return None
+        return self.development_version.summary
+
+    @property
     def development_version(self):
         """See `IDistributionSourcePackage`."""
         series = self.distribution.currentseries
@@ -112,34 +207,25 @@ class DistributionSourcePackage(BugTargetBase,
         # measure while DistributionSourcePackage is not yet hooked
         # into the database but we need access to some of the fields
         # in the database.
-        return Store.of(self.distribution).find(
-            DistributionSourcePackageInDatabase,
-            DistributionSourcePackageInDatabase.sourcepackagename == (
-                self.sourcepackagename),
-            DistributionSourcePackageInDatabase.distribution == (
-                self.distribution)
-            ).one()
+        return self._get(self.distribution, self.sourcepackagename)
 
-    def _get_bug_reporting_guidelines(self):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is not None:
-            return dsp_in_db.bug_reporting_guidelines
-        return None
+    def recalculateBugHeatCache(self):
+        """See `IHasBugHeat`."""
+        row = IStore(Bug).find(
+            (Max(Bug.heat), Sum(Bug.heat), Count(Bug.id)),
+            BugTask.bug == Bug.id,
+            BugTask.distributionID == self.distribution.id,
+            BugTask.sourcepackagenameID == self.sourcepackagename.id,
+            Bug.duplicateof == None,
+            BugTask.status.is_in(UNRESOLVED_BUGTASK_STATUSES)).one()
 
-    def _set_bug_reporting_guidelines(self, value):
-        """See `IBugTarget`."""
-        dsp_in_db = self._self_in_database
-        if dsp_in_db is None:
-            dsp_in_db = DistributionSourcePackageInDatabase()
-            dsp_in_db.sourcepackagename = self.sourcepackagename
-            dsp_in_db.distribution = self.distribution
-            Store.of(self.distribution).add(dsp_in_db)
-        dsp_in_db.bug_reporting_guidelines = value
+        # Aggregate functions return NULL if zero rows match.
+        row = list(row)
+        for i in range(len(row)):
+            if row[i] is None:
+                row[i] = 0
 
-    bug_reporting_guidelines = property(
-        _get_bug_reporting_guidelines,
-        _set_bug_reporting_guidelines)
+        self.max_bug_heat, self.total_bug_heat, self.bug_count = row
 
     @property
     def latest_overall_publication(self):
@@ -148,7 +234,7 @@ class DistributionSourcePackage(BugTargetBase,
         # latest relevant publication. It relies on ordering of status
         # and pocket enum values, which is arguably evil but much faster
         # than CASE sorting; at any rate this can be fixed when
-        # https://bugs.edge.launchpad.net/soyuz/+bug/236922 is.
+        # https://bugs.launchpad.net/soyuz/+bug/236922 is.
         spph = SourcePackagePublishingHistory.selectFirst("""
             SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND
@@ -166,7 +252,7 @@ class DistributionSourcePackage(BugTargetBase,
                           PackagePublishingStatus.PUBLISHED,
                           PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
-                          "SourcePackageRelease", 
+                          "SourcePackageRelease",
                           "DistroSeries"],
             orderBy=["status",
                      SQLConstant(
@@ -262,6 +348,7 @@ class DistributionSourcePackage(BugTargetBase,
         results = store.find(
             Archive,
             Archive.distribution == self.distribution,
+            Archive._enabled == True,
             Archive.private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
@@ -274,8 +361,7 @@ class DistributionSourcePackage(BugTargetBase,
             # Next, the joins for the ordering by soyuz karma of the
             # SPR creator.
             KarmaTotalCache.person == SourcePackageRelease.creatorID,
-            *extra_args
-            )
+            *extra_args)
 
         # Note: If and when we later have a field on IArchive to order by,
         # such as IArchive.rank, we will then be able to return distinct
@@ -293,11 +379,17 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.series:
-            source_package = distroseries.getSourcePackage(
-                self.sourcepackagename)
-            if source_package.direct_packaging is not None:
-                return source_package.direct_packaging.productseries.product
+        store = Store.of(self.sourcepackagename)
+        condition = And(
+            Packaging.sourcepackagename == self.sourcepackagename,
+            Packaging.distroseriesID == DistroSeries.id,
+            DistroSeries.distribution == self.distribution)
+        result = store.find(Packaging, condition)
+        result.order_by("debversion_sort_key(version) DESC")
+        if result.count() == 0:
+            return None
+        else:
+            return result[0].productseries.product
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
@@ -330,14 +422,12 @@ class DistributionSourcePackage(BugTargetBase,
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
-        # Local import of DistroSeries to avoid import loop.
-        from lp.registry.model.distroseries import DistroSeries
         store = Store.of(self.distribution)
         result = store.find(
             (SourcePackageRelease, SourcePackagePublishingHistory),
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
-            In(SourcePackagePublishingHistory.archiveID,
+            SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
             SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id,
@@ -396,12 +486,17 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugTask.distribution == self.distribution,
-                BugTask.sourcepackagename == self.sourcepackagename),
-            user)
+            And(BugSummary.distribution == self.distribution,
+                BugSummary.sourcepackagename == self.sourcepackagename),
+            user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def _getOfficialTagClause(self):
+        return self.distribution._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):
@@ -448,8 +543,44 @@ class DistributionSourcePackage(BugTargetBase,
         # Get all persons whose email addresses are in the list.
         result_set = store.using(*origin).find(
             (EmailAddress, Person),
-            In(Lower(EmailAddress.email), email_addresses))
+            EmailAddress.email.lower().is_in(email_addresses))
         return result_set
+
+    @classmethod
+    def _get(cls, distribution, sourcepackagename):
+        return Store.of(distribution).find(
+            DistributionSourcePackageInDatabase,
+            DistributionSourcePackageInDatabase.sourcepackagename ==
+                sourcepackagename,
+            DistributionSourcePackageInDatabase.distribution ==
+                distribution).one()
+
+    @classmethod
+    def _new(cls, distribution, sourcepackagename,
+             is_upstream_link_allowed=False):
+        dsp = DistributionSourcePackageInDatabase()
+        dsp.distribution = distribution
+        dsp.sourcepackagename = sourcepackagename
+        dsp.is_upstream_link_allowed = is_upstream_link_allowed
+        Store.of(distribution).add(dsp)
+        Store.of(distribution).flush()
+        return dsp
+
+    @classmethod
+    def ensure(cls, spph):
+        """Create DistributionSourcePackage record, if necessary.
+
+        Only create a record for primary archives (i.e. not for PPAs).
+        """
+        if spph.archive.purpose != ArchivePurpose.PRIMARY:
+            return
+
+        distribution = spph.distroseries.distribution
+        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        dsp = cls._get(distribution, sourcepackagename)
+        if dsp is None:
+            upstream_link_allowed = is_upstream_link_allowed(spph)
+            cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
 class DistributionSourcePackageInDatabase(Storm):
@@ -473,3 +604,11 @@ class DistributionSourcePackageInDatabase(Storm):
         sourcepackagename_id, 'SourcePackageName.id')
 
     bug_reporting_guidelines = Unicode()
+    bug_reported_acknowledgement = Unicode()
+
+    max_bug_heat = Int()
+    total_bug_heat = Int()
+    bug_count = Int()
+    po_message_count = Int()
+    is_upstream_link_allowed = Bool()
+    enable_bugfiling_duplicate_search = Bool()

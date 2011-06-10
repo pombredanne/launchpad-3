@@ -13,7 +13,10 @@ __all__ = [
     'IComponentSet',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Choice
 
 from canonical.launchpad import _

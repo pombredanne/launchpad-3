@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -11,37 +11,52 @@ __all__ = [
     'ArchiveSubscribersView',
     'PersonArchiveSubscriptionView',
     'PersonArchiveSubscriptionsView',
-    'traverse_archive_subscription_for_subscriber'
+    'traverse_archive_subscription_for_subscriber',
     ]
 
 import datetime
+from operator import attrgetter
 
 import pytz
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
-from zope.schema import Date, Text
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Date,
+    Text,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView, Navigation)
-from canonical.widgets import DateWidget
-from canonical.widgets.popup import PersonPickerWidget
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
 
 
 def archive_subscription_ui_adapter(archive_subscription):
@@ -94,7 +109,7 @@ class IArchiveSubscriberUI(Interface):
     we simply want to use a date field when users create or edit new
     subscriptions.
     """
-    subscriber = ParticipatingPersonChoice(
+    subscriber = PersonChoice(
         title=_("Subscriber"), required=True, vocabulary='ValidPersonOrTeam',
         description=_("The person or team to grant access."))
 
@@ -137,18 +152,20 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
         super(ArchiveSubscribersView, self).initialize()
 
-    @property
+    @cachedproperty
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
-        return getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context)
+        result = list(getUtility(IArchiveSubscriberSet
+            ).getByArchive( self.context))
+        ids = set(map(attrgetter('subscriber_id'), result))
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
+            need_validity=True))
+        return result
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.subscriptions.any() is not None
+        return bool(self.subscriptions)
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
@@ -298,12 +315,26 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
             self.context)
 
         # Turn the result set into a list of dicts so it can be easily
-        # accessed in TAL:
-        return [
-            dict(subscription=PersonalArchiveSubscription(self.context,
-                                                          subscr.archive),
-                 token=token)
-            for subscr, token in subs_with_tokens]
+        # accessed in TAL. Note that we need to ensure that only one
+        # PersonalArchiveSubscription is included for each archive,
+        # as the person might have participation in multiple
+        # subscriptions (via different teams).
+        unique_archives = set()
+        personal_subscription_tokens = []
+        for subscription, token in subs_with_tokens:
+            if subscription.archive in unique_archives:
+                continue
+
+            unique_archives.add(subscription.archive)
+
+            personal_subscription = PersonalArchiveSubscription(
+                self.context, subscription.archive)
+            personal_subscription_tokens.append({
+                'subscription': personal_subscription,
+                'token': token
+                })
+
+        return personal_subscription_tokens
 
 
 class PersonArchiveSubscriptionView(LaunchpadView):
@@ -327,7 +358,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         # active token, then create a token, provided a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.redirect(self.request.getURL())
 
@@ -337,7 +368,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         elif self.request.form.get('regenerate') and self.active_token:
             self.active_token.deactivate()
 
-            token = self.context.archive.newAuthToken(self.context.subscriber)
+            self.context.archive.newAuthToken(self.context.subscriber)
 
             self.request.response.addNotification(
                 "Launchpad has generated the new password you requested "
@@ -370,6 +401,3 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
             self.context.archive, self.context.subscriber)
-
-
-

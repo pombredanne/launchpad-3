@@ -5,7 +5,12 @@
 
 __metaclass__ = type
 
+# XXX: JonathanLange 2010-01-06: Many of these functions should be moved to a
+# generic lp.services.text module.
 __all__ = [
+    'extract_bug_numbers',
+    'extract_email_addresses',
+    'linkify_changelog',
     'SourcePackageReleaseView',
     ]
 
@@ -13,7 +18,7 @@ import cgi
 import re
 
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.tales import FormattersAPI
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 def extract_bug_numbers(text):
@@ -79,7 +84,7 @@ def linkify_bug_numbers(text):
 
 
 def extract_email_addresses(text):
-    '''Unique email adresses in the text.'''
+    '''Unique email addresses in the text.'''
     matches = re.finditer(FormattersAPI._re_email, text)
     return list(set([match.group() for match in matches]))
 
@@ -142,3 +147,13 @@ class SourcePackageReleaseView(LaunchpadView):
     def change_summary(self):
         """Return a linkified change summary."""
         return linkify_changelog(self.user, self.context.change_summary)
+
+    @property
+    def highlighted_copyright(self):
+        """Return the copyright with markup that highlights paths and URLs."""
+        if not self.context.copyright:
+            return ''
+        # Match any string with 2 or more non-consecutive slashes in it.
+        pattern = re.compile(r'([\S]+/[\S]+/[\S]+)')
+        highlight = r'<span class="highlight">\1</span>'
+        return pattern.sub(highlight, self.context.copyright)

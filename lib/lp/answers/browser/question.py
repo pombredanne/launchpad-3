@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -26,54 +26,97 @@ __all__ = [
     'QuestionWorkflowView',
     ]
 
-import re
-
 from operator import attrgetter
+import re
 from xml.sax.saxutils import escape
 
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.app.form.browser.widget import renderElement
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import alsoProvides, implements, providedBy
+from zope.interface import (
+    alsoProvides,
+    implements,
+    providedBy,
+    )
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 import zope.security
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from lp.answers.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.helpers import (
-    is_english_variant, preferred_or_request_languages)
-
-from canonical.launchpad.interfaces import (
-    IAnswersFrontPageSearchForm, IFAQ, IFAQTarget,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, IProject, IQuestion,
-    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
-    IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
-    QuestionSort, NotFoundError, UnexpectedFormData)
-
+    is_english_variant,
+    preferred_or_request_languages,
+    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, Link, canonical_url,
-    enabled_with_permission, Navigation, LaunchpadView, action,
-    LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
-    safe_action, NavigationMenu)
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
-from canonical.widgets.project import ProjectScopeWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-
 from canonical.lazr.utils import smartquote
+from lp.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.enums import (
+    QuestionAction,
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.answers.interfaces.question import (
+    IQuestion,
+    IQuestionAddMessageForm,
+    IQuestionChangeStatusForm,
+    IQuestionLinkFAQForm,
+    )
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.answers.interfaces.questiontarget import (
+    IAnswersFrontPageSearchForm,
+    IQuestionTarget,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.widgets.project import ProjectScopeWidget
+from lp.app.widgets.textwidgets import TokensTextWidget
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.personroles import PersonRoles
+from lp.services.propertycache import cachedproperty
 
 
 class QuestionLinksMixin:
@@ -185,6 +228,7 @@ class QuestionSetContextMenu(ContextMenu):
 
 class QuestionSetNavigation(Navigation):
     """Navigation for the IQuestionSet."""
+
     usedfor = IQuestionSet
 
     def traverse(self, name):
@@ -195,7 +239,13 @@ class QuestionSetNavigation(Navigation):
             question = None
         if question is None:
             raise NotFoundError(name)
-        return redirection(canonical_url(question), status=301)
+        # We need to check if this is an API request, as we don't want to
+        # send a redirect in that instance (it breaks launchpadlib).
+        if hasattr(self.request, 'version'):
+            return question
+        else:
+            return self.redirectSubTree(
+                canonical_url(question, self.request), status=301)
 
 
 class QuestionBreadcrumb(Breadcrumb):
@@ -321,7 +371,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Subscription to question #%s' % self.context.id
+        return 'Subscription'
 
     @property
     def label(self):
@@ -356,7 +406,8 @@ class QuestionLanguageVocabularyFactory:
 
         :param view: The view that provides the request used to determine the
         user languages. The view contains the Product widget selected by the
-        user in the case where a question is asked in the context of a Project.
+        user in the case where a question is asked in the context of a
+        ProjectGroup.
         """
         self.view = view
 
@@ -376,17 +427,17 @@ class QuestionLanguageVocabularyFactory:
         languages.insert(0, english)
 
         # The vocabulary indicates which languages are supported.
-        if context is not None and not IProject.providedBy(context):
+        if context is not None and not IProjectGroup.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and
+        elif (IProjectGroup.providedBy(context) and
                 self.view.question_target is not None):
-            # Projects do not implement IQuestionTarget--the user must
+            # ProjectGroups do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
-            supported_languages = set([english])
+            supported_languages = [english]
 
         terms = []
         for lang in languages:
@@ -452,8 +503,7 @@ class QuestionSupportLanguageMixin:
                         "The language in which this question is written. "
                         "The languages marked with a star (*) are the "
                         "languages spoken by at least one answer contact in "
-                        "the community."
-                        )),
+                        "the community.")),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
@@ -497,7 +547,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The fields displayed on the search page.
     search_field_names = ['language', 'title']
 
-    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('title', TextWidget, displayWidth=40, displayMaxWidth=250)
 
     search_template = ViewPageTemplateFile(
         '../templates/question-add-search.pt')
@@ -559,6 +609,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         if 'title' not in data:
             self.setFieldError(
                 'title', _('You must enter a summary of your problem.'))
+        else:
+            if len(data['title']) > 250:
+                self.setFieldError(
+                    'title', _('The summary cannot exceed 250 characters.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(
@@ -603,7 +657,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             # Remove the description widget.
             widgets = [(True, self.widgets[name])
                        for name in self.search_field_names]
-            self.widgets = form.Widgets(widgets, len(self.prefix)+1)
+            self.widgets = form.Widgets(widgets, len(self.prefix) + 1)
             return self.search_template()
         return self.continue_action.success(data)
 
@@ -659,11 +713,13 @@ class QuestionChangeStatusView(LaunchpadFormView):
     cancel_url = next_url
 
 
-class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
+class QuestionEditView(LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "assignee", "whiteboard"]
+    field_names = [
+        "language", "title", "description", "target", "assignee",
+        "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -684,10 +740,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
         self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
-
-        # Add the language field with a vocabulary specialized for display
-        # purpose.
-        self.form_fields = self.createLanguageField() + self.form_fields
 
         editable_fields = []
         for field in self.form_fields:
@@ -764,7 +816,6 @@ class LinkFAQMixin:
         return '%s suggests this article as an answer to your question:' % (
             self.user.displayname)
 
-
     def getFAQMessageReference(self, faq):
         """Return the reference for the FAQ to use in the linking message."""
         return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
@@ -781,7 +832,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
 
     @property
     def label(self):
-        return self.context.title
+        return FormattersAPI(self.context.title).obfuscate_email()
 
     @property
     def page_title(self):
@@ -836,6 +887,17 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 return True
         return False
 
+    @property
+    def visible_messages(self):
+        messages = self.context.messages
+        strip_invisible = True
+        if self.user is not None:
+            role = PersonRoles(self.user)
+            strip_invisible = not (role.in_admin or role.in_registry_experts)
+        if strip_invisible:
+            messages = [message for message in messages if message.visible]
+        return messages
+
     def canAddComment(self, action):
         """Return whether the comment action should be displayed.
 
@@ -863,7 +925,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
+    @action(_('Propose Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
         """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])
@@ -991,7 +1053,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def original_bug(self):
         """Return the bug that the question was created from or None."""
         for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View',  buglink.bug)
+            if (check_permission('launchpad.View', buglink.bug)
                 and buglink.bug.owner == self.context.owner
                 and buglink.bug.datecreated == self.context.datecreated):
                 return buglink.bug
@@ -1050,6 +1112,18 @@ class QuestionMessageDisplayView(LaunchpadView):
             return "boardCommentBody highlighted"
         else:
             return "boardCommentBody"
+
+    @cachedproperty
+    def canSeeSpamControls(self):
+        return check_permission('launchpad.Moderate', self.context.question)
+
+    def getBoardCommentCSSClass(self):
+        css_classes = ["boardComment"]
+        if not self.context.visible:
+            # If a comment that isn't visible is being rendered, it's being
+            # rendered for an admin or registry_expert.
+            css_classes.append("adminHiddenComment")
+        return " ".join(css_classes)
 
     def canConfirmAnswer(self):
         """Return True if the user can confirm this answer."""
@@ -1140,7 +1214,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
         Adds a message field to the form.
         """
         super(QuestionCreateFAQView, self).setUpFields()
-        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields += form.Fields(
+            copy_field(IQuestionLinkFAQForm['message']))
+        self.form_fields['message'].field.title = _(
+            'Additional comment for question #%s' % self.context.id)
         self.form_fields['message'].custom_widget = (
             self.custom_widgets['message'])
 

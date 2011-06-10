@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -23,13 +23,18 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
-                                          SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingStatus)
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
 from canonical.lp import initZopeless
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 from contrib.glock import GlobalLock
 
@@ -353,7 +358,7 @@ def what_to_remove(packages):
                 to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distro_series.getPublishedReleases(removal):
+                for spp in distro_series.getPublishedSources(removal):
                     package = spp.sourcepackagerelease.sourcepackagename.name
                     version = spp.sourcepackagerelease.version
                     if (Options.component and
@@ -377,9 +382,9 @@ def do_removal(removal):
     """
     current = removal["publishing"]
     if removal["type"] == "binary":
-        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
+        real_current = BinaryPackagePublishingHistory.get(current.id)
     else:
-        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+        real_current = SourcePackagePublishingHistory.get(current.id)
     real_current.status = PackagePublishingStatus.SUPERSEDED
     real_current.datesuperseded = UTC_NOW
 

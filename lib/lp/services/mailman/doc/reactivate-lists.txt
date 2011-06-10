@@ -14,8 +14,10 @@ First, No Privileges Person will create a new team and its mailing list.
 
 Give the mailing list a welcome message.
 
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser('no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev:8085/~itest-one/+mailinglist')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
     >>> browser.getControl('Save').click()
@@ -50,7 +52,7 @@ As far as Mailman is concerned, the mailing list no longer exists.
 
 Now the team owner reactivates the list.
 
-    >>> browser.getLink('Create a mailing list').click()
+    >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> xmlrpc_watcher.wait_for_reactivation('itest-one')
 

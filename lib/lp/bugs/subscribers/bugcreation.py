@@ -2,9 +2,13 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'at_least_one_task',
+    ]
 
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+
+
 def at_least_one_task(bug, event):
     """Make sure that the created bug has at least one task.
 

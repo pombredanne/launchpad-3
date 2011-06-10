@@ -5,15 +5,18 @@
 
 __metaclass__ = type
 
-import unittest
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.browser.bazaar import BazaarApplicationView
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
@@ -69,8 +72,3 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         recent_branches = self.getViewBranches('recently_imported_branches')
         self.assertEqual(branch, recent_branches[0])
         self.assertTrue(check_permission('launchpad.View', branch))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

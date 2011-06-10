@@ -16,7 +16,9 @@
         <tal:has-subscribers condition="view/subscribers/currentBatch">
           <p>The following people are subscribed to the team mailing list and
           will receive email messages sent to the list.</p>
-          <tal:subscribers replace="structure view/renderTable" />
+          <tal:cache content="cache:anonymous, 10 minute">
+            <tal:subscribers replace="structure view/renderTable" />
+          </tal:cache>
           <br />
           <tal:navigation replace="structure view/subscribers/@@+navigation-links-lower" />
         </tal:has-subscribers>
@@ -25,8 +27,13 @@
         </tal:no-subscribers>
       </tal:has-mailinglist>
       <tal:no_mailing_list condition="not: context/mailing_list">
-        <p>This team does not have a mailing list.</p>
-        <p><a href="+mailinglist">Configure</a> the team's mailing list.</p>
+        <p>This team does not use Launchpad to host a mailing list.</p>
+        <ul class="horizontal">
+          <li>
+            <tal:configure_mailing_list
+              replace="structure context/menu:overview/configure_mailing_list/fmt:link-icon" />
+          </li>
+        </ul>
       </tal:no_mailing_list>
     </div>
 

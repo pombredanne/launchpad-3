@@ -8,9 +8,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <class class="lp.services.database.prejoin.PrejoinResultSet">
-        <allow interface="storm.zope.interfaces.IResultSet" />
-        <allow attributes="__getslice__" />
+    <class class="storm.references.BoundIndirectReferenceSet">
+        <allow attributes="add remove clear" />
     </class>
-
 </configure>

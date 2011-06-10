@@ -11,29 +11,39 @@ __all__ = [
 
 import operator
 
+from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from lp.soyuz.interfaces.queue import (
-    IHasQueueItems, IPackageUpload, IPackageUploadSet,
-    QueueInconsistentStateError)
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.soyuz.interfaces.files import (
-    IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
-from lp.soyuz.interfaces.publishing import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.files import (
+    IBinaryPackageFileSet,
+    ISourcePackageReleaseFileSet,
+    )
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import (
+    name_priority_map,
+    )
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload,
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
-from lazr.delegates import delegates
 
 QUEUE_SIZE = 30
 
@@ -46,7 +56,6 @@ class QueueItemsView(LaunchpadView):
     template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
-    __used_for__ = IHasQueueItems
 
     def setupQueueList(self):
         """Setup a batched queue list.
@@ -283,7 +292,7 @@ class QueueItemsView(LaunchpadView):
             self.error = "Invalid component: %s" % component_override
             return
 
-        # Get a list of components that the user has rights to accept and
+        # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
@@ -391,7 +400,7 @@ class QueueItemsView(LaunchpadView):
 
     def queue_action_accept(self, queue_item):
         """Reject the queue item passed."""
-        queue_item.acceptFromQueue(announce_list=self.context.changeslist)
+        queue_item.acceptFromQueue()
 
     def queue_action_reject(self, queue_item):
         """Accept the queue item passed."""
@@ -479,4 +488,14 @@ class CompletePackageUpload:
         if self.is_delayed_copy:
             return self.sources[0].sourcepackagerelease.upload_changesfile
         return self.context.changesfile
+
+    @property
+    def package_sets(self):
+        assert self.sourcepackagerelease, \
+            "Can only be used on a source upload."
+        return ' '.join(sorted(ps.name for ps in
+            getUtility(IPackagesetSet).setsIncludingSource(
+                self.sourcepackagerelease.sourcepackagename,
+                distroseries=self.distroseries,
+                direct_inclusion=True)))
 

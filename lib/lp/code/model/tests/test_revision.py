@@ -5,33 +5,49 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 import psycopg2
 import pytz
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.ftests.logger import MockLogger
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchLifecycleStatus
-from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.revision import RevisionCache, RevisionSet
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.revision import (
+    RevisionCache,
+    RevisionSet,
+    )
 from lp.registry.model.karma import Karma
-from lp.testing import TestCaseWithFactory, time_counter
+from lp.services.log.logger import DevNullLogger
+from lp.testing import (
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -140,14 +156,27 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_junkBranchMovedToProductNeedsKarma(self):
         # A junk branch that moves to a product needs karma allocated.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
         project = self.factory.makeProduct()
         branch.setTarget(user=branch.owner, project=project)
+        # The revision is now identified as needing karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_junkBranchMovedToPackageNeedsKarma(self):
+        # A junk branch that moves to a package needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        source_package = self.factory.makeSourcePackage()
+        branch.setTarget(user=branch.owner, source_package=source_package)
         # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -166,9 +195,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
         # The person registers with Launchpad.
-        author = self.factory.makePerson(email=email)
+        self.factory.makePerson(email=email)
         # Garbo runs the RevisionAuthorEmailLinker job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -178,16 +207,60 @@ class TestRevisionKarma(TestCaseWithFactory):
         # is set to be the time that the revision was created.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email,
+            author=author,
             revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
         branch = self.factory.makeProductBranch()
-        branch.createBranchRevision(1, rev)
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
+        karma = rev.allocateKarma(branch)
         self.assertEqual(karma.datecreated, rev.date_created)
+
+    def test_allocateKarma_personal_branch(self):
+        # A personal branch gets no karma event.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertIs(None, karma)
+
+    def test_allocateKarma_package_branch(self):
+        # A revision on a package branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePackageBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.distribution, karma.distribution)
+        self.assertEqual(branch.sourcepackagename, karma.sourcepackagename)
+
+    def test_allocateKarma_product_branch(self):
+        # A revision on a product branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makeProductBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.product, karma.product)
+
+
+class TestRevisionSet(TestCaseWithFactory):
+    """Tests for IRevisionSet."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestRevisionSet, self).setUp()
+        self.revision_set = getUtility(IRevisionSet)
+
+    def test_getRevisionById_existing(self):
+        # IRevisionSet.getByRevisionId returns the revision with that id.
+        revision = self.factory.makeRevision()
+        found = self.revision_set.getByRevisionId(revision.revision_id)
+        self.assertEquals(revision, found)
+
+    def test_getRevisionById_nonexistent(self):
+        # IRevisionSet.getByRevisionId returns None if there is no revision
+        # with that id.
+        found = self.revision_set.getByRevisionId('nonexistent')
+        self.assertIs(None, found)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
@@ -372,7 +445,7 @@ class RevisionTestMixin:
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
         self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
-        self.assertEqual([rev2],  self._getRevisions(day_limit))
+        self.assertEqual([rev2], self._getRevisions(day_limit))
 
 
 class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,
@@ -437,9 +510,10 @@ class TestGetPublicRevisionsForProduct(GetPublicRevisionsTestCase,
         self.assertEqual([rev1], self._getRevisions())
 
 
-class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
-                                       RevisionTestMixin):
-    """Test the `getPublicRevisionsForProject` method of `RevisionSet`."""
+class TestGetPublicRevisionsForProjectGroup(GetPublicRevisionsTestCase,
+                                            RevisionTestMixin):
+    """Test the `getPublicRevisionsForProjectGroup` method of `RevisionSet`.
+    """
 
     def setUp(self):
         GetPublicRevisionsTestCase.setUp(self)
@@ -448,7 +522,7 @@ class TestGetPublicRevisionsForProject(GetPublicRevisionsTestCase,
 
     def _getRevisions(self, day_limit=30):
         # Returns the revisions for the person.
-        return list(RevisionSet.getPublicRevisionsForProject(
+        return list(RevisionSet.getPublicRevisionsForProjectGroup(
                 self.project, day_limit))
 
     def testRevisionsMustBeInABranchOfProduct(self):

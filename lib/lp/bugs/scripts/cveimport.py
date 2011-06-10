@@ -11,23 +11,27 @@ try:
     import xml.etree.cElementTree as cElementTree
 except ImportError:
     import cElementTree
-import urllib2
 import gzip
 import StringIO
 import time
+import urllib2
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-
 from zope.lifecycleevent import ObjectModifiedEvent
 
 from canonical.config import config
-from lp.bugs.interfaces.cve import CveStatus, ICveSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from lp.bugs.interfaces.cve import (
+    CveStatus,
+    ICveSet,
+    )
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads}'

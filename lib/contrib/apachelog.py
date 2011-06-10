@@ -159,7 +159,7 @@ class parser:
             elif findpercent.search(element):
                 subpattern = r'(\[[^\]]+\])'
                 
-            elif element == '%U':
+            elif element in ('%U', '%u'):
                 subpattern = '(.+?)'
             
             subpatterns.append(subpattern)

@@ -1,30 +1,43 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the transport-backed SFTP server implementation."""
 
+from contextlib import closing
 import os
-import unittest
 
+from bzrlib import (
+    errors as bzr_errors,
+    urlutils,
+    )
 from bzrlib.tests import TestCaseInTempDir
-from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
-from bzrlib import urlutils
+from bzrlib.transport.memory import MemoryTransport
 
-from twisted.conch.ssh import filetransfer
+from testtools.deferredruntest import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    )
+
 from twisted.conch.interfaces import ISFTPServer
 from twisted.conch.ls import lsLine
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import mergeFunctionMetadata
-from twisted.trial.unittest import TestCase as TrialTestCase
 
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
 from lp.codehosting.sftp import (
-    FatLocalTransport, TransportSFTPServer, FileIsADirectory)
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
+    FatLocalTransport,
+    TransportSFTPServer,
+    )
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
+from lp.services.sshserver.sftp import FileIsADirectory
+from lp.testing import TestCase
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing.layers import TwistedLayer
 
 
 class AsyncTransport:
@@ -96,24 +109,24 @@ class TestFatLocalTransport(TestCaseInTempDir):
         self.assertIsInstance(transport, FatLocalTransport)
 
 
-class TestSFTPAdapter(TrialTestCase):
+class TestSFTPAdapter(TestCase):
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        TrialTestCase.setUp(self)
+        TestCase.setUp(self)
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
-        self.branchfs_endpoint = XMLRPCWrapper(
-            frontend.getFilesystemEndpoint())
+        self.codehosting_endpoint = XMLRPCWrapper(
+            frontend.getCodehostingEndpoint())
 
-    def makeLaunchpadAvatar(self):
+    def makeCodehostingAvatar(self):
         user = self.factory.makePerson()
         user_dict = dict(id=user.id, name=user.name)
-        return LaunchpadAvatar(user_dict, self.branchfs_endpoint)
+        return CodehostingAvatar(user_dict, self.codehosting_endpoint)
 
     def test_canAdaptToSFTPServer(self):
-        avatar = self.makeLaunchpadAvatar()
+        avatar = self.makeCodehostingAvatar()
         # The adapter logs the SFTPStarted event, which gets the id of the
         # transport attribute of 'avatar'. Here we set transport to an
         # arbitrary object that can have its id taken.
@@ -153,13 +166,15 @@ class SFTPTestMixin:
         return self._factory.getUniqueString('%41%42%43-')
 
 
-class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
+class TestSFTPFile(TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
+
+    # This works around a clash between the TrialTestCase and the BzrTestCase.
+    skip = None
 
     def setUp(self):
-        TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
         SFTPTestMixin.setUp(self)
         transport = AsyncTransport(
@@ -169,7 +184,7 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     def assertSFTPError(self, sftp_code, function, *args, **kwargs):
         """Assert that calling functions fails with `sftp_code`."""
         deferred = defer.maybeDeferred(function, *args, **kwargs)
-        deferred = self.assertFailure(deferred, filetransfer.SFTPError)
+        deferred = assert_fails_with(deferred, filetransfer.SFTPError)
         def check_sftp_code(exception):
             self.assertEqual(sftp_code, exception.code)
             return exception
@@ -344,7 +359,7 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         os.mkdir(directory)
         deferred = self.openFile(directory, filetransfer.FXF_WRITE, {})
         deferred.addCallback(lambda handle: handle.writeChunk(0, 'bar'))
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_readChunk(self):
         # readChunk reads a chunk of data from the file.
@@ -377,7 +392,7 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         filename = self.getPathSegment()
         deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.readChunk(1, 2))
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
         # setAttrs on TransportSFTPFile does nothing.
@@ -402,16 +417,15 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         filename = self.getPathSegment()
         deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.getAttrs())
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
 
-class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
+class TestSFTPServer(TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
-        TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
         SFTPTestMixin.setUp(self)
         transport = AsyncTransport(
@@ -438,7 +452,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         # SFTPErrors.
         nonexistent_file = self.getPathSegment()
         deferred = self.sftp_server.getAttrs(nonexistent_file, False)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_removeFile(self):
         # removeFile removes the file.
@@ -453,14 +467,14 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         # Errors in removeFile are translated into SFTPErrors.
         filename = self.getPathSegment()
         deferred = self.sftp_server.removeFile(filename)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_removeFile_directory(self):
         # Errors in removeFile are translated into SFTPErrors.
         filename = self.getPathSegment()
         self.build_tree_contents([(filename+'/',)])
         deferred = self.sftp_server.removeFile(filename)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_renameFile(self):
         # renameFile renames the file.
@@ -478,7 +492,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         orig_filename = self.getPathSegment()
         new_filename = self.getPathSegment()
         deferred = self.sftp_server.renameFile(orig_filename, new_filename)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_makeDirectory(self):
         # makeDirectory makes the directory.
@@ -497,7 +511,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         nonexistent_child = '%s/%s' % (nonexistent, self.getPathSegment())
         deferred = self.sftp_server.makeDirectory(
             nonexistent_child, {'permissions': 0777})
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_removeDirectory(self):
         # removeDirectory removes the directory.
@@ -512,7 +526,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         # Errors in removeDirectory are translated into SFTPErrors.
         directory = self.getPathSegment()
         deferred = self.sftp_server.removeDirectory(directory)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
 
     def test_gotVersion(self):
         # gotVersion returns an empty dictionary.
@@ -577,7 +591,40 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         # Errors in openDirectory are translated into SFTPErrors.
         nonexistent = self.getPathSegment()
         deferred = self.sftp_server.openDirectory(nonexistent)
-        return self.assertFailure(deferred, filetransfer.SFTPError)
+        return assert_fails_with(deferred, filetransfer.SFTPError)
+
+    def test_openDirectoryMemory(self):
+        """openDirectory works on MemoryTransport."""
+        transport = MemoryTransport()
+        transport.put_bytes('hello', 'hello')
+        sftp_server = TransportSFTPServer(AsyncTransport(transport))
+        deferred = sftp_server.openDirectory('.')
+        def check_directory(directory):
+            with closing(directory):
+                names = [entry[0] for entry in directory]
+            self.assertEqual(['hello'], names)
+        return deferred.addCallback(check_directory)
+
+    def test__format_directory_entries_with_MemoryStat(self):
+        """format_directory_entries works with MemoryStat.
+
+        MemoryStat lacks many fields, but format_directory_entries works
+        around that.
+        """
+        t = MemoryTransport()
+        stat_result = t.stat('.')
+        entries = self.sftp_server._format_directory_entries(
+            [stat_result], ['filename'])
+        self.assertEqual(list(entries), [
+            ('filename', 'drwxr-xr-x    0 0        0               0 '
+             'Jan 01  1970 filename',
+             {'atime': 0,
+              'gid': 0,
+              'mtime': 0,
+              'permissions': 16877,
+              'size': 0,
+              'uid': 0})])
+        self.assertIs(None, getattr(stat_result, 'st_mtime', None))
 
     def do_translation_test(self, exception, sftp_code, method_name=None):
         """Test that `exception` is translated into the correct SFTPError."""
@@ -621,7 +668,3 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
             self.sftp_server.translateError,
             failure.Failure(exception), 'methodName')
         self.assertIs(result, exception)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

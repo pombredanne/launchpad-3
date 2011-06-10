@@ -1,4 +1,5 @@
-== Edit person location information ==
+Edit person location information
+================================
 
 A person's location is only editable by people who have launchpad.Edit on
 the person, which is that person and admins.
@@ -49,35 +50,3 @@ And so can a Launchpad admin:
     >>> admin_browser.open('http://launchpad.dev/~zzz/+editlocation')
     >>> admin_browser.getControl(name='field.location.latitude').value
     '39.48'
-
-The +editlocation page also allows a person to change his location
-visibility, that is, whether or not others can see it. 
-
-    >>> nopriv_browser.open('http://launchpad.dev/~no-priv/+editlocation')
-    >>> nopriv_browser.getControl(
-    ...     'Hide my location details from others.').selected = True
-    >>> nopriv_browser.getControl('Update').click()
-    >>> nopriv_browser.url
-    'http://launchpad.dev/~no-priv'
-
-Once hidden, other users can't see it.
-
-    >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> name12_browser.open('http://launchpad.dev/~no-priv')
-    >>> print str(find_tag_by_id(name12_browser.contents, 'person_map_div'))
-    None
-
-The person himself can still see and change it, though.
-
-    >>> nopriv_browser.open('http://launchpad.dev/~no-priv')
-    >>> print str(find_tag_by_id(nopriv_browser.contents, 'portlet-map'))
-    <div...
-    <h2>Location</h2>
-    ...
-
-    >>> nopriv_browser.open('http://launchpad.dev/~no-priv/+editlocation')
-    >>> nopriv_browser.getControl(
-    ...     'Hide my location details from others.').selected = False
-    >>> nopriv_browser.getControl('Update').click()
-    >>> nopriv_browser.url
-    'http://launchpad.dev/~no-priv'

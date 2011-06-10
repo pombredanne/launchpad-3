@@ -1,6 +1,6 @@
 = Sprints relevant for pillars =
 
-For Products, Projects and Distributions, we have a +sprints page which lists
+For Products, ProjectGroups and Distributions, we have a +sprints page which lists
 all events relevant to that pillar.
 
     >>> import re

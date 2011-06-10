@@ -8,23 +8,24 @@ __metaclass__ = type
 
 import datetime
 import logging
-import pytz
 import os
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.archivepublisher.config import getPubConfig, LucilleConfigError
-from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.utils import process_in_batches
+import pytz
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.archivepublisher.config import (
+    getPubConfig,
+    )
+from lp.archivepublisher.diskpool import DiskPool
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
-    ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory)
-from lp.soyuz.interfaces.publishing import (
-    MissingSymlinkInPool, NotInPool)
+    IBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory,
+    MissingSymlinkInPool,
+    NotInPool,
+    )
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -37,12 +38,8 @@ def getDeathRow(archive, log, pool_root_override):
          the one provided by the publishing-configuration, it will be only
          used for PRIMARY archives.
     """
-    log.debug("Grab Lucille config.")
-    try:
-        pubconf = getPubConfig(archive)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
+    log.debug("Grab publisher config.")
+    pubconf = getPubConfig(archive)
 
     if (pool_root_override is not None and
         archive.purpose == ArchivePurpose.PRIMARY):
@@ -69,6 +66,7 @@ class DeathRow:
     removal in the publisher tables, and if they are no longer referenced
     by other packages.
     """
+
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
         self.diskpool = diskpool
@@ -117,8 +115,7 @@ class DeathRow:
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
             SourcePackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM sourcepackagepublishinghistory as spph,
-                  sourcepackagerelease as spr
+              SELECT 1 FROM sourcepackagepublishinghistory as spph
               WHERE
                   SourcePackagePublishingHistory.sourcepackagerelease =
                       spph.sourcepackagerelease AND
@@ -133,8 +130,7 @@ class DeathRow:
             BinaryPackagePublishingHistory.scheduleddeletiondate < %s AND
             BinaryPackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM binarypackagepublishinghistory as bpph,
-                  binarypackagerelease as bpr
+              SELECT 1 FROM binarypackagepublishinghistory as bpph
               WHERE
                   BinaryPackagePublishingHistory.binarypackagerelease =
                       bpph.binarypackagerelease AND
@@ -150,30 +146,30 @@ class DeathRow:
         """Check if given (filename, MD5) can be removed from the pool.
 
         Check the archive reference-counter implemented in:
-        `SecureSourcePackagePublishingHistory` or
-        `SecureBinaryPackagePublishingHistory`.
+        `SourcePackagePublishingHistory` or
+        `BinaryPackagePublishingHistory`.
 
         Only allow removal of unnecessary files.
         """
         clauses = []
         clauseTables = []
 
-        if ISecureSourcePackagePublishingHistory.implementedBy(
+        if ISourcePackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureSourcePackagePublishingHistory.archive = %s AND
-                SecureSourcePackagePublishingHistory.dateremoved is NULL AND
-                SecureSourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackagePublishingHistory.archive = %s AND
+                SourcePackagePublishingHistory.dateremoved is NULL AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
             """ % sqlvalues(self.archive))
             clauseTables.append('SourcePackageReleaseFile')
-        elif ISecureBinaryPackagePublishingHistory.implementedBy(
+        elif IBinaryPackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureBinaryPackagePublishingHistory.archive = %s AND
-                SecureBinaryPackagePublishingHistory.dateremoved is NULL AND
-                SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackagePublishingHistory.archive = %s AND
+                BinaryPackagePublishingHistory.dateremoved is NULL AND
+                BinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
             """ % sqlvalues(self.archive))
@@ -201,7 +197,6 @@ class DeathRow:
             if pub.scheduleddeletiondate is None:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
-            # See PubConfig.pendingremovalduration value.
             if pub.scheduleddeletiondate > right_now:
                 return False
 
@@ -215,6 +210,12 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+            BinaryPackagePublishingHistory,
+            SourcePackagePublishingHistory,
+            )
+
         bytes = 0
         condemned_files = set()
         condemned_records = set()
@@ -265,25 +266,10 @@ class DeathRow:
                 condemned_records.add(pub_file.publishing_record)
 
         # Check source and binary publishing records.
-        def check_source(pub_record):
-            # Avoid circular imports.
-            from lp.soyuz.model.publishing import (
-                SecureSourcePackagePublishingHistory)
-            checkPubRecord(pub_record, SecureSourcePackagePublishingHistory)
-
-        process_in_batches(
-            condemned_source_files, check_source, self.logger,
-            minimum_chunk_size=500)
-
-        def check_binary(pub_record):
-            # Avoid circular imports.
-            from lp.soyuz.model.publishing import (
-                SecureBinaryPackagePublishingHistory)
-            checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
-
-        process_in_batches(
-            condemned_binary_files, check_binary, self.logger,
-            minimum_chunk_size=500)
+        for pub_record in condemned_source_files:
+            checkPubRecord(pub_record, SourcePackagePublishingHistory)
+        for pub_record in condemned_binary_files:
+            checkPubRecord(pub_record, BinaryPackagePublishingHistory)
 
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
@@ -315,4 +301,3 @@ class DeathRow:
                           len(condemned_records))
         for record in condemned_records:
             record.dateremoved = UTC_NOW
-

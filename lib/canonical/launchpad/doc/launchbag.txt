@@ -5,7 +5,7 @@ filter or otherwise specialize views or behavior.
 First, we'll set up various imports and stub objects.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import ILaunchBag
+>>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 >>> from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
 >>> from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 >>> from canonical.launchpad.webapp.interfaces import \

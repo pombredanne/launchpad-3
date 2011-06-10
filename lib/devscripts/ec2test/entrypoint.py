@@ -12,6 +12,7 @@ import readline
 import rlcompleter
 import sys
 
+import bzrlib
 from bzrlib.errors import BzrCommandError
 
 from devscripts.ec2test import builtins
@@ -32,14 +33,15 @@ def main():
 
     We run the specified command, or give help if none was specified.
     """
-    controller = EC2CommandController()
-    controller.install_bzrlib_hooks()
-    controller.load_module(builtins)
+    with bzrlib.initialize():
+        controller = EC2CommandController()
+        controller.install_bzrlib_hooks()
+        controller.load_module(builtins)
 
-    args = sys.argv[1:]
-    if not args:
-        args = ['help']
-    try:
-        controller.run(args)
-    except BzrCommandError, e:
-        sys.exit('ec2: ERROR: ' + str(e))
+        args = sys.argv[1:]
+        if not args:
+            args = ['help']
+        try:
+            controller.run(args)
+        except BzrCommandError, e:
+            sys.exit('ec2: ERROR: ' + str(e))

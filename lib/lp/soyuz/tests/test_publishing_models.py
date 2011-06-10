@@ -1,19 +1,19 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test model and set utilities used for publishing."""
 
-import unittest
-
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.publishing import (IPublishingSet,
-    PackagePublishingStatus)
-from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.buildmaster.enums import BuildStatus
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
@@ -27,7 +27,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            build.buildstate = BuildStatus.FULLYBUILT
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):
@@ -66,7 +66,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.SUPERSEDED)
         for bpph in bpphs:
-            bpph.secure_record.datepublished = UTC_NOW
+            bpph.datepublished = UTC_NOW
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
@@ -76,5 +76,13 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         # even though it is no longer published.
         self.assertContentEqual(self.builds[1:3], unpublished_builds)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_getChangesFileLFA(self):
+        # The getChangesFileLFA() method finds the right LFAs.
+        lfas = (
+            self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
+            for hist in self.sources)
+        urls = [lfa.http_url for lfa in lfas]
+        self.assert_(urls[0].endswith('/94/gedit_666_source.changes'))
+        self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
+        self.assert_(urls[2].endswith(
+            '/98/getting-things-gnome_666_source.changes'))

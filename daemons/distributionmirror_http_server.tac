@@ -9,7 +9,7 @@ import os
 from twisted.application import service, internet, strports
 from twisted.web import server
 
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -18,7 +18,7 @@ application = service.Application('DistributionMirrorTestHTTPServer')
 httpserverService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(httpserverService)
+readyservice.ReadyService().setServiceParent(httpserverService)
 
 root = DistributionMirrorTestHTTPServer()
 site = server.Site(root)

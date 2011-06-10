@@ -9,11 +9,10 @@ __all__ = [
     ]
 
 from sqlobject import IntCol
-
 from zope.interface import implements
 
-from lp.registry.interfaces.featuredproject import IFeaturedProject
 from canonical.database.sqlbase import SQLBase
+from lp.registry.interfaces.featuredproject import IFeaturedProject
 
 
 class FeaturedProject(SQLBase):

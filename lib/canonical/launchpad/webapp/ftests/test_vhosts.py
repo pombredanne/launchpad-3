@@ -5,7 +5,12 @@
 
 __metaclass__ = type
 
-from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
+
 
 def test_suite():
     suite = DocTestSuite(

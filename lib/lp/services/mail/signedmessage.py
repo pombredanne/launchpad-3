@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for simpler handling of PGP signed email messages."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SignedMessage',
     'signed_message_from_string',
+    'strip_pgp_signature',
     ]
 
 import email
@@ -15,7 +16,8 @@ import re
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ISignedMessage
+from canonical.launchpad.interfaces.mail import ISignedMessage
+
 
 clearsigned_re = re.compile(
     r'-----BEGIN PGP SIGNED MESSAGE-----'
@@ -149,3 +151,13 @@ class SignedMessage(email.Message.Message):
         """
         signature, signed_content = self._getSignatureAndSignedContent()
         return signature
+
+
+def strip_pgp_signature(text):
+    """Strip any PGP signature from the supplied text."""
+    signed_message = signed_message_from_string(text)
+    # For unsigned text the signedContent will be None.
+    if signed_message.signedContent is not None:
+        return signed_message.signedContent
+    else:
+        return text

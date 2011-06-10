@@ -12,9 +12,8 @@ __all__ = [
 
 import os.path
 import tempfile
-import zipfile
-
 from textwrap import dedent
+import zipfile
 
 import lp.translations
 

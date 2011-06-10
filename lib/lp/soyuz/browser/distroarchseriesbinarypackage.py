@@ -8,11 +8,15 @@ __all__ = [
     'DistroArchSeriesBinaryPackageView',
     ]
 
-from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
-from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    GetitemNavigation,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
+from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
+    IDistroArchSeriesBinaryPackage,
+    )
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):

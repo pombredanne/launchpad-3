@@ -22,7 +22,7 @@ history" in the sampledata to test those tools properly.
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
   ...                       "archive-override-check.py")
 
-  >>> process = subprocess.Popen([sys.executable, script, "-vv",
+  >>> process = subprocess.Popen([sys.executable, script, "-v",
   ...                             "-d", "ubuntu",
   ...                             "-s", "warty"],
   ...                            stdout=subprocess.PIPE,

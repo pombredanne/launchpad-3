@@ -1,4 +1,4 @@
-#! /usr/bin/python2.5
+#! /usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -11,12 +11,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 
 
 class ReuploadPackageTranslations(LaunchpadScript):

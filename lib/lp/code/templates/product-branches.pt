@@ -3,40 +3,75 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <meta tal:condition="context/codehosting_usage/enumvalue:UNKNOWN"
+      name="robots" content="noindex,nofollow" />
+  </tal:head-epilogue>
+</head>
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+    <div id="branch-portlet"
+         tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
+      <div id="privacy"
+           tal:define="are_private view/new_branches_are_private"
+           tal:attributes="class python: are_private and 'first portlet private' or 'first portlet public'">
 
-  <div style="float:right" id="floating-links"
-       tal:define="menu context/menu:branches">
-    <div tal:define="link menu/branch_add"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-    <div tal:define="link menu/code_import"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-    <div tal:define="link menu/branch_visibility"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-  </div>
+        <p tal:condition="not:view/new_branches_are_private" id="privacy-text">
+          New branches you create for <tal:name replace="context/displayname"/>
+          are <strong>public</strong> initially.
+        </p>
 
-  <div id="private-policy" tal:condition="view/new_branches_are_private"
-       class="informational message">
-    New branches you create for <tal:name replace="context/displayname"/>
-    are <strong>private</strong> initially.
-  </div>
+        <p tal:condition="view/new_branches_are_private" id="privacy-text">
+          New branches you create for <tal:name replace="context/displayname"/>
+          are <strong>private</strong> initially.
+        </p>
 
-  <tal:branch-summary content="structure context/@@+branch-summary" />
+      </div>
 
-  <tal:has-branches condition="view/branch_count"
-                    define="branches view/branches">
-    <tal:branchlisting content="structure branches/@@+branch-listing" />
-  </tal:has-branches>
-</div>
+      <div id="involvement" class="portlet"
+           tal:define="menu context/menu:branches">
+        <ul class="involvement">
+            <li style="border: none">
+              <a href="+addbranch" class="menu-link-addbranch sprite code">
+                Register a branch
+              </a>
+            </li>
+        </ul>
+        <p style="margin-top:10px;"
+           tal:define="link menu/code_import"
+           tal:condition="link/enabled"
+           tal:content="structure link/render"></p>
+        <p tal:define="configure_codehosting view/configure_codehosting | nothing"
+           tal:condition="configure_codehosting"
+           tal:replace="structure configure_codehosting/fmt:link"></p>
+        <p tal:define="link menu/branch_visibility"
+           tal:condition="link/enabled"
+           tal:content="structure link/render"></p>
+      </div>
+
+    </div>
+  </metal:side>
+
+  <tal:main metal:fill-slot="main">
+
+    <tal:branch-summary content="structure context/@@+branch-summary" />
+
+    <tal:code-statistics
+      condition="not: view/context/codehosting_usage/enumvalue:UNKNOWN"
+      replace="structure context/@@+portlet-product-codestatistics" />
+
+    <tal:has-branches condition="view/branch_count"
+                      define="branches view/branches">
+      <tal:branchlisting content="structure branches/@@+branch-listing" />
+    </tal:has-branches>
+
+  </tal:main>
 
 </body>
 </html>

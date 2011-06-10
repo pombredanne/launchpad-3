@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ActiveReviewsView',
+    'BranchActiveReviewsView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
@@ -15,29 +16,43 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.publisher.interfaces import NotFound
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.schema import Choice
 
-from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item, use_template
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.widgets import LaunchpadDropdownWidget
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branch import IBranch
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.interfaces.branchcollection import (
-    IAllBranches, IBranchCollection)
+    IAllBranches,
+    IBranchCollection,
+    )
 from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, IBranchMergeProposalGetter,
-    IBranchMergeProposalListingBatchNavigator)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    IBranchMergeProposalListingBatchNavigator,
+    )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.services.propertycache import cachedproperty
 
 
 class BranchMergeProposalListingItem:
@@ -96,6 +111,26 @@ class BranchMergeProposalListingItem:
     def reviewer_vote(self):
         """A vote from the specified reviewer."""
         return self.context.getUsersVoteReference(self.proposal_reviewer)
+
+    @property
+    def sort_key(self):
+        """The value to order by.
+
+        This defaults to date_review_requested, but there are occasions where
+        this is not set if the proposal went directly from work in progress to
+        approved.  In this case the date_reviewed is used.
+
+        The value is always not None as proposals in needs review state will
+        always have date_review_requested set, and approved proposals will
+        always have date_reviewed set.  These are the only two states that are
+        shown in the active reviews page, so they can always be sorted on.
+        """
+        if self.context.date_review_requested is not None:
+            return self.context.date_review_requested
+        elif self.context.date_reviewed is not None:
+            return self.context.date_reviewed
+        else:
+            return self.context.date_created
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
@@ -306,10 +341,6 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return self.user
 
     def initialize(self):
-        # Branches, despite implementing IHasMergeProposals, does not
-        # have an active reviews page.
-        if IBranch.providedBy(self.context):
-            raise NotFound(self.context, '+activereviews')
         # Work out the review groups
         self.review_groups = {}
         self.getter = getUtility(IBranchMergeProposalGetter)
@@ -330,7 +361,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
                 self.show_diffs = True
         # Sort each collection...
         for group in self.review_groups.values():
-            group.sort(key=attrgetter('date_review_requested'))
+            group.sort(key=attrgetter('sort_key'))
         self.proposal_count = len(proposals)
 
     @cachedproperty
@@ -381,6 +412,16 @@ class ActiveReviewsView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no active code reviews." % self.context.displayname
+
+
+class BranchActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for a branch that are needing review."""
+
+    def getProposals(self):
+        """See `ActiveReviewsView`."""
+        candidates = self.context.landing_candidates
+        return [proposal for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
 
 
 class PersonActiveReviewsView(ActiveReviewsView):

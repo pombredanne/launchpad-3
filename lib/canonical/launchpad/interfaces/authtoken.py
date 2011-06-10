@@ -10,15 +10,26 @@ __metaclass__ = type
 __all__ = [
     'LoginTokenType',
     'IAuthToken',
-    'IAuthTokenSet',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
-from zope.interface import Attribute, Interface
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.services.fields import PasswordField
 
 
 class LoginTokenType(DBEnumeratedType):
@@ -79,13 +90,6 @@ class LoginTokenType(DBEnumeratedType):
         needs to be validated.
         """)
 
-    PROFILECLAIM = DBItem(8, """
-        Claim an unvalidated Launchpad profile
-
-        A user has found an unvalidated profile in Launchpad and is trying
-        to claim it.
-        """)
-
     NEWPROFILE = DBItem(9, """
         A user created a new Launchpad profile for another person.
 
@@ -118,6 +122,9 @@ class LoginTokenType(DBEnumeratedType):
         """)
 
 
+# XXX: Guilherme Salgado, 2010-03-30: This interface was created to be used by
+# our old OpenID provider, but that doesn't exist anymore, so we should merge
+# it with ILoginToken.
 class IAuthToken(Interface):
     """The object that stores one time tokens used for validating email
     addresses and other tasks that require verifying if an email address is
@@ -193,55 +200,3 @@ class IAuthToken(Interface):
         """Send an email message to the requester with a magic URL that allows
         him to finish the Launchpad registration process.
         """
-
-
-class IAuthTokenSet(Interface):
-    """The set of AuthTokens."""
-
-    title = Attribute('Title')
-
-    def get(id, default=None):
-        """Return the AuthToken object with the given id.
-
-        Return the default value if there's no such AuthToken.
-        """
-
-    def searchByEmailAccountAndType(email, account, type, consumed=None):
-        """Return all AuthTokens for the given email, account and type.
-
-        :param email: The email address to search for.
-        :param account: The Account object representing the requester
-            to search for.
-        :param type: The AuthTokenType to search for.
-        :param consumed: A flag indicating whether to return consumed tokens.
-            If False, only unconsumed tokens will be returned.
-            If True, only consumed tokens will be returned.
-            If None, this parameter will be ignored and all tokens will be
-            returned.
-        """
-
-    def deleteByEmailAccountAndType(email, account, type):
-        """Delete all AuthToken entries with the given email,
-        requester account and type."""
-
-    def new(requester, requesteremail, email, tokentype, redirection_url):
-        """Create a new AuthToken object.
-
-        :param requester: a Person object or None (in case of a new
-            account)
-        :param requesteremail: the email address used to login on the
-            system. Can also be None in case of a new account
-        :param email: the email address that this request will be sent
-            to.  It should be previously validated by valid_email()
-        :param tokentype: the type of the request, according to
-            LoginTokenType.
-        :param redirection_url: the URL the user will be forwarded to
-            after consuming the token.  May be None.
-        """
-
-    def __getitem__(id):
-        """Returns the AuthToken with the given id.
-
-        Raises KeyError if there is no such AuthToken.
-        """
-

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -42,7 +42,6 @@ class OOPSPruner(LaunchpadCronScript):
 
             oops_directories.append(oops_dir)
 
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         for oops_directory in oops_directories:
             for oops_path in unwanted_oops_files(oops_directory,
                                                  40, self.logger):
@@ -55,5 +54,4 @@ class OOPSPruner(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = OOPSPruner('oops-prune', dbuser='oopsprune')
-    script.lock_and_run()
-
+    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)

@@ -49,4 +49,4 @@ We can delete existing links between a bug and a branch.
     not support SVG and the branch lp://dev/~name12/firefox/main?
     ...
 
-    >>> user_browser.getControl('Delete').click()
+    >>> user_browser.getControl('Remove link').click()

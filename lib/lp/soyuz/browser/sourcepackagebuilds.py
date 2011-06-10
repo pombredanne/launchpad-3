@@ -9,16 +9,12 @@ __all__ = [
     'SourcePackageBuildsView',
     ]
 
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.lazr.utils import smartquote
+from lp.soyuz.browser.build import BuildRecordsView
 
 
 class SourcePackageBuildsView(BuildRecordsView):
     """A view for (distro series) source package builds."""
-
-    @property
-    def page_title(self):
-        return smartquote("Builds for " + self.context.title)
 
     @property
     def search_name(self):

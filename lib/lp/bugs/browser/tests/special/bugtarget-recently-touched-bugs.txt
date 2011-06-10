@@ -80,7 +80,7 @@ Only bugs that the user is allowed to see will be present in the list.
 Bugs that are duplicates of other bugs will be omitted from the list as
 well.
 
-    >>> bug_b.duplicateof = bug_c
+    >>> bug_b.markAsDuplicate(bug_c)
     >>> syncUpdate(bug_b)
 
     >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:

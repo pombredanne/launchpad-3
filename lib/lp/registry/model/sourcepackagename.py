@@ -7,19 +7,29 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'getSourcePackageDescriptions'
-]
+    'getSourcePackageDescriptions',
+    ]
 
+from sqlobject import (
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, SQLMultipleJoin
-
-from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.database.sqlbase import (
+    cursor,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.helpers import ensure_unicode
+from lp.app.errors import NotFoundError
+from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
 
 
 class SourcePackageName(SQLBase):
@@ -37,6 +47,9 @@ class SourcePackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
+    def __repr__(self):
+        return "<%s '%s'>" % (self.__class__.__name__, self.name)
+
     def ensure(klass, name):
         try:
             return klass.byName(name)
@@ -50,6 +63,7 @@ class SourcePackageNameSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        name = ensure_unicode(name)
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
@@ -115,15 +129,16 @@ def getSourcePackageDescriptions(
     cur = cursor()
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
-                     FROM BinaryPackageRelease, SourcePackageName, Build,
-                          SourcePackageRelease, BinaryPackageName
+                     FROM BinaryPackageRelease, SourcePackageName,
+                          BinaryPackageBuild, SourcePackageRelease,
+                          BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
-                       BinaryPackageRelease.build = Build.id AND
+                       BinaryPackageRelease.build = BinaryPackageBuild.id AND
                        SourcePackageRelease.sourcepackagename =
                            SourcePackageName.id AND
-                       Build.sourcepackagerelease =
+                       BinaryPackageBuild.source_package_release =
                            SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,
@@ -132,7 +147,7 @@ def getSourcePackageDescriptions(
 
     descriptions = {}
     for binarypackagename, sourcepackagename in cur.fetchall():
-        if not descriptions.has_key(sourcepackagename):
+        if not sourcepackagename in descriptions:
             descriptions[sourcepackagename] = (
                 "Source of: %s" % binarypackagename)
         else:
@@ -142,4 +157,3 @@ def getSourcePackageDescriptions(
                 description = ", %s" % binarypackagename
             descriptions[sourcepackagename] += description
     return descriptions
-

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -18,14 +18,17 @@ import sys
 
 from zope.component import getUtility
 
+# Still needed fake import to stop circular imports.
+import canonical.launchpad.interfaces
+
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.build import BuildStatus
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.app.errors import NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 def main():
@@ -121,6 +124,12 @@ def main():
             build_state=target_state, pocket=pocket)
 
         for build in target_builds:
+            # Skip builds for superseded sources; they won't ever
+            # actually build.
+            if not build.current_source_publication:
+                log.debug(
+                    'Skipping superseded %s (%s)' % (build.title, build.id))
+                continue
 
             if not build.can_be_retried:
                 log.warn('Can not retry %s (%s)' % (build.title, build.id))

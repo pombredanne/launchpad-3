@@ -1,15 +1,16 @@
-= ProductSeries Translations Branch =
+ProductSeries Translations Branch
+=================================
 
 If a ProductSeries has its translations_branch set, Launchpad will
 periodically commit snapshots of the series' translations to that
 branch.
 
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.enums import ServiceUsage
 
     >>> login(ANONYMOUS)
     >>> owner = factory.makePerson(email='x@example.com', password='****')
-    >>> product = factory.makeProduct(owner=owner)
-    >>> removeSecurityProxy(product).official_rosetta = True
+    >>> product = factory.makeProduct(owner=owner,
+    ...     translations_usage=ServiceUsage.LAUNCHPAD)
     >>> productseries = product.getSeries('trunk')
     >>> branch = factory.makeBranch(product=product, owner=owner)
     >>> branch_name = branch.name
@@ -99,7 +100,8 @@ changed.
     </div>
 
 
-== Disabling exports ==
+Disabling exports
+-----------------
 
 The field can also be cleared in order to disable the exports.
 
@@ -125,7 +127,8 @@ overview as a translations source.
     None
 
 
-== Security ==
+Security
+--------
 
 You can only set the translations_branch to a branch that you own.
 Otherwise you'd be giving Launchpad a blanket license to commit

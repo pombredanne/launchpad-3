@@ -5,10 +5,10 @@
   <div class="section" tal:define="tags_cloud_data view/tags_cloud_data">
     <h2 tal:condition="tags_cloud_data">Tags</h2>
     <div style="text-align: justify">
-      <a tal:repeat="tag_info view/tags_cloud_data"
+      <a tal:repeat="tag_info tags_cloud_data"
          tal:content="tag_info/tag"
          tal:attributes="href tag_info/url;
-                         style string:font-size: ${tag_info/factor}em" />
+                        style string:font-size: ${tag_info/factor}em" />
     </div>
   </div>
 </div>

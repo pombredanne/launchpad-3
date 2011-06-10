@@ -11,44 +11,52 @@ __all__ = [
     'SpecificationDependencyTreeView',
     ]
 
+from zope.interface import Interface
+
+from lazr.restful.interface import copy_field
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.blueprints.interfaces.specificationdependency import (
-    ISpecificationDependency, ISpecificationDependencyRemoval)
+    ISpecificationDependency,
+    ISpecificationDependencyRemoval,
+    )
 
-from zope.formlib import form
-from zope.schema import Choice
+
+class AddSpecificationDependencySchema(Interface):
+
+    dependency = copy_field(
+        ISpecificationDependency['dependency'],
+        readonly=False,
+        description=_(
+            "If another blueprint needs to be fully implemented "
+            "before this feature can be started, then specify that "
+            "dependency here so Launchpad knows about it and can "
+            "give you an accurate project plan.  You can enter the "
+            "name of a blueprint that has the same target, or the "
+            "URL of any blueprint."))
 
 
 class SpecificationDependencyAddView(LaunchpadFormView):
-    schema = ISpecificationDependency
-    field_names = ['dependency']
+    schema = AddSpecificationDependencySchema
     label = _('Depends On')
 
-    def setUpFields(self):
-        """Override the setup to define own fields."""
-        self.form_fields = form.Fields(
-            Choice(
-                __name__='dependency',
-                title=_(u'Depends On'),
-                vocabulary='SpecificationDepCandidates',
-                required=True,
-                description=_(
-                    "If another blueprint needs to be fully implemented "
-                    "before this feature can be started, then specify that "
-                    "dependency here so Launchpad knows about it and can "
-                    "give you an accurate project plan.")),
-            render_context=self.render_context)
-
     def validate(self, data):
-        is_valid = True
-        token = self.request.form.get(self.widgets['dependency'].name)
-        try:
-            self.widgets['dependency'].vocabulary.getTermByToken(token)
-        except LookupError:
-            is_valid = False
-        if not is_valid:
+        """See `LaunchpadFormView.validate`.
+
+        Because it's too hard to set a good error message from inside the
+        widget -- it will be the infamously inscrutable 'Invalid Value' -- we
+        replace it here.
+        """
+        if self.getFieldError('dependency'):
+            token = self.request.form.get(self.widgets['dependency'].name)
             self.setFieldError(
                 'dependency',
                 'There is no blueprint named "%s" in %s, or '

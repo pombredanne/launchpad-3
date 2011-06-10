@@ -9,20 +9,31 @@ import httplib
 import os
 import socket
 import tempfile
-import urllib2
 import unittest
+import urllib2
 
 from bzrlib.errors import (
-    BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
-    NotBranchError)
-
-from lp.codehosting.puller.worker import (
-    BranchMirrorer, BranchReferenceForbidden, BranchLoopError, PullerWorker,
-    PullerWorkerProtocol, StackedOnBranchNotFound)
-from lp.codehosting.vfs.branchfs import (
-    BadUrlLaunchpad, BadUrlScheme, BadUrlSsh)
-from lp.code.enums import BranchType
+    BzrError,
+    NotBranchError,
+    ParamikoNotPresent,
+    UnknownFormatError,
+    UnsupportedFormatError,
+    )
 from lazr.uri import InvalidURIError
+
+from lp.code.enums import BranchType
+from lp.codehosting.puller.worker import (
+    BranchLoopError,
+    BranchMirrorer,
+    BranchReferenceForbidden,
+    PullerWorker,
+    PullerWorkerProtocol,
+    )
+from lp.codehosting.vfs.branchfs import (
+    BadUrlLaunchpad,
+    BadUrlScheme,
+    BadUrlSsh,
+    )
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
@@ -111,14 +122,6 @@ class TestErrorCatching(unittest.TestCase):
             BranchReferenceForbidden(),
             branch_type=BranchType.HOSTED)
         self.assertEqual(expected_msg, msg)
-
-    def testStackedOnBranchNotFound(self):
-        # If StackedOnBranchNotFound is raised then we send mirrorDeferred to
-        # the scheduler.
-        worker = self.makeRaisingWorker(StackedOnBranchNotFound())
-        worker.mirror()
-        self.assertEqual(
-            [('startMirroring',), ('mirrorDeferred',)], worker.protocol.calls)
 
     def testLocalURL(self):
         # A file:// branch reference for a mirror branch must cause an error.

@@ -1,4 +1,5 @@
-= Presenting private bug reports =
+Presenting private bug reports
+==============================
 
 When a bug report is public, it says so.
 
@@ -8,20 +9,16 @@ When a bug report is public, it says so.
     This report is public
 
 But when marked private, it gains the standard Launchpad presentation
-for private things. The date and time at which the bug report was
-marked private and the person who did it is also shown (as a
-title/tooltip):
+for private things.
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
-    >>> browser.getControl("This bug report should be private").selected = True
+    >>> browser.getControl(
+    ...     "This bug report should be private").selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4
     >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
     This report is private
-
-XXX 20080708 mpt: The date and person are not actually shown anywhere
-(bug 246671).
 
 Bugs created before we started recording the date and time and who
 marked the bug private show only a simple message:
@@ -35,7 +32,7 @@ bugs or where the product requests that bugs are private by default)
 have the full message:
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+filebug")
-    >>> browser.getControl('Summary').value = (
+    >>> browser.getControl('Summary', index=0).value = (
     ...     'Firefox crashes when I change the default route')
     >>> browser.getControl('Continue').click()
 
@@ -68,10 +65,10 @@ But poor old no privs does not, and neither do anonymous users:
     >>> browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):
     ...
-    Unauthorized: Bug 4 is private
+    NotFound: ...
 
     >>> anon_browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):
     ...
-    Unauthorized: Bug 4 is private
+    NotFound: ...
 

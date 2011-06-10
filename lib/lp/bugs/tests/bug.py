@@ -3,29 +3,42 @@
 
 """Helper functions for bug-related doctests and pagetests."""
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from operator import attrgetter
+import re
 import textwrap
 
-from datetime import datetime, timedelta
-from operator import attrgetter
-from pytz import UTC
-
 from BeautifulSoup import BeautifulSoup
-
+from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tag_by_id, find_main_content, find_tags_by_class)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    print_table,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
 
 def print_direct_subscribers(bug_page):
@@ -108,18 +121,30 @@ def print_bugs_list(content, list_id):
         print extract_text(node)
 
 
-def print_bugtasks(text):
+def print_bugtasks(text, show_heat=None):
     """Print all the bugtasks in the text."""
-    print '\n'.join(extract_bugtasks(text))
+    print '\n'.join(extract_bugtasks(text, show_heat=show_heat))
 
 
-def extract_bugtasks(text):
+def extract_bugtasks(text, show_heat=None):
     """Extracts a list of strings for all the bugtasks in the text."""
     main_content = find_main_content(text)
     table = main_content.find('table', {'id': 'buglisting'})
     if table is None:
         return []
-    return [extract_text(tr) for tr in table('tr') if tr.td is not None]
+    rows = []
+    for tr in table('tr'):
+        if tr.td is not None:
+            row_text = extract_text(tr)
+            if show_heat:
+                for img in tr.findAll('img'):
+                    mo = re.search('^/@@/bug-heat-([0-4]).png$', img['src'])
+                    if mo:
+                        flames = int(mo.group(1))
+                        heat_text = flames * '*' + (4 - flames) * '-'
+                        row_text += '\n' + heat_text
+            rows.append(row_text)
+    return rows
 
 
 def create_task_from_strings(bug, owner, product, watchurl=None):
@@ -181,7 +206,8 @@ def create_old_bug(
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
-    bug.duplicateof = duplicateof
+    if duplicateof is not None:
+        bug.markAsDuplicate(duplicateof)
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(
@@ -194,7 +220,7 @@ def create_old_bug(
         bugtask.transitionToAssignee(assignee)
     bugtask.milestone = milestone
     if external_bugtracker is not None:
-        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
+        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person,
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
@@ -206,7 +232,7 @@ def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
     bugtaskset = getUtility(IBugTaskSet)
     expirable_bugtasks = list(bugtaskset.findExpirableBugTasks(
-        0, getUtility(ILaunchpadCelebrities).janitor))
+        config.malone.days_before_expiration, getUtility(ILaunchpadCelebrities).janitor))
     print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:
@@ -264,3 +290,54 @@ def print_upstream_linking_form(browser):
         if text_field is not None:
             text_control = browser.getControl(name=text_field.get('name'))
             print '    [%s]' % text_control.value.ljust(10)
+
+
+def print_bugfilters_portlet_unfilled(browser, target):
+    """Print the raw, unfilled contents of the bugfilters portlet.
+
+    This is the contents before any actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_filled() to test the populated portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev/%s/+portlet-bugfilters' % target)
+    table = BeautifulSoup(browser.contents).find('table', 'bug-links')
+    tbody_info, tbody_links = table('tbody')
+    print_table(tbody_info)
+    for link in tbody_links('a'):
+        text = extract_text(link)
+        if len(text) > 0:
+            print "%s\n  --> %s" % (text, link['href'])
+
+
+def print_bugfilters_portlet_filled(browser, target):
+    """Print the filled-in contents of the bugfilters portlet.
+
+    This is the contents after the actual data has been fetched.
+    (The portlet is normally populated with data by a separate
+    javascript call, to avoid delaying the overall page load.  Use
+    print_bugfilters_portlet_unfilled() to test the unpopulated
+    portlet.)
+
+    :param browser  browser from which to extract the content.
+    :param target   entity from whose bugs page to fetch the portlet
+                    (e.g., http://bugs.launchpad.dev/TARGET/...)
+    """
+    browser.open(
+        'http://bugs.launchpad.dev'
+        '/%s/+bugtarget-portlet-bugfilters-stats' % target)
+    table = BeautifulSoup('<table>%s</table>' % browser.contents)
+    print_table(table)
+
+
+def print_bug_tag_anchors(anchors):
+    """The the bug tags in the iterable of anchors."""
+    for anchor in anchors:
+        href = anchor['href']
+        if href != '+edit' and '/+help/tag-help.html' not in href:
+            print anchor['class'], anchor.contents[0]

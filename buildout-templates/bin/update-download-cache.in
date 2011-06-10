@@ -1,2 +1,4 @@
-bzr up ${buildout:directory}/buildout/download-cache
+${shell-relative-path-setup}
+
+bzr up ${buildout:directory/buildout/download-cache|shell-path}
 

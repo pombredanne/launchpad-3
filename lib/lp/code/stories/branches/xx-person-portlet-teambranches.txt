@@ -6,27 +6,36 @@ that this person participates in that has branches.
 The portlet only appears when the persons teams actually have branches,
 and only teams that have branches are shown.
 
-None of No Privileges Person's teams have any branches, so there should
-not be a portlet there.
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(
+    ...     name="eric", password="test", email="eric@example.com",
+    ...     displayname="Eric the Viking")
+    >>> vikings = factory.makeTeam(name="vikings", owner=eric)
+    >>> # Also give vikings a cool icon.
+    >>> icon = factory.makeLibraryFileAlias(
+    ...     filename='vikings.png', content_type='image/png')
+    >>> from lp.testing import run_with_login
+    >>> run_with_login(eric, setattr, vikings, 'icon', icon)
+    >>> logout()
 
-    >>> browser.open('http://code.launchpad.dev/~no-priv')
+Initially Eric's teams have no branches, so there is not be a portlet
+there.
+
+    >>> browser.open('http://code.launchpad.dev/~eric')
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
     >>> print portlet
     None
 
-Robert is a member of vcs-imports so there is one team branch there.
+    >>> login(ANONYMOUS)
+    >>> vb = factory.makeAnyBranch(owner=vikings)
+    >>> logout()
 
-    >>> browser.open('http://code.launchpad.dev/~lifeless')
-    >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
-    >>> print extract_text(portlet)
-    Branches related to
-    VCS imports
-
-Now Foo Bar has two different teams with code.
-
-    >>> browser.open('http://code.launchpad.dev/~name16')
-    >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
-    >>> print extract_text(portlet)
-    Branches related to
-    Launchpad Developers
-    VCS imports
+    >>> browser.open('http://code.launchpad.dev/~eric')
+    >>> tb = find_tag_by_id(browser.contents, 'portlet-team-branches')
+    >>> print extract_text(tb.h2)
+    Branches owned by
+    >>> print tb.li
+    <li>
+      <img src="http://.../vikings.png" width="14" height="14" />
+      <a href="/~vikings">Vikings</a>
+    </li>

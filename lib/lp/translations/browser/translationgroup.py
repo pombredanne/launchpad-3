@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for translation groups."""
@@ -16,22 +16,30 @@ __all__ = [
     'TranslationGroupView',
     ]
 
-import operator
-
 from zope.component import getUtility
 
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroup, ITranslationGroupSet)
-from lp.translations.interfaces.translator import (
-    ITranslator, ITranslatorSet)
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+    )
+from lp.translations.interfaces.translator import (
+    ITranslator,
+    ITranslatorSet,
+    )
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -55,12 +63,14 @@ class TranslationGroupSetView:
     label = page_title
 
 
-class TranslationGroupView:
+class TranslationGroupView(LaunchpadView):
 
     def __init__(self, context, request):
+        super(TranslationGroupView, self).__init__(context, request)
         self.context = context
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
+        self.user_can_edit = check_permission('launchpad.Edit', self.context)
 
     @property
     def label(self):
@@ -70,20 +80,27 @@ class TranslationGroupView:
     def page_title(self):
         return self.context.title
 
+    def _makeTranslatorDict(self, translator, language, person):
+        """Compose dict describing a `Translator` for UI use.
+
+        Parameters are the ones found in each item in the sequence
+        returned by `TranslationGroup.fetchTranslatorData`.
+        """
+        return {
+                'person': person,
+                'code': language.code,
+                'language': language,
+                'datecreated': translator.datecreated,
+                'style_guide_url': translator.style_guide_url,
+                'context': translator,
+            }
+
     @property
     def translator_list(self):
-        result = []
-        for item in self.context.translators:
-            result.append({'lang': item.language.englishname,
-                           'person': item.translator,
-                           'code': item.language.code,
-                           'language' : item.language,
-                           'datecreated': item.datecreated,
-                           'style_guide_url': item.style_guide_url,
-                           'context' : item,
-                           })
-        result.sort(key=operator.itemgetter('lang'))
-        return result
+        """List of dicts describing the translation teams."""
+        return [
+            self._makeTranslatorDict(*data)
+            for data in self.context.fetchTranslatorData()]
 
 
 class TranslationGroupAddTranslatorView(LaunchpadFormView):

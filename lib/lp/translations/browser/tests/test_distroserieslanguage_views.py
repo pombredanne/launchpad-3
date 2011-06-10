@@ -3,19 +3,23 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
+from lazr.restful.utils import get_current_browser_request
+from testtools.matchers import Equals
+import transaction
 from zope.component import getUtility
 
-from lp.translations.browser.distroserieslanguage import (
-    DistroSeriesLanguageView)
-from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.browser.distroseries import DistroSeriesView
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing import TestCaseWithFactory, login_person
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
+from lp.translations.browser.serieslanguage import DistroSeriesLanguageView
+from lp.translations.interfaces.translator import ITranslatorSet
 
 
 class TestDistroSeriesLanguage(TestCaseWithFactory):
@@ -33,11 +37,16 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(
             distroseries=self.distroseries,
             sourcepackagename=sourcepackagename)
-        pofile = self.factory.makePOFile('sr', potemplate)
+        self.factory.makePOFile('sr', potemplate)
         self.distroseries.updateStatistics(transaction)
         self.dsl = self.distroseries.distroserieslanguages[0]
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
+
+    def _simulateReadOnlyMode(self):
+        """Pretend to be in read-only mode for this test."""
+        request = get_current_browser_request()
+        request.annotations['launchpad.read_only_mode'] = True
 
     def test_empty_view(self):
         self.assertEquals(self.view.translation_group, None)
@@ -48,6 +57,9 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.distroseries.distribution.owner, url=None)
         self.distroseries.distribution.translationgroup = group
+        self.view = DistroSeriesLanguageView(
+            self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -66,7 +78,22 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         # Recreate the view because we are using a cached property.
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
+        self.view.initialize()
         self.assertEquals(self.view.translation_team, translator)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_access_level_description_handles_readonly(self):
+        self._simulateReadOnlyMode()
+        notice = (
+            "No work can be done on these translations while Launchpad "
+            "is in read-only mode.")
+        self.assertEqual(notice, self.view.access_level_description)
+
+    def test_sourcepackagenames_bulk_loaded(self):
+        # SourcePackageName records referenced by POTemplates
+        # are bulk loaded. Accessing the sourcepackagename attribute
+        # of a potemplate does not require an additional SQL query.
+        self.view.initialize()
+        template = self.view.batchnav.currentBatch()[0]
+        with StormStatementRecorder() as recorder:
+            template.sourcepackagename
+        self.assertThat(recorder, HasQueryCount(Equals(0)))

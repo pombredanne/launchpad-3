@@ -6,9 +6,9 @@ for IDistroSeries context (IDistroSeriesView)
 Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryMultiAdapter
+  >>> from canonical.launchpad.database.librarian import LibraryFileAlias
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> fake_chroot = LibraryFileAlias.get(1)
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -46,7 +46,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
   >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
@@ -128,7 +128,7 @@ It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
 
 Accepting an item from NEW queue.
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
   >>> getUtility(IPackageUploadSet).get(1).status.name
   'NEW'
   >>> getUtility(IPackageUploadSet).get(3).status.name
@@ -230,9 +230,9 @@ for a package "foo" and uploading a new build that has "foo" and
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
     >>> stp = SoyuzTestPublisher()
     >>> hoary = ubuntu['hoary']
     >>> stp.prepareBreezyAutotest()
@@ -247,22 +247,28 @@ for a package "foo" and uploading a new build that has "foo" and
 
 Now that "foo" is published in Hoary, we can upload a new build.
 
+    # First we'll need to create a source publication for the foo-1.0-2,
+    # though, as our upload will only include binaries.
+    >>> foo_source_1_0_2 = stp.getPubSource(
+    ...     sourcename="foo", distroseries=hoary, version="1.0-2",
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.archiveuploader.uploadpolicy import ArchiveUploadType
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.component import ComponentSelection
-    >>> from lp.archiveuploader.tests import (
-    ...     datadir, getPolicy, mock_logger_quiet)
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
     >>> from lp.archiveuploader.nascentupload import NascentUpload
     >>> import_public_test_keys()
     >>> universe = getUtility(IComponentSet)['universe']
     >>> trash = ComponentSelection(distroseries=hoary, component=universe)
     >>> sync_policy = getPolicy(name='sync', distro='ubuntu',
     ...    distroseries='hoary')
-    >>> sync_policy.can_upload_binaries = True
-    >>> sync_policy.can_upload_mixed = True
-    >>> foo_upload = NascentUpload(
+    >>> sync_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> foo_upload = NascentUpload.from_changesfile_path(
     ...    datadir('suite/foo_1.0-2_multi_binary/foo_1.0-2_i386.changes'),
-    ...    sync_policy, mock_logger_quiet)
+    ...    sync_policy, DevNullLogger())
     >>> foo_upload.process()
     >>> foo_upload.do_accept()
     True
@@ -288,5 +294,5 @@ is_new() method requires to work.
 
 We created librarian files that need cleaning up before leaving the test.
 
-  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()

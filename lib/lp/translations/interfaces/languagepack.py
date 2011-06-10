@@ -10,29 +10,22 @@ __metaclass__ = type
 __all__ = [
     'ILanguagePack',
     'ILanguagePackSet',
-    'LanguagePackType',
     ]
 
-from zope.schema import Choice, Datetime, Int, Object
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lazr.enum import DBEnumeratedType, DBItem
-
-
-class LanguagePackType(DBEnumeratedType):
-    """Type of language packs."""
-
-    FULL = DBItem(1, """
-        Full
-
-        Full translations export.""")
-
-    DELTA = DBItem(2, """
-        Delta
-
-        Delta translation export based on a previous full export.""")
+from lp.translations.enums import LanguagePackType
 
 
 class ILanguagePack(Interface):
@@ -56,8 +49,8 @@ class ILanguagePack(Interface):
         title=_('Language pack type'), required=True,
         vocabulary=LanguagePackType,
         description=_("""
-            The language pack is either a "Full" export, or a "Delta" of changes
-            from the base language pack of the distribution series.
+            The language pack is either a "Full" export, or a "Delta" of
+            changes from the base language pack of the distribution series.
             """))
 
     updates = Attribute(_('The LanguagePack that this one updates.'))

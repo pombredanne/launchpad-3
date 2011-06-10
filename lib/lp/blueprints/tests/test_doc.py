@@ -8,12 +8,14 @@ Run the doctests and pagetests.
 import logging
 import os
 
+from canonical.launchpad.ftests.test_system_documentation import (
+    ProcessMailLayer,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.launchpad.ftests.test_system_documentation import(
-    ProcessMailLayer)
-from canonical.testing import DatabaseFunctionalLayer
-
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from lp.services.testing import build_test_suite
 
 
@@ -31,4 +33,4 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    return build_test_suite(here, special)

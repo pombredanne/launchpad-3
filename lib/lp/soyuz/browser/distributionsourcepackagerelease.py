@@ -4,42 +4,41 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSourcePackageReleaseBreadcrumb',
     'DistributionSourcePackageReleaseNavigation',
-    'DistributionSourcePackageReleaseView',
     'DistributionSourcePackageReleasePublishingHistoryView',
+    'DistributionSourcePackageReleaseView',
     ]
 
 import operator
 
-from zope.component import getUtility
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepthrough)
-from lp.archivepublisher.debversion import Version
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-
+    LaunchpadView,
+    Navigation,
+    )
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
+from lp.archivepublisher.debversion import Version
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.build import BuildNavigationMixin
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
 
 
-class DistributionSourcePackageReleaseNavigation(Navigation):
+class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
+    """A breadcrumb for `IDistributionSourcePackageRelease`."""
+
+    @property
+    def text(self):
+        return self.context.version
+
+
+class DistributionSourcePackageReleaseNavigation(Navigation,
+                                                 BuildNavigationMixin):
     usedfor = IDistributionSourcePackageRelease
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):
@@ -109,7 +108,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         :return: a `list` of dictionaries containing 'distroseries' and its
              grouped 'builds' ordered by descending distroseries versions.
         """
-        # Build a local list of `IBuilds` ordered by ascending
+        # Build a local list of `IBinaryPackageBuilds` ordered by ascending
         # 'architecture_tag'.
         cached_builds = sorted(
             self.context.builds, key=operator.attrgetter('arch_tag'))
@@ -119,7 +118,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
         def distroseries_sort_key(item):
             return Version(item.version)
         sorted_distroseries = sorted(
-            set(build.distroseries for build in cached_builds),
+            set(build.distro_series for build in cached_builds),
             key=distroseries_sort_key, reverse=True)
 
         # Group builds as dictionaries.
@@ -128,7 +127,7 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
             builds = [
                 build
                 for build in cached_builds
-                if build.distroseries == distroseries
+                if build.distro_series == distroseries
                 ]
             distroseries_builds.append(
                 {'distroseries': distroseries, 'builds': builds})

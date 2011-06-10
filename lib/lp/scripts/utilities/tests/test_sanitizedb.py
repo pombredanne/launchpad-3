@@ -9,8 +9,14 @@ import os.path
 import subprocess
 import unittest
 
-from canonical.config import config, dbconfig
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
 from canonical.testing.layers import DatabaseLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import TestCase
@@ -20,6 +26,7 @@ class SanitizeDbScriptTestCase(TestCase):
     layer = DatabaseLayer
 
     def setUp(self):
+        super(SanitizeDbScriptTestCase, self).setUp()
         self.script_path = os.path.join(
             config.root, 'utilities', 'sanitize-db.py')
         DatabaseLayer.force_dirty_database()

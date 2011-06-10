@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -15,13 +15,23 @@ import logging
 # zope bits
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.scripts import debbugs
 from lp.services.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import (IBugSet,
-    ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,
-    IBugWatchSet, IMessageSet, ICveSet, BugTaskSearchParams)
-from canonical.database.constants import UTC_NOW
+from lp.services.messages.interfaces.message import (
+    InvalidEmailMessage,
+    IMessageSet,
+    )
+
 
 # setup core values and defaults
 debbugs_location_default = '/srv/bugs-mirror.debian.org/'

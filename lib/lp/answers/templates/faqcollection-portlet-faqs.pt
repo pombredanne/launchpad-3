@@ -17,7 +17,8 @@
     </p>
   </form>
 
-  <ul tal:condition="faqs">
+  <ul tal:condition="faqs"
+    tal:content="cache:public, 3 hour">
     <li tal:repeat="faq faqs">
       <a class="sprite question"
         tal:attributes="href faq/fmt:url"
@@ -25,8 +26,7 @@
     </li>
   </ul>
 
-  <ul class="horizontal"
-    tal:condition="context/required:launchpad.Moderate">
+  <ul class="horizontal">
     <li>
       <a tal:replace="structure view/menu:answers/create_faq/fmt:link" />
     </li>

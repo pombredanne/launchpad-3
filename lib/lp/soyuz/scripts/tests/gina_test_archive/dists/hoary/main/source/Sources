@@ -12,6 +12,20 @@ Files:
  41b62efd646e5f010d6e34862503e5a5 510 archive-copier_0.1.5.dsc
  cc6132eb7b8bc715ddd1690a68d7df89 16600 archive-copier_0.1.5.tar.gz
 
+Package: archive-copier
+Binary: archive-copier
+Version: 0.3.6
+Section: misc
+Maintainer: Colin Watson <cjwatson@ubuntu.com>
+Build-Depends: debhelper (>= 4.2)
+Architecture: any
+Standards-Version: 3.6.2
+Format: 1.0
+Directory: pool/main/a/archive-copier
+Files:
+ 3b6c16962308a4b8b753ec8d5b289506 510 archive-copier_0.3.6.dsc
+ 6ca2e13475a9aa0a694b85330d905dbd 19598 archive-copier_0.3.6.tar.gz
+
 Package: db1-compat
 Binary: libdb1-compat
 Version: 2.1.3-7

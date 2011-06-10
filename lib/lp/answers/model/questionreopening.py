@@ -10,19 +10,18 @@ __metaclass__ = type
 __all__ = ['QuestionReopening',
            'create_questionreopening']
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from sqlobject import ForeignKey
 from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import ProxyFactory
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-
-from sqlobject import ForeignKey
-
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
+from canonical.database.sqlbase import SQLBase
+from lp.answers.enums import QuestionStatus
+from lp.answers.interfaces.questionreopening import IQuestionReopening
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -45,41 +44,28 @@ class QuestionReopening(SQLBase):
     date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
-# XXX flacoste 2006-10-25 The QuestionReopening is probably not that useful
-# anymore since the question history is nearly completely tracked in the
-# question message trails. (Only missing information is the previous recorded
-# answer.) If we decide to still keep that class, this subscriber should
-# probably be moved outside of database code.
-def create_questionreopening(question, event):
-    """Event subscriber that creates a QuestionReopening whenever a question
-    with an answer changes back to the OPEN state.
+
+def create_questionreopening(
+        question,
+        reopen_msg,
+        old_status,
+        old_answerer,
+        old_date_solved):
+    """Helper function to handle question reopening.
+
+    A QuestionReopening is created when question with an answer changes back
+    to the OPEN state.
     """
-    if question.status != QuestionStatus.OPEN:
+    # XXX jcsackett This guard has to be maintained because reopen can
+    # be called with the question in a bad state.
+    if old_answerer is None:
         return
-
-    # Only create a QuestionReopening if the question had previsouly an
-    # answer.
-    old_question = event.object_before_modification
-    if old_question.answerer is None:
-        return
-    assert question.answerer is None, (
-        "Open question shouldn't have an answerer.")
-
-    # The last added message is the cause of the reopening.
-    reopen_msg = question.messages[-1]
-
-    # Make sure that the last message is really the last added one.
-    assert [reopen_msg] == (
-        list(set(question.messages).difference(old_question.messages))), (
-            "Reopening message isn't the last one.")
-
     reopening = QuestionReopening(
-            question=question, reopener=reopen_msg.owner,
+            question=question,
+            reopener=reopen_msg.owner,
             datecreated=reopen_msg.datecreated,
-            answerer=old_question.answerer,
-            date_solved=old_question.date_solved,
-            priorstate=old_question.status)
-
+            answerer=old_answerer,
+            date_solved=old_date_solved,
+            priorstate=old_status)
     reopening = ProxyFactory(reopening)
     notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))
-

@@ -1,7 +1,7 @@
 = Delete a Bug Watch =
 
-If a bug watch isn't linked to a bug task, it's possible to delete from
-the bug watch edit page.
+If a bug watch isn't linked to a bug task and no comments have been
+imported for it, it's possible to delete from the bug watch edit page.
 
     >>> user_browser.open('http://launchpad.dev/bugs/1')
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
@@ -32,4 +32,3 @@ the bug watch edit page.
     mozilla.org #2000
     mozilla.org #42
     debbugs #304014
-

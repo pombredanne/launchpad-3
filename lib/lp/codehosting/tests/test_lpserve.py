@@ -1,27 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the lp-serve plugin."""
 
 __metaclass__ = type
 
-import os
-import re
-from subprocess import PIPE
-import unittest
-
-from bzrlib import errors, osutils
+from bzrlib import (
+    errors,
+    )
 from bzrlib.smart import medium
-from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import remote
+from bzrlib.plugins.lpserve.test_lpserve import TestCaseWithSubprocess
 
-from canonical.config import config
-
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
 from lp.codehosting.bzrutils import make_error_utility
 
 
-class TestLaunchpadServe(TestCaseWithTransport):
+class TestLaunchpadServe(TestCaseWithSubprocess):
     """Tests for the lp-serve plugin.
 
     Most of the helper methods here are copied from bzrlib.tests and
@@ -31,88 +25,7 @@ class TestLaunchpadServe(TestCaseWithTransport):
 
     def assertFinishedCleanly(self, result):
         """Assert that a server process finished cleanly."""
-        # XXX gary 2009-10-15 bug 316192
-        # Ideally, this method would only be this single line:
-        #
-        # self.assertEqual((0, '', ''), tuple(result))
-        #
-        # However, because of the bug above, stderr (the last value) can
-        # include complaints that bzr tried to import certain plugins but
-        # was unable to.  This can make the last value into something like
-        # this (concatenate the strings):
-        #
-        #  "No module named dbus.bus\n"
-        #  "Unable to load plugin 'dbus' from "
-        #    "'/usr/lib/python2.4/site-packages/bzrlib/plugins'\n"
-        #  "No module named dbus.bus\n"
-        #  "Unable to load plugin 'avahi' from "
-        #    "'/usr/lib/python2.4/site-packages/bzrlib/plugins'\n"
-        #
-        # Therefore, for now, we allow stderr to have messages like
-        # that, with a regex.  A fix for the bzr bug mentioned above has
-        # already been released, so hopefully soon this method can
-        # return to the single assert above, this module will no longer
-        # have to import re, and this comment can be consigned to
-        # history.
-        self.assertEqual(0, result[0]) # the return code
-        self.assertEqual('', result[1]) # stdout
-        self.failUnless(re.match(
-            r"(No module named \S+\n|"
-               "Unable to load plugin \S+ from '/usr/lib/python[^']+'\n)*$",
-            result[2]))
-
-    def get_python_path(self):
-        """Return the path to the Python interpreter."""
-        return '%s/bin/py' % config.root
-
-    def start_bzr_subprocess(self, process_args, env_changes=None,
-                             working_dir=None):
-        """Start bzr in a subprocess for testing.
-
-        Copied and modified from `bzrlib.tests.TestCase.start_bzr_subprocess`.
-        This version removes some of the skipping stuff, some of the
-        irrelevant comments (e.g. about win32) and uses Launchpad's own
-        mechanisms for getting the path to 'bzr'.
-
-        Comments starting with 'LAUNCHPAD' are comments about our
-        modifications.
-        """
-        if env_changes is None:
-            env_changes = {}
-        env_changes['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
-        old_env = {}
-
-        def cleanup_environment():
-            for env_var, value in env_changes.iteritems():
-                old_env[env_var] = osutils.set_or_unset_env(env_var, value)
-
-        def restore_environment():
-            for env_var, value in old_env.iteritems():
-                osutils.set_or_unset_env(env_var, value)
-
-        cwd = None
-        if working_dir is not None:
-            cwd = osutils.getcwd()
-            os.chdir(working_dir)
-
-        # LAUNCHPAD: Because of buildout, we need to get a custom Python
-        # binary, not sys.executable.
-        python_path = self.get_python_path()
-        # LAUNCHPAD: We can't use self.get_bzr_path(), since it'll find
-        # lib/bzrlib, rather than the path to sourcecode/bzr/bzr.
-        bzr_path = get_bzr_path()
-        try:
-            cleanup_environment()
-            command = [python_path, bzr_path]
-            command.extend(process_args)
-            process = self._popen(
-                command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        finally:
-            restore_environment()
-            if cwd is not None:
-                os.chdir(cwd)
-
-        return process
+        self.assertEqual((0, '', ''), tuple(result))
 
     def finish_lpserve_subprocess(self, process):
         """Shut down the server process.
@@ -192,4 +105,10 @@ class TestLaunchpadServe(TestCaseWithTransport):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    from bzrlib import tests
+    from bzrlib.plugins import lpserve
+
+    loader = tests.TestLoader()
+    suite = loader.loadTestsFromName(__name__)
+    suite = lpserve.load_tests(suite, lpserve, loader)
+    return suite

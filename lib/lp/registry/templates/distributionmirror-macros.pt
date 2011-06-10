@@ -16,7 +16,7 @@
   <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
-      <tr class="highlighted">
+      <tr class="highlight">
         <th colspan="2" style="text-align: left"
             tal:content="country_and_mirrors/country" />
         <th style="text-align: left"
@@ -50,7 +50,8 @@
         </td>
         <td tal:condition="show_freshness"
             tal:define="freshness mirror/getOverallFreshness">
-          <span tal:replace="freshness/title" />
+          <span tal:content="freshness/title"
+            tal:attributes="class string:distromirrorstatus${freshness/name}" />
         </td>
       </tr>
 
@@ -58,12 +59,12 @@
         Include a blank row after the last entry of a country to provide
         vertical spacing to separate the next country.
       </tal:comment>
-      <tr class="note">
+      <tr class="lesser">
         <td>&nbsp;</td>
       </tr>
 
     </tal:country_and_mirrors>
-    <tr class="highlighted">
+    <tr class="highlight">
       <th colspan="5" style="text-align: left; font-weight: bold;">Total</th>
     </tr>
     <tr>
@@ -110,7 +111,8 @@
     <tr tal:repeat="arch_series arch_series">
       <td tal:content="arch_series/distro_arch_series/distroseries/title" />
       <td tal:content="arch_series/distro_arch_series/architecturetag" />
-      <td tal:content="arch_series/freshness/title" />
+      <td tal:content="arch_series/freshness/title"
+        tal:attributes="class string:distromirrorstatus${arch_series/freshness/name}" />
     </tr>
   </tbody>
   </table>
@@ -132,7 +134,8 @@
   <tbody>
     <tr tal:repeat="source_series source_series">
       <td tal:content="source_series/distroseries/title" />
-      <td tal:content="source_series/freshness/title" />
+      <td tal:content="source_series/freshness/title"
+        tal:attributes="class string:distromirrorstatus${source_series/freshness/name}" />
     </tr>
   </tbody>
   </table>

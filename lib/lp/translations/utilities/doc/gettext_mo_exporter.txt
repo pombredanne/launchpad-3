@@ -32,6 +32,8 @@ TranslationFileData.
 
 To get a TranslationFileData, we use the GettextPOImporter class.
 
+    >>> from lp.translations.interfaces.translationfileformat import (
+    ...     TranslationFileFormat)
     >>> parser = POParser()
     >>> file_content = '''
     ...     msgid ""
@@ -50,11 +52,16 @@ To get a TranslationFileData, we use the GettextPOImporter class.
     >>> translation_file_es.path = 'foo/es.po'
     >>> translation_file_es.language_code = 'es'
     >>> translation_file_es.translation_domain = 'foo'
+    >>> translation_file_es.format = TranslationFileFormat.PO
 
 When we export a single file, we get a .mo file as output.
 
+    >>> from lp.translations.utilities.translation_export import (
+    ...     ExportFileStorage)
     >>> exporter = GettextMOExporter()
-    >>> exported_file = exporter.exportTranslationFiles([translation_file_es])
+    >>> storage = ExportFileStorage()
+    >>> exporter.exportTranslationFile(translation_file_es, storage)
+    >>> exported_file = storage.export()
     >>> print exported_file.content_type
     application/x-gmo
     >>> is_valid_mofile(exported_file.read())
@@ -62,12 +69,17 @@ When we export a single file, we get a .mo file as output.
 
 When we export more than one file, we get a tarball.
 
+    >>> from lp.translations.interfaces.translationexporter import (
+    ...     ITranslationExporter)
     >>> translation_file_sr = parser.parse(file_content)
     >>> translation_file_sr.path = 'foo/sr.po'
     >>> translation_file_sr.language_code = 'sr'
     >>> translation_file_sr.translation_domain = 'foo'
-    >>> exported_file = exporter.exportTranslationFiles(
-    ...     [translation_file_es, translation_file_sr])
+    >>> translation_file_sr.format = TranslationFileFormat.PO
+    >>> translation_exporter = getUtility(ITranslationExporter)
+    >>> exported_file = translation_exporter.exportTranslationFiles(
+    ...     [translation_file_es, translation_file_sr],
+    ...     target_format=TranslationFileFormat.MO)
     >>> print exported_file.content_type
     application/x-gtar
     >>> file_content = exported_file.read()
@@ -79,12 +91,14 @@ When we export more than one file, we get a tarball.
     ...         lines = len(tarfile.extractfile(member).readlines())
     ...     else:
     ...         lines = 0
-    ...     print "| %5d | %s" % (lines, member.name)
-    |     0 | es/
-    |     0 | es/LC_MESSAGES/
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print "| %5d | %s" % (lines, member.name.rstrip('/'))
+    |     0 | es
+    |     0 | es/LC_MESSAGES
     |    12 | es/LC_MESSAGES/foo.mo
-    |     0 | sr/
-    |     0 | sr/LC_MESSAGES/
+    |     0 | sr
+    |     0 | sr/LC_MESSAGES
     |    12 | sr/LC_MESSAGES/foo.mo
 
 

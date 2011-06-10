@@ -24,7 +24,10 @@ __all__ = [
     'RANK',
     ]
 
-from storm.expr import CompoundOper, NamedFunc
+from storm.expr import (
+    CompoundOper,
+    NamedFunc,
+    )
 
 
 class FTQ(NamedFunc):

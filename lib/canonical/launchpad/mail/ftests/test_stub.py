@@ -3,12 +3,13 @@
 
 __metaclass__ = type
 
-import unittest
+from doctest import DocTestSuite
 import re
-from zope.testing.doctest import DocTestSuite
+
 from zope.testing.renormalizing import RENormalizing
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
+
 
 def test_simple_sendmail():
     r"""
@@ -112,6 +113,3 @@ def test_suite():
         (re.compile(r'Revision="\d+"'), 'Revision="1999"')]))
     suite.layer = LaunchpadFunctionalLayer
     return suite
-
-if __name__ == '__main__':
-    unittest.main(test_suite())

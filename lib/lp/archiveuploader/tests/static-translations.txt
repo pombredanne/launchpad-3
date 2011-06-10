@@ -22,11 +22,11 @@ librarian and are retrieved using the webservice.  We can demonstrate the
 publishing behaviour using a mock PackageUploadCustom object:
 
     >>> from zope.interface import implements
-    >>> from lp.archiveuploader.tests import mock_logger
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> from lp.soyuz.interfaces.queue import (
-    ...     IPackageUpload, IPackageUploadCustom, PackageUploadCustomFormat)
+    ...     IPackageUpload, IPackageUploadCustom)
     >>> from lp.soyuz.model.queue import PackageUploadCustom
     >>> class MockPackageUploadCustom(PackageUploadCustom):
     ...     implements(IPackageUploadCustom)
@@ -44,7 +44,8 @@ publishing behaviour using a mock PackageUploadCustom object:
     ...     archive=bat.main_archive)
     >>> custom_upload = MockPackageUploadCustom()
     >>> custom_upload.packageupload = package_upload
-    >>> custom_upload.publish(logger=mock_logger)
-    DEBUG: Publishing custom to ubuntu/breezy-autotest
-    DEBUG: Skipping publishing of static translations.
+    >>> from lp.services.log.logger import FakeLogger
+    >>> custom_upload.publish(logger=FakeLogger())
+    DEBUG Publishing custom to ubuntu/breezy-autotest
+    DEBUG Skipping publishing of static translations.
 

@@ -11,18 +11,31 @@ __all__ = [
     'MakesAnnouncements',
     ]
 
-import pytz, datetime
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+import datetime
+
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from lp.registry.interfaces.announcement import IAnnouncement, IAnnouncementSet
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.registry.interfaces.announcement import (
+    IAnnouncement,
+    IAnnouncementSet,
+    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class Announcement(SQLBase):
@@ -42,7 +55,7 @@ class Announcement(SQLBase):
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
-    project = ForeignKey(dbName='project', foreignKey='Project')
+    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
@@ -88,7 +101,7 @@ class Announcement(SQLBase):
             self.distribution = target
             self.project = None
             self.product = None
-        elif IProject.providedBy(target):
+        elif IProjectGroup.providedBy(target):
             self.project = target
             self.distribution = None
             self.product = None
@@ -159,7 +172,7 @@ class HasAnnouncements:
                 query += """ AND
                     (Announcement.product = %s OR Announcement.project = %s)
                     """ % sqlvalues(self.id, self.project)
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             query += """ AND
                 (Announcement.project = %s OR Announcement.product IN
                     (SELECT id FROM Product WHERE project = %s))
@@ -186,7 +199,7 @@ class MakesAnnouncements(HasAnnouncements):
         project = product = distribution = None
         if IProduct.providedBy(self):
             product = self
-        elif IProject.providedBy(self):
+        elif IProjectGroup.providedBy(self):
             project = self
         elif IDistribution.providedBy(self):
             distribution = self

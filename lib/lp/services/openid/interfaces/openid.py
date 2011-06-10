@@ -8,7 +8,10 @@ __all__ = [
     'IOpenIDPersistentIdentity',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IOpenIDPersistentIdentity(Interface):

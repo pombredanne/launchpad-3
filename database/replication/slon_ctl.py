@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -88,9 +88,11 @@ def get_pidfile(nickname):
 
 
 def get_logfile(nickname):
+    logdir = config.database.replication_logdir
+    if not os.path.isabs(logdir):
+        logdir = os.path.normpath(os.path.join(config.root, logdir))
     return os.path.join(
-        config.root, 'database', 'replication',
-        'lpslon_%s_%s.log' % (nickname, config.instance_name))
+        logdir, 'lpslon_%s_%s.log' % (nickname, config.instance_name))
 
 
 def start(log, nodes, lag=None):
@@ -114,7 +116,7 @@ def start(log, nodes, lag=None):
             "--exec", "/usr/bin/slon",
             "--startas", "/bin/sh",
             "--", "-c",
-            "slon -p %s %s %s '%s' > %s" % (
+            "slon -p %s %s %s '%s' >> %s" % (
                 pidfile, slon_args, replication.helpers.CLUSTERNAME,
                 node.connection_string, logfile)]
         log.debug("Running %s" % repr(cmd))

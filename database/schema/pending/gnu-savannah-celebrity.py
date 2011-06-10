@@ -1,6 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Creates the GNU Savannah bugtracker celebrity.
@@ -16,10 +16,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.launchpad.database import BugTrackerAlias
-from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTrackerAliasSet, IBugTrackerSet,
-    ILaunchpadCelebrities)
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerAliasSet,
+    IBugTrackerSet,
+    )
+from lp.bugs.model.bugtracker import BugTrackerAlias
 
 
 execute_zcml_for_scripts()

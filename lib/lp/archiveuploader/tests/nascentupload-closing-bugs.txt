@@ -31,9 +31,10 @@ Check the current status of the bug we are supposed to fix:
     >>> the_bug_id = 6
 
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBugTaskSet, IDistributionSet, IPersonSet)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('no-priv@canonical.com')
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
@@ -79,7 +80,7 @@ This new version fixes bug #6 according its changesfiles:
     >>> bar2_src.changes.changed_by['person'].name
     u'kinnison'
 
-    >>> bar2_src.changes._dict['launchpad-bugs-fixed']
+    >>> bar2_src.changes._dict['Launchpad-bugs-fixed']
     '6'
 
     >>> print bar2_src.changes.changes_comment
@@ -111,7 +112,7 @@ FIXRELEASED and bug notification are generated:
     Bug #6 in bar (Ubuntu): "Firefox crashes when ...
     FIXRELEASED
 
-    >>> from canonical.launchpad.database import BugNotification
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> notifications = BugNotification.selectBy(bug=the_bug, orderBy='id')
     >>> for notification in notifications:
     ...     print "From %s:\n%s\n" % (

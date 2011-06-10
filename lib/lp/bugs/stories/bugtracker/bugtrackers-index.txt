@@ -1,19 +1,12 @@
-= Bug trackers in Launchpad =
+Bug trackers in Launchpad
+=========================
 
 The bug trackers index page has the same navigation as the main Bugs
 page, with the addition of a breadcrumb itself.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-    >>> print_location(user_browser.contents)
-    Hierarchy: None displayed
-    Tabs:
-    * Launchpad Home - http://launchpad.dev/
-    * Branches - http://code.launchpad.dev/
-    * Bugs (selected) - http://bugs.launchpad.dev/
-    * Blueprints - http://blueprints.launchpad.dev/
-    * Translations - http://translations.launchpad.dev/
-    * Answers - http://answers.launchpad.dev/
-    Main heading: Bug trackers registered in Launchpad
+    >>> print user_browser.title
+    Bug trackers registered in Launchpad
 
 The page presents a table with all bugtrackers currently registered:
 
@@ -46,11 +39,11 @@ The page presents a table with all bugtrackers currently registered:
     Email Address
     0
     ------------------------
-    GNU Savannah Bug Tracker
-    http://savannah.gnu.org/
-      --> http://savannah.gnu.org/
+    T'other Gnome GBugGTracker
+    http://bugzilla.gnome.org/
+      --> http://bugzilla.gnome.org/
     &mdash;
-    Savane
+    Bugzilla
     0
     ------------------------
     ...
@@ -75,6 +68,8 @@ auto-created ones - so the title is also obfuscated.
     &mdash;
     Email Address
     0
+    ------------------------
+    ...
 
 The watch counts match the number of bugs listed, of course:
 
@@ -88,10 +83,11 @@ The listing also displays projects and projects linked to bug trackers.
 Let's link a pair to debbugs:
 
     >>> def link_to_debbugs(name):
-    ...     admin_browser.open("http://launchpad.dev/%s/+edit" % name)
+    ...     admin_browser.open(
+    ...         "http://launchpad.dev/%s/+configure-bugtracker" % name)
     ...     admin_browser.getControl("In a registered bug tracker").click()
     ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
-    ...     bt.value = ["3"]
+    ...     bt.value = 'debbugs'
     ...     admin_browser.getControl("Change").click()
     ...
     >>> link_to_debbugs('upstart')

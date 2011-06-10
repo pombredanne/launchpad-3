@@ -6,16 +6,16 @@
   tal:define="
     bug context/bug|context;
     direct_subscriptions view/sorted_direct_subscriptions;
-    also_notified_subscribers bug/getAlsoNotifiedSubscribers
   ">
   <div class="section" id="subscribers-direct">
-    <h2>Subscribers</h2>
+    <h3>Directly subscribed</h3>
       <div id="subscribers-links">
       <div
         tal:condition="direct_subscriptions"
         tal:repeat="subscription direct_subscriptions"
-        tal:attributes="class subscription/css_name"
-      >
+        tal:attributes="
+            class subscription/css_name;
+            id string:direct-${subscription/css_name}">
         <metal:subscriber metal:define-macro="subscriber-row">
 
             <a
@@ -38,7 +38,7 @@
                  class python: view.getSubscriptionClassForUser(subscription.person)
                "
             >
-              <img class="unsub-icon" src="/@@/remove"
+              <img class="unsub-icon" src="/@@/remove" alt="Remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />
             </a>
 
@@ -46,7 +46,8 @@
       </div>
       </div>
       <div id="none-subscribers"
-        tal:condition="not:direct_subscriptions">None</div>
+        tal:condition="not:direct_subscriptions">
+        No subscribers.</div>
   </div>
   <div id="subscribers-from-duplicates-container">
     <a id="subscribers-from-dupes-content-link"
@@ -56,15 +57,18 @@
       <img src="/@@/spinner" />
     </div>
   </div>
-  <div
-    tal:condition="also_notified_subscribers"
-    id="subscribers-indirect"
-    class="Section"
-  >
-    <h2>Also notified</h2>
+  <tal:also_notified condition="not: request/features/malone.advanced-subscriptions.enabled">
     <div
-      tal:repeat="subscriber also_notified_subscribers"
-      tal:content="structure subscriber/fmt:link"
-    />
-  </div>
+      tal:define="also_notified_subscribers bug/getAlsoNotifiedSubscribers"
+      tal:condition="also_notified_subscribers"
+      id="subscribers-indirect"
+      class="Section"
+    >
+      <h3>Also notified</h3>
+      <div
+        tal:repeat="subscriber also_notified_subscribers"
+        tal:content="structure subscriber/fmt:link"
+      />
+    </div>
+  </tal:also_notified>
 </div>

@@ -5,13 +5,13 @@ bugs pertaining to a target. All objects with a bug supervisor are also
 structural subscription targets. When the bug supervisor for such an object
 is set, a new bug subscription is created as well.
 
-    >>> target.bug_subscriptions
+    >>> list(target.bug_subscriptions)
     []
 
     >>> print target.bug_supervisor
     None
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> no_priv = personset.getByEmail("no-priv@canonical.com")
     >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")

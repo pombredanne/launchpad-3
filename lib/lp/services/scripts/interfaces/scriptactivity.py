@@ -13,7 +13,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, TextLine
+from zope.schema import (
+    Datetime,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

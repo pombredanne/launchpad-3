@@ -37,18 +37,18 @@
            tal:attributes="href product/translationgroup/fmt:url"
              >Ubuntu Translation Group</a><br />
       </tal:has_prod_translationgrp>
-      <tal:has_project condition="product/project"
-                       define="project product/project">
-        <b>Project:</b>
-          <a tal:content="project/displayname"
-             tal:attributes="href string:/${project/name}/" /><br />
-        <tal:has_proj_translationgrp condition="project/translationgroup">
-          <b>Project translation group:</b><br />
-          <a tal:content="project/translationgroup/title"
-             tal:attributes="href project/translationgroup/fmt:url"
+      <tal:has_project_group condition="product/project"
+                       define="projectgroup product/project">
+        <b>Project group:</b>
+          <a tal:content="projectgroup/displayname"
+             tal:attributes="href string:/${projectgroup/name}/" /><br />
+        <tal:has_projgrp_translationgrp condition="projectgroup/translationgroup">
+          <b>Project group translation group:</b><br />
+          <a tal:content="projectgroup/translationgroup/title"
+             tal:attributes="href projectgroup/translationgroup/fmt:url"
                >Ubuntu Translation Group</a><br />
-        </tal:has_proj_translationgrp>
-      </tal:has_project>
+        </tal:has_projgrp_translationgrp>
+      </tal:has_project_group>
     </tal:block>
     </tal:has_series>
     <tal:block condition="context/potemplate/distroseries">

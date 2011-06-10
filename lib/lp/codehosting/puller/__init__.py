@@ -8,7 +8,6 @@ __all__ = ['get_lock_id_for_branch_id', 'mirror']
 import datetime
 
 import pytz
-
 from twisted.internet import defer
 
 

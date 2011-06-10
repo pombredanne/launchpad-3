@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -7,19 +7,34 @@ __metaclass__ = type
 __all__ = ['InvalidTransition', 'Job', 'JobStatus']
 
 
+from calendar import timegm
 import datetime
 import time
+
+import pytz
+from sqlobject import (
+    IntCol,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Or,
+    Select,
+    )
+from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-import pytz
-from sqlobject import IntCol, StringCol
-from storm.expr import Select, And, Or
-from zope.interface import implements
-
-from lp.services.job.interfaces.job import IJob, JobStatus, LeaseHeld
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    LeaseHeld,
+    )
 
 
 UTC = pytz.timezone('UTC')
@@ -56,17 +71,29 @@ class Job(SQLBase):
 
     attempt_count = IntCol(default=0)
 
-    # List of the valid target states from a given state.
+    max_retries = IntCol(default=0)
+
+    # Mapping of valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
-            (JobStatus.RUNNING,),
+            (JobStatus.RUNNING,
+             JobStatus.SUSPENDED),
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
+             JobStatus.SUSPENDED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
-    }
+        JobStatus.SUSPENDED:
+            (JobStatus.WAITING,),
+        }
+
+    # Set of all states where the job could eventually complete.
+    PENDING_STATUSES = frozenset(
+        (JobStatus.WAITING,
+         JobStatus.RUNNING,
+         JobStatus.SUSPENDED))
 
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
@@ -74,6 +101,22 @@ class Job(SQLBase):
         self._status = status
 
     status = property(lambda x: x._status)
+
+    @classmethod
+    def createMultiple(self, store, num_jobs):
+        """Create multiple `Job`s at once.
+
+        :param store: `Store` to ceate the jobs in.
+        :param num_jobs: Number of `Job`s to create.
+        :return: An iterable of `Job.id` values for the new jobs.
+        """
+        job_contents = ["(%s)" % quote(JobStatus.WAITING)] * num_jobs
+        result = store.execute("""
+            INSERT INTO Job (status)
+            VALUES %s
+            RETURNING id
+            """ % ", ".join(job_contents))
+        return [job_id for job_id, in result]
 
     def acquireLease(self, duration=300):
         """See `IJob`."""
@@ -83,6 +126,15 @@ class Job(SQLBase):
         expiry = datetime.datetime.fromtimestamp(time.time() + duration,
             UTC)
         self.lease_expires = expiry
+
+    def getTimeout(self):
+        """Return the number of seconds until the job should time out.
+
+        Jobs timeout when their leases expire.  If the lease for this job has
+        already expired, return 0.
+        """
+        expiry = timegm(self.lease_expires.timetuple())
+        return max(0, expiry - time.time())
 
     def start(self):
         """See `IJob`."""
@@ -105,6 +157,16 @@ class Job(SQLBase):
         """See `IJob`."""
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+
+    def suspend(self):
+        """See `IJob`."""
+        self._set_status(JobStatus.SUSPENDED)
+
+    def resume(self):
+        """See `IJob`."""
+        if self.status is not JobStatus.SUSPENDED:
+            raise InvalidTransition(self._status, JobStatus.WAITING)
+        self._set_status(JobStatus.WAITING)
 
 
 Job.ready_jobs = Select(

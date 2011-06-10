@@ -41,7 +41,7 @@ For Distribution, it's possible to filter build results by state and name:
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Builds").click()
     >>> print anon_browser.title
-    Ubuntu Linux builds...
+    Builds : Ubuntu
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -51,7 +51,7 @@ For DistroSeries, an architecture filter is also presented:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    The Hoary Hedgehog Release builds...
+    Builds : Hoary (5.04) : Ubuntu
 
     >>> print check_builds_options(anon_browser.contents)
     State, Arch and Name present
@@ -61,7 +61,7 @@ For DistroArchSeries, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    The Hoary Hedgehog Release for i386 (x86) builds...
+    Builds : i386 : Hoary (5.04) : Ubuntu
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -71,7 +71,7 @@ For Builder, same as Distribution:
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
     >>> anon_browser.getLink("View full history").click()
     >>> print anon_browser.title
-    Build history for “Bob...
+    Build history : Bob The Builder : Build Farm
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -82,7 +82,7 @@ For Archive (PPA), same as Distribution:
     ...     "http://launchpad.dev/~cprov/+archive/+packages")
     >>> anon_browser.getLink("View all builds").click()
     >>> print anon_browser.title
-    Builds for PPA for Celso Providelo...
+    Builds : PPA for Celso Providelo : Celso Providelo
 
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
@@ -93,7 +93,7 @@ For SourcePackage, it's only possible to filter by state.
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
     >>> print anon_browser.title
-    Builds for ...pmount... in Hoary :...
+    Builds : ...pmount... source package : Hoary (5.04) : Ubuntu
 
     >>> print check_builds_options(anon_browser.contents)
     State present, Name not present
@@ -143,8 +143,8 @@ initialised' one (fix bug #52704).
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started at an unknown time on an unknown build machine and finished
-    on 2007-08-09 taking
+    Build started on 2007-08-09 on an unknown build machine and finished
+    on 2007-08-09 taking ten minutes
     ------------------------------
     Failed to upload
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
@@ -200,8 +200,8 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
     Successfully built
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
-    Build started at an unknown time on an unknown build machine and finished
-    on 2007-08-09 taking
+    Build started on 2007-08-09 on an unknown build machine and finished
+    on 2007-08-09 taking ten minutes
     ------------------------------
     Successfully built
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
@@ -486,9 +486,9 @@ processed, the upload 'status' is shown in parentheses after the build
 link.
 
     # Create testing source publications.
-    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login('foo.bar@canonical.com')
     >>> test_publisher = SoyuzTestPublisher()
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')

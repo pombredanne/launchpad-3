@@ -7,22 +7,33 @@ __metaclass__ = type
 __all__ = ['Entitlement', 'EntitlementSet']
 
 from datetime import datetime
+
 import pytz
-
-from zope.interface import implements
-
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol,
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
     )
+from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.entitlement import (
-    EntitlementInvalidError, EntitlementQuota, EntitlementQuotaExceededError,
-    EntitlementState, EntitlementType, IEntitlement, IEntitlementSet)
+    EntitlementInvalidError,
+    EntitlementQuota,
+    EntitlementQuotaExceededError,
+    EntitlementState,
+    EntitlementType,
+    IEntitlement,
+    IEntitlementSet,
+    )
+
+
 class Entitlement(SQLBase):
     """A table recording the entitlements for a person or team."""
 

@@ -54,9 +54,6 @@ def upload_request(request):
     """Librarian upload server test helper, process a request and report what
     happens.
 
-    Inspired by the canonical.functional.http function used by the Launchpad
-    page tests.
-
     Hands a request to a librarian file upload protocol, and prints the reply
     from the server, a summary of the file uploaded, and whether the connection
     closed, e.g.::
