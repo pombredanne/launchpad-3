@@ -627,28 +627,14 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class IDistroSeriesInitializeForm(Interface):
-
-    derived_from_series = Choice(
-        title=_('Derived from distribution series'),
-        default=None,
-        vocabulary="DistroSeriesDerivation",
-        description=_(
-            "Select the distribution series you "
-            "want to derive from."),
-        required=True)
+class EmptySchema(Interface):
+    pass
 
 
 class DistroSeriesInitializeView(LaunchpadFormView):
     """A view to initialize an `IDistroSeries`."""
 
-    schema = IDistroSeriesInitializeForm
-    field_names = [
-        "derived_from_series",
-        ]
-
-    custom_widget('derived_from_series', LaunchpadDropdownWidget)
-
+    schema = EmptySchema
     label = 'Initialize series'
     page_title = label
 
@@ -659,6 +645,13 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     @property
     def is_derived_series_feature_enabled(self):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
+
+    @property
+    def rebuilding_allowed(self):
+        """If the distribution has got any initialized series already,
+        rebuilding is not allowed.
+        """
+        return not self.context.distribution.has_published_sources
 
     @property
     def next_url(self):
@@ -823,11 +816,14 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         else:
             destination_pocket = PackagePublishingPocket.RELEASE
 
+        # When syncing we *must* do it asynchronously so that a package
+        # copy job is created.  This gives the job a chance to inspect
+        # the copy and create a PackageUpload if required.
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
-            person=self.user):
+            person=self.user, force_async=True):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
@@ -1077,16 +1073,18 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     def requestUpgrades(self):
         """Request sync of packages that can be easily upgraded."""
         target_distroseries = self.context
-        target_archive = target_distroseries.main_archive
-        job_source = getUtility(IPlainPackageCopyJobSource)
-
-        for dsd in self.getUpgrades():
-            job_source.create(
+        copies = [
+            (
                 dsd.source_package_name.name,
-                dsd.parent_series.main_archive, target_archive,
-                target_distroseries, PackagePublishingPocket.UPDATES,
-                package_version=dsd.parent_source_version,
-                copy_policy=PackageCopyPolicy.MASS_SYNC)
+                dsd.parent_source_version,
+                dsd.parent_series.main_archive,
+                target_distroseries.main_archive,
+                PackagePublishingPocket.RELEASE,
+            )
+            for dsd in self.getUpgrades()]
+        getUtility(IPlainPackageCopyJobSource).createMultiple(
+            target_distroseries, copies,
+            copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
             (u"Upgrades of {context.displayname} packages have been "

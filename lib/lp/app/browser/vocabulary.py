@@ -57,16 +57,28 @@ class IPickerEntry(Interface):
     description = Attribute('Description')
     image = Attribute('Image URL')
     css = Attribute('CSS Class')
+    alt_title = Attribute('Alternative title')
+    title_link = Attribute('URL used for anchor on title')
+    alt_title_link = Attribute('URL used for anchor on alt title')
+    link_css = Attribute('CSS Class for links')
+    badges = Attribute('List of badge img attributes')
 
 
 class PickerEntry:
     """See `IPickerEntry`."""
     implements(IPickerEntry)
 
-    def __init__(self, description=None, image=None, css=None, api_uri=None):
+    def __init__(self, description=None, image=None, css=None, alt_title=None,
+                 title_link=None, alt_title_link=None, link_css='js-action',
+                 badges=None, api_uri=None):
         self.description = description
         self.image = image
         self.css = css
+        self.alt_title = alt_title
+        self.title_link = title_link
+        self.alt_title_link = alt_title_link
+        self.link_css = link_css
+        self.badges = badges
 
 
 @adapter(Interface)
@@ -108,10 +120,11 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         if enhanced_picker_enabled:
             # If the person is affiliated with the associated_object then we
             # can display a badge.
-            badge_name = IHasAffiliation(
+            badge_info = IHasAffiliation(
                 associated_object).getAffiliationBadge(person)
-            if badge_name is not None:
-                extra.image = "/@@/%s" % badge_name
+            if badge_info:
+                extra.badges = [
+                    dict(url=badge_info.url, alt=badge_info.alt_text)]
 
         if person.preferredemail is not None:
             if person.hide_email_addresses:
@@ -123,6 +136,12 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     extra.description = '<email address hidden>'
 
         if enhanced_picker_enabled:
+            # We will display the person's name (launchpad id) after their
+            # displayname.
+            extra.alt_title = person.name
+            # We will linkify the person's name so it can be clicked to open
+            # the page for that person.
+            extra.alt_title_link = canonical_url(person, rootsite='mainsite')
             # We will display the person's irc nick(s) after their email
             # address in the description text.
             irc_nicks = None
@@ -236,6 +255,16 @@ class HugeVocabularyJSONView:
                 entry['image'] = picker_entry.image
             if picker_entry.css is not None:
                 entry['css'] = picker_entry.css
+            if picker_entry.alt_title is not None:
+                entry['alt_title'] = picker_entry.alt_title
+            if picker_entry.title_link is not None:
+                entry['title_link'] = picker_entry.title_link
+            if picker_entry.alt_title_link is not None:
+                entry['alt_title_link'] = picker_entry.alt_title_link
+            if picker_entry.link_css is not None:
+                entry['link_css'] = picker_entry.link_css
+            if picker_entry.badges is not None:
+                entry['badges'] = picker_entry.badges
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')
