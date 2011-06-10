@@ -369,8 +369,8 @@ class Bugzilla:
 
         return person
 
-    def _getPackageNames(self, bug):
-        """Returns the source and binary package names for the given bug."""
+    def _getPackageName(self, bug):
+        """Returns the source package name for the given bug."""
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
             raise AssertionError('product must be Ubuntu')
@@ -389,19 +389,17 @@ class Bugzilla:
             pkgname = bug.component.encode('ASCII')
 
         try:
-            srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
+            return self.ubuntu.guessPublishedSourcePackageName(pkgname)
         except NotFoundError, e:
             logger.warning('could not find package name for "%s": %s',
                            pkgname, str(e))
-            srcpkg = binpkg = None
-
-        return srcpkg, binpkg
+            return None
 
     def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
-        srcpkg, binpkg = self._getPackageNames(bug)
+        srcpkg = self._getPackageName(bug)
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
@@ -435,7 +433,7 @@ class Bugzilla:
         This function relies on the package -> product linkage having been
         entered in advance.
         """
-        srcpkgname, binpkgname = self._getPackageNames(bug)
+        srcpkgname = self._getPackageName(bug)
         # find a product series
         series = None
         for series in self.ubuntu.series:

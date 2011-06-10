@@ -135,8 +135,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    source_name, binary_name = distribution.guessPackageNames(
-                        package_name.name)
+                    source_name = (
+                        distribution.guessPublishedSourcePackageName(
+                            package_name.name))
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"

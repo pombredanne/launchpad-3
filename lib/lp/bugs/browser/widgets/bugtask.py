@@ -494,7 +494,7 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
         distribution = self.getDistribution()
 
         try:
-            source, binary = distribution.guessPackageNames(input)
+            source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
                 return self.convertTokensToValues([input])[0]

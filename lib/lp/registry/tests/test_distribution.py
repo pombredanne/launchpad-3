@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
     Not,
@@ -19,6 +20,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.errors import NotFoundError
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPersonSet
@@ -41,9 +43,6 @@ class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistribution, self).setUp('foo.bar@canonical.com')
-
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
         distro = self.factory.makeDistribution(
@@ -58,6 +57,143 @@ class TestDistribution(TestCaseWithFactory):
             name="distro", displayname=u'\u0170-distro')
         ignore, displayname, name = repr(distro).rsplit(' ', 2)
         self.assertEqual("'\\u0170-distro'", displayname)
+
+    def test_guessPublishedSourcePackageName_no_distro_series(self):
+        # Distribution without a series raises NotFoundError
+        distro = self.factory.makeDistribution()
+        with ExpectedException(NotFoundError, '.*has no series.*'):
+            distro.guessPublishedSourcePackageName('package')
+
+    def test_guessPublishedSourcePackageName_invalid_name(self):
+        # Invalid name raises a NotFoundError
+        distro = self.factory.makeDistribution()
+        with ExpectedException(NotFoundError, "'Invalid package name.*"):
+            distro.guessPublishedSourcePackageName('a*package')
+
+    def test_guessPublishedSourcePackageName_nothing_published(self):
+        distroseries = self.factory.makeDistroSeries()
+        with ExpectedException(NotFoundError, "'Unknown package:.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'a-package')
+
+    def test_guessPublishedSourcePackageName_sourcepackage_name(self):
+        my_package_name = self.factory.makeSourcePackageName('my-package')
+        distroseries = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=my_package_name)
+        self.assertEquals(
+            my_package_name,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+
+    def test_guessPublishedSourcePackageName_binarypackage_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        my_package_name = self.factory.makeSourcePackageName(
+            'my-package')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=my_package_name)
+        binary_package_name = self.factory.makeBinaryPackageName(
+            'binary-package')
+        binary_package_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease)
+        binary_package_release = self.factory.makeBinaryPackageRelease(
+            build=binary_package_build, binarypackagename=binary_package_name)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagerelease=binary_package_release)
+        self.assertEquals(
+            my_package_name,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'binary-package'))
+
+    def test_guessPublishedSourcePackageName_exlude_ppa(self):
+        # Package published in PPAs are not considered to be part of the
+        # distribution.
+        my_package_name = self.factory.makeSourcePackageName('my-package')
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        ppa_archive = self.factory.makeArchive()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=my_package_name,
+            archive=ppa_archive)
+        with ExpectedException(NotFoundError, ".*not published in.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package')
+
+    def test_guessPublishedSourcePackageName_exlude_other_distro(self):
+        # Published source package are only found in the distro
+        # in which they were published.
+        my_package_name = self.factory.makeSourcePackageName('my-package')
+        distroseries1 = self.factory.makeDistroSeries()
+        distroseries2 = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries1, sourcepackagename=my_package_name)
+        self.assertEquals(
+            my_package_name,
+            distroseries1.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+        with ExpectedException(NotFoundError, ".*not published in.*"):
+            distroseries2.distribution.guessPublishedSourcePackageName(
+                'my-package')
+
+    def test_guessPublishedSourcePackageName_looks_for_source_first(self):
+        # If both a binary and source package name shares the same name,
+        # the source package will be returned (and the one from the unrelated
+        # binary).
+        distroseries = self.factory.makeDistroSeries()
+        my_package_name = self.factory.makeSourcePackageName(
+            'my-package')
+        other_name = self.factory.makeSourcePackageName(
+            'other-package')
+        my_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=my_package_name)
+        other_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=other_name)
+        binary_package_name = self.factory.makeBinaryPackageName(
+            'my-package')
+        binary_package_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=other_spph.sourcepackagerelease)
+        binary_package_release = self.factory.makeBinaryPackageRelease(
+            build=binary_package_build, binarypackagename=binary_package_name)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagerelease=binary_package_release)
+        self.assertEquals(
+            my_package_name,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+
+    def test_guessPublishedSourcePackageName_uses_latest(self):
+        # If multiple binaries match, it will return the source of the latest
+        # one published.
+        distroseries = self.factory.makeDistroSeries()
+        old_src_name = self.factory.makeSourcePackageName(
+            'old-source-name')
+        new_src_name = self.factory.makeSourcePackageName(
+            'new-source-name')
+        old_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=old_src_name)
+        new_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename=new_src_name)
+        binary_package_name = self.factory.makeBinaryPackageName(
+            'my-package')
+        old_package_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=old_spph.sourcepackagerelease)
+        old_package_release = self.factory.makeBinaryPackageRelease(
+            build=old_package_build, binarypackagename=binary_package_name)
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagerelease=old_package_release)
+        new_package_build = self.factory.makeBinaryPackageBuild(
+            source_package_release=new_spph.sourcepackagerelease)
+        new_package_release = self.factory.makeBinaryPackageRelease(
+            build=new_package_build, binarypackagename=binary_package_name)
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagerelease=new_package_release)
+        self.assertEquals(
+            new_src_name,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package'))
 
 
 class TestDistributionCurrentSourceReleases(

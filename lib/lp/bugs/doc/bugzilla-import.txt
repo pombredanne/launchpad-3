@@ -232,12 +232,14 @@ to notice:
    effect of the import, because they are subscribed to the bug.
  * The "RESOLVED WONTFIX" status is converted to a status of INVALID.
  * The fact that the "unknown" package does not exist in Ubuntu has
-   been logged, along with the exception raised by guessPackageNames().
+   been logged, along with the exception raised by
+   guessPublishedSourcePackageName().
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
   >>> bug = bz.handleBug(2)
-  WARNING:lp.bugs.scripts.bugzilla:could not find package name for "unknown": 'Unknown package: unknown'
+  WARNING:lp.bugs.scripts.bugzilla:could not find package name for "unknown":
+  'Unknown package: unknown'
   >>> import transaction
   >>> transaction.commit()
 

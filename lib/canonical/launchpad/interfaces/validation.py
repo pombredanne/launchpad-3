@@ -198,7 +198,8 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
         try:
-            distribution.guessPackageNames(sourcepackagename.name)
+            distribution.guessPublishedSourcePackageName(
+                sourcepackagename.name)
         except NotFoundError, e:
             raise LaunchpadValidationError(e)
     new_source_package = distribution.getSourcePackage(sourcepackagename)

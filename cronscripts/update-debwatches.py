@@ -16,6 +16,7 @@ import logging
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
+from lp.app.error import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
@@ -104,8 +105,9 @@ class DebWatchUpdater(LaunchpadCronScript):
         # make sure we have updated their status and severity appropriately
         for packagename in debian_bug.packagelist():
             try:
-                srcpkgname, binpkgname = debian.guessPackageNames(packagename)
-            except ValueError:
+                srcpkgname = debian.guessPublishedSourcePackageName(
+                    packagename)
+            except NotFoundError:
                 self.logger.error(sys.exc_value)
                 continue
             search_params = BugTaskSearchParams(user=None, bug=malone_bug,
@@ -114,8 +116,8 @@ class DebWatchUpdater(LaunchpadCronScript):
             bugtasks = bugtaskset.search(search_params)
             if len(bugtasks) == 0:
                 # we need a new task to link the bug to the debian package
-                self.logger.info('Linking %d and debian %s/%s' % (
-                    malone_bug.id, srcpkgname.name, binpkgname.name))
+                self.logger.info('Linking %d and debian %s' % (
+                    malone_bug.id, srcpkgname.name))
                 # XXX: kiko 2007-02-03:
                 # This code is completely untested and broken.
                 bugtask = malone_bug.addTask(

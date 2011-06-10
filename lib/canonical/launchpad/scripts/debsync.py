@@ -17,6 +17,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
+from lp.app.error import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
@@ -143,11 +144,11 @@ def import_bug(debian_bug, logger):
     # debian_bug.packagelist[0] is going to be a single package name for
     # sure. we work through the package list, try to find one we can
     # work with, otherwise give up
-    srcpkg = binpkg = pkgname = None
+    srcpkg = pkgname = None
     for pkgname in debian_bug.packagelist():
         try:
-            srcpkg, binpkg = ubuntu.guessPackageNames(pkgname)
-        except ValueError:
+            srcpkg = ubuntu.guessPublishedSourcePackageName(pkgname)
+        except NotFoundError:
             logger.error(sys.exc_value)
     if srcpkg is None:
         # none of the package names gave us a source package we can use

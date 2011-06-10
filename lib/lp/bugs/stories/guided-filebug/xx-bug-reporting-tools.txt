@@ -121,12 +121,6 @@ information specified in the extra filebug data.
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
 
-Some extra text was appended to the description.
-
-    >>> find_tag_by_id(
-    ...     user_browser.contents, 'edit-description').renderContents()
-    '...<p>Binary package hint: mozilla-firefox</p>\n<p>A bug description...'
-
 Two attachments were added.
 
     >>> attachment_portlet = find_portlet(
