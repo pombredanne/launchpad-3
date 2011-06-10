@@ -299,6 +299,12 @@
             template="../templates/specification-portlet-subscribers-content.pt"
             permission="zope.Public"/>
         <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecificationSubscription"
+            name="+blueprint-subscriber-row"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
+            template="../templates/specification-subscriber-row.pt"
+            permission="zope.Public"/>
+        <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+blueprint-portlet-subscribers-ids"
             class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersIds"

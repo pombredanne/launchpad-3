@@ -70,6 +70,11 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
     """View for the contents for the subscribers portlet."""
 
     @property
+    def subscription(self):
+        """Return a decorated subscription with added attributes."""
+        return SubscriptionAttrDecorator(self.context)
+
+    @property
     def sorted_subscriptions(self):
         """Get the list of subscriptions to the specification.
 
@@ -92,10 +97,7 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
                 cannot_unsubscribe.append(subscription)
 
         sorted_subscriptions = can_unsubscribe + cannot_unsubscribe
-        result = [
-            SubscriptionAttrDecorator(subscription)
-            for subscription in sorted_subscriptions]
-        return result
+        return sorted_subscriptions
 
     @property
     def current_user_subscription_class(self):
