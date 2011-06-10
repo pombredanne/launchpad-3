@@ -151,8 +151,8 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertEquals(build_view.package_upload, None)
         self.assertFalse(build_view.has_published_binaries)
         package_upload = build.distro_series.createQueueEntry(
-            PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
-            build.archive)
+            PackagePublishingPocket.UPDATES, build.archive,
+            'changes.txt', 'my changes')
         package_upload_build = PackageUploadBuild(
             packageupload =package_upload, build=build)
         self.assertEquals(package_upload.status.name, 'NEW')

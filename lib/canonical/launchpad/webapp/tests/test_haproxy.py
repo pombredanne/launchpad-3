@@ -35,6 +35,15 @@ class HAProxyIntegrationTest(TestCase):
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
         self.assertEquals(200, result.getStatus())
 
+    def test_authenticated_HAProxyStatusView_works(self):
+        # We don't use authenticated requests, but this keeps us from
+        # generating oopses.
+        result = self.http(
+            u'GET /+haproxy HTTP/1.0\n'
+            u'Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=\n',
+            handle_errors=False)
+        self.assertEquals(200, result.getStatus())
+
     def test_HAProxyStatusView_going_down_returns_500(self):
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
@@ -61,4 +70,3 @@ class HAProxyIntegrationTest(TestCase):
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
         self.assertEquals(499, result.getStatus())
-
