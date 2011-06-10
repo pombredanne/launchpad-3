@@ -46,7 +46,8 @@
                     container_box: '#other-bug-subscribers',
                     bug: LP.cache.bug,
                     subscribers_details_view:
-                        '/+bug-portlet-subscribers-details'
+                        '/+bug-portlet-subscribers-details',
+                    subscribe_someone_else_link: '.menu-link-addsubscriber'
                 });
             });
          });
