@@ -362,16 +362,20 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeSourcePackageUpload(self, distroseries):
+    def makeSourcePackageUpload(self, distroseries, sourcepackagename=None):
         upload = self.factory.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
-        upload.addSource(self.factory.makeSourcePackageRelease())
+        upload.addSource(self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename))
         return upload
 
-    def makeBuildPackageUpload(self, distroseries):
+    def makeBuildPackageUpload(self, distroseries, sourcepackagename=None):
         upload = self.factory.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
-        upload.addBuild(self.factory.makeBinaryPackageBuild())
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename)
+        upload.addBuild(
+            self.factory.makeBinaryPackageBuild(source_package_release=spr))
         return upload
 
     def makeCustomPackageUpload(self, distroseries, custom_type=None):
@@ -382,8 +386,9 @@ class TestPackageUploadSet(TestCaseWithFactory):
         upload.addCustom(self.factory.makeLibraryFileAlias(), custom_type)
         return upload
 
-    def makeCopyJobPackageUpload(self, distroseries):
-        spph = self.factory.makeSourcePackagePublishingHistory()
+    def makeCopyJobPackageUpload(self, distroseries, sourcepackagename=None):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename)
         spr = spph.sourcepackagerelease
         job = self.factory.makePlainPackageCopyJob(
             package_name=spr.sourcepackagename.name,
@@ -500,6 +505,61 @@ class TestPackageUploadSet(TestCaseWithFactory):
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, custom_type=other_type))
+
+    def test_getAll_matches_source_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.makeSourcePackageUpload(
+            distroseries, sourcepackagename=spn)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(distroseries, package_name=spn.name))
+
+    def test_getAll_filters_source_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [],
+            upload_set.getAll(
+                distroseries, package_name=self.factory.getUniqueString()))
+
+    def test_getAll_matches_build_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.makeBuildPackageUpload(
+            distroseries, sourcepackagename=spn)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, package_name=spn.name))
+
+    def test_getAll_filters_build_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeBuildPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [],
+            upload_set.getAll(
+                distroseries, package_name=self.factory.getUniqueString()))
+
+    def test_getAll_matches_copy_job_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.makeCopyJobPackageUpload(
+            distroseries, sourcepackagename=spn)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, package_name=spn.name))
+
+    def test_getAll_filters_copy_job_upload_by_package_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeCopyJobPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [],
+            upload_set.getAll(
+                distroseries, package_name=self.factory.getUniqueString()))
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
