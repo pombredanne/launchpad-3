@@ -356,7 +356,6 @@ class IPackageUploadBuild(Interface):
             title=_("ID"), required=True, readonly=True,
             )
 
-
     packageupload = Int(
             title=_("PackageUpload"), required=True,
             readonly=False,
@@ -392,7 +391,6 @@ class IPackageUploadSource(Interface):
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
-
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,
