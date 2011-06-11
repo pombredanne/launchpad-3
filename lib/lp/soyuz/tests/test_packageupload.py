@@ -455,7 +455,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_filters_by_status(self):
         distroseries = self.factory.makeDistroSeries()
-        upload = self.makeSourcePackageUpload(distroseries)
+        self.makeSourcePackageUpload(distroseries)
         status = PackageUploadStatus.DONE
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
@@ -496,8 +496,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         one_type = PackageUploadCustomFormat.DIST_UPGRADER
         other_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
-        upload = self.makeCustomPackageUpload(
-            distroseries, custom_type=one_type)
+        self.makeCustomPackageUpload(distroseries, custom_type=one_type)
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, custom_type=other_type))
@@ -521,7 +520,8 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         pcj = removeSecurityProxy(
             self.factory.makePlainPackageCopyJob()).context
         pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs([pcj.id])
+        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [pcj.id])
         self.assertEqual(pu, result.one())
 
     def test_overrideSource_with_copy_job(self):
