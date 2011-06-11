@@ -263,7 +263,7 @@ class BugTrackerComponentGroup(StormBase):
         return component
 
     def getComponent(self, component_name):
-        """Retrieves a component by the given name.
+        """Retrieves a component by the given name or id number.
 
         None is returned if there is no component by that name in the
         group.
