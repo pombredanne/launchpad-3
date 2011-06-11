@@ -95,7 +95,14 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_cannot_doublelink_sourcepackages(self):
-        # Two components try linking to same package
+        ''' Two components try linking to same same package
+
+        We must maintain a one-to-one relationship between components
+        and source packages.  However, users are bound to attempt to try
+        to make multiple components linked to the same source package,
+        so the view needs to be sure to not allow this to be done and
+        pop up a friendly error message instead.
+        '''
         component_a = self.factory.makeBugTrackerComponent(
             u'a', self.comp_group)
         component_b = self.factory.makeBugTrackerComponent(
