@@ -1307,7 +1307,8 @@ class PackageUploadSet:
         return PackageUpload.select(query).count()
 
     def getAll(self, distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None,
+               package_name=None):
         """See `IPackageUploadSet`."""
         # XXX Julian 2009-07-02 bug=394645
         # This method is an incremental deprecation of
