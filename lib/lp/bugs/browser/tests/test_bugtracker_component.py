@@ -72,10 +72,11 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
 
         notifications = view.request.response.notifications
         self.assertEqual(component.distro_source_package, package)
-        expected = (
-            u"alpha:Example is now linked to the example "
-            "source package in ubuntu.")
-        self.assertEqual(expected, notifications.pop().message)
+        expected = """
+            alpha:Example is now linked to the example
+            source package in ubuntu."""
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, notifications.pop().message)
 
     def test_unlinking(self):
         component = self.factory.makeBugTrackerComponent(
@@ -111,7 +112,8 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected = (
-            "The example source package is already linked to "
-            "alpha:a in ubuntu.")
-        self.assertEqual(expected, notifications.pop().message)
+        expected = """
+            The example source package is already linked to
+            alpha:a in ubuntu."""
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, notifications.pop().message)
