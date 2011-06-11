@@ -396,10 +396,10 @@
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by PublicPersonChoice fields. -->
+    <!-- Define the widget used by PersonChoice fields. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for="lp.services.fields.PublicPersonChoice
+      for="lp.services.fields.PersonChoice
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.PersonPickerWidget"
