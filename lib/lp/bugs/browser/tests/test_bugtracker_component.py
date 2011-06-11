@@ -71,7 +71,7 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         view = create_initialized_view(
             component, name='+edit', form=form)
         notifications = view.request.response.notifications
-        self.assertEqual(component.distro_source_package, dsp)
+        self.assertEqual(dsp, component.distro_source_package)
 
     def test_linking_notifications(self):
         component = self._makeComponent(u'Example')
