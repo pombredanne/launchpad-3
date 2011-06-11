@@ -1309,6 +1309,9 @@ class PackageUploadSet:
         # using Storm queries instead of SQLObject, but not everything
         # is implemented yet.  When it is, this comment and the old
         # method can be removed and call sites updated to use this one.
+
+        # XXX 2011-06-11 JeroenVermeulen bug=795651: The "archive"
+        # argument is currently ignored.  Not sure why.
         store = Store.of(distroseries)
 
         def dbitem_tuple(item_or_list):
