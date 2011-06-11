@@ -1327,38 +1327,34 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
-        timestamp_query_clause = ()
+        clauses = []
         if created_since_date is not None:
-            timestamp_query_clause = (
-                PackageUpload.date_created > created_since_date,)
+            clauses.append(PackageUpload.date_created > created_since_date)
 
-        status_query_clause = ()
         if status is not None:
             status = dbitem_tuple(status)
-            status_query_clause = (PackageUpload.status.is_in(status),)
+            clauses.append(PackageUpload.status.is_in(status))
 
         archives = distroseries.distribution.getArchiveIDList(archive)
-        archive_query_clause = (PackageUpload.archiveID.is_in(archives),)
+        clauses.append(PackageUpload.archiveID.is_in(archives))
 
-        pocket_query_clause = ()
         if pocket is not None:
             pocket = dbitem_tuple(pocket)
-            pocket_query_clause = (PackageUpload.pocket.is_in(pocket),)
+            clauses.append(PackageUpload.pocket.is_in(pocket))
 
-        custom_type_query_clause = ()
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
-            custom_type_query_clause = (
-                PackageUpload.id == PackageUploadCustom.packageuploadID,
+            clauses.append(
+                PackageUpload.id == PackageUploadCustom.packageuploadID)
+            clauses.append(
                 PackageUploadCustom.customformat.is_in(custom_type))
 
-        return store.find(
+        query = store.find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
-            *(status_query_clause + archive_query_clause +
-              pocket_query_clause + timestamp_query_clause +
-              custom_type_query_clause)).order_by(
-                  Desc(PackageUpload.id)).config(distinct=True)
+            *clauses)
+        query = query.order_by(Desc(PackageUpload.id))
+        return query.config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""
