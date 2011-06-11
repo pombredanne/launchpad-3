@@ -519,11 +519,10 @@ class TestPackageUploadSet(TestCaseWithFactory):
     def test_getAll_filters_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.makeSourcePackageUpload(distroseries)
+        other_name = unicode(self.factory.getUniqueString())
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [],
-            upload_set.getAll(
-                distroseries, package_name=self.factory.getUniqueString()))
+            [], upload_set.getAll(distroseries, package_name=other_name))
 
     def test_getAll_matches_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
@@ -537,11 +536,10 @@ class TestPackageUploadSet(TestCaseWithFactory):
     def test_getAll_filters_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.makeBuildPackageUpload(distroseries)
+        other_name = unicode(self.factory.getUniqueString())
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [],
-            upload_set.getAll(
-                distroseries, package_name=self.factory.getUniqueString()))
+            [], upload_set.getAll(distroseries, package_name=other_name))
 
     def test_getAll_matches_copy_job_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
@@ -555,11 +553,10 @@ class TestPackageUploadSet(TestCaseWithFactory):
     def test_getAll_filters_copy_job_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.makeCopyJobPackageUpload(distroseries)
+        other_name = unicode(self.factory.getUniqueString())
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [],
-            upload_set.getAll(
-                distroseries, package_name=self.factory.getUniqueString()))
+            [], upload_set.getAll(distroseries, package_name=other_name))
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):

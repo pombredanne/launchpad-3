@@ -23,7 +23,9 @@ from sqlobject import (
     SQLMultipleJoin,
     SQLObjectNotFound,
     )
+from storm.expr import LeftJoin
 from storm.locals import (
+    And,
     Desc,
     Int,
     Join,
@@ -1319,6 +1321,10 @@ class PackageUploadSet:
 
         # XXX 2011-06-11 JeroenVermeulen bug=795651: The "archive"
         # argument is currently ignored.  Not sure why.
+
+        # Avoid circular imports.
+        from lp.soyuz.model.packagecopyjob import PackageCopyJob
+
         store = Store.of(distroseries)
 
         def dbitem_tuple(item_or_list):
@@ -1327,6 +1333,7 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
+        joins = [PackageUpload]
         clauses = []
         if created_since_date is not None:
             clauses.append(PackageUpload.date_created > created_since_date)
@@ -1344,12 +1351,20 @@ class PackageUploadSet:
 
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
+            joins.append(PackageUploadCustom)
             clauses.append(
                 PackageUpload.id == PackageUploadCustom.packageuploadID)
             clauses.append(
                 PackageUploadCustom.customformat.is_in(custom_type))
 
-        query = store.find(
+        if package_name is not None:
+            joins.append(LeftJoin(
+                PackageCopyJob, And(
+                    PackageCopyJob.id == PackageUpload.package_copy_job_id,
+                    PackageCopyJob.package_name == package_name)))
+            clauses.append(PackageCopyJob.id != None)
+
+        query = store.using(*joins).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
             *clauses)
