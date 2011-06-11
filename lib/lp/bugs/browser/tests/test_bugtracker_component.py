@@ -102,11 +102,7 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
         package = self.factory.makeDistributionSourcePackage(
             sourcepackagename='example', distribution=distro)
-
-        form = self._makeForm(package)
-        view = create_initialized_view(
-            component_a, name='+edit', form=form)
-        notifications = view.request.response.notifications
+        component_a.distro_source_package = package
 
         form = self._makeForm(package)
         view = create_initialized_view(
