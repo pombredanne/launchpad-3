@@ -63,15 +63,23 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
         package = self.factory.makeDistributionSourcePackage(
             sourcepackagename='example', distribution=distro)
+        form = self._makeForm(package)
 
         self.assertIs(None, component.distro_source_package)
+        view = create_initialized_view(
+            component, name='+edit', form=form)
+        notifications = view.request.response.notifications
+        self.assertEqual(component.distro_source_package, package)
+
+    def test_linking_notifications(self):
+        component = self._makeComponent(u'Example')
+        package = self._makeUbuntuSourcePackage('example')
         form = self._makeForm(package)
+
         view = create_initialized_view(
             component, name='+edit', form=form)
         self.assertEqual([], view.errors)
-
         notifications = view.request.response.notifications
-        self.assertEqual(component.distro_source_package, package)
         expected = """
             alpha:Example is now linked to the example
             source package in ubuntu."""
