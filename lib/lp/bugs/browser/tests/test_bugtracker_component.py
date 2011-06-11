@@ -107,9 +107,6 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         view = create_initialized_view(
             component_a, name='+edit', form=form)
         notifications = view.request.response.notifications
-        self.assertEqual([], view.errors)
-        self.assertEqual(1, len(notifications))
-        self.assertEqual(package, component_a.distro_source_package)
 
         form = self._makeForm(package)
         view = create_initialized_view(
