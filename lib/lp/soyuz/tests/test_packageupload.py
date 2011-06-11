@@ -1,8 +1,9 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
 
+from datetime import timedelta
 from email import message_from_string
 import os
 import shutil
@@ -13,6 +14,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -21,7 +23,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import (
+    JobStatus,
+    SuspendJobException,
+    )
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -350,6 +355,152 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
+
+
+class TestPackageUploadSet(TestCaseWithFactory):
+    """Unit tests for `PackageUploadSet`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeSourcePackageUpload(self, distroseries):
+        upload = self.factory.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        upload.addSource(self.factory.makeSourcePackageRelease())
+        return upload
+
+    def makeBuildPackageUpload(self, distroseries):
+        upload = self.factory.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        upload.addBuild(self.factory.makeBinaryPackageBuild())
+        return upload
+
+    def makeCustomPackageUpload(self, distroseries, custom_type=None):
+        if custom_type is None:
+            custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
+        upload = self.factory.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        upload.addCustom(self.factory.makeLibraryFileAlias(), custom_type)
+        return upload
+
+    def makeCopyJobPackageUpload(self, distroseries):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spr = spph.sourcepackagerelease
+        job = self.factory.makePlainPackageCopyJob(
+            package_name=spr.sourcepackagename.name,
+            package_version=spr.version,
+            source_archive=spph.archive,
+            target_archive=distroseries.main_archive,
+            target_distroseries=distroseries)
+        self.layer.txn.commit()
+        try:
+            job.run()
+        except SuspendJobException:
+            # Expected exception.
+            job.suspend()
+        upload_set = getUtility(IPackageUploadSet)
+        return upload_set.getByPackageCopyJobIDs([job.id]).one()
+
+    def test_PackageUploadSet_implements_IPackageUploadSet(self):
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertTrue(verifyObject(IPackageUploadSet, upload_set))
+
+    def test_getAll_returns_source_upload(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+
+    def test_getAll_returns_build_upload(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeBuildPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+
+    def test_getAll_returns_custom_upload(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeCustomPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+
+    def test_getAll_returns_copy_job_upload(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeCopyJobPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+
+    def test_getAll_matches_created_since_date(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        yesterday = upload.date_created - timedelta(1)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(distroseries, created_since_date=yesterday))
+
+    def test_getAll_filters_by_created_since_date(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        tomorrow = upload.date_created + timedelta(1)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, created_since_date=tomorrow))
+
+    def test_getAll_matches_status(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        status = upload.status
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, status=status))
+
+    def test_getAll_filters_by_status(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        status = PackageUploadStatus.DONE
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, status=status))
+
+    def test_getAll_matches_pocket(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        pocket = upload.pocket
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, pocket=pocket))
+
+    def test_getAll_filters_by_pocket(self):
+        def find_different_pocket_than(pocket):
+            for other_pocket in PackagePublishingPocket.items:
+                if other_pocket != pocket:
+                    return other_pocket
+
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        pocket = find_different_pocket_than(upload.pocket)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, pocket=pocket))
+
+    def test_getAll_matches_custom_type(self):
+        distroseries = self.factory.makeDistroSeries()
+        custom_type = PackageUploadCustomFormat.DDTP_TARBALL
+        upload = self.makeCustomPackageUpload(
+            distroseries, custom_type=custom_type)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(distroseries, custom_type=custom_type))
+
+    def test_getAll_filters_by_custom_type(self):
+        distroseries = self.factory.makeDistroSeries()
+        one_type = PackageUploadCustomFormat.DIST_UPGRADER
+        other_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+        upload = self.makeCustomPackageUpload(
+            distroseries, custom_type=one_type)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, custom_type=other_type))
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
