@@ -23,7 +23,10 @@ from sqlobject import (
     SQLMultipleJoin,
     SQLObjectNotFound,
     )
-from storm.expr import LeftJoin
+from storm.expr import (
+    Coalesce,
+    LeftJoin,
+    )
 from storm.locals import (
     And,
     Desc,
@@ -60,6 +63,7 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
@@ -1324,6 +1328,7 @@ class PackageUploadSet:
 
         # Avoid circular imports.
         from lp.soyuz.model.packagecopyjob import PackageCopyJob
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         store = Store.of(distroseries)
 
@@ -1351,18 +1356,38 @@ class PackageUploadSet:
 
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
-            joins.append(PackageUploadCustom)
+            joins = [PackageUploadCustom] + joins
             clauses.append(
                 PackageUpload.id == PackageUploadCustom.packageuploadID)
             clauses.append(
                 PackageUploadCustom.customformat.is_in(custom_type))
 
         if package_name is not None:
+            # Join in any attached PackageCopyJob with the right
+            # package name.
             joins.append(LeftJoin(
                 PackageCopyJob, And(
                     PackageCopyJob.id == PackageUpload.package_copy_job_id,
                     PackageCopyJob.package_name == package_name)))
-            clauses.append(PackageCopyJob.id != None)
+            # Other types of upload involving the package name require
+            # the SourcePackageName.
+            joins.append(Join(
+                SourcePackageName, SourcePackageName.name == package_name))
+            # Join in any attached PackageUploadSource with attached
+            # SourcePackageRelease with the right SourcePackageName.
+            joins.append(LeftJoin(
+                PackageUploadSource,
+                PackageUploadSource.packageuploadID == PackageUpload.id))
+            joins.append(LeftJoin(
+                SourcePackageRelease, And(
+                    SourcePackageRelease.id ==
+                        PackageUploadSource.sourcepackagereleaseID,
+                    SourcePackageRelease.sourcepackagenameID ==
+                        SourcePackageName.id)))
+            # One of these attached items (for that package we're
+            # looking for) must exist.
+            clauses.append(
+                Coalesce(PackageCopyJob.id, SourcePackageRelease.id) != None)
 
         query = store.using(*joins).find(
             PackageUpload,
