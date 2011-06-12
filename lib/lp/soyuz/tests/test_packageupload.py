@@ -369,13 +369,13 @@ class TestPackageUploadSet(TestCaseWithFactory):
             sourcepackagename=sourcepackagename))
         return upload
 
-    def makeBuildPackageUpload(self, distroseries, sourcepackagename=None):
+    def makeBuildPackageUpload(self, distroseries, binarypackagename=None):
         upload = self.factory.makePackageUpload(
             distroseries=distroseries, archive=distroseries.main_archive)
-        spr = self.factory.makeSourcePackageRelease(
-            sourcepackagename=sourcepackagename)
-        upload.addBuild(
-            self.factory.makeBinaryPackageBuild(source_package_release=spr))
+        build = self.factory.makeBinaryPackageBuild()
+        upload.addBuild(build)
+        self.factory.makeBinaryPackageRelease(
+            binarypackagename=binarypackagename, build=build)
         return upload
 
     def makeCustomPackageUpload(self, distroseries, custom_type=None):
@@ -516,17 +516,6 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(distroseries, package_name=spn.name))
 
-    def test_getAll_matches_name_by_prefix(self):
-        distroseries = self.factory.makeDistroSeries()
-        spn = self.factory.makeSourcePackageName()
-        upload = self.makeSourcePackageUpload(
-            distroseries, sourcepackagename=spn)
-        prefix_name = spn.name[:-1]
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual(
-            [upload],
-            upload_set.getAll(distroseries, package_name=prefix_name))
-
     def test_getAll_filters_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.makeSourcePackageUpload(distroseries)
@@ -537,17 +526,17 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_matches_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
-        spn = self.factory.makeSourcePackageName()
+        bpn = self.factory.makeBinaryPackageName()
         upload = self.makeBuildPackageUpload(
-            distroseries, sourcepackagename=spn)
+            distroseries, binarypackagename=bpn)
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, package_name=spn.name))
+            [upload], upload_set.getAll(distroseries, package_name=bpn.name))
 
     def test_getAll_filters_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.makeBuildPackageUpload(distroseries)
-        other_name = self.factory.makeSourcePackageName().name
+        other_name = self.factory.makeBinaryPackageName().name
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, package_name=other_name))
@@ -568,6 +557,19 @@ class TestPackageUploadSet(TestCaseWithFactory):
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, package_name=other_name))
+
+    def test_getAll_matches_name_by_prefix(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.makeSourcePackageUpload(
+            distroseries, sourcepackagename=spn)
+        prefix_name = spn.name[:-1]
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(distroseries, package_name=prefix_name))
+
+# XXX: Test for proper escaping of the LIKE pattern!
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):

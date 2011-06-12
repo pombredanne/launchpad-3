@@ -90,6 +90,8 @@ from lp.soyuz.interfaces.queue import (
     QueueSourceAcceptError,
     QueueStateWriteProtectedError,
     )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
@@ -1371,13 +1373,12 @@ class PackageUploadSet:
                 PackageCopyJob, And(
                     PackageCopyJob.id == PackageUpload.package_copy_job_id,
                     compose_package_name_match(PackageCopyJob.package_name))))
-            # Other types of upload involving the package name require
-            # the SourcePackageName.
-            joins.append(Join(
-                SourcePackageName,
-                compose_package_name_match(SourcePackageName.name)))
+
             # Join in any attached PackageUploadSource with attached
             # SourcePackageRelease with the right SourcePackageName.
+            joins.append(LeftJoin(
+                SourcePackageName,
+                compose_package_name_match(SourcePackageName.name)))
             joins.append(LeftJoin(
                 PackageUploadSource,
                 PackageUploadSource.packageuploadID == PackageUpload.id))
@@ -1387,10 +1388,28 @@ class PackageUploadSet:
                         PackageUploadSource.sourcepackagereleaseID,
                     SourcePackageRelease.sourcepackagenameID ==
                         SourcePackageName.id)))
+
+            # Join in any attached PackageUploadBuild with attached
+            # BinaryPackageRelease with the right BinaryPackageName.
+            joins.append(LeftJoin(
+                BinaryPackageName,
+                compose_package_name_match(BinaryPackageName.name)))
+            joins.append(LeftJoin(
+                PackageUploadBuild,
+                PackageUploadBuild.packageuploadID == PackageUpload.id))
+            joins.append(LeftJoin(
+                BinaryPackageRelease, And(
+                    BinaryPackageRelease.buildID ==
+                        PackageUploadBuild.buildID,
+                    BinaryPackageRelease.binarypackagenameID ==
+                        BinaryPackageName.id)))
+
             # One of these attached items (for that package we're
             # looking for) must exist.
             clauses.append(
-                Coalesce(PackageCopyJob.id, SourcePackageRelease.id) != None)
+                Coalesce(
+                    PackageCopyJob.id, SourcePackageRelease.id,
+                    BinaryPackageRelease.id) != None)
 
         query = store.using(*joins).find(
             PackageUpload,
