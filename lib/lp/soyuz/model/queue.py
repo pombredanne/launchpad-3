@@ -1314,8 +1314,7 @@ class PackageUploadSet:
         return PackageUpload.select(query).count()
 
     def getAll(self, distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None,
-               package_name=None):
+               archive=None, pocket=None, custom_type=None, name_filter=None):
         """See `IPackageUploadSet`."""
         # XXX Julian 2009-07-02 bug=394645
         # This method is an incremental deprecation of
@@ -1339,9 +1338,9 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
-        def compose_package_name_match(column):
-            """Match a query column to `package_name`."""
-            return column.startswith(unicode(package_name))
+        def compose_name_match(column):
+            """Match a query column to `name_filter`."""
+            return column.startswith(unicode(name_filter))
 
         joins = [PackageUpload]
         clauses = []
@@ -1365,19 +1364,19 @@ class PackageUploadSet:
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
                 PackageUploadCustom.customformat.is_in(custom_type))))
 
-        if package_name is not None and package_name != '':
+        if name_filter is not None and name_filter != '':
             # Join in any attached PackageCopyJob with the right
             # package name.
             joins.append(LeftJoin(
                 PackageCopyJob, And(
                     PackageCopyJob.id == PackageUpload.package_copy_job_id,
-                    compose_package_name_match(PackageCopyJob.package_name))))
+                    compose_name_match(PackageCopyJob.package_name))))
 
             # Join in any attached PackageUploadSource with attached
             # SourcePackageRelease with the right SourcePackageName.
             joins.append(LeftJoin(
                 SourcePackageName,
-                compose_package_name_match(SourcePackageName.name)))
+                compose_name_match(SourcePackageName.name)))
             joins.append(LeftJoin(
                 PackageUploadSource,
                 PackageUploadSource.packageuploadID == PackageUpload.id))
@@ -1392,7 +1391,7 @@ class PackageUploadSet:
             # BinaryPackageRelease with the right BinaryPackageName.
             joins.append(LeftJoin(
                 BinaryPackageName,
-                compose_package_name_match(BinaryPackageName.name)))
+                compose_name_match(BinaryPackageName.name)))
             joins.append(LeftJoin(
                 PackageUploadBuild,
                 PackageUploadBuild.packageuploadID == PackageUpload.id))
