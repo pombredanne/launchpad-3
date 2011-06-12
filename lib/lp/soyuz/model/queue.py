@@ -26,7 +26,6 @@ from sqlobject import (
 from storm.expr import (
     Coalesce,
     LeftJoin,
-    Like,
     )
 from storm.locals import (
     And,
@@ -1342,7 +1341,7 @@ class PackageUploadSet:
 
         def compose_package_name_match(column):
             """Match a query column to `package_name`."""
-            return Like(column, package_name + "%%")
+            return column.startswith(unicode(package_name))
 
         joins = [PackageUpload]
         clauses = []
