@@ -49,6 +49,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -1402,12 +1403,23 @@ class PackageUploadSet:
                     BinaryPackageRelease.binarypackagenameID ==
                         BinaryPackageName.id)))
 
+            # Join in any attached PackageUploadCustom with attached
+            # LibraryFileAlias with the right filename.
+            joins.append(LeftJoin(
+                PackageUploadCustom,
+                PackageUploadCustom.packageuploadID == PackageUpload.id))
+            joins.append(LeftJoin(
+                LibraryFileAlias, And(
+                    LibraryFileAlias.id ==
+                        PackageUploadCustom.libraryfilealiasID,
+                    compose_name_match(LibraryFileAlias.filename))))
+
             # One of these attached items (for that package we're
             # looking for) must exist.
             clauses.append(
                 Coalesce(
                     PackageCopyJob.id, SourcePackageRelease.id,
-                    BinaryPackageRelease.id) != None)
+                    BinaryPackageRelease.id, LibraryFileAlias.id) != None)
 
         query = store.using(*joins).find(
             PackageUpload,
