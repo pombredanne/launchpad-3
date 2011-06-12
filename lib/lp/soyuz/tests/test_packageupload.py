@@ -516,6 +516,17 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(distroseries, package_name=spn.name))
 
+    def test_getAll_matches_name_by_prefix(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.makeSourcePackageUpload(
+            distroseries, sourcepackagename=spn)
+        prefix_name = spn.name[:-1]
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(distroseries, package_name=prefix_name))
+
     def test_getAll_filters_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.makeSourcePackageUpload(distroseries)

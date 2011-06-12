@@ -26,6 +26,7 @@ from sqlobject import (
 from storm.expr import (
     Coalesce,
     LeftJoin,
+    Like,
     )
 from storm.locals import (
     And,
@@ -1337,6 +1338,10 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
+        def compose_package_name_match(column):
+            """Match a query column to `package_name`."""
+            return Like(column, package_name + "%%")
+
         joins = [PackageUpload]
         clauses = []
         if created_since_date is not None:
@@ -1355,23 +1360,22 @@ class PackageUploadSet:
 
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
-            joins = [PackageUploadCustom] + joins
-            clauses.append(
-                PackageUpload.id == PackageUploadCustom.packageuploadID)
-            clauses.append(
-                PackageUploadCustom.customformat.is_in(custom_type))
+            joins.append(Join(PackageUploadCustom, And(
+                PackageUpload.id == PackageUploadCustom.packageuploadID,
+                PackageUploadCustom.customformat.is_in(custom_type))))
 
-        if package_name is not None:
+        if package_name is not None and package_name != '':
             # Join in any attached PackageCopyJob with the right
             # package name.
             joins.append(LeftJoin(
                 PackageCopyJob, And(
                     PackageCopyJob.id == PackageUpload.package_copy_job_id,
-                    PackageCopyJob.package_name == package_name)))
+                    compose_package_name_match(PackageCopyJob.package_name))))
             # Other types of upload involving the package name require
             # the SourcePackageName.
             joins.append(Join(
-                SourcePackageName, SourcePackageName.name == package_name))
+                SourcePackageName,
+                compose_package_name_match(SourcePackageName.name)))
             # Join in any attached PackageUploadSource with attached
             # SourcePackageRelease with the right SourcePackageName.
             joins.append(LeftJoin(

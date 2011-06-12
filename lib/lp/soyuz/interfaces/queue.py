@@ -612,7 +612,7 @@ class IPackageUploadSet(Interface):
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
-        :param package_name: Filter results by this package name.
+        :param package_name: Filter results by this package name prefix.
         :return: A result set containing `IPackageUpload`s
         """
 
