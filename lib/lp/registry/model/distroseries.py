@@ -1619,20 +1619,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 "changesfilename and changesfilecontent must be supplied "
                 "if there is no package_copy_job")
 
-        # The PGP signature is stripped from all changesfiles
-        # to avoid replay attacks (see bugs 159304 and 451396).
-        signed_message = signed_message_from_string(changesfilecontent)
-        if signed_message is not None:
-            # Overwrite `changesfilecontent` with the text stripped
-            # of the PGP signature.
-            new_content = signed_message.signedContent
-            if new_content is not None:
-                changesfilecontent = signed_message.signedContent
+        if package_copy_job is None:
+            # The PGP signature is stripped from all changesfiles
+            # to avoid replay attacks (see bugs 159304 and 451396).
+            signed_message = signed_message_from_string(changesfilecontent)
+            if signed_message is not None:
+                # Overwrite `changesfilecontent` with the text stripped
+                # of the PGP signature.
+                new_content = signed_message.signedContent
+                if new_content is not None:
+                    changesfilecontent = signed_message.signedContent
 
-        changes_file = getUtility(ILibraryFileAliasSet).create(
-            changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain',
-            restricted=archive.private)
+            changes_file = getUtility(ILibraryFileAliasSet).create(
+                changesfilename, len(changesfilecontent),
+                StringIO(changesfilecontent), 'text/plain',
+                restricted=archive.private)
+        else:
+            changes_file = None
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,

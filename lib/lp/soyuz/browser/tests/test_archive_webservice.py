@@ -1,19 +1,30 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import unittest
 
-from lazr.restfulclient.errors import HTTPError
+from lazr.restfulclient.errors import (
+    BadRequest,
+    HTTPError,
+    Unauthorized as LRUnauthorized,
+)
+from testtools import ExpectedException
+import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
+    person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 
 
@@ -65,6 +76,112 @@ class TestArchiveWebservice(TestCaseWithFactory):
         self.assertIn(
             "Not permitted to upload to the UPDATES pocket in a series "
             "in the 'DEVELOPMENT' state.", e.content)
+
+
+class TestExternalDependencies(WebServiceTestCase):
+
+    def test_external_dependencies_random_user(self):
+        """Normal users can look but not touch."""
+        archive = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        with ExpectedException(LRUnauthorized, '.*'):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_owner(self):
+        """Normal archive owners can look but not touch."""
+        archive = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        with ExpectedException(LRUnauthorized, '.*'):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_commercial_owner_invalid(self):
+        """Commercial admins can look and touch."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        owner = self.factory.makePerson(member_of=[commercial])
+        archive = self.factory.makeArchive(owner=owner)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = "random"
+        regex = '(\n|.)*Invalid external dependencies(\n|.)*'
+        with ExpectedException(BadRequest, regex):
+            ws_archive.lp_save()
+
+    def test_external_dependencies_commercial_owner_valid(self):
+        """Commercial admins can look and touch."""
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        owner = self.factory.makePerson(member_of=[commercial])
+        archive = self.factory.makeArchive(owner=owner)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        self.assertIs(None, ws_archive.external_dependencies)
+        ws_archive.external_dependencies = (
+            "deb http://example.org suite components")
+        ws_archive.lp_save()
+
+
+class TestArchiveDependencies(WebServiceTestCase):
+
+    def test_addArchiveDependency_random_user(self):
+        """Normal users cannot add archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
+        failure_regex = '(.|\n)*addArchiveDependency.*launchpad.Edit(.|\n)*'
+        with ExpectedException(LRUnauthorized, failure_regex):
+            dependency = ws_archive.addArchiveDependency(
+                dependency=ws_dependency, pocket='Release', component='main')
+
+    def test_addArchiveDependency_owner(self):
+        """Normal users cannot add archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        ws_dependency = self.wsObject(dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
+        with ExpectedException(BadRequest, '(.|\n)*asdf(.|\n)*'):
+            ws_archive.addArchiveDependency(
+                dependency=ws_dependency, pocket='Release', component='asdf')
+        dependency = ws_archive.addArchiveDependency(
+            dependency=ws_dependency, pocket='Release', component='main')
+        self.assertContentEqual([dependency], ws_archive.dependencies)
+
+    def test_removeArchiveDependency_random_user(self):
+        """Normal users can remove archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            archive.addArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE)
+        transaction.commit()
+        ws_archive = self.wsObject(archive)
+        ws_dependency = self.wsObject(dependency)
+        failure_regex = '(.|\n)*remove.*Dependency.*launchpad.Edit(.|\n)*'
+        with ExpectedException(LRUnauthorized, failure_regex):
+            ws_archive.removeArchiveDependency(dependency=ws_dependency)
+
+    def test_removeArchiveDependency_owner(self):
+        """Normal users can remove archive dependencies."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            archive.addArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        ws_dependency = self.wsObject(dependency)
+        ws_archive.removeArchiveDependency(dependency=ws_dependency)
+        self.assertContentEqual([], ws_archive.dependencies)
 
 
 def test_suite():
