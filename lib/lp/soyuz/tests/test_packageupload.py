@@ -569,7 +569,11 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(distroseries, package_name=prefix_name))
 
-# XXX: Test for proper escaping of the LIKE pattern!
+    def test_package_name_is_escaped(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, package_name="'"))
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
