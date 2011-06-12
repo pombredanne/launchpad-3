@@ -1265,7 +1265,6 @@ class PackageUploadSet:
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
         from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         store = IMasterStore(PackageUpload)

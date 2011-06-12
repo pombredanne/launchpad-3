@@ -518,7 +518,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_filters_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
-        upload = self.makeSourcePackageUpload(distroseries)
+        self.makeSourcePackageUpload(distroseries)
         other_name = self.factory.makeSourcePackageName().name
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
@@ -535,7 +535,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_filters_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
-        upload = self.makeBuildPackageUpload(distroseries)
+        self.makeBuildPackageUpload(distroseries)
         other_name = self.factory.makeSourcePackageName().name
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
@@ -552,7 +552,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_filters_copy_job_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
-        upload = self.makeCopyJobPackageUpload(distroseries)
+        self.makeCopyJobPackageUpload(distroseries)
         other_name = self.factory.makeSourcePackageName().name
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
