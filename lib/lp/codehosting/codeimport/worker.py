@@ -131,17 +131,30 @@ class BazaarBranchStore:
         except NotBranchError:
             remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
+            old_branch = None
         else:
             if remote_branch.bzrdir.needs_format_conversion(
                     required_format):
-                remote_branch.bzrdir.retire_bzrdir()
+                old_branch = remote_branch
+                upgrade_url = urljoin(target_url, "upgrade.bzr")
+                try:
+                    remote_branch.bzrdir.root_transport.delete_tree(
+                        'upgrade.bzr')
+                except NoSuchFile:
+                    pass
                 remote_branch = BzrDir.create_branch_and_repo(
-                    target_url, format=required_format)
+                    upgrade_url, format=required_format)
+            else:
+                old_branch = None
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
         remote_branch.repository.fetch(bzr_branch.repository)
+        if old_branch is not None:
+            base_transport = old_branch.bzrdir.root_transport
+            old_branch.bzrdir.retire_bzrdir()
+            base_transport.rename("upgrade.bzr/.bzr", ".bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 
