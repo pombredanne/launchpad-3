@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -271,10 +271,17 @@ class BugTrackerComponentGroup(StormBase):
 
         if component_name is None:
             return None
+        elif component_name.isdigit():
+            component_id = int(component_name)
+            return Store.of(self).find(
+                BugTrackerComponent,
+                BugTrackerComponent.id == component_id,
+                BugTrackerComponent.component_group == self.id).one()
         else:
             return Store.of(self).find(
                 BugTrackerComponent,
-                (BugTrackerComponent.name == component_name)).one()
+                BugTrackerComponent.name == component_name,
+                BugTrackerComponent.component_group == self.id).one()
 
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker
@@ -680,10 +687,30 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        component_group = store.find(
-            BugTrackerComponentGroup,
-            name = component_group_name).one()
+        if component_group_name.isdigit():
+            component_group_id = int(component_group_name)
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                BugTrackerComponentGroup.id == component_group_id).one()
+        else:
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                BugTrackerComponentGroup.name == component_group_name).one()
         return component_group
+
+    def getRemoteComponentForDistroSourcePackageName(
+        self, distribution, sourcepackagename):
+        """See `IBugTracker`."""
+        if distribution is None:
+            return None
+        dsp = distribution.getSourcePackage(sourcepackagename)
+        if dsp is None:
+            return None
+        return Store.of(self).find(
+            BugTrackerComponent,
+            BugTrackerComponent.distribution == distribution.id,
+            BugTrackerComponent.source_package_name ==
+                dsp.sourcepackagename.id).one()
 
 
 class BugTrackerSet:
@@ -751,7 +778,7 @@ class BugTrackerSet:
         # Without context, cannot tell what store flavour is desirable.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         if active is not None:
-            clauses = [BugTracker.active==active]
+            clauses = [BugTracker.active == active]
         else:
             clauses = []
         results = store.find(BugTracker, *clauses)

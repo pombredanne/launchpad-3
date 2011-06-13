@@ -28,6 +28,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    And,
     Desc,
     Join,
     SQL,
@@ -801,13 +802,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return not self.getParentSeries() == []
 
     @property
-    def is_initialising(self):
-        """See `IDistroSeries`."""
-        return not getUtility(
-            IInitialiseDistroSeriesJobSource).getPendingJobsForDistroseries(
-                self).is_empty()
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -853,10 +847,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IHasBugs`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distroseries == self, user, wanted_tags=wanted_tags)
+            And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                ),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):
@@ -1600,8 +1600,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     version = None
                 get_property_cache(spph).newer_distroseries_version = version
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         archive, signing_key=None, package_copy_job=None):
+    def createQueueEntry(self, pocket, archive, changesfilename=None,
+                         changesfilecontent=None, signing_key=None,
+                         package_copy_job=None):
         """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -1612,20 +1613,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
 
-        # The PGP signature is stripped from all changesfiles
-        # to avoid replay attacks (see bugs 159304 and 451396).
-        signed_message = signed_message_from_string(changesfilecontent)
-        if signed_message is not None:
-            # Overwrite `changesfilecontent` with the text stripped
-            # of the PGP signature.
-            new_content = signed_message.signedContent
-            if new_content is not None:
-                changesfilecontent = signed_message.signedContent
+        if package_copy_job is None and (
+            changesfilename is None or changesfilecontent is None):
+            raise AssertionError(
+                "changesfilename and changesfilecontent must be supplied "
+                "if there is no package_copy_job")
 
-        changes_file = getUtility(ILibraryFileAliasSet).create(
-            changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain',
-            restricted=archive.private)
+        if package_copy_job is None:
+            # The PGP signature is stripped from all changesfiles
+            # to avoid replay attacks (see bugs 159304 and 451396).
+            signed_message = signed_message_from_string(changesfilecontent)
+            if signed_message is not None:
+                # Overwrite `changesfilecontent` with the text stripped
+                # of the PGP signature.
+                new_content = signed_message.signedContent
+                if new_content is not None:
+                    changesfilecontent = signed_message.signedContent
+
+            changes_file = getUtility(ILibraryFileAliasSet).create(
+                changesfilename, len(changesfilecontent),
+                StringIO(changesfilecontent), 'text/plain',
+                restricted=archive.private)
+        else:
+            changes_file = None
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
@@ -2023,6 +2033,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
+
+    def isInitializing(self):
+        """See `IDistroSeries`."""
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        pending_jobs = job_source.getPendingJobsForDistroseries(self)
+        return not pending_jobs.is_empty()
+
+    def isInitialized(self):
+        """See `IDistroSeries`."""
+        published = self.main_archive.getPublishedSources(distroseries=self)
+        return not published.is_empty()
 
 
 class DistroSeriesSet:

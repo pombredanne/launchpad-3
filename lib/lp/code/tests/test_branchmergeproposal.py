@@ -8,7 +8,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.tests.test_branch import PermissionTest
 from lp.registry.interfaces.person import IPersonSet
@@ -33,9 +32,8 @@ class TestEditMergeProposal(PermissionTest):
         sourcepackage = branch.sourcepackage
         suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
         registrant = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            suite_sourcepackage.distribution.owner,
             ICanHasLinkedBranch(suite_sourcepackage).setBranch,
             branch, registrant)
         source_branch = self.factory.makePackageBranch(
@@ -55,7 +53,6 @@ class TestEditMergeProposal(PermissionTest):
         # And so isn't allowed to edit the merge proposal
         self.assertCannotEdit(person, proposal)
 
-
     def test_package_upload_permissions_grant_merge_proposal_edit(self):
         # If you can upload to the package then you can edit merge
         # proposals against the official branch.
@@ -67,7 +64,8 @@ class TestEditMergeProposal(PermissionTest):
         # restriction isn't relevant to these tests.
         permission_set = removeSecurityProxy(permission_set)
         # Now give 'person' permission to upload to 'package'.
-        archive = proposal.target_branch.distroseries.distribution.main_archive
+        archive = (
+            proposal.target_branch.distroseries.distribution.main_archive)
         package = proposal.target_branch.sourcepackage
         spn = package.sourcepackagename
         permission_set.newPackageUploader(archive, person, spn)

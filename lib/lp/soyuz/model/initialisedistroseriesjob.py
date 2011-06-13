@@ -11,11 +11,12 @@ from zope.interface import (
     classProvides,
     implements,
     )
+
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.registry.model.distroseries import DistroSeries
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitialiseDistroSeriesJob,
@@ -26,8 +27,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
-from lp.services.job.model.job import Job
-from lp.services.database import bulk
 
 
 class InitialiseDistroSeriesJob(DistributionJobDerived):
@@ -74,23 +73,38 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
 
     @property
     def overlays(self):
-        return tuple(self.metadata['overlays'])
+        if self.metadata['overlays'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlays'])
 
     @property
     def overlay_pockets(self):
-        return tuple(self.metadata['overlay_pockets'])
+        if self.metadata['overlay_pockets'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlay_pockets'])
 
     @property
     def overlay_components(self):
-        return tuple(self.metadata['overlay_components'])
+        if self.metadata['overlay_components'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['overlay_components'])
 
     @property
     def arches(self):
-        return tuple(self.metadata['arches'])
+        if self.metadata['arches'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['arches'])
 
     @property
     def packagesets(self):
-        return tuple(self.metadata['packagesets'])
+        if self.metadata['packagesets'] is None:
+            return ()
+        else:
+            return tuple(self.metadata['packagesets'])
 
     @property
     def rebuild(self):
