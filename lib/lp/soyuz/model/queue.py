@@ -537,12 +537,52 @@ class PackageUpload(SQLBase):
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
 
+    @property
+    def package_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.package_name
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.sourcepackagename.name
+        else:
+            return None
+
+    @property
+    def package_version(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.metadata["package_version"]
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.version
+        else:
+            return None
+
+    @property
+    def component_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.metadata["component_override"]
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.component.name
+        else:
+            return None
+
+    @property
+    def section_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.metadata["section_override"]
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.section.name
+        else:
+            return None
+
     @cachedproperty
     def displayname(self):
-        """See `IPackageUpload`"""
+        """See `IPackageUpload`."""
         names = []
-        for queue_source in self.sources:
-            names.append(queue_source.sourcepackagerelease.name)
+        if self.contains_source or self.package_copy_job_id is not None:
+            names.append(self.package_name)
         for queue_build in self.builds:
             names.append(queue_build.build.source_package_release.name)
         for queue_custom in self.customfiles:
@@ -558,7 +598,7 @@ class PackageUpload(SQLBase):
     def displayarchs(self):
         """See `IPackageUpload`"""
         archs = []
-        for queue_source in self.sources:
+        if self.contains_source or self.package_copy_job_id is not None:
             archs.append('source')
         for queue_build in self.builds:
             archs.append(queue_build.build.distro_arch_series.architecturetag)
@@ -569,42 +609,20 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def displayversion(self):
         """See `IPackageUpload`"""
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.version
-        if self.builds:
-            return self.builds[0].build.source_package_release.version
-        if self.customfiles:
+        package_version = self.package_version
+        if package_version is not None:
+            return package_version
+        elif self.customfiles:
             return '-'
-
-    @cachedproperty
-    def sourcepackagerelease(self):
-        """The source package release related to this queue item.
-
-        This is currently heuristic but may be more easily calculated later.
-        """
-        if self.sources:
-            return self.sources[0].sourcepackagerelease
-        elif self.builds:
-            return self.builds[0].build.source_package_release
         else:
             return None
 
-    @property
-    def my_source_package_release(self):
-        """The source package release related to this queue item.
-
-        al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
-        The cached property version above behaves very finicky in
-        tests and I've had a *hell* of a time revising these and
-        making them pass.
-
-        In any case, Celso's advice was to stay away from it
-        and I am hence introducing this non-cached variant for
-        usage inside the content class.
-        """
-        if self.sources is not None and bool(self.sources):
+    @cachedproperty
+    def sourcepackagerelease(self):
+        """See `IPackageUpload`."""
+        if self.contains_source:
             return self.sources[0].sourcepackagerelease
-        elif self.builds is not None and bool(self.builds):
+        elif self.contains_build:
             return self.builds[0].build.source_package_release
         else:
             return None
@@ -1380,4 +1398,3 @@ class PackageUploadSet:
         return IStore(PackageUpload).find(
             PackageUpload,
             PackageUpload.package_copy_job_id.is_in(pcj_ids))
-
