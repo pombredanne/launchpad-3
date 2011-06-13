@@ -344,7 +344,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Initialize series', 'a',
                 text='Initialize series',
-                attrs={'href': '%s/+initseries' %canonical_url(series)}))
+                attrs={'href': '%s/+initseries' % canonical_url(series)}))
 
         with person_logged_in(person):
             view = create_initialized_view(
@@ -384,10 +384,12 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
     def test_differences_init_link_initialized(self):
         # The link to +initseries is not displayed if the series is
-        # already initialized.
+        # already initialized (i.e. has any published package).
         set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
-        self.factory.makeDistroSeriesParent(derived_series=series)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=series.main_archive,
+            distroseries=series)
 
         self.assertInitSeriesLinkNotPresent(series, 'admin')
 

@@ -218,10 +218,9 @@ class DistroSeriesOverviewMenu(
                  'queue',
                  'add_port',
                  'create_milestone',
+                 'initseries',
                  ]
         add_subscribe_link(links)
-        if getFeatureFlag('soyuz.derived_series_ui.enabled') is not None:
-            links.append('initseries')
         links.append('admin')
         return links
 
@@ -279,8 +278,10 @@ class DistroSeriesOverviewMenu(
 
     @enabled_with_permission('launchpad.Admin')
     def initseries(self):
-        enabled = (not self.context.is_initialising and
-                   not self.context.is_derived_series)
+        enabled = (
+             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
+             not self.context.isInitializing() and
+             not self.context.isInitialized())
         text = 'Initialize series'
         return Link('+initseries', text, icon='edit', enabled=enabled)
 
