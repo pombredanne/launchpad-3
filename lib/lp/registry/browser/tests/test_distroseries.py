@@ -328,6 +328,82 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
+    def assertInitSeriesLinkPresent(self, series, person):
+        self._assertInitSeriesLink(series, person, True)
+
+    def assertInitSeriesLinkNotPresent(self, series, person):
+        self._assertInitSeriesLink(series, person, False)
+
+    def _assertInitSeriesLink(self, series, person, present=True):
+        # Helper method to check the presence/absence of the link to
+        # +iniseries.
+        if person == 'admin':
+            person = getUtility(ILaunchpadCelebrities).admin.teamowner
+
+        init_link_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Initialize series', 'a',
+                text='Initialize series',
+                attrs={'href': '%s/+initseries' % canonical_url(series)}))
+
+        with person_logged_in(person):
+            view = create_initialized_view(
+                series,
+                '+index',
+                principal=person)
+            html_content = view()
+
+        if present:
+            self.assertThat(html_content, init_link_matcher)
+        else:
+            self.assertThat(html_content, Not(init_link_matcher))
+
+    def test_differences_init_link_no_feature(self):
+        # The link to +initseries is not displayed if the feature flag
+        # is not enabled.
+        series = self.factory.makeDistroSeries()
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+    def test_differences_init_link_admin(self):
+        # The link to +initseries is displayed to admin users if the
+        # feature flag is enabled.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+
+        self.assertInitSeriesLinkPresent(series, 'admin')
+
+    def test_differences_init_link_not_admin(self):
+        # The link to +initseries is not displayed to not admin users if the
+        # feature flag is enabled.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        person = self.factory.makePerson()
+
+        self.assertInitSeriesLinkNotPresent(series, person)
+
+    def test_differences_init_link_initialized(self):
+        # The link to +initseries is not displayed if the series is
+        # already initialized (i.e. has any published package).
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=series.main_archive,
+            distroseries=series)
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+    def test_differences_init_link_series_initializing(self):
+        # The link to +initseries is not displayed if the series is
+        # initializing.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source.create(series, [parent_series.id])
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
+
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""
