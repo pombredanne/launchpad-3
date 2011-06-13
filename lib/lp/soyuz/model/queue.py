@@ -29,7 +29,10 @@ from storm.locals import (
     Join,
     Reference,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -41,7 +44,10 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
@@ -397,17 +403,34 @@ class PackageUpload(SQLBase):
         self._closeBugs(changesfile_path, logger)
         self._giveKarma()
 
-    def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
+    def acceptFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         assert not self.is_delayed_copy, 'Cannot process delayed copies.'
 
+        if self.package_copy_job is not None:
+            if self.status == PackageUploadStatus.REJECTED:
+                raise QueueInconsistentStateError(
+                    "Can't resurrect rejected syncs")
+            # Circular imports :(
+            from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+            # Release the job hounds, Smithers.
+            self.setAccepted()
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
+            job.resume()
+            # The copy job will send emails as appropriate.  We don't
+            # need to worry about closing bugs from syncs, although we
+            # should probably give karma but that needs more work to
+            # fix here.
+            return
+
         self.setAccepted()
+
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         # We explicitly allow unsigned uploads here since the .changes file
         # is pulled from the librarian which are stripped of their
         # signature just before being stored.
         self.notify(
-            announce_list=announce_list, logger=logger, dry_run=dry_run,
+            logger=logger, dry_run=dry_run,
             changes_file_object=changes_file_object)
         self.syncUpdate()
 
@@ -438,6 +461,18 @@ class PackageUpload(SQLBase):
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
+        if self.package_copy_job is not None:
+            # Circular imports :(
+            from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
+            job = PlainPackageCopyJob.get(self.package_copy_job_id)
+            # Do the state transition dance.
+            job.queue()
+            job.start()
+            job.fail()
+            # This possibly should be sending a rejection email but I
+            # don't think we need them for sync rejections.
+            return
+
         changes_file_object = StringIO.StringIO(self.changesfile.read())
         # We allow unsigned uploads since they come from the librarian,
         # which are now stored unsigned.
@@ -449,7 +484,7 @@ class PackageUpload(SQLBase):
     @property
     def is_delayed_copy(self):
         """See `IPackageUpload`."""
-        return self.changesfile is None
+        return self.changesfile is None and self.package_copy_job is None
 
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
@@ -638,7 +673,6 @@ class PackageUpload(SQLBase):
                     changes_file_object = StringIO.StringIO(
                         changes_file.read())
                     self.notify(
-                        announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
                         logger=logger)
                     self.syncUpdate()
@@ -688,8 +722,8 @@ class PackageUpload(SQLBase):
         # and uploading to any archive as the signer.
         return changes, strip_pgp_signature(changes_content).splitlines(True)
 
-    def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False):
+    def notify(self, summary_text=None, changes_file_object=None,
+               logger=None, dry_run=False):
         """See `IPackageUpload`."""
         status_action = {
             PackageUploadStatus.NEW: 'new',
@@ -709,8 +743,8 @@ class PackageUpload(SQLBase):
             signer = None
         notify(
             signer, self.sourcepackagerelease, self.builds, self.customfiles,
-            self.archive, self.distroseries, self.pocket, announce_list,
-            summary_text, changes, changesfile_content, changes_file_object,
+            self.archive, self.distroseries, self.pocket, summary_text,
+            changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run, logger)
 
     def _isPersonUploader(self, person):
@@ -1337,3 +1371,13 @@ class PackageUploadSet:
         return PackageUploadSource.select("""
             PackageUploadSource.sourcepackagerelease IN %s
             """ % sqlvalues(spr_ids))
+
+    def getByPackageCopyJobIDs(self, pcj_ids):
+        """See `IPackageUploadSet`."""
+        if pcj_ids is None or len(pcj_ids) == 0:
+            return EmptyResultSet()
+
+        return IStore(PackageUpload).find(
+            PackageUpload,
+            PackageUpload.package_copy_job_id.is_in(pcj_ids))
+

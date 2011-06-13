@@ -79,7 +79,8 @@ class DistributionJobType(DBEnumeratedType):
 class IInitialiseDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitialiseDistroSeriesJobs."""
 
-    def create(distroseries, arches, packagesets, rebuild):
+    def create(parents, arches, packagesets, rebuild, overlay,
+               overlay_pockets, overlay_components):
         """Create a new initialisation job for a distroseries."""
 
     def getPendingJobsForDistroseries(distroseries):

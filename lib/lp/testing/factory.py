@@ -595,7 +595,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
         displayname=None, time_zone=None, latitude=None, longitude=None,
-        selfgenerated_bugnotifications=False):
+        selfgenerated_bugnotifications=False, member_of=()):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -659,6 +659,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         removeSecurityProxy(email).status = email_address_status
 
         self.makeOpenIdIdentifier(person.account)
+
+        for team in member_of:
+            with person_logged_in(team.teamowner):
+                team.addMember(person, team.teamowner)
 
         # Ensure updated ValidPersonCache
         flush_database_updates()
@@ -1401,13 +1405,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         # here.
         removeSecurityProxy(branch).branchChanged(
             '', 'rev1', None, None, None)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.development_version.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(package.distribution.owner):
+            package.development_version.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
         return branch
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
@@ -3375,7 +3376,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
         package_upload = distroseries.createQueueEntry(
-            pocket, changes_filename, changes_file_content, archive,
+            pocket, archive, changes_filename, changes_file_content,
             signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
             naked_package_upload = removeSecurityProxy(package_upload)
@@ -4084,7 +4085,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
             package_version = unicode(self.getUniqueInteger()) + 'version'
-        package_tuple = (package_name, package_version)
         if source_archive is None:
             source_archive = self.makeArchive()
         if target_archive is None:
@@ -4094,8 +4094,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if target_pocket is None:
             target_pocket = self.getAnyPocket()
         return getUtility(IPlainPackageCopyJobSource).create(
-            package_tuple, source_archive, target_archive,
-            target_distroseries, target_pocket)
+            package_name, source_archive, target_archive,
+            target_distroseries, target_pocket,
+            package_version=package_version)
 
 
 # Some factory methods return simple Python types. We don't add

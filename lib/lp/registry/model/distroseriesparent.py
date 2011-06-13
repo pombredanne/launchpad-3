@@ -89,6 +89,14 @@ class DistroSeriesParentSet:
             DistroSeriesParent,
             DistroSeriesParent.parent_series_id == parent_series.id)
 
+    def getByDerivedAndParentSeries(self, derived_series, parent_series):
+        """See `IDistroSeriesParentSet`."""
+        store = IStore(DistroSeriesParent)
+        return store.find(
+            DistroSeriesParent,
+            DistroSeriesParent.parent_series_id == parent_series.id,
+            DistroSeriesParent.derived_series_id == derived_series.id).one()
+
     def getFlattenedOverlayTree(self, derived_series):
         """See `IDistroSeriesParentSet`."""
         self.getByDerivedSeries(derived_series)

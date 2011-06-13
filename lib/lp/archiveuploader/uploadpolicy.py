@@ -150,15 +150,6 @@ class AbstractUploadPolicy:
         if self.archive is None:
             self.archive = self.distroseries.main_archive
 
-    @property
-    def announcelist(self):
-        """Return the announcement list address."""
-        announce_list = getattr(self.options, 'announcelist', None)
-        if (announce_list is None and
-            getattr(self, 'distroseries', None) is not None):
-            announce_list = self.distroseries.changeslist
-        return announce_list
-
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
         if self.archive.is_copy:

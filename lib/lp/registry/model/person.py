@@ -271,6 +271,7 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
@@ -597,7 +598,7 @@ class Person(
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -611,6 +612,10 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty
+    def ircnicknames(self):
+        return list(self._ircnicknames)
 
     @cachedproperty
     def languages(self):
@@ -939,11 +944,30 @@ class Person(
     # rather than package bug supervisors.
     def getBugSubscriberPackages(self):
         """See `IPerson`."""
-        packages = [sub.target for sub in self.structural_subscriptions
-                    if (sub.distribution is not None and
-                        sub.sourcepackagename is not None)]
-        packages.sort(key=lambda x: x.name)
-        return packages
+        # Avoid circular imports.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        from lp.registry.model.distribution import Distribution
+        origin = (
+            StructuralSubscription,
+            Join(
+                Distribution,
+                StructuralSubscription.distributionID == Distribution.id),
+            Join(
+                SourcePackageName,
+                StructuralSubscription.sourcepackagenameID ==
+                    SourcePackageName.id)
+            )
+        result = Store.of(self).using(*origin).find(
+            (Distribution, SourcePackageName),
+            StructuralSubscription.subscriberID == self.id)
+        result.order_by(SourcePackageName.name)
+
+        def decorator(row):
+            return DistributionSourcePackage(*row)
+
+        return DecoratedResultSet(result, decorator)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -1336,18 +1360,7 @@ class Person(
                 pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
-        if tp is not None or self.id == team.teamownerID:
-            in_team = True
-        elif not team.teamowner.inTeam(team):
-            # The owner is not a member but must retain his rights over
-            # this team. This person may be a member of the owner, and in this
-            # case it'll also have rights over this team.
-            # Note that this query and the tp query above can be consolidated
-            # when we get to a finer grained level of optimisations.
-            in_team = self.inTeam(team.teamowner)
-        else:
-            in_team = False
-
+        in_team = tp is not None
         self._inTeam_cache[team.id] = in_team
         return in_team
 
@@ -3965,6 +3978,9 @@ class PersonSet:
             ('votecast', 'person'),
             ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
+            # These are ON DELETE CASCADE and maintained by triggers.
+            ('bugsummary', 'viewed_by'),
+            ('bugsummaryjournal', 'viewed_by'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))

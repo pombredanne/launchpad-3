@@ -76,6 +76,13 @@ class IDistroSeriesParentSet(Interface):
         :param parent_series: An `IDistroseries`
         """
 
+    def getByDerivedAndParentSeries(self, derived_series, parent_series):
+        """Get the `DistroSeriesParent` by derived and parent series.
+
+        :param derived_series: The derived `IDistroseries`
+        :param parent_series: The parent `IDistroseries`
+        """
+
     def getFlattenedOverlayTree(derived_series):
         """Get the list of DistroSeriesParents corresponding to the
         flattened overlay tree.

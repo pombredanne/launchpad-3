@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests cronscript for retriving components from remote Bugzillas"""
@@ -8,14 +8,13 @@ __metaclass__ = type
 __all__ = []
 
 import os
-import unittest
 import transaction
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import (
     login,
     )
-from canonical.launchpad.scripts.bzremotecomponentfinder import (
+from lp.bugs.scripts.bzremotecomponentfinder import (
     BugzillaRemoteComponentFinder,
     BugzillaRemoteComponentScraper,
     dictFromCSV,
@@ -105,7 +104,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 
         # Set up remote bug tracker with synthetic data
         bz_bugtracker = BugzillaRemoteComponentScraper(
-            base_url = "http://bugzilla.example.org")
+            base_url="http://bugzilla.example.org")
         bz_bugtracker.products = {
             u'alpha': {
                 'name': u'alpha',
@@ -147,8 +146,8 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             title="fdo-example",
             name="fdo-example")
         transaction.commit()
-        bz_bugtracker = BugzillaRemoteComponentScraper(
-            base_url = "http://bugzilla.example.org")
+        BugzillaRemoteComponentScraper(
+            base_url="http://bugzilla.example.org")
 
         page_text = read_test_file("bugzilla-fdo-advanced-query.html")
         finder = BugzillaRemoteComponentFinder(
@@ -165,7 +164,8 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertIsNot(None, comp)
         self.assertEqual(u'Driver/Radeon', comp.name)
 
-# FIXME: This takes ~9 sec to run, but mars says new testsuites need to compete in 2
+# FIXME: This takes ~9 sec to run, but mars says new testsuites need to
+#        compete in 2
 #    def test_cronjob(self):
 #        """Runs the cron job to verify it executes without error"""
 #        import subprocess
@@ -182,9 +182,3 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
 #        self.assertTrue('ERROR' not in err)
 #        self.assertTrue('CRITICAL' not in err)
 #        self.assertTrue('Exception raised' not in err)
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-
-    return suite

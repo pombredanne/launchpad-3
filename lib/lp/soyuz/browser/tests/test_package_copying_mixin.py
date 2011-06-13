@@ -17,7 +17,6 @@ from lp.soyuz.browser.archive import (
     copy_asynchronously,
     copy_synchronously,
     FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS,
-    name_pubs_with_versions,
     PackageCopyingMixin,
     render_cannotcopy_as_html,
     )
@@ -102,15 +101,6 @@ class TestPackageCopyingMixinLight(TestCase):
         # Large numbers of packages must be copied asynchronously.
         packages = [self.getUniqueString() for counter in range(300)]
         self.assertFalse(PackageCopyingMixin().canCopySynchronously(packages))
-
-    def test_name_pubs_with_versions_lists_packages_and_versions(self):
-        # name_pubs_with_versions returns a list of tuples of source
-        # package name and source package version, one per SPPH.
-        spph = FakeSPPH()
-        spr = spph.sourcepackagerelease
-        self.assertEqual(
-            [(spr.sourcepackagename.name, spr.version)],
-            name_pubs_with_versions([spph]))
 
     def test_render_cannotcopy_as_html_lists_errors(self):
         # render_cannotcopy_as_html includes a CannotCopy error message
@@ -257,10 +247,10 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
             archive))
         self.assertEqual(1, len(jobs))
+        job = jobs[0]
         spr = spph.sourcepackagerelease
-        self.assertEqual(
-            [[spr.sourcepackagename.name, spr.version]],
-            jobs[0].metadata['source_packages'])
+        self.assertEqual(spr.sourcepackagename.name, job.package_name)
+        self.assertEqual(spr.version, job.package_version)
 
     def test_do_copy_goes_async_if_canCopySynchronously_says_so(self):
         # The view opts for asynchronous copying if canCopySynchronously
