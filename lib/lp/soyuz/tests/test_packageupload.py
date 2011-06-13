@@ -435,6 +435,13 @@ class TestPackageUploadSet(TestCaseWithFactory):
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual([upload], upload_set.getAll(distroseries))
 
+    def test_getAll_filters_by_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.makeSourcePackageUpload(distroseries)
+        other_series = self.factory.makeDistroSeries()
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual([], upload_set.getAll(other_series))
+
     def test_getAll_matches_created_since_date(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.makeSourcePackageUpload(distroseries)
