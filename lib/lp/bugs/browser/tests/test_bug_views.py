@@ -310,9 +310,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                     "Since you marked this bug as private you have "
                     "automatically been subscribed to it. If you don't want "
                     "to receive email about this bug you can <a href=\""
-                    "%s\">mute your subscription or unsubscribe</a>."
-                    % canonical_url(
-                        bug.default_bugtask, view_name='+subscribe'))
+                    "%s\">mute your subscription</a> or <a href=\"%s\">"
+                    "unsubscribe</a>." % (
+                        canonical_url(
+                            bug.default_bugtask, view_name='+mute'),
+                        canonical_url(
+                            bug.default_bugtask, view_name='+subscribe')))
                 self.assertEqual(
                     message_text,
                     view.request.response.notifications[0].message)
