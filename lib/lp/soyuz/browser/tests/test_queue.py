@@ -18,9 +18,7 @@ from lp.archiveuploader.tests import datadir
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,

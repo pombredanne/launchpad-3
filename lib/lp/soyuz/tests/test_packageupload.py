@@ -8,14 +8,13 @@ import os
 import shutil
 
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.archiveuploader.tests import datadir
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket

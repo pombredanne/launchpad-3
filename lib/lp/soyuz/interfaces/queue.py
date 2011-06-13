@@ -22,10 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
-
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -44,8 +41,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
 
 class QueueStateWriteProtectedError(Exception):

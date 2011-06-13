@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -24,8 +24,8 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -129,7 +129,7 @@ class QueueAction:
             try:
                 self.distroseries, self.pocket = (
                     self.distribution.getDistroSeriesAndPocket(
-                    self.suite_name))
+                        self.suite_name))
             except NotFoundError:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
