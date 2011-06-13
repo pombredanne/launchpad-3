@@ -135,6 +135,10 @@ class BazaarBranchStore:
         else:
             if remote_branch.bzrdir.needs_format_conversion(
                     required_format):
+                # For upgrades, push to a new branch in
+                # the new format. When done pushing,
+                # retire the old .bzr directory and rename
+                # the new one in place.
                 old_branch = remote_branch
                 upgrade_url = urljoin(target_url, "upgrade.bzr")
                 try:
@@ -152,6 +156,8 @@ class BazaarBranchStore:
         # We need to transfer them too.
         remote_branch.repository.fetch(bzr_branch.repository)
         if old_branch is not None:
+            # The format has changed; move the new format
+            # branch in place.
             base_transport = old_branch.bzrdir.root_transport
             old_branch.bzrdir.retire_bzrdir()
             base_transport.rename("upgrade.bzr/.bzr", ".bzr")

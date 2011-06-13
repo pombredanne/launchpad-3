@@ -235,15 +235,20 @@ class TestBazaarBranchStore(WorkerTest):
 
         # The remote branch is still in the old format at this point.
         target_branch = Branch.open(target_url)
-        self.assertEqual(knit_format.get_branch_format(),
+        self.assertEqual(
+            knit_format.get_branch_format(),
             target_branch._format)
 
         store.push(self.arbitrary_branch_id, new_branch, default_format)
 
         # The remote branch is now in the new format.
         target_branch = Branch.open(target_url)
-        self.assertEqual(default_format.get_branch_format(),
+        self.assertEqual(
+            default_format.get_branch_format(),
             target_branch._format)
+        self.assertEquals(
+            target_branch.last_revision_info(),
+            new_branch.last_revision_info())
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
