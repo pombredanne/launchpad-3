@@ -437,7 +437,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_getAll_filters_by_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        upload = self.makeSourcePackageUpload(distroseries)
+        self.makeSourcePackageUpload(distroseries)
         other_series = self.factory.makeDistroSeries()
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual([], upload_set.getAll(other_series))
