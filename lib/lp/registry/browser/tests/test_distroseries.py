@@ -40,11 +40,11 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.archivepublisher.debversion import Version
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
-    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
+    IGNORED,
     NON_IGNORED,
     RESOLVED,
     )
@@ -73,22 +73,23 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
-from lp.soyuz.model import distroseriesdifferencejob
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
-    feature_flags,
     login_person,
     person_logged_in,
-    set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    EqualsIgnoringWhitespace,
+    HasQueryCount,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -324,7 +325,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             view.request.features = get_relevant_feature_controller()
             html_content = view()
 
-        self.assertTrue(derived_series.is_initialising)
+        self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
     def assertInitSeriesLinkPresent(self, series, person):
@@ -491,17 +492,17 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # the soyuz.derived_series_ui.enabled flag.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             self.assertFalse(view.is_derived_series_feature_enabled)
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             self.assertTrue(view.is_derived_series_feature_enabled)
 
     def test_form_hidden_when_derived_series_feature_disabled(self):
         # The form is hidden when the feature flag is not set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             root = html.fromstring(view())
             self.assertEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -515,8 +516,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # The form is shown when the feature flag is set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             root = html.fromstring(view())
             self.assertNotEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -536,7 +537,6 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
         view = create_initialized_view(distroseries, "+initseries")
-
         self.assertTrue(view.rebuilding_allowed)
 
     def test_rebuilding_not_allowed(self):
@@ -547,8 +547,44 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=another_distroseries)
         view = create_initialized_view(distroseries, "+initseries")
-
         self.assertFalse(view.rebuilding_allowed)
+
+    def test_form_hidden_when_distroseries_is_initialized(self):
+        # The form is hidden when the feature flag is set but the series has
+        # already been initialized.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"This series already contains source packages "
+                    u"and cannot be initialized again."))
+
+    def test_form_hidden_when_distroseries_is_being_initialized(self):
+        # The form is hidden when the feature flag is set but the series has
+        # already been derived.
+        distroseries = self.factory.makeDistroSeries()
+        getUtility(IInitialiseDistroSeriesJobSource).create(
+            distroseries, [self.factory.makeDistroSeries().id])
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"This series is already being initialized."))
 
 
 class DistroSeriesDifferenceMixin:
