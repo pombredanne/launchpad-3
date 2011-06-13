@@ -217,7 +217,7 @@ BEGIN
         GROUP BY
             product, productseries, distribution, distroseries,
             sourcepackagename, viewed_by, tag, status, milestone,
-            imporance, has_patch, fixed_upstream
+            importance, has_patch, fixed_upstream
         HAVING sum(count) <> 0
     LOOP
         IF d.count < 0 THEN
@@ -374,7 +374,7 @@ BEGIN
     PERFORM ensure_bugsummary_temp_journal();
     FOR d IN 
         SELECT
-            SUM(count), product, productseries,
+            NULL::integer AS id, SUM(count), product, productseries,
             distribution, distroseries, sourcepackagename,
             viewed_by, tag, status, milestone,
             importance, has_patch, fixed_upstream
