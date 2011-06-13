@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['BugSummary']
 
 from storm.locals import (
+    Bool,
     Int,
     Reference,
     Storm,
@@ -59,3 +60,7 @@ class BugSummary(Storm):
 
     milestone_id = Int(name='milestone')
     milestone = Reference(milestone_id, Milestone.id)
+
+    importance = Int()
+    has_patch = Bool()
+    fixed_upstream = Bool()

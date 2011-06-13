@@ -9,6 +9,7 @@ __all__ = ['IBugSummary']
 
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Int,
     Object,
@@ -60,3 +61,7 @@ class IBugSummary(Interface):
 
     milestone_id = Int(readonly=True)
     milestone = Object(IMilestone, readonly=True)
+
+    importance = Int(readonly=True)
+    has_patch = Bool(readonly=True)
+    fixed_upstream = Bool(readonly=True)
