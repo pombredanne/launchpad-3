@@ -511,4 +511,38 @@ END;
 $$;
 
 
+CREATE OR REPLACE FUNCTION bugsummary_locations(BUG_ROW bug)
+RETURNS SETOF bugsummary LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF BUG_ROW.duplicateof IS NOT NULL THEN
+        RETURN;
+    END IF;
+    RETURN QUERY
+        SELECT
+            CAST(NULL AS integer) AS id,
+            CAST(1 AS integer) AS count,
+            product, productseries, distribution, distroseries,
+            sourcepackagename, person AS viewed_by, tag, status, milestone,
+            importance,
+            BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
+            EXISTS (
+                SELECT TRUE FROM BugTask AS RelatedBugTask
+                WHERE
+                    RelatedBugTask.bug = BugTask.bug
+                    -- XXX: Why is a bugtask only fixed_upstream if there
+                    -- is a related bugtask fixed upstream, not if it meets
+                    -- these conditions itself?
+                    AND RelatedBugTask.id <> BugTask.id
+                    AND ((bugwatch IS NOT NULL AND status IN (17, 25, 30))
+                        OR (bugwatch IS NULL AND product IS NOT NULL
+                            AND status IN (25, 30)))) AS fixed_upstream
+
+        FROM bugsummary_tasks(BUG_ROW) AS tasks
+        JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
+        LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
+END;
+$$;
+
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 75, 0);
