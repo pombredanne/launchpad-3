@@ -87,7 +87,7 @@ WITH
             bug, product, productseries, distribution, distroseries,
             sourcepackagename, status, milestone, importance,
             -- XXX: Why is a bugtask only fixed_upstream if there is a related
-            -- bugtask fixed upstrea, not if it meets these conditions itself?
+            -- bugtask fixed upstream, not if it meets these conditions itself?
             (EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
                 WHERE BugTask.id <> fixed_upstream_tasks.id
@@ -102,7 +102,7 @@ WITH
             NULL::integer as sourcepackagename,
             status, milestone, importance,
             -- XXX: Why is a bugtask only fixed_upstream if there is a related
-            -- bugtask fixed upstrea, not if it meets these conditions itself?
+            -- bugtask fixed upstream, not if it meets these conditions itself?
             (EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
                 WHERE BugTask.id <> fixed_upstream_tasks.id
@@ -388,7 +388,7 @@ BEGIN
     LOOP
         IF d.count < 0 THEN
             PERFORM bug_summary_dec(d);
-        ELSIF d.count > 0 THEN
+        ELSE
             PERFORM bug_summary_inc(d);
         END IF;
     END LOOP;
