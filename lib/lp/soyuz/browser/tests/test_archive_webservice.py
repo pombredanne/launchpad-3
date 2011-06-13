@@ -156,6 +156,21 @@ class TestArchiveDependencies(WebServiceTestCase):
             dependency=ws_dependency, pocket='Release', component='main')
         self.assertContentEqual([dependency], ws_archive.dependencies)
 
+    def test_addArchiveDependency_invalid(self):
+        """Invalid requests generate a 400 status error."""
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            archive.addArchiveDependency(
+                dependency, PackagePublishingPocket.RELEASE)
+        transaction.commit()
+        ws_archive = self.wsObject(archive, archive.owner)
+        ws_dependency = self.wsObject(dependency)
+        expected_re = '(.|\n)*This dependency is already registered(.|\n)*'
+        with ExpectedException(BadRequest, expected_re):
+            ws_archive.addArchiveDependency(
+                dependency=ws_dependency, pocket='Release')
+
     def test_removeArchiveDependency_random_user(self):
         """Normal users can remove archive dependencies."""
         archive = self.factory.makeArchive()
