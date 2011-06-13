@@ -533,8 +533,8 @@ class IDistroSeriesPublic(
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getPackageUploads(created_since_date, status, archive, pocket,
-                          custom_type):
+    def getPackageUploads(created_since_date=None, status=None, archive=None,
+                          pocket=None, custom_type=None, name_filter=None):
         """Get package upload records for this distribution series.
 
         :param created_since_date: If specified, only returns items uploaded
@@ -543,6 +543,8 @@ class IDistroSeriesPublic(
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name_filter: Filter results by this file name or package name
+            prefix.
         :return: A result set containing `IPackageUpload`
         """
 

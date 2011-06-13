@@ -598,7 +598,8 @@ class IPackageUploadSet(Interface):
         """
 
     def getAll(distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None,
+               name_filter=None):
         """Get package upload records for a series with optional filtering.
 
         :param created_since_date: If specified, only returns items uploaded
@@ -607,6 +608,10 @@ class IPackageUploadSet(Interface):
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name_filter: Filter results by this package or file name
+            prefix.  Passing 'a' will pass a source upload for source package
+            'ax', a build upload for binary package 'aardvark', a custom
+            upload of file 'app', and so on.
         :return: A result set containing `IPackageUpload`s
         """
 
