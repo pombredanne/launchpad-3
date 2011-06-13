@@ -170,15 +170,11 @@
                 </tal:derived>
               </td>
 
-              <td>
-                <tal:comment tal:define="comment difference/latest_comment"
-                             tal:condition="comment">
-                  <span tal:replace="comment/body_text/fmt:shorten/50">I'm on this.</span>
-                  <br /><span class="greyed-out greylink"><span
-                      tal:replace="comment/comment_date/fmt:approximatedate">2005-09-16</span>
-                  by <a tal:replace="structure
-                      comment/comment_author/fmt:link">joesmith</a></span>
-                </tal:comment>
+              <td class="latest-comment-fragment">
+                <tal:latest-comment-fragment
+                    define="comment difference/latest_comment"
+                    content="structure comment/@@+latest-comment-fragment"
+                    condition="comment" />
               </td>
 
             </tr>
