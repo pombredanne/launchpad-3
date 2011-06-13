@@ -157,7 +157,7 @@ class TestArchiveDependencies(WebServiceTestCase):
         self.assertContentEqual([dependency], ws_archive.dependencies)
 
     def test_addArchiveDependency_invalid(self):
-        """Invalid requests generate a 400 status error."""
+        """Invalid requests generate a BadRequest error."""
         archive = self.factory.makeArchive()
         dependency = self.factory.makeArchive()
         with person_logged_in(archive.owner):
