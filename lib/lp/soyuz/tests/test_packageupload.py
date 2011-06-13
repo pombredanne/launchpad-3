@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -42,6 +41,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import Provides
 
 
 class PackageUploadTestCase(TestCaseWithFactory):
@@ -409,7 +409,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     def test_PackageUploadSet_implements_IPackageUploadSet(self):
         upload_set = getUtility(IPackageUploadSet)
-        self.assertTrue(verifyObject(IPackageUploadSet, upload_set))
+        self.assertThat(upload_set, Provides(IPackageUploadSet))
 
     def test_getAll_returns_source_upload(self):
         distroseries = self.factory.makeDistroSeries()
