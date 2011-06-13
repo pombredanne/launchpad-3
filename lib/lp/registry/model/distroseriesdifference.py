@@ -753,7 +753,7 @@ class DistroSeriesDifference(StormBase):
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
                 apt_pkg.VersionCompare(
-                    self.source_version, self.parent_source_version) < 0
+                    self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # If the derived version is lower than the parent's, we
                 # ensure the diff status is blacklisted.
