@@ -108,7 +108,7 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
         self.first_derivation = (
-            distroseries.main_archive.getPublishedSources().is_empty())
+            not self.distroseries.distribution.has_published_sources)
         if self.first_derivation:
             # Use-case #1.
             self.derivation_parents = self.parents
