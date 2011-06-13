@@ -526,23 +526,66 @@ BEGIN
             sourcepackagename, person AS viewed_by, tag, status, milestone,
             importance,
             BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
-            EXISTS (
+            (EXISTS (
                 SELECT TRUE FROM BugTask AS RelatedBugTask
                 WHERE
-                    RelatedBugTask.bug = BugTask.bug
+                    RelatedBugTask.bug = tasks.bug
                     -- XXX: Why is a bugtask only fixed_upstream if there
                     -- is a related bugtask fixed upstream, not if it meets
                     -- these conditions itself?
-                    AND RelatedBugTask.id <> BugTask.id
+                    AND RelatedBugTask.id <> tasks.id
                     AND ((bugwatch IS NOT NULL AND status IN (17, 25, 30))
                         OR (bugwatch IS NULL AND product IS NOT NULL
-                            AND status IN (25, 30)))) AS fixed_upstream
-
+                            AND status IN (25, 30)))))::boolean AS fixed_upstream
         FROM bugsummary_tasks(BUG_ROW) AS tasks
         JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
         LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
 END;
 $$;
+
+COMMENT ON FUNCTION bugsummary_locations(bug) IS
+'Calculate what BugSummary rows should exist for a given Bug.';
+
+
+CREATE OR REPLACE FUNCTION bugsummary_tasks(BUG_ROW bug)
+RETURNS SETOF bugtask LANGUAGE plpgsql STABLE AS
+$$
+DECLARE
+    bt bugtask%ROWTYPE;
+    r record;
+BEGIN
+    bt.bug = BUG_ROW.id;
+
+    -- One row only for each target permutation - need to ignore other fields
+    -- like date last modified to deal with conjoined masters and multiple
+    -- sourcepackage tasks in a distro.
+    FOR r IN
+        SELECT
+            product, productseries, distribution, distroseries,
+            sourcepackagename, status, milestone, importance
+        FROM BugTask WHERE bug=BUG_ROW.id
+        UNION -- Implicit DISTINCT
+        SELECT
+            product, productseries, distribution, distroseries,
+            NULL, status, milestone, importance
+        FROM BugTask WHERE bug=BUG_ROW.id AND sourcepackagename IS NOT NULL
+    LOOP
+        bt.product = r.product;
+        bt.productseries = r.productseries;
+        bt.distribution = r.distribution;
+        bt.distroseries = r.distroseries;
+        bt.sourcepackagename = r.sourcepackagename;
+        bt.status = r.status;
+        bt.milestone = r.milestone;
+        bt.importance = r.importance;
+        RETURN NEXT bt;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION bugsummary_tasks(bug) IS
+'Return all tasks for the bug + all sourcepackagename tasks again with the sourcepackagename squashed';
+
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 75, 0);
