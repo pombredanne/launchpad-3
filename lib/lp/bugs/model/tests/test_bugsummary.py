@@ -927,6 +927,144 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.milestone == milestone),
             0)
 
+    def test_fixUpstream(self):
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        distro_bugtask = self.factory.makeBugTask(target=distribution)
+        bug = distro_bugtask.bug
+        product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            1)
+
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, bug.owner)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            0)
+
+    def test_breakUpstream(self):
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        distro_bugtask = self.factory.makeBugTask(target=distribution)
+        bug = distro_bugtask.bug
+        product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
+
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.FIXCOMMITTED, bug.owner)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            9)
+
+        product_bugtask.status = BugTaskStatus.INPROGRESS
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            1)
+
+    def test_fixUpstreamViaWatch(self):
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        distro_bugtask = self.factory.makeBugTask(target=distribution)
+        bug = distro_bugtask.bug
+        product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
+        product_bugwatch = self.factory.makeBugWatch(bug_task=product_bugtask)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            1)
+
+        # Bugs flagged INVALID by upstream count as fixed upstream.
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.INVALID, bug.owner)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            0)
+
+    def test_breakUpstreamViaWatch(self):
+        distribution = self.factory.makeDistribution()
+        product = self.factory.makeProduct()
+        distro_bugtask = self.factory.makeBugTask(target=distribution)
+        bug = distro_bugtask.bug
+        product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
+        product_bugwatch = self.factory.makeBugWatch(bug_task=product_bugtask)
+
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.FIXCOMMITTED, bug.owner)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            9)
+
+        product_bugtask.status = BugTaskStatus.INVALID
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == True),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.distribution == distribution,
+                BugSummary.fixed_upstream == False),
+            1)
+
+
+
+
 
 class TestBugSummaryRolledUp(TestBugSummary):
 
