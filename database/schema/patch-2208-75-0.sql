@@ -438,8 +438,8 @@ BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF OLD.duplicateof IS DISTINCT FROM NEW.duplicateof
             OR OLD.private IS DISTINCT FROM NEW.private
-            OR OLD.has_patch IS DISTINCT FROM NEW.has_patch
-            OR OLD.fixed_upstream IS DISTINCT FROM NEW.fixed_upstream THEN
+            OR (OLD.latest_patch_uploaded IS NULL)
+                <> (NEW.latest_patch_uploaded IS NULL) THEN
             PERFORM unsummarise_bug(OLD);
             PERFORM summarise_bug(NEW);
         END IF;
@@ -489,9 +489,9 @@ BEGIN
             OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
             OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
             OR OLD.status IS DISTINCT FROM NEW.status
-            OR OLD.milestone IS DISTINCT FROM NEW.milestone
-            OR OLD.has_patch IS DISTINCT FROM NEW.has_patch
-            OR OLD.fixed_upstream IS DISTINCT FROM NEW.fixed_upstream) THEN
+            OR OLD.bugwatch IS DISTINCT FROM NEW.bugwatch
+            OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
+
             IF TG_WHEN = 'BEFORE' THEN
                 PERFORM unsummarise_bug(bug_row(OLD.bug));
                 IF OLD.bug <> NEW.bug THEN
