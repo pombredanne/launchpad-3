@@ -95,15 +95,6 @@ class BazaarBranchStore:
             if needs_tree:
                 local_branch.bzrdir.create_workingtree()
             return local_branch
-        # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
-        # branches disabled.  Need an orderly upgrade process.
-        if False and remote_bzr_dir.needs_format_conversion(
-            format=required_format):
-            try:
-                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            upgrade(remote_url, required_format)
         # The proper thing to do here would be to call
         # "remote_bzr_dir.sprout()".  But 2a fetch slowly checks which
         # revisions are in the ancestry of the tip of the remote branch, which
@@ -116,6 +107,13 @@ class BazaarBranchStore:
         target_control.create_prefix()
         remote_bzr_dir.transport.copy_tree_to_transport(target_control)
         local_bzr_dir = BzrDir.open_from_transport(target)
+        if local_bzr_dir.needs_format_conversion(
+            format=required_format):
+            try:
+                local_bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(target_path, required_format)
         if needs_tree:
             local_bzr_dir.create_workingtree()
         return local_bzr_dir.open_branch()
@@ -133,6 +131,12 @@ class BazaarBranchStore:
         except NotBranchError:
             remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
+        else:
+            if remote_branch.bzrdir.needs_format_conversion(
+                    required_format):
+                remote_branch.bzrdir.retire_bzrdir()
+                remote_branch = BzrDir.create_branch_and_repo(
+                    target_url, format=required_format)
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
