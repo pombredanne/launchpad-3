@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,10 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
-
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -44,9 +41,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-
-from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -356,7 +352,6 @@ class IPackageUploadBuild(Interface):
             title=_("ID"), required=True, readonly=True,
             )
 
-
     packageupload = Int(
             title=_("PackageUpload"), required=True,
             readonly=False,
@@ -392,7 +387,6 @@ class IPackageUploadSource(Interface):
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
-
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,

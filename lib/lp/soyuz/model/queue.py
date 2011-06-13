@@ -539,7 +539,7 @@ class PackageUpload(SQLBase):
 
     @cachedproperty
     def displayname(self):
-        """See `IPackageUpload`"""
+        """See `IPackageUpload`."""
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
@@ -1380,4 +1380,3 @@ class PackageUploadSet:
         return IStore(PackageUpload).find(
             PackageUpload,
             PackageUpload.package_copy_job_id.is_in(pcj_ids))
-
