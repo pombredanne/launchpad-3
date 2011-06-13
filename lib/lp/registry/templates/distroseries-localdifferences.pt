@@ -12,6 +12,9 @@
         .distroseries-localdiff-search-filter input[type="radio"] {
           margin-left: 0;
         }
+        /* Don't show a border between the
+           difference rows and their expanded sections */
+        table.listing tr.diff-extra td { border-top: 0; }
       </style>
     </metal:block>
 
