@@ -44,6 +44,8 @@ class TestBugSummary(TestCaseWithFactory):
         # previous transactions.
         self.store.invalidate()
 
+        self._maybe_rollup()
+
         public_summaries = self.store.find(
             BugSummary,
             BugSummary.viewed_by == None,
@@ -57,6 +59,12 @@ class TestBugSummary(TestCaseWithFactory):
         # Note that if there a 0 records found, sum() returns None, but
         # we prefer to return 0 here.
         return all_summaries.sum(BugSummary.count) or 0
+
+    def _maybe_rollup(self):
+        """Rollup the journal if the class is testing the rollup case."""
+        # The base class does not rollup the journal, see
+        # TestBugSummaryRolledUp which does.
+        pass
 
     def test_providesInterface(self):
         bug_summary = self.store.find(BugSummary)[0]
@@ -918,3 +926,13 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.distribution == distribution,
                 BugSummary.milestone == milestone),
             0)
+
+
+class TestBugSummaryRolledUp(TestBugSummary):
+
+    def _maybe_rollup(self):
+        # Rollup the BugSummaryJournal into BugSummary
+        # so all the records are in one place - this checks the journal
+        # flushing logic is correct.
+        self.store.execute("SELECT bugsummary_rollup_journal()")
+
