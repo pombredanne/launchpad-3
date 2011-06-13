@@ -31,7 +31,7 @@ class BugSummary(Storm):
 
     implements(IBugSummary)
 
-    __storm_table__ = 'bugsummary'
+    __storm_table__ = 'combinedbugsummary'
 
     id = Int(primary=True)
     count = Int()

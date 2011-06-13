@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -8,20 +8,19 @@ import os
 import shutil
 
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.archiveuploader.tests import datadir
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archiveuploader.tests import datadir
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.log.logger import BufferLogger
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -365,6 +364,14 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         Store.of(pu).flush()
 
         self.assertEqual(pcj, pu.package_copy_job)
+
+    def test_getByPackageCopyJobIDs(self):
+        pcj = removeSecurityProxy(
+            self.factory.makePlainPackageCopyJob()).context
+        pu = self.factory.makePackageUpload(package_copy_job=pcj)
+        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [pcj.id])
+        self.assertEqual(pu, result.one())
 
     def test_overrideSource_with_copy_job(self):
         # The overrides should be stored in the job's metadata.

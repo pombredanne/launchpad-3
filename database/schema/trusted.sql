@@ -259,6 +259,7 @@ $$
         WHERE
             pg_class.relnamespace = pg_namespace.oid
             AND pg_class.relkind = 'r'
+            AND pg_table_is_visible(pg_class.oid)
 
         UNION ALL
         
@@ -277,6 +278,7 @@ $$
             pg_index
         WHERE
             pg_class_index.relkind = 'i'
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_index.relnamespace = pg_namespace_index.oid
             AND pg_class_table.relnamespace = pg_namespace_table.oid
             AND pg_index.indexrelid = pg_class_index.oid
@@ -299,6 +301,7 @@ $$
             pg_class AS pg_class_toast
         WHERE
             pg_class_toast.relnamespace = pg_namespace_toast.oid
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_table.relnamespace = pg_namespace_table.oid
             AND pg_class_toast.oid = pg_class_table.reltoastrelid
 
@@ -320,6 +323,7 @@ $$
             pg_class AS pg_class_toast
         WHERE
             pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_index.relnamespace = pg_namespace_index.oid
             AND pg_class_table.reltoastrelid = pg_class_toast.oid
             AND pg_class_index.oid = pg_class_toast.reltoastidxid
