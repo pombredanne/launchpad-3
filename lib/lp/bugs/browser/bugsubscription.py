@@ -555,10 +555,12 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         details = list(self.context.getDirectSubscribersWithDetails())
         api_request = IWebServiceClientRequest(self.request)
         for person, subscription in details:
-            if person == self.user:
-                # Skip the current user viewing the page.
-                continue
             can_edit = self.user is not None and self.user.inTeam(person)
+            if person == self.user or (person.private and not can_edit):
+                # Skip the current user viewing the page,
+                # and private teams user is not a member of.
+                continue
+
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,

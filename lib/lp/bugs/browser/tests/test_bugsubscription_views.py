@@ -342,40 +342,6 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 'bug-notification-level-field', widget_class)
 
 
-class BugSubscriptionAdvancedFeaturesPortletTestCase(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-    feature_flag = 'malone.advanced-subscriptions.enabled'
-
-    def setUp(self):
-        super(BugSubscriptionAdvancedFeaturesPortletTestCase, self).setUp()
-        self.bug = self.factory.makeBug()
-        self.person = self.factory.makePerson()
-        self.target = self.bug.default_bugtask.target
-        subscriber = self.factory.makePerson()
-        with person_logged_in(self.person):
-            self.target.addBugSubscription(subscriber, subscriber)
-
-    def get_contents(self, flag):
-        with person_logged_in(self.person):
-            with FeatureFixture({self.feature_flag: flag}):
-                bug_view = create_initialized_view(
-                    self.bug, name="+bug-portlet-subscribers-content")
-                return bug_view.render()
-
-    def test_also_notified_suppressed(self):
-        # If the advanced-subscription.enabled feature flag is on then the
-        # "Also notified" portion of the portlet is suppressed.
-        contents = self.get_contents(ON)
-        self.assertFalse('Also notified' in contents)
-
-    def test_also_notified_not_suppressed(self):
-        # If the advanced-subscription.enabled feature flag is off then the
-        # "Also notified" portion of the portlet is shown.
-        contents = self.get_contents(OFF)
-        self.assertTrue('Also notified' in contents)
-
-
 class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
     """Tests for the BugSubscriptionsListView."""
 
