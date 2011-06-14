@@ -97,7 +97,7 @@ and used to query private bug counts.
     ...     print_result(resultset)
 
 
-/!\ A Note About Privacy in These Examples 
+/!\ A Note About Privacy in These Examples
 ------------------------------------------
 
 All the examples, except for the ones in the Privacy section, are
@@ -262,7 +262,6 @@ of the product column. Note that if there is a BugTask targetting a
 ProductSeries, there also must be a BugTask record targetting that
 ProductSeries' Product:
 
-    >>> from lp.registry.model.productseries import ProductSeries
     >>> prod_b = factory.makeProduct(name='pr-b')
     >>> productseries_b = factory.makeProductSeries(
     ...     product=prod_b, name='ps-b')

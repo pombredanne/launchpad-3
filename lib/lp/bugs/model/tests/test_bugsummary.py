@@ -1040,7 +1040,7 @@ class TestBugSummary(TestCaseWithFactory):
         distro_bugtask = self.factory.makeBugTask(target=distribution)
         bug = distro_bugtask.bug
         product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
-        product_bugwatch = self.factory.makeBugWatch(bug_task=product_bugtask)
+        self.factory.makeBugWatch(bug_task=product_bugtask)
 
         self.assertEqual(
             self.getPublicCount(
@@ -1074,7 +1074,7 @@ class TestBugSummary(TestCaseWithFactory):
         distro_bugtask = self.factory.makeBugTask(target=distribution)
         bug = distro_bugtask.bug
         product_bugtask = self.factory.makeBugTask(bug=bug, target=product)
-        product_bugwatch = self.factory.makeBugWatch(bug_task=product_bugtask)
+        self.factory.makeBugWatch(bug_task=product_bugtask)
 
         product_bugtask.transitionToStatus(
             BugTaskStatus.FIXCOMMITTED, bug.owner)
@@ -1159,4 +1159,3 @@ class TestBugSummaryRolledUp(TestBugSummary):
         # so all the records are in one place - this checks the journal
         # flushing logic is correct.
         self.store.execute("SELECT bugsummary_rollup_journal()")
-
