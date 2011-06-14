@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+import httplib
 import sys
 import traceback
 
@@ -44,10 +45,10 @@ class SystemErrorView(LaunchpadView):
     override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
-        '../templates/oops-veryplain.pt')
+        'templates/oops-veryplain.pt')
 
     # Override this in subclasses.  A value of None means "don't set this"
-    response_code = 500
+    response_code = httplib.INTERNAL_SERVER_ERROR
 
     show_tracebacks = False
     pagetesting = False
@@ -196,7 +197,7 @@ class NotFoundView(SystemErrorView):
     page_title = 'Error: Page not found'
     override_title_breadcrumbs = True
 
-    response_code = 404
+    response_code = httplib.NOT_FOUND
 
     def __call__(self):
         return self.index()
@@ -224,8 +225,10 @@ class NotFoundView(SystemErrorView):
 
 class GoneView(NotFoundView):
     """The page is gone, such as a page belonging to a suspended user."""
+
     page_title = 'Error: Page gone'
-    response_code = 410
+
+    response_code = httplib.GONE
 
 
 class RequestExpiredView(SystemErrorView):
@@ -233,7 +236,7 @@ class RequestExpiredView(SystemErrorView):
     page_title = 'Error: Timeout'
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def __init__(self, context, request):
         SystemErrorView.__init__(self, context, request)
@@ -249,7 +252,7 @@ class InvalidBatchSizeView(SystemErrorView):
     page_title = "Error: Invalid Batch Size"
     override_title_breadcrumbs = True
 
-    response_code = 400
+    response_code = httplib.BAD_REQUEST
 
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
@@ -268,7 +271,7 @@ class TranslationUnavailableView(SystemErrorView):
     page_title = 'Error: Translation page is not available'
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def __call__(self):
         return self.index()
@@ -280,7 +283,7 @@ class ReadOnlyErrorView(SystemErrorView):
     page_title = "Error: you can't do this right now"
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
@@ -293,4 +296,13 @@ class ReadOnlyErrorView(SystemErrorView):
 class NoReferrerErrorView(SystemErrorView):
     """View rendered when a POST request does not include a REFERER header."""
 
-    response_code = 403 # Forbidden.
+    response_code = httplib.FORBIDDEN
+
+
+class OpenIdDiscoveryFailureView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False

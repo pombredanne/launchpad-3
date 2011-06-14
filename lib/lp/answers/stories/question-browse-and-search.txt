@@ -148,7 +148,6 @@ to jump to the question.
     >>> browser.getControl(name='field.search_text').value = '9'
     >>> browser.getControl('Find Answers').click()
     >>> from canonical.launchpad.helpers import backslashreplace
-    >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
     Question #9 : ...
 

@@ -31,7 +31,7 @@ __all__ = [
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
     'DistributionVocabulary',
-    'DistroSeriesDerivationVocabularyFactory',
+    'DistroSeriesDerivationVocabulary',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -50,7 +50,6 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
     'UserTeamsParticipationVocabulary',
-    'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
@@ -76,14 +75,13 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Union,
+    With,
     )
 from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import (
-    IVocabulary,
-    IVocabularyTokenized,
-    )
+from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -100,13 +98,15 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.helpers import (
     ensure_unicode,
     shortlist,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
@@ -115,6 +115,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
@@ -124,6 +125,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import (
     IBugTask,
@@ -152,7 +154,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonVisibility,
     )
-from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarName,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -163,11 +168,15 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
 from lp.registry.model.milestone import Milestone
-from lp.registry.model.person import Person
+from lp.registry.model.person import (
+    IrcID,
+    Person,
+    )
 from lp.registry.model.pillar import PillarName
 from lp.registry.model.product import Product
 from lp.registry.model.productrelease import ProductRelease
@@ -175,13 +184,23 @@ from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
-from lp.services.propertycache import cachedproperty
+from lp.services.database import bulk
+from lp.services.features import getFeatureFlag
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache
+    )
 
 
 class BasePersonVocabulary:
     """This is a base class used by all different Person Vocabularies."""
 
     _table = Person
+
+    def __init__(self, context=None):
+        super(BasePersonVocabulary, self).__init__(context)
+        self.enhanced_picker_enabled = bool(
+            getFeatureFlag('disclosure.picker_enhancements.enabled'))
 
     def toTerm(self, obj):
         """Return the term for this object."""
@@ -271,7 +290,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
-            return self._table.select(sql, orderBy=self._orderBy)
+            if getFeatureFlag('disclosure.picker_enhancements.enabled'):
+                order_by = (
+                    '(CASE name WHEN %s THEN 1 '
+                    ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
+                    % (fti_query, fti_query))
+            else:
+                order_by = self._orderBy
+            return self._table.select(sql, orderBy=order_by, limit=100)
         return self.emptySelectResults()
 
 
@@ -475,6 +501,19 @@ class ValidPersonOrTeamVocabulary(
         """The storm store."""
         return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
+    @cachedproperty
+    def _karma_context_constraint(self):
+        context = nearest(self.context, IPillar)
+        if IProduct.providedBy(context):
+            karma_context_column = 'product'
+        elif IDistribution.providedBy(context):
+            karma_context_column = 'distribution'
+        elif IProjectGroup.providedBy(context):
+            karma_context_column = 'project'
+        else:
+            return None
+        return '%s = %d' % (karma_context_column, context.id)
+
     def _privateTeamQueryAndTables(self):
         """Return query tables for private teams.
 
@@ -504,7 +543,12 @@ class ValidPersonOrTeamVocabulary(
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
+        if self.enhanced_picker_enabled:
+            return self._doSearchWithImprovedSorting(text)
+        else:
+            return self._doSearchWithOriginalSorting(text)
 
+    def _doSearchWithOriginalSorting(self, text=""):
         private_query, private_tables = self._privateTeamQueryAndTables()
         exact_match = None
 
@@ -580,7 +624,6 @@ class ValidPersonOrTeamVocabulary(
                       EmailAddressStatus.PREFERRED.value,
                       self.LIMIT))
 
-
             public_result = self.store.using(*public_tables).find(
                 Person,
                 And(
@@ -646,6 +689,195 @@ class ValidPersonOrTeamVocabulary(
         result.config(limit=self.LIMIT)
         return result
 
+    def _doSearchWithImprovedSorting(self, text=""):
+        """Return the people/teams whose fti or email address match :text:"""
+
+        private_query, private_tables = self._privateTeamQueryAndTables()
+
+        # Short circuit if there is no search text - all valid people and
+        # teams have been requested.
+        if not text:
+            tables = [
+                Person,
+                Join(self.cache_table_name,
+                     SQL("%s.id = Person.id" % self.cache_table_name)),
+                ]
+            tables.extend(private_tables)
+            result = self.store.using(*tables).find(
+                Person,
+                And(
+                    Or(Person.visibility == PersonVisibility.PUBLIC,
+                       private_query,
+                       ),
+                    Person.merged == None,
+                    self.extra_clause
+                    )
+                )
+            result.config(distinct=True)
+            result.order_by(Person.displayname, Person.name)
+        else:
+            # Do a full search based on the text given.
+
+            # The queries are broken up into several steps for efficiency.
+            # The public person and team searches do not need to join with the
+            # TeamParticipation table, which is very expensive.  The search
+            # for private teams does need that table but the number of private
+            # teams is very small so the cost is not great. However, if the
+            # person is a logged in administrator, we don't need to join to
+            # the TeamParticipation table and can construct a more efficient
+            # query (since in this case we are searching all private teams).
+
+            # Create a query that will match public persons and teams that
+            # have the search text in the fti, at the start of their email
+            # address, as their full IRC nickname, or at the start of their
+            # displayname.
+            # Since we may be eliminating results with the limit to improve
+            # performance, we sort by the rank, so that we will always get
+            # the best results. The fti rank will be between 0 and 1.
+            # Note we use lower() instead of the non-standard ILIKE because
+            # ILIKE doesn't hit the indexes.
+            # The '%%' is necessary because storm variable substitution
+            # converts it to '%'.
+
+            # This is the SQL that will give us the IDs of the people we want
+            # in the result.
+            matching_person_sql = SQL("""
+                SELECT id, MAX(rank) AS rank, false as is_private_team
+                FROM (
+                    SELECT Person.id,
+                    (case
+                        when person.name=? then 100
+                        when person.name like ? || '%%' then 5
+                        when lower(person.displayname) like ? || '%%' then 4
+                        else rank(fti, ftq(?))
+                    end) as rank
+                    FROM Person
+                    WHERE Person.name LIKE ? || '%%'
+                    or lower(Person.displayname) LIKE ? || '%%'
+                    or Person.fti @@ ftq(?)
+                    UNION ALL
+                    SELECT Person.id, 3 AS rank
+                    FROM Person, IrcID
+                    WHERE Person.id = IrcID.person
+                        AND IrcID.nickname = ?
+                    UNION ALL
+                    SELECT Person.id, 2 AS rank
+                    FROM Person, EmailAddress
+                    WHERE Person.id = EmailAddress.person
+                        AND LOWER(EmailAddress.email) LIKE ? || '%%'
+                        AND status IN (?, ?)
+                ) AS person_match
+                GROUP BY id, is_private_team
+            """, (text, text, text, text, text, text, text, text, text,
+                  EmailAddressStatus.VALIDATED.value,
+                  EmailAddressStatus.PREFERRED.value))
+
+            # Do we need to search for private teams.
+            if private_tables:
+                private_tables = [Person] + private_tables
+                private_ranking_sql = SQL("""
+                    (case
+                        when person.name=? then 100
+                        when person.name like ? || '%%' then 5
+                        when lower(person.displayname) like ? || '%%' then 3
+                        else rank(fti, ftq(?))
+                    end) as rank
+                """, (text, text, text, text))
+
+                # Searching for private teams that match can be easier since
+                # we are only interested in teams.  Teams can have email
+                # addresses but we're electing to ignore them here.
+                private_result_select = Select(
+                    tables=private_tables,
+                    columns=(Person.id, private_ranking_sql,
+                                SQL("true as is_private_team")),
+                    where=And(
+                        SQL("""
+                            Person.name LIKE ? || '%%'
+                            OR lower(Person.displayname) LIKE ? || '%%'
+                            OR Person.fti @@ ftq(?)
+                            """, [text, text, text]),
+                        private_query))
+                matching_person_sql = Union(matching_person_sql,
+                          private_result_select, all=True)
+
+            # The tables for public persons and teams that match the text.
+            public_tables = [
+                SQL("MatchingPerson"),
+                Person,
+                LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+                ]
+
+            # If private_tables is empty, we are searching for all private
+            # teams. We can simply append the private query component to the
+            # public query. Otherwise, for efficiency as stated earlier, we
+            # need to do a separate query to join to the TeamParticipation
+            # table.
+            private_teams_query = private_query
+            if private_tables:
+                private_teams_query = SQL("is_private_team")
+
+            # We just select the required ids since we will use
+            # IPersonSet.getPrecachedPersonsFromIDs to load the results
+            matching_with = With("MatchingPerson", matching_person_sql)
+            result = self.store.with_(
+                matching_with).using(*public_tables).find(
+                Person,
+                And(
+                    SQL("Person.id = MatchingPerson.id"),
+                    Or(
+                        And(# A public person or team
+                            Person.visibility == PersonVisibility.PUBLIC,
+                            Person.merged == None,
+                            Or(# A valid person-or-team is either a team...
+                                # Note: 'Not' due to Bug 244768.
+                                Not(Person.teamowner == None),
+                                # Or a person who has preferred email address.
+                                EmailAddress.status ==
+                                    EmailAddressStatus.PREFERRED)),
+                        # Or a private team
+                        private_teams_query),
+                    self.extra_clause),
+                )
+            # Better ranked matches go first.
+            if (getFeatureFlag('disclosure.person_affiliation_rank.enabled')
+                and self._karma_context_constraint):
+                rank_order = SQL("""
+                    rank * COALESCE(
+                        (SELECT LOG(karmavalue) FROM KarmaCache
+                         WHERE person = Person.id AND
+                            %s
+                            AND category IS NULL AND karmavalue > 10),
+                        1) DESC""" % self._karma_context_constraint)
+            else:
+                rank_order = SQL("rank DESC")
+            result.order_by(rank_order, Person.displayname, Person.name)
+        result.config(limit=self.LIMIT)
+
+        # We will be displaying the person's irc nick(s) and emails in the
+        # description so we need to bulk load them for performance, otherwise
+        # we get one query per person per attribute.
+        def pre_iter_hook(rows):
+            persons = set(obj for obj in rows)
+            # The emails.
+            emails = bulk.load_referencing(
+                EmailAddress, persons, ['personID'])
+            email_by_person = dict((email.personID, email)
+                for email in emails
+                if email.status == EmailAddressStatus.PREFERRED)
+
+            for person in persons:
+                cache = get_property_cache(person)
+                cache.preferredemail = email_by_person.get(person.id, None)
+                cache.ircnicknames = []
+
+            # The irc nicks.
+            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
+            for nick in nicks:
+                get_property_cache(nick.person).ircnicknames.append(nick)
+
+        return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
+
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""
         if not text:
@@ -695,7 +927,14 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:
-            name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
+            if self.enhanced_picker_enabled:
+                name_match_query = SQL("""
+                    Person.name LIKE ? || '%%'
+                    OR lower(Person.displayname) LIKE ? || '%%'
+                    OR Person.fti @@ ftq(?)
+                    """, [text, text, text]),
+            else:
+                name_match_query = SQL("Person.fti @@ ftq(%s)" % quote(text))
 
             email_storm_query = self.store.find(
                 EmailAddress.personID,
@@ -713,11 +952,8 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
                     Or(name_match_query,
                        EmailAddress.person != None)))
 
-        # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
-        # setting the 'distinct' and 'limit' options in a single call to
-        # .config().  The work-around is to split them up.  Note the limit has
-        # to be after the call to 'order_by' for this work-around to be
-        # effective.
+        # To get the correct results we need to do distinct first, then order
+        # by, then limit.
         result.config(distinct=True)
         result.order_by(Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
@@ -1433,7 +1669,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         series = self._table.select(
-            DistroSeries.q.distributionID==Distribution.q.id,
+            DistroSeries.q.distributionID == Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
         for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
@@ -1481,7 +1717,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
-class DistroSeriesDerivationVocabularyFactory:
+class DistroSeriesDerivationVocabulary:
     """A vocabulary source for series to derive from.
 
     Once a distribution has a series that has derived from a series in another
@@ -1496,12 +1732,63 @@ class DistroSeriesDerivationVocabularyFactory:
     series at the same time.
     """
 
-    implements(IVocabulary, IVocabularyTokenized)
+    implements(IHugeVocabulary)
+
+    displayname = "Add a parent series"
+    step_title = 'Search'
 
     def __init__(self, context):
-        """See `IVocabularyFactory.__call__`."""
+        """Create a new vocabulary for the context.
+
+        :param context: It should adaptable to `IDistroSeries`.
+        """
         assert IDistroSeries.providedBy(context)
         self.distribution = context.distribution
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.searchParents().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for series in self.searchParents():
+            yield self.toTerm(series)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        if not IDistroSeries.providedBy(value):
+            return False
+        return value.id in [parent.id for parent in self.searchParents()]
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def terms_by_token(self):
+        """Mapping of terms by token."""
+        return dict((term.token, term) for term in self.terms)
+
+    def getTermByToken(self, token):
+        try:
+            return self.terms_by_token[token]
+        except KeyError:
+            raise LookupError(token)
+
+    def toTerm(self, series):
+        """Return the term for a parent series."""
+        title = "%s: %s" % (series.distribution.displayname, series.title)
+        return SimpleTerm(series, series.id, title)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.searchParents(query)
+        return CountableIterator(len(results), results, self.toTerm)
+
+    @cachedproperty
+    def terms(self):
+        return self.searchParents()
 
     def find_terms(self, *where):
         """Return a `tuple` of terms matching the given criteria.
@@ -1516,77 +1803,36 @@ class DistroSeriesDerivationVocabularyFactory:
         query = query.order_by(
             Distribution.displayname,
             Desc(DistroSeries.date_created))
-        return tuple(
-            DistroSeriesVocabulary.toTerm(series)
-            for (series, distribution) in query)
+        return [series for (series, distribution) in query]
 
-    @cachedproperty
-    def terms(self):
-        """Terms for the series the context can derive from, in order.
-
-        The order is the same as for `DistroSeriesVocabulary`.
-        """
+    def searchParents(self, query=None):
+        """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
+        where = []
+        if query is not None:
+            term = '%' + query.lower() + '%'
+            search = Or(
+                    DistroSeries.title.lower().like(term),
+                    DistroSeries.description.lower().like(term),
+                    DistroSeries.summary.lower().like(term))
+            where.append(search)
         parent_distributions = Select(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
-                child.previous_seriesID == parent.id))
-        terms = self.find_terms(
+                child.id == DistroSeriesParent.derived_series_id,
+                parent.id == DistroSeriesParent.parent_series_id))
+        where.append(
             DistroSeries.distributionID.is_in(parent_distributions))
+        terms = self.find_terms(where)
         if len(terms) == 0:
-            terms = self.find_terms(
-                DistroSeries.distribution != self.distribution)
+            where = []
+            if query is not None:
+                where.append(search)
+            where.append(DistroSeries.distribution != self.distribution)
+            terms = self.find_terms(where)
         return terms
-
-    @cachedproperty
-    def terms_by_value(self):
-        """Mapping of terms by value."""
-        return dict((term.value, term) for term in self.terms)
-
-    @cachedproperty
-    def terms_by_token(self):
-        """Mapping of terms by token."""
-        return dict((term.token, term) for term in self.terms)
-
-    def __iter__(self):
-        """Returns an iterator over the terms in the vocabulary.
-
-        See `IIterableVocabulary`.
-        """
-        return iter(self.terms)
-
-    def __len__(self):
-        """The number of terms.
-
-        See `IIterableVocabulary`.
-        """
-        return len(self.terms)
-
-    def getTerm(self, value):
-        """Return the `ITerm` object for the term 'value'.
-
-        See `IBaseVocabulary`.
-        """
-        try:
-            return self.terms_by_value[value]
-        except KeyError:
-            raise LookupError(value)
-
-    def __contains__(self, value):
-        """Return whether the value is available in this source.
-
-        See `ISource`.
-        """
-        return (value in self.terms_by_value)
-
-    def getTermByToken(self, token):
-        """See `IVocabularyTokenized`."""
-        try:
-            return self.terms_by_token[token]
-        except KeyError:
-            raise LookupError(token)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):

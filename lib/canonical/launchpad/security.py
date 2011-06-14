@@ -18,15 +18,9 @@ from zope.interface import Interface
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.launchpad import (
-    IHasDrivers,
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
-from lp.services.messages.interfaces.message import IMessage
 from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
@@ -38,8 +32,9 @@ from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
-from lp.app.security import(
+from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
     )
@@ -84,10 +79,6 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch,
-    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -110,10 +101,11 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceAdmin,
     IDistroSeriesDifferenceEdit,
     )
+from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
 from lp.registry.interfaces.entitlement import IEntitlement
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
@@ -127,6 +119,7 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklistSet,
     )
 from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -155,10 +148,15 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
+from lp.services.messages.interfaces.message import IMessage
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -985,6 +983,20 @@ class EditDistroSeriesParent(AuthorizationBase):
 class ViewCountry(AnonymousAuthorization):
     """Anyone can view a Country."""
     usedfor = ICountry
+
+
+class AdminDistroSeriesDifference(AuthorizationBase):
+    """You need to be an archive admin or LP admin to get lp.Admin."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroSeriesDifferenceAdmin
+
+    def checkAuthenticated(self, user):
+        # Archive admin is done by component, so here we just
+        # see if the user has that permission on any components
+        # at all.
+        archive = self.obj.derived_series.main_archive
+        return bool(
+            archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
 
 
 class EditDistroSeriesDifference(AuthorizationBase):
@@ -2505,38 +2517,6 @@ class EditArchivePermissionSet(AuthorizationBase):
         return user.in_admin or user.in_ubuntu_techboard
 
 
-class LinkOfficialSourcePackageBranches(AuthorizationBase):
-    """Who can source packages to their official branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = IMakeOfficialBranchLinks
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
-
-
-class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
-    """Who can change the links from source packages to their branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = ISeriesSourcePackageBranch
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
-
-
 class ViewPackageset(AnonymousAuthorization):
     """Anyone can view an IPackageset."""
     usedfor = IPackageset
@@ -2611,3 +2591,25 @@ class SetMessageVisibility(AuthorizationBase):
 
 class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
+
+
+class EditSourcePackage(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackage
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it."""
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        # checkUpload() returns the reason the user can't upload
+        # or None if they are allowed.
+        reason = distribution.main_archive.checkUpload(
+            user.person, self.obj.distroseries, self.obj.sourcepackagename,
+            component=None, pocket=PackagePublishingPocket.RELEASE,
+            strict_component=False)
+        return reason is None

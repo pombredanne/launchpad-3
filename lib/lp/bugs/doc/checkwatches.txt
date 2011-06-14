@@ -21,8 +21,7 @@ timeout and call the checkwatches cronscript machinery directly.
 First, we create some bug watches to test with:
 
     >>> from datetime import datetime
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.model.bugtracker import BugTracker

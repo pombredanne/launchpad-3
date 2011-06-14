@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -535,6 +535,12 @@
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
+            name="+portlet-subscription"
+            template="../templates/bug-portlet-subscription.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugView"
+            permission="launchpad.View"
             name="+portlet-subscribers"
             template="../templates/bug-portlet-subscribers.pt"/>
         <browser:page
@@ -813,6 +819,12 @@
             path_expression="name"
             attribute_to_parent="component_group"
             rootsite="bugs"/>
+        <browser:page
+            name="+edit"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
+            class="lp.bugs.browser.bugtracker.BugTrackerEditComponentView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             class="lp.bugs.browser.bugtracker.BugTrackerView"
@@ -823,6 +835,9 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/bugtracker-portlet-details.pt"/>
+            <browser:page
+                name="+portlet-components"
+                template="../templates/bugtracker-portlet-components.pt"/>
             <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
@@ -1238,5 +1253,25 @@
 
     <!-- Widgets -->
     <include package=".widgets"/>
+
+    <!-- batching -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view"
+        template="../templates/bugs-listing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-table-without-navlinks.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
+        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
+        permission="zope.Public" />
 
 </configure>

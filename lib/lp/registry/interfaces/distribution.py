@@ -53,10 +53,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -85,7 +81,11 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.services.fields import (
     Description,
     IconImageUpload,
@@ -157,7 +157,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -338,6 +338,11 @@ class IDistributionPublic(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
                       "on disk."),
+        readonly=True, required=False)
+
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
         readonly=True, required=False)
 
     def getArchiveIDList(archive=None):

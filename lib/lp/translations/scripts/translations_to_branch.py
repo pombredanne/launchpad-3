@@ -34,6 +34,10 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from lp.app.enums import ServiceUsage
+# Load the normal plugin set.
+import lp.codehosting
+from lp.code.errors import StaleLastMirrored
+from lp.code.interfaces.branch import get_db_branch_info
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError,
@@ -180,7 +184,6 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                     template.date_last_updated > changed_since):
                     yield pofile
 
-
     def _exportToBranch(self, source):
         """Export translations for source into source.translations_branch.
 
@@ -189,7 +192,17 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
         self.logger.info("Exporting %s." % source.title)
         self._checkForObjections(source)
 
-        committer = self._prepareBranchCommit(source.translations_branch)
+        try:
+            committer = self._prepareBranchCommit(source.translations_branch)
+        except StaleLastMirrored as e:
+            source.translations_branch.branchChanged(
+                **get_db_branch_info(**e.info))
+            self.logger.warning(
+                'Skipped %s due to stale DB info and scheduled scan.',
+                source.translations_branch.bzr_identity)
+            if self.txn:
+                self.txn.commit()
+            return
         self.logger.debug("Created DirectBranchCommit.")
         if self.txn:
             self.txn.commit()

@@ -45,8 +45,7 @@ We will use an arbitrary source package release from the sampledata.
 
 And the 'katie' celebrity as the user responsible for the transalation.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> katie = getUtility(ILaunchpadCelebrities).katie
 
 Before the final upload, we can see that the translation queue for the

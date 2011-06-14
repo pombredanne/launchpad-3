@@ -281,115 +281,17 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
-The authentication information gets added for private PPA
-dependencies. We'll create a private PPA and then update cprov's PPA,
-removing the dependency on Mark's public PPA and adding one for the
-new private PPA.
-
-    >>> private_ppa = factory.makeArchive(
-    ...     owner=mark, name='p3a', private=True, distribution=ubuntu)
-    >>> pub_binaries = test_publisher.getPubBinaries(
-    ...     binaryname='dep-bin', archive=private_ppa,
-    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> cprov.archive.removeArchiveDependency(mark.archive)
-    >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     private_ppa, PackagePublishingPocket.RELEASE,
-    ...     getUtility(IComponentSet)['main'])
 
-    >>> print_building_sources_list(a_build)
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://buildd:sekrit@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main
-    deb http://archive.launchpad.dev/ubuntu hoary
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-updates
-        main restricted universe multiverse
-
-Remove the private PPA dependency before continuing.
-
-    >>> cprov.archive.removeArchiveDependency(private_ppa)
-
-    >>> cprov.archive.external_dependencies is None
-    True
-    >>> cprov.archive.enabled
-    True
-
-What happens when we fake external dependencies?
+What when we supply invalid dependencies, an exception is raised.
 
     >>> cprov.archive.external_dependencies = (
     ...     "Malformed format string here --> %(series)")
-
-The error caused by the malformed format string is caught and the other
-dependencies are returned as normal.
-
-    >>> print_building_sources_list(a_build)
-    ERROR:root:Exception during external dependency processing:
     Traceback (most recent call last):
-      File ... in get_sources_list_for_building
-        {'series': distroarchseries.distroseries.name})
-    ValueError: incomplete format
-    <BLANKLINE>
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://archive.launchpad.dev/ubuntu hoary
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-updates
-        main restricted universe multiverse
-
-However, in order to avoid the problem going forward (and to allow the PPA
-owner to correct the external dependencies) the PPA will be disabled.
-
-    >>> cprov.archive.enabled
-    False
-
-Restore the 'external_dependencies' property to its original state and
-re-enable the PPA.
-
-    >>> cprov.archive.external_dependencies = None
-    >>> cprov.archive.enable()
-
-    >>> cprov.archive.external_dependencies is None
-    True
-    >>> cprov.archive.enabled
-    True
-
-What happens when we fake external dependencies?
-
-    >>> cprov.archive.external_dependencies = (
-    ...     "Malformed format string here --> %(series)")
-
-The error caused by the malformed format string is caught and the other
-dependencies are returned as normal.
-
-    >>> print_building_sources_list(a_build)
-    ERROR:root:Exception during external dependency processing:
-    Traceback (most recent call last):
-      File ... in get_sources_list_for_building
-        {'series': distroarchseries.distroseries.name})
-    ValueError: incomplete format
-    <BLANKLINE>
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://archive.launchpad.dev/ubuntu hoary
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://archive.launchpad.dev/ubuntu hoary-updates
-        main restricted universe multiverse
-
-However, in order to avoid the problem going forward (and to allow the PPA
-owner to correct the external dependencies) the PPA will be disabled.
-
-    >>> cprov.archive.enabled
-    False
-
-Restore the 'external_dependencies' property to its original state and
-re-enable the PPA.
-
-    >>> cprov.archive.external_dependencies = None
-    >>> cprov.archive.enable()
+    InvalidExternalDependencies: (InvalidExternalDependencies(...),
+    "Invalid external dependencies:\nMalformed format string here
+    --> %(series): Must start with 'deb'\nMalformed format string here
+    --> %(series): Invalid URL\n")
 
 
 == Overriding default primary archive dependencies ==
@@ -576,3 +478,31 @@ Now builds in Celso's PPA will use the external dependencies.
         main restricted universe multiverse
     deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
+
+
+== Overlays ==
+
+An overlay distroseries is a derived distribution which works like a PPA.
+This means that the parent's details gets added to the sources.list passed to
+the builders.
+
+    >>> depdistro = factory.makeDistribution('depdistro',
+    ...     publish_base_url=u'http://archive.launchpad.dev/')
+    >>> depseries = factory.makeDistroSeries(
+    ...     name='depseries', distribution=depdistro)
+    >>> deparchseries = factory.makeDistroArchSeries(
+    ...     distroseries = depseries, architecturetag = 'i386')
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> dsp = factory.makeDistroSeriesParent(
+    ...     derived_series=hoary, parent_series=depseries,
+    ...     initialized=True, is_overlay=True,
+    ...     pocket=PackagePublishingPocket.SECURITY,
+    ...     component=universe_component)
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.1', archive=hoary.main_archive)
+    >>> [hoary_build] = pub_source.createMissingBuilds()
+    >>> print_building_sources_list(hoary_build)
+    deb http://archive.launchpad.dev/ubuntu hoary main
+    deb http://archive.launchpad.dev/depdistro depseries main universe
+    deb http://archive.launchpad.dev/depdistro depseries-security
+        main universe

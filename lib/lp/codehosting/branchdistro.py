@@ -28,7 +28,6 @@ import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -347,7 +346,7 @@ class DistroBrancher:
             old_db_branch.registrant)
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
-            getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
+            new_db_branch.owner)
         old_db_branch.lifecycle_status = BranchLifecycleStatus.MATURE
         # switch_branches *moves* the data to locations dependent on the
         # new_branch's id, so if the transaction was rolled back we wouldn't

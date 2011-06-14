@@ -24,7 +24,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     IMessageApprovalSet,

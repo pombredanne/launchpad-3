@@ -75,15 +75,15 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
+from canonical.launchpad import (
+    _,
+    searchbuilder,
+    )
 from canonical.launchpad.browser.feeds import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -99,22 +99,25 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    vocabulary_to_choice_edit_items,
+    )
 from lp.app.errors import NotFoundError
-from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -122,7 +125,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,

@@ -37,9 +37,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    )
+from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import (
     cursor,
     quote,
@@ -47,8 +45,8 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
@@ -81,9 +79,7 @@ from lp.translations.model.translationmessage import (
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
-from lp.translations.utilities.validate import (
-    validate_translation,
-    )
+from lp.translations.utilities.validate import validate_translation
 
 # Msgids that indicate translation credit messages, and their
 # contexts and type.
