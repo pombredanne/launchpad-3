@@ -163,6 +163,22 @@ def get_string_matcher(exact_match=False):
         return match_substring
 
 
+def strip_duplicates(sequence):
+    """Remove duplicates from `sequence`, preserving order.
+
+    Optimized for very short sequences.  Do not use with large data.
+
+    :param sequence: An iterable of comparable items.
+    :return: A list of the unique items in `sequence`, in the order in which
+        they first occur there.
+    """
+    result = []
+    for item in sequence:
+        if item not in result:
+            result.append(item)
+    return result
+
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -1460,7 +1476,15 @@ class PackageUploadSet:
                     BinaryPackageName.id,
                 match_column(LibraryFileAlias.filename, name)))
 
-        query = store.using(*joins).find(
+        if version is not None and version != '':
+            joins.append(source_join)
+            joins.append(spr_join)
+
+            clauses.append(Or(
+                match_column(SourcePackageRelease.version, version),
+                ))
+
+        query = store.using(*strip_duplicates(joins)).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
             *clauses)
