@@ -80,7 +80,7 @@ try:
     import html5browser
     # Hush lint.
     html5browser
-except AttributeError:
+except ImportError:
     html5browser = None
 
 from bzrlib import trace
