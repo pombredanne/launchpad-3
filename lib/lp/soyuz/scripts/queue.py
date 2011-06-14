@@ -24,8 +24,8 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackageUploadStatus
@@ -120,7 +120,7 @@ class QueueAction:
         distroset = getUtility(IDistributionSet)
         try:
             self.distribution = distroset[self.distribution_name]
-        except NotFoundError, info:
+        except NotFoundError:
             self.distribution = distroset['ubuntu']
 
         if self.suite_name:
@@ -129,8 +129,8 @@ class QueueAction:
             try:
                 self.distroseries, self.pocket = (
                     self.distribution.getDistroSeriesAndPocket(
-                    self.suite_name))
-            except NotFoundError, info:
+                        self.suite_name))
+            except NotFoundError:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
                                           self.suite_name))
@@ -539,7 +539,7 @@ class QueueActionOverride(QueueAction):
         # ("source" or "binary").
         try:
             override_stanza = self.terms[0]
-        except IndexError, info:
+        except IndexError:
             self.displayUsage('Missing override_stanza.')
             return
 
