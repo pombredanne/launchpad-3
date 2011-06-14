@@ -1393,21 +1393,26 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
+        # Collect the joins here, table first.  Don't worry about
+        # duplicates; we filter out repetitions at the end.
         joins = [PackageUpload]
-        clauses = []
+
+        # Collection "WHERE" conditions here.
+        conditions = []
+
         if created_since_date is not None:
-            clauses.append(PackageUpload.date_created > created_since_date)
+            conditions.append(PackageUpload.date_created > created_since_date)
 
         if status is not None:
             status = dbitem_tuple(status)
-            clauses.append(PackageUpload.status.is_in(status))
+            conditions.append(PackageUpload.status.is_in(status))
 
         archives = distroseries.distribution.getArchiveIDList(archive)
-        clauses.append(PackageUpload.archiveID.is_in(archives))
+        conditions.append(PackageUpload.archiveID.is_in(archives))
 
         if pocket is not None:
             pocket = dbitem_tuple(pocket)
-            clauses.append(PackageUpload.pocket.is_in(pocket))
+            conditions.append(PackageUpload.pocket.is_in(pocket))
 
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
@@ -1435,40 +1440,34 @@ class PackageUploadSet:
             PackageUploadBuild.packageuploadID == PackageUpload.id)
 
         if name is not None and name != '':
-            # Join in any attached PackageCopyJob with the right
-            # package name.
-            joins.append(package_copy_job_join)
-
-            # Join in any attached PackageUploadSource with attached
-            # SourcePackageRelease with the right SourcePackageName.
-            joins.append(LeftJoin(
+            spn_join = LeftJoin(
                 SourcePackageName,
-                match_column(SourcePackageName.name, name)))
-            joins.append(source_join)
-            joins.append(spr_join)
-
-            # Join in any attached PackageUploadBuild with attached
-            # BinaryPackageRelease with the right BinaryPackageName.
-            joins.append(LeftJoin(
+                match_column(SourcePackageName.name, name))
+            bpn_join = LeftJoin(
                 BinaryPackageName,
-                match_column(BinaryPackageName.name, name)))
-            joins.append(build_join)
-            joins.append(bpr_join)
-
-            # Join in any attached PackageUploadCustom with attached
-            # LibraryFileAlias with the right filename.
-            joins.append(LeftJoin(
+                match_column(BinaryPackageName.name, name))
+            custom_join = LeftJoin(
                 PackageUploadCustom,
-                PackageUploadCustom.packageuploadID == PackageUpload.id))
-            joins.append(LeftJoin(
+                PackageUploadCustom.packageuploadID == PackageUpload.id)
+            file_join = LeftJoin(
                 LibraryFileAlias, And(
                     LibraryFileAlias.id ==
-                        PackageUploadCustom.libraryfilealiasID,
-                    match_column(LibraryFileAlias.filename, name))))
+                        PackageUploadCustom.libraryfilealiasID))
 
-            # One of these attached items (for that package we're
-            # looking for) must exist.
-            clauses.append(Or(
+            joins += [
+                package_copy_job_join,
+                spn_join,
+                source_join,
+                spr_join,
+                bpn_join,
+                build_join,
+                bpr_join,
+                custom_join,
+                file_join,
+                ]
+
+            # One of these attached items must have a matching name.
+            conditions.append(Or(
                 match_column(PackageCopyJob.package_name, name),
                 SourcePackageRelease.sourcepackagenameID ==
                     SourcePackageName.id,
@@ -1477,17 +1476,22 @@ class PackageUploadSet:
                 match_column(LibraryFileAlias.filename, name)))
 
         if version is not None and version != '':
-            joins.append(source_join)
-            joins.append(spr_join)
+            joins += [
+                source_join,
+                spr_join,
+                build_join,
+                bpr_join,
+                ]
 
-            clauses.append(Or(
+            # One of these attached items must have a matching version.
+            conditions.append(Or(
                 match_column(SourcePackageRelease.version, version),
                 ))
 
         query = store.using(*strip_duplicates(joins)).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
-            *clauses)
+            *conditions)
         query = query.order_by(Desc(PackageUpload.id))
         return query.config(distinct=True)
 
