@@ -132,7 +132,8 @@ def match_exact_string(haystack, needle):
     :param haystack: A database column being matched.
         Storm database column.
     :param needle: The string you're looking for.
-    :return: True for a match, False otherwise.
+    :return: A Storm expression that returns True for a match or False for a
+        non-match.
     """
     return haystack == needle
 
@@ -144,7 +145,8 @@ def match_substring(haystack, needle):
 
     :param haystack: A database column being matched.
     :param needle: The string you're looking for.
-    :return: True for a match, False otherwise.
+    :return: A Storm expression that returns True for a match or False for a
+        non-match.
     """
     return haystack.contains_string(needle)
 
