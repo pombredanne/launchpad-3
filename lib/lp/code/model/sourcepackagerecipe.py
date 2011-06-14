@@ -46,11 +46,11 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild

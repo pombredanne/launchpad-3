@@ -589,14 +589,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive, policy=None):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
 
         :param distroseries: The `IDistroSeries` to copy the source
             publication into.
         :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
-        :param policy: The `IOverridePolicy` to apply to the copy.
+        :param overrides: A tuple of override data as returned from a
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.

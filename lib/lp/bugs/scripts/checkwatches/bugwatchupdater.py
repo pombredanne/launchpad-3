@@ -15,10 +15,9 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
@@ -30,6 +29,7 @@ from lp.bugs.scripts.checkwatches.utilities import (
     get_remote_system_oops_properties,
     )
 from lp.registry.interfaces.person import PersonCreationRationale
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 class BugWatchUpdater(WorkingBase):

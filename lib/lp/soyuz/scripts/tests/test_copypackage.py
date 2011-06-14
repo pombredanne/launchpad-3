@@ -7,6 +7,7 @@ import datetime
 import os
 import subprocess
 import sys
+from textwrap import dedent
 import unittest
 
 import pytz
@@ -14,6 +15,7 @@ from testtools.content import text_content
 from testtools.matchers import (
     Equals,
     LessThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -28,6 +30,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.archivepublisher.utils import get_ppa_reference
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -39,6 +42,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -80,10 +84,13 @@ from lp.soyuz.scripts.packagecopier import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -1376,6 +1383,107 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
+
+    def test_copy_with_override(self):
+        # Test the override parameter for do_copy and by extension
+        # _do_direct_copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        dsp = self.factory.makeDistroSeriesParent()
+        target_archive = dsp.derived_series.main_archive
+        override = SourceOverride(
+            source.sourcepackagerelease.sourcepackagename,
+            self.factory.makeComponent(),
+            self.factory.makeSection())
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
+        self.layer.txn.commit()
+        self.layer.switchDbUser('archivepublisher')
+        [copied_source] = do_copy(
+            [source], target_archive, dsp.derived_series, source.pocket,
+            check_permissions=False, overrides=[override])
+
+        matcher = MatchesStructure(
+            component=Equals(override.component),
+            section=Equals(override.section))
+        self.assertThat(copied_source, matcher)
+
+    def test_copy_ppa_generates_notification(self):
+        # When a copy into a PPA is performed, a notification is sent.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=True)
+        [notification] = pop_notifications()
+        self.assertEquals(
+            get_ppa_reference(target_archive),
+            notification['X-Launchpad-PPA'])
+        self.assertIn(
+            source.sourcepackagerelease.changelog_entry,
+            notification.as_string())
+
+    def test_copy_generates_notification(self):
+        # When a copy into a primary archive is performed, a notification is
+        # sent.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        nobby.changeslist = 'nobby-changes@example.com'
+        [copied_source] = do_copy(
+            [source], archive, nobby, source.pocket, False,
+            person=source.sourcepackagerelease.creator,
+            check_permissions=False, send_email=True)
+        [notification, announcement] = pop_notifications()
+        self.assertEquals(
+            'Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEquals('nobby-changes@example.com', announcement['To'])
+        for mail in (notification, announcement):
+            self.assertEquals(
+                '[ubuntutest/nobby] foo 1.0-2 (Accepted)', mail['Subject'])
+        expected_text = dedent("""
+            * Foo!
+
+            Date: %s
+            Changed-By: Foo Bar <foo.bar@canonical.com>
+            http://launchpad.dev/ubuntutest/breezy-autotest/+source/foo/1.0-2
+            """ % source.sourcepackagerelease.dateuploaded)
+        self.assertIn(expected_text, notification.as_string())
+        self.assertIn(expected_text, announcement.as_string())
+
+    def test_copy_does_not_generate_notification(self):
+        # When notify = False is passed to do_copy, no notification is
+        # generated.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        target_archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest)
+        [copied_source] = do_copy(
+            [source], target_archive, nobby, source.pocket, False,
+            person=target_archive.owner, check_permissions=False,
+            send_email=False)
+        self.assertEquals([], pop_notifications())
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):

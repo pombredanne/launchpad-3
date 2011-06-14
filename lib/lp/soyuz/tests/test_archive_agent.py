@@ -5,9 +5,9 @@
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.testing import (
     login,

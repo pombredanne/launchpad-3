@@ -8,7 +8,10 @@ from datetime import datetime
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.interface import providedBy
@@ -28,7 +31,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -39,6 +41,7 @@ from canonical.testing.layers import (
     reconnect_stores,
     )
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
@@ -373,6 +376,64 @@ class TestPerson(TestCaseWithFactory):
         other = self.factory.makePerson()
         with person_logged_in(person):
             self.assertRaises(Unauthorized, getattr, other, 'canWrite')
+
+    def makeSubscribedDistroSourcePackages(self):
+        # Create a person, a distribution and four
+        # DistributionSourcePacakage. Subscribe the person to two
+        # DSPs, and subscribe another person to another DSP.
+        user = self.factory.makePerson()
+        distribution = self.factory.makeDistribution()
+        dsp1 = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='sp-b', distribution=distribution)
+        distribution = self.factory.makeDistribution()
+        dsp2 = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='sp-a', distribution=distribution)
+        dsp3 = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='sp-c', distribution=distribution)
+        with person_logged_in(user):
+            dsp1.addSubscription(user, subscribed_by=user)
+            dsp2.addSubscription(user, subscribed_by=user)
+        dsp4 = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='sp-d', distribution=distribution)
+        other_user = self.factory.makePerson()
+        with person_logged_in(other_user):
+            dsp4.addSubscription(other_user, subscribed_by=other_user)
+        return user, dsp1, dsp2
+
+    def test_getBugSubscriberPackages(self):
+        # getBugSubscriberPackages() returns the DistributionSourcePackages
+        # to which a user is subscribed.
+        user, dsp1, dsp2 = self.makeSubscribedDistroSourcePackages()
+
+        # We cannot directly compare the objects returned by
+        # getBugSubscriberPackages() with the expected DSPs:
+        # These are different objects and the class does not have
+        # an __eq__ operator. So we compare the attributes distribution
+        # and sourcepackagename.
+
+        def get_distribution(dsp):
+            return dsp.distribution
+
+        def get_spn(dsp):
+            return dsp.sourcepackagename
+
+        result = user.getBugSubscriberPackages()
+        self.assertEqual(
+            [get_distribution(dsp) for dsp in (dsp2, dsp1)],
+            [get_distribution(dsp) for dsp in result])
+        self.assertEqual(
+            [get_spn(dsp) for dsp in (dsp2, dsp1)],
+            [get_spn(dsp) for dsp in result])
+
+    def test_getBugSubscriberPackages__one_query(self):
+        # getBugSubscriberPackages() retrieves all objects
+        # needed to build the DistributionSourcePackages in
+        # one SQL query.
+        user, dsp1, dsp2 = self.makeSubscribedDistroSourcePackages()
+        Store.of(user).invalidate()
+        with StormStatementRecorder() as recorder:
+            list(user.getBugSubscriberPackages())
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 class TestPersonStates(TestCaseWithFactory):

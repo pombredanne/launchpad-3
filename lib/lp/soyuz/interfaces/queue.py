@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,10 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
-
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -44,8 +41,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-
 from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -139,6 +136,12 @@ class IPackageUpload(Interface):
                             "associated with this upload")
 
     signing_key = Attribute("Changesfile Signing Key.")
+
+    package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Package Copy Job"), required=False, readonly=True)
+
     archive = exported(
         Reference(
             # Really IArchive, patched in _schema_circular_imports.py
@@ -199,14 +202,6 @@ class IPackageUpload(Interface):
         on all the binarypackagerelease records arising from the build.
         """)
 
-    def isAutoSyncUpload(changed_by_email):
-        """Return True if this is a (Debian) auto sync upload.
-
-        Sync uploads are source-only, unsigned and not targeted to
-        the security pocket.  The Changed-By field is also the Katie
-        user (archive@ubuntu.com).
-        """
-
     def setNew():
         """Set queue state to NEW."""
 
@@ -246,7 +241,7 @@ class IPackageUpload(Interface):
             has no sources associated to it.
         """
 
-    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+    def acceptFromQueue(logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email.
 
          * Grant karma to people involved with the upload.
@@ -288,14 +283,11 @@ class IPackageUpload(Interface):
         committed to have some updates actually written to the database.
         """
 
-    def notify(announce_list=None, summary_text=None,
-        changes_file_object=None, logger=None):
+    def notify(summary_text=None, changes_file_object=None, logger=None):
         """Notify by email when there is a new distroseriesqueue entry.
 
         This will send new, accept, announce and rejection messages as
         appropriate.
-
-        :param announce_list: The email address of the distro announcements
 
         :param summary_text: Any additional text to append to the auto-
             generated summary.  This is also the only text used if there is
@@ -360,7 +352,6 @@ class IPackageUploadBuild(Interface):
             title=_("ID"), required=True, readonly=True,
             )
 
-
     packageupload = Int(
             title=_("PackageUpload"), required=True,
             readonly=False,
@@ -396,7 +387,6 @@ class IPackageUploadSource(Interface):
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
-
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,
@@ -608,7 +598,8 @@ class IPackageUploadSet(Interface):
         """
 
     def getAll(distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None,
+               name_filter=None):
         """Get package upload records for a series with optional filtering.
 
         :param created_since_date: If specified, only returns items uploaded
@@ -617,6 +608,10 @@ class IPackageUploadSet(Interface):
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name_filter: Filter results by this package or file name
+            prefix.  Passing 'a' will pass a source upload for source package
+            'ax', a build upload for binary package 'aardvark', a custom
+            upload of file 'app', and so on.
         :return: A result set containing `IPackageUpload`s
         """
 
@@ -636,6 +631,13 @@ class IPackageUploadSet(Interface):
 
     def getSourceBySourcePackageReleaseIDs(spr_ids):
         """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
+
+    def getByPackageCopyJobIDs(pcj_ids):
+        """Return `PackageUpload`s using `PackageCopyJob`s.
+
+        :param pcj_ids: A list of `PackageCopyJob` IDs.
+        :return: all the `PackageUpload`s that reference the supplied IDs.
+        """
 
 
 class IHasQueueItems(Interface):

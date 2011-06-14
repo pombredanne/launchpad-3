@@ -1214,7 +1214,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Is this person is a member or the owner of `team`?
+        """Is this person is a member of `team`?
 
         Returns `True` when you ask if an `IPerson` (or an `ITeam`,
         since it inherits from `IPerson`) is a member of himself

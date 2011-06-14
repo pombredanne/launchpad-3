@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """queue tool base class tests."""
@@ -10,10 +10,7 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
@@ -23,9 +20,7 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.librarian.testing.server import (
-    fillLibrarianFile,
-    )
+from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -54,15 +49,11 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
-    )
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
     )
 from lp.soyuz.scripts.queue import (
     CommandRunner,
@@ -91,10 +82,9 @@ class TestQueueBase(TestCase):
         self.test_output.append(text)
 
     def execute_command(self, argument, queue_name='new', no_mail=True,
-                        distribution_name='ubuntu',announcelist=None,
-                        component_name=None, section_name=None,
-                        priority_name=None, suite_name='breezy-autotest',
-                        quiet=True):
+                        distribution_name='ubuntu', component_name=None,
+                        section_name=None, priority_name=None,
+                        suite_name='breezy-autotest', quiet=True):
         """Helper method to execute a queue command.
 
         Initialise output buffer and execute a command according
@@ -105,7 +95,7 @@ class TestQueueBase(TestCase):
         self.test_output = []
         queue = name_queue_map[queue_name]
         runner = CommandRunner(
-            queue, distribution_name, suite_name, announcelist, no_mail,
+            queue, distribution_name, suite_name, no_mail,
             component_name, section_name, priority_name,
             display=self._test_display)
 
@@ -207,8 +197,8 @@ class TestQueueTool(TestQueueBase):
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
         queue_size = getUtility(IPackageUploadSet).count(
-            status=PackageUploadStatus.NEW,
-            distroseries=bat, pocket= PackagePublishingPocket.RELEASE)
+            status=PackageUploadStatus.NEW, distroseries=bat,
+            pocket=PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
         # was passed.
@@ -515,7 +505,7 @@ class TestQueueTool(TestQueueBase):
         # Ensure it is what we expect.
         target_queue = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.UNAPPROVED,
-            pocket= PackagePublishingPocket.BACKPORTS)[0]
+            pocket=PackagePublishingPocket.BACKPORTS)[0]
         self.assertEqual(10, target_queue.id)
 
         # Ensure breezy-autotest is set.
@@ -998,7 +988,7 @@ class TestQueueToolInJail(TestQueueBase):
     def _getsha1(self, filename):
         """Return a sha1 hex digest of a file"""
         file_sha = hashlib.sha1()
-        opened_file = open(filename,"r")
+        opened_file = open(filename, "r")
         for chunk in filechunks(opened_file):
             file_sha.update(chunk)
         opened_file.close()
@@ -1044,7 +1034,7 @@ class TestQueueToolInJail(TestQueueBase):
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
         # clobber the existing file, fetch it again and expect an exception
-        f = open(self._listfiles()[0],"w")
+        f = open(self._listfiles()[0], "w")
         f.write(CLOBBERED)
         f.close()
 
@@ -1052,7 +1042,7 @@ class TestQueueToolInJail(TestQueueBase):
             CommandRunnerError, self.execute_command, 'fetch 1')
 
         # make sure the file has not changed
-        f = open(self._listfiles()[0],"r")
+        f = open(self._listfiles()[0], "r")
         line = f.read()
         f.close()
 
@@ -1106,7 +1096,3 @@ class TestQueueToolInJail(TestQueueBase):
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes', 'netapplet-1.0.0.tar.gz'],
             files)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -15,7 +15,7 @@ class FormNamespaceView(view):
 
     # Use a class variable for the template so that it does not need
     # to be created during the traverse.
-    template = ViewPageTemplateFile('../templates/launchpad-form-body.pt')
+    template = ViewPageTemplateFile('templates/launchpad-form-body.pt')
 
     def traverse(self, name, ignored):
         """Form traversal adapter.

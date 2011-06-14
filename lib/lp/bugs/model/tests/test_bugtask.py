@@ -13,7 +13,6 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -24,6 +23,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -1027,7 +1027,8 @@ class BugTaskSetSearchTest(TestCaseWithFactory):
         with person_logged_in(blueprint2.owner):
             blueprint2.linkBug(bug2)
         self.factory.makeBug()
-        params = BugTaskSearchParams(user=None, linked_blueprints=blueprint1.id)
+        params = BugTaskSearchParams(
+            user=None, linked_blueprints=blueprint1.id)
         tasks = set(getUtility(IBugTaskSet).search(params))
         self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
@@ -1384,3 +1385,66 @@ class TestBugTaskContributor(TestCaseWithFactory):
         self.assertEqual(person.displayname, result['person_name'])
         self.assertEqual(
             bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+
+class TestConjoinedBugTasks(TestCaseWithFactory):
+    """Tests for conjoined bug task functionality."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestConjoinedBugTasks, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.distro = self.factory.makeDistribution(
+            name="eggs", owner=self.owner, bug_supervisor=self.owner)
+        distro_release = self.factory.makeDistroRelease(
+            distribution=self.distro, registrant=self.owner)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=distro_release)
+        bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=source_package.sourcepackagename,
+            owner=self.owner)
+        with person_logged_in(self.owner):
+            nomination = bug.addNomination(self.owner, distro_release)
+            nomination.approve(self.owner)
+            self.generic_task, self.series_task = bug.bugtasks
+
+    def test_editing_generic_status_reflects_upon_conjoined_master(self):
+        # If a change is made to the status of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, self.series_task.status)
+
+    def test_editing_generic_importance_reflects_upon_conjoined_master(self):
+        # If a change is made to the importance of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, self.owner)
+            self.assertEqual(
+                BugTaskImportance.HIGH, self.series_task.importance)
+
+    def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
+        # If a change is made to the assignee of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToAssignee(self.owner)
+            self.assertEqual(
+                self.owner, self.series_task.assignee)
+
+    def test_editing_generic_package_reflects_upon_conjoined_master(self):
+        # If a change is made to the source package of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        source_package_name = self.factory.makeSourcePackageName("ham")
+        with person_logged_in(self.owner):
+            self.generic_task.sourcepackagename = source_package_name
+            self.assertEqual(
+                source_package_name, self.series_task.sourcepackagename)

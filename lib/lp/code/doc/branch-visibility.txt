@@ -114,8 +114,7 @@ special.  Launchpad administrators often have a need to see private
 Launchpad things in order to fix up fubars by users.
 
     >>> mark = person_set.getByName('mark')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
     >>> mark.inTeam(lp_admins)
     True
