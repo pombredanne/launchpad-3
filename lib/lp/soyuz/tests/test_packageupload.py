@@ -648,7 +648,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
             upload_set.getAll(
                 distroseries, version=version, exact_match=True))
 
-    def test_getAll_with_exact_match_does_not_match_substring_of_version(self):
+    def test_getAll_w_exact_match_does_not_match_substring_of_version(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         version = upload.displayversion[1:-1]
