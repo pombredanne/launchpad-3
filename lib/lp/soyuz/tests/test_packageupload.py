@@ -620,24 +620,54 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, version=other_version))
 
-    def test_getAll_matches_copy_job_upload_by_version(self):
+    def test_getAll_version_filter_ignores_copy_job_uploads(self):
+        # Version match for package copy jobs is not implemented at the
+        # moment.
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeCopyJobPackageUpload(distroseries)
         version = upload.package_copy_job.package_version
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, version=version))
+            [], upload_set.getAll(distroseries, version=version))
 
-    def test_getAll_filters_copy_job_upload_by_version(self):
+    def test_getAll_without_exact_match_matches_substring_of_version(self):
         distroseries = self.factory.makeDistroSeries()
-        self.factory.makeCopyJobPackageUpload(distroseries)
-        other_version = self.factory.getUniqueUnicode()
+        upload = self.factory.makeSourcePackageUpload(distroseries)
+        version = upload.displayversion[1:-1]
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, version=other_version))
+            [upload], upload_set.getAll(distroseries, version=version))
 
-# XXX: TODO: Test exact match vs. substring match
-# XXX: TODO: Test that version & name filters combine.
+    def test_getAll_with_exact_match_matches_exact_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeSourcePackageUpload(distroseries)
+        version = upload.displayversion
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(
+                distroseries, version=version, exact_match=True))
+
+    def test_getAll_with_exact_match_does_not_match_substring_of_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeSourcePackageUpload(distroseries)
+        version = upload.displayversion[1:-1]
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [],
+            upload_set.getAll(
+                distroseries, version=version, exact_match=True))
+
+    def test_getAll_can_combine_version_and_name_filters(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        upload = self.factory.makeSourcePackageUpload(
+            distroseries, sourcepackagename=spn)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload],
+            upload_set.getAll(
+                distroseries, name=spn.name, version=upload.displayversion))
 
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
