@@ -23,6 +23,7 @@ __all__ = [
 
 import apt_pkg
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -638,6 +639,29 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     label = 'Initialize series'
     page_title = label
 
+    def initialize(self):
+        super(DistroSeriesInitializeView, self).initialize()
+        cache = IJSONRequestCache(self.request).objects
+        distribution = self.context.distribution
+        is_first_derivation = not distribution.has_published_sources
+        cache['is_first_derivation'] = is_first_derivation
+        if not is_first_derivation:
+            def vocabularyValue(series):
+                # Format the series fields like the series vocabulary
+                # picker would do.
+                return {
+                    'value': series.id,
+                    'title': '%s: %s'
+                        % (series.distribution.displayname, series.title),
+                    'api_uri': canonical_url(
+                        series, path_only_if_possible=True)}
+
+            cache['previous_series'] = vocabularyValue(
+                self.context.previous_series)
+            previous_parents = self.context.previous_series.getParentSeries()
+            cache['previous_parents'] = [
+                vocabularyValue(series) for series in previous_parents]
+
     @action(u"Initialize Series", name='initialize')
     def submit(self, action, data):
         """Stub for the Javascript in the page to use."""
@@ -668,13 +692,6 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return (
             self.is_derived_series_feature_enabled and
             self.context.isInitializing())
-
-    @property
-    def rebuilding_allowed(self):
-        """If the distribution has got any initialized series already,
-        rebuilding is not allowed.
-        """
-        return not self.context.distribution.has_published_sources
 
     @property
     def next_url(self):
