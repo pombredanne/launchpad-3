@@ -1,12 +1,9 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.security.proxy import removeSecurityProxy
 from storm.store import Store
-from lp.soyuz.interfaces.component import IComponentSet
 from zope.component import getUtility
-from lp.soyuz.model.component import ComponentSelection
-from lp.registry.interfaces.person import IPersonSet
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.utils import get_ppa_reference
@@ -18,6 +15,8 @@ from lp.soyuz.adapters.notification import (
     person_to_email,
     notify,
     )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,

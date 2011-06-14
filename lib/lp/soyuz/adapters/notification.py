@@ -354,8 +354,8 @@ def send_mail(
     debug(logger, "  Subject: %s" % subject)
     debug(logger, "  Sender: %s" % from_addr)
     debug(logger, "  Recipients: %s" % recipients)
-    if extra_headers.has_key('Bcc'):
-       debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
+    if 'Bcc' in extra_headers:
+        debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
     debug(logger, "  Body:")
     for line in mail_text.splitlines():
         debug(logger, line)
