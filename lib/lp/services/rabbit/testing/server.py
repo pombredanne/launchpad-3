@@ -11,6 +11,7 @@ __all__ = [
 
 import os
 import re
+import signal
 import socket
 import subprocess
 import time
@@ -64,6 +65,12 @@ RABBITBIN = "/usr/lib/rabbitmq/bin"
 #     chan.close()
 #     conn.close()
 #     return True
+
+
+def preexec_fn():
+    # Revert Python's handling of SIGPIPE. See
+    # http://bugs.python.org/issue1652 for more info.
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
 def allocate_ports(n=1):
@@ -163,7 +170,8 @@ class RabbitServerEnvironment(Fixture):
         env = dict(os.environ, HOME=self.config.homedir)
         ctl = subprocess.Popen(
             (ctlbin, "-n", nodename, command), env=env,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            preexec_fn=preexec_fn)
         outstr, errstr = ctl.communicate()
         if strip:
             return outstr.strip(), errstr.strip()
@@ -255,7 +263,8 @@ class RabbitServerRunner(Fixture):
             with open(os.devnull, "rb") as devnull:
                 self.process = subprocess.Popen(
                     [cmd], stdin=devnull, stdout=logfile, stderr=logfile,
-                    close_fds=True, cwd=self.config.homedir, env=env)
+                    close_fds=True, cwd=self.config.homedir, env=env,
+                    preexec_fn=preexec_fn)
         self.addDetail(
             os.path.basename(self.config.logfile),
             content_from_file(self.config.logfile))
