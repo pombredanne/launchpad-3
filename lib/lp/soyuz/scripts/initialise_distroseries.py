@@ -135,8 +135,7 @@ class InitialiseDistroSeries:
         self._checkSeries()
 
     def _checkParents(self):
-        """If self.first_derivation, the parents list cannot be empty.
-        """
+        """If self.first_derivation, the parents list cannot be empty."""
         if self.first_derivation:
             # Use-case #1.
             if len(self.parent_ids) == 0:
