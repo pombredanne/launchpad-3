@@ -198,10 +198,12 @@ class TestQueueItemsView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def makeView(self, distroseries, user, form):
+        """Create a queue view."""
         return create_initialized_view(
             distroseries, name='+queue', principal=user)
 
     def makeCopyJobUpload(self, distroseries, component):
+        """Create a `PackageUpload` with a `PackageCopyJob`."""
         job = self.factory.makePlainPackageCopyJob(
             target_distroseries=distroseries)
         job.addSourceOverride(SourceOverride(
