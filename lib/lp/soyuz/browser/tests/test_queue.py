@@ -1,13 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
 
 __metaclass__ = type
-__all__ = [
-    'TestAcceptPartnerArchive',
-    'test_suite',
-    ]
 
 import transaction
 from zope.component import (
@@ -20,9 +16,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
@@ -85,7 +79,6 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             distribution.getArchiveByComponent('partner'),
             self.partner_queue_admin, self.partner_spr.component)
 
-
         # We need to commit to ensure the changes file exists in the
         # librarian.
         transaction.commit()
@@ -111,7 +104,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',
@@ -148,7 +141,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',
@@ -166,7 +159,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',

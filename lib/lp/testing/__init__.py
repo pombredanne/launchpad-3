@@ -163,7 +163,6 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
-from lp.testing.matchers import Provides
 from lp.testing.windmill import (
     constants,
     lpuser,
@@ -390,6 +389,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
+        from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
