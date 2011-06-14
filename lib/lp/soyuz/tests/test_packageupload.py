@@ -559,7 +559,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
     def test_getAll_with_exact_match_does_not_match_substring_of_name(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
-        upload = self.factory.makeSourcePackageUpload(
+        self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
         partial_name = spn.name[:-1]
         upload_set = getUtility(IPackageUploadSet)

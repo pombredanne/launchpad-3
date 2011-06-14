@@ -1402,7 +1402,7 @@ class PackageUploadSet:
         match_column = get_string_matcher(exact_match)
 
         package_copy_job_join = LeftJoin(
-            PackageCopyJob, 
+            PackageCopyJob,
             PackageCopyJob.id == PackageUpload.package_copy_job_id)
         source_join = LeftJoin(
             PackageUploadSource,
@@ -1459,7 +1459,7 @@ class PackageUploadSet:
                 BinaryPackageRelease.binarypackagenameID ==
                     BinaryPackageName.id,
                 match_column(LibraryFileAlias.filename, name)))
-                
+
         query = store.using(*joins).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
