@@ -133,7 +133,7 @@ an implementation of ISearchResult.
     True
 
 The title and summary attributes contain the same text that
-initialised the object.
+initialized the object.
 
     >>> page_match.title
     u'Unicode Titles in Launchpad'

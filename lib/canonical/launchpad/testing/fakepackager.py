@@ -318,7 +318,7 @@ class FakePackager:
     def buildVersion(self, version, changelog_text="nicht !",
                      suite='hoary', section=None, arch=None, author='Foo Bar',
                      email='foo.bar@canonical.com', timestamp=None):
-        """Initialise a new version of extracted package."""
+        """Initialize a new version of extracted package."""
         assert version.startswith(self.version), (
             'New versions should start with the upstream version: %s ' % (
                 self.version))

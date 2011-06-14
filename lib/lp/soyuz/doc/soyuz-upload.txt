@@ -561,7 +561,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   >>> print stdout
   <BLANKLINE>
   >>> print stderr
-  DEBUG   Initialising zopeless.
+  DEBUG   Initializing zopeless.
   DEBUG     Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
@@ -658,7 +658,7 @@ already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
   >>> print stderr
-  DEBUG   Initialising zopeless.
+  DEBUG   Initializing zopeless.
   DEBUG     Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
@@ -749,7 +749,7 @@ Defining path to the script:
   0
   >>> print stderr
   DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
+  DEBUG   Initializing connection.
   DEBUG   Considering Sources:
   DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/restricted/source/Sources.gz
   DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz

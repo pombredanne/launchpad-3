@@ -296,7 +296,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         DistributionJob(
             distribution=dsd.derived_series.distribution,
             distroseries=dsd.derived_series,
-            job_type=DistributionJobType.INITIALISE_SERIES,
+            job_type=DistributionJobType.INITIALIZE_SERIES,
             metadata={"sourcepackagename": dsd.source_package_name.id})
         self.assertEqual(
             {},
