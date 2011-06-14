@@ -528,7 +528,7 @@ class enabled_with_permission:
         """
         permission = self.permission
 
-        # This is importe here to forestall an import-time config read that
+        # This is imported here to forestall an import-time config read that
         # wreaks havoc.
         from canonical.launchpad.webapp.authorization import check_permission
 
