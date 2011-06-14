@@ -103,7 +103,7 @@ class TestBuilderBasics(TestCaseWithFactory):
     def test_default_values(self):
         builder = self.factory.makeBuilder()
         # Make sure the Storm cache gets the values that the database
-        # initialises.
+        # initializes.
         flush_database_updates()
         self.assertEqual(0, builder.failure_count)
 

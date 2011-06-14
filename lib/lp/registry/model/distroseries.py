@@ -90,7 +90,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -140,7 +139,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distributionjob import (
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -176,9 +175,9 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.initialise_distroseries import (
-    InitialisationError,
-    InitialiseDistroSeries,
+from lp.soyuz.scripts.initialize_distroseries import (
+    InitializationError,
+    InitializeDistroSeries,
     )
 from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
@@ -847,7 +846,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
@@ -1619,20 +1619,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 "changesfilename and changesfilecontent must be supplied "
                 "if there is no package_copy_job")
 
-        # The PGP signature is stripped from all changesfiles
-        # to avoid replay attacks (see bugs 159304 and 451396).
-        signed_message = signed_message_from_string(changesfilecontent)
-        if signed_message is not None:
-            # Overwrite `changesfilecontent` with the text stripped
-            # of the PGP signature.
-            new_content = signed_message.signedContent
-            if new_content is not None:
-                changesfilecontent = signed_message.signedContent
+        if package_copy_job is None:
+            # The PGP signature is stripped from all changesfiles
+            # to avoid replay attacks (see bugs 159304 and 451396).
+            signed_message = signed_message_from_string(changesfilecontent)
+            if signed_message is not None:
+                # Overwrite `changesfilecontent` with the text stripped
+                # of the PGP signature.
+                new_content = signed_message.signedContent
+                if new_content is not None:
+                    changesfilecontent = signed_message.signedContent
 
-        changes_file = getUtility(ILibraryFileAliasSet).create(
-            changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain',
-            restricted=archive.private)
+            changes_file = getUtility(ILibraryFileAliasSet).create(
+                changesfilename, len(changesfilecontent),
+                StringIO(changesfilecontent), 'text/plain',
+                restricted=archive.private)
+        else:
+            changes_file = None
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
@@ -1645,10 +1648,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUploadQueue(self, state)
 
     def getPackageUploads(self, created_since_date=None, status=None,
-                          archive=None, pocket=None, custom_type=None):
+                          archive=None, pocket=None, custom_type=None,
+                          name_filter=None):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
-            self, created_since_date, status, archive, pocket, custom_type)
+            self, created_since_date, status, archive, pocket, custom_type,
+            name_filter=name_filter)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
@@ -1971,12 +1976,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.is_derived_series:
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
-        initialise_series = InitialiseDistroSeries(self, parents)
+        initialize_series = InitializeDistroSeries(self, parents)
         try:
-            initialise_series.check()
-        except InitialisationError, e:
+            initialize_series.check()
+        except InitializationError, e:
             raise DerivationError(e)
-        getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitializeDistroSeriesJobSource).create(
             self, parents, architectures, packagesets, rebuild, overlays,
             overlay_pockets, overlay_components)
 
@@ -2032,7 +2037,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         pending_jobs = job_source.getPendingJobsForDistroseries(self)
         return not pending_jobs.is_empty()
 

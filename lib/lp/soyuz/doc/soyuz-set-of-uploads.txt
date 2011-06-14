@@ -73,8 +73,8 @@ for the ubuntutest distribution.
   >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> from lp.registry.model.distribution import Distribution
   >>> from lp.soyuz.enums import PackageUploadStatus
-  >>> from lp.soyuz.scripts.initialise_distroseries import (
-  ...     InitialiseDistroSeries)
+  >>> from lp.soyuz.scripts.initialize_distroseries import (
+  ...     InitializeDistroSeries)
   >>> from canonical.launchpad.database.librarian import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -83,8 +83,8 @@ for the ubuntutest distribution.
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', None,
   ...     breezy_autotest.owner)
-  >>> ids = InitialiseDistroSeries(breezy, [breezy_autotest.id])
-  >>> ids.initialise()
+  >>> ids = InitializeDistroSeries(breezy, [breezy_autotest.id])
+  >>> ids.initialize()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> fake_chroot = LibraryFileAlias.get(1)
   >>> unused = breezy['i386'].addOrUpdateChroot(fake_chroot)
@@ -429,7 +429,7 @@ ubututest/breezy-RELEASE:
   >>> simulate_upload(
   ...     'foo_1.0-1', upload_policy='sync', is_new=True,
   ...     loglevel=logging.DEBUG)
-  DEBUG Initialising connection.
+  DEBUG Initializing connection.
   ...
   DEBUG Sent a mail:
   DEBUG   Subject: [ubuntutest/breezy] foo 1.0-1 (New)
@@ -486,7 +486,7 @@ Upload a newer version of source package "foo" to breezy-backports:
 
   >>> simulate_upload(
   ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
-  DEBUG Initialising connection.
+  DEBUG Initializing connection.
   ...
   DEBUG Setting it to ACCEPTED
   ...
@@ -526,7 +526,7 @@ live with this inconsistency.
 
   >>> simulate_upload(
   ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
-  DEBUG Initialising connection.
+  DEBUG Initializing connection.
   ...
   DEBUG Setting it to ACCEPTED
   ...
@@ -538,7 +538,7 @@ in PROPOSED:
 
   >>> simulate_upload(
   ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
-  DEBUG Initialising connection.
+  DEBUG Initializing connection.
   ...
   DEBUG Setting it to ACCEPTED
   ...
@@ -546,7 +546,7 @@ in PROPOSED:
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
-  DEBUG Initialising connection.
+  DEBUG Initializing connection.
   ...
   DEBUG Setting it to ACCEPTED
   ...
@@ -696,7 +696,7 @@ files that are published in the sample data.
   >>> fillLibrarianFile(70)
 
   >>> run_publish_distro(careful=True)
-  DEBUG   Initialising zopeless.
+  DEBUG   Initializing zopeless.
   DEBUG   Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb from library
@@ -725,7 +725,7 @@ Check that breezy-autotest is skipped, to ensure that changes to what's
 uploaded in the test above don't break the assumptions of this test.
 
   >>> run_publish_distro(careful_publishing=True)
-  DEBUG   Initialising zopeless.
+  DEBUG   Initializing zopeless.
   DEBUG   Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/universe/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
