@@ -86,15 +86,11 @@ WITH
         SELECT
             bug, product, productseries, distribution, distroseries,
             sourcepackagename, status, milestone, importance,
-            -- XXX: Why is a bugtask only fixed_upstream if there is a related
-            -- bugtask fixed upstream, not if it meets these conditions itself?
             EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
                 WHERE 
                     BugTask.bug = fixed_upstream_tasks.bug
-                    -- XXX: This is disabled. See XXX in
-                    -- bugsummary_locations()
-                    -- AND BugTask.id <> fixed_upstream_tasks.id
+                    AND BugTask.id <> fixed_upstream_tasks.id
                     ) AS fixed_upstream
         FROM bugtask
         UNION
@@ -104,15 +100,11 @@ WITH
             bug, product, productseries, distribution, distroseries,
             NULL::integer as sourcepackagename,
             status, milestone, importance,
-            -- XXX: Why is a bugtask only fixed_upstream if there is a related
-            -- bugtask fixed upstream, not if it meets these conditions itself?
             EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
                 WHERE
                     BugTask.bug = fixed_upstream_tasks.bug
-                    -- XXX: This is disabled. See XXX in
-                    -- bugsummary_locations()
-                    -- AND BugTask.id <> fixed_upstream_tasks.id
+                    AND BugTask.id <> fixed_upstream_tasks.id
                     ) AS fixed_upstream
         FROM bugtask where sourcepackagename IS NOT NULL)
 
@@ -534,18 +526,26 @@ BEGIN
             importance,
             BUG_ROW.latest_patch_uploaded IS NOT NULL AS has_patch,
             (EXISTS (
-                SELECT TRUE FROM BugTask AS RelatedBugTask
+                SELECT TRUE FROM BugTask AS RBT
                 WHERE
-                    RelatedBugTask.bug = tasks.bug
-                    -- XXX: Why is a bugtask only fixed_upstream if there
-                    -- is a related bugtask fixed upstream, not if it meets
-                    -- these conditions itself?
-                    -- XXX: The following line is broken, as tasks.id is
-                    -- always NULL because of duplicate removal.
-                    -- AND RelatedBugTask.id <> tasks.id
+                    RBT.bug = tasks.bug
+                    -- This would just be 'RBT.id <> tasks.id', except
+                    -- that the records from tasks are summaries and not
+                    -- real bugtasks, and do not have an id.
+                    AND (RBT.product IS DISTINCT FROM tasks.product
+                        OR RBT.productseries
+                            IS DISTINCT FROM tasks.productseries
+                        OR RBT.distribution IS DISTINCT FROM tasks.distribution
+                        OR RBT.distroseries IS DISTINCT FROM tasks.distroseries
+                        OR RBT.sourcepackagename
+                            IS DISTINCT FROM tasks.sourcepackagename)
+                    -- Flagged as INVALID, FIXCOMMITTED or FIXRELEASED
+                    -- via a bugwatch, or FIXCOMMITTED or FIXRELEASED on
+                    -- the product.
                     AND ((bugwatch IS NOT NULL AND status IN (17, 25, 30))
                         OR (bugwatch IS NULL AND product IS NOT NULL
-                            AND status IN (25, 30)))))::boolean AS fixed_upstream
+                            AND status IN (25, 30))))
+                )::boolean AS fixed_upstream
         FROM bugsummary_tasks(BUG_ROW) AS tasks
         JOIN bugsummary_tags(BUG_ROW) AS bug_tags ON TRUE
         LEFT OUTER JOIN bugsummary_viewers(BUG_ROW) AS bug_viewers ON TRUE;
