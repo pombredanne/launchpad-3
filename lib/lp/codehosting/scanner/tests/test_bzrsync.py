@@ -277,7 +277,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         """
         file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
         if contents is None:
-            file.write(str(time.time()+random.random()))
+            file.write(str(time.time() + random.random()))
         else:
             file.write(contents)
         file.close()
@@ -620,7 +620,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 class TestBzrTranslationsUploadJob(BzrSyncTestCase):
     """Tests BzrSync support for generating TranslationsUploadJobs."""
 
-    def _makeProductSeries(self, mode = None):
+    def _makeProductSeries(self, mode=None):
         """Switch to the Launchpad db user to create and configure a
         product series that is linked to the the branch.
         """
