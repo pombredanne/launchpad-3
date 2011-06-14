@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
@@ -15,14 +16,19 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.services.features.testing import FeatureFixture
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.dbuser import dbuser
+from lp.testing.matchers import HasQueryCount
 
 
 PERSON_AFFILIATION_RANK_FLAG = {
@@ -123,6 +129,37 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
 
     def test_root_karma_context(self):
         self.assertKarmaContextConstraint(None, None)
+
+
+class TestValidPersonOrTeamPreloading(VocabularyTestBase,
+                                      TestCaseWithFactory):
+    """Tests for ValidPersonOrTeamVocabulary's preloading behaviour."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'ValidPersonOrTeam'
+
+    def test_preloads_irc_nicks_and_preferredemail(self):
+        people = []
+        for num in range(3):
+            person = self.factory.makePerson(displayname='foobar %d' % num)
+            getUtility(IIrcIDSet).new(person, 'launchpad', person.name)
+            people.append(person)
+        expected_nicks = dict(
+            (person.id, list(person.ircnicknames)) for person in people)
+        expected_emails = dict(
+            (person.id, person.preferredemail) for person in people)
+        Store.of(people[0]).invalidate()
+
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            results = list(self.searchVocabulary(None, u'foobar'))
+        with StormStatementRecorder() as recorder:
+            self.assertEquals(3, len(results))
+            for person in results:
+                self.assertEqual(
+                    expected_nicks[person.id], person.ircnicknames)
+                self.assertEqual(
+                    expected_emails[person.id], person.preferredemail)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
 class TeamMemberVocabularyTestBase(VocabularyTestBase):
