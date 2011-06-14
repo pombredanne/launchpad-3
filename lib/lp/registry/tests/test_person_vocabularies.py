@@ -139,11 +139,17 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
     vocabulary_name = 'ValidPersonOrTeam'
 
     def test_preloads_irc_nicks_and_preferredemail(self):
+        """Test that IRC nicks and preferred email addresses are preloaded."""
+        # Create three people with IRC nicks, and one without.
         people = []
         for num in range(3):
             person = self.factory.makePerson(displayname='foobar %d' % num)
             getUtility(IIrcIDSet).new(person, 'launchpad', person.name)
             people.append(person)
+        people.append(self.factory.makePerson(displayname='foobar 4'))
+
+        # Remember the current values for checking later, and throw out
+        # the cache.
         expected_nicks = dict(
             (person.id, list(person.ircnicknames)) for person in people)
         expected_emails = dict(
@@ -153,7 +159,7 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
         with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
             results = list(self.searchVocabulary(None, u'foobar'))
         with StormStatementRecorder() as recorder:
-            self.assertEquals(3, len(results))
+            self.assertEquals(4, len(results))
             for person in results:
                 self.assertEqual(
                     expected_nicks[person.id], person.ircnicknames)
