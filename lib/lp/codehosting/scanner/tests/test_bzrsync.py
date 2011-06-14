@@ -41,7 +41,10 @@ from lp.code.model.revision import (
     RevisionParent,
     )
 from lp.code.model.tests.test_diff import commit_file
-from lp.codehosting.bzrutils import write_locked
+from lp.codehosting.bzrutils import (
+    read_locked,
+    write_locked,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import (
@@ -557,6 +560,28 @@ class TestBzrSync(BzrSyncTestCase):
             bzrsync.retrieveDatabaseAncestry())
         self.assertEqual(expected_ancestry, set(db_ancestry))
         self.assertEqual(expected_history, list(db_history))
+
+
+class TestPlanDatabaseChanges(BzrSyncTestCase):
+
+    def test_ancestry_already_present(self):
+        # If a BranchRevision is being added, and it's already in the DB, but
+        # not found through the graph operations, we should schedule it for
+        # deletion anyway.
+        rev1_id = self.bzr_tree.commit('initial commit')
+        merge_tree = self.bzr_tree.bzrdir.sprout('merge').open_workingtree()
+        merge_id = merge_tree.commit('mergeable commit')
+        self.bzr_tree.merge_from_branch(merge_tree.branch)
+        rev2_id = self.bzr_tree.commit('merge')
+        self.useContext(read_locked(self.bzr_tree))
+        syncer = BzrSync(self.db_branch)
+        syncer.syncBranchAndClose(self.bzr_tree.branch)
+        self.assertEqual(rev2_id, self.db_branch.last_scanned_id)
+        self.db_branch.last_scanned_id = rev1_id
+        db_ancestry, db_history = self.db_branch.getScannerData()
+        branchrevisions_to_delete = syncer.planDatabaseChanges(
+            self.bzr_branch, [rev1_id, rev2_id], db_ancestry, db_history)[1]
+        self.assertIn(merge_id, branchrevisions_to_delete)
 
 
 class TestBzrSyncOneRevision(BzrSyncTestCase):
