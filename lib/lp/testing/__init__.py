@@ -76,7 +76,12 @@ import unittest
 
 import simplejson
 
-import html5browser
+try:
+    import html5browser
+    # Hush lint.
+    html5browser
+except AttributeError:
+    html5browser = None
 
 from bzrlib import trace
 from bzrlib.bzrdir import (
