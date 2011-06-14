@@ -298,11 +298,12 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
                 BugSummary.viewed_by_id == None,
                 BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
                 ))
-    tag_count_columns = (BugSummary.tag, Sum(BugSummary.count))
+    sum_count = Sum(BugSummary.count)
+    tag_count_columns = (BugSummary.tag, sum_count)
     # Always query for used
     def _query(*args):
         return store.find(tag_count_columns, *(where_conditions + list(args))
-            ).group_by(BugSummary.tag).order_by(
+            ).group_by(BugSummary.tag).having(sum_count != 0).order_by(
             Desc(Sum(BugSummary.count)), BugSummary.tag)
     used = _query()
     if tag_limit:

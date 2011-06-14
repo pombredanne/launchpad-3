@@ -687,7 +687,9 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        if component_group_name.isdigit():
+        if component_group_name is None:
+            return None
+        elif component_group_name.isdigit():
             component_group_id = int(component_group_name)
             component_group = store.find(
                 BugTrackerComponentGroup,

@@ -110,6 +110,10 @@ flag_info = sorted([
      'boolean',
      ('Enables the display of extra details in the person picker.'),
      ''),
+    ('disclosure.person_affiliation_rank.enabled',
+     'boolean',
+     ('Enables ranking by pillar affiliation in the person picker.'),
+     ''),
     ])
 
 # The set of all flag names that are documented.
