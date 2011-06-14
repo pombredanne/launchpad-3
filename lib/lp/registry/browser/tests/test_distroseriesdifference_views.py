@@ -496,8 +496,6 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             self.factory.makeDistroSeriesDifference(set_base_version=True))
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         page = view()
-        #soup = BeautifulSoup(page)
-        #tag = soup.find('last_common_version')
 
         distro = ds_diff.parent_series.distribution
         sourcepackagerelease = ds_diff.parent_source_package_release
