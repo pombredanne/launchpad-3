@@ -61,7 +61,7 @@ def bug_filter(bug, previous_import_set, target_bugs, target_package_set,
         return False
     # and we won't import any bug that is newer than one week, to give
     # debian some time to find dups
-    if bug.date > datetime.datetime.now()-datetime.timedelta(minimum_age):
+    if bug.date > datetime.datetime.now() - datetime.timedelta(minimum_age):
         return False
     return True
 
@@ -104,7 +104,6 @@ def do_import(logger, max_imports, debbugs_location, target_bugs,
 
 def import_bug(debian_bug, logger):
     """Consider importing a debian bug, return True if you did."""
-    packagelist = debian_bug.packagelist()
     bugset = getUtility(IBugSet)
     debbugs_tracker = getUtility(ILaunchpadCelebrities).debbugs
     malone_bug = bugset.queryByRemoteBug(debbugs_tracker, debian_bug.id)
@@ -159,8 +158,8 @@ def import_bug(debian_bug, logger):
         return False
     # sometimes debbugs has initial emails that contain the package name, we
     # can remove that
-    if title.startswith(pkgname+':'):
-        title = title[len(pkgname)+2:].strip()
+    if title.startswith(pkgname + ':'):
+        title = title[len(pkgname) + 2:].strip()
     params = CreateBugParams(
         title=title, msg=msg, owner=msg.owner,
         datecreated=msg.datecreated)
@@ -200,5 +199,3 @@ def import_bug(debian_bug, logger):
 
     flush_database_updates()
     return True
-
-

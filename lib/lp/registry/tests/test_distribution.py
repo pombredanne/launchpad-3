@@ -100,7 +100,7 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package')
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
             binarypackagename='binary-package',
             source_package_release=spph.sourcepackagerelease)
@@ -114,7 +114,7 @@ class TestDistribution(TestCaseWithFactory):
         # distribution.
         distroseries = self.factory.makeUbuntuDistroSeries()
         ppa_archive = self.factory.makeArchive()
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package',
             archive=ppa_archive)
         with ExpectedException(NotFoundError, ".*not published in.*"):
@@ -143,7 +143,7 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         my_spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package')
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
             binarypackagename='my-package', sourcepackagename='other-package')
         self.assertEquals(
@@ -155,11 +155,11 @@ class TestDistribution(TestCaseWithFactory):
         # If multiple binaries match, it will return the source of the latest
         # one published.
         distroseries = self.factory.makeDistroSeries()
-        old_bpph = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
             sourcepackagename='old-source-name',
             binarypackagename='my-package')
-        new_bpph = self.factory.makeBinaryPackagePublishingHistory(
+        self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
             sourcepackagename='new-source-name',
             binarypackagename='my-package')

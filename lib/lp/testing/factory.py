@@ -3469,7 +3469,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
         :param sourcepackagename: when source_package_release is None, the
-            sourcepackagename from which the build will come. 
+            sourcepackagename from which the build will come.
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
