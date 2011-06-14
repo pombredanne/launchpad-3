@@ -16,12 +16,15 @@ from twisted.internet.defer import (
     )
 
 from bzrlib.branch import Branch
+from canonical.launchpad.webapp.interfaces import IUnloggedException
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.log.nullhandler import NullHandler
 from lp.services.mime import customizeMimetypes
+from zope.interface import alsoProvides
 from zope.security import checker
+import zope.publisher.browser
 
 
 def add_custom_loglevels():
@@ -136,6 +139,32 @@ def customize_logger():
     silence_transaction_logger()
 
 
+def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
+    """URL parameter conversion errors shouldn't generate an OOPS report.
+
+    This injects (monkey patches) our wrapper around get_converter so improper
+    use of parameter type converters (like http://...?foo=bar:int) won't
+    generate OOPS reports.
+    """
+    original_get_converter = zope_publisher_browser.get_converter
+
+    def get_converter(*args, **kws):
+        """Get a type converter but turn off OOPS reporting if it fails."""
+        converter = original_get_converter(*args, **kws)
+
+        def wrapped_converter(v):
+            try:
+                return converter(v)
+            except ValueError, e:
+                # Mark the exception as not being OOPS-worthy.
+                alsoProvides(e, IUnloggedException)
+                raise
+
+        return wrapped_converter
+
+    zope_publisher_browser.get_converter = get_converter
+
+
 def main(instance_name):
     # This is called by our custom buildout-generated sitecustomize.py
     # in parts/scripts/sitecustomize.py. The instance name is sent to
@@ -161,3 +190,4 @@ def main(instance_name):
     checker.BasicTypes[grouper] = checker._iteratorChecker
     silence_warnings()
     customize_logger()
+    customize_get_converter()

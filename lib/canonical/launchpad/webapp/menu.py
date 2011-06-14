@@ -39,7 +39,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IApplicationMenu,
     IContextMenu,
@@ -528,6 +527,10 @@ class enabled_with_permission:
         called.
         """
         permission = self.permission
+
+        # This is importe here to forestall an import-time config read that
+        # wreaks havoc.
+        from canonical.launchpad.webapp.authorization import check_permission
 
         def enable_if_allowed(self):
             link = func(self)
