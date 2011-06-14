@@ -112,7 +112,7 @@ The anonymous user checks the contents of the distro builds list page.
 == Build titles ==
 
 The anonymous user can review the build titles, including 'not
-initialised' one (fix bug #52704).
+initialized' one (fix bug #52704).
 
  * SUPERSEDED and NEEDSBUILD builds contain title
 

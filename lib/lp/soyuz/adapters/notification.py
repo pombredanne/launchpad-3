@@ -69,7 +69,10 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     body = template % information
     to_addrs = get_recipients(
         blamer, archive, distroseries, logger, changes=changes)
-    logger.debug("Sending rejection email.")
+    debug(logger, "Sending rejection email.")
+    if not to_addrs:
+        debug(logger, "No recipients have a preferred email.")
+        return
     send_mail(None, archive, to_addrs, subject, body, False, logger=logger)
 
 
