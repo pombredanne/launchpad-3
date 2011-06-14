@@ -5,10 +5,18 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+
+from pytz import utc
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugsummary import IBugSummary
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.model.bug import BugTag
 from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
@@ -202,6 +210,38 @@ class TestBugSummary(TestCaseWithFactory):
                 self.getPublicCount(
                     BugSummary.product == product,
                     BugSummary.status == new_status),
+                3 - count)
+
+    def test_changeImportance(self):
+        org_importance = BugTaskImportance.UNDECIDED
+        new_importance = BugTaskImportance.CRITICAL
+
+        product = self.factory.makeProduct()
+
+        for count in range(3):
+            bug = self.factory.makeBug(product=product)
+            bug_task = self.store.find(BugTask, bug=bug).one()
+            bug_task.importance = org_importance
+
+            self.assertEqual(
+                self.getPublicCount(
+                    BugSummary.product == product,
+                    BugSummary.importance == org_importance),
+                count + 1)
+
+        for count in reversed(range(3)):
+            bug_task = self.store.find(
+                BugTask, product=product, importance=org_importance).any()
+            bug_task.importance = new_importance
+            self.assertEqual(
+                self.getPublicCount(
+                    BugSummary.product == product,
+                    BugSummary.importance == org_importance),
+                count)
+            self.assertEqual(
+                self.getPublicCount(
+                    BugSummary.product == product,
+                    BugSummary.importance == new_importance),
                 3 - count)
 
     def test_makePrivate(self):
@@ -978,9 +1018,10 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(
                 BugSummary.distribution == distribution,
                 BugSummary.fixed_upstream == False),
-            9)
+            0)
 
-        product_bugtask.status = BugTaskStatus.INPROGRESS
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.INPROGRESS, bug.owner)
 
         self.assertEqual(
             self.getPublicCount(
@@ -1047,9 +1088,10 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(
                 BugSummary.distribution == distribution,
                 BugSummary.fixed_upstream == False),
-            9)
+            0)
 
-        product_bugtask.status = BugTaskStatus.INVALID
+        product_bugtask.transitionToStatus(
+            BugTaskStatus.UNKNOWN, bug.owner)
 
         self.assertEqual(
             self.getPublicCount(
@@ -1062,8 +1104,52 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.fixed_upstream == False),
             1)
 
+    def test_addPatch(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
 
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == True),
+            0)
 
+        removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == True),
+            1)
+
+    def test_removePatch(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        removeSecurityProxy(bug).latest_patch_uploaded = datetime.now(tz=utc)
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == True),
+            1)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == False),
+            0)
+
+        removeSecurityProxy(bug).latest_patch_uploaded = None
+
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == True),
+            0)
+        self.assertEqual(
+            self.getPublicCount(
+                BugSummary.product == product,
+                BugSummary.has_patch == False),
+            1)
 
 
 class TestBugSummaryRolledUp(TestBugSummary):
