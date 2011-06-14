@@ -88,11 +88,14 @@ WITH
             sourcepackagename, status, milestone, importance,
             -- XXX: Why is a bugtask only fixed_upstream if there is a related
             -- bugtask fixed upstream, not if it meets these conditions itself?
-            (EXISTS (
+            EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
-                WHERE BugTask.id <> fixed_upstream_tasks.id
-                    AND BugTask.bug = fixed_upstream_tasks.bug)
-            ) AS fixed_upstream
+                WHERE 
+                    BugTask.bug = fixed_upstream_tasks.bug
+                    -- XXX: This is disabled. See XXX in
+                    -- bugsummary_locations()
+                    -- AND BugTask.id <> fixed_upstream_tasks.id
+                    ) AS fixed_upstream
         FROM bugtask
         UNION
         SELECT DISTINCT ON (
@@ -103,11 +106,14 @@ WITH
             status, milestone, importance,
             -- XXX: Why is a bugtask only fixed_upstream if there is a related
             -- bugtask fixed upstream, not if it meets these conditions itself?
-            (EXISTS (
+            EXISTS (
                 SELECT TRUE FROM fixed_upstream_tasks
-                WHERE BugTask.id <> fixed_upstream_tasks.id
-                    AND BugTask.bug = fixed_upstream_tasks.bug))
-            AS fixed_upstream
+                WHERE
+                    BugTask.bug = fixed_upstream_tasks.bug
+                    -- XXX: This is disabled. See XXX in
+                    -- bugsummary_locations()
+                    -- AND BugTask.id <> fixed_upstream_tasks.id
+                    ) AS fixed_upstream
         FROM bugtask where sourcepackagename IS NOT NULL)
 
     -- Now combine
@@ -489,6 +495,7 @@ BEGIN
             OR OLD.distroseries IS DISTINCT FROM NEW.distroseries
             OR OLD.sourcepackagename IS DISTINCT FROM NEW.sourcepackagename
             OR OLD.status IS DISTINCT FROM NEW.status
+            OR OLD.importance IS DISTINCT FROM NEW.importance
             OR OLD.bugwatch IS DISTINCT FROM NEW.bugwatch
             OR OLD.milestone IS DISTINCT FROM NEW.milestone) THEN
 
@@ -533,7 +540,9 @@ BEGIN
                     -- XXX: Why is a bugtask only fixed_upstream if there
                     -- is a related bugtask fixed upstream, not if it meets
                     -- these conditions itself?
-                    AND RelatedBugTask.id <> tasks.id
+                    -- XXX: The following line is broken, as tasks.id is
+                    -- always NULL because of duplicate removal.
+                    -- AND RelatedBugTask.id <> tasks.id
                     AND ((bugwatch IS NOT NULL AND status IN (17, 25, 30))
                         OR (bugwatch IS NULL AND product IS NOT NULL
                             AND status IN (25, 30)))))::boolean AS fixed_upstream
@@ -562,12 +571,12 @@ BEGIN
     FOR r IN
         SELECT
             product, productseries, distribution, distroseries,
-            sourcepackagename, status, milestone, importance
+            sourcepackagename, status, milestone, importance, bugwatch
         FROM BugTask WHERE bug=BUG_ROW.id
         UNION -- Implicit DISTINCT
         SELECT
             product, productseries, distribution, distroseries,
-            NULL, status, milestone, importance
+            NULL, status, milestone, importance, bugwatch
         FROM BugTask WHERE bug=BUG_ROW.id AND sourcepackagename IS NOT NULL
     LOOP
         bt.product = r.product;
@@ -578,6 +587,7 @@ BEGIN
         bt.status = r.status;
         bt.milestone = r.milestone;
         bt.importance = r.importance;
+        bt.bugwatch = r.bugwatch;
         RETURN NEXT bt;
     END LOOP;
 END;
