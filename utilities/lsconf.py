@@ -34,7 +34,7 @@ class Configuration:
 
     @classmethod
     def load(cls, conf_path, schema_path=None):
-        """Initialise the Configuration.
+        """Initialize the Configuration.
 
         :conf_path: The path to the lazr.config conf file.
         :schema_path: The path to the lazr.config schema that defines

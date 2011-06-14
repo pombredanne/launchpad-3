@@ -451,7 +451,7 @@ class CopyCheckerHarness:
     def assertCanCopySourceOnly(self, delayed=False):
         """Source-only copy is allowed.
 
-        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        Initialize a `CopyChecker` and assert a `checkCopy` call returns
         None (more importantly, doesn't raise `CannotCopy`) in the test
         suite context.
 
@@ -479,7 +479,7 @@ class CopyCheckerHarness:
     def assertCanCopyBinaries(self, delayed=False):
         """Source and binary copy is allowed.
 
-        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        Initialize a `CopyChecker` and assert a `checkCopy` call returns
         None (more importantly, doesn't raise `CannotCopy`) in the test
         suite context.
 
@@ -968,7 +968,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         binary.copyTo(hoary, source.pocket, source.archive)
 
         # Create a fresh PPA for ubuntutest, which will be the copy
-        # destination and initialise a CopyChecker for it.
+        # destination and initialize a CopyChecker for it.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
             purpose=ArchivePurpose.PPA)
@@ -1029,7 +1029,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # the case (restricted files being copied to public archives).
         # However this feature can be turned off, and the operation can
         # be performed as a direct-copy by passing 'allow_delayed_copies'
-        # as False when initialising `CopyChecker`.
+        # as False when initializing `CopyChecker`.
         # This aspect is currently only used in `UnembargoSecurityPackage`
         # script class, because it performs the file privacy fixes in
         # place.
@@ -2097,7 +2097,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.checkCopies(copied, target_archive, 2)
 
     def getTestPublisher(self, distroseries):
-        """Return a initialised `SoyuzTestPublisher` object.
+        """Return a initialized `SoyuzTestPublisher` object.
 
         Setup a i386 chroot for the given distroseries, so it can build
         and publish binaries.
