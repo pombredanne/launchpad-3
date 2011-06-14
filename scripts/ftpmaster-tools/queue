@@ -95,7 +95,7 @@ def main():
         no_mail, options.component_name, options.section_name,
         options.priority_name, log=log)
 
-    print ("Initialising connection to queue %s" % options.queue_name)
+    print ("Initializing connection to queue %s" % options.queue_name)
 
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser,

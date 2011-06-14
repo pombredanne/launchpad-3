@@ -182,7 +182,7 @@ working network connection.
     >>> sorted(trac.bugs.keys())
     [1]
 
-If we initialise with a different set of keys we overwrite the first set:
+If we initialize with a different set of keys we overwrite the first set:
 
     >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
     >>> sorted(trac.bugs.keys())

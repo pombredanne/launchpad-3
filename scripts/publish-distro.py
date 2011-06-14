@@ -24,7 +24,7 @@ if __name__ == "__main__":
     assert len(args) == 0, "publish-distro takes no arguments, only options."
 
     log = logger(options, "publish-distro")
-    log.debug("Initialising zopeless.")
+    log.debug("Initializing zopeless.")
     execute_zcml_for_scripts()
     txn = initZopeless(dbuser=config.archivepublisher.dbuser)
 

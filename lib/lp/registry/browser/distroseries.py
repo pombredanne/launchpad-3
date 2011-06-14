@@ -219,6 +219,7 @@ class DistroSeriesOverviewMenu(
                  'queue',
                  'add_port',
                  'create_milestone',
+                 'initseries',
                  ]
         add_subscribe_link(links)
         links.append('admin')
@@ -275,6 +276,15 @@ class DistroSeriesOverviewMenu(
     def queue(self):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def initseries(self):
+        enabled = (
+             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
+             not self.context.isInitializing() and
+             not self.context.isInitialized())
+        text = 'Initialize series'
+        return Link('+initseries', text, icon='edit', enabled=enabled)
 
 
 class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):

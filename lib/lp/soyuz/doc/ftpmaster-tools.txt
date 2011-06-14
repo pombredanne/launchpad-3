@@ -29,7 +29,7 @@ INFO
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue new
+  Initializing connection to queue new
   Running: "info"
   Listing ubuntu/breezy-autotest (NEW) 6/6
   ---------|----|----------------------|----------------------|---------------
@@ -59,7 +59,7 @@ Check the custom uploads presentation:
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue unapproved
+  Initializing connection to queue unapproved
   Running: "info"
   Listing ubuntu/breezy-autotest-updates (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
