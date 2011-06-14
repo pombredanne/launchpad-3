@@ -199,7 +199,7 @@ class WalkerBase_walk(TestCase):
 class FTPWalker_Base(TestCase):
 
     def testFtpScheme(self):
-        """FTPWalker works when initialised with an ftp-scheme URL."""
+        """FTPWalker works when initialized with an ftp-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
             FTPWalker)
         w = FTPWalker("ftp://localhost/")
@@ -236,14 +236,14 @@ class FTPWalker_Base(TestCase):
 class HTTPWalker_Base(TestCase):
 
     def testHttpScheme(self):
-        """HTTPWalker works when initialised with an http-scheme URL."""
+        """HTTPWalker works when initialized with an http-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         w = HTTPWalker("http://localhost/")
         self.assertEquals(w.host, "localhost")
 
     def testHttpsScheme(self):
-        """HTTPWalker works when initialised with an https-scheme URL."""
+        """HTTPWalker works when initialized with an https-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         w = HTTPWalker("https://localhost/")

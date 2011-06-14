@@ -30,7 +30,7 @@
                 }
             }
             formatlist.on('change', toggle_pochanged);
-            // Initialise the state of the controls.
+            // Initialize the state of the controls.
             toggle_pochanged();
         });
     });

@@ -6,9 +6,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
     calculate_subject,
     fetch_information,
+    reject_changes_file,
     person_to_email,
     notify,
     )
@@ -128,3 +130,19 @@ class TestNotification(TestCaseWithFactory):
         body = notification.as_string()
         self.assertEqual(person_to_email(person), notification['To'])
         self.assertIn('Rejected by archive administrator.\n\n* Foo!\n', body)
+
+    def test_reject_changes_file_no_email(self):
+        # If we are rejecting a mail, and the person to notify has no
+        # preferred email, we should return early.
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        uploader = self.factory.makePerson()
+        removeSecurityProxy(uploader).preferredemail = None
+        email = '%s <foo@example.com>' % uploader.displayname
+        changes = {'Changed-By': email, 'Maintainer': email}
+        logger = BufferLogger()
+        reject_changes_file(
+            uploader, '/tmp/changes', changes, archive, distroseries, '',
+            logger=logger)
+        self.assertIn(
+            'No recipients have a preferred email.', logger.getLogBuffer())

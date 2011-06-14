@@ -129,7 +129,7 @@ class DebianBuildManager(BuildManager):
         func(success)
 
     def iterate_INIT(self, success):
-        """Just finished initialising the build."""
+        """Just finished initializing the build."""
         if success != 0:
             if not self.alreadyfailed:
                 # The init failed, can't fathom why that would be...
