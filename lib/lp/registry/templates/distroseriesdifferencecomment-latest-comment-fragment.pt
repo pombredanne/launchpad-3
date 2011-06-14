@@ -3,8 +3,15 @@
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     i18n:domain="launchpad">
-  <span tal:replace="context/body_text/fmt:shorten/50">I'm on this.</span>
-  <br /><span class="greyed-out greylink"><span
-  tal:replace="context/comment_date/fmt:approximatedate">2005-09-16</span>
-  by <a tal:replace="structure context/comment_author/fmt:link" /></span>
+  <span
+    tal:condition="view/css_class"
+    tal:attributes="class view/css_class"></span>
+  <tal:text tal:replace="context/body_text/fmt:shorten/50">
+    I'm on this.
+  </tal:text>
+  <br />
+  <span class="greyed-out greylink"><tal:date
+    replace="context/comment_date/fmt:approximatedate">2005-09-16</tal:date>
+  by
+  <tal:author replace="structure context/comment_author/fmt:link" /></span>
 </span>

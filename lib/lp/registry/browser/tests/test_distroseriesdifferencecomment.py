@@ -6,8 +6,10 @@
 __metaclass__ = type
 
 from lxml import html
+from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
 
@@ -28,3 +30,22 @@ class TestDistroSeriesDifferenceCommentFragment(TestCaseWithFactory):
         self.assertEqual(
             "/~%s" % comment.comment_author.name,
             root.find("span").find("a").get("href"))
+
+    def test_comment_is_rendered_with_view_css_class(self):
+        comment = self.factory.makeDistroSeriesDifferenceComment()
+        view = create_initialized_view(comment, '+latest-comment-fragment')
+        view.css_class = self.factory.getUniqueString()
+        root = html.fromstring(view())
+        self.assertEqual(view.css_class, root.find("span").get("class"))
+
+    def test_view_css_class_is_empty_by_default(self):
+        comment = self.factory.makeDistroSeriesDifferenceComment(
+            comment=self.factory.getUniqueString())
+        view = create_initialized_view(comment, '+latest-comment-fragment')
+        self.assertEqual("", view.css_class)
+
+    def test_view_css_class_has_error_sprite_if_from_janitor(self):
+        comment = self.factory.makeDistroSeriesDifferenceComment(
+            owner=getUtility(ILaunchpadCelebrities).janitor)
+        view = create_initialized_view(comment, '+latest-comment-fragment')
+        self.assertEqual("sprite error-icon", view.css_class)
