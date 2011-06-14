@@ -24,7 +24,7 @@ from lp.services.propertycache import cachedproperty
 
 class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     """Wrapper for the lazr-js picker/picker.js widget."""
-   
+
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
 
     picker_type = 'default'
@@ -54,11 +54,11 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         else:
             # The widget has not rendered before this. We return False, but
             # set the attribute to true, so future checks will see that it
-            # has rendered. It would be better to set this in __init__ or 
+            # has rendered. It would be better to set this in __init__ or
             # similar, but then this first check also sees True, and we never
             # render the part of the template this is used to guard.
             setattr(self.request, attr, True)
-            return False 
+            return False
 
     @widget_rendered.setter
     def widget_rendered(self, val):
