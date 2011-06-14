@@ -580,6 +580,64 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, name=u"'", exact_match=True))
 
+    def test_getAll_matches_source_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeSourcePackageUpload(distroseries)
+        version = upload.displayversion
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, version=version))
+
+    def test_getAll_filters_source_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackageUpload(distroseries)
+        other_version = self.factory.getUniqueString()
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, version=other_version))
+
+    def test_getAll_matches_build_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeBuildPackageUpload(distroseries)
+        version = upload.displayversion
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, version=version))
+
+    def test_getAll_filters_build_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        other_version = self.factory.getUniqueString()
+        self.factory.makeBuildPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, version=other_version))
+
+    def test_getAll_version_filter_ignores_custom_uploads(self):
+        distroseries = self.factory.makeDistroSeries()
+        other_version = self.factory.getUniqueString()
+        self.factory.makeCustomPackageUpload(distroseries)
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, version=other_version))
+
+    def test_getAll_matches_copy_job_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeCopyJobPackageUpload(distroseries)
+        version = upload.displayversion
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [upload], upload_set.getAll(distroseries, version=version))
+
+    def test_getAll_filters_copy_job_upload_by_version(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeCopyJobPackageUpload(distroseries)
+        other_version = self.factory.getUniqueString()
+        upload_set = getUtility(IPackageUploadSet)
+        self.assertContentEqual(
+            [], upload_set.getAll(distroseries, version=other_version))
+
+# XXX: TODO: Test exact match vs. substring match
+
 
 class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 

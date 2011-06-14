@@ -23,15 +23,13 @@ from sqlobject import (
     SQLMultipleJoin,
     SQLObjectNotFound,
     )
-from storm.expr import (
-    Coalesce,
-    LeftJoin,
-    )
+from storm.expr import LeftJoin
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
+    Or,
     Reference,
     )
 from storm.store import (
@@ -1403,43 +1401,43 @@ class PackageUploadSet:
 
         match_column = get_string_matcher(exact_match)
 
+        package_copy_job_join = LeftJoin(
+            PackageCopyJob, 
+            PackageCopyJob.id == PackageUpload.package_copy_job_id)
+        source_join = LeftJoin(
+            PackageUploadSource,
+            PackageUploadSource.packageuploadID == PackageUpload.id)
+        spr_join = LeftJoin(
+            SourcePackageRelease,
+            SourcePackageRelease.id ==
+                PackageUploadSource.sourcepackagereleaseID)
+        bpr_join = LeftJoin(
+            BinaryPackageRelease,
+            BinaryPackageRelease.buildID == PackageUploadBuild.buildID)
+        build_join = LeftJoin(
+            PackageUploadBuild,
+            PackageUploadBuild.packageuploadID == PackageUpload.id)
+
         if name is not None and name != '':
             # Join in any attached PackageCopyJob with the right
             # package name.
-            joins.append(LeftJoin(
-                PackageCopyJob, And(
-                    PackageCopyJob.id == PackageUpload.package_copy_job_id,
-                    match_column(PackageCopyJob.package_name, name))))
+            joins.append(package_copy_job_join)
 
             # Join in any attached PackageUploadSource with attached
             # SourcePackageRelease with the right SourcePackageName.
             joins.append(LeftJoin(
                 SourcePackageName,
                 match_column(SourcePackageName.name, name)))
-            joins.append(LeftJoin(
-                PackageUploadSource,
-                PackageUploadSource.packageuploadID == PackageUpload.id))
-            joins.append(LeftJoin(
-                SourcePackageRelease, And(
-                    SourcePackageRelease.id ==
-                        PackageUploadSource.sourcepackagereleaseID,
-                    SourcePackageRelease.sourcepackagenameID ==
-                        SourcePackageName.id)))
+            joins.append(source_join)
+            joins.append(spr_join)
 
             # Join in any attached PackageUploadBuild with attached
             # BinaryPackageRelease with the right BinaryPackageName.
             joins.append(LeftJoin(
                 BinaryPackageName,
                 match_column(BinaryPackageName.name, name)))
-            joins.append(LeftJoin(
-                PackageUploadBuild,
-                PackageUploadBuild.packageuploadID == PackageUpload.id))
-            joins.append(LeftJoin(
-                BinaryPackageRelease, And(
-                    BinaryPackageRelease.buildID ==
-                        PackageUploadBuild.buildID,
-                    BinaryPackageRelease.binarypackagenameID ==
-                        BinaryPackageName.id)))
+            joins.append(build_join)
+            joins.append(bpr_join)
 
             # Join in any attached PackageUploadCustom with attached
             # LibraryFileAlias with the right filename.
@@ -1454,11 +1452,14 @@ class PackageUploadSet:
 
             # One of these attached items (for that package we're
             # looking for) must exist.
-            clauses.append(
-                Coalesce(
-                    PackageCopyJob.id, SourcePackageRelease.id,
-                    BinaryPackageRelease.id, LibraryFileAlias.id) != None)
-
+            clauses.append(Or(
+                match_column(PackageCopyJob.package_name, name),
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id,
+                BinaryPackageRelease.binarypackagenameID ==
+                    BinaryPackageName.id,
+                match_column(LibraryFileAlias.filename, name)))
+                
         query = store.using(*joins).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,

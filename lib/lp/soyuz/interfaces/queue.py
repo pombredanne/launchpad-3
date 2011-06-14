@@ -599,7 +599,7 @@ class IPackageUploadSet(Interface):
 
     def getAll(distroseries, created_since_date=None, status=None,
                archive=None, pocket=None, custom_type=None,
-               name=None, exact_match=False):
+               name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
         :param created_since_date: If specified, only returns items uploaded
