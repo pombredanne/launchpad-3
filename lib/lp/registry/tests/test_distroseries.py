@@ -27,7 +27,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
@@ -224,11 +224,11 @@ class TestDistroSeries(TestCaseWithFactory):
 
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
-        # initialisation job with a pending status attached to this series.
+        # initialization job with a pending status attached to this series.
         distroseries = self.factory.makeDistroSeries()
         parent_distroseries = self.factory.makeDistroSeries()
         self.assertFalse(distroseries.isInitializing())
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job = job_source.create(distroseries, [parent_distroseries.id])
         self.assertTrue(distroseries.isInitializing())
         job.start()
