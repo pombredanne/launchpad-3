@@ -387,6 +387,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
             removeSecurityProxy(pcj).context, pu.package_copy_job)
 
     def test_getByPackageCopyJobIDs(self):
+        # getByPackageCopyJobIDs retrieves the right PackageCopyJob.
         pu, pcj = self.makeUploadWithPackageCopyJob()
         result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [pcj.id])
@@ -443,10 +444,13 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         self.assertEqual(job.package_version, upload.package_version)
 
     def test_displayarchs_for_copy_job_is_source(self):
+        # For copy jobs, displayarchs is "source."
         upload, job = self.makeUploadWithPackageCopyJob()
         self.assertEqual('source', upload.displayarchs)
 
     def test_component_and_section_name(self):
+        # An upload with a copy job takes its component and section
+        # names from the job.
         spn = self.factory.makeSourcePackageName()
         upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         component = self.factory.makeComponent()
@@ -456,11 +460,15 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         self.assertEqual(component.name, upload.component_name)
 
     def test_displayname_is_package_name(self):
+        # An upload with a copy job uses the package name for its
+        # display name.
         spn = self.factory.makeSourcePackageName()
         upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         self.assertEqual(spn.name, upload.displayname)
 
     def test_upload_with_copy_job_has_no_source_package_release(self):
+        # A copy job does not provide the upload with a
+        # SourcePackageRelease.
         pu, pcj = self.makeUploadWithPackageCopyJob()
         self.assertIs(None, pu.sourcepackagerelease)
 

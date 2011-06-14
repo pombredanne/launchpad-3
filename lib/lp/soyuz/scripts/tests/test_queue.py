@@ -43,17 +43,14 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
-from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
@@ -939,33 +936,14 @@ class TestQueueActionLite(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makePackageCopyJob(self, sourcepackagerelease=None):
-        """Create a `PlainPackageCopyJob` for use with a `PackageUpload`."""
-        job_source = getUtility(IPlainPackageCopyJobSource)
-        if sourcepackagerelease is None:
-            sourcepackagerelease = self.factory.makeSourcePackageRelease()
-        distroseries = self.factory.makeDistroSeries()
-        job = job_source.create(
-            sourcepackagerelease.sourcepackagename.name,
-            sourcepackagerelease.upload_archive,
-            distroseries.main_archive,
-            distroseries,
-            PackagePublishingPocket.RELEASE,
-            package_version=sourcepackagerelease.version)
-        job.addSourceOverride(SourceOverride(
-            source_package_name=sourcepackagerelease.sourcepackagename,
-            component=sourcepackagerelease.component,
-            section=sourcepackagerelease.section))
-        IStore(removeSecurityProxy(job).context).flush()
-        return job
-
     def makeQueueAction(self, package_upload, distroseries=None):
         """Create a `QueueAction` for use with a `PackageUpload`.
 
         The action's `display` method is set to a `FakeMethod`.
         """
         if distroseries is None:
-            distroseries = self.factory.makeDistroSeries()
+            distroseries = self.factory.makeDistroSeries(
+                status=SeriesStatus.CURRENT)
         distro = distroseries.distribution
         if package_upload is None:
             package_upload = self.factory.makePackageUpload(
@@ -981,32 +959,12 @@ class TestQueueActionLite(TestCaseWithFactory):
             distro.name, suite, queue, terms, component.name,
             section.name, priority_name, display)
 
-    def makeSourceUpload(self):
-        """Create a `PackageUpload` with source attached."""
-        upload = self.factory.makePackageUpload()
-        upload.addSource(self.factory.makeSourcePackageRelease())
-        return upload
-
-    def makeCopyJobUpload(self):
-        """Create a `PackageUpload` with a package copy job attached."""
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        job = self.makePackageCopyJob(spph.sourcepackagerelease)
-        # Let the job create a PackageUpload and suspend itself for
-        # future approval or rejection.
-        try:
-            job.run()
-        except SuspendJobException:
-            # Expected exception.
-            job.suspend()
-        upload_set = getUtility(IPackageUploadSet)
-        return upload_set.getByPackageCopyJobIDs([job.id]).one()
-
     def test_display_actions_have_privileges_for_PackageCopyJob(self):
         # The methods that display uploads have privileges to work with
         # a PackageUpload that has a copy job.
         # Bundling tests for multiple operations into one test because
         # the database user change requires a costly commit.
-        upload = self.makeCopyJobUpload()
+        upload = self.factory.makeCopyJobPackageUpload()
         action = self.makeQueueAction(upload)
         self.layer.txn.commit()
         self.layer.switchDbUser(config.uploadqueue.dbuser)
@@ -1018,7 +976,11 @@ class TestQueueActionLite(TestCaseWithFactory):
         self.assertNotEqual(0, action.display.call_count)
 
     def test_accept_actions_have_privileges_for_PackageCopyJob(self):
-        upload = self.makeCopyJobUpload()
+        # The script also has privileges to approve uploads that have
+        # copy jobs.
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.CURRENT)
+        upload = self.factory.makeCopyJobPackageUpload(distroseries)
         self.layer.txn.commit()
         self.layer.switchDbUser(config.uploadqueue.dbuser)
         upload.acceptFromQueue(DevNullLogger(), dry_run=True)
@@ -1028,25 +990,29 @@ class TestQueueActionLite(TestCaseWithFactory):
         IStore(upload).flush()
 
     def test_displayItem_displays_PackageUpload_with_source(self):
-        upload = self.makeSourceUpload()
+        # displayItem can display a source package upload.
+        upload = self.factory.makeSourcePackageUpload()
         action = self.makeQueueAction(upload)
         action.displayItem(upload)
         self.assertNotEqual(0, action.display.call_count)
 
     def test_displayItem_displays_PackageUpload_with_PackageCopyJob(self):
-        upload = self.makeCopyJobUpload()
+        # displayItem can display a copy-job package upload.
+        upload = self.factory.makeCopyJobPackageUpload()
         action = self.makeQueueAction(upload)
         action.displayItem(upload)
         self.assertNotEqual(0, action.display.call_count)
 
     def test_displayInfo_displays_PackageUpload_with_source(self):
-        upload = self.makeSourceUpload()
+        # displayInfo can display a source package upload.
+        upload = self.factory.makeSourcePackageUpload()
         action = self.makeQueueAction(upload)
         action.displayInfo(upload)
         self.assertNotEqual(0, action.display.call_count)
 
     def test_displayInfo_displays_PackageUpload_with_PackageCopyJob(self):
-        upload = self.makeCopyJobUpload()
+        # displayInfo can display a copy-job package upload.
+        upload = self.factory.makeCopyJobPackageUpload()
         action = self.makeQueueAction(upload)
         action.displayInfo(upload)
         self.assertNotEqual(0, action.display.call_count)
