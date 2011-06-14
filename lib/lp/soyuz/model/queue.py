@@ -126,6 +126,45 @@ def validate_status(self, attr, value):
             'provided methods to set it.')
 
 
+def match_exact_string(haystack, needle):
+    """Try an exact string match: is `haystack` equal to `needle`?
+
+    Helper for `PackageUploadSet.getAll`.
+
+    :param haystack: A database column being matched.
+        Storm database column.
+    :param needle: The string you're looking for.
+    :return: True for a match, False otherwise.
+    """
+    return haystack == needle
+
+
+def match_substring(haystack, needle):
+    """Try a substring match: does `haystack` contain `needle`?
+
+    Helper for `PackageUploadSet.getAll`.
+
+    :param haystack: A database column being matched.
+    :param needle: The string you're looking for.
+    :return: True for a match, False otherwise.
+    """
+    return haystack.contains_string(needle)
+
+
+def get_string_matcher(exact_match=False):
+    """Return a string-matching function of the right sort.
+
+    :param exact_match: If True, return a string matcher that compares a
+        database column to a string.  If False, return one that looks for a
+        substring match.
+    :return: A matching function: (database column, search string) -> bool.
+    """
+    if exact_match:
+        return match_exact_string
+    else:
+        return match_substring
+
+
 class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
@@ -1315,7 +1354,8 @@ class PackageUploadSet:
         return PackageUpload.select(query).count()
 
     def getAll(self, distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None, name_filter=None):
+               archive=None, pocket=None, custom_type=None, name=None,
+               version=None, exact_match=False):
         """See `IPackageUploadSet`."""
         # XXX Julian 2009-07-02 bug=394645
         # This method is an incremental deprecation of
@@ -1339,10 +1379,6 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
-        def compose_name_match(column):
-            """Match a query column to `name_filter`."""
-            return column.startswith(unicode(name_filter))
-
         joins = [PackageUpload]
         clauses = []
         if created_since_date is not None:
@@ -1365,19 +1401,21 @@ class PackageUploadSet:
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
                 PackageUploadCustom.customformat.is_in(custom_type))))
 
-        if name_filter is not None and name_filter != '':
+        match_column = get_string_matcher(exact_match)
+
+        if name is not None and name != '':
             # Join in any attached PackageCopyJob with the right
             # package name.
             joins.append(LeftJoin(
                 PackageCopyJob, And(
                     PackageCopyJob.id == PackageUpload.package_copy_job_id,
-                    compose_name_match(PackageCopyJob.package_name))))
+                    match_column(PackageCopyJob.package_name, name))))
 
             # Join in any attached PackageUploadSource with attached
             # SourcePackageRelease with the right SourcePackageName.
             joins.append(LeftJoin(
                 SourcePackageName,
-                compose_name_match(SourcePackageName.name)))
+                match_column(SourcePackageName.name, name)))
             joins.append(LeftJoin(
                 PackageUploadSource,
                 PackageUploadSource.packageuploadID == PackageUpload.id))
@@ -1392,7 +1430,7 @@ class PackageUploadSet:
             # BinaryPackageRelease with the right BinaryPackageName.
             joins.append(LeftJoin(
                 BinaryPackageName,
-                compose_name_match(BinaryPackageName.name)))
+                match_column(BinaryPackageName.name, name)))
             joins.append(LeftJoin(
                 PackageUploadBuild,
                 PackageUploadBuild.packageuploadID == PackageUpload.id))
@@ -1412,7 +1450,7 @@ class PackageUploadSet:
                 LibraryFileAlias, And(
                     LibraryFileAlias.id ==
                         PackageUploadCustom.libraryfilealiasID,
-                    compose_name_match(LibraryFileAlias.filename))))
+                    match_column(LibraryFileAlias.filename, name))))
 
             # One of these attached items (for that package we're
             # looking for) must exist.

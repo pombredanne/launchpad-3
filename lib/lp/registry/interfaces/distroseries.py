@@ -534,7 +534,8 @@ class IDistroSeriesPublic(
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPackageUploads(created_since_date=None, status=None, archive=None,
-                          pocket=None, custom_type=None, name_filter=None):
+                          pocket=None, custom_type=None, name=None,
+                          version=None, exact_match=False):
         """Get package upload records for this distribution series.
 
         :param created_since_date: If specified, only returns items uploaded
@@ -543,8 +544,12 @@ class IDistroSeriesPublic(
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
-        :param name_filter: Filter results by this file name or package name
-            prefix.
+        :param name: Filter results by this file name or package name.
+        :param version: Filter results by this version number string.
+        :param exact_match: If True, look for exact string matches on the
+            `name` and `version` filters.  If False, look for a substring
+            match so that e.g. a package "kspreadsheetplusplus" would match
+            the search string "spreadsheet".  Defaults to False.
         :return: A result set containing `IPackageUpload`
         """
 
