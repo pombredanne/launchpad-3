@@ -2,17 +2,26 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.security.proxy import removeSecurityProxy
+from storm.store import Store
+from lp.soyuz.interfaces.component import IComponentSet
+from zope.component import getUtility
+from lp.soyuz.model.component import ComponentSelection
+from lp.registry.interfaces.person import IPersonSet
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.adapters.notification import (
     calculate_subject,
+    get_recipients,
     fetch_information,
     person_to_email,
     notify,
     )
-from lp.soyuz.enums import PackageUploadCustomFormat
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadCustomFormat,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
@@ -26,7 +35,7 @@ class TestNotification(TestCaseWithFactory):
             'Date': '2001-01-01',
             'Changed-By': 'Foo Bar <foo.bar@canonical.com>',
             'Maintainer': 'Foo Bar <foo.bar@canonical.com>',
-            'Changes': ' * Foo!'
+            'Changes': ' * Foo!',
             }
         (changesfile, date, changedby, maintainer) = fetch_information(
             None, None, changes)
@@ -63,7 +72,7 @@ class TestNotification(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         expected_subject = '[PPA %s] [%s/%s] %s %s (Accepted)' % (
             get_ppa_reference(archive), distroseries.distribution.name,
-            distroseries.getSuite(pocket), spr.name, spr.version)  
+            distroseries.getSuite(pocket), spr.name, spr.version)
         subject = calculate_subject(
             spr, [], [], archive, distroseries, pocket, 'accepted')
         self.assertEqual(expected_subject, subject)
@@ -128,3 +137,77 @@ class TestNotification(TestCaseWithFactory):
         body = notification.as_string()
         self.assertEqual(person_to_email(person), notification['To'])
         self.assertIn('Rejected by archive administrator.\n\n* Foo!\n', body)
+
+    def _run_recipients_test(self, changes, blamer, maintainer, changer):
+        distribution = self.factory.makeDistribution()
+        archive = self.factory.makeArchive(
+            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        # Now set the uploaders.
+        component = getUtility(IComponentSet).ensure('main')
+        if component not in distroseries.components:
+            store = Store.of(distroseries)
+            store.add(
+                ComponentSelection(
+                    distroseries=distroseries, component=component))
+        archive.newComponentUploader(maintainer, component)
+        archive.newComponentUploader(changer, component)
+        return get_recipients(
+            blamer, archive, distroseries, logger=None, changes=changes)
+
+    def test_get_recipients_good_emails(self):
+        # Test get_recipients with good email addresses..
+        blamer = self.factory.makePerson()
+        maintainer = self.factory.makePerson(
+            'maintainer@canonical.com', displayname='Maintainer')
+        changer = self.factory.makePerson(
+            'changer@canonical.com', displayname='Changer')
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@canonical.com>',
+            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changes': ' * Foo!',
+            }
+        recipients = self._run_recipients_test(
+            changes, blamer, maintainer, changer)
+        expected = [format_address_for_person(p)
+                    for p in (blamer, maintainer, changer)]
+        self.assertEqual(expected, recipients)
+
+    def test_get_recipients_bad_maintainer_email(self):
+        blamer = self.factory.makePerson()
+        maintainer = self.factory.makePerson(
+            'maintainer@canonical.com', displayname='Maintainer')
+        changer = self.factory.makePerson(
+            'changer@canonical.com', displayname='Changer')
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@canonical.com>',
+            'Maintainer': 'Maintainer <maintainer at canonical.com>',
+            'Changes': ' * Foo!',
+            }
+        recipients = self._run_recipients_test(
+            changes, blamer, maintainer, changer)
+        expected = [format_address_for_person(p)
+                    for p in (blamer, changer)]
+        self.assertEqual(expected, recipients)
+
+    def test_get_recipients_bad_changedby_email(self):
+        # Test get_recipients with invalid changedby email address.
+        blamer = self.factory.makePerson()
+        maintainer = self.factory.makePerson(
+            'maintainer@canonical.com', displayname='Maintainer')
+        changer = self.factory.makePerson(
+            'changer@canonical.com', displayname='Changer')
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer at canonical.com>',
+            'Maintainer': 'Maintainer <maintainer@canonical.com>',
+            'Changes': ' * Foo!',
+            }
+        recipients = self._run_recipients_test(
+            changes, blamer, maintainer, changer)
+        expected = [format_address_for_person(p)
+                    for p in (blamer, maintainer)]
+        self.assertEqual(expected, recipients)

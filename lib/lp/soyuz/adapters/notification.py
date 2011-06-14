@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_recipients',  # Available for testing only.
     'notify',
     ]
 
@@ -18,22 +19,25 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
-from lp.archiveuploader.utils import safe_fix_maintainer
+from lp.archiveuploader.utils import (
+    ParseMaintError,
+    safe_fix_maintainer,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    sendmail,
+    )
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
@@ -89,7 +93,7 @@ ACTION_DESCRIPTIONS = {
     'unapproved': 'Waiting for approval',
     'rejected': 'Rejected',
     'accepted': 'Accepted',
-    'announcement': 'Accepted'
+    'announcement': 'Accepted',
     }
 
 
@@ -119,7 +123,7 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
            changesfile_object=None, action=None, dry_run=False, logger=None):
-    """Notify about 
+    """Notify about
 
     :param blamer: The `IPerson` who is to blame for this notification.
     :param spr: The `ISourcePackageRelease` that was created.
@@ -420,12 +424,20 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
     debug(logger, "Building recipients list.")
     (changesfile, date, changedby, maint) = fetch_information(
         spr, bprs, changes)
+
     if changedby:
-        changer = email_to_person(changedby)
+        try:
+            changer = email_to_person(changedby)
+        except ParseMaintError:
+            changer = None
     else:
         changer = None
+
     if maint:
-        maintainer = email_to_person(maint)
+        try:
+            maintainer = email_to_person(maint)
+        except ParseMaintError:
+            maintainer = None
     else:
         maintainer = None
 
@@ -447,7 +459,7 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
         candidate_recipients.extend(uploaders)
 
     # If this is not a PPA, we also consider maintainer and changed-by.
-    if blamer and not archive.is_ppa:
+    elif blamer is not None:
         if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
@@ -464,8 +476,7 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
     for person in candidate_recipients:
         if person is None or person.preferredemail is None:
             continue
-        recipient = format_address(person.displayname,
-            person.preferredemail.email)
+        recipient = format_address_for_person(person)
         debug(logger, "Adding recipient: '%s'" % recipient)
         recipients.append(recipient)
 
@@ -569,6 +580,8 @@ def fetch_information(spr, bprs, changes):
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
+    else:
+        changesfile = date = None
     return (changesfile, date, changedby, maintainer)
 
 
