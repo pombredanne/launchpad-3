@@ -90,7 +90,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -847,7 +846,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
@@ -1648,10 +1648,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return PackageUploadQueue(self, state)
 
     def getPackageUploads(self, created_since_date=None, status=None,
-                          archive=None, pocket=None, custom_type=None):
+                          archive=None, pocket=None, custom_type=None,
+                          name_filter=None):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
-            self, created_since_date, status, archive, pocket, custom_type)
+            self, created_since_date, status, archive, pocket, custom_type,
+            name_filter=name_filter)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):

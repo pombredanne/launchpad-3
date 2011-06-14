@@ -113,6 +113,7 @@ class ArchiveDependencyError(Exception):
      * It is not a PPA,
      * It is already recorded.
     """
+    webservice_error(400)  # Bad request.
 
 
 # Exceptions used in the webservice that need to be in this file to get
