@@ -587,9 +587,31 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             [self.section1, self.section2],
             child.sections)
 
+    def test_multiple_parents_same_packaging(self):
+        # If the same packaging exists different parents, the packaging
+        # in the first parent takes precedence.
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'package': '0.3-1'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'package': '0.1-1'})
+        sourcepackagename = self.factory.getOrMakeSourcePackageName('package')
+        packaging1 = self.factory.makePackagingLink(
+            distroseries=self.parent1, sourcepackagename=sourcepackagename)
+        self.factory.makePackagingLink(
+            distroseries=self.parent2, sourcepackagename=sourcepackagename)
+        child = self._fullInitialise([self.parent1, self.parent2])
+        productseries1 = packaging1.productseries
+        child_packagings = productseries1.getPackagingInDistribution(
+            child.distribution)
+
+        self.assertEquals(1, len(child_packagings))
+        self.assertEquals(
+            packaging1.owner,
+            child_packagings[0].owner)
+
     def test_multiple_parents_same_package(self):
         # If the same package is published in different parents, the package
-        # in the first parents takes precedence.
+        # in the first parent takes precedence.
         self.parent1, self.parent_das1 = self.setupParent(
             packages={'package': '0.3-1'})
         self.parent2, self.parent_das2 = self.setupParent(
