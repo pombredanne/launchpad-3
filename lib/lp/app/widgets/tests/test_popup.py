@@ -24,6 +24,8 @@ class TestMetaClass(InterfaceClass):
             "test_invalid_chars+":
             Choice(vocabulary='ValidTeamOwner'),
             "test_valid.item":
+            Choice(vocabulary='ValidTeamOwner'),
+            "test_valid.second_item":
             Choice(vocabulary='ValidTeamOwner')}
         super(TestMetaClass, self).__init__(
             name, bases=bases, attrs=attrs, __doc__=__doc__,
@@ -46,6 +48,24 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.vocabulary = vocabulary_registry.get(
             self.context, 'ValidTeamOwner')
         self.request = LaunchpadTestRequest()
+
+    def test_widget_rendered_one(self):
+        field = ITest['test_valid.item']
+        bound_field = field.bind(self.context)
+        picker_widget = VocabularyPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        self.assertFalse(picker_widget.widget_rendered)
+        self.assertTrue(self.request.VocabularyPickerWidget_rendered)
+
+    def test_widget_rendered_multiple(self):
+        fields = (ITest['test_valid.item'], ITest['test_valid.second_item'])
+        bound_fields = [field.bind(self.context) for field in fields]
+        picker_widgets = [VocabularyPickerWidget(
+            bound_field, self.vocabulary, self.request)
+            for bound_field in bound_fields]
+        self.assertFalse(picker_widgets[0].widget_rendered)
+        self.assertTrue(self.request.VocabularyPickerWidget_rendered)
+        self.assertTrue(picker_widgets[1].widget_rendered)
 
     def test_widget_template_properties(self):
         # Check the picker widget is correctly set up for a field which has a
