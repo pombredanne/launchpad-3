@@ -866,15 +866,15 @@ class ValidPersonOrTeamVocabulary(
                 for email in emails
                 if email.status == EmailAddressStatus.PREFERRED)
 
-            # The irc nicks.
-            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
-            nicks_by_person = dict((nick.personID, nicks)
-                for nick in nicks)
-
             for person in persons:
                 cache = get_property_cache(person)
                 cache.preferredemail = email_by_person.get(person.id, None)
-                cache.ircnicknames = nicks_by_person.get(person.id, None)
+                cache.ircnicknames = []
+
+            # The irc nicks.
+            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
+            for nick in nicks:
+                get_property_cache(nick.person).ircnicknames.append(nick)
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
