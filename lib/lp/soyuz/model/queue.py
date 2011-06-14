@@ -1486,6 +1486,7 @@ class PackageUploadSet:
             # One of these attached items must have a matching version.
             conditions.append(Or(
                 match_column(SourcePackageRelease.version, version),
+                match_column(BinaryPackageRelease.version, version),
                 ))
 
         query = store.using(*strip_duplicates(joins)).find(
