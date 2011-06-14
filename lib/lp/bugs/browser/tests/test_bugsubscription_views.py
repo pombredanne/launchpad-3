@@ -7,10 +7,12 @@ __metaclass__ = type
 
 from simplejson import dumps
 
+from zope.traversing.browser import absoluteURL
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
-
+from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
     BugPortletSubscribersWithDetails,
@@ -523,6 +525,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             bug.subscribe(subscriber, subscriber,
                           level=BugNotificationLevel.LIFECYCLE)
         harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
 
         expected_result = {
             'subscriber': {
@@ -531,6 +534,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'is_team': False,
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
                 },
             'subscription_level': "Lifecycle",
             }
@@ -547,6 +551,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             bug.subscribe(subscriber, subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
         harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
 
         expected_result = {
             'subscriber': {
@@ -555,6 +560,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'is_team': True,
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
                 },
             'subscription_level': "Lifecycle",
             }
@@ -572,6 +578,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                           level=BugNotificationLevel.LIFECYCLE)
             harness = LaunchpadFormHarness(
                 bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
 
         expected_result = {
             'subscriber': {
@@ -580,6 +587,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'is_team': True,
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
                 },
             'subscription_level': "Lifecycle",
             }
@@ -599,6 +607,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                           level=BugNotificationLevel.LIFECYCLE)
         harness = LaunchpadFormHarness(
             bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
 
         expected_result = {
             'subscriber': {
@@ -607,6 +616,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'is_team': True,
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
                 },
             'subscription_level': "Lifecycle",
             }
