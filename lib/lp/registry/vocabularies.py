@@ -747,12 +747,12 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id,
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 5
+                        when person.name like ? || '%%' then 5
                         when lower(person.displayname) like ? || '%%' then 4
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE lower(Person.name) LIKE ? || '%%'
+                    WHERE Person.name LIKE ? || '%%'
                     or lower(Person.displayname) LIKE ? || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
@@ -778,7 +778,7 @@ class ValidPersonOrTeamVocabulary(
                 private_ranking_sql = SQL("""
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 5
+                        when person.name like ? || '%%' then 5
                         when lower(person.displayname) like ? || '%%' then 3
                         else rank(fti, ftq(?))
                     end) as rank
@@ -793,7 +793,7 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            lower(Person.name) LIKE ? || '%%'
+                            Person.name LIKE ? || '%%'
                             OR lower(Person.displayname) LIKE ? || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
@@ -929,7 +929,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             if self.enhanced_picker_enabled:
                 name_match_query = SQL("""
-                    lower(Person.name) LIKE ? || '%%'
+                    Person.name LIKE ? || '%%'
                     OR lower(Person.displayname) LIKE ? || '%%'
                     OR Person.fti @@ ftq(?)
                     """, [text, text, text]),
