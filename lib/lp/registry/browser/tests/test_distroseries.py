@@ -399,7 +399,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job_source.create(series, [parent_series.id])
 
         self.assertInitSeriesLinkNotPresent(series, 'admin')
