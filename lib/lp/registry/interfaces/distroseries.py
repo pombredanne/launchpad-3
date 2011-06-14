@@ -213,7 +213,7 @@ class IDistroSeriesPublic(
             description=_("The version string for this series.")))
     distribution = exported(
         Reference(
-            Interface, # Really IDistribution, see circular import fix below.
+            Interface,  # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
     distributionID = Attribute('The distribution ID.')
@@ -239,16 +239,13 @@ class IDistroSeriesPublic(
     is_derived_series = Bool(
         title=u'Is this series a derived series?', readonly=True,
         description=(u"Whether or not this series is a derived series."))
-    is_initialising = Bool(
-        title=u'Is this series initialising?', readonly=True,
-        description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     previous_series = exported(
         ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True, schema=Interface, # Really IDistroSeries, see below
+            required=True, schema=Interface,  # Really IDistroSeries
             vocabulary='DistroSeries'),
         ("devel", dict(exported_as="previous_series")),
         ("1.0", dict(exported_as="parent_series")),
@@ -370,7 +367,7 @@ class IDistroSeriesPublic(
 
     main_archive = exported(
         Reference(
-            Interface, # Really IArchive, see below for circular import fix.
+            Interface,  # Really IArchive, see below for circular import fix.
             title=_('Distribution Main Archive')))
 
     supported = exported(
@@ -418,7 +415,7 @@ class IDistroSeriesPublic(
     architectures = exported(
         CollectionField(
             title=_("All architectures in this series."),
-            value_type=Reference(schema=Interface), # IDistroArchSeries.
+            value_type=Reference(schema=Interface),  # IDistroArchSeries.
             readonly=True))
 
     enabled_architectures = Attribute(
@@ -536,8 +533,8 @@ class IDistroSeriesPublic(
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getPackageUploads(created_since_date, status, archive, pocket,
-                          custom_type):
+    def getPackageUploads(created_since_date=None, status=None, archive=None,
+                          pocket=None, custom_type=None, name_filter=None):
         """Get package upload records for this distribution series.
 
         :param created_since_date: If specified, only returns items uploaded
@@ -546,6 +543,8 @@ class IDistroSeriesPublic(
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name_filter: Filter results by this file name or package name
+            prefix.
         :return: A result set containing `IPackageUpload`
         """
 
@@ -848,18 +847,18 @@ class IDistroSeriesPublic(
 
     @operation_parameters(
         parent_series=Reference(
-            schema=Interface, # IDistroSeries
+            schema=Interface,  # IDistroSeries
             title=_("The parent series to consider."),
             required=False),
         difference_type=Choice(
-            vocabulary=DBEnumeratedType, # DistroSeriesDifferenceType
+            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceType
             title=_("Only return differences of this type."), required=False),
         source_package_name_filter=TextLine(
             title=_("Only return differences for packages matching this "
                     "name."),
             required=False),
         status=Choice(
-            vocabulary=DBEnumeratedType, # DistroSeriesDifferenceStatus
+            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceStatus
             title=_("Only return differences of this status."),
             required=False),
         child_version_higher=Bool(
@@ -885,6 +884,12 @@ class IDistroSeriesPublic(
         :param child_version_higher: Only return differences for which the
             child's version is higher than the parent's version.
         """
+
+    def isInitializing():
+        """Is this series initializing?"""
+
+    def isInitialized():
+        """Has this series been initialized?"""
 
 
 class IDistroSeriesEditRestricted(Interface):
@@ -1032,7 +1037,7 @@ class IDistroSeriesSet(Interface):
 
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
-    webservice_error(400) # Bad Request
+    webservice_error(400)  # Bad Request
     _message_prefix = "Error deriving distro series"
 
 
