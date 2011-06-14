@@ -95,15 +95,6 @@ class BazaarBranchStore:
             if needs_tree:
                 local_branch.bzrdir.create_workingtree()
             return local_branch
-        # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
-        # branches disabled.  Need an orderly upgrade process.
-        if False and remote_bzr_dir.needs_format_conversion(
-            format=required_format):
-            try:
-                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            upgrade(remote_url, required_format)
         # The proper thing to do here would be to call
         # "remote_bzr_dir.sprout()".  But 2a fetch slowly checks which
         # revisions are in the ancestry of the tip of the remote branch, which
@@ -116,6 +107,13 @@ class BazaarBranchStore:
         target_control.create_prefix()
         remote_bzr_dir.transport.copy_tree_to_transport(target_control)
         local_bzr_dir = BzrDir.open_from_transport(target)
+        if local_bzr_dir.needs_format_conversion(
+            format=required_format):
+            try:
+                local_bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(target_path, required_format)
         if needs_tree:
             local_bzr_dir.create_workingtree()
         return local_bzr_dir.open_branch()
@@ -133,11 +131,36 @@ class BazaarBranchStore:
         except NotBranchError:
             remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
+            old_branch = None
+        else:
+            if remote_branch.bzrdir.needs_format_conversion(
+                    required_format):
+                # For upgrades, push to a new branch in
+                # the new format. When done pushing,
+                # retire the old .bzr directory and rename
+                # the new one in place.
+                old_branch = remote_branch
+                upgrade_url = urljoin(target_url, "upgrade.bzr")
+                try:
+                    remote_branch.bzrdir.root_transport.delete_tree(
+                        'upgrade.bzr')
+                except NoSuchFile:
+                    pass
+                remote_branch = BzrDir.create_branch_and_repo(
+                    upgrade_url, format=required_format)
+            else:
+                old_branch = None
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
         remote_branch.repository.fetch(bzr_branch.repository)
+        if old_branch is not None:
+            # The format has changed; move the new format
+            # branch in place.
+            base_transport = old_branch.bzrdir.root_transport
+            old_branch.bzrdir.retire_bzrdir()
+            base_transport.rename("upgrade.bzr/.bzr", ".bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 
@@ -500,7 +523,7 @@ class CSCVSImportWorker(ImportWorker):
         last_commit = cscvs.findLastCscvsCommit(scm_branch)
 
         # If branch in `bazaar_tree` doesn't have any identifiable CSCVS
-        # revisions, CSCVS "initialises" the branch.
+        # revisions, CSCVS "initializes" the branch.
         if last_commit is None:
             self._runToBaz(
                 foreign_directory, "-SI", "MAIN.1", bzr_directory)
@@ -545,24 +568,20 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses need to implement `format_classes`.
+    Subclasses need to implement `probers`.
     """
 
     needs_bzr_tree = False
 
     @property
-    def format_classes(self):
-        """The format classes that should be tried for this import."""
+    def probers(self):
+        """The probers that should be tried for this import."""
         raise NotImplementedError
 
-    def getExtraPullArgs(self):
-        """Return extra arguments to `InterBranch.pull`.
-
-        This method only really exists because only bzr-git and bzr-svn
-        support the 'limit' argument to this method.  When bzr-hg plugin does
-        too, this method can go away.
+    def getRevisionLimit(self):
+        """Return maximum number of revisions to fetch (None for no limit).
         """
-        return {}
+        return None
 
     def _doImport(self):
         self._logger.info("Starting job.")
@@ -574,9 +593,10 @@ class PullingImportWorker(ImportWorker):
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             transport = get_transport(self.source_details.url)
-            for format_class in self.format_classes:
+            for prober_kls in self.probers:
+                prober = prober_kls()
                 try:
-                    format = format_class.probe_transport(transport)
+                    format = prober.probe_transport(transport)
                     break
                 except NotBranchError:
                     pass
@@ -586,19 +606,19 @@ class PullingImportWorker(ImportWorker):
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
             self._logger.info("Importing branch.")
-            pull_result = inter_branch.pull(
-                overwrite=True, **self.getExtraPullArgs())
+            inter_branch.fetch(limit=self.getRevisionLimit())
+            if bazaar_branch.repository.has_revision(remote_branch_tip):
+                pull_result = inter_branch.pull(overwrite=True)
+                if pull_result.old_revid != pull_result.new_revid:
+                    result = CodeImportWorkerExitCode.SUCCESS
+                else:
+                    result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
+            else:
+                result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
             self._logger.info("Pushing local import branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
-            last_imported_revison = bazaar_branch.last_revision()
             self._logger.info("Job complete.")
-            if last_imported_revison == remote_branch_tip:
-                if pull_result.old_revid != pull_result.new_revid:
-                    return CodeImportWorkerExitCode.SUCCESS
-                else:
-                    return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
-            else:
-                return CodeImportWorkerExitCode.SUCCESS_PARTIAL
+            return result
         finally:
             bzrlib.ui.ui_factory = saved_factory
 
@@ -610,16 +630,15 @@ class GitImportWorker(PullingImportWorker):
     """
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        # We only return LocalGitBzrDirFormat for tests.
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.git import (
-            LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
-        return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
+            LocalGitProber, RemoteGitProber)
+        return [LocalGitProber, RemoteGitProber]
 
-    def getExtraPullArgs(self):
-        """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.git_revisions_import_limit}
+    def getRevisionLimit(self):
+        """See `PullingImportWorker.getRevisionLimit`."""
+        return config.codeimport.git_revisions_import_limit
 
     def getBazaarBranch(self):
         """See `ImportWorker.getBazaarBranch`.
@@ -666,11 +685,14 @@ class HgImportWorker(PullingImportWorker):
     """
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        # We only return HgLocalRepository for tests.
-        from bzrlib.plugins.hg import HgBzrDirFormat
-        return [HgBzrDirFormat]
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
+        from bzrlib.plugins.hg import HgProber
+        return [HgProber]
+
+    def getRevisionLimit(self):
+        """See `PullingImportWorker.getRevisionLimit`."""
+        return config.codeimport.hg_revisions_import_limit
 
     def getBazaarBranch(self):
         """See `ImportWorker.getBazaarBranch`.
@@ -714,12 +736,12 @@ class HgImportWorker(PullingImportWorker):
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
 
-    def getExtraPullArgs(self):
-        """See `PullingImportWorker.getExtraPullArgs`."""
-        return {'limit': config.codeimport.svn_revisions_import_limit}
+    def getRevisionLimit(self):
+        """See `PullingImportWorker.getRevisionLimit`."""
+        return config.codeimport.svn_revisions_import_limit
 
     @property
-    def format_classes(self):
-        """See `PullingImportWorker.opening_format`."""
-        from bzrlib.plugins.svn.format import SvnRemoteFormat
-        return [SvnRemoteFormat]
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
+        from bzrlib.plugins.svn import SvnRemoteProber
+        return [SvnRemoteProber]

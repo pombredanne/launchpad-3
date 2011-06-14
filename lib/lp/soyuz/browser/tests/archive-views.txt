@@ -753,7 +753,8 @@ dependency. Each element has:
     mark/ppa
 
     >>> print dependency.title.escapedtext
-    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark Shuttleworth</a>
+    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark
+    Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.
@@ -1387,32 +1388,34 @@ it's a valid sources.list entry.
     >>> ppa_archive_view = create_initialized_view(
     ...     cprov.archive, name="+admin")
 
-The validate_external_dependencies() method is called when validating and will
-return a list of errors if the data dis not validate.  A valid entry is of the
-form:
+    >>> from lp.soyuz.interfaces.archive import validate_external_dependencies
+
+The validate_external_dependencies() function is called when validating and
+will return a list of errors if the data dis not validate.  A valid entry is
+of the form:
     deb scheme://domain/ suite component[s]
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic main")
     []
 
 Multiple entries are valid, separated by newlines:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic main\n"
     ...     "deb http://example.com/ karmic restricted")
     []
 
 If the line does not start with the word "deb" it fails:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "dab http://example.com/ karmic main")
     ["dab http://example.com/ karmic main: Must start with 'deb'"]
 
 If the line has too few parts it fails.  Here we're missing a suite:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "deb http://example.com/ main")
     ["'deb http://example.com/ main'
@@ -1420,7 +1423,7 @@ If the line has too few parts it fails.  Here we're missing a suite:
 
 If the URL looks invalid, it fails:
 
-    >>> print ppa_archive_view.validate_external_dependencies(
+    >>> print validate_external_dependencies(
     ...     "deb http://example.com/ karmic universe\n"
     ...     "deb example.com/ karmic main")
     ['deb example.com/ karmic main: Invalid URL']

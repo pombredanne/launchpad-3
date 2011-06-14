@@ -29,7 +29,10 @@ from storm.locals import (
     Or,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -646,10 +649,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distribution == self, user, wanted_tags=wanted_tags)
+            And(BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1785,10 +1792,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED).config(limit=1)
 
-        # XXX 2009-02-19 Julian
-        # Storm is not very useful for bool checking on the results,
-        # see: https://bugs.launchpad.net/soyuz/+bug/246200
-        return results.any() != None
+        return not results.is_empty()
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -1832,6 +1836,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @property
+    def has_published_sources(self):
+        archives_sources = EmptyResultSet()
+        for archive in self.all_distro_archives:
+            archives_sources = archives_sources.union(
+                archive.getPublishedSources())
+        return not archives_sources.is_empty()
 
 
 class DistributionSet:

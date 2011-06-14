@@ -82,7 +82,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -209,7 +209,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
 
-        Use *initialiseFromParent* procedure to create 'breezy'
+        Use *initializeFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
 
         Also sets 'changeslist' and 'nominatedarchindep' properly and
@@ -228,8 +228,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             '5.10', None, bat.owner)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(bat, self.breezy)
-        ids.initialise()
+        ids = InitializeDistroSeries(self.breezy, [bat.id])
+        ids.initialize()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy['i386'].addOrUpdateChroot(fake_chroot)

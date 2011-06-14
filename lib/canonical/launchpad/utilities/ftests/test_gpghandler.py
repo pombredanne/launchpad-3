@@ -9,7 +9,6 @@ from datetime import (
 from math import floor
 import os
 from time import time
-import unittest
 
 import gpgme
 from pytz import UTC
@@ -22,16 +21,28 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyDoesNotExistOnServer,
+    GPGKeyTemporarilyNotFoundError,
+    IGPGHandler,
+    )
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from canonical.lazr.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import TestCase
+from lp.testing.keyserver import KeyServerTac
 
 
-class TestImportKeyRing(unittest.TestCase):
+class TestImportKeyRing(TestCase):
     """Tests for keyring imports"""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Get a gpghandler and login"""
+        super(TestImportKeyRing, self).setUp()
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
         self.gpg_handler.resetLocalState()
@@ -42,6 +53,7 @@ class TestImportKeyRing(unittest.TestCase):
         # This should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
         logout()
+        super(TestImportKeyRing, self).tearDown()
 
     def populateKeyring(self):
         for email in keys_for_tests.iter_test_key_emails():
@@ -208,3 +220,37 @@ class TestImportKeyRing(unittest.TestCase):
         gpghandler.touchConfigurationDirectory()
         for fname in files_to_check:
             self.assertTrue(now <= floor(os.path.getmtime(fname)))
+
+    def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
+        # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
+        # when called for a key that does not exist on the key server.
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        gpghandler = getUtility(IGPGHandler)
+        self.assertRaises(
+            GPGKeyDoesNotExistOnServer, gpghandler.retrieveKey,
+            'non-existent-fp')
+
+    def test_retrieveKey_raises_GPGKeyTemporarilyNotFoundError_for_timeout(
+        self):
+        # If the keyserver responds too slowly, GPGHandler.retrieveKey()
+        # raises GPGKeyTemporarilyNotFoundError.
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+        old_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(lambda: 0.01)
+        try:
+            gpghandler = getUtility(IGPGHandler)
+            self.assertRaises(
+                GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
+                'non-existent-fp')
+            # An OOPS report is generated for the timeout.
+            error_utility = ErrorReportingUtility()
+            error_report = error_utility.getLastOopsReport()
+            self.assertEqual('False', error_report.informational)
+            self.assertEqual('TimeoutError', error_report.type)
+            self.assertEqual('timeout exceeded.', error_report.value)
+        finally:
+            set_default_timeout_function(old_timeout_function)

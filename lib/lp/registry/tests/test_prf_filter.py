@@ -27,7 +27,7 @@ class Filter_Logging(unittest.TestCase):
 
 class Filter_Init(unittest.TestCase):
     def testDefaultFiltersProperty(self):
-        """Filter constructor initialises filters property to empty dict."""
+        """Filter constructor initializes filters property to empty dict."""
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         f = Filter()
