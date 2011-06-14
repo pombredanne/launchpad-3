@@ -8,6 +8,7 @@ __all__ = [
     'DocTestMatches',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
+    'EqualsIgnoringWhitespace',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
@@ -20,17 +21,17 @@ __all__ = [
     ]
 
 from lazr.lifecycle.snapshot import Snapshot
+from testtools import matchers
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
-    Equals,
     DocTestMatches as OriginalDocTestMatches,
+    Equals,
     LessThan,
     Matcher,
     Mismatch,
     MismatchesAll,
     )
-from testtools import matchers
 from zope.interface.exceptions import (
     BrokenImplementation,
     BrokenMethodImplementation,
@@ -44,6 +45,7 @@ from zope.security.proxy import (
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.testing import normalize_whitespace
 from lp.testing._login import person_logged_in
 from lp.testing._webservice import QueryCollector
 
@@ -290,7 +292,8 @@ class IsConfiguredBatchNavigator(Matcher):
 
         :param singular: The singular header the batch should be using.
         :param plural: The plural header the batch should be using.
-        :param batch_size: The batch size that should be configured by default.
+        :param batch_size: The batch size that should be configured by
+            default.
         """
         self._single = Equals(singular)
         self._plural = Equals(plural)
@@ -438,3 +441,21 @@ class MatchesPickerText(Matcher):
         text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
         text_matcher = DocTestMatches(extract_text(text))
         return text_matcher.match(matchee)
+
+
+class EqualsIgnoringWhitespace(Equals):
+    """Compare equality, ignoring whitespace in strings.
+
+    Whitespace in strings is normalized before comparison. All other objects
+    are compared as they come.
+    """
+
+    def __init__(self, expected):
+        if isinstance(expected, (str, unicode)):
+            expected = normalize_whitespace(expected)
+        super(EqualsIgnoringWhitespace, self).__init__(expected)
+
+    def match(self, observed):
+        if isinstance(observed, (str, unicode)):
+            observed = normalize_whitespace(observed)
+        return super(EqualsIgnoringWhitespace, self).match(observed)

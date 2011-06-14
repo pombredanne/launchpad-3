@@ -44,6 +44,11 @@ viewed_by is a team reference and used to query private bug counts.
     ...     # bugs created in previous transactions.
     ...     store.flush()
     ...     store.invalidate()
+    ...
+    ...     # And rollup the BugSummaryJournal into BugSummary
+    ...     # so all the records are in one place.
+    ...     store.execute("SELECT bugsummary_rollup_journal()")
+    ...
     ...     # Make sure our results are in a consistent order.
     ...     ordered_results = bugsummary_resultset.order_by(
     ...         BugSummary.product_id, BugSummary.productseries_id,

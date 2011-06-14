@@ -218,6 +218,7 @@ class DistroSeriesOverviewMenu(
                  'queue',
                  'add_port',
                  'create_milestone',
+                 'initseries',
                  ]
         add_subscribe_link(links)
         links.append('admin')
@@ -274,6 +275,15 @@ class DistroSeriesOverviewMenu(
     def queue(self):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def initseries(self):
+        enabled = (
+             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
+             not self.context.isInitializing() and
+             not self.context.isInitialized())
+        text = 'Initialize series'
+        return Link('+initseries', text, icon='edit', enabled=enabled)
 
 
 class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
@@ -645,6 +655,29 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     @property
     def is_derived_series_feature_enabled(self):
         return getFeatureFlag("soyuz.derived_series_ui.enabled") is not None
+
+    @property
+    def show_derivation_not_yet_available(self):
+        return not self.is_derived_series_feature_enabled
+
+    @property
+    def show_derivation_form(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            not self.context.isInitializing() and
+            not self.context.isInitialized())
+
+    @property
+    def show_already_initialized_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.isInitialized())
+
+    @property
+    def show_already_initializing_message(self):
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.isInitializing())
 
     @property
     def rebuilding_allowed(self):
