@@ -796,11 +796,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
-    def is_derived_series(self):
-        """See `IDistroSeries`."""
-        return not self.getParentSeries() == []
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -1973,7 +1968,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
-        if self.is_derived_series:
+        if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
         initialise_series = InitialiseDistroSeries(self, parents)
@@ -2034,6 +2029,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
+
+    def isDerivedSeries(self):
+        """See `IDistroSeries`."""
+        return not self.getParentSeries() == []
 
     def isInitializing(self):
         """See `IDistroSeries`."""

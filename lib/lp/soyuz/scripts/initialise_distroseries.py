@@ -92,7 +92,7 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.is_derived_series:
+        if self.distroseries.isDerivedSeries():
             raise InitialisationError(
                 ("DistroSeries {child.name} has already been initialized"
                  ".").format(

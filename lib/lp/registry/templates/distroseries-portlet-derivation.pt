@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="series-derivation" class="portlet"
   tal:define="overview_menu context/menu:overview">
-  <tal:is_derived condition="context/is_derived_series">
+  <tal:is_derived condition="context/isDerivedSeries">
     <tal:is_initialised condition="not: context/isInitializing">
     <tal:one_parent condition="view/has_unique_parent">
       <h2>Derived from <tal:name replace="view/unique_parent/displayname"/></h2>
