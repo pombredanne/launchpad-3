@@ -218,7 +218,7 @@ def snapshot_bug_params(bug_params):
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
             "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
+            "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
             "milestone", "assignee"])
@@ -2533,13 +2533,6 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
-
-        # Store binary package name in the description, because
-        # storing it as a separate field was a maintenance burden to
-        # developers.
-        if params.binarypackagename:
-            params.comment = "Binary package hint: %s\n\n%s" % (
-                params.binarypackagename.name, params.comment)
 
         # Create the bug comment if one was given.
         if params.comment:
