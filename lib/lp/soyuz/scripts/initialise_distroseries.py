@@ -50,12 +50,11 @@ class InitialiseDistroSeries:
     We support 2 use cases here:
       #1 If the child distribution has zero initialized series:
         - the parent list can't be empty (otherwise we trigger an error);
-        - the series will be derived from the parents;
+        - the series will be derived from the parents passed as argument;
         - the parents will be set to the parents passed as argument;
         - first_derivation = True.
       #2 If the child distribution has more than zero initialized series:
-        - the series will be derived from the previous_series'
-          parents;
+        - the series will be derived from the previous_series;
         - the parents will be set to the parents passed as argument or
           the parents of the previous_series if the passed argument is empty;
         - first_derivation = False.
