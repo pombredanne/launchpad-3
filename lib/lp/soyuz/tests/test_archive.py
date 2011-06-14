@@ -10,7 +10,9 @@ from datetime import (
     )
 import doctest
 
-from testtools.matchers import DocTestMatches
+from testtools.matchers import DocTestMatches, MatchesRegex
+from testtools.testcase import ExpectedException
+
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -48,6 +50,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
+    ArchiveDependencyError,
     ArchiveDisabled,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
@@ -223,7 +226,7 @@ class TestSeriesWithSources(TestCaseWithFactory):
         # Calling series_with_sources returns all series with publishings.
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(distribution=distribution)
-        series_with_no_sources = self.factory.makeDistroSeries(
+        self.factory.makeDistroSeries(
             distribution=distribution, version="0.5")
         series_with_sources1 = self.factory.makeDistroSeries(
             distribution=distribution, version="1")
@@ -283,7 +286,7 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
                 source_package_release=sourcepackagerelease,
                 archive=archive, status=status)
             sprs.append(sourcepackagerelease)
-        unlinked_spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageRelease()
         return archive, sprs
 
     def test_getSourcePackageReleases_with_no_params(self):
@@ -425,7 +428,7 @@ class TestCollectLatestPublishedSources(TestCaseWithFactory):
         other_spn = self.factory.makeSourcePackageName(name="bar")
         archive = self.factory.makeArchive()
         self.makePublishedSources(archive,
-            [PackagePublishingStatus.PUBLISHED]*3,
+            [PackagePublishingStatus.PUBLISHED] * 3,
             ["1.0", "1.1", "2.0"],
             [sourcepackagename, sourcepackagename, other_spn])
         pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
@@ -1299,6 +1302,69 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         self.assertTrue(self.archive.build_debug_symbols)
 
 
+class TestAddArchiveDependencies(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_add_hidden_dependency(self):
+        # The user cannot add a dependency on an archive they cannot see.
+        archive = self.factory.makeArchive(private=True)
+        dependency = self.factory.makeArchive(private=True)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "You don't have permission to use this dependency."):
+                archive.addArchiveDependency(dependency, 'foo')
+
+    def test_private_dependency_public_archive(self):
+        # A public archive may not depend on a private archive.
+        archive = self.factory.makeArchive()
+        dependency = self.factory.makeArchive(
+            private=True, owner=archive.owner)
+        with person_logged_in(archive.owner):
+            with ExpectedException(
+                ArchiveDependencyError,
+                "Public PPAs cannot depend on private ones."):
+                archive.addArchiveDependency(dependency, 'foo')
+
+    def test_add_private_dependency(self):
+        # The user can add a dependency on private archive they can see.
+        archive = self.factory.makeArchive(private=True)
+        dependency = self.factory.makeArchive(
+            private=True, owner=archive.owner)
+        with person_logged_in(archive.owner):
+            archive_dependency = archive.addArchiveDependency(dependency,
+                PackagePublishingPocket.RELEASE)
+            self.assertContentEqual(
+                archive.dependencies, [archive_dependency])
+
+
+class TestArchiveDependencies(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_private_sources_list(self):
+        """Entries for private dependencies include credentials."""
+        p3a = self.factory.makeArchive(name='p3a', private=True)
+        dependency = self.factory.makeArchive(
+            name='dependency', private=True, owner=p3a.owner)
+        with person_logged_in(p3a.owner):
+            bpph = self.factory.makeBinaryPackagePublishingHistory(
+                archive=dependency, status=PackagePublishingStatus.PUBLISHED)
+            p3a.addArchiveDependency(dependency,
+                PackagePublishingPocket.RELEASE)
+            build = self.factory.makeBinaryPackageBuild(archive=p3a,
+                distroarchseries=bpph.distroarchseries)
+            sources_list = get_sources_list_for_building(
+                build, build.distro_arch_series,
+                build.source_package_release.name)
+            sources_list_str = '\n'.join(sources_list)
+            matches = MatchesRegex(
+                "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
+                "person-name-.*/dependency/ubuntu distroseries-.* main")
+            self.assertThat(sources_list[0], matches)
+
+
 class TestFindDepCandidates(TestCaseWithFactory):
     """Tests for Archive.findDepCandidates."""
 
@@ -1346,7 +1412,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
 
     def test_does_not_find_pending_publication(self):
         # A pending candidate in the same archive should not be found.
-        bins = self.publisher.getPubBinaries(
+        self.publisher.getPubBinaries(
             binaryname='foo', archive=self.archive)
         self.assertDep('i386', 'foo', [])
 
@@ -1572,7 +1638,7 @@ class TestvalidatePPA(TestCaseWithFactory):
     def test_two_ppas_with_team(self):
         team = self.factory.makeTeam(
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        ppa = self.factory.makeArchive(owner=team, name='ppa')
+        self.factory.makeArchive(owner=team, name='ppa')
         self.assertEqual("%s already has a PPA named 'ppa'." % (
             team.displayname), Archive.validatePPA(team, 'ppa'))
 
