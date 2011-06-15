@@ -518,7 +518,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         admin = self.factory.makeAdministrator()
         sourcepackage = self.factory.makeSourcePackage()
         with person_logged_in(admin):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Administrators should have launchpad.Edit on source "
                 "packages.")
@@ -526,7 +526,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
     def test_distro_owner_have_launchpad_Edit(self):
         sourcepackage = self.factory.makeSourcePackage()
         with person_logged_in(sourcepackage.distribution.owner):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Distribution owner should have launchpad.Edit on source "
                 "packages.")
@@ -538,7 +538,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages.")
@@ -553,7 +553,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages in an OBSOLETE series.")
@@ -568,7 +568,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages in a CURRENT series.")
@@ -583,7 +583,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages in a SUPPORTED series.")
