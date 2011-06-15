@@ -330,19 +330,14 @@ class HWSubmissionSet:
                 args.append(Distribution.id == distribution.id)
             if distroseries is not None:
                 args.append(DistroArchSeries.distroseries == distroseries.id)
-
         if owner is not None:
             args.append(HWSubmission.owner == owner.id)
-
         if created_before is not None:
             args.append(HWSubmission.date_created <= created_before)
-
         if created_after is not None:
             args.append(HWSubmission.date_created > created_after)
-
         if submitted_before is not None:
             args.append(HWSubmission.date_submitted <= submitted_before)
-
         if submitted_after is not None:
             args.append(HWSubmission.date_submitted > submitted_after)
 
