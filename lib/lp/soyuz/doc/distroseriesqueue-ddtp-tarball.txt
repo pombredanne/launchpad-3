@@ -151,7 +151,7 @@ Let's use the script to fetch the ddtp-tarball upload:
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue accepted
+  Initializing connection to queue accepted
   Running: "fetch trans"
   Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
   ---------------------------------------------------------------------------

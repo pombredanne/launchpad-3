@@ -101,7 +101,7 @@ be rejecting from unapproved or new, fix bug #54649):
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue accepted
+  Initializing connection to queue accepted
   ...
   Rejecting dist-upgrader_20060302.0120_all.tar.gz
   ...
@@ -119,7 +119,7 @@ very unlikely, however it's only for testing purpose, fix #54649):
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue rejected
+  Initializing connection to queue rejected
   ...
   Accepting dist-upgrader_20060302.0120_all.tar.gz
   ...
@@ -135,7 +135,7 @@ Let's use the script to fetch the dist-upgrader upload:
   >>> process.returncode
   0
   >>> print stdout
-  Initialising connection to queue accepted
+  Initializing connection to queue accepted
   Running: "fetch dist"
   Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
   ---------------------------------------------------------------------------
