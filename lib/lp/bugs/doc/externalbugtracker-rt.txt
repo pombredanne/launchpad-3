@@ -98,7 +98,7 @@ all unknown.
    'Unknown'
 
 
-== Initialisation ==
+== Initialization ==
 
 Calling initializeRemoteBugDB() on our RequestTracker instance and
 passing it a set of remote bug IDs will fetch those bug IDs from the

@@ -521,7 +521,7 @@ class TestNewBuilders(TestCase):
         return NewBuildersScanner(manager=manager, clock=clock)
 
     def test_init_stores_existing_builders(self):
-        # Make sure that NewBuildersScanner initialises itself properly
+        # Make sure that NewBuildersScanner initializes itself properly
         # by storing a list of existing builders.
         all_builders = [builder.name for builder in getUtility(IBuilderSet)]
         builder_scanner = self._getScanner()

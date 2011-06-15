@@ -97,7 +97,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         """Initialize some values on the form, when it's possible."""
         field_values = {}
         if self.request.method == 'POST':
-            # We got a form post, we don't need to do any initialisation.
+            # We got a form post, we don't need to do any initialization.
             return field_values
         # Fill the know values.
         field_values['path'] = self.context.path
@@ -280,7 +280,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # Only show languagepack for Ubuntu packages.
             self.field_names.remove('languagepack')
 
-        # Execute default initialisation.
+        # Execute default initialization.
         LaunchpadFormView.initialize(self)
 
 # XXX: HenningEggers 2008-11-21 bug=300608: This code is too generic to be in
