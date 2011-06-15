@@ -45,7 +45,6 @@ class NameAlreadyTaken(Exception):
 
 class NoSuchDistroSeries(NameLookupFailed):
     """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such distribution series"
 
 
