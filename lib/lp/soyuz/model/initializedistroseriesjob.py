@@ -22,6 +22,7 @@ from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitializeDistroSeriesJob,
     IInitializeDistroSeriesJobSource,
+    InitializationCompleted,
     InitializationPending,
     )
 from lp.soyuz.model.distributionjob import (
@@ -55,6 +56,8 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
                 # to be rescheduled.
                 store.remove(distribution_job)
                 store.remove(distribution_job.job)
+            elif distribution_job.job.status == JobStatus.COMPLETED:
+                raise InitializationCompleted(cls(distribution_job))
             else:
                 raise InitializationPending(cls(distribution_job))
         # Schedule the initialization.

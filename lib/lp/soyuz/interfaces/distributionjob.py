@@ -10,6 +10,7 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitializeDistroSeriesJob",
     "IInitializeDistroSeriesJobSource",
+    "InitializationCompleted",
     "InitializationPending",
 ]
 
@@ -85,6 +86,17 @@ class InitializationPending(Exception):
 
     def __init__(self, job):
         super(InitializationPending, self).__init__()
+        self.job = job
+
+
+class InitializationCompleted(Exception):
+    """The initialization of the distroseries has already been done.
+
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
+
+    def __init__(self, job):
+        super(InitializationCompleted, self).__init__()
         self.job = job
 
 

@@ -20,6 +20,7 @@ from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJob,
     IInitializeDistroSeriesJobSource,
+    InitializationCompleted,
     InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
@@ -68,25 +69,24 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         # for a DistroSeries, InitializeDistroSeriesJob.create() raises an
         # exception.
         job = self.job_source.create(distroseries, [parent.id])
-        assert_create_fails = lambda: self.assertRaises(
-            InitializationPending, self.job_source.create,
-            distroseries, [parent.id])
+        assert_create_fails = lambda exc_type: self.assertRaises(
+            exc_type, self.job_source.create, distroseries, [parent.id])
         # JobStatus.WAITING -> fails
-        exception = assert_create_fails()
+        exception = assert_create_fails(InitializationPending)
         self.assertThat(exception.job, Provides(IInitializeDistroSeriesJob))
         self.assertEqual(distroseries, exception.job.distroseries)
         self.assertIn(exception.job.job.status, Job.PENDING_STATUSES)
         # JobStatus.RUNNING -> fails
         job.start()
-        assert_create_fails()
+        assert_create_fails(InitializationPending)
         # JobStatus.SUSPENDED -> fails
         job.suspend()
-        assert_create_fails()
+        assert_create_fails(InitializationPending)
         # JobStatus.COMPLETED -> fails
         job.queue()
         job.start()
         job.complete()
-        assert_create_fails()
+        assert_create_fails(InitializationCompleted)
 
     def test_create_with_existing_failed_job(self):
         parent = self.factory.makeDistroSeries()
