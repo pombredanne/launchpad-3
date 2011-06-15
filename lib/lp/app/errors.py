@@ -32,6 +32,7 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+@error_status(httplib.GONE)
 class GoneError(KeyError):
     """Launchpad object is gone."""
 
