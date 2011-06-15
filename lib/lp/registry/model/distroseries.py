@@ -139,7 +139,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distributionjob import (
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -175,9 +175,9 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.initialise_distroseries import (
-    InitialisationError,
-    InitialiseDistroSeries,
+from lp.soyuz.scripts.initialize_distroseries import (
+    InitializationError,
+    InitializeDistroSeries,
     )
 from lp.translations.enums import LanguagePackType
 from lp.translations.model.distroseries_translations_copy import (
@@ -794,11 +794,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def fullseriesname(self):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
-
-    @property
-    def is_derived_series(self):
-        """See `IDistroSeries`."""
-        return not self.getParentSeries() == []
 
     @property
     def bugtargetname(self):
@@ -1649,11 +1644,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPackageUploads(self, created_since_date=None, status=None,
                           archive=None, pocket=None, custom_type=None,
-                          name_filter=None):
+                          name=None, version=None, exact_match=False):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
-            name_filter=name_filter)
+            name=name, version=version, exact_match=exact_match)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
@@ -1973,15 +1968,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
-        if self.is_derived_series:
+        if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
-        initialise_series = InitialiseDistroSeries(self, parents)
+        initialize_series = InitializeDistroSeries(self, parents)
         try:
-            initialise_series.check()
-        except InitialisationError, e:
+            initialize_series.check()
+        except InitializationError, e:
             raise DerivationError(e)
-        getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitializeDistroSeriesJobSource).create(
             self, parents, architectures, packagesets, rebuild, overlays,
             overlay_pockets, overlay_components)
 
@@ -2035,9 +2030,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 status=status,
                 child_version_higher=child_version_higher)
 
+    def isDerivedSeries(self):
+        """See `IDistroSeries`."""
+        return not self.getParentSeries() == []
+
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         pending_jobs = job_source.getPendingJobsForDistroseries(self)
         return not pending_jobs.is_empty()
 

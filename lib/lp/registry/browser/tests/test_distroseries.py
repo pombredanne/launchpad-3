@@ -67,7 +67,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -297,22 +297,22 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
         self.assertThat(html_content, portlet_display)
 
-    def test_differences_portlet_initialising(self):
-        # The difference portlet displays 'The series is initialising.' if
-        # there is an initialising job for the series.
+    def test_differences_portlet_initializing(self):
+        # The difference portlet displays 'The series is initializing.' if
+        # there is an initializing job for the series.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         self.simple_user = self.factory.makePerson()
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job_source.create(derived_series, [parent_series.id])
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Series initialisation in progress'),
+                text='Series initialization in progress'),
             soupmatchers.Tag(
                 'Init message', True,
-                text=re.compile('\s*This series is initialising.\s*')),
+                text=re.compile('\s*This series is initializing.\s*')),
               )
 
         with person_logged_in(self.simple_user):
@@ -399,7 +399,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         set_derived_series_ui_feature_flag(self)
         series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job_source.create(series, [parent_series.id])
 
         self.assertInitSeriesLinkNotPresent(series, 'admin')
@@ -574,7 +574,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # The form is hidden when the feature flag is set but the series has
         # already been derived.
         distroseries = self.factory.makeDistroSeries()
-        getUtility(IInitialiseDistroSeriesJobSource).create(
+        getUtility(IInitializeDistroSeriesJobSource).create(
             distroseries, [self.factory.makeDistroSeries().id])
         view = create_initialized_view(distroseries, "+initseries")
         flags = {u"soyuz.derived_series_ui.enabled": u"true"}
@@ -659,12 +659,12 @@ class TestDistroSeriesLocalDifferences(
             "Form filter should not be shown when there are no differences.")
 
     def test_parent_packagesets_localpackagediffs(self):
-        # +localpackagediffs displays the parent packagesets.
+        # +localpackagediffs displays the packagesets.
         ds_diff = self.factory.makeDistroSeriesDifference()
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[ds_diff.source_package_name],
-                distroseries=ds_diff.parent_series)
+                distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -675,8 +675,8 @@ class TestDistroSeriesLocalDifferences(
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -687,7 +687,7 @@ class TestDistroSeriesLocalDifferences(
                 self.factory.makePackageset(
                     name=name,
                     packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.parent_series)
+                    distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -699,8 +699,8 @@ class TestDistroSeriesLocalDifferences(
         packageset_text = re.compile(
             '\s*' + ', '.join(sorted(unsorted_names)))
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
 
 class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
