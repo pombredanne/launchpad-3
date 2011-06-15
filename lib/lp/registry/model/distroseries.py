@@ -1644,11 +1644,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPackageUploads(self, created_since_date=None, status=None,
                           archive=None, pocket=None, custom_type=None,
-                          name_filter=None):
+                          name=None, version=None, exact_match=False):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
-            name_filter=name_filter)
+            name=name, version=version, exact_match=exact_match)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):

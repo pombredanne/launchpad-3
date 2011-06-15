@@ -121,6 +121,10 @@ class PackageCopyJob(StormBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
+    @property
+    def package_version(self):
+        return self.metadata["package_version"]
+
     def extendMetadata(self, metadata_dict):
         """Add metadata_dict to the existing metadata."""
         existing = self.metadata
@@ -195,7 +199,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version, include_binaries):
-        """."""
+        """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
@@ -313,10 +317,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
-
-    @property
-    def package_version(self):
-        return self.metadata["package_version"]
 
     @property
     def include_binaries(self):

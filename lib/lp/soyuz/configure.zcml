@@ -914,6 +914,13 @@
         provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
     </securedutility>
+
+    <!-- PackageCopyJob -->
+    <class class=".model.packagecopyjob.PackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+    </class>
+
+    <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
       <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
