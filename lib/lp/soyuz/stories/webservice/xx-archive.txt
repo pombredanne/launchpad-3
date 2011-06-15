@@ -233,7 +233,7 @@ Passing a bad package name results in an error:
     >>> print user_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
     ...     source_package_name="badpackage")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
 
 Colin is a valid member of the team who owns the ubuntu primary archive.
@@ -306,7 +306,7 @@ Passing a bad component name results in an error:
     >>> print cjwatson_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
     ...     component_name="badcomponent")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
 
 If you don't specify the component, you get all the uploaders for

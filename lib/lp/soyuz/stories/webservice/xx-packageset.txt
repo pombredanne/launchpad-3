@@ -72,7 +72,7 @@ When a `PackageSet` cannot be found, an error is returned.
     >>> response = webservice.named_get(
     ...     '/package-sets', 'getByName', {}, name=u'not-found')
     >>> print response
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such package set (in the specified distro series): 'not-found'.
 
@@ -499,7 +499,7 @@ If a non-existing source package name is passed it returns an error.
     ...     '/package-sets/', 'setsIncludingSource', {},
     ...     sourcepackagename=u'does-not-exist')
     >>> print response
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such source package: 'does-not-exist'.
 

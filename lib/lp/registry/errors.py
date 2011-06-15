@@ -59,7 +59,6 @@ class UserCannotChangeMembershipSilently(Unauthorized):
 
 class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
-    webservice_error(httplib.BAD_REQUEST)
     _message_prefix = "No such source package"
 
 

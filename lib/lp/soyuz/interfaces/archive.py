@@ -157,7 +157,7 @@ class NoTokensForTeams(Exception):
 
 class ComponentNotFound(Exception):
     """Invalid source name."""
-    webservice_error(400)  # Bad request.
+    webservice_error(404)  # Bad request.
 
 
 class InvalidComponent(Exception):
@@ -167,7 +167,6 @@ class InvalidComponent(Exception):
 
 class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
-    webservice_error(400)  # Bad request.
     _message_prefix = "No such ppa"
 
 

@@ -50,8 +50,6 @@ from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
-    # Bad request.
-    webservice_error(400)
     _message_prefix = "No such package set (in the specified distro series)"
 
 
