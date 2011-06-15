@@ -659,12 +659,12 @@ class TestDistroSeriesLocalDifferences(
             "Form filter should not be shown when there are no differences.")
 
     def test_parent_packagesets_localpackagediffs(self):
-        # +localpackagediffs displays the parent packagesets.
+        # +localpackagediffs displays the packagesets.
         ds_diff = self.factory.makeDistroSeriesDifference()
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[ds_diff.source_package_name],
-                distroseries=ds_diff.parent_series)
+                distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -675,8 +675,8 @@ class TestDistroSeriesLocalDifferences(
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -687,7 +687,7 @@ class TestDistroSeriesLocalDifferences(
                 self.factory.makePackageset(
                     name=name,
                     packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.parent_series)
+                    distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -699,8 +699,8 @@ class TestDistroSeriesLocalDifferences(
         packageset_text = re.compile(
             '\s*' + ', '.join(sorted(unsorted_names)))
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
 
 class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
