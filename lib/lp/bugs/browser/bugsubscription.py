@@ -53,7 +53,6 @@ from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.services import features
 from lp.services.propertycache import cachedproperty
 
 
@@ -110,12 +109,6 @@ class AdvancedSubscriptionMixin:
     """
 
     @cachedproperty
-    def _use_advanced_features(self):
-        """Return True if advanced subscriptions features are enabled."""
-        return features.getFeatureFlag(
-            'malone.advanced-subscriptions.enabled')
-
-    @cachedproperty
     def _bug_notification_level_field(self):
         """Return a custom form field for bug_notification_level."""
         # We rebuild the items that we show in the field so that the
@@ -144,10 +137,6 @@ class AdvancedSubscriptionMixin:
 
     def _setUpBugNotificationLevelField(self):
         """Set up the bug_notification_level field."""
-        if not self._use_advanced_features:
-            # If advanced features are disabled, do nothing.
-            return
-
         self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(
             self._bug_notification_level_field)
@@ -176,10 +165,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @property
     def field_names(self):
-        if self._use_advanced_features:
-            return ['bug_notification_level']
-        else:
-            return []
+        return ['bug_notification_level']
 
     @property
     def next_url(self):
@@ -236,7 +222,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @cachedproperty
     def _unsubscribe_current_user_term(self):
-        if self._use_advanced_features and self.user_is_muted:
+        if self.user_is_muted:
             label = "unmute bug mail from this bug"
         else:
             label = 'unsubscribe me from this bug'
@@ -256,7 +242,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _subscription_field(self):
         subscription_terms = []
         self_subscribed = False
-        is_really_muted = self._use_advanced_features and self.user_is_muted
+        is_really_muted = self.user_is_muted
         if is_really_muted:
             subscription_terms.insert(0, self._unmute_user_term)
         for person in self._subscribers_for_current_user:
@@ -265,8 +251,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                     # We've already added the unmute option.
                     continue
                 else:
-                    if (self._use_advanced_features and
-                        self.user_is_subscribed_directly):
+                    if self.user_is_subscribed_directly:
                         subscription_terms.append(
                             self._update_subscription_term)
                     subscription_terms.insert(
@@ -300,8 +285,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             subscription_terms[-1].title += '.'
 
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        if (self._use_advanced_features and
-            (self.user_is_subscribed_directly or self.user_is_muted)):
+        if self.user_is_subscribed_directly or self.user_is_muted:
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -328,25 +312,24 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         self.widgets['subscription'].widget_class = 'bug-subscription-basic'
-        if self._use_advanced_features:
-            self.widgets['bug_notification_level'].widget_class = (
-                'bug-notification-level-field')
-            if (len(self.form_fields['subscription'].field.vocabulary) == 1):
-                # We hide the subscription widget if the user isn't
-                # subscribed, since we know who the subscriber is and we
-                # don't need to present them with a single radio button.
-                self.widgets['subscription'].visible = False
-            else:
-                # We show the subscription widget when the user is
-                # subscribed via a team, because they can either
-                # subscribe theirself or unsubscribe their team.
-                self.widgets['subscription'].visible = True
+        self.widgets['bug_notification_level'].widget_class = (
+            'bug-notification-level-field')
+        if (len(self.form_fields['subscription'].field.vocabulary) == 1):
+            # We hide the subscription widget if the user isn't
+            # subscribed, since we know who the subscriber is and we
+            # don't need to present them with a single radio button.
+            self.widgets['subscription'].visible = False
+        else:
+            # We show the subscription widget when the user is
+            # subscribed via a team, because they can either
+            # subscribe theirself or unsubscribe their team.
+            self.widgets['subscription'].visible = True
 
-            if self.user_is_subscribed_to_dupes_only:
-                # If the user is subscribed via a duplicate but is not
-                # directly subscribed, we hide the
-                # bug_notification_level field, since it's not used.
-                self.widgets['bug_notification_level'].visible = False
+        if self.user_is_subscribed_to_dupes_only:
+            # If the user is subscribed via a duplicate but is not
+            # directly subscribed, we hide the
+            # bug_notification_level field, since it's not used.
+            self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
     def user_is_muted(self):
@@ -396,10 +379,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def subscribe_action(self, action, data):
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
-        if self._use_advanced_features:
-            bug_notification_level = data.get('bug_notification_level', None)
-        else:
-            bug_notification_level = None
+        bug_notification_level = data.get('bug_notification_level', None)
 
         if (subscription_person == self._update_subscription_term.value and
             (self.user_is_subscribed or self.user_is_muted)):

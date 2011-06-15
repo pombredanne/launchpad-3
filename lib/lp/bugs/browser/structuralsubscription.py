@@ -396,7 +396,10 @@ class StructuralSubscriptionMenuMixin:
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True, enabled=self._enabled)
+        # Clicks to this link will be intercepted by the on-page JavaScript,
+        # but we want a link target for non-JS-enabled browsers.
+        return Link('+subscribe', text, icon='add', hidden=True,
+            enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):

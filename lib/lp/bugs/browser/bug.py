@@ -108,7 +108,6 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
-from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -216,11 +215,6 @@ class BugContextMenu(ContextMenu):
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
     @cachedproperty
-    def _use_advanced_features(self):
-        """Return True if advanced subscriptions features are enabled."""
-        return features.getFeatureFlag(
-            'malone.advanced-subscriptions.enabled')
-
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
         text = 'Update description / tags'
@@ -254,16 +248,12 @@ class BugContextMenu(ContextMenu):
         elif user is not None and (
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
-            if self._use_advanced_features:
-                if self.context.bug.isMuted(user):
-                    text = 'Subscribe'
-                    icon = 'add'
-                else:
-                    text = 'Edit subscription'
-                    icon = 'edit'
+            if self.context.bug.isMuted(user):
+                text = 'Subscribe'
+                icon = 'add'
             else:
-                text = 'Unsubscribe'
-                icon = 'remove'
+                text = 'Edit subscription'
+                icon = 'edit'
         else:
             text = 'Subscribe'
             icon = 'add'
@@ -588,6 +578,7 @@ class BugView(LaunchpadView, BugViewMixin):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(
             attachment.libraryfile, attachment).http_url
+
 
 class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
     """View class for the subscription portlet."""
