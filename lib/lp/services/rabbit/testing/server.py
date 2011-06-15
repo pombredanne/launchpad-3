@@ -14,6 +14,7 @@ import os
 import re
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import time
@@ -174,6 +175,7 @@ class RabbitServerResources(Fixture):
     :ivar mnesiadir: A directory for the RabbitMQ db.
     :ivar logfile: The logfile allocated for the server.
     :ivar pidfile: The file the pid should be written to.
+    :ivar cookiefile: The file where Erlang is expected to place its cookie.
     :ivar nodename: The name of the node.
     """
     def setUp(self):
@@ -184,6 +186,7 @@ class RabbitServerResources(Fixture):
         self.mnesiadir = self.useFixture(TempDir()).path
         self.logfile = os.path.join(self.rabbitdir, 'rabbit.log')
         self.pidfile = os.path.join(self.rabbitdir, 'rabbit.pid')
+        self.cookiefile = os.path.join(self.rabbitdir, '.erlang.cookie')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
 
     @property
@@ -253,8 +256,42 @@ class RabbitServerEnvironment(Fixture):
             return outstr.strip(), errstr.strip()
         return outstr, errstr
 
+    def check_cookie(self):
+        """Checks that the Erlang cookie is in place."""
+        try:
+            cookie_stat = os.stat(self.config.cookiefile)
+        except OSError, e:
+            self._errors.append(
+                "Cookie %s could not be accessed: %s (%d)" % (
+                    self.config.cookiefile,
+                    errno.errorcode.get(e.errno, "???"),
+                    e.errno))
+            return False
+        else:
+            if not stat.S_ISREG(cookie_stat.st_mode):
+                self._errors.append(
+                    "Cookie %s is not a regular file: %07o" % (
+                        self.config.cookiefile,
+                        stat.S_IFMT(cookie_stat.st_mode)))
+                return False
+            if cookie_stat.st_mode & 0077 != 0000:
+                self._errors.append(
+                    "Cookie %s is group/world accessible: %04o" % (
+                        self.config.cookiefile,
+                        stat.S_IMODE(cookie_stat.st_mode)))
+                return False
+            if cookie_stat.st_mode & 0400 != 0400:
+                self._errors.append(
+                    "Cookie %s is not readable: %04o" % (
+                        self.config.cookiefile,
+                        stat.S_IMODE(cookie_stat.st_mode)))
+                return False
+            return True
+
     def check_running(self):
         """Checks that RabbitMQ is up and running."""
+        if not self.check_cookie():
+            return False
         nodename = self.config.fq_nodename
         outdata, errdata = self.rabbitctl("status")
         if errdata:
