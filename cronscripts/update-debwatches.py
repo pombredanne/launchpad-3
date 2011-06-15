@@ -16,7 +16,7 @@ import logging
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from lp.app.error import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (

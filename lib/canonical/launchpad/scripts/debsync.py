@@ -17,7 +17,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from lp.app.error import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
