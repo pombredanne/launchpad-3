@@ -160,7 +160,12 @@ def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
                 alsoProvides(e, IUnloggedException)
                 raise
 
-        return wrapped_converter
+        # The converter can be None, in which case wrapping it makes no sense,
+        # otherwise it is a function which we wrap.
+        if converter is None:
+            return None
+        else:
+            return wrapped_converter
 
     zope_publisher_browser.get_converter = get_converter
 

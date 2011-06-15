@@ -1066,6 +1066,20 @@ class TestWrappedParameterConverter(testtools.TestCase):
         except RuntimeError, e:
             self.assertFalse(IUnloggedException.providedBy(e))
 
+    def test_none_is_not_wrapped(self):
+        # The get_converter function that we're wrapping can return None, in
+        # that case there's no function for us to wrap and we just return None
+        # as well.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                return None
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        self.assertTrue(converter is None)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
