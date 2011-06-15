@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test initialising a distroseries using
+"""Test initializing a distroseries using
 IDistroSeries.initDerivedDistroSeries."""
 
 __metaclass__ = type
@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.distroseries import DerivationError
 from lp.soyuz.interfaces.distributionjob import (
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.testing import (
     ANONYMOUS,
@@ -56,5 +56,5 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.child.initDerivedDistroSeries(
             self.child.driver, [self.parent.id])
         [job] = list(
-            getUtility(IInitialiseDistroSeriesJobSource).iterReady())
+            getUtility(IInitializeDistroSeriesJobSource).iterReady())
         self.assertEqual(job.distroseries, self.child)
