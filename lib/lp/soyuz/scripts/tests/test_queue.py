@@ -20,6 +20,7 @@ from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.librarian.testing.server import fillLibrarianFile
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
@@ -59,15 +60,17 @@ from lp.soyuz.scripts.queue import (
     CommandRunner,
     CommandRunnerError,
     name_queue_map,
+    QueueAction,
     )
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
-class TestQueueBase(TestCase):
+class TestQueueBase:
     """Base methods for queue tool test classes."""
 
     def setUp(self):
@@ -107,7 +110,7 @@ class TestQueueBase(TestCase):
         self.assertEqual(to_addrs, expected_to_addrs)
 
 
-class TestQueueTool(TestQueueBase):
+class TestQueueTool(TestQueueBase, TestCase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
@@ -924,6 +927,97 @@ class TestQueueTool(TestQueueBase):
             'override binary pmount', component_name='partner')
 
 
+class TestQueueActionLite(TestCaseWithFactory):
+    """A lightweight unit test case for `QueueAction`.
+
+    Meant for detailed tests that would be too expensive for full end-to-end
+    tests.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def makeQueueAction(self, package_upload, distroseries=None):
+        """Create a `QueueAction` for use with a `PackageUpload`.
+
+        The action's `display` method is set to a `FakeMethod`.
+        """
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries(
+                status=SeriesStatus.CURRENT)
+        distro = distroseries.distribution
+        if package_upload is None:
+            package_upload = self.factory.makePackageUpload(
+                distroseries=distroseries, archive=distro.main_archive)
+        component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        suite = "%s-%s" % (distroseries.name, "release")
+        queue = None
+        priority_name = "STANDARD"
+        display = FakeMethod()
+        terms = ['*']
+        return QueueAction(
+            distro.name, suite, queue, terms, component.name,
+            section.name, priority_name, display)
+
+    def test_display_actions_have_privileges_for_PackageCopyJob(self):
+        # The methods that display uploads have privileges to work with
+        # a PackageUpload that has a copy job.
+        # Bundling tests for multiple operations into one test because
+        # the database user change requires a costly commit.
+        upload = self.factory.makeCopyJobPackageUpload()
+        action = self.makeQueueAction(upload)
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.uploadqueue.dbuser)
+
+        action.displayItem(upload)
+        self.assertNotEqual(0, action.display.call_count)
+        action.display.calls = []
+        action.displayInfo(upload)
+        self.assertNotEqual(0, action.display.call_count)
+
+    def test_accept_actions_have_privileges_for_PackageCopyJob(self):
+        # The script also has privileges to approve uploads that have
+        # copy jobs.
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.CURRENT)
+        upload = self.factory.makeCopyJobPackageUpload(distroseries)
+        self.layer.txn.commit()
+        self.layer.switchDbUser(config.uploadqueue.dbuser)
+        upload.acceptFromQueue(DevNullLogger(), dry_run=True)
+        # Flush changes to make sure we're not caching any updates that
+        # the database won't allow.  If this passes, we've got the
+        # privileges.
+        IStore(upload).flush()
+
+    def test_displayItem_displays_PackageUpload_with_source(self):
+        # displayItem can display a source package upload.
+        upload = self.factory.makeSourcePackageUpload()
+        action = self.makeQueueAction(upload)
+        action.displayItem(upload)
+        self.assertNotEqual(0, action.display.call_count)
+
+    def test_displayItem_displays_PackageUpload_with_PackageCopyJob(self):
+        # displayItem can display a copy-job package upload.
+        upload = self.factory.makeCopyJobPackageUpload()
+        action = self.makeQueueAction(upload)
+        action.displayItem(upload)
+        self.assertNotEqual(0, action.display.call_count)
+
+    def test_displayInfo_displays_PackageUpload_with_source(self):
+        # displayInfo can display a source package upload.
+        upload = self.factory.makeSourcePackageUpload()
+        action = self.makeQueueAction(upload)
+        action.displayInfo(upload)
+        self.assertNotEqual(0, action.display.call_count)
+
+    def test_displayInfo_displays_PackageUpload_with_PackageCopyJob(self):
+        # displayInfo can display a copy-job package upload.
+        upload = self.factory.makeCopyJobPackageUpload()
+        action = self.makeQueueAction(upload)
+        action.displayInfo(upload)
+        self.assertNotEqual(0, action.display.call_count)
+
+
 class TestQueuePageClosingBugs(TestCaseWithFactory):
     # The distroseries +queue page can close bug when accepting
     # packages.  Unit tests for that belong here.
@@ -954,7 +1048,7 @@ class TestQueuePageClosingBugs(TestCaseWithFactory):
             self.assertEqual(bug_task.status, BugTaskStatus.FIXRELEASED)
 
 
-class TestQueueToolInJail(TestQueueBase):
+class TestQueueToolInJail(TestQueueBase, TestCase):
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 

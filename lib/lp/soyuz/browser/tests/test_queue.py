@@ -10,10 +10,12 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -21,8 +23,10 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class TestAcceptQueueUploads(TestCaseWithFactory):
@@ -186,3 +190,45 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.assertEquals(
             'NEW',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+
+class TestQueueItemsView(TestCaseWithFactory):
+    """Unit tests for `QueueItemsView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeView(self, distroseries, user, form):
+        """Create a queue view."""
+        return create_initialized_view(
+            distroseries, name='+queue', principal=user)
+
+    def makeCopyJobUpload(self, distroseries, component):
+        """Create a `PackageUpload` with a `PackageCopyJob`."""
+        job = self.factory.makePlainPackageCopyJob(
+            target_distroseries=distroseries)
+        job.addSourceOverride(SourceOverride(
+            self.factory.makeSourcePackageName().name,
+            component=component, section=self.factory.makeSection()))
+        naked_job = removeSecurityProxy(job).context
+        return self.factory.makePackageUpload(
+            distroseries=distroseries, package_copy_job=naked_job)
+
+    def test_copy_upload_does_not_break_rendering(self):
+        # The presence of a PackageUpload with a PackageCopyJob does not
+        # break rendering of the page.
+        # XXX JeroenVermeulen 2011-06-13 bug=394645: the current reason
+        # why this doesn't break is that the view uses getQueueItems,
+        # which won't return PackageUploads with copy jobs.  This test
+        # may start breaking once the view uses getPackageUploads.
+        distroseries = self.factory.makeDistroSeries()
+        component = self.factory.makeComponent()
+        upload = self.makeCopyJobUpload(distroseries, component=component)
+        queue_admin = self.factory.makeArchiveAdmin(distroseries.main_archive)
+        form = {
+            'queue_state': PackageUploadStatus.NEW.value,
+            'Accept': 'Accept',
+            'QUEUE_ID': [upload.id],
+            }
+        with person_logged_in(queue_admin):
+            view = self.makeView(distroseries, queue_admin, form)
+            view()

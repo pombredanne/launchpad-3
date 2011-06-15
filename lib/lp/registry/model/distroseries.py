@@ -796,11 +796,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             self.distribution.name.capitalize(), self.name.capitalize())
 
     @property
-    def is_derived_series(self):
-        """See `IDistroSeries`."""
-        return not self.getParentSeries() == []
-
-    @property
     def bugtargetname(self):
         """See IBugTarget."""
         # XXX mpt 2007-07-10 bugs 113258, 113262:
@@ -1649,11 +1644,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getPackageUploads(self, created_since_date=None, status=None,
                           archive=None, pocket=None, custom_type=None,
-                          name_filter=None):
+                          name=None, version=None, exact_match=False):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
-            name_filter=name_filter)
+            name=name, version=version, exact_match=exact_match)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
@@ -1973,7 +1968,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 overlay_pockets=(),
                                 overlay_components=()):
         """See `IDistroSeries`."""
-        if self.is_derived_series:
+        if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
         initialize_series = InitializeDistroSeries(self, parents)
@@ -2034,6 +2029,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 source_package_name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
+
+    def isDerivedSeries(self):
+        """See `IDistroSeries`."""
+        return not self.getParentSeries() == []
 
     def isInitializing(self):
         """See `IDistroSeries`."""
