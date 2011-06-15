@@ -590,7 +590,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
     def test_form_hidden_when_distroseries_is_initialized(self):
         # The form is hidden when the feature flag is set but the series has
         # already been initialized.
-        distroseries = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=self.factory.makeDistroSeries())
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, archive=distroseries.main_archive)
         view = create_initialized_view(distroseries, "+initseries")
