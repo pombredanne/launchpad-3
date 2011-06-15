@@ -89,3 +89,9 @@ class TestRabbitFixture(TestCase):
 
         # The daemon should be closed now.
         self.assertRaises(socket.error, amqp.Connection, **connect_arguments)
+
+
+for num in xrange(1000):
+    setattr(
+        TestRabbitFixture, "test_start_check_shutdown_%d" % num,
+        TestRabbitFixture.test_start_check_shutdown)
