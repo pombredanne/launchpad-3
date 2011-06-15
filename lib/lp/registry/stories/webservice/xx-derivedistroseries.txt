@@ -79,10 +79,10 @@ And we can verify that the job has been created.
 
     >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
-    ...     IInitialiseDistroSeriesJobSource)
+    ...     IInitializeDistroSeriesJobSource)
     >>> login(ADMIN_EMAIL)
     >>> jobs = sorted(
-    ...     getUtility(IInitialiseDistroSeriesJobSource).iterReady(),
+    ...     getUtility(IInitializeDistroSeriesJobSource).iterReady(),
     ...     key=lambda x: x.distroseries.name)
     >>> for job in jobs:
     ...     print job.distroseries.name

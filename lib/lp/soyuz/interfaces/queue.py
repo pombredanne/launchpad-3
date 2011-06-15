@@ -88,7 +88,7 @@ class IPackageUploadQueue(Interface):
     """Used to establish permission to a group of package uploads.
 
     Recieves an IDistroSeries and a PackageUploadStatus dbschema
-    on initialisation.
+    on initialization.
     No attributes exposed via interface, only used to check permissions.
     """
 
