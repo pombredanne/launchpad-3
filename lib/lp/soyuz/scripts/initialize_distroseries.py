@@ -385,6 +385,8 @@ class InitializeDistroSeries:
                     parent_ps.name, parent_ps.description,
                     new_owner, distroseries=self.distroseries,
                     related_set=parent_ps)
+            # XXX: 2011-06-15 rvb bug=797599.
+            # Copying archivepermissions cross-distro is wrong.
             self._store.execute("""
                 INSERT INTO Archivepermission
                 (person, permission, archive, packageset, explicit)
