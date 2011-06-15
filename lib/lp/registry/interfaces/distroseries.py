@@ -236,9 +236,6 @@ class IDistroSeriesPublic(
         Choice(
             title=_("Status"), required=True,
             vocabulary=SeriesStatus))
-    is_derived_series = Bool(
-        title=u'Is this series a derived series?', readonly=True,
-        description=(u"Whether or not this series is a derived series."))
     datereleased = exported(
         Datetime(title=_("Date released")))
     previous_series = exported(
@@ -883,6 +880,12 @@ class IDistroSeriesPublic(
         :param status: The status of the differences to return.
         :param child_version_higher: Only return differences for which the
             child's version is higher than the parent's version.
+        """
+
+    def isDerivedSeries():
+        """Is this series a derived series?
+
+        A derived series has one or more parent series.
         """
 
     def isInitializing():
