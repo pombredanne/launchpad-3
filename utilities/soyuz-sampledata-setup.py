@@ -58,7 +58,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -228,8 +228,8 @@ def create_series(parent, full_name, version, status):
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    ids = InitialiseDistroSeries(new_series, [parent.id])
-    ids.initialise()
+    ids = InitializeDistroSeries(new_series, [parent.id])
+    ids.initialize()
     return new_series
 
 

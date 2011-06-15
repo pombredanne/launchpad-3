@@ -104,7 +104,7 @@ class Dominator:
     """
 
     def __init__(self, logger, archive):
-        """Initialise the dominator.
+        """Initialize the dominator.
 
         This process should be run after the publisher has published
         new stuff into the distribution but before the publisher

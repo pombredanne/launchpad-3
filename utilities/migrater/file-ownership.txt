@@ -2110,7 +2110,7 @@ reg ./doc/gpgkey.txt
     ./doc/image-widget.txt
     ./doc/incomingmail.txt
     ./doc/initial-bug-contacts.txt
-    ./doc/initialise-from-parent.txt
+    ./doc/initialize-from-parent.txt
     ./doc/keyring_trust_analyser.txt
     ./doc/language-pack.txt
     ./doc/language.txt

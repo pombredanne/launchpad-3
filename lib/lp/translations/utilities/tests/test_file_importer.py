@@ -316,13 +316,13 @@ class FileImporterTestCase(TestCaseWithFactory):
             NUMBER_OF_TEST_MESSAGES,
             "FileImporter.__init__ did not parse the template file "
             "correctly.")
-        # Test if POTFileImporter gets initialised correctly.
+        # Test if POTFileImporter gets initialized correctly.
         self.failUnless(pot_importer.potemplate is not None,
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(pot_importer.pofile is None or
             pot_importer.pofile.language == "en",
             "POTFileImporter referenced an IPOFile which was not English.")
-        # Test if POFileImporter gets initialised correctly.
+        # Test if POFileImporter gets initialized correctly.
         self.failUnless(po_importer.potemplate is not None,
             "POTFileImporter had no reference to an IPOTemplate.")
         self.failUnless(po_importer.pofile is not None,

@@ -67,6 +67,9 @@ class IPackageCopyJob(Interface):
     package_name = TextLine(
         title=_("Package name"), required=True, readonly=True)
 
+    package_version = TextLine(
+        title=_("Package version"), required=True, readonly=True)
+
     job = Reference(
         schema=IJob, title=_('The common Job attributes'),
         required=True, readonly=True)
@@ -146,9 +149,6 @@ class IPlainPackageCopyJob(IRunnableJob):
     target_pocket = Int(
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
-
-    package_version = TextLine(
-        title=_("Package version"), required=True, readonly=True)
 
     include_binaries = Bool(
         title=_("Copy binaries"),
