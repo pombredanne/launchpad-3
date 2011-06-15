@@ -188,8 +188,9 @@ from lp.services.database import bulk
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache
+    get_property_cache,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
 class BasePersonVocabulary:
@@ -1728,6 +1729,9 @@ class DistroSeriesDerivationVocabulary:
     derived at a later date, but as soon as this happens, the above rule
     applies.
 
+    Also, a series must have architectures setup in LP to be a potential
+    parent.
+
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
@@ -1809,7 +1813,8 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        where = []
+        # Select only the series with architectures setup in LP.
+        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1817,22 +1822,20 @@ class DistroSeriesDerivationVocabulary:
                     DistroSeries.description.lower().like(term),
                     DistroSeries.summary.lower().like(term))
             where.append(search)
-        parent_distributions = Select(
+        parent_distributions = IStore(DistroSeries).find(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
                 child.id == DistroSeriesParent.derived_series_id,
                 parent.id == DistroSeriesParent.parent_series_id))
-        where.append(
-            DistroSeries.distributionID.is_in(parent_distributions))
-        terms = self.find_terms(where)
-        if len(terms) == 0:
-            where = []
-            if query is not None:
-                where.append(search)
-            where.append(DistroSeries.distribution != self.distribution)
-            terms = self.find_terms(where)
-        return terms
+        if not parent_distributions.is_empty():
+            where.append(
+                DistroSeries.distributionID.is_in(parent_distributions))
+            return self.find_terms(where)
+        else:
+            where.append(
+                DistroSeries.distribution != self.distribution)
+            return self.find_terms(where)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
