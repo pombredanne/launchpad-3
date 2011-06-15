@@ -638,6 +638,17 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+def seriesToVocab(series):
+    # Simple helper function to format series data into a dict:
+    # {'value':series_id, 'api_uri': api_uri, 'title': series_title}.
+    return {
+        'value': series.id,
+        'title': '%s: %s'
+            % (series.distribution.displayname, series.title),
+        'api_uri': canonical_url(
+            series, path_only_if_possible=True)}
+
+
 class EmptySchema(Interface):
     pass
 
@@ -656,21 +667,11 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         is_first_derivation = not distribution.has_published_sources
         cache['is_first_derivation'] = is_first_derivation
         if not is_first_derivation:
-            def vocabularyValue(series):
-                # Format the series fields like the series vocabulary
-                # picker would do.
-                return {
-                    'value': series.id,
-                    'title': '%s: %s'
-                        % (series.distribution.displayname, series.title),
-                    'api_uri': canonical_url(
-                        series, path_only_if_possible=True)}
-
-            cache['previous_series'] = vocabularyValue(
+            cache['previous_series'] = seriesToVocab(
                 self.context.previous_series)
             previous_parents = self.context.previous_series.getParentSeries()
             cache['previous_parents'] = [
-                vocabularyValue(series) for series in previous_parents]
+                seriesToVocab(series) for series in previous_parents]
 
     @action(u"Initialize Series", name='initialize')
     def submit(self, action, data):

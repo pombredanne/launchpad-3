@@ -48,6 +48,7 @@ from lp.registry.browser.distroseries import (
     IGNORED,
     NON_IGNORED,
     RESOLVED,
+    seriesToVocab,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -534,6 +535,14 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 u"javascript-disabled",
                 message.get("class").split())
 
+    def test_seriesToVocab(self):
+        distroseries = self.factory.makeDistroSeries()
+        formatted_dict = seriesToVocab(distroseries)
+
+        self.assertEquals(
+            ['api_uri', 'title', 'value'],
+            sorted(formatted_dict.keys()))
+
     def test_is_first_derivation(self):
         # If the distro has no initialized series, this initialization
         # is a 'first_derivation'.
@@ -544,21 +553,6 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request).objects
 
         self.assertTrue(cache['is_first_derivation'])
-
-    def assetVocFormatedSeries(self, series, formatted):
-        # Helper to assert that the formatted dict is of the form:
-        # {'value':series_id, 'api_uri': api_uri, 'title': series_title}.
-        # (i.e. the format returned by a js vocabulary picker)
-        self.assertEqual(
-            {'value': series.id,
-             'api_uri': '/%s/%s'
-                 % (series.distribution.name,
-                    series.name),
-             'title': '%s: %s'
-                 % (series.distribution.displayname,
-                    series.title)},
-            formatted
-        )
 
     def test_not_is_first_derivation(self):
         # If the distro has an initialized series, this initialization
@@ -580,17 +574,17 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         cache = IJSONRequestCache(view.request).objects
 
         self.assertFalse(cache['is_first_derivation'])
-        self.assetVocFormatedSeries(
-            previous_series,
+        self.assertContentEqual(
+            seriesToVocab(previous_series),
             cache['previous_series'])
         self.assertEqual(
             2,
             len(cache['previous_parents']))
-        self.assetVocFormatedSeries(
-            previous_parent1,
+        self.assertContentEqual(
+            seriesToVocab(previous_parent1),
             cache['previous_parents'][0])
-        self.assetVocFormatedSeries(
-            previous_parent2,
+        self.assertContentEqual(
+            seriesToVocab(previous_parent2),
             cache['previous_parents'][1])
 
     def test_form_hidden_when_distroseries_is_initialized(self):
