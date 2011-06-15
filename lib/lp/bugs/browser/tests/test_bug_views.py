@@ -308,3 +308,14 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                 bug.default_bugtask, view_name='+subscribe')
             self.assertIn(mute_url, notification)
             self.assertIn(subscribe_url, notification)
+
+    def test_no_notification_shown_if_marking_private_and_in_sub_team(self):
+        # If a user who is directly subscribed to a bug via a team marks
+        # that bug as private, the user will see no notification.
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        bug = self.factory.makeBug()
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+        view = self.createInitializedSecrecyView(person, bug)
+        self.assertContentEqual([], view.request.response.notifications)

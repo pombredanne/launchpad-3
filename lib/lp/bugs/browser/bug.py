@@ -849,7 +849,7 @@ class BugSecrecyEditView(BugEditViewBase):
             bug, providing=providedBy(bug))
         private = data.pop('private')
         user_will_be_subscribed = (
-            private and not bug.personIsDirectSubscriber(self.user))
+            private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
