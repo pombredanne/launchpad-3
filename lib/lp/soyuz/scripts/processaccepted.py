@@ -266,7 +266,7 @@ class ProcessAccepted(LaunchpadScript):
                         distroseries.name, description))
 
                     queue_items = distroseries.getPackageUploads(
-                        status=PackageUploadStatus.ACCEPTED)
+                        status=PackageUploadStatus.ACCEPTED, archive=archive)
                     for queue_item in queue_items:
                         self.logger.debug(
                             "Processing queue item %d" % queue_item.id)

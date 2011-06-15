@@ -1391,9 +1391,6 @@ class PackageUploadSet:
                archive=None, pocket=None, custom_type=None, name=None,
                version=None, exact_match=False):
         """See `IPackageUploadSet`."""
-        # XXX 2011-06-11 JeroenVermeulen bug=795651: The "archive"
-        # argument is currently ignored.  Not sure why.
-
         # Avoid circular imports.
         from lp.soyuz.model.packagecopyjob import PackageCopyJob
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
