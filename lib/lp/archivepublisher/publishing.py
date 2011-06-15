@@ -108,7 +108,7 @@ def _setupHtaccess(archive, pubconf, log):
 
 
 def getPublisher(archive, allowed_suites, log, distsroot=None):
-    """Return an initialised Publisher instance for the given context.
+    """Return an initialized Publisher instance for the given context.
 
     The callsites can override the location where the archive indexes will
     be stored via 'distroot' argument.
@@ -143,7 +143,7 @@ class Publisher(object):
 
     def __init__(self, log, config, diskpool, archive, allowed_suites=None,
                  library=None):
-        """Initialise a publisher.
+        """Initialize a publisher.
 
         Publishers need the pool root dir and a DiskPool object.
 
