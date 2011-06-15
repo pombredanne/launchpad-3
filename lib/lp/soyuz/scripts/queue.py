@@ -80,7 +80,7 @@ class QueueAction:
     def __init__(self, distribution_name, suite_name, queue, terms,
                  component_name, section_name, priority_name,
                  display, no_mail=True, exact_match=False, log=None):
-        """Initialises passed variables. """
+        """Initializes passed variables. """
         self.terms = terms
         # Some actions have addtional commands at the start of the terms
         # so allow them to state that here by specifiying the start index.
