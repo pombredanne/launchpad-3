@@ -91,7 +91,7 @@ class TestRabbitFixture(TestCase):
         self.assertRaises(socket.error, amqp.Connection, **connect_arguments)
 
 
-for num in xrange(10):
+for num in xrange(1000):
     setattr(
         TestRabbitFixture, "test_start_check_shutdown_%04d" % num,
         TestRabbitFixture.test_start_check_shutdown)
