@@ -523,7 +523,7 @@ class CSCVSImportWorker(ImportWorker):
         last_commit = cscvs.findLastCscvsCommit(scm_branch)
 
         # If branch in `bazaar_tree` doesn't have any identifiable CSCVS
-        # revisions, CSCVS "initialises" the branch.
+        # revisions, CSCVS "initializes" the branch.
         if last_commit is None:
             self._runToBaz(
                 foreign_directory, "-SI", "MAIN.1", bzr_directory)

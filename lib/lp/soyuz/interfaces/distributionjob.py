@@ -8,8 +8,8 @@ __all__ = [
     "IDistributionJob",
     "IDistroSeriesDifferenceJob",
     "IDistroSeriesDifferenceJobSource",
-    "IInitialiseDistroSeriesJob",
-    "IInitialiseDistroSeriesJobSource",
+    "IInitializeDistroSeriesJob",
+    "IInitializeDistroSeriesJobSource",
 ]
 
 from lazr.enum import (
@@ -36,7 +36,7 @@ from lp.services.job.interfaces.job import (
 
 
 class IDistributionJob(Interface):
-    """A Job that initialises acts on a distribution."""
+    """A Job that initializes acts on a distribution."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -61,10 +61,10 @@ class IDistributionJob(Interface):
 
 class DistributionJobType(DBEnumeratedType):
 
-    INITIALISE_SERIES = DBItem(1, """
-        Initialise a Distro Series.
+    INITIALIZE_SERIES = DBItem(1, """
+        Initialize a Distro Series.
 
-        This job initialises a given distro series, creating builds, and
+        This job initializes a given distro series, creating builds, and
         populating the archive from the parent distroseries.
         """)
 
@@ -76,19 +76,19 @@ class DistributionJobType(DBEnumeratedType):
         """)
 
 
-class IInitialiseDistroSeriesJobSource(IJobSource):
-    """An interface for acquiring IInitialiseDistroSeriesJobs."""
+class IInitializeDistroSeriesJobSource(IJobSource):
+    """An interface for acquiring IInitializeDistroSeriesJobs."""
 
     def create(parents, arches, packagesets, rebuild, overlay,
                overlay_pockets, overlay_components):
-        """Create a new initialisation job for a distroseries."""
+        """Create a new initialization job for a distroseries."""
 
     def getPendingJobsForDistroseries(distroseries):
-        """Retrieve pending initialisation jobs for a distroseries.
+        """Retrieve pending initialization jobs for a distroseries.
         """
 
 
-class IInitialiseDistroSeriesJob(IRunnableJob):
+class IInitializeDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
 
 
