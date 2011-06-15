@@ -486,9 +486,9 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [self.parent1, self.parent3, self.parent2],
             child.getParentSeries())
-        self.assertEqual(1, distroseriesparent1.ordering)
-        self.assertEqual(3, distroseriesparent2.ordering)
-        self.assertEqual(2, distroseriesparent3.ordering)
+        self.assertEqual(0, distroseriesparent1.ordering)
+        self.assertEqual(1, distroseriesparent3.ordering)
+        self.assertEqual(2, distroseriesparent2.ordering)
 
     def test_multiple_parent_packagesets_merge(self):
         # Identical packagesets from the parents are merged as one
