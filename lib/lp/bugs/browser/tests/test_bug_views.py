@@ -109,17 +109,6 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         self.assertTrue('menu-link-editsubscriptions' not in html)
         self.assertTrue('/+subscriptions' not in html)
 
-    def test_mute_subscription_link_not_shown_with_no_feature_flag(self):
-        # Mute link is not shown when the feature flag is off.
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            with FeatureFixture({self.feature_flag_1: None}):
-                view = create_initialized_view(
-                    self.bug, name="+portlet-subscription")
-                self.assertFalse(view.user_should_see_mute_link)
-                html = view.render()
-                self.assertFalse('mute_subscription' in html)
-
     def _hasCSSClass(self, html, element_id, css_class):
         # Return True if element with ID `element_id` in `html` has
         # a CSS class `css_class`.
