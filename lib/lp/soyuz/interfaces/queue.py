@@ -168,7 +168,7 @@ class IPackageUpload(Interface):
         exported_as="display_name")
     displayversion = exported(
         TextLine(
-            title=_("The source package version for this item"),
+            title=_("This item's displayable source package version"),
             readonly=True),
         exported_as="display_version")
     displayarchs = exported(
@@ -178,6 +178,15 @@ class IPackageUpload(Interface):
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
+
+    package_name = TextLine(
+        title=_("Name of the uploaded source package"), readonly=True)
+
+    package_version = TextLine(
+        title=_("Source package version"), readonly=True)
+
+    component_name = TextLine(
+        title=_("Source package component name"), readonly=True)
 
     contains_source = Attribute("whether or not this upload contains sources")
     contains_build = Attribute("whether or not this upload contains binaries")
@@ -201,6 +210,9 @@ class IPackageUpload(Interface):
         sourcepackagerelease.  For binaries, this is all the components
         on all the binarypackagerelease records arising from the build.
         """)
+
+    section_name = TextLine(
+        title=_("Source package sectio name"), readonly=True)
 
     def setNew():
         """Set queue state to NEW."""

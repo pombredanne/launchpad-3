@@ -23,6 +23,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -351,6 +352,125 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # the partner archive.
         pub = package_upload.realiseUpload()[0]
         self.assertEqual("partner", pub.archive.name)
+
+    def test_package_name_and_version(self):
+        # The PackageUpload knows the name and version of the package
+        # being uploaded.  Internally, it gets this information from the
+        # SourcePackageRelease.
+        upload = self.factory.makePackageUpload()
+        spr = self.factory.makeSourcePackageRelease()
+        upload.addSource(spr)
+        self.assertEqual(spr.sourcepackagename.name, upload.package_name)
+        self.assertEqual(spr.version, upload.package_version)
+
+
+class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+    dbuser = config.uploadqueue.dbuser
+
+    def makeUploadWithPackageCopyJob(self, sourcepackagename=None):
+        """Create a `PackageUpload` plus attached `PlainPackageCopyJob`."""
+        job_factory_args = {}
+        if sourcepackagename is not None:
+            job_factory_args['package_name'] = sourcepackagename.name
+            job_factory_args['package_version'] = '1.0'
+        job = self.factory.makePlainPackageCopyJob(**job_factory_args)
+        naked_job = removeSecurityProxy(job).context
+        upload = self.factory.makePackageUpload(package_copy_job=naked_job)
+        return upload, job
+
+    def test_package_copy_job_property(self):
+        # Test that we can set and get package_copy_job.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        self.assertEqual(
+            removeSecurityProxy(pcj).context, pu.package_copy_job)
+
+    def test_getByPackageCopyJobIDs(self):
+        # getByPackageCopyJobIDs retrieves the right PackageCopyJob.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [pcj.id])
+        self.assertEqual(pu, result.one())
+
+    def test_overrideSource_with_copy_job(self):
+        # The overrides should be stored in the job's metadata.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        component = getUtility(IComponentSet)['restricted']
+        section = getUtility(ISectionSet)['games']
+
+        expected_metadata = {
+            'component_override': component.name,
+            'section_override': section.name,
+        }
+        expected_metadata.update(pcj.metadata)
+
+        pu.overrideSource(component, section, allowed_components=[component])
+
+        self.assertEqual(expected_metadata, pcj.metadata)
+
+    def test_acceptFromQueue_with_copy_job(self):
+        # acceptFromQueue should accept the upload and resume the copy
+        # job.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+        pcj.suspend()
+
+        pu.acceptFromQueue()
+
+        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+        self.assertEqual(JobStatus.WAITING, pcj.status)
+
+    def test_rejectFromQueue_with_copy_job(self):
+        # rejectFromQueue will reject the upload and fail the copy job.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        pcj.suspend()
+
+        pu.rejectFromQueue()
+
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
+        self.assertEqual(JobStatus.FAILED, pcj.status)
+
+        # It cannot be resurrected after rejection.
+        self.assertRaises(
+            QueueInconsistentStateError, pu.acceptFromQueue, None)
+
+    def test_package_name_and_version_are_as_in_job(self):
+        # The PackageUpload knows the name and version of the package
+        # being uploaded.  It gets this information from the
+        # PlainPackageCopyJob.
+        upload, job = self.makeUploadWithPackageCopyJob()
+        self.assertEqual(job.package_name, upload.package_name)
+        self.assertEqual(job.package_version, upload.package_version)
+
+    def test_displayarchs_for_copy_job_is_source(self):
+        # For copy jobs, displayarchs is "source."
+        upload, job = self.makeUploadWithPackageCopyJob()
+        self.assertEqual('source', upload.displayarchs)
+
+    def test_component_and_section_name(self):
+        # An upload with a copy job takes its component and section
+        # names from the job.
+        spn = self.factory.makeSourcePackageName()
+        upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
+        component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        job.addSourceOverride(SourceOverride(
+            source_package_name=spn, component=component, section=section))
+        self.assertEqual(component.name, upload.component_name)
+
+    def test_displayname_is_package_name(self):
+        # An upload with a copy job uses the package name for its
+        # display name.
+        spn = self.factory.makeSourcePackageName()
+        upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
+        self.assertEqual(spn.name, upload.displayname)
+
+    def test_upload_with_copy_job_has_no_source_package_release(self):
+        # A copy job does not provide the upload with a
+        # SourcePackageRelease.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        self.assertIs(None, pu.sourcepackagerelease)
 
 
 class TestPackageUploadSet(TestCaseWithFactory):

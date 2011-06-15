@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -194,6 +194,9 @@ class QueueAction:
                     term, version = term.strip().split('/')
 
                 # Expand SQLObject results.
+                # XXX 2011-06-13 JeroenVermeulen bug=394645: This should
+                # use getPackageUploads, not getQueueItems, so that it
+                # will also include copy-job uploads.
                 for item in self.distroseries.getQueueItems(
                     status=self.queue, name=term, version=version,
                     exact_match=self.exact_match, pocket=self.pocket):
@@ -267,11 +270,14 @@ class QueueAction:
         Optionally pass a binarypackagename via 'only' argument to display
         only exact matches within the selected build queue items.
         """
-        for source in queue_item.sources:
-            spr = source.sourcepackagerelease
-            self.display("\t | * %s/%s Component: %s Section: %s"
-                         % (spr.sourcepackagename.name, spr.version,
-                            spr.component.name, spr.section.name))
+        if queue_item.package_copy_job or not queue_item.sources.is_empty():
+            self.display(
+                "\t | * %s/%s Component: %s Section: %s" % (
+                    queue_item.package_name,
+                    queue_item.package_version,
+                    queue_item.component_name,
+                    queue_item.section_name,
+                    ))
 
         for queue_build in queue_item.builds:
             for bpr in queue_build.build.binarypackages:

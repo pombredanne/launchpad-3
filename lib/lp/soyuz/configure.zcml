@@ -166,6 +166,7 @@
                 custom_file_urls
                 date_created
                 sourcepackagerelease
+                component_name
                 contains_source
                 contains_build
                 contains_translation
@@ -178,6 +179,9 @@
                 is_delayed_copy
                 isPPA
                 package_copy_job
+                package_name
+                package_version
+                section_name
                 components"/>
         <require
             permission="launchpad.Edit"

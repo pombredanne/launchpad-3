@@ -479,7 +479,7 @@ class CompletePackageUpload:
         used to upload the contained source.
         """
         if self.is_delayed_copy:
-            return self.sources[0].sourcepackagerelease.upload_changesfile
+            return self.sourcepackagerelease.upload_changesfile
         return self.context.changesfile
 
     @property
