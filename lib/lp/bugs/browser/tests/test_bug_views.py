@@ -255,13 +255,12 @@ class TestBugSecrecyViews(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_notification_shown_if_marking_private_and_not_subscribed(self):
-        # If a user who is not subscribed to a bug marks that bug as
-        # private, the user will be subscribed to the bug. This allows
-        # them to un-mark the bug if they choose to, rather than being
-        # blocked from doing so.
-        person = self.factory.makePerson()
-        bug = self.factory.makeBug()
+    def createInitializedSecrecyView(self, person=None, bug=None):
+        """Create and return an initialized BugSecrecyView."""
+        if person is None:
+            person = self.factory.makePerson()
+        if bug is None:
+            bug = self.factory.makeBug()
         with person_logged_in(person):
             view = create_initialized_view(
                 bug.default_bugtask, name='+secrecy', form={
@@ -269,12 +268,21 @@ class TestBugSecrecyViews(TestCaseWithFactory):
                     'field.security_related': '',
                     'field.actions.change': 'Change',
                     })
-            self.assertEqual(1, len(view.request.response.notifications))
-            message_text = (
-                "Since you marked this bug as private you have "
-                "automatically been subscribed to it.")
-            self.assertEqual(
-                message_text, view.request.response.notifications[0].message)
+            return view
+
+    def test_notification_shown_if_marking_private_and_not_subscribed(self):
+        # If a user who is not subscribed to a bug marks that bug as
+        # private, the user will be subscribed to the bug. This allows
+        # them to un-mark the bug if they choose to, rather than being
+        # blocked from doing so.
+        view = self.createInitializedSecrecyView()
+        message_text = (
+            "Since you marked this bug as private you have "
+            "automatically been subscribed to it.")
+        notifications = view.request.response.notifications
+        self.assertEqual(
+            [message_text],
+            [notification.message for notification in notifications])
 
     def test_no_notification_shown_if_marking_private_and_subscribed(self):
         # If a user who is subscribed to a bug marks that bug as
@@ -283,39 +291,20 @@ class TestBugSecrecyViews(TestCaseWithFactory):
         bug = self.factory.makeBug()
         with person_logged_in(person):
             bug.subscribe(person, person)
-            view = create_initialized_view(
-                bug.default_bugtask, name='+secrecy', form={
-                    'field.private': 'on',
-                    'field.security_related': '',
-                    'field.actions.change': 'Change',
-                    })
-            self.assertEqual(0, len(view.request.response.notifications))
+        view = self.createInitializedSecrecyView(person, bug)
+        self.assertContentEqual([], view.request.response.notifications)
 
     def test_notification_includes_link_for_advanced_subscriptions(self):
         # If the advanced subscriptions feature flag is turned on, the
         # notification will include a link to the edit subscription
-        # page.
-        person = self.factory.makePerson()
-        bug = self.factory.makeBug()
+        # page and the mute page for the bug.
         with FeatureFixture({'malone.advanced-subscriptions.enabled': 'on'}):
-            with person_logged_in(person):
-                view = create_initialized_view(
-                    bug.default_bugtask, name='+secrecy', form={
-                        'field.private': 'on',
-                        'field.security_related': '',
-                        'field.actions.change': 'Change',
-                        })
-                self.assertEqual(1, len(view.request.response.notifications))
-                message_text = (
-                    "Since you marked this bug as private you have "
-                    "automatically been subscribed to it. If you don't want "
-                    "to receive email about this bug you can <a href=\""
-                    "%s\">mute your subscription</a> or <a href=\"%s\">"
-                    "unsubscribe</a>." % (
-                        canonical_url(
-                            bug.default_bugtask, view_name='+mute'),
-                        canonical_url(
-                            bug.default_bugtask, view_name='+subscribe')))
-                self.assertEqual(
-                    message_text,
-                    view.request.response.notifications[0].message)
+            view = self.createInitializedSecrecyView()
+            bug = view.context.bug
+            self.assertEqual(1, len(view.request.response.notifications))
+            notification = view.request.response.notifications[0].message
+            mute_url = canonical_url(bug.default_bugtask, view_name='+mute')
+            subscribe_url = canonical_url(
+                bug.default_bugtask, view_name='+subscribe')
+            self.assertIn(mute_url, notification)
+            self.assertIn(subscribe_url, notification)
