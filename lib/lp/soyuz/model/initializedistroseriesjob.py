@@ -21,6 +21,7 @@ from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitializeDistroSeriesJob,
     IInitializeDistroSeriesJobSource,
+    InitializationPending,
     )
 from lp.soyuz.model.distributionjob import (
     DistributionJob,
@@ -41,6 +42,20 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
                rebuild=False, overlays=(), overlay_pockets=(),
                overlay_components=()):
         """See `IInitializeDistroSeriesJob`."""
+        store = IMasterStore(DistributionJob)
+        # Only one InitializeDistroSeriesJob can be present at a time.
+        distribution_job = store.find(
+            DistributionJob, DistributionJob.job_id == Job.id,
+            DistributionJob.job_type == cls.class_job_type,
+            DistributionJob.distroseries_id == child.id).one()
+        if distribution_job is not None:
+            if distribution_job.job.status in Job.PENDING_STATUSES:
+                raise InitializationPending(cls(distribution_job))
+            # The job has completed one way or another, so delete it to
+            # allow initialization of the series to be rescheduled.
+            store.remove(distribution_job)
+            store.remove(distribution_job.job)
+        # Schedule the initialization.
         metadata = {
             'parents': parents,
             'arches': arches,
@@ -50,11 +65,10 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             'overlay_pockets': overlay_pockets,
             'overlay_components': overlay_components,
             }
-        job = DistributionJob(
-            child.distribution, child, cls.class_job_type,
-            metadata)
-        IMasterStore(DistributionJob).add(job)
-        return cls(job)
+        distribution_job = DistributionJob(
+            child.distribution, child, cls.class_job_type, metadata)
+        store.add(distribution_job)
+        return cls(distribution_job)
 
     @classmethod
     def getPendingJobsForDistroseries(cls, distroseries):
@@ -62,8 +76,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         return IStore(DistributionJob).find(
             DistributionJob,
             DistributionJob.job_id == Job.id,
-            DistributionJob.job_type ==
-                DistributionJobType.INITIALIZE_SERIES,
+            DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distroseries_id == distroseries.id,
             Job._status.is_in(Job.PENDING_STATUSES))
 

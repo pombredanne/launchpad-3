@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from storm.exceptions import IntegrityError
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -17,8 +16,11 @@ from canonical.testing import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
+    IInitializeDistroSeriesJob,
     IInitializeDistroSeriesJobSource,
+    InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -26,6 +28,7 @@ from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import Provides
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
@@ -58,15 +61,30 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         queue."""
         return len(self._getJobs())
 
-    def test_create_only_creates_one(self):
+    def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
-        # If there's already a InitializeDistroSeriesJob for a
-        # DistroSeries, InitializeDistroSeriesJob.create() won't create
-        # a new one.
+        # If there's already a pending InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # exception.
         self.job_source.create(distroseries, [parent.id])
+        exception = self.assertRaises(
+            InitializationPending, self.job_source.create,
+            distroseries, [parent.id])
+        self.assertThat(exception.job, Provides(IInitializeDistroSeriesJob))
+        self.assertEqual(distroseries, exception.job.distroseries)
+        self.assertIn(exception.job.job.status, Job.PENDING_STATUSES)
+
+    def test_create_with_existing_completed_job(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        # If there's a previous InitializeDistroSeriesJob that has already
+        # completed, the old job is deleted and the new job scheduled.
+        job = self.job_source.create(distroseries, [parent.id])
+        job.start()
+        job.complete()
         self.job_source.create(distroseries, [parent.id])
-        self.assertRaises(IntegrityError, flush_database_caches)
+        flush_database_caches()
 
     def test_run_with_previous_series_already_set(self):
         # InitializationError is raised if a parent series already exists

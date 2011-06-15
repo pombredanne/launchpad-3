@@ -10,6 +10,7 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitializeDistroSeriesJob",
     "IInitializeDistroSeriesJobSource",
+    "InitializationPending",
 ]
 
 from lazr.enum import (
@@ -74,6 +75,17 @@ class DistributionJobType(DBEnumeratedType):
         Updates the status of a potential difference between a derived
         distribution release series and its parent series.
         """)
+
+
+class InitializationPending(Exception):
+    """The initialization of the distroseries has already been scheduled.
+
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
+
+    def __init__(self, job):
+        super(InitializationPending, self).__init__()
+        self.job = job
 
 
 class IInitializeDistroSeriesJobSource(IJobSource):
