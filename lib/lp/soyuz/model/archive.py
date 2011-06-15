@@ -2128,7 +2128,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive = Archive.id AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            Archive.private = FALSE AND
+            Archive._private = FALSE AND
             Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
@@ -2219,7 +2219,7 @@ class ArchiveSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             Archive,
-            Archive.private == True,
+            Archive._private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getCommercialPPAs(self):
@@ -2247,7 +2247,7 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        public_archive = And(Archive.private == False,
+        public_archive = And(Archive._private == False,
                              Archive._enabled == True)
 
         if user is not None:
