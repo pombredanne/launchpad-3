@@ -119,7 +119,6 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklistSet,
     )
 from lp.registry.interfaces.packaging import IPackaging
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -2606,7 +2605,9 @@ class EditSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # checkUpload() returns the reason the user can't upload
+        # We use verifyUpload() instead of checkUpload() because
+        # we don't have a pocket.
+        # It returns the reason the user can't upload
         # or None if they are allowed.
         reason = distribution.main_archive.verifyUpload(
             user.person, distroseries=self.obj.distroseries,
