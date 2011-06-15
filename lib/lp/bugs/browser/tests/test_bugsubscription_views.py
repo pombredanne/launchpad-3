@@ -292,21 +292,20 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
         # Using the "unmute bug mail from this bug and subscribe me to this
         # bug" option when the user has muted their email will unmute and
         # subscribe.
-        with FeatureFixture({self.feature_flag: ON}):
-            with person_logged_in(self.person):
-                self.bug.mute(self.person, self.person)
-                level = BugNotificationLevel.METADATA
-                form_data = {
-                    'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.title,
-                    # Although this isn't used we must pass it for the
-                    # sake of form validation.
-                    'field.actions.continue': 'Continue',
-                    }
-                create_initialized_view(
-                    self.bug.default_bugtask, form=form_data,
-                    name='+subscribe')
-                self.assertFalse(self.bug.isMuted(self.person))
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            level = BugNotificationLevel.METADATA
+            form_data = {
+                'field.subscription': 'update-subscription',
+                'field.bug_notification_level': level.title,
+                # Although this isn't used we must pass it for the
+                # sake of form validation.
+                'field.actions.continue': 'Continue',
+                }
+            create_initialized_view(
+                self.bug.default_bugtask, form=form_data,
+                name='+subscribe')
+            self.assertFalse(self.bug.isMuted(self.person))
         subscription = self.bug.getSubscriptionForPerson(self.person)
         self.assertEqual(
             BugNotificationLevel.METADATA,
