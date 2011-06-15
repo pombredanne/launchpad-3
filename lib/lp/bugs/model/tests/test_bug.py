@@ -270,3 +270,15 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(person):
             bug.setPrivate(True, person)
             self.assertTrue(bug.personIsDirectSubscriber(person))
+
+    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private will not be subscribed if they're
+        # already a member of a team which is a direct subscriber.
+        bug = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+            bug.setPrivate(True, person)
+            self.assertFalse(bug.personIsDirectSubscriber(person))

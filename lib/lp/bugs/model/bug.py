@@ -1645,10 +1645,13 @@ BugMessage""" % sqlvalues(self.id))
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
                     self.subscribe(person, who)
-                # We also add `who` as a subscriber so that they can
-                # see the bug they've just marked private. If they're
-                # already subscribed this will be a no-op.
-                self.subscribe(who, who)
+                subscribers_for_who = self.getSubscribersForPerson(who)
+                if subscribers_for_who.is_empty():
+                    # We also add `who` as a subscriber, if they're not
+                    # already directly subscribed or part of a team
+                    # that's directly subscribed, so that they can
+                    # see the bug they've just marked private.
+                    self.subscribe(who, who)
 
             self.private = private
 
