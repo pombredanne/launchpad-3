@@ -2059,8 +2059,8 @@ class ArchiveAdminView(BaseArchiveEditView):
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
-            # buildd secrets are only used by builders, autogenerate one.
-            self.context.buildd_secret = create_token(16)
+            # The buildd secret is auto-generated and set when 'private' is set
+            # to True
             del(data['buildd_secret'])
         super(ArchiveAdminView, self).updateContextFromData(data)
 

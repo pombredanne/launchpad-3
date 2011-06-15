@@ -59,6 +59,7 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
+    create_token,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
@@ -271,7 +272,7 @@ class Archive(SQLBase):
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
-    private = BoolCol(dbName='private', notNull=True, default=False,
+    _private = BoolCol(dbName='private', notNull=True, default=False,
                       storm_validator=_validate_archive_privacy)
 
     require_virtualized = BoolCol(
@@ -335,6 +336,19 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
+
+    @property
+    def private(self):
+        return self._private
+
+    @private.setter
+    def private(self, private):
+        self._private = private
+        if private:
+            if not self.buildd_secret:
+                self.buildd_secret = create_token(20)
+        else:
+            self.buildd_secret = None
 
     @property
     def title(self):
