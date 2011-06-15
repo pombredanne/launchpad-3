@@ -212,8 +212,6 @@ class NoLinkedBranch(InvalidBranchException):
 class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    webservice_error(400)
-
     _message_prefix = "No such branch"
 
 
