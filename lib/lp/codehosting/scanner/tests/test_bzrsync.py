@@ -568,11 +568,14 @@ class TestPlanDatabaseChanges(BzrSyncTestCase):
         # If a BranchRevision is being added, and it's already in the DB, but
         # not found through the graph operations, we should schedule it for
         # deletion anyway.
-        rev1_id = self.bzr_tree.commit('initial commit')
+        rev1_id = self.bzr_tree.commit(
+            'initial commit', committer='me@example.org')
         merge_tree = self.bzr_tree.bzrdir.sprout('merge').open_workingtree()
-        merge_id = merge_tree.commit('mergeable commit')
+        merge_id = merge_tree.commit(
+            'mergeable commit', committer='me@example.org')
         self.bzr_tree.merge_from_branch(merge_tree.branch)
-        rev2_id = self.bzr_tree.commit('merge')
+        rev2_id = self.bzr_tree.commit(
+            'merge', committer='me@example.org')
         self.useContext(read_locked(self.bzr_tree))
         syncer = BzrSync(self.db_branch)
         syncer.syncBranchAndClose(self.bzr_tree.branch)
