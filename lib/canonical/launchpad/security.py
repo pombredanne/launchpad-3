@@ -2608,8 +2608,8 @@ class EditSourcePackage(AuthorizationBase):
 
         # checkUpload() returns the reason the user can't upload
         # or None if they are allowed.
-        reason = distribution.main_archive.checkUpload(
-            user.person, self.obj.distroseries, self.obj.sourcepackagename,
-            component=None, pocket=PackagePublishingPocket.RELEASE,
-            strict_component=False)
+        reason = distribution.main_archive.verifyUpload(
+            user.person, distroseries=self.obj.distroseries,
+            sourcepackagename=self.obj.sourcepackagename,
+            component=None, strict_component=False)
         return reason is None
