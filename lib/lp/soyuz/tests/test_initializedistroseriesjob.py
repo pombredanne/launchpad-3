@@ -61,28 +61,43 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         queue."""
         return len(self._getJobs())
 
-    def test_create_with_existing_pending_job(self):
+    def test_create_with_existing_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
-        # If there's already a pending InitializeDistroSeriesJob for a
-        # DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # If there's already a pending or completed InitializeDistroSeriesJob
+        # for a DistroSeries, InitializeDistroSeriesJob.create() raises an
         # exception.
-        self.job_source.create(distroseries, [parent.id])
-        exception = self.assertRaises(
+        job = self.job_source.create(distroseries, [parent.id])
+        assert_create_fails = lambda: self.assertRaises(
             InitializationPending, self.job_source.create,
             distroseries, [parent.id])
+        # JobStatus.WAITING -> fails
+        exception = assert_create_fails()
         self.assertThat(exception.job, Provides(IInitializeDistroSeriesJob))
         self.assertEqual(distroseries, exception.job.distroseries)
         self.assertIn(exception.job.job.status, Job.PENDING_STATUSES)
-
-    def test_create_with_existing_completed_job(self):
-        parent = self.factory.makeDistroSeries()
-        distroseries = self.factory.makeDistroSeries()
-        # If there's a previous InitializeDistroSeriesJob that has already
-        # completed, the old job is deleted and the new job scheduled.
-        job = self.job_source.create(distroseries, [parent.id])
+        # JobStatus.RUNNING -> fails
+        job.start()
+        assert_create_fails()
+        # JobStatus.SUSPENDED -> fails
+        job.suspend()
+        assert_create_fails()
+        # JobStatus.COMPLETED -> fails
+        job.queue()
         job.start()
         job.complete()
+        assert_create_fails()
+
+    def test_create_with_existing_failed_job(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        # If there's already a failed InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() schedules a new
+        # job.
+        job = self.job_source.create(distroseries, [parent.id])
+        # JobStatus.FAILED -> succeeds
+        job.start()
+        job.fail()
         self.job_source.create(distroseries, [parent.id])
         flush_database_caches()
 

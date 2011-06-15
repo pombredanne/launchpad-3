@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -49,12 +50,13 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distroseries_id == child.id).one()
         if distribution_job is not None:
-            if distribution_job.job.status in Job.PENDING_STATUSES:
+            if distribution_job.job.status == JobStatus.FAILED:
+                # Delete the failed job to allow initialization of the series
+                # to be rescheduled.
+                store.remove(distribution_job)
+                store.remove(distribution_job.job)
+            else:
                 raise InitializationPending(cls(distribution_job))
-            # The job has completed one way or another, so delete it to
-            # allow initialization of the series to be rescheduled.
-            store.remove(distribution_job)
-            store.remove(distribution_job.job)
         # Schedule the initialization.
         metadata = {
             'parents': parents,
