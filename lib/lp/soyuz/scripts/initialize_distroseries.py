@@ -213,11 +213,11 @@ class InitializeDistroSeries:
                 dsp_set.new(
                     self.distroseries, parent, initialized=False,
                     is_overlay=True, pocket=pocket, component=component,
-                    ordering=count + 1)
+                    ordering=count)
             else:
                 dsp_set.new(
                     self.distroseries, parent, initialized=False,
-                    is_overlay=False, ordering=count + 1)
+                    is_overlay=False, ordering=count)
             count += 1
 
     def _set_initialized(self):
