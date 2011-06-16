@@ -1629,7 +1629,7 @@ COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage UR
 
 COMMENT ON TABLE BinaryPackageReleaseContents IS 'BinaryPackageReleaseContents: Mapping table that maps from BinaryPackageReleases to path names.';
 COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagerelease IS 'The BinaryPackageRelease that contains the path name.';
-COMMENT ON COLUMN BinaryPackageReleaseContents.path IS 'The path name, via the BinaryPackagePaths table.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagepath IS 'The path name, via the BinaryPackagePaths table.';
 
 -- BinaryPackageFile
 
