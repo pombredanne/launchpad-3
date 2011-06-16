@@ -208,7 +208,6 @@ class TestQueueItemsView(TestCaseWithFactory):
             upload.distroseries.main_archive)
         with person_logged_in(queue_admin):
             view = self.makeView(upload.distroseries, queue_admin)
-            view.setupQueueList()
             html = view()
         self.assertIn(upload.package_name, html)
 
@@ -219,7 +218,6 @@ class TestQueueItemsView(TestCaseWithFactory):
             upload.distroseries.main_archive)
         with person_logged_in(queue_admin):
             view = self.makeView(upload.distroseries, queue_admin)
-            view.setupQueueList()
             html = view()
         self.assertIn(upload.package_name, html)
 
@@ -230,6 +228,5 @@ class TestQueueItemsView(TestCaseWithFactory):
             upload.distroseries.main_archive)
         with person_logged_in(queue_admin):
             view = self.makeView(upload.distroseries, queue_admin)
-            view.setupQueueList()
             html = view()
         self.assertIn(upload.package_name, html)
