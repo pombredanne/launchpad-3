@@ -480,7 +480,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         schema=Interface)) # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 
-    # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,

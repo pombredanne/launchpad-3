@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['BugSummary']
 
 from storm.locals import (
+    Bool,
     Int,
     Reference,
     Storm,
@@ -16,7 +17,10 @@ from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from lp.bugs.interfaces.bugsummary import IBugSummary
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.milestone import Milestone
@@ -51,11 +55,16 @@ class BugSummary(Storm):
     sourcepackagename_id = Int(name='sourcepackagename')
     sourcepackagename = Reference(sourcepackagename_id, SourcePackageName.id)
 
+    milestone_id = Int(name='milestone')
+    milestone = Reference(milestone_id, Milestone.id)
+
+    status = EnumCol(dbName='status', schema=BugTaskStatus)
+    importance = EnumCol(dbName='importance', schema=BugTaskImportance)
+
+    tag = Unicode()
+
     viewed_by_id = Int(name='viewed_by')
     viewed_by = Reference(viewed_by_id, Person.id)
 
-    tag = Unicode()
-    status = EnumCol(dbName='status', schema=BugTaskStatus)
-
-    milestone_id = Int(name='milestone')
-    milestone = Reference(milestone_id, Milestone.id)
+    has_patch = Bool()
+    fixed_upstream = Bool()
