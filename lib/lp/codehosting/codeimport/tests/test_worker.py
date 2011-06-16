@@ -215,6 +215,7 @@ class TestBazaarBranchStore(WorkerTest):
         # The fetched branch is in the default format.
         new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
+        self.assertEquals(os.listdir(self.temp_dir), [".bzr"])
         self.assertEqual(
             default_format, new_branch.bzrdir._format)
 
