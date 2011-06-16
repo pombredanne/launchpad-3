@@ -9,4 +9,4 @@ CREATE INDEX hwsubmission__date_created__idx ON hwsubmission USING btree (date_c
 -- For IHWSubmissionSet, which can now search by date_submitted.
 CREATE INDEX hwsubmission__date_submitted__idx ON hwsubmission USING btree (date_submitted);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 73, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 73, 2);
