@@ -146,7 +146,7 @@ If the string is not a valid component, a NotFound exception is thrown:
     ...     ubuntu.main_archive, "badcomponent")
     Traceback (most recent call last):
     ...
-    ComponentNotFound: 'badcomponent'
+    ComponentNotFound: No such component: 'badcomponent'.
 
 If the component argument is not passed, it will return
 ArchivePermission records for all matching components:

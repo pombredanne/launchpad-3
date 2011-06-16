@@ -149,9 +149,9 @@ class NoTokensForTeams(Exception):
     webservice_error(400)  # Bad request.
 
 
-class ComponentNotFound(Exception):
+class ComponentNotFound(NameLookupFailed):
     """Invalid source name."""
-    webservice_error(404)  # Bad request.
+    _message_prefix = 'No such component'
 
 
 class InvalidComponent(Exception):
