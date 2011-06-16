@@ -69,7 +69,7 @@ We can add a new chroot for ubuntu/hoary/i386 with the "add" command:
     0
     >>> print stderr
     INFO    Creating lockfile: /var/lock/launchpad-mangage-chroot.lock
-    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) added.
     INFO    Transaction committed.
@@ -88,7 +88,7 @@ Using an invalid command results in an error.
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
-    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     ERROR Allowed actions: ['add', 'update', 'remove', 'get']
     Unknown action: bogus
 
@@ -108,7 +108,7 @@ We can update the previous chroot with the "update" command:
 
     >>> manage_chroot = getScriptObject("update")
     >>> manage_chroot.mainTask()
-    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   LibraryFileAlias: ..., 25 bytes, 04a60337a417012f7c51fb56d59d2d0d
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) updated.
 
@@ -127,7 +127,7 @@ Adding a chroot using a non-existent path will result in an error.
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
-    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Could not open: ...no-such-file
 
 Commit the work done so far so the librarian has the uploaded file.
@@ -142,7 +142,7 @@ filename.
 
     >>> manage_chroot = getScriptObject("get", filepath=filepath)
     >>> manage_chroot.mainTask()
-    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
     DEBUG   Writing to '...foo'.
 
@@ -159,7 +159,7 @@ Using the "remove" command will remove a previously uploaded chroot.
 
     >>> manage_chroot = getScriptObject("remove")
     >>> manage_chroot.mainTask()
-    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) retrieved.
     DEBUG   PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)' (1) removed.
 
@@ -173,7 +173,7 @@ Trying to retrieve a removed chroot will fail.
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
-    DEBUG Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Chroot was deleted.
 
   >>> os.remove(filepath)
@@ -192,7 +192,7 @@ results in an appropriate error.
     ...     print info
     ... else:
     ...     print "Did not get expected exception"
-    DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
+    DEBUG   Initializing ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Librarian upload failed: ...Connection refused...
 
     >>> LibrarianLayer.reveal()

@@ -263,7 +263,7 @@ class BugTrackerComponentGroup(StormBase):
         return component
 
     def getComponent(self, component_name):
-        """Retrieves a component by the given name.
+        """Retrieves a component by the given name or id number.
 
         None is returned if there is no component by that name in the
         group.
@@ -687,7 +687,9 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        if component_group_name.isdigit():
+        if component_group_name is None:
+            return None
+        elif component_group_name.isdigit():
             component_group_id = int(component_group_name)
             component_group = store.find(
                 BugTrackerComponentGroup,

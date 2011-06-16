@@ -90,6 +90,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -653,6 +656,13 @@ class DistroSeriesDifference(StormBase):
             return DistroSeriesSourcePackageRelease(
                 distro_series, pub.sourcepackagerelease)
 
+    @cachedproperty
+    def base_distro_source_package_release(self):
+        """See `IDistroSeriesDifference`."""
+        return DistributionSourcePackageRelease(
+            self.parent_series.distribution,
+            self.parent_source_package_release)
+
     def update(self, manual=False):
         """See `IDistroSeriesDifference`."""
         # Updating is expected to be a heavy operation (not called
@@ -753,7 +763,7 @@ class DistroSeriesDifference(StormBase):
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
                 apt_pkg.VersionCompare(
-                    self.source_version, self.parent_source_version) < 0
+                    self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # If the derived version is lower than the parent's, we
                 # ensure the diff status is blacklisted.

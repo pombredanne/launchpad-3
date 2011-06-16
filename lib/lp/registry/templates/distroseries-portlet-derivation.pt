@@ -4,8 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="series-derivation" class="portlet"
   tal:define="overview_menu context/menu:overview">
-  <tal:is_derived condition="context/is_derived_series">
-    <tal:is_initialised condition="not: context/is_initialising">
+  <tal:is_derived condition="context/isDerivedSeries">
+    <tal:is_initialized condition="not: context/isInitializing">
     <tal:one_parent condition="view/has_unique_parent">
       <h2>Derived from <tal:name replace="view/unique_parent/displayname"/></h2>
     </tal:one_parent>
@@ -59,10 +59,10 @@
           No differences.
         </tal:no_diffs>
       </tal:diffs>
-  </tal:is_initialised>
+  </tal:is_initialized>
   </tal:is_derived>
-  <tal:is_initialising condition="context/is_initialising">
-    <h2>Series initialisation in progress</h2>
-      This series is initialising.
-  </tal:is_initialising>
+  <tal:is_initializing condition="context/isInitializing">
+    <h2>Series initialization in progress</h2>
+      This series is initializing.
+  </tal:is_initializing>
 </div>
