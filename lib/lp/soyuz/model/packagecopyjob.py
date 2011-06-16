@@ -39,7 +39,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,

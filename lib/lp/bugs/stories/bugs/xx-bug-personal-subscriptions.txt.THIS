@@ -5,15 +5,16 @@ Users can subscribe to bugs reported in Launchpad, via the "Subscribe" link
 in the actions portlet.
 
     >>> from lp.bugs.tests.bug import (
-    ...     print_direct_subscribers, print_also_notified,
-    ...     print_subscribers_from_duplicates)
+    ...     print_direct_subscribers, print_also_notified)
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
+    >>> browser.open(bug_1)
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
 
     >>> subscription_widget = browser.getControl(name='field.subscription')
     >>> subscription_widget.options
@@ -36,24 +37,11 @@ this.
     ...   print tag.renderContents()
     You have subscribed to this bug report.
 
-There's also now a link to unsubscribe the user next to the name. It's a
-relative URL to +subscribe, so it will only work when the portlet is
-in the context of the bug page.
-
-    >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
-    >>> print_direct_subscribers(browser.contents)
-    Foo Bar (Self-subscribed) (Unsubscribe Foo Bar)
-    Sample Person (Subscribed by Launchpad Janitor)
-    Steve Alexander (Subscribed by Launchpad Janitor)
-
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
-    >>> link = browser.getLink(id='unsubscribe-subscriber-16')
-    >>> print link.mech_link.url
-    +subscribe
+Reloading the page shows the link for editing one's subscription.
 
     >>> browser.open(bug_1)
-    >>> browser.getLink('Unsubscribe').click()
+    >>> browser.getLink(
+    ...     'subscribed to all notifications for this bug.').click()
     >>> print browser.title
     Bug #1...
     >>> browser.url
@@ -90,23 +78,18 @@ first subscribing one of Foo Bar's teams.
 
 There's an unsubscribe link next to the team name.
 
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
+    >>> browser.open(bug_1 + '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(browser.contents)
-    Launchpad Developers (Subscribed by Foo Bar) (Unsubscribe Launchpad
-                                                    Developers)
-    Sample Person (Subscribed by Launchpad Janitor)
-    Steve Alexander (Subscribed by Launchpad Janitor)
+    Launchpad Developers (Unsubscribe)
+    Sample Person
+    Steve Alexander
 
-Clicking either the subscribe link (for subscribing the user to the bug)
-or the unsubscribe link for the team gives us the option of both
+Clicking either the subscribe link gives us the option of both
 subscribing Foo Bar, and unsubscribing the Launchpad team.
 
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
-    >>> browser.getLink(id='unsubscribe-subscriber-57').mech_link.url
-    '+subscribe'
-
     >>> browser.open(bug_1)
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -127,16 +110,17 @@ Let's unsubscribe the Launchpad team.
     ...   print tag.renderContents()
     Launchpad Developers has been unsubscribed from bug 1.
 
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
+    >>> browser.open(bug_1 + '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(browser.contents)
-    Sample Person (Subscribed by Launchpad Janitor)
-    Steve Alexander (Subscribed by Launchpad Janitor)
+    Sample Person
+    Steve Alexander
 
 On the subscribe page there's a Cancel link as well, that will return
 the browser to the bug page.
 
     >>> browser.open(bug_1)
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -151,25 +135,19 @@ Foo Bar wasn't subscribed to the bug.
 
     >>> len(find_tags_by_class(browser.contents, 'informational message'))
     0
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
-    >>> print_direct_subscribers(browser.contents)
-    Sample Person (Subscribed by Launchpad Janitor)
-    Steve Alexander (Subscribed by Launchpad Janitor)
 
-Subscribers which the current user may unsubscribe (the current user and teams
-they are a member of) display first in the list, before all other
-subscriptions.
+Subscribers which the current user may unsubscribe have an indication
+that shows the unsubscribe link in the list of subscribers.
 
     >>> browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
     >>> browser.getControl('Person').value = 'testing-spanish-team'
     >>> browser.getControl('Subscribe user').click()
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
+    >>> browser.open(bug_1 + '+bug-portlet-subscribers-details')
     >>> print_direct_subscribers(browser.contents)
-    testing Spanish team (Subscribed by Foo Bar)
-                        (Unsubscribe testing Spanish team)
-    Sample Person (Subscribed by Launchpad Janitor)
-    Steve Alexander (Subscribed by Launchpad Janitor)
+    Sample Person
+    Steve Alexander
+    testing Spanish team (Unsubscribe)
 
 Subscriptions and Duplicate Bugs
 --------------------------------
@@ -184,17 +162,12 @@ For example, Steve Alexander can currently subscribe to bug #3.
     >>> stevea_browser = setupBrowser(
     ...   auth="Basic steve.alexander@ubuntulinux.com:test")
     >>> bug_3 = 'http://launchpad.dev/bugs/3/'
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-    >>> print_subscribers_from_duplicates(stevea_browser.contents)
-    From duplicates:
-
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-content")
+    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-details")
     >>> print_also_notified(stevea_browser.contents)
     Also notified:
 
 But if bug #2, a bug that Steve is directly subscribed to, is marked as
-a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-is presented with the Unsubscribe link instead.
+a dupe of bug #3, then Steve gets indirectly subscribed to bug #3.
 
     >>> bug_2 = 'http://launchpad.dev/tomcat/+bug/2/'
     >>> stevea_browser.open(bug_2 + "+duplicate")
@@ -202,40 +175,37 @@ is presented with the Unsubscribe link instead.
     >>> stevea_browser.getControl("Duplicate Of").value = "3"
     >>> stevea_browser.getControl("Change").click()
 
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-    >>> print_subscribers_from_duplicates(stevea_browser.contents)
-    From duplicates:
-    Steve Alexander (Subscribed to bug 2 by Launchpad Janitor)
-                    (Unsubscribe Steve Alexander)
+A logged-in user doesn't show up in the subscribers list.
 
-    >>> stevea_browser.getLink(id='unsubscribe-subscriber-11').mech_link.url
-    '+subscribe'
+    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-details")
+    >>> print_also_notified(stevea_browser.contents)
+    Also notified:
+
+However, an anonymous user will see them listed.
+
+    >>> anon_browser.open(bug_3 + "+bug-portlet-subscribers-details")
+    >>> print_also_notified(anon_browser.contents)
+    Also notified:
+    Steve Alexander
 
 When he chooses to unsubscribe, he will be unsubscribed from bug #2, the
 dupe of bug #3, so he'll no longer get mail from bug #3.
 
     >>> stevea_browser.open("http://launchpad.dev/bugs/3")
-    >>> stevea_browser.getLink('Unsubscribe').click()
+    >>> stevea_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> stevea_browser.getControl("Continue").click()
-
-# XXX: Brad Bollenbach 2006-09-27 bug=62634: Printing the tag here,
-# instead of tag.string.
 
     >>> for tag in find_tags_by_class(
     ...     stevea_browser.contents, 'informational message'):
     ...   print tag.renderContents()
     You have been unsubscribed from bug 3 and 1 duplicate (<a...#2</a>)...
 
-(Except for Mark, who has a structural subscription to the target,
-there are no longer any indirect subscribers, because Steve was
+There are no longer any indirect subscribers, because Steve was
 unsubscribed from the dupes and thus is no longer indirectly subscribed
-to bug #3.)
+to bug #3.
 
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-    >>> print_subscribers_from_duplicates(stevea_browser.contents)
-    From duplicates:
-
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-content")
+    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-details")
     >>> print_also_notified(stevea_browser.contents)
     Also notified:
 
@@ -255,19 +225,15 @@ previous example.)
     >>> stevea_browser.getControl('Person').value = 'stevea'
     >>> stevea_browser.getControl('Subscribe user').click()
 
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-    >>> print_subscribers_from_duplicates(stevea_browser.contents)
-    From duplicates:
-    Sample Person (Subscribed ...)
-    Steve Alexander (Subscribed ...) (Unsubscribe Steve Alexander)
-    testing Spanish team (Subscribed to bug 1 by Foo Bar)
-
-    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-content")
+    >>> stevea_browser.open(bug_3 + "+bug-portlet-subscribers-details")
     >>> print_also_notified(stevea_browser.contents)
     Also notified:
+    Sample Person
+    testing Spanish team
 
     >>> stevea_browser.open("http://launchpad.dev/bugs/3")
-    >>> stevea_browser.getLink("Unsubscribe").click()
+    >>> stevea_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
     >>> stevea_browser.getControl("Continue").click()
 
     >>> for tag in find_tags_by_class(
@@ -283,11 +249,9 @@ that follow.)
     >>> stevea_browser.getControl("Duplicate Of").value = ""
     >>> stevea_browser.getControl("Change").click()
 
-This unsubscribe behaviour is team-aware too, so you can unsubscribe
-your teams from a bug, even when the team's subscription comes from a
-duplicate. For example, let's login as Foo Bar, subscribe ubuntu-team to
-bug #2, and notice how bug #3's indirect subscriptions are update to
-include that team.
+This unsubscribe behaviour is team-aware: if we login as Foo Bar,
+subscribe ubuntu-team to bug #2, bug #3's indirect subscriptions
+are updated to include that team.
 
     >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> foobar_browser.open("http://launchpad.dev/bugs/2")
@@ -295,17 +259,10 @@ include that team.
     >>> foobar_browser.getControl("Person").value = "ubuntu-team"
     >>> foobar_browser.getControl("Subscribe user").click()
 
-    >>> foobar_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-
-    >>> print_subscribers_from_duplicates(foobar_browser.contents)
-    From duplicates:
-    Ubuntu Team (Subscribed to bug 2 by Foo Bar) (Unsubscribe Ubuntu Team)
-
-    >>> foobar_browser.open(
-    ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-
+    >>> foobar_browser.open(bug_3 + "+bug-portlet-subscribers-details")
     >>> print_also_notified(foobar_browser.contents)
     Also notified:
+    Ubuntu Team
 
 The subscribe link for Foo Bar still says "Subscribe", because
 Foo Bar can subscribe himself directly to this bug. For unsubscribing
@@ -313,7 +270,8 @@ the team, the (-) icon can be used. In reality, the two links point to
 the same page, but that is changed when the page is AJAX enabled.
 
     >>> foobar_browser.open("http://launchpad.dev/bugs/3")
-    >>> foobar_browser.getLink('Subscribe').click()
+    >>> foobar_browser.getLink(
+    ...     "not directly subscribed to this bug's notifications.").click()
 
 Foo Bar can unsubscribe ubuntu-team, and ubuntu-team will no longer show
 up in the indirect subscriptions.
@@ -330,38 +288,7 @@ up in the indirect subscriptions.
 
 (ubuntu-team is no longer an indirect subscriber.)
 
-    >>> foobar_browser.open(bug_3 + "+bug-portlet-dupe-subscribers-content")
-    >>> print_subscribers_from_duplicates(foobar_browser.contents)
-    From duplicates:
-
     >>> foobar_browser.open(
-    ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+    ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-details")
     >>> print_also_notified(foobar_browser.contents)
     Also notified:
-
-
-Displaying subscribers
-----------------------
-
-The display names of subscribers are escaped in the subscribers list, they are
-also trimmed to 20 characters, so that they fit alongside the unsubscribe
-icon.
-
-    >>> login(ANONYMOUS)
-    >>> abuser = factory.makePerson(
-    ...     name='abuser',
-    ...     displayname='<script>javascript:alert("YO")</script>')
-    >>> logout()
-    >>> browser.open(
-    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
-    >>> browser.getControl('Person').value = 'abuser'
-    >>> browser.getControl('Subscribe user').click()
-    >>> bug_1 = 'http://bugs.launchpad.dev/bugs/1/'
-    >>> browser.open(bug_1 + '+bug-portlet-subscribers-content')
-    >>> subscriber_list = find_tag_by_id(
-    ...     browser.contents, 'subscribers-direct')
-    >>> for subscriber in subscriber_list.findAll('div'):
-    ...     if '~abuser' in subscriber.a['href']:
-    ...         print subscriber.a.contents[2].strip()
-    &lt;script&gt;javascrip...
-
