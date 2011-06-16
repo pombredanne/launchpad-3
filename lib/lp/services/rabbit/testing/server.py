@@ -271,6 +271,13 @@ class RabbitServerRunner(Fixture):
 
     def _start(self):
         """Start the RabbitMQ server."""
+        # Check if Rabbit is already running. In truth this is really to avoid
+        # a race condition around creating $HOME/.erlang.cookie: let rabbitctl
+        # create it now, before spawning the daemon.
+        if self.environment.is_node_running():
+            raise AssertionError(
+                "RabbitMQ OTP already running even though it "
+                "hasn't been started it yet!")
         self._spawn()
         # Wait for the server to come up...
         timeout = time.time() + 15

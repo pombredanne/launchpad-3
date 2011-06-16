@@ -93,5 +93,5 @@ class TestRabbitFixture(TestCase):
 
 for num in xrange(1000):
     setattr(
-        TestRabbitFixture, "test_start_check_shutdown_%d" % num,
+        TestRabbitFixture, "test_start_check_shutdown_%04d" % num,
         TestRabbitFixture.test_start_check_shutdown)
