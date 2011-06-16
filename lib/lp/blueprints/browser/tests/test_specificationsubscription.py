@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -14,7 +14,7 @@ from lp.testing.views import create_initialized_view
 class SpecificationPortletSubscribersContentsTestCase(TestCaseWithFactory):
     """Tests for SpecificationPortletSubscribersContents view."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_sorted_subscriptions(self):
         # SpecificationPortletSubscribersContents.sorted_subscriptions
@@ -28,17 +28,12 @@ class SpecificationPortletSubscribersContentsTestCase(TestCaseWithFactory):
             sub3 = spec.subscribe(subscriber2, subscriber)
             view = create_initialized_view(
                 spec, name="+blueprint-portlet-subscribers-content")
-            # Loop over the results of sorted_subscriptions to extract the
-            # subscriptions from their SubscriptionAttrDecorator instances.
-            sorted_subscriptions = [
-                decorator.subscription for decorator in
-                view.sorted_subscriptions]
-            self.assertEqual([sub1, sub3, sub2], sorted_subscriptions)
+            self.assertEqual([sub1, sub3, sub2], view.sorted_subscriptions)
 
 
 class TestSpecificationPortletSubcribersIds(TestCaseWithFactory):
     # Tests for SpecificationPortletSubcribersIds view.
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def test_subscriber_ids(self):
         spec = self.factory.makeSpecification()
