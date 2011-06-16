@@ -744,6 +744,7 @@
                     date_last_updated
                     getBugTask
                     getDirectSubscribers
+                    getDirectSubscribersWithDetails
                     getDirectSubscriptions
                     getIndirectSubscribers
                     is_complete
