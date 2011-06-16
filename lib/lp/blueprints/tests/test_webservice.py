@@ -292,7 +292,7 @@ class TestSpecificationSubscription(SpecificationWebserviceTestCase):
         # Check the results.
         sub = db_spec.subscription(db_person)
         self.assertIsNot(None, sub)
-        self.assertEqual(sub.essential, True)
+        self.assertTrue(sub.essential)
 
     def test_unsubscribe(self):
         # Test unsubscribe() API.
