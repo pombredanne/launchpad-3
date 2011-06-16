@@ -848,6 +848,8 @@ class BugSecrecyEditView(BugEditViewBase):
         bug_before_modification = Snapshot(
             bug, providing=providedBy(bug))
         private = data.pop('private')
+        user_will_be_subscribed = (
+            private and bug.getSubscribersForPerson(self.user).is_empty())
         security_related = data.pop('security_related')
         private_changed = bug.setPrivate(
             private, getUtility(ILaunchBag).user)
@@ -856,6 +858,7 @@ class BugSecrecyEditView(BugEditViewBase):
             changed_fields = []
             if private_changed:
                 changed_fields.append('private')
+                self._handlePrivacyChanged(user_will_be_subscribed)
             if security_related_changed:
                 changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
@@ -863,6 +866,29 @@ class BugSecrecyEditView(BugEditViewBase):
 
         # Apply other changes.
         self.updateBugFromData(data)
+
+    def _handlePrivacyChanged(self, user_will_be_subscribed):
+        """Handle the case where the privacy of the bug has been changed.
+
+        If the bug has been made private and the user is not a direct
+        subscriber, they will be subscribed. If the bug is being made
+        public or the user is already directly subscribed, this is a
+        no-op.
+        """
+        if user_will_be_subscribed:
+            notification_text = (
+                    "Since you marked this bug as private you have "
+                    "automatically been subscribed to it. "
+                    "If you don't want to receive email about "
+                    "this bug you can <a href=\"%s\">mute your "
+                    "subscription</a> or <a href=\"%s\">"
+                    "unsubscribe</a>." % (
+                    canonical_url(
+                        self.context, view_name='+mute'),
+                    canonical_url(
+                        self.context, view_name='+subscribe')))
+            self.request.response.addInfoNotification(
+                structured(notification_text))
 
 
 class DeprecatedAssignedBugsView:
@@ -897,6 +923,7 @@ class BugTextView(LaunchpadView):
         return list(self.context.bugtasks)
 
     def bug_text(self):
+
         """Return the bug information for text display."""
         bug = self.context
 
