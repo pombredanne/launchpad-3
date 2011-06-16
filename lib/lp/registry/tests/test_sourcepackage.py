@@ -518,7 +518,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         admin = self.factory.makeAdministrator()
         sourcepackage = self.factory.makeSourcePackage()
         with person_logged_in(admin):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Administrators should have launchpad.Edit on source "
                 "packages.")
@@ -526,22 +526,67 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
     def test_distro_owner_have_launchpad_Edit(self):
         sourcepackage = self.factory.makeSourcePackage()
         with person_logged_in(sourcepackage.distribution.owner):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Distribution owner should have launchpad.Edit on source "
                 "packages.")
 
-    def test_uploader_have_launchpad_edit(self):
+    def test_uploader_has_launchpad_edit(self):
         sourcepackage = self.factory.makeSourcePackage()
         uploader = self.factory.makePerson()
         archive = sourcepackage.get_default_archive()
         with person_logged_in(sourcepackage.distribution.main_archive.owner):
             archive.newPackageUploader(uploader, sourcepackage.name)
         with person_logged_in(uploader):
-            self.failUnless(
+            self.assertTrue(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Uploader to the package should have launchpad.Edit on "
                 "source packages.")
+
+    def test_uploader_has_launchpad_edit_on_obsolete_series(self):
+        obsolete_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.OBSOLETE)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=obsolete_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in an OBSOLETE series.")
+
+    def test_uploader_have_launchpad_edit_on_current_series(self):
+        current_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.CURRENT)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=current_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a CURRENT series.")
+
+    def test_uploader_have_launchpad_edit_on_supported_series(self):
+        supported_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.SUPPORTED)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=supported_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a SUPPORTED series.")
 
     def test_john_doe_cannot_edit(self):
         sourcepackage = self.factory.makeSourcePackage()
