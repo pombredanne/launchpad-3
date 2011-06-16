@@ -27,6 +27,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -47,7 +48,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def setupParent(self, packages=None, format_selection=None):
         parent = self.factory.makeDistroSeries()
-        parent_das = self.factory.makeDistroArchSeries(distroseries=parent)
+        pf = getUtility(IProcessorFamilySet).getByName('x86')
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf,
+            architecturetag='i386')
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
