@@ -522,15 +522,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Direct subscribers have an entry in the BugSubscription table.
         """
 
-    def getDirectSubscribersWithDetails():
-        """Get direct subscribers and their subscriptions for the bug.
-
-        Those with muted bug subscriptions are excluded from results.
-
-        :returns: A ResultSet of tuples (Person, BugSubscription)
-            representing a subscriber and their bug subscription.
-        """
-
     def getIndirectSubscribers(recipients=None, level=None):
         """Return IPersons that are indirectly subscribed to this bug.
 

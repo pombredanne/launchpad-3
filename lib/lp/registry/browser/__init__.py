@@ -39,6 +39,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 
 
 class StatusCount:
@@ -71,8 +72,14 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
 
 
 def add_subscribe_link(links):
-    """Add the subscription-related links."""
-    links.extend(['subscribe_to_bug_mail', 'edit_bug_mail'])
+    """Based on a feature flag, add the correct link."""
+    use_advanced_features = getFeatureFlag(
+        'malone.advanced-structural-subscriptions.enabled')
+    if use_advanced_features:
+        links.append('subscribe_to_bug_mail')
+        links.append('edit_bug_mail')
+    else:
+        links.append('subscribe')
 
 
 class MilestoneOverlayMixin:

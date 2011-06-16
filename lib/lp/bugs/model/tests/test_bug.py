@@ -202,37 +202,6 @@ class TestBug(TestCaseWithFactory):
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
 
-    def test_get_direct_subscribers_with_details(self):
-        # getDirectSubscribersWithDetails() returns both
-        # Person and BugSubscription records in one go.
-        bug = self.factory.makeBug()
-        with person_logged_in(bug.owner):
-            # Unsubscribe bug owner so it doesn't taint the result.
-            bug.unsubscribe(bug.owner, bug.owner)
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            subscription = bug.subscribe(
-                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
-
-        self.assertContentEqual(
-            [(subscriber, subscription)],
-            bug.getDirectSubscribersWithDetails())
-
-    def test_get_direct_subscribers_with_details_mute_excludes(self):
-        # getDirectSubscribersWithDetails excludes muted subscriptions.
-        bug = self.factory.makeBug()
-        with person_logged_in(bug.owner):
-            # Unsubscribe bug owner so it doesn't taint the result.
-            bug.unsubscribe(bug.owner, bug.owner)
-        subscriber = self.factory.makePerson()
-        with person_logged_in(subscriber):
-            bug.subscribe(
-                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
-            bug.mute(subscriber, subscriber)
-
-        self.assertContentEqual(
-            [], bug.getDirectSubscribersWithDetails())
-
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
         # parameter it will include only subscribers subscribed to
