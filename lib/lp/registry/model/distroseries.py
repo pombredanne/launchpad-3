@@ -1642,7 +1642,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
-    def getPackageUploads(self, created_since_date=None, status=None,
+    def getPackageUploads(self, status=None, created_since_date=None,
                           archive=None, pocket=None, custom_type=None,
                           name=None, version=None, exact_match=False):
         """See `IDistroSeries`."""
