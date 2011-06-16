@@ -14,12 +14,13 @@ __all__ = [
 
 import calendar
 import datetime
+import httplib
 import operator
 
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 import pytz
 from sqlobject import (
     BoolCol,
@@ -287,9 +288,9 @@ class ProductWithLicenses:
                 tables=[ProductLicense]))
 
 
+@error_status(httplib.BAD_REQUEST)
 class UnDeactivateable(Exception):
     """Raised when a project is requested to deactivate but can not."""
-    webservice_error(400)
 
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)

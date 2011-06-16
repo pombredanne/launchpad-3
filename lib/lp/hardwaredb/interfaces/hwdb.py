@@ -43,12 +43,15 @@ __all__ = [
     'ParameterError',
     ]
 
+import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_destructor_operation,
     export_read_operation,
@@ -58,7 +61,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -1576,10 +1578,11 @@ class IHWDBApplication(ILaunchpadApplication):
         """
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""
-    webservice_error(400) #Bad request.
 
+
+@error_status(httplib.BAD_REQUEST)
 class ParameterError(Exception):
     """Exception raised when a method parameter does not match a constrint."""
-    webservice_error(400) #Bad request.

@@ -4,6 +4,7 @@
 # pylint: disable-msg=E0211,E0213
 
 from datetime import timedelta
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -14,6 +15,7 @@ from lazr.enum import (
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_read_operation,
@@ -23,7 +25,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -79,13 +80,13 @@ class TranslationImportQueueConflictError(
     conflicts with existing entries."""
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotSetTranslationImportStatus(Unauthorized):
     """User not permitted to change status.
 
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 # Some time spans in days.

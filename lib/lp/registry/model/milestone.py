@@ -14,8 +14,9 @@ __all__ = [
     ]
 
 import datetime
+import httplib
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 from sqlobject import (
     AND,
     BoolCol,
@@ -119,9 +120,9 @@ class HasMilestonesMixin:
     milestones = property(_get_milestones)
 
 
+@error_status(httplib.BAD_REQUEST)
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
-    webservice_error(400)
 
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)

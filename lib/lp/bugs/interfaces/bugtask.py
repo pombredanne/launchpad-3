@@ -56,6 +56,7 @@ from lazr.enum import (
     )
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
@@ -66,7 +67,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -401,51 +401,51 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
 
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskImportance(Unauthorized):
     """User not permitted to change importance.
 
     Raised when a user tries to transition to a new importance who
     doesn't have the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskMilestone(Unauthorized):
     """User not permitted to change milestone.
 
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskAssignee(Unauthorized):
     """User not permitted to change bugtask assignees.
 
     Raised when a user with insufficient prilieges tries to set
     the assignee of a bug task.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalRelatedBugTasksParams(Exception):
     """Exception raised when trying to overwrite all relevant parameters
     in a search for related bug tasks"""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class IBugTask(IHasDateCreated, IHasBug):

@@ -14,8 +14,11 @@ __all__ = [
     'NoSuchPackageSet',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
@@ -26,7 +29,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -53,10 +55,9 @@ class NoSuchPackageSet(NameLookupFailed):
     _message_prefix = "No such package set (in the specified distro series)"
 
 
+@error_status(httplib.BAD_REQUEST)
 class DuplicatePackagesetName(Exception):
     """Raised for packagesets with the same name and distroseries."""
-    # Bad request.
-    webservice_error(400)
 
 
 class IPackagesetViewOnly(IHasOwner):
