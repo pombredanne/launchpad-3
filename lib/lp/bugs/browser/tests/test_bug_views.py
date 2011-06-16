@@ -15,7 +15,6 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -208,3 +207,60 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
             self.assertFalse(
                 self._hasCSSClass(
                     contents, 'mute-link-container', 'hidden'))
+
+
+class TestBugSecrecyViews(TestCaseWithFactory):
+    """Tests for the Bug secrecy views."""
+
+    layer = DatabaseFunctionalLayer
+
+    def createInitializedSecrecyView(self, person=None, bug=None):
+        """Create and return an initialized BugSecrecyView."""
+        if person is None:
+            person = self.factory.makePerson()
+        if bug is None:
+            bug = self.factory.makeBug()
+        with person_logged_in(person):
+            view = create_initialized_view(
+                bug.default_bugtask, name='+secrecy', form={
+                    'field.private': 'on',
+                    'field.security_related': '',
+                    'field.actions.change': 'Change',
+                    })
+            return view
+
+    def test_notification_shown_if_marking_private_and_not_subscribed(self):
+        # If a user who is not subscribed to a bug marks that bug as
+        # private, the user will be subscribed to the bug. This allows
+        # them to un-mark the bug if they choose to, rather than being
+        # blocked from doing so.
+        view = self.createInitializedSecrecyView()
+        bug = view.context.bug
+        self.assertEqual(1, len(view.request.response.notifications))
+        notification = view.request.response.notifications[0].message
+        mute_url = canonical_url(bug.default_bugtask, view_name='+mute')
+        subscribe_url = canonical_url(
+            bug.default_bugtask, view_name='+subscribe')
+        self.assertIn(mute_url, notification)
+        self.assertIn(subscribe_url, notification)
+
+    def test_no_notification_shown_if_marking_private_and_subscribed(self):
+        # If a user who is subscribed to a bug marks that bug as
+        # private, the user will see not notification.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        with person_logged_in(person):
+            bug.subscribe(person, person)
+        view = self.createInitializedSecrecyView(person, bug)
+        self.assertContentEqual([], view.request.response.notifications)
+
+    def test_no_notification_shown_if_marking_private_and_in_sub_team(self):
+        # If a user who is directly subscribed to a bug via a team marks
+        # that bug as private, the user will see no notification.
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        bug = self.factory.makeBug()
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+        view = self.createInitializedSecrecyView(person, bug)
+        self.assertContentEqual([], view.request.response.notifications)
