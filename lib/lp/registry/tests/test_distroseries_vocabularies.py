@@ -222,7 +222,7 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         # Reload distroseries and distribution; these will reasonably already
         # be loaded before using the vocabulary.
         distroseries.distribution
-        # Getting terms issues 3 queries to find parent serieses.
+        # Getting terms issues 2 queries to find parent serieses.
         with StormStatementRecorder() as recorder:
             DistroSeriesDerivationVocabulary(distroseries).terms
-            self.assertThat(recorder, HasQueryCount(Equals(3)))
+            self.assertThat(recorder, HasQueryCount(Equals(2)))

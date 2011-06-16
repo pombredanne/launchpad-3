@@ -1822,13 +1822,13 @@ class DistroSeriesDerivationVocabulary:
                     DistroSeries.description.lower().like(term),
                     DistroSeries.summary.lower().like(term))
             where.append(search)
-        parent_distributions = IStore(DistroSeries).find(
+        parent_distributions = list(IStore(DistroSeries).find(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
                 child.id == DistroSeriesParent.derived_series_id,
-                parent.id == DistroSeriesParent.parent_series_id))
-        if not parent_distributions.is_empty():
+                parent.id == DistroSeriesParent.parent_series_id)))
+        if parent_distributions != []:
             where.append(
                 DistroSeries.distributionID.is_in(parent_distributions))
             return self.find_terms(where)
