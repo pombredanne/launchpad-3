@@ -1625,6 +1625,11 @@ COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binar
 COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
+-- BinaryPackageReleaseContents
+
+COMMENT ON TABLE BinaryPackageReleaseContents IS 'BinaryPackageReleaseContents: Mapping table that maps from BinaryPackageReleases to path names.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagerelease IS 'The BinaryPackageRelease that contains the path name.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.path IS 'The path name, via the BinaryPackagePaths table.';
 
 -- BinaryPackageFile
 
@@ -1636,6 +1641,11 @@ COMMENT ON COLUMN BinaryPackageFile.filetype IS 'The "type" of the file. E.g. DE
 -- BinaryPackageName
 
 COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package name.';
+
+-- BinaryPackagePaths
+
+COMMENT ON TABLE BinaryPackagePaths IS 'BinaryPackagePaths: A table of filenames shipped in binary packages.';
+COMMENT ON COLUMN BinaryPackagePaths.path IS 'The full path of the file.';
 
 -- Distribution
 

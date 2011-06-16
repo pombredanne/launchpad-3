@@ -3,10 +3,15 @@
 
 SET client_min_messages=ERROR;
 
+CREATE TABLE BinaryPackagePaths (
+    id serial PRIMARY KEY,
+    path text
+);
+
 CREATE TABLE BinaryPackageReleaseContents (
     binarypackagerelease integer REFERENCES BinaryPackageRelease,
-    filename text,
-    PRIMARY KEY (binarypackagerelease, filename)
+    path integer REFERENCES BinaryPackagePaths,
+    PRIMARY KEY (binarypackagerelease, path)
 );
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
