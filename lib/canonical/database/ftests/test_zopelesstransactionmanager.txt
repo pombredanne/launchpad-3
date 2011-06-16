@@ -6,9 +6,9 @@ transaction manager and SQLOS database adapter.
 With the move to Storm, it was converted to a small compatibility shim
 used to configure the database adapter.
 
-== Initialisation ==
+== Initialization ==
 
-The ZopelessTransactionManager is initialised with the initZopeless()
+The ZopelessTransactionManager is initialized with the initZopeless()
 function.
 
     >>> from canonical.lp import initZopeless

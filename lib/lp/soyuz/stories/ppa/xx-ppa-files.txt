@@ -28,7 +28,7 @@ Create a private PPA for no-priv.
     ...     owner=no_priv, private=True, name='p3a',
     ...     distribution=ubuntu)
 
-Initialise SoyuzTestPublisher.
+Initialize SoyuzTestPublisher.
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()

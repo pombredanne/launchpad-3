@@ -71,7 +71,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
 class ArchiveCruftCheckerError(Exception):
     """ArchiveCruftChecker specific exception.
 
-    Mostly used to describe errors in the initialisation of this object.
+    Mostly used to describe errors in the initialization of this object.
     """
 
 
@@ -400,7 +400,7 @@ class ArchiveCruftChecker:
             self.logger.debug("No NBS found")
 
     def initialize(self):
-        """Initialise and build required lists of obsolete entries in archive.
+        """Initialize and build required lists of obsolete entries in archive.
 
         Check integrity of passed parameters and store organised data.
         The result list is the self.nbs_to_remove which should contain
@@ -952,9 +952,9 @@ class LpQueryDistro(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
 
     def __init__(self, *args, **kwargs):
-        """Initialise dynamic 'usage' message and LaunchpadScript parent.
+        """Initialize dynamic 'usage' message and LaunchpadScript parent.
 
-        Also initialise the list 'allowed_arguments'.
+        Also initialize the list 'allowed_arguments'.
         """
         self.allowed_actions = [
             'current', 'development', 'supported', 'pending_suites', 'archs',
@@ -1001,7 +1001,7 @@ class LpQueryDistro(LaunchpadScript):
         print result
 
     def runAction(self, presenter=None):
-        """Run a given initialised action (self.action_name).
+        """Run a given initialized action (self.action_name).
 
         It accepts an optional 'presenter' which will be used to
         store/present the action result.
@@ -1398,7 +1398,7 @@ class ManageChrootScript(SoyuzScript):
         self.options.confirm_all = True
 
         self.logger.debug(
-            "Initialising ChrootManager for '%s'" % (distroarchseries.title))
+            "Initializing ChrootManager for '%s'" % (distroarchseries.title))
         chroot_manager = ChrootManager(
             distroarchseries, filepath=self.options.filepath)
 
