@@ -59,7 +59,6 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -2059,8 +2058,8 @@ class ArchiveAdminView(BaseArchiveEditView):
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
-            # The buildd secret is auto-generated and set when 'private' is set
-            # to True
+            # The buildd secret is auto-generated and set when 'private'
+            # is set to True
             del(data['buildd_secret'])
         super(ArchiveAdminView, self).updateContextFromData(data)
 
