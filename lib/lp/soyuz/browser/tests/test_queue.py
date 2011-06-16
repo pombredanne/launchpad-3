@@ -10,12 +10,10 @@ from zope.component import (
     getUtility,
     queryMultiAdapter,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
-from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -26,6 +24,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -197,38 +196,40 @@ class TestQueueItemsView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def makeView(self, distroseries, user, form):
+    def makeView(self, distroseries, user):
         """Create a queue view."""
         return create_initialized_view(
             distroseries, name='+queue', principal=user)
 
-    def makeCopyJobUpload(self, distroseries, component):
-        """Create a `PackageUpload` with a `PackageCopyJob`."""
-        job = self.factory.makePlainPackageCopyJob(
-            target_distroseries=distroseries)
-        job.addSourceOverride(SourceOverride(
-            self.factory.makeSourcePackageName().name,
-            component=component, section=self.factory.makeSection()))
-        naked_job = removeSecurityProxy(job).context
-        return self.factory.makePackageUpload(
-            distroseries=distroseries, package_copy_job=naked_job)
-
-    def test_copy_upload_does_not_break_rendering(self):
-        # The presence of a PackageUpload with a PackageCopyJob does not
-        # break rendering of the page.
-        # XXX JeroenVermeulen 2011-06-13 bug=394645: the current reason
-        # why this doesn't break is that the view uses getQueueItems,
-        # which won't return PackageUploads with copy jobs.  This test
-        # may start breaking once the view uses getPackageUploads.
-        distroseries = self.factory.makeDistroSeries()
-        component = self.factory.makeComponent()
-        upload = self.makeCopyJobUpload(distroseries, component=component)
-        queue_admin = self.factory.makeArchiveAdmin(distroseries.main_archive)
-        form = {
-            'queue_state': PackageUploadStatus.NEW.value,
-            'Accept': 'Accept',
-            'QUEUE_ID': [upload.id],
-            }
+    def test_view_renders_source_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeSourcePackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
         with person_logged_in(queue_admin):
-            view = self.makeView(distroseries, queue_admin, form)
-            view()
+            view = self.makeView(upload.distroseries, queue_admin)
+            view.setupQueueList()
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_build_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeBuildPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            view.setupQueueList()
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_copy_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeCopyJobPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            view.setupQueueList()
+            html = view()
+        self.assertIn(upload.package_name, html)
