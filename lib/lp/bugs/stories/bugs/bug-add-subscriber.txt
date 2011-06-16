@@ -32,14 +32,17 @@ By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
     >>> from lp.bugs.tests.bug import (
-    ...     print_also_notified, print_direct_subscribers)
+    ...     print_also_notified, print_direct_subscribers,
+    ...     print_subscribers_from_duplicates)
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
-    Sample Person
-    Steve Alexander
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
+    >>> print_subscribers_from_duplicates(user_browser.contents)
+    From duplicates:
     >>> print_also_notified(user_browser.contents)
     Also notified:
     Foo Bar
@@ -65,11 +68,11 @@ The subscribers portlet now contains the new subscriber's name.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
-    Sample Person
-    Steve Alexander
+    David Allouche (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 David got a notification, saying that he was subscribed to the bug.
 
@@ -108,12 +111,12 @@ The subscribers portlet displays the new subscribed team.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
-    Landscape Developers
-    Sample Person
-    Steve Alexander
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 
 Subscription of private teams
@@ -142,37 +145,37 @@ private team.
     'http://bugs.launchpad.dev/firefox/+bug/1'
     >>> foobar_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(foobar_browser.contents)
-    David Allouche
-    Landscape Developers
-    Private Team (Unsubscribe)
-    Sample Person
-    Steve Alexander
+    Private Team (Subscribed by Foo Bar) (Unsubscribe Private Team)
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 Someone not in the team will not see the private team in the
 subscribers list.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(user_browser.contents)
-    David Allouche
-    Landscape Developers
-    Sample Person
-    Steve Alexander
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 An anonymous user will not be shown the private team in the subscribers
 list.
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/bugs/1/'
-    ...     '+bug-portlet-subscribers-details')
+    ...     '+bug-portlet-subscribers-content')
     >>> print_direct_subscribers(anon_browser.contents)
-    David Allouche
-    Landscape Developers
-    Sample Person
-    Steve Alexander
+    David Allouche (Subscribed by No Privileges Person)
+    Landscape Developers (Subscribed by No Privileges Person)
+    Sample Person (Subscribed by Launchpad Janitor)
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
 The activity log also does not show subscribed private teams.  If we
 look at the activity log for the bug used above, we'll see that David Allouche

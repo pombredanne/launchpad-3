@@ -9,13 +9,17 @@ When he does so, all currently implicit subscribers will be made
 explicit. There are two implicit subscribers.
 
     >>> from lp.bugs.tests.bug import (
-    ...     print_also_notified, print_direct_subscribers)
+    ...     print_also_notified, print_direct_subscribers,
+    ...     print_subscribers_from_duplicates)
 
     >>> browser.open(
-    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
+    ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
 
     >>> print_direct_subscribers(browser.contents)
-    Steve Alexander
+    Steve Alexander (Subscribed by Launchpad Janitor)
+
+    >>> print_subscribers_from_duplicates(browser.contents)
+    From duplicates:
     >>> print_also_notified(browser.contents)
     Also notified:
     Sample Person
@@ -36,12 +40,14 @@ anyway, because he is an admin.
 All the implicit subscribers have been made explicit.
 
   >>> browser.open(
-  ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
+  ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-content")
   >>> print_direct_subscribers(browser.contents)
-  Sample Person
-  Steve Alexander
-  Ubuntu Team (Unsubscribe)
+  Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
+  Sample Person (Subscribed by Foo Bar)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
+  >>> print_subscribers_from_duplicates(browser.contents)
+  From duplicates:
   >>> print_also_notified(browser.contents)
   Also notified:
 

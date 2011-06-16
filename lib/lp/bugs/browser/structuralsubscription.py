@@ -396,10 +396,7 @@ class StructuralSubscriptionMenuMixin:
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
         text = 'Subscribe to bug mail'
-        # Clicks to this link will be intercepted by the on-page JavaScript,
-        # but we want a link target for non-JS-enabled browsers.
-        return Link('+subscribe', text, icon='add', hidden=True,
-            enabled=self._enabled)
+        return Link('#', text, icon='add', hidden=True, enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):
@@ -414,19 +411,13 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
-    if subscriptions is None:
-        try:
-            # No subscriptions, which means we are on a target
-            # subscriptions page. Let's at least provide target details.
-            target_info = {}
-            target_info['title'] = context.title
-            target_info['url'] = canonical_url(context, rootsite='mainsite')
-            IJSONRequestCache(request).objects['target_info'] = target_info
-        except NoCanonicalUrl:
-            # We export nothing if the target implements no canonical URL.
-            pass
+    if subscriptions is None or len(list(subscriptions)) == 0:
+        subscriptions = []
+        target = context
     else:
-        expose_user_subscriptions_to_js(user, subscriptions, request)
+        target = None
+    expose_user_subscriptions_to_js(
+        user, subscriptions, request, target)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -478,14 +469,27 @@ def expose_user_administered_teams_to_js(request, user, context,
     objects['administratedTeams'] = info
 
 
-def expose_user_subscriptions_to_js(user, subscriptions, request):
+def expose_user_subscriptions_to_js(user, subscriptions, request,
+                                    target=None):
     """Make the user's subscriptions available to JavaScript."""
-    api_request = IWebServiceClientRequest(request)
     info = {}
+    api_request = IWebServiceClientRequest(request)
     if user is None:
         administered_teams = []
     else:
         administered_teams = user.administrated_teams
+
+    if target is not None:
+        try:
+            # No subscriptions, which means we are on a target
+            # subscriptions page. Let's at least provide target details.
+            target_info = {}
+            target_info['title'] = target.title
+            target_info['url'] = canonical_url(target, rootsite='mainsite')
+            IJSONRequestCache(request).objects['target_info'] = target_info
+        except NoCanonicalUrl:
+            # We export nothing if the target implements no canonical URL.
+            pass
 
     for subscription in subscriptions:
         target = subscription.target

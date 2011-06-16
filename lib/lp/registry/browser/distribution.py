@@ -118,6 +118,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -300,7 +301,13 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
 
     @cachedproperty
     def links(self):
-        return ['edit', 'pubconf', 'subscribe_to_bug_mail', 'edit_bug_mail']
+        links = ['edit', 'pubconf']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+            links.append('edit_bug_mail')
+        return links
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -1011,9 +1018,9 @@ class DistributionMirrorsView(LaunchpadView):
         if throughput < 1000:
             return str(throughput) + ' Kbps'
         elif throughput < 1000000:
-            return str(throughput / 1000) + ' Mbps'
+            return str(throughput/1000) + ' Mbps'
         else:
-            return str(throughput / 1000000) + ' Gbps'
+            return str(throughput/1000000) + ' Gbps'
 
     @cachedproperty
     def total_throughput(self):
