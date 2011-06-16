@@ -11,11 +11,17 @@ __all__ = [
     'gatherResults',
     'no_traceback_failures',
     'suppress_stderr',
+    'run_reactor',
     ]
 
 
 import functools
 import StringIO
+from signal import (
+    getsignal,
+    SIGCHLD,
+    signal,
+    )
 import sys
 
 from twisted.internet import (
@@ -134,3 +140,12 @@ def no_traceback_failures(func):
             return Failure(e)
 
     return wrapped
+
+
+def run_reactor():
+    """Run the reactor and return with the SIGCHLD handler unchanged."""
+    handler = getsignal(SIGCHLD)
+    try:
+        default_reactor.run()
+    finally:
+        signal(SIGCHLD, handler)

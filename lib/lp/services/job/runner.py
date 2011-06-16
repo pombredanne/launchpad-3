@@ -20,8 +20,6 @@ import contextlib
 import logging
 import os
 from signal import (
-    getsignal,
-    SIGCHLD,
     SIGHUP,
     signal,
     )
@@ -56,6 +54,7 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport import run_reactor
 from lp.services.twistedsupport.task import (
     ParallelLimitedTaskConsumer,
     PollingTaskSource,
@@ -502,11 +501,7 @@ class TwistedJobRunner(BaseJobRunner):
             log.startLoggingWithObserver(observer.emit)
         runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
-        handler = getsignal(SIGCHLD)
-        try:
-            reactor.run()
-        finally:
-            signal(SIGCHLD, handler)
+        run_reactor()
         return runner
 
 
