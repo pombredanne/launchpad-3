@@ -49,7 +49,7 @@ from lazr.restful.declarations import error_status
 from lp.app.errors import NameLookupFailed
 
 # Annotate the RecipeParseError's with a 400 webservice status.
-error_status(400)(RecipeParseError)
+error_status(httplib.BAD_REQUEST)(RecipeParseError)
 
 
 class BadBranchMergeProposalSearchContext(Exception):

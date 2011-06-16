@@ -26,6 +26,7 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -79,7 +80,7 @@ HTTP_MOVED_PERMANENTLY = 301
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
-error_status(404)(NotFound)
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:

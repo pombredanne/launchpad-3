@@ -76,10 +76,6 @@ from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
 
-# "Slam" a 400 response code onto RecipeParseError so that it will behave
-# properly when raised in a web service context.
-error_status(400)(RecipeParseError)
-
 
 def get_buildable_distroseries_set(user):
     ppas = getUtility(IArchiveSet).getPPAsForUser(user)
