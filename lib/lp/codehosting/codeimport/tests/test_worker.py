@@ -1001,6 +1001,13 @@ class PullingImportWorkerTests:
         worker = self.makeImportWorker(source_details)
         self.assertRaises(NotBranchError, worker.run)
 
+    def test_invalid(self):
+        # If there is no branch in the target URL, exit with FAILURE_INVALID
+        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
+            rcstype=self.rcstype, url="file:///path/non/existant"))
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
     def test_partial(self):
         # Only config.codeimport.revisions_import_limit will be imported in a
         # given run.

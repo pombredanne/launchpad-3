@@ -30,7 +30,9 @@ from bzrlib.bzrdir import (
     BzrDirFormat,
     )
 from bzrlib.errors import (
+    ConnectionError,
     NoSuchFile,
+    NoRepositoryPresent,
     NotBranchError,
     )
 from bzrlib.transport import get_transport
@@ -66,6 +68,8 @@ class CodeImportWorkerExitCode:
     FAILURE = 1
     SUCCESS_NOCHANGE = 2
     SUCCESS_PARTIAL = 3
+    FAILURE_INVALID = 4
+    FAILURE_UNSUPPORTED_FEATURE = 5
 
 
 class BazaarBranchStore:
@@ -480,7 +484,7 @@ class ImportWorker:
     def _doImport(self):
         """Perform the import.
 
-        :return: True if the import actually imported some new revisions.
+        :return: A CodeImportWorkerExitCode
         """
         raise NotImplementedError()
 
@@ -573,6 +577,15 @@ class PullingImportWorker(ImportWorker):
 
     needs_bzr_tree = False
 
+    invalid_branch_exceptions = [
+        NoRepositoryPresent,
+        NotBranchError,
+        ConnectionError,
+        ]
+
+    unsupported_feature_exceptions = [
+        ]
+
     @property
     def probers(self):
         """The probers that should be tried for this import."""
@@ -606,15 +619,27 @@ class PullingImportWorker(ImportWorker):
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
             self._logger.info("Importing branch.")
-            inter_branch.fetch(limit=self.getRevisionLimit())
-            if bazaar_branch.repository.has_revision(remote_branch_tip):
-                pull_result = inter_branch.pull(overwrite=True)
-                if pull_result.old_revid != pull_result.new_revid:
-                    result = CodeImportWorkerExitCode.SUCCESS
+            try:
+                inter_branch.fetch(limit=self.getRevisionLimit())
+                if bazaar_branch.repository.has_revision(remote_branch_tip):
+                    pull_result = inter_branch.pull(overwrite=True)
+                    if pull_result.old_revid != pull_result.new_revid:
+                        result = CodeImportWorkerExitCode.SUCCESS
+                    else:
+                        result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
                 else:
-                    result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
-            else:
-                result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
+                    result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
+            except Exception, e:
+                if e.__class__ in self.unsupported_feature_exceptions:
+                    self._logger.info(
+                        "Unable to import branch because of limitations in Bazaar.")
+                    self._logger.info(str(e))
+                    result = CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE
+                elif e.__class__ in self.invalid_branch_exceptions:
+                    self._logger.info("Branch invalid: %s", e(str))
+                    result = CodeImportWorkerExitCode.FAILURE_INVALID
+                else:
+                    raise
             self._logger.info("Pushing local import branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
             self._logger.info("Job complete.")
