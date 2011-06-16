@@ -1059,12 +1059,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        try:
-            return self.destroySelf(break_references=True)
-        except CannotDeleteBranch, e:
-            # Reraise and expose exception here so that the webservice_error
-            # is propogated.
-            raise CannotDeleteBranch(e.message)
+        return self.destroySelf(break_references=True)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""

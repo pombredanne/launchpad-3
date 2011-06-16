@@ -1034,15 +1034,8 @@ class Person(
             # calling this method on a Person object directly via the
             # webservice API means searching for user related tasks
             user = kwargs.pop('user')
-            try:
-                search_params = get_related_bugtasks_search_params(
-                    user, self, **kwargs)
-            except IllegalRelatedBugTasksParams, e:
-                # dirty hack, marking an exception with a HTTP error
-                # only works if the exception is raised in the exported
-                # method, see docstring of
-                # `lazr.restful.declarations.webservice_error()`
-                raise e
+            search_params = get_related_bugtasks_search_params(
+                user, self, **kwargs)
             return getUtility(IBugTaskSet).search(
                 *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
