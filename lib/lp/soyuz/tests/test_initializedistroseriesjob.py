@@ -7,7 +7,6 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -16,9 +15,7 @@ from canonical.testing import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
-    IInitializeDistroSeriesJob,
     IInitializeDistroSeriesJobSource,
     InitializationCompleted,
     InitializationPending,
@@ -29,7 +26,6 @@ from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-from lp.testing.matchers import Provides
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
@@ -62,31 +58,31 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         queue."""
         return len(self._getJobs())
 
-    def test_create_with_existing_job(self):
+    def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
-        # If there's already a pending or completed InitializeDistroSeriesJob
-        # for a DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # If there's already a pending InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() raises an
         # exception.
         job = self.job_source.create(distroseries, [parent.id])
-        assert_create_fails = lambda exc_type: self.assertRaises(
-            exc_type, self.job_source.create, distroseries, [parent.id])
-        # JobStatus.WAITING -> fails
-        exception = assert_create_fails(InitializationPending)
-        self.assertThat(exception.job, Provides(IInitializeDistroSeriesJob))
-        self.assertEqual(distroseries, exception.job.distroseries)
-        self.assertIn(exception.job.job.status, Job.PENDING_STATUSES)
-        # JobStatus.RUNNING -> fails
-        job.start()
-        assert_create_fails(InitializationPending)
-        # JobStatus.SUSPENDED -> fails
-        job.suspend()
-        assert_create_fails(InitializationPending)
-        # JobStatus.COMPLETED -> fails
-        job.queue()
+        exception = self.assertRaises(
+            InitializationPending, self.job_source.create,
+            distroseries, [parent.id])
+        self.assertEqual(job, exception.job)
+
+    def test_create_with_existing_completed_job(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        # If there's already a completed InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # exception.
+        job = self.job_source.create(distroseries, [parent.id])
         job.start()
         job.complete()
-        assert_create_fails(InitializationCompleted)
+        exception = self.assertRaises(
+            InitializationCompleted, self.job_source.create,
+            distroseries, [parent.id])
+        self.assertEqual(job, exception.job)
 
     def test_create_with_existing_failed_job(self):
         parent = self.factory.makeDistroSeries()
@@ -95,11 +91,9 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         # DistroSeries, InitializeDistroSeriesJob.create() schedules a new
         # job.
         job = self.job_source.create(distroseries, [parent.id])
-        # JobStatus.FAILED -> succeeds
         job.start()
         job.fail()
         self.job_source.create(distroseries, [parent.id])
-        flush_database_caches()
 
     def test_run_with_previous_series_already_set(self):
         # InitializationError is raised if a parent series already exists
