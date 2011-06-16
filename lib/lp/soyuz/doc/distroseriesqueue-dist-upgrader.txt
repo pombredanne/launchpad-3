@@ -166,7 +166,7 @@ Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
     >>> from lp.soyuz.enums import PackageUploadStatus
-    >>> queue_item = breezy_autotest.getQueueItems(
+    >>> queue_item = breezy_autotest.getPackageUploads(
     ...      status=PackageUploadStatus.ACCEPTED)[0]
     >>> queue_item.customfiles[0].libraryfilealias.filename
     u'dist-upgrader_20060302.0120_all.tar.gz'
