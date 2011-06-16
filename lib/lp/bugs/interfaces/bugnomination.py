@@ -209,5 +209,3 @@ class IBugNominationForm(Interface):
         title=_("Series that can be nominated"), required=True,
         value_type=Choice(vocabulary="BugNominatableSeries"),
         constraint=can_be_nominated_for_series)
-
-

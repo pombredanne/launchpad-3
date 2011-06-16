@@ -272,8 +272,8 @@ class MilestoneSet:
 
     def getByNameAndProduct(self, name, product, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.productID==product.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.productID == product.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default
@@ -281,8 +281,8 @@ class MilestoneSet:
 
     def getByNameAndDistribution(self, name, distribution, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.distributionID==distribution.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.distributionID == distribution.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default

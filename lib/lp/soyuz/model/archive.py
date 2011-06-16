@@ -1534,7 +1534,7 @@ class Archive(SQLBase):
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError, error:
+        except KeyError:
             raise PocketNotFound(to_pocket.upper())
 
         # Fail immediately if the destination pocket is not Release and

@@ -1,4 +1,5 @@
-= Archive Permissions =
+Archive Permissions
+===================
 
 The ArchivePermission table gives us a way of looking up permissions for
 operations in the archive context.  The IArchivePermission utility adds
@@ -70,7 +71,8 @@ permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
 a SourcePacakgeName as the "item" parameter:
 
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
     >>> alsa_permissions = permission_set.checkAuthenticated(
     ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,
@@ -260,7 +262,8 @@ enumeration of archives.
     multiverse
 
 
-== Amending Permissions ==
+Amending Permissions
+~~~~~~~~~~~~~~~~~~~~
 
 There are some methods that will enable the caller to add and delete
 PackageSet based permissions.  They currently require launchpad.Edit

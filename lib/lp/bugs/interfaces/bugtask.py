@@ -477,7 +477,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         required=False,
         readonly=True,
         vocabulary='Milestone',
-        schema=Interface)) # IMilestone
+        schema=Interface))  # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 
     # XXX kiko 2006-03-23:
@@ -597,7 +597,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     owner = exported(
         Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
-        title=_('Target'), required=True, schema=Interface, # IBugTarget
+        title=_('Target'), required=True, schema=Interface,  # IBugTarget
         readonly=True,
         description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
@@ -610,7 +610,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             description=_(
                 "IBugTasks related to this one, namely other "
                 "IBugTasks on the same IBug."),
-            value_type=Reference(schema=Interface), # Will be specified later.
+            value_type=Reference(schema=Interface),  # Will be specified later
             readonly=True))
     pillar = Choice(
         title=_('Pillar'),
@@ -643,7 +643,7 @@ class IBugTask(IHasDateCreated, IHasBug):
                 "work required on this bug task."),
              readonly=True))
 
-    @operation_returns_collection_of(Interface) # Actually IBug.
+    @operation_returns_collection_of(Interface)  # Actually IBug.
     @call_with(user=REQUEST_USER, limit=10)
     @export_read_operation()
     def findSimilarBugs(user, limit=10):
@@ -1399,7 +1399,7 @@ class BugTaskSearchParams:
         elif zope_isinstance(tags, str):
             search_params.tag = tags
         elif tags is None:
-            pass # tags not supplied
+            pass  # tags not supplied
         else:
             raise AssertionError(
                 'Tags can only be supplied as a list or a string.')
@@ -1640,10 +1640,9 @@ class IBugTaskSet(Interface):
 
     def buildUpstreamClause(params):
         """Create a SQL clause to do upstream checks in a bug search.
-        
+
         :return: A string SQL expression.
         """
-
 
 
 def valid_remote_bug_url(value):

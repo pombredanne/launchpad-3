@@ -474,7 +474,7 @@ class IEditTranslationImportQueueEntry(Interface):
         description=_(
             "The type of the file being imported."),
         required=True,
-        vocabulary = TranslationFileType)
+        vocabulary=TranslationFileType)
 
     path = TextLine(
         title=_("Path"),

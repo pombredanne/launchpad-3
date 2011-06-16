@@ -173,4 +173,3 @@ class JoinNotAllowed(Exception):
 @error_status(httplib.BAD_REQUEST)
 class PPACreationError(Exception):
     """Raised when there is an issue creating a new PPA."""
-

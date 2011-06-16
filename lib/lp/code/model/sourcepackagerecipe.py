@@ -16,9 +16,7 @@ from datetime import (
     timedelta,
     )
 
-from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
-from lazr.restful.declarations import error_status
 from pytz import utc
 from storm.expr import (
     And,
@@ -249,7 +247,7 @@ class SourcePackageRecipe(Storm):
         self.distroseries.clear()
         self._recipe_data.instructions.find().remove()
         builds = store.find(
-            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe==self)
+            SourcePackageRecipeBuild, SourcePackageRecipeBuild.recipe == self)
         builds.set(recipe_id=None)
         store.remove(self._recipe_data)
         store.remove(self)
@@ -340,7 +338,7 @@ class SourcePackageRecipe(Storm):
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
         query_args = [
-            SourcePackageRecipeBuild.recipe==self,
+            SourcePackageRecipeBuild.recipe == self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
             And(PackageBuild.archive_id == Archive.id,

@@ -345,7 +345,8 @@ set hierarchy:
     ...
 
     >>> response = webservice.named_post(
-    ...     '/package-sets/hoary/gnome', 'addSubsets', {}, names=[u'languagepack'])
+    ...     '/package-sets/hoary/gnome', 'addSubsets', {},
+    ...     names=[u'languagepack'])
     >>> print response
     HTTP/1.1 200 Ok
     ...
@@ -506,7 +507,8 @@ If a non-existing source package name is passed it returns an error.
 What source packages are shared by the 'firefox' and the 'thunderbird'
 package sets?
 
-    >>> thunderbird = webservice.get("/package-sets/hoary/thunderbird").jsonBody()
+    >>> thunderbird = webservice.get(
+    ...     "/package-sets/hoary/thunderbird").jsonBody()
     >>> response = webservice.named_get(
     ...     '/package-sets/hoary/firefox', 'getSourcesSharedBy', {},
     ...     other_package_set=thunderbird['self_link'])
@@ -843,7 +845,8 @@ Archive permissions can be accessed via their URLs in direct fashion.
 If we do *not* specify the distro series for package set based archive
 permission URLs a 404 will result.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -852,7 +855,8 @@ permission URLs a 404 will result.
 The same happens if a user tries to doctor an URL with an invalid distro
 series.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=foobar'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=foobar')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -860,7 +864,8 @@ series.
 
 The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=hoary'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=hoary')
     >>> response = webservice.get(url)
     >>> print response
     HTTP/1.1 404 Not Found
@@ -868,7 +873,8 @@ The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
 .. but is allowed to upload to 'thunderbird' in 'grumpy'.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=grumpy'
+    >>> url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=thunderbird&series=grumpy')
     >>> permission = webservice.get(url).jsonBody()
     >>> print permission['package_set_name']
     thunderbird
@@ -877,7 +883,8 @@ The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
 
 The user 'cprov' has no upload permission for 'thunderbird' in 'hoary'.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/cprov?type=packageset&item=thunderbird&series=hoary'
+    >>> url = ('/ubuntu/+archive/primary/+upload/cprov'
+    ...     '?type=packageset&item=thunderbird&series=hoary')
     >>> permission = webservice.get(url).jsonBody()
     >>> pprint_entry(permission)
     archive_link: u'http://api.launchpad.dev/beta/ubuntu/+archive/primary'

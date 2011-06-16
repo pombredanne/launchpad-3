@@ -69,6 +69,7 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     One example would be a URL containing uppercase letters.
     """
 
+
 @error_status(httplib.UNAUTHORIZED)
 class UserCannotUnsubscribePerson(Unauthorized):
     """User does not have permission to unsubscribe person or team."""
