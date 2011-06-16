@@ -98,7 +98,7 @@ class PackageCloner:
             for (origin_das, destination_das) in distroarchseries_list:
                 self._clone_binary_packages(
                     origin, destination, origin_das, destination_das,
-                    sourcepackagenames)
+                    sourcepackagenames, no_duplicates)
 
         if proc_families is None:
             proc_families = []
@@ -154,7 +154,7 @@ class PackageCloner:
 
     def _clone_binary_packages(
         self, origin, destination, origin_das, destination_das,
-        sourcepackagenames=None):
+        sourcepackagenames=None, no_duplicates=False):
         """Copy binary publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -172,7 +172,10 @@ class PackageCloner:
         @param sourcepackagenames: List of source packages to restrict
             the copy to
         @type sourcepackagenames: Iterable
-        """
+        @param no_duplicates: if we should prevent the duplication
+            of packages with identical binarypackagename in the
+            destination.
+         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
             INSERT INTO BinaryPackagePublishingHistory (
@@ -206,6 +209,27 @@ class PackageCloner:
                             AND spr.sourcepackagename = spn.id
                             AND spn.name IN %s)''' % sqlvalues(
                                 sourcepackagenames)
+
+        if no_duplicates:
+            query += '''AND bpph.binarypackagerelease NOT IN
+                            (SELECT origin_bpr.id
+                             FROM BinaryPackageRelease as origin_bpr,
+                                  BinaryPackageRelease as dest_bpr,
+                                  BinaryPackagePublishingHistory as
+                                      dest_bpph
+                             WHERE dest_bpph.binarypackagerelease =
+                                 dest_bpr.id
+                             AND dest_bpr.binarypackagename =
+                                 origin_bpr.binarypackagename
+                             AND dest_bpph.distroarchseries = %s
+                             AND dest_bpph.status in (%s, %s)
+                             AND dest_bpph.pocket = %s
+                             AND dest_bpph.archive = %s)
+                      ''' % sqlvalues(
+                          destination_das,
+                          PackagePublishingStatus.PENDING,
+                          PackagePublishingStatus.PUBLISHED,
+                          destination.pocket, destination.archive)
 
         store.execute(query)
 
