@@ -15,13 +15,6 @@
                         class string:${subscription/css_name} subscriber">
     <a tal:condition="subscription/required:launchpad.Edit"
        tal:attributes="href subscription/fmt:url">
-      <img
-        tal:condition="not:subscription/person/is_valid_person"
-        alt="(inactive)"
-        src="/@@/person-inactive"
-        title="No longer uses Launchpad."
-      />
-      <tal:active condition="subscription/person/is_valid_person">
         <img
           tal:condition="subscription/essential"
           alt="(essential)"
@@ -34,7 +27,6 @@
           src="/@@/subscriber-inessential"
           title="Normal subscriber."
         />
-      </tal:active>
     </a>
     <tal:no_edit condition="not: subscription/required:launchpad.Edit">
        <img tal:condition="subscription/essential"
