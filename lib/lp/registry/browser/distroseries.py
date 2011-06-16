@@ -218,6 +218,7 @@ class DistroSeriesOverviewMenu(
                  'queue',
                  'add_port',
                  'create_milestone',
+                 'initseries',
                  ]
         add_subscribe_link(links)
         links.append('admin')
@@ -274,6 +275,15 @@ class DistroSeriesOverviewMenu(
     def queue(self):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def initseries(self):
+        enabled = (
+             getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
+             not self.context.isInitializing() and
+             not self.context.isInitialized())
+        text = 'Initialize series'
+        return Link('+initseries', text, icon='edit', enabled=enabled)
 
 
 class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
@@ -1032,7 +1042,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     """
     page_title = 'Local package differences'
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
-    show_parent_packagesets = True
+    show_packagesets = True
     search_higher_parent_option = True
 
     def initialize(self):

@@ -231,6 +231,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -250,6 +251,7 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingPriority,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -267,6 +269,7 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.files import (
@@ -383,7 +386,7 @@ class ObjectFactory:
     __metaclass__ = AutoDecorate(default_master_store)
 
     def __init__(self):
-        # Initialise the unique identifier.
+        # Initialize the unique identifier.
         self._local = local()
 
     def getUniqueEmailAddress(self):
@@ -3387,6 +3390,65 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 }
             status_changers[status]()
         return package_upload
+
+    def makeSourcePackageUpload(self, distroseries=None,
+                                sourcepackagename=None):
+        """Make a `PackageUpload` with a `PackageUploadSource` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        upload.addSource(self.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename))
+        return upload
+
+    def makeBuildPackageUpload(self, distroseries=None,
+                               binarypackagename=None):
+        """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        build = self.makeBinaryPackageBuild()
+        upload.addBuild(build)
+        self.makeBinaryPackageRelease(
+            binarypackagename=binarypackagename, build=build)
+        return upload
+
+    def makeCustomPackageUpload(self, distroseries=None, custom_type=None,
+                                filename=None):
+        """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if custom_type is None:
+            custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        file_alias = self.makeLibraryFileAlias(filename=filename)
+        upload.addCustom(file_alias, custom_type)
+        return upload
+
+    def makeCopyJobPackageUpload(self, distroseries=None,
+                                 sourcepackagename=None):
+        """Make a `PackageUpload` with a `PackageCopyJob` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        spph = self.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename)
+        spr = spph.sourcepackagerelease
+        job = self.makePlainPackageCopyJob(
+            package_name=spr.sourcepackagename.name,
+            package_version=spr.version,
+            source_archive=spph.archive,
+            target_archive=distroseries.main_archive,
+            target_distroseries=distroseries)
+        try:
+            job.run()
+        except SuspendJobException:
+            # Expected exception.
+            job.suspend()
+        upload_set = getUtility(IPackageUploadSet)
+        return upload_set.getByPackageCopyJobIDs([job.id]).one()
 
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
                                  distroseries=None, maintainer=None,
