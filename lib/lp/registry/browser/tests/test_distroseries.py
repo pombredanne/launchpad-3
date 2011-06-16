@@ -40,11 +40,11 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.archivepublisher.debversion import Version
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
-    IGNORED,
     HIGHER_VERSION_THAN_PARENT,
+    IGNORED,
     NON_IGNORED,
     RESOLVED,
     )
@@ -67,27 +67,29 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
-    IInitialiseDistroSeriesJobSource,
+    IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model import distroseriesdifferencejob
+from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
-    feature_flags,
     login_person,
     person_logged_in,
-    set_feature_flag,
     StormStatementRecorder,
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    EqualsIgnoringWhitespace,
+    HasQueryCount,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -295,22 +297,22 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
         self.assertThat(html_content, portlet_display)
 
-    def test_differences_portlet_initialising(self):
-        # The difference portlet displays 'The series is initialising.' if
-        # there is an initialising job for the series.
+    def test_differences_portlet_initializing(self):
+        # The difference portlet displays 'The series is initializing.' if
+        # there is an initializing job for the series.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries()
         parent_series = self.factory.makeDistroSeries()
         self.simple_user = self.factory.makePerson()
-        job_source = getUtility(IInitialiseDistroSeriesJobSource)
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
         job_source.create(derived_series, [parent_series.id])
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derived series', 'h2',
-                text='Series initialisation in progress'),
+                text='Series initialization in progress'),
             soupmatchers.Tag(
                 'Init message', True,
-                text=re.compile('\s*This series is initialising.\s*')),
+                text=re.compile('\s*This series is initializing.\s*')),
               )
 
         with person_logged_in(self.simple_user):
@@ -323,8 +325,84 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             view.request.features = get_relevant_feature_controller()
             html_content = view()
 
-        self.assertTrue(derived_series.is_initialising)
+        self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
+
+    def assertInitSeriesLinkPresent(self, series, person):
+        self._assertInitSeriesLink(series, person, True)
+
+    def assertInitSeriesLinkNotPresent(self, series, person):
+        self._assertInitSeriesLink(series, person, False)
+
+    def _assertInitSeriesLink(self, series, person, present=True):
+        # Helper method to check the presence/absence of the link to
+        # +iniseries.
+        if person == 'admin':
+            person = getUtility(ILaunchpadCelebrities).admin.teamowner
+
+        init_link_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Initialize series', 'a',
+                text='Initialize series',
+                attrs={'href': '%s/+initseries' % canonical_url(series)}))
+
+        with person_logged_in(person):
+            view = create_initialized_view(
+                series,
+                '+index',
+                principal=person)
+            html_content = view()
+
+        if present:
+            self.assertThat(html_content, init_link_matcher)
+        else:
+            self.assertThat(html_content, Not(init_link_matcher))
+
+    def test_differences_init_link_no_feature(self):
+        # The link to +initseries is not displayed if the feature flag
+        # is not enabled.
+        series = self.factory.makeDistroSeries()
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+    def test_differences_init_link_admin(self):
+        # The link to +initseries is displayed to admin users if the
+        # feature flag is enabled.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+
+        self.assertInitSeriesLinkPresent(series, 'admin')
+
+    def test_differences_init_link_not_admin(self):
+        # The link to +initseries is not displayed to not admin users if the
+        # feature flag is enabled.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        person = self.factory.makePerson()
+
+        self.assertInitSeriesLinkNotPresent(series, person)
+
+    def test_differences_init_link_initialized(self):
+        # The link to +initseries is not displayed if the series is
+        # already initialized (i.e. has any published package).
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=series.main_archive,
+            distroseries=series)
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+    def test_differences_init_link_series_initializing(self):
+        # The link to +initseries is not displayed if the series is
+        # initializing.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job_source.create(series, [parent_series.id])
+
+        self.assertInitSeriesLinkNotPresent(series, 'admin')
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -416,17 +494,17 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # the soyuz.derived_series_ui.enabled flag.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             self.assertFalse(view.is_derived_series_feature_enabled)
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             self.assertTrue(view.is_derived_series_feature_enabled)
 
     def test_form_hidden_when_derived_series_feature_disabled(self):
         # The form is hidden when the feature flag is not set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
+        with FeatureFixture({}):
             root = html.fromstring(view())
             self.assertEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -440,8 +518,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         # The form is shown when the feature flag is set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
-        with feature_flags():
-            set_feature_flag(u"soyuz.derived_series_ui.enabled", u"true")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
             root = html.fromstring(view())
             self.assertNotEqual(
                 [], root.cssselect("#initseries-form-container"))
@@ -454,6 +532,61 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             self.assertIn(
                 u"javascript-disabled",
                 message.get("class").split())
+
+    def test_rebuilding_allowed(self):
+        # If the distro has no initialized series, rebuilding is allowed.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        view = create_initialized_view(distroseries, "+initseries")
+        self.assertTrue(view.rebuilding_allowed)
+
+    def test_rebuilding_not_allowed(self):
+        # If the distro has an initialized series, no rebuilding is allowed.
+        distroseries = self.factory.makeDistroSeries()
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=another_distroseries)
+        view = create_initialized_view(distroseries, "+initseries")
+        self.assertFalse(view.rebuilding_allowed)
+
+    def test_form_hidden_when_distroseries_is_initialized(self):
+        # The form is hidden when the feature flag is set but the series has
+        # already been initialized.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"This series already contains source packages "
+                    u"and cannot be initialized again."))
+
+    def test_form_hidden_when_distroseries_is_being_initialized(self):
+        # The form is hidden when the feature flag is set but the series has
+        # already been derived.
+        distroseries = self.factory.makeDistroSeries()
+        getUtility(IInitializeDistroSeriesJobSource).create(
+            distroseries, [self.factory.makeDistroSeries().id])
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u"This series is already being initialized."))
 
 
 class DistroSeriesDifferenceMixin:
@@ -526,12 +659,12 @@ class TestDistroSeriesLocalDifferences(
             "Form filter should not be shown when there are no differences.")
 
     def test_parent_packagesets_localpackagediffs(self):
-        # +localpackagediffs displays the parent packagesets.
+        # +localpackagediffs displays the packagesets.
         ds_diff = self.factory.makeDistroSeriesDifference()
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[ds_diff.source_package_name],
-                distroseries=ds_diff.parent_series)
+                distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -542,8 +675,8 @@ class TestDistroSeriesLocalDifferences(
 
         packageset_text = re.compile('\s*' + ps.name)
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -554,7 +687,7 @@ class TestDistroSeriesLocalDifferences(
                 self.factory.makePackageset(
                     name=name,
                     packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.parent_series)
+                    distroseries=ds_diff.derived_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -566,8 +699,8 @@ class TestDistroSeriesLocalDifferences(
         packageset_text = re.compile(
             '\s*' + ', '.join(sorted(unsorted_names)))
         self._test_packagesets(
-            html_content, packageset_text, 'parent-packagesets',
-            'Parent packagesets')
+            html_content, packageset_text, 'packagesets',
+            'Packagesets')
 
 
 class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
@@ -1049,6 +1182,9 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         # that need doing.
         dsd = self.makePackageUpgrade()
         series = dsd.derived_series
+        with celebrity_logged_in('admin'):
+            series.status = SeriesStatus.DEVELOPMENT
+            series.datereleased = UTC_NOW
         view = self.makeView(series)
         view.requestUpgrades()
         job_source = getUtility(IPlainPackageCopyJobSource)
@@ -1059,6 +1195,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         self.assertEquals(series, job.target_distroseries)
         self.assertEqual(dsd.source_package_name.name, job.package_name)
         self.assertEqual(dsd.parent_source_version, job.package_version)
+        self.assertEqual(PackagePublishingPocket.RELEASE, job.target_pocket)
 
     def test_upgrade_gives_feedback(self):
         # requestUpgrades doesn't instantly perform package upgrades,
@@ -1077,7 +1214,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         observed = map(vars, view.request.response.notifications)
         self.assertEqual([expected], observed)
 
-    def test_requestUpgrade_is_efficient(self):
+    def test_requestUpgrades_is_efficient(self):
         # A single web request may need to schedule large numbers of
         # package upgrades.  It must do so without issuing large numbers
         # of database queries.
@@ -1087,18 +1224,17 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         flush_database_caches()
         with StormStatementRecorder() as recorder1:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(recorder1, HasQueryCount(LessThan(10)))
-        # Creating Jobs and DistributionJobs takes 2 extra queries per
-        # requested sync.
-        requested_syncs = 3
-        for index in xrange(requested_syncs):
+        self.assertThat(recorder1, HasQueryCount(LessThan(12)))
+
+        # The query count does not increase with the number of upgrades.
+        for index in xrange(3):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
         self.assertThat(
             recorder2,
-            HasQueryCount(Equals(recorder1.count + 2 * requested_syncs)))
+            HasQueryCount(Equals(recorder1.count)))
 
 
 class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
@@ -1587,24 +1723,18 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             "component" in view.errors[0])
 
     def assertPackageCopied(self, series, src_name, version, view):
-        # Helper to check that a package has been copied.
-        # The new version should now be in the destination series.
-        pub = series.main_archive.getPublishedSources(
-            name=src_name, version=version,
-            distroseries=series).one()
-        self.assertIsNot(None, pub)
-        self.assertEqual(version, pub.sourcepackagerelease.version)
+        # Helper to check that a package has been copied by virtue of
+        # there being a package copy job ready to run.
+        pcj = PlainPackageCopyJob.getActiveJobs(series.main_archive).one()
+        self.assertEqual(version, pcj.package_version)
 
         # The view should show no errors, and the notification should
         # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        self.assertEqual(
-            '<p>Packages copied to '
-            '<a href="http://launchpad.dev/%s/%s"'
-            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
-            'derilucid</li>\n</ul>' % (series.parent.name, series.name),
+        self.assertIn(
+            "<p>Requested sync of 1 packages.</p>",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
@@ -1683,14 +1813,14 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             person, sp_name)
         self._syncAndGetView(
             derived_series, person, [diff_id])
-        parent_pub = parent_series.main_archive.getPublishedSources(
+        parent_series.main_archive.getPublishedSources(
             name='my-src-name', version=versions['parent'],
             distroseries=parent_series).one()
-        pub = derived_series.main_archive.getPublishedSources(
-            name='my-src-name', version=versions['parent'],
-            distroseries=derived_series).one()
-        self.assertEqual(self.factory.getAnyPocket(), parent_pub.pocket)
-        self.assertEqual(PackagePublishingPocket.UPDATES, pub.pocket)
+
+        # We look for a PackageCopyJob with the right metadata.
+        pcj = PlainPackageCopyJob.getActiveJobs(
+            derived_series.main_archive).one()
+        self.assertEqual(PackagePublishingPocket.UPDATES, pcj.target_pocket)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

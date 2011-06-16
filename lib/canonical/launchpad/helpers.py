@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Various functions and classes that are useful across different parts of
@@ -11,7 +11,6 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 from difflib import unified_diff
-import hashlib
 import os
 import random
 import re
@@ -28,7 +27,6 @@ from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
     )
-from lp.services.utils import compress_hash
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -411,14 +409,6 @@ def filenameToContentType(fname):
         if fname.endswith(ending):
             return ftmap[ending]
     return "application/octet-stream"
-
-
-def get_filename_from_message_id(message_id):
-    """Returns a librarian filename based on the email message_id.
-
-    It generates a file name that's not easily guessable.
-    """
-    return '%s.msg' % compress_hash(hashlib.sha1(message_id))
 
 
 def intOrZero(value):

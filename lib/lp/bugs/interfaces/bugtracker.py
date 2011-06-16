@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -33,6 +33,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -311,7 +312,7 @@ class IBugTracker(Interface):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
-            is to be filed or search for.
+            is to be filed or searched for.
         :param summary: The string with which to pre-filly the summary
             field of the upstream bug tracker's search and bug filing forms.
         :param description: The string with which to pre-filly the description
@@ -390,13 +391,31 @@ class IBugTracker(Interface):
 
     @operation_parameters(
         component_group_name=TextLine(
-            title=u"The name of the remote component group", required=True))
+            title=u"The name of the remote component group",
+            required=True))
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getRemoteComponentGroup(component_group_name):
         """Retrieve a given component group registered with the bug tracker.
 
         :param component_group_name: Name of the component group to retrieve.
+        """
+
+    @operation_parameters(
+        distribution=TextLine(
+            title=u"The distribution for the source package",
+            required=True),
+        sourcepackagename=TextLine(
+            title=u"The source package name",
+            required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getRemoteComponentForDistroSourcePackageName(
+        distribution, sourcepackagename):
+        """Returns the component linked to this source package, if any.
+
+        If no components have been linked, returns value of None.
         """
 
 
@@ -538,6 +557,10 @@ class IBugTrackerComponent(Interface):
             title=_('Name'),
             description=_("The name of a software component "
                           "as shown in Launchpad.")))
+    sourcepackagename = Choice(
+        title=_("Package"), required=False, vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
     distro_source_package = exported(
         Reference(

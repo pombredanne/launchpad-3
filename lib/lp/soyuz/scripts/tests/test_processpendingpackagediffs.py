@@ -53,7 +53,7 @@ class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
         :param limit: if passed, it will be used as the 'limit' script
            argument.
 
-        :return the initialised script object using `BufferLogger` and
+        :return the initialized script object using `BufferLogger` and
            the given parameters.
         """
         test_args = []

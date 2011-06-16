@@ -184,7 +184,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         correct master Store.
         """
         from canonical.launchpad.interfaces.lpstorm import IMasterStore
-        # Make it simple to write dumb-invalidators - initialised
+        # Make it simple to write dumb-invalidators - initialized
         # _cached_properties to a valid list rather than just-in-time
         # creation.
         self._cached_properties = []

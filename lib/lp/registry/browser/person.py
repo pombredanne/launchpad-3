@@ -2005,6 +2005,10 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return package_links
 
+    @cachedproperty
+    def person_url(self):
+        return canonical_url(self.context)
+
     def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
@@ -2029,14 +2033,13 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
 
             params.update(extra_params)
 
-        person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return (person_url + '/+packagebugs-search?advanced=1&%s'
+            return (self.person_url + '/+packagebugs-search?advanced=1&%s'
                     % query_string)
         else:
-            return person_url + '/+packagebugs-search?%s' % query_string
+            return self.person_url + '/+packagebugs-search?%s' % query_string
 
     def getBugSubscriberPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
