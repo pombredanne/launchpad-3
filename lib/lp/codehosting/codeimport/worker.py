@@ -113,7 +113,7 @@ class BazaarBranchStore:
                 local_bzr_dir.root_transport.delete_tree('backup.bzr')
             except NoSuchFile:
                 pass
-            upgrade(target_path, required_format)
+            upgrade(target_path, required_format, clean_up=True)
         if needs_tree:
             local_bzr_dir.create_workingtree()
         return local_bzr_dir.open_branch()
