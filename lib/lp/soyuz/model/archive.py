@@ -337,6 +337,9 @@ class Archive(SQLBase):
         else:
             alsoProvides(self, IDistributionArchive)
 
+    # Note: You may safely ignore lint when it complains about this
+    # declaration.  As of Python 2.6, this is a perfectly valid way
+    # of adding a setter
     @property
     def private(self):
         return self._private
