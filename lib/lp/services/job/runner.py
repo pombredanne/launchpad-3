@@ -40,6 +40,7 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols import amp
+from twisted.python import log
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -483,12 +484,22 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, dbuser, logger):
+    def runFromSource(cls, job_source, dbuser, logger, _log_twisted=False):
         """Run all ready jobs provided by the specified source.
 
         The dbuser parameter is not ignored.
+        :param _log_twisted: For debugging: If True, emit verbose Twisted
+            messages to stderr.
         """
         logger.info("Running through Twisted.")
+        if _log_twisted:
+            logging.getLogger().setLevel(0)
+            logger_object = logging.getLogger('twistedjobrunner')
+            handler = logging.StreamHandler(sys.stderr)
+            logger_object.addHandler(handler)
+            observer = log.PythonLoggingObserver(
+                loggerName='twistedjobrunner')
+            log.startLoggingWithObserver(observer.emit)
         runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
