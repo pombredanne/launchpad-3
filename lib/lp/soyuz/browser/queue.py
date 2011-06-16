@@ -68,7 +68,7 @@ class QueueItemsView(LaunchpadView):
         try:
             state_value = int(self.request.get('queue_state', ''))
         except ValueError:
-            state_value = 0
+            state_value = PackageUploadStatus.NEW.value
 
         try:
             self.state = PackageUploadStatus.items[state_value]
