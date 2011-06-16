@@ -940,6 +940,17 @@ BugMessage""" % sqlvalues(self.id))
                 recipients.addDirectSubscriber(subscriber)
         return subscriptions.subscribers.sorted
 
+    def getDirectSubscribersWithDetails(self):
+        """See `IBug`."""
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id == self.id)))
+            ).order_by(Person.displayname)
+        return results
+
     def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
@@ -1659,6 +1670,13 @@ BugMessage""" % sqlvalues(self.id))
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
                     self.subscribe(person, who)
+                subscribers_for_who = self.getSubscribersForPerson(who)
+                if subscribers_for_who.is_empty():
+                    # We also add `who` as a subscriber, if they're not
+                    # already directly subscribed or part of a team
+                    # that's directly subscribed, so that they can
+                    # see the bug they've just marked private.
+                    self.subscribe(who, who)
 
             self.private = private
 
@@ -2306,7 +2324,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_structural_subscriptions_for_bug(self.bug)
+        return list(get_structural_subscriptions_for_bug(self.bug))
 
     @cachedproperty
     @freeze(BugSubscriberSet)
