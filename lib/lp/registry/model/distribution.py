@@ -123,6 +123,9 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import (
     IBaseDistribution,
@@ -1405,6 +1408,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     )).order_by(
                         Desc(SourcePackagePublishingHistory.id)).first()
             if publishing is not None:
+                return sourcepackagename
+
+            # Look to see if there is an official source package branch.
+            # That's considered "published" enough.
+            branch_links = getUtility(IFindOfficialBranchLinks)
+            results = branch_links.findForDistributionSourcePackage(
+                self.getSourcePackage(sourcepackagename))
+            if results.any() is not None:
                 return sourcepackagename
 
         # At this point we don't have a published source package by

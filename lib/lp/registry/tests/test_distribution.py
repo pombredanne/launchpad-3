@@ -168,6 +168,18 @@ class TestDistribution(TestCaseWithFactory):
             distroseries.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
 
+    def test_guessPublishedSourcePackageName_official_package_branch(self):
+        # It consider that a sourcepackage that has an official package 
+        # branch is published.
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename='my-package')
+        self.factory.makeRelatedBranchesForSourcePackage(
+            sourcepackage=sourcepackage)
+        self.assertEquals(
+            'my-package',
+            sourcepackage.distribution.guessPublishedSourcePackageName(
+                'my-package').name)
+
 
 class TestDistributionCurrentSourceReleases(
     TestDistroSeriesCurrentSourceReleases):

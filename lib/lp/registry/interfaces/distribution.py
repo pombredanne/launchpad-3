@@ -570,8 +570,12 @@ class IDistributionPublic(
     def guessPublishedSourcePackageName(pkgname):
         """Return the "published" SourcePackageName related to pkgname.
 
-        If pkgname is corresponds to a source package that was published in
-        any of the distribution series.
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
+
+        If there is any official source package branch linked, then that
+        source package name is returned.
 
         Otherwise, try to find a published binary package name and then return
         the source package name from which it comes from.
