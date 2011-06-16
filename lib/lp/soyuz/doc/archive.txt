@@ -2333,7 +2333,7 @@ all result in a NotFound exception:
     ...     person=mark)
     Traceback (most recent call last):
     ...
-    PocketNotFound: 'BADPOCKET'
+    PocketNotFound: No such pocket: 'BADPOCKET'.
 
     >>> mark.archive.syncSources(
     ...     sources, cprov.archive, "release", to_series="badseries",

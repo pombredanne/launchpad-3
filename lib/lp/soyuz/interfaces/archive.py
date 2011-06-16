@@ -129,9 +129,9 @@ class CannotSwitchPrivacy(Exception):
     webservice_error(400)  # Bad request.
 
 
-class PocketNotFound(Exception):
+class PocketNotFound(NameLookupFailed):
     """Invalid pocket."""
-    webservice_error(400)  # Bad request.
+    _message_prefix = "No such pocket"
 
 
 class AlreadySubscribed(Exception):

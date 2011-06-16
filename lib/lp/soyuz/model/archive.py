@@ -1535,7 +1535,7 @@ class Archive(SQLBase):
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
         except KeyError, error:
-            raise PocketNotFound(error)
+            raise PocketNotFound(to_pocket.upper())
 
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
