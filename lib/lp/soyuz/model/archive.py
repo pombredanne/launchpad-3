@@ -88,6 +88,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -128,7 +129,6 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
-    DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -1548,7 +1548,7 @@ class Archive(SQLBase):
             result = getUtility(IDistroSeriesSet).queryByName(
                 self.distribution, to_series)
             if result is None:
-                raise DistroSeriesNotFound(to_series)
+                raise NoSuchDistroSeries(to_series)
             series = result
         else:
             series = None

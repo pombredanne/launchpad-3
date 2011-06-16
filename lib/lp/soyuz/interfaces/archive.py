@@ -20,7 +20,6 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
-    'DistroSeriesNotFound',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
@@ -132,11 +131,6 @@ class CannotSwitchPrivacy(Exception):
 
 class PocketNotFound(Exception):
     """Invalid pocket."""
-    webservice_error(400)  # Bad request.
-
-
-class DistroSeriesNotFound(Exception):
-    """Invalid distroseries."""
     webservice_error(400)  # Bad request.
 
 
@@ -1266,7 +1260,7 @@ class IArchiveAppend(Interface):
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 
@@ -1308,7 +1302,7 @@ class IArchiveAppend(Interface):
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 
