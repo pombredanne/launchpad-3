@@ -538,17 +538,18 @@ class IDistroSeriesPublic(
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
         :param status: Filter results by this `PackageUploadStatus`, or list
-            of `PackageUploadStatus`es.
-        :param archive: Filter results for this `IArchive`
-        :param pocket: Filter results by this `PackagePublishingPocket`
-        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+            of statuses.
+        :param archive: Filter results for this `IArchive`.
+        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param custom_type: Filter results by this
+            `PackageUploadCustomFormat`.
         :param name: Filter results by this file name or package name.
         :param version: Filter results by this version number string.
         :param exact_match: If True, look for exact string matches on the
             `name` and `version` filters.  If False, look for a substring
             match so that e.g. a package "kspreadsheetplusplus" would match
             the search string "spreadsheet".  Defaults to False.
-        :return: A result set containing `IPackageUpload`
+        :return: A result set containing `IPackageUpload`.
         """
 
     def getUnlinkedTranslatableSourcePackages():
