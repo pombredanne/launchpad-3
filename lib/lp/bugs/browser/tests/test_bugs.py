@@ -87,7 +87,7 @@ class TestMaloneView(TestCaseWithFactory):
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
         picker_script = (
-            "vocabulary_name: 'DistributionOrProductOrProjectGroup'")
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
         self.assertIn(picker_script, text)
         focus_script = "setFocusByName('field.searchtext')"
         self.assertIn(focus_script, text)
