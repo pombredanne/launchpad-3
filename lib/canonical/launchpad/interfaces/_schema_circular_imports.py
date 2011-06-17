@@ -200,6 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
@@ -377,6 +378,8 @@ patch_reference_property(
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
+patch_collection_property(
+    IArchive, 'enabled_restricted_families', IProcessorFamily)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(

@@ -17,9 +17,17 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import Bool
+from zope.schema import (
+    Bool,
+    TextLine,
+    )
 
 from canonical.launchpad import _
+
+from lazr.restful.declarations import (
+    exported,
+    export_as_webservice_entry,
+    )
 
 
 class IProcessor(Interface):
@@ -32,8 +40,14 @@ class IProcessor(Interface):
 
 class IProcessorFamily(Interface):
     """The SQLObject ProcessorFamily Interface"""
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
+
     id = Attribute("The ProcessorFamily ID")
-    name = Attribute("The Processor Family Name")
+    name = exported(
+        TextLine(
+            title=_("Name"),
+            description=_("The Processor Family Name")),
+        as_of='devel')
     title = Attribute("The Processor Family Title")
     description = Attribute("The Processor Name Description")
     processors = Attribute("The Processors in this family.")
