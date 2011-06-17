@@ -614,10 +614,10 @@ class IPackageUploadSet(Interface):
                name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`, or list
-            of `PackageUploadStatus`es.
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
