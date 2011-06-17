@@ -313,6 +313,28 @@ class ErrorReportingUtility:
         finally:
             oops_report.close()
 
+    def getOopsReportById(self, oops_id):
+        """Return the oops report for a given OOPS-ID.
+
+        Only recent reports are found.  The report's filename is assumed to
+        have the same numeric suffix as the oops_id.  The OOPS report must be
+        located in the error directory used by this ErrorReportingUtility.
+
+        If no report is found, return None.
+        """
+        suffix = re.search('[0-9]*$', oops_id).group(0)
+        for directory, name in self.log_namer.listRecentReportFiles():
+            if not name.endswith(suffix):
+                continue
+            with open(os.path.join(directory, name), 'r') as oops_report_file:
+                try:
+                    report = ErrorReport.read(oops_report_file)
+                except TypeError:
+                    continue
+            if report.id != oops_id:
+                continue
+            return report
+
     def getLastOopsReport(self):
         """Return the last ErrorReport reported with the current config.
 

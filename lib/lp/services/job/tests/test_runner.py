@@ -4,11 +4,13 @@
 """Tests for job-running facilities."""
 
 import logging
+import re
 import sys
 from textwrap import dedent
 from time import sleep
 
 from testtools.testcase import ExpectedException
+from testtools.matchers import MatchesRegex
 import transaction
 from zope.interface import implements
 
@@ -512,6 +514,15 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             sys.path.append(config.root)
             self.addCleanup(sys.path.remove, config.root)
 
+    @staticmethod
+    def getOopsFromLog(logger):
+        matches = re.search('INFO Job resulted in OOPS: (.*)',
+            logger.getLogBuffer())
+        if matches is None:
+            return None
+        oops_id = matches.group(1)
+        return errorlog.globalErrorUtility.getOopsReportById(oops_id)
+
     def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
@@ -526,19 +537,17 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
-        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
-        # condition. Another OOPS could be logged.  Also confusing because it
-        # might be polluted by values from previous jobs.
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        oops = self.getOopsFromLog(logger)
         self.assertEqual(
-            (dedent("""\
-             INFO Running through Twisted.
-             INFO Job resulted in OOPS: %s
-             """) % oops.id,
-             'TimeoutError', 'Job ran too long.'),
-            (logger.getLogBuffer(), oops.type, oops.value))
+            ('TimeoutError', 'Job ran too long.'), (oops.type, oops.value))
+        self.assertThat(logger.getLogBuffer(), MatchesRegex(
+            dedent("""\
+            INFO Running through Twisted.
+            INFO Job resulted in OOPS: .*
+            """)))
+
 
     def test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
@@ -554,10 +563,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         runner = TwistedJobRunner.runFromSource(
             ShorterStuckJob, 'branchscanner', logger)
 
-        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
-        # condition. Another OOPS could be logged.  Also confusing because it
-        # might be polluted by values from previous jobs.
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        oops = self.getOopsFromLog(logger)
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertEqual(
@@ -601,7 +607,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        oops = self.getOopsFromLog(logger)
         self.assertEqual('MemoryError', oops.type)
 
 
