@@ -434,6 +434,23 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             harness.request.response.getHeader('content-type'),
             'application/json')
 
+    def test_bugtask(self):
+        # This view works for the bug-task as well, when it renders
+        # the same data as for the bug.
+        bug = self.factory.makeBug()
+
+        # It works even for anonymous users, so no log-in is needed.
+        harness_bug = LaunchpadFormHarness(
+            bug, BugPortletSubscribersWithDetails)
+        bug_content = harness_bug.view.render()
+
+        # It works even for anonymous users, so no log-in is needed.
+        harness_bugtask = LaunchpadFormHarness(
+            bug.default_bugtask, BugPortletSubscribersWithDetails)
+        bugtask_content = harness_bugtask.view.render()
+
+        self.assertEqual(bug_content, bugtask_content)
+
     def _makeBugWithNoSubscribers(self):
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
