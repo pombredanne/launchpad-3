@@ -169,7 +169,7 @@ class TestDistribution(TestCaseWithFactory):
                 'my-package').name)
 
     def test_guessPublishedSourcePackageName_official_package_branch(self):
-        # It consider that a sourcepackage that has an official package 
+        # It consider that a sourcepackage that has an official package
         # branch is published.
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename='my-package')

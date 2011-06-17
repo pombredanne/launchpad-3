@@ -426,4 +426,3 @@ class TestFileBugSourcePackage(TestCaseWithFactory):
             notification.message
             for notification in view.request.response.notifications])
         self.assertIn("Thank you for your bug report.", msg)
-
