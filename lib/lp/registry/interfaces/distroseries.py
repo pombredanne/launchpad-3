@@ -536,7 +536,7 @@ class IDistroSeriesPublic(
         """Get package upload records for this distribution series.
 
         :param status: Filter results by this `PackageUploadStatus`, or list
-            of `PackageUploadStatus`es.
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
         :param archive: Filter results for this `IArchive`
