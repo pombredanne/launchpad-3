@@ -40,11 +40,13 @@
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
             Y.on('domready', function() {
+                var bug = { self_link: LP.cache.context.bug_link,
+                            web_link: LP.cache.context.web_link };
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
                 var sl = new Y.lp.bugs.subscribers_list.BugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
-                    bug: LP.cache.bug,
+                    bug: bug,
                     subscribers_details_view:
                         '/+bug-portlet-subscribers-details',
                     subscribe_someone_else_link: '.menu-link-addsubscriber'
