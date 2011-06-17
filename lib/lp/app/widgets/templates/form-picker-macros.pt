@@ -29,19 +29,21 @@
     </tal:search_results>
 
     <tal:chooseLink replace="structure view/chooseLink" />
-
-    <script
-      tal:condition="not: view/widget_rendered"
-      tal:content="structure string:
+    <script tal:content="structure string:
     LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
         if (Y.UA.ie) {
             return;
         }
-        namespace = Y.namespace('lp.macros');
+
         // The vocabulary picker, created when used for the first time.
-        function make_picker(config) {
-            var vocab_name = config.vocabulary_name;
-            var picker = Y.lp.app.picker.create(vocab_name, config);
+        function make_picker() {
+            var config = {
+                header: ${view/header_text},
+                step_title: ${view/step_title_text},
+                extra_no_results_message: ${view/extra_no_results_message},
+                picker_type: '${view/picker_type}'
+            };
+            var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
             if (config.extra_no_results_message !== null) {
                 picker.before('resultsChange', function (e) {
                     var new_results = e.details[0].newVal;
@@ -55,27 +57,10 @@
                 });
             }
             picker.plug(Y.lazr.TextFieldPickerPlugin,
-                        {input_element: '[id=\x22' + config.input_id + '\x22]'});
+                        {input_element: '[id=\x22${view/input_id}\x22]'});
             return picker;
         }
-        namespace.make_picker = make_picker;
-    });
-    "/>
-
-    <script tal:content="structure string:
-    LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
-        if (Y.UA.ie) {
-            return;
-        }
         var picker = null;
-        var config = {
-            vocabulary_name: '${view/vocabulary_name}',
-            header: ${view/header_text},
-            step_title: ${view/step_title_text},
-            extra_no_results_message: ${view/extra_no_results_message},
-            picker_type: '${view/picker_type}',
-            input_id: '${view/input_id}'
-        };
         Y.on('domready', function(e) {
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');
@@ -85,7 +70,7 @@
             show_widget_node.get('parentNode').removeClass('unseen');
             show_widget_node.on('click', function (e) {
                 if (picker === null) {
-                    picker = Y.lp.macros.make_picker(config);
+                    picker = make_picker();
                 }
                 picker.show();
                 e.preventDefault();
