@@ -17,7 +17,6 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -38,12 +37,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -121,6 +120,10 @@ class PackageCopyJob(StormBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
+    @property
+    def package_version(self):
+        return self.metadata["package_version"]
+
     def extendMetadata(self, metadata_dict):
         """Add metadata_dict to the existing metadata."""
         existing = self.metadata
@@ -195,7 +198,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version, include_binaries):
-        """."""
+        """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
@@ -313,10 +316,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     @property
     def target_pocket(self):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
-
-    @property
-    def package_version(self):
-        return self.metadata["package_version"]
 
     @property
     def include_binaries(self):

@@ -122,7 +122,7 @@ class InitializeDistroSeries:
                     self.distroseries.previous_series.getParentSeries())
 
     def check(self):
-        if self.distroseries.is_derived_series:
+        if self.distroseries.isDerivedSeries():
             raise InitializationError(
                 ("DistroSeries {child.name} has already been initialized"
                  ".").format(
@@ -168,14 +168,16 @@ class InitializeDistroSeries:
         """
         # only the RELEASE pocket is inherited, so we only check
         # queue items for it.
-        for queue in (
-            PackageUploadStatus.NEW, PackageUploadStatus.ACCEPTED,
-            PackageUploadStatus.UNAPPROVED):
-            items = parent.getQueueItems(
-                queue, pocket=PackagePublishingPocket.RELEASE)
-            if items:
-                raise InitializationError(
-                    "Parent series queues are not empty.")
+        statuses = [
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.UNAPPROVED,
+            ]
+        items = parent.getPackageUploads(
+            status=statuses, pocket=PackagePublishingPocket.RELEASE)
+        if not items.is_empty():
+            raise InitializationError(
+                "Parent series queues are not empty.")
 
     def _checkSeries(self):
         error = (

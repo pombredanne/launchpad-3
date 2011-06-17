@@ -312,7 +312,7 @@ class IBugTracker(Interface):
         """Return the bug filing and search links for the tracker.
 
         :param remote_product: The name of the product on which the bug
-            is to be filed or search for.
+            is to be filed or searched for.
         :param summary: The string with which to pre-filly the summary
             field of the upstream bug tracker's search and bug filing forms.
         :param description: The string with which to pre-filly the description

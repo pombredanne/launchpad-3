@@ -195,23 +195,6 @@ the UI elements for the subscription/unsubscription of arbitrary persons.
     LookupError: label '\xa0Foo Bar'
 
 
-Bug #462742
-===========
-
-Loading pages with the subscription menu works fine for anonymous users, even
-when there are existing subscriptions.
-
-    >>> browser.open('http://launchpad.dev/bzr')
-    >>> browser.getLink('Subscribe to bug mail').click()
-    >>> browser.getControl(
-    ...     'I want to receive these '
-    ...     'notifications by e-mail.').selected = True
-    >>> browser.getControl('Save these changes').click()
-
-    >>> anon_browser.open('http://launchpad.dev/bzr')
-    >>> print anon_browser.title
-    Bazaar Version Control System in Launchpad
-
 Distribution with a bug supervisor
 ==================================
 
