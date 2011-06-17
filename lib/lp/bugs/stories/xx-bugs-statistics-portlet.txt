@@ -28,8 +28,7 @@ general stats.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+subscribe
+
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     1 New bug
@@ -57,8 +56,7 @@ reported bugs.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+subscribe
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
     1 New bug
@@ -97,8 +95,6 @@ link to review nominations.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
@@ -128,8 +124,6 @@ reported bugs.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/woody/+subscribe
     Review nominations
       --> http://bugs.launchpad.dev/debian/woody/+nominations
 
@@ -169,8 +163,6 @@ If the user is not logged-in general stats are shown.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     1 New bug
@@ -198,8 +190,6 @@ reported bugs.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+subscribe
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
     1 New bug
@@ -308,8 +298,6 @@ If the user is not logged-in general stats are shown.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/mozilla/+subscribe
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     4 New bugs
@@ -339,6 +327,9 @@ and reported bugs.
     Open CVE bugs
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/mozilla/+subscribe
+    Edit bug mail
+      --> http://bugs.launchpad.dev/mozilla/+subscriptions
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
     4 New bugs
@@ -379,8 +370,6 @@ If the user is not logged-in general stats are shown.
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
-    Subscribe to bug mail
-      --> http://bugs.launchpad.dev/firefox/+subscribe
 
     >>> print_bugfilters_portlet_filled(anon_browser, path)
     3 New bugs
@@ -410,6 +399,9 @@ bugs is also shown.
     Open CVE bugs - CVE reports
     Subscribe to bug mail
       --> http://bugs.launchpad.dev/firefox/+subscribe
+    Edit bug mail
+      --> http://bugs.launchpad.dev/firefox/+subscriptions
+
 
     >>> print_bugfilters_portlet_filled(user_browser, path)
     3 New bugs

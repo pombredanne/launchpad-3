@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -389,7 +389,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testInstantiate(self):
         """UploadProcessor should instantiate"""
-        up = self.getUploadProcessor(None)
+        self.getUploadProcessor(None)
 
     def testLocateDirectories(self):
         """Return a sorted list of subdirs in a directory.
@@ -496,7 +496,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         try:
             # Create an upload, a .distro and a target to move it to.
             upload, distro = self._makeUpload(testdir)
-            upload_name = os.path.basename(upload)
+            os.path.basename(upload)
 
             # Remove it
             self.options.base_fsroot = testdir
@@ -1251,7 +1251,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Invalid upload path (1/ubuntu) for this policy (insecure)"]
         self.assertEmail(contents=contents, recipients=[])
 
-
     # Uploads that are new should have the component overridden
     # such that:
     #   'contrib' -> 'multiverse'
@@ -1262,7 +1261,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
     # the default action taken anyway.
     #
     # The following three tests check this.
-
     def checkComponentOverride(self, upload_dir_name,
                                expected_component_name):
         """Helper function to check overridden component names.
@@ -1379,7 +1377,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Failed to upload bar source:\n%s" % raw_msg)
         self.publishPackage("bar", "1.0-1")
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Upload a binary lzma-compressed package.
         upload_dir = self.queueUpload("bar_1.0-1_lzma_binary")
@@ -1483,9 +1481,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self.publishPackage('bar', '1.0-1')
+        self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Now upload the next version.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -1535,9 +1533,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self.publishPackage('bar', '1.0-1')
+        self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Now upload the next version.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -1716,7 +1714,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        spph = self.publishPackage("bar", "1.0-1")
+        self.publishPackage("bar", "1.0-1")
 
         # Upload another source sharing the same (component) orig.
         upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
@@ -1965,14 +1963,14 @@ class TestUploadHandler(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         relative_path = "~%s/%s/%s/%s" % (
             archive.owner.name, archive.name, self.breezy.distribution.name,
             self.breezy.name)
-        upload_dir = self.queueUpload(
+        self.queueUpload(
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
@@ -1999,7 +1997,7 @@ class TestUploadHandler(TestUploadProcessorBase):
 
     def testSourcePackageRecipeBuild_success_mail(self):
         """Source package recipe build success does not cause mail.
-        
+
         See bug 778437.
         """
         self.doSuccessRecipeBuild()
@@ -2013,7 +2011,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2055,7 +2053,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2107,7 +2105,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
-        last_stub_mail_count = len(stub.test_emails)
+        len(stub.test_emails)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
