@@ -27,6 +27,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -47,7 +48,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def setupParent(self, packages=None, format_selection=None):
         parent = self.factory.makeDistroSeries()
-        parent_das = self.factory.makeDistroArchSeries(distroseries=parent)
+        pf = getUtility(IProcessorFamilySet).getByName('x86')
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf,
+            architecturetag='i386')
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
@@ -609,9 +613,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             packaging1.owner,
             child_packagings[0].owner)
 
-    def test_multiple_parents_same_package(self):
-        # If the same package is published in different parents, the package
-        # in the first parent takes precedence.
+    def test_multiple_parents_same_source_package(self):
+        # If the same source package (i.e. same packagename) is published in
+        # different parents, the source package in the first parent takes
+        # precedence.
         self.parent1, self.parent_das1 = self.setupParent(
             packages={'package': '0.3-1'})
         self.parent2, self.parent_das2 = self.setupParent(
@@ -623,6 +628,24 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertEquals(
             u'0.3-1',
             published_sources[0].sourcepackagerelease.version)
+
+    def test_multiple_parents_same_binary_package(self):
+        # If the same binary package (i.e. same packagename) is published
+        # in different parents, the binary package in the first parent
+        # takes precedence.
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'package': '0.3-1'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'package': '0.1-1'})
+        child = self._fullInitialize([self.parent1, self.parent2])
+        published_binaries = child.main_archive.getAllPublishedBinaries()
+
+        self.assertEquals(1, published_binaries.count())
+        self.assertEquals(
+            u'0.3-1',
+            published_binaries[0].binarypackagerelease.version)
+
+        return child
 
     def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
                                       publish_in_distribution=True):
