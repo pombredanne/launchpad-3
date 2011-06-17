@@ -169,6 +169,7 @@ class BaseJobRunner(object):
             logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
+        self.oops_ids = []
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
@@ -257,6 +258,7 @@ class BaseJobRunner(object):
         """Report oopses by id to the log."""
         if self.logger is not None:
             self.logger.info('Job resulted in OOPS: %s' % oops_id)
+        self.oops_ids.append(oops_id)
 
 
 class JobRunner(BaseJobRunner):

@@ -4,7 +4,6 @@
 """Tests for job-running facilities."""
 
 import logging
-import re
 import sys
 from textwrap import dedent
 from time import sleep
@@ -514,15 +513,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             sys.path.append(config.root)
             self.addCleanup(sys.path.remove, config.root)
 
-    @staticmethod
-    def getOopsFromLog(logger):
-        matches = re.search('INFO Job resulted in OOPS: (.*)',
-            logger.getLogBuffer())
-        if matches is None:
-            return None
-        oops_id = matches.group(1)
-        return errorlog.globalErrorUtility.getOopsReportById(oops_id)
-
     def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
@@ -539,7 +529,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
-        oops = self.getOopsFromLog(logger)
+        oops = errorlog.globalErrorUtility.getOopsReportById(
+            runner.oops_ids[0])
         self.assertEqual(
             ('TimeoutError', 'Job ran too long.'), (oops.type, oops.value))
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
@@ -547,7 +538,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             INFO Running through Twisted.
             INFO Job resulted in OOPS: .*
             """)))
-
 
     def test_timeout_short(self):
         """When a job exceeds its lease, an exception is raised.
@@ -563,7 +553,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         runner = TwistedJobRunner.runFromSource(
             ShorterStuckJob, 'branchscanner', logger)
 
-        oops = self.getOopsFromLog(logger)
+        oops = errorlog.globalErrorUtility.getOopsReportById(
+            runner.oops_ids[0])
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertEqual(
@@ -607,7 +598,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
-        oops = self.getOopsFromLog(logger)
+        oops = errorlog.globalErrorUtility.getOopsReportById(
+            runner.oops_ids[0])
         self.assertEqual('MemoryError', oops.type)
 
 
