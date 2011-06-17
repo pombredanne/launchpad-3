@@ -164,7 +164,7 @@ And we need a way to process the accepted queue
     >>> def process_accepted(distro):
     ...     distribution = getUtility(IDistributionSet)[distro]
     ...     for series in distribution.series:
-    ...         items = series.getQueueItems(
+    ...         items = series.getPackageUploads(
     ...            status=PackageUploadStatus.ACCEPTED)
     ...         for item in items:
     ...             item.realiseUpload()
@@ -179,11 +179,12 @@ it into the accepted queue
     ...     if series is None:
     ...         series = "breezy"
     ...     dr, pocket = distribution.getDistroSeriesAndPocket(series)
-    ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
+    ...     items = dr.getPackageUploads(status=PackageUploadStatus.NEW)
     ...     for item in items:
     ...         item.setAccepted()
     ...         syncUpdate(item)
-    ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
+    ...     items = dr.getPackageUploads(
+    ...         status=PackageUploadStatus.UNAPPROVED)
     ...     for item in items:
     ...         item.setAccepted()
     ...         syncUpdate(item)

@@ -495,8 +495,8 @@ queue entry in the database.
     REJECTED
 
     >>> from lp.soyuz.enums import PackageUploadStatus
-    >>> hoary.getQueueItems(
-    ...     status=PackageUploadStatus.REJECTED, name="ed").count()
+    >>> hoary.getPackageUploads(
+    ...     status=PackageUploadStatus.REJECTED, name=u"ed").count()
     1
 
 
@@ -720,8 +720,8 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
-    >>> inst_queue = hoary.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='test75874', exact_match=True)[0]
+    >>> inst_queue = hoary.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'test75874', exact_match=True)[0]
     >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
 
     >>> inst_spr.dsc_maintainer_rfc822

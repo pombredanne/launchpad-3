@@ -688,13 +688,13 @@ class TestPackageUploadSet(TestCaseWithFactory):
             upload_set.getAll(
                 distroseries, name=partial_name, exact_match=True))
 
-    def test_getAll_without_exact_match_escapes_name_filter(self):
+    def test_getAll_without_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [], upload_set.getAll(distroseries, name=u"'"))
 
-    def test_getAll_with_exact_match_escapes_name_filter(self):
+    def test_getAll_with_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
         upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
@@ -778,7 +778,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
             upload_set.getAll(
                 distroseries, version=version, exact_match=True))
 
-    def test_getAll_can_combine_version_and_name_filters(self):
+    def test_getAll_can_combine_version_and_name(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
         upload = self.factory.makeSourcePackageUpload(
