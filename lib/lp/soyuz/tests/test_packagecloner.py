@@ -58,10 +58,12 @@ class PackageClonerTests(TestCaseWithFactory):
                 (source.source_package_name, source.source_package_version))
         self.assertEqual(expected_set, actual_set)
 
-    def createSourceDistribution(self, package_infos, distro_name=None):
+    def createSourceDistribution(self, package_infos, distro_name=None,
+                                 create_binaries=False):
         """Create a distribution to be the source of a copy archive."""
         distroseries = self.createSourceDistroSeries(distro_name=distro_name)
-        self.createSourcePublications(package_infos, distroseries)
+        self.createSourcePublications(
+            package_infos, distroseries, create_binaries)
         return distroseries
 
     def createSourceDistroSeries(self, distro_name="foobuntu",
@@ -88,8 +90,10 @@ class PackageClonerTests(TestCaseWithFactory):
             name="test-copy-archive", purpose=ArchivePurpose.COPY,
             distribution=distribution)
 
-    def createSourcePublication(self, info, distroseries):
-        """Create a SourcePackagePublishingHistory based on a PackageInfo."""
+    def createSourcePublication(self, info, distroseries, create_binaries):
+        """Create a SourcePackagePublishingHistory /
+        BinaryPackagePublishingHistory based on a PackageInfo.
+        """
         archive = distroseries.distribution.main_archive
         sources = archive.getPublishedSources(
             distroseries=distroseries,
@@ -106,18 +110,31 @@ class PackageClonerTests(TestCaseWithFactory):
             version=info.version, architecturehintlist='any',
             archive=archive, status=info.status,
             pocket=PackagePublishingPocket.RELEASE)
+        if create_binaries:
+            binarypackagerelease = self.factory.makeBinaryPackageRelease(
+                binarypackagename=self.factory.getOrMakeBinaryPackageName(
+                    info.name),
+                version=info.version)
+            self.factory.makeBinaryPackagePublishingHistory(
+                binarypackagerelease=binarypackagerelease,
+                distroarchseries=distroseries.nominatedarchindep,
+                archive=archive, status=info.status,
+                pocket=PackagePublishingPocket.RELEASE)
 
-    def createSourcePublications(self, package_infos, distroseries):
+    def createSourcePublications(self, package_infos, distroseries,
+                                 create_binaries=False):
         """Create a source publication for each item in package_infos."""
         for package_info in package_infos:
-            self.createSourcePublication(package_info, distroseries)
+            self.createSourcePublication(
+                package_info, distroseries, create_binaries)
 
     def makeCopyArchive(self, package_infos, component="main",
                         source_pocket=None, target_pocket=None,
-                        proc_families=None, distro_name=None):
+                        proc_families=None, distro_name=None,
+                        create_binaries=False):
         """Make a copy archive based on a new distribution."""
         distroseries = self.createSourceDistribution(
-            package_infos, distro_name)
+            package_infos, distro_name, create_binaries=create_binaries)
         copy_archive = self.getTargetArchive(distroseries.distribution)
         to_component = getUtility(IComponentSet).ensure(component)
         self.copyArchive(
@@ -147,7 +164,7 @@ class PackageClonerTests(TestCaseWithFactory):
     def copyArchive(self, to_archive, to_distroseries, from_archive=None,
                     from_distroseries=None, from_pocket=None, to_pocket=None,
                     to_component=None, packagesets=None, proc_families=None,
-                    no_duplicates=False):
+                    no_duplicates=False, distroarchseries_list=None):
         """Use a PackageCloner to copy an archive."""
         if from_distroseries is None:
             from_distroseries = to_distroseries
@@ -170,7 +187,7 @@ class PackageClonerTests(TestCaseWithFactory):
             destination.component = to_component
         cloner = getUtility(IPackageCloner)
         cloner.clonePackages(
-            origin, destination, distroarchseries_list=None,
+            origin, destination, distroarchseries_list=distroarchseries_list,
             proc_families=proc_families, no_duplicates=no_duplicates)
         return cloner
 
@@ -663,10 +680,8 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive,
             package_infos + package_infos + package_infos2 + package_infos2)
 
-    def testCopyNoDuplicates(self):
-        # No duplicate SourcePackagePublishingHistory is created by the
-        # packagecloner if no_duplicates=True is passed to
-        # cloner.clonePackages.
+    def setUpDistroSeriesWithSimilarPackages(self, packagename,
+                                             create_binaries=False):
         package_infos = [
             PackageInfo(
                 "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
@@ -675,34 +690,39 @@ class PackageClonerTests(TestCaseWithFactory):
             PackageInfo(
                 "bzr", "2.3", status=PackagePublishingStatus.PUBLISHED)]
         proc_families = [ProcessorFamilySet().getByName("x86")]
-        # Create bzr 2.1 (superseeded) and 2.2 (published) in archive1.
-        archive1, distroseries1 = self.makeCopyArchive(
-            package_infos[:2], proc_families=proc_families)
-        self.checkCopiedSources(
-            archive1, distroseries1, package_infos[1:2])
-        self.checkBuilds(archive1, package_infos[1:2])
+        # Create bzr 2.1 (superseeded) and 2.2 (published) in
+        # distroseries1.
+        distroseries1 = self.createSourceDistribution(
+            package_infos[:2], create_binaries=create_binaries)
 
-        # Create bzr 2.2 (superseeded) and 2.3 (published) in archive2.
-        archive2, distroseries2 = self.makeCopyArchive(
-            package_infos, proc_families=proc_families,
-            distro_name="foo2")
-        self.checkCopiedSources(
-            archive2, distroseries2, package_infos[2:])
-        self.checkBuilds(archive2, package_infos[2:])
+        # Create bzr 2.1 (superseeded), 2.2 (superseeded) and 2.3 (published)
+        # in distroseries2.
+        distroseries2 = self.createSourceDistribution(
+            package_infos, distro_name='foo2',
+            create_binaries=create_binaries)
 
-        # Copy into a new archive from the two archives we just created.
+        return (proc_families, distroseries1, distroseries2)
+
+    def testCopyNoSourceDuplicates(self):
+        # No duplicate SourcePackagePublishingHistory is created by
+        # the packagecloner if no_duplicates=True is passed to
+        # cloner.clonePackages.
+        res = self.setUpDistroSeriesWithSimilarPackages('bzr')
+        proc_fam, distroseries1, distroseries2 = res
         dest_series = self.createSourceDistroSeries(distro_name="foo3")
         dest_archive = self.getTargetArchive(dest_series.distribution)
         self.copyArchive(
-            dest_archive, dest_series, from_archive=archive1,
-            from_distroseries=distroseries1, proc_families=proc_families,
+            dest_archive, dest_series,
+            from_archive=distroseries1.main_archive,
+            from_distroseries=distroseries1, proc_families=proc_fam,
             no_duplicates=True)
         self.copyArchive(
-            dest_archive, dest_series, from_archive=archive2,
-            from_distroseries=distroseries2, proc_families=proc_families,
+            dest_archive, dest_series,
+            from_archive=distroseries2.main_archive,
+            from_distroseries=distroseries2, proc_families=proc_fam,
             no_duplicates=True)
 
-       # Fetch published sources and builds in the new archive.
+       # Fetch published sources in the destination archive.
         published_sources = dest_archive.getPublishedSources(
             name='bzr')
         naked_published_sources = removeSecurityProxy(published_sources)
@@ -721,3 +741,42 @@ class PackageClonerTests(TestCaseWithFactory):
         # Only *missing builds* are created by the packagecloner so only
         # the first copy creates a build.
         self.assertEquals(1, naked_builds.count())
+
+    def testCopyNoBinaryDuplicates(self):
+        # No duplicate BinaryPackagePublishingHistory is created by
+        # the packagecloner if no_duplicates=True is passed to
+        # cloner.clonePackages.
+        res = self.setUpDistroSeriesWithSimilarPackages('bzr', True)
+        proc_fam, distroseries1, distroseries2 = res
+        dest_series = self.createSourceDistroSeries(distro_name="foo3")
+        dest_archive = self.getTargetArchive(dest_series.distribution)
+        self.copyArchive(
+            dest_archive, dest_series,
+            from_archive=distroseries1.main_archive,
+            from_distroseries=distroseries1, proc_families=proc_fam,
+            no_duplicates=True,
+            distroarchseries_list=[
+                (distroseries1.nominatedarchindep,
+                 dest_series.nominatedarchindep)])
+        self.copyArchive(
+            dest_archive, dest_series,
+            from_archive=distroseries2.main_archive,
+            from_distroseries=distroseries2, proc_families=proc_fam,
+            no_duplicates=True,
+            distroarchseries_list=[
+                (distroseries2.nominatedarchindep,
+                 dest_series.nominatedarchindep)])
+
+        # Fetch published binaries in the destination archive.
+        published_binaries = dest_archive.getAllPublishedBinaries(
+            name='bzr')
+        naked_published_binaries = removeSecurityProxy(published_binaries)
+
+        # Since we passed no_duplicates=True to the packagecloner, the
+        # second copy has not created any new BinaryPackagePublishingHistory
+        # for bzr.
+        self.assertEquals(2, naked_published_binaries.count())
+        self.assertContentEqual(
+            [u'2.1', u'2.2'],
+            sorted([binary.binarypackagerelease.version for binary in
+                    naked_published_binaries]))
