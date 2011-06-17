@@ -46,8 +46,9 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setupParent(self, packages=None, format_selection=None):
-        parent = self.factory.makeDistroSeries()
+    def setupParent(self, packages=None, format_selection=None,
+                    distribution=None):
+        parent = self.factory.makeDistroSeries(distribution)
         pf = getUtility(IProcessorFamilySet).getByName('x86')
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf,
@@ -262,12 +263,54 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             direct_inclusion=True)
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
-        # The uploader can also upload to the new distroseries.
+
+    def test_perm_copying_init_within_distro(self):
+        # If the initialization happens within a distribution (i.e.
+        # both the parent and the child are in the same distribution),
+        # then the archive permission are copied.
+        self.parent, self.parent_das = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test1.addSources('udev')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent.main_archive, uploader, test1)
+        previous_series, unused = self.setupParent(
+            distribution=self.parent.distribution)
+        child = self.factory.makeDistroSeries(
+            previous_series=previous_series,
+            distribution=self.parent.distribution)
+        child = self._fullInitialize([self.parent], child=child)
+
+        # The uploader can upload to the new distroseries.
         self.assertTrue(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 self.parent.main_archive, 'udev', uploader,
                 distroseries=self.parent))
         self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader,
+                distroseries=child))
+
+    def test_no_cross_distro_perm_copying(self):
+        # No crss-distro archivepermissions copying should happen.
+        self.parent, self.parent_das = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test1.addSources('udev')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent.main_archive, uploader, test1)
+        child = self._fullInitialize([self.parent])
+
+        # The uploader cannot upload to the new distroseries.
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent.main_archive, 'udev', uploader,
+                distroseries=self.parent))
+        self.assertFalse(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
@@ -529,23 +572,6 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             set(parent1_srcs).union(set(parent2_srcs)),
             child_srcs)
-        # The uploaders can also upload to the new distroseries.
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent1.main_archive, 'udev', uploader1,
-                distroseries=self.parent1))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader1,
-                distroseries=child))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent2.main_archive, 'libc6', uploader2,
-                distroseries=self.parent2))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'libc6', uploader2,
-                distroseries=child))
 
     def test_multiple_parents_format_selection_union(self):
         # The format selection for the derived series is the union of
