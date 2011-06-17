@@ -21,8 +21,11 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.views import create_initialized_view
 
 
 class TestAcceptQueueUploads(TestCaseWithFactory):
@@ -186,3 +189,44 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.assertEquals(
             'NEW',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+
+class TestQueueItemsView(TestCaseWithFactory):
+    """Unit tests for `QueueItemsView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeView(self, distroseries, user):
+        """Create a queue view."""
+        return create_initialized_view(
+            distroseries, name='+queue', principal=user)
+
+    def test_view_renders_source_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeSourcePackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_build_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeBuildPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_copy_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeCopyJobPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)

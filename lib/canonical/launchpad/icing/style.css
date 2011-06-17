@@ -556,6 +556,16 @@ div#mute-link-container a.sprite {
   width: auto;
 }
 
+/* Gives us some room after the description of the user's subscription. */
+div#current_user_subscription {
+    padding-bottom: 8px;
+}
+
+/* This lets us have a link that spans lines. */
+div#current_user_subscription a.sprite {
+  display: inline;
+}
+
 /* === Translations === */
 
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */

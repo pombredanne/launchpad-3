@@ -91,7 +91,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(69)))
+        self.assertThat(recorder, HasQueryCount(LessThan(74)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -107,7 +107,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                73, self.factory.makePerson())
+                78, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -647,13 +647,13 @@ class TestBugTaskEditView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp_1 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='mouse')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_1.sourcepackagename)
         bug_task_1 = self.factory.makeBugTask(target=dsp_1)
         dsp_2 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='rabbit')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_2.sourcepackagename)
         bug_task_2 = self.factory.makeBugTask(
