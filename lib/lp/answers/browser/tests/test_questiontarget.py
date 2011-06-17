@@ -219,7 +219,7 @@ class QuestionSetViewTestCase(TestCaseWithFactory):
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
         picker_script = (
-            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+            "vocabulary_name: 'DistributionOrProductOrProjectGroup'")
         self.assertIn(picker_script, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)

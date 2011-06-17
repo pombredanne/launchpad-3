@@ -358,6 +358,11 @@ class TestBrokenBugzilla(TestBugzilla):
                 2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER')}
 
 
+class AnotherBrokenBugzilla(TestBrokenBugzilla):
+    """Test parsing of a Bugzilla which returns broken XML."""
+    bug_item_file = 'unescaped_control_character.xml'
+
+
 class TestIssuezilla(TestBugzilla):
     """Test support for Issuezilla, with slightly modified XML."""
     version_file = 'issuezilla_version.xml'

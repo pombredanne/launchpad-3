@@ -90,6 +90,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -652,6 +655,13 @@ class DistroSeriesDifference(StormBase):
         else:
             return DistroSeriesSourcePackageRelease(
                 distro_series, pub.sourcepackagerelease)
+
+    @cachedproperty
+    def base_distro_source_package_release(self):
+        """See `IDistroSeriesDifference`."""
+        return DistributionSourcePackageRelease(
+            self.parent_series.distribution,
+            self.parent_source_package_release)
 
     def update(self, manual=False):
         """See `IDistroSeriesDifference`."""
