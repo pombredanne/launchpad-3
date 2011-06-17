@@ -213,18 +213,18 @@ class PackageCloner:
         if no_duplicates:
             query += '''AND bpph.binarypackagerelease NOT IN
                             (SELECT origin_bpr.id
-                             FROM BinaryPackageRelease as origin_bpr,
-                                  BinaryPackageRelease as dest_bpr,
-                                  BinaryPackagePublishingHistory as
-                                      dest_bpph
-                             WHERE dest_bpph.binarypackagerelease =
-                                 dest_bpr.id
-                             AND dest_bpr.binarypackagename =
-                                 origin_bpr.binarypackagename
-                             AND dest_bpph.distroarchseries = %s
-                             AND dest_bpph.status in (%s, %s)
-                             AND dest_bpph.pocket = %s
-                             AND dest_bpph.archive = %s)
+                             FROM BinaryPackageRelease as origin_bpr
+                             WHERE origin_bpr.binarypackagename IN
+                                (SELECT DISTINCT dest_bpr.binarypackagename
+                                 FROM BinaryPackageRelease as dest_bpr,
+                                 BinaryPackagePublishingHistory as
+                                     dest_bpph
+                                 WHERE dest_bpph.binarypackagerelease =
+                                     dest_bpr.id
+                                 AND dest_bpph.distroarchseries = %s
+                                 AND dest_bpph.status in (%s, %s)
+                                 AND dest_bpph.pocket = %s
+                                 AND dest_bpph.archive = %s))
                       ''' % sqlvalues(
                           destination_das,
                           PackagePublishingStatus.PENDING,
@@ -487,18 +487,18 @@ class PackageCloner:
         if no_duplicates:
             query += '''AND spph.sourcepackagerelease NOT IN
                             (SELECT origin_spr.id
-                             FROM SourcePackageRelease as origin_spr,
-                                  SourcePackageRelease as dest_spr,
+                             FROM SourcePackageRelease as origin_spr
+                             WHERE origin_spr.sourcepackagename IN
+                                (SELECT DISTINCT dest_spr.sourcepackagename
+                                  FROM SourcePackageRelease as dest_spr,
                                   SourcePackagePublishingHistory as
                                       dest_spph
-                             WHERE dest_spph.sourcepackagerelease =
-                                 dest_spr.id
-                             AND dest_spr.sourcepackagename =
-                                 origin_spr.sourcepackagename
-                             AND dest_spph.distroseries = %s
-                             AND dest_spph.status in (%s, %s)
-                             AND dest_spph.pocket = %s
-                             AND dest_spph.archive = %s)
+                                 WHERE dest_spph.sourcepackagerelease =
+                                      dest_spr.id
+                                 AND dest_spph.distroseries = %s
+                                 AND dest_spph.status in (%s, %s)
+                                 AND dest_spph.pocket = %s
+                                 AND dest_spph.archive = %s))
                       ''' % sqlvalues(
                           destination.distroseries,
                           PackagePublishingStatus.PENDING,
