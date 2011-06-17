@@ -2131,7 +2131,7 @@ class ArchiveSet:
             SourcePackagePublishingHistory.archive = Archive.id AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            Archive._private = FALSE AND
+            Archive.private = FALSE AND
             Archive.enabled = TRUE AND
             DistroSeries.distribution = %s AND
             Archive.purpose = %s
