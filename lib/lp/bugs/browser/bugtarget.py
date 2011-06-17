@@ -329,6 +329,17 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         self.extra_data = FileBugData()
 
     def initialize(self):
+        # redirect_ubuntu_filebug is a cached_property.
+        # Access it first just to compute its value. Because it 
+        # makes a DB access to get the bug supervisor, it causes
+        # trouble in tests when form validation errors occur. Because the 
+        # transaction is doomed, the storm cache is invalidated and accessing
+        # the property will result in a a LostObjectError, because
+        # the created objects disappeared. Not likely a problem in production
+        # since the objects will still be in the DB, but doesn't hurt there
+        # either. It makes for better diagnosis of failing tests.
+        if self.redirect_ubuntu_filebug:
+            pass
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
             self.extra_data_token is not None and
