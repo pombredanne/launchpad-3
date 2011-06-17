@@ -427,17 +427,17 @@ class InitializeDistroSeries:
                     new_owner, distroseries=self.distroseries,
                     related_set=parent_ps)
 
-                # Only copy archivepermissions if this is not a cross-distro
-                # parent/child relation.
-                if self.distroseries.distribution.id in parent_distro_ids:
-                    self._store.execute("""
-                        INSERT INTO Archivepermission
-                        (person, permission, archive, packageset, explicit)
-                        SELECT person, permission, %s, %s, explicit
-                        FROM Archivepermission WHERE packageset = %s
-                        """ % sqlvalues(
-                            self.distroseries.main_archive, child_ps.id,
-                            parent_ps.id))
+            # Only copy archivepermissions if this is not a cross-distro
+            # parent/child relation.
+            if self.distroseries.distribution.id in parent_distro_ids:
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, packageset, explicit)
+                    SELECT person, permission, %s, %s, explicit
+                    FROM Archivepermission WHERE packageset = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, child_ps.id,
+                        parent_ps.id))
             parent_to_child[parent_ps] = child_ps
         # Copy the relations between sets, and the contents.
         for old_series_ps, new_series_ps in parent_to_child.items():
