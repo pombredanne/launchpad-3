@@ -25,7 +25,8 @@ The distribution filebug page will attach a bugtask to a sourcepackage
 if the user provides a valid package name when reporting the bug.
 
 If the package name entered by the user happens to be a binary package
-name, the bug is filed against the source package used to build that binary.
+name, that information is recorded in the description, and the first
+comment, of the bug report.
 
     >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.webapp.interfaces import (
@@ -69,7 +70,13 @@ name, the bug is filed against the source package used to build that binary.
 
     >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
-The source package from which the binary was built has been set on
+The user specified a binary package name, so that's been added to the
+bug description and the first comment:
+
+    >>> print latest_ubuntu_bugtask.bug.description
+    a bug in a bin pkg
+
+the source package from which the binary was built has been set on
 the bugtask.
 
     >>> print latest_ubuntu_bugtask.sourcepackagename.name
@@ -324,19 +331,19 @@ If the user isn't subscribed to the bug , 'Subscribe' is shown.
     >>> bug_menu.subscription().icon
     'add'
 
-If we subscribe Foo Bar, 'Unsubscribe' is shown.
+If we subscribe Foo Bar, 'Edit subscription' is shown.
 
     >>> bug_one.subscribe(foo_bar, foo_bar)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
-still say 'Unsubscribe':
+still say 'Edit subscription':
 
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
@@ -345,10 +352,10 @@ still say 'Unsubscribe':
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
-    'Unsubscribe'
+    'Edit subscription'
 
     >>> bug_menu.subscription().icon
-    'remove'
+    'edit'
 
 If we now unsubscribe Foo Bar, it will say 'Subscribe', since team
 unsubsription is handled by the remove icon next the the team in the
@@ -390,7 +397,7 @@ can't know if the user is subscribed or not.
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
-    is presented with the Unsubscribe link.
+    is presented with the "Edit subscription" link.
 
     >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -398,7 +405,7 @@ can't know if the user is subscribed or not.
     >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
-        'Unsubscribe'
+    'Edit subscription'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
     time where the subscription from the duplicate is of a /team/ of which

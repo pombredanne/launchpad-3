@@ -68,7 +68,7 @@ class QueueItemsView(LaunchpadView):
         try:
             state_value = int(self.request.get('queue_state', ''))
         except ValueError:
-            state_value = 0
+            state_value = PackageUploadStatus.NEW.value
 
         try:
             self.state = PackageUploadStatus.items[state_value]
@@ -89,19 +89,14 @@ class QueueItemsView(LaunchpadView):
         self.filtered_options = []
 
         for state in valid_states:
-            if state == self.state:
-                selected = True
-            else:
-                selected = False
+            selected = (state == self.state)
             self.filtered_options.append(
-                dict(name=state.title, value=state.value, selected=selected)
-                )
+                dict(name=state.title, value=state.value, selected=selected))
 
-        # request context queue items according the selected state
-        queue_items = self.context.getQueueItems(
+        queue_items = self.context.getPackageUploads(
             status=self.state, name=self.name_filter)
-        self.batchnav = BatchNavigator(queue_items, self.request,
-                                       size=QUEUE_SIZE)
+        self.batchnav = BatchNavigator(
+            queue_items, self.request, size=QUEUE_SIZE)
 
     def builds_dict(self, upload_ids, binary_files):
         """Return a dictionary of PackageUploadBuild keyed on build ID.
@@ -479,7 +474,7 @@ class CompletePackageUpload:
         used to upload the contained source.
         """
         if self.is_delayed_copy:
-            return self.sources[0].sourcepackagerelease.upload_changesfile
+            return self.sourcepackagerelease.upload_changesfile
         return self.context.changesfile
 
     @property
