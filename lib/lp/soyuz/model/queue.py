@@ -1391,16 +1391,6 @@ class PackageUploadSet:
                archive=None, pocket=None, custom_type=None, name=None,
                version=None, exact_match=False):
         """See `IPackageUploadSet`."""
-        # XXX Julian 2009-07-02 bug=394645
-        # This method is an incremental deprecation of
-        # IDistroSeries.getQueueItems(). It's basically re-writing it
-        # using Storm queries instead of SQLObject, but not everything
-        # is implemented yet.  When it is, this comment and the old
-        # method can be removed and call sites updated to use this one.
-
-        # XXX 2011-06-11 JeroenVermeulen bug=795651: The "archive"
-        # argument is currently ignored.  Not sure why.
-
         # Avoid circular imports.
         from lp.soyuz.model.packagecopyjob import PackageCopyJob
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease

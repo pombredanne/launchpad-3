@@ -298,15 +298,17 @@
     :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
       no link will be created.
   </tal:comment>
-  <tal:unexpired tal:condition="libraryfilealias/content">
-    <a tal:attributes="href libraryfilealias/http_url">
-      <tal:filename replace="libraryfilealias/filename"/>
-    </a>
-    (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
-  </tal:unexpired>
-  <tal:expired tal:condition="not:libraryfilealias/content">
-    <span tal:content="libraryfilealias/filename"/>
-  </tal:expired>
+  <tal:not-none condition="libraryfilealias">
+    <tal:unexpired tal:condition="libraryfilealias/content">
+      <a tal:attributes="href libraryfilealias/http_url">
+        <tal:filename replace="libraryfilealias/filename"/>
+      </a>
+      (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
+    </tal:unexpired>
+    <tal:expired tal:condition="not:libraryfilealias/content">
+      <span tal:content="libraryfilealias/filename"/>
+    </tal:expired>
+  </tal:not-none>
 </metal:macro>
 
 <metal:macro define-macro="package-iconlist">
@@ -333,12 +335,17 @@
          alt="[Debian Description Translation Project Indexes]"
          src="/@@/ubuntu-icon"
          title="Debian Description Translation Project Indexes"/>
-    <a tal:condition="not: packageupload/pending_delayed_copy"
-       tal:content="packageupload/displayname"
-       tal:attributes="
-         href packageupload/changesfile/http_url;
-         title string:Changes file for ${packageupload/displayname};">
-    </a>
+    <tal:not-delayed condition="not: packageupload/pending_delayed_copy">
+      <a tal:condition="packageupload/changesfile"
+         tal:content="packageupload/displayname"
+         tal:attributes="
+           href packageupload/changesfile/http_url;
+           title string:Changes file for ${packageupload/displayname};">
+      </a>
+      <tal:no-changes-file
+        condition="not: packageupload/changesfile"
+        replace="packageupload/displayname"/>
+    </tal:not-delayed>
     <tal:pending_delayed_copy_title
       condition="packageupload/pending_delayed_copy"
       replace="packageupload/displayname" />

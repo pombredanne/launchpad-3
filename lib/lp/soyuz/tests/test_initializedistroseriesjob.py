@@ -3,12 +3,10 @@
 
 __metaclass__ = type
 
-from storm.exceptions import IntegrityError
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import (
     DatabaseFunctionalLayer,
@@ -19,6 +17,8 @@ from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
+    InitializationCompleted,
+    InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -58,15 +58,42 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         queue."""
         return len(self._getJobs())
 
-    def test_create_only_creates_one(self):
+    def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
-        # If there's already a InitializeDistroSeriesJob for a
-        # DistroSeries, InitializeDistroSeriesJob.create() won't create
-        # a new one.
+        # If there's already a pending InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # exception.
+        job = self.job_source.create(distroseries, [parent.id])
+        exception = self.assertRaises(
+            InitializationPending, self.job_source.create,
+            distroseries, [parent.id])
+        self.assertEqual(job, exception.job)
+
+    def test_create_with_existing_completed_job(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        # If there's already a completed InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() raises an
+        # exception.
+        job = self.job_source.create(distroseries, [parent.id])
+        job.start()
+        job.complete()
+        exception = self.assertRaises(
+            InitializationCompleted, self.job_source.create,
+            distroseries, [parent.id])
+        self.assertEqual(job, exception.job)
+
+    def test_create_with_existing_failed_job(self):
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        # If there's already a failed InitializeDistroSeriesJob for a
+        # DistroSeries, InitializeDistroSeriesJob.create() schedules a new
+        # job.
+        job = self.job_source.create(distroseries, [parent.id])
+        job.start()
+        job.fail()
         self.job_source.create(distroseries, [parent.id])
-        self.job_source.create(distroseries, [parent.id])
-        self.assertRaises(IntegrityError, flush_database_caches)
 
     def test_run_with_previous_series_already_set(self):
         # InitializationError is raised if a parent series already exists

@@ -124,14 +124,16 @@ class InitializeDistroSeries:
         """
         # only the RELEASE pocket is inherited, so we only check
         # queue items for it.
-        for queue in (
-            PackageUploadStatus.NEW, PackageUploadStatus.ACCEPTED,
-            PackageUploadStatus.UNAPPROVED):
-            items = self.parent.getQueueItems(
-                queue, pocket=PackagePublishingPocket.RELEASE)
-            if items:
-                raise InitializationError(
-                    "Parent series queues are not empty.")
+        statuses = [
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.UNAPPROVED,
+            ]
+        items = self.parent.getPackageUploads(
+            status=statuses, pocket=PackagePublishingPocket.RELEASE)
+        if not items.is_empty():
+            raise InitializationError(
+                "Parent series queues are not empty.")
 
     def _checkSeries(self):
         error = (

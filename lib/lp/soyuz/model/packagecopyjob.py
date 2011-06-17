@@ -17,7 +17,6 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -38,12 +37,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
