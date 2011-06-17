@@ -481,6 +481,24 @@ class ProcessSharingJob(StaticJobSource):
                 raise ValueError('Different process.')
 
 
+class MemoryHogJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [()]
+
+    done = False
+
+    memory_limit = 0
+
+    def __init__(self, id):
+        self.job = Job()
+        self.id = id
+
+    def run(self):
+        self.x = '*' * (10 ** 6)
+
+
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
@@ -573,6 +591,18 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             ProcessSharingJob, 'branchscanner', logger)
         self.assertEqual(
             (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+
+    def test_memory_hog_job(self):
+        """A job with a memory limit will trigger MemoryError on excess."""
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        runner = TwistedJobRunner.runFromSource(
+            MemoryHogJob, 'branchscanner', logger)
+        self.assertEqual(
+            (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        self.assertEqual('MemoryError', oops.type)
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):

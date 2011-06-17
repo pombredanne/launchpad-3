@@ -19,6 +19,11 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
+from resource import (
+    getrlimit,
+    RLIMIT_AS,
+    setrlimit,
+    )
 from signal import (
     SIGHUP,
     signal,
@@ -75,6 +80,8 @@ class BaseRunnableJob:
     user_error_types = ()
 
     retry_error_types = ()
+
+    memory_limit = None
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -361,6 +368,11 @@ class JobRunnerProcess(child.AMPChild):
         """Run a job from this job_source according to its job id."""
         runner = BaseJobRunner()
         job = self.job_source.get(job_id)
+        if self.job_source.memory_limit is not None:
+            soft_limit, hard_limit = getrlimit(RLIMIT_AS)
+            if soft_limit != self.job_source.memory_limit:
+                limits = (self.job_source.memory_limit, hard_limit)
+                setrlimit(RLIMIT_AS, limits)
         oops = runner.runJobHandleError(job)
         if oops is None:
             oops_id = ''
