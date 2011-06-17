@@ -416,6 +416,9 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 self.incomplete_jobs.append(job)
                 self.logger.debug('Incomplete %r', job)
+                # Kill the worker that experienced a failure; this only
+                # works because there's a single worker.
+                self.pool.stopAWorker()
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
 
@@ -461,8 +464,8 @@ class TwistedJobRunner(BaseJobRunner):
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
         # 1 is hard-coded for now until we're sure we'd get gains by running
-        # more than one at a time.  Note that test_timeout relies on this
-        # being 1.
+        # more than one at a time.  Note that several tests, including
+        # test_timeout, rely on this being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 

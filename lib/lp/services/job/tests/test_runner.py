@@ -377,7 +377,22 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIn(job, runner.incomplete_jobs)
 
 
-class StuckJob(BaseRunnableJob):
+class StaticJobSource(BaseRunnableJob):
+
+    @classmethod
+    def iterReady(cls):
+        if not cls.done:
+            for index, args in enumerate(cls.jobs):
+                yield cls.get(index)
+        cls.done = True
+
+    @classmethod
+    def get(cls, index):
+        args = cls.jobs[index]
+        return cls(index, *args)
+
+
+class StuckJob(StaticJobSource):
     """Simulation of a job that stalls."""
     implements(IRunnableJob)
 
@@ -389,21 +404,9 @@ class StuckJob(BaseRunnableJob):
     # doesn't expire and so we soak up the ZCML loading time.  For the
     # second job, have a short lease so we hit the timeout.
     jobs = [
-        (0, 10000, 0),
-        (1, 5, 30),
+        (10000, 0),
+        (5, 30),
         ]
-
-    @classmethod
-    def iterReady(cls):
-        if not cls.done:
-            for id, lease_length, delay in cls.jobs:
-                yield cls(id, lease_length, delay)
-        cls.done = True
-
-    @classmethod
-    def get(cls, id):
-        id, lease_length, delay = cls.jobs[id]
-        return cls(id, lease_length, delay)
 
     def __init__(self, id, lease_length, delay):
         self.id = id
@@ -426,9 +429,56 @@ class ShorterStuckJob(StuckJob):
     """Simulation of a job that stalls."""
 
     jobs = [
-        (0, 10000, 0),
-        (1, 0.05, 30),
+        (10000, 0),
+        (0.05, 30),
         ]
+
+
+class InitialFailureJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [(True,), (False,)]
+
+    has_failed = False
+
+    done = False
+
+    def __init__(self, id, fail):
+        self.id = id
+        self.job = Job()
+        self.fail = fail
+
+    def run(self):
+        if self.fail:
+            InitialFailureJob.has_failed = True
+            raise ValueError('I failed.')
+        else:
+            if InitialFailureJob.has_failed:
+                raise ValueError('Previous failure.')
+
+
+class ProcessSharingJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [(True,), (False,)]
+
+    initial_job_was_here = False
+
+    done = False
+
+    def __init__(self, id, first):
+        self.id = id
+        self.job = Job()
+        self.first = first
+
+    def run(self):
+        if self.first:
+            ProcessSharingJob.initial_job_was_here = True
+        else:
+            if not ProcessSharingJob.initial_job_was_here:
+                raise ValueError('Different process.')
 
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
@@ -499,6 +549,30 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
              """) % oops.id,
              'TimeoutError', 'Job ran too long.'),
             (logger.getLogBuffer(), oops.type, oops.value))
+
+    def test_previous_failure_gives_new_process(self):
+        """Failed jobs cause their worker to be terminated.
+
+        When a job fails, it's not clear whether its process can be safely
+        reused for a new job, so we kill the worker.
+        """
+        logger = BufferLogger()
+        runner = TwistedJobRunner.runFromSource(
+            InitialFailureJob, 'branchscanner', logger)
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+
+    def test_successful_jobs_share_process(self):
+        """Successful jobs allow process reuse.
+
+        When a job succeeds, we assume that its process can be safely reused
+        for a new job, so we reuse the worker.
+        """
+        logger = BufferLogger()
+        runner = TwistedJobRunner.runFromSource(
+            ProcessSharingJob, 'branchscanner', logger)
+        self.assertEqual(
+            (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
