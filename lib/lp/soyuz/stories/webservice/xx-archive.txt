@@ -31,6 +31,26 @@ We publish a subset of their attributes.
     signing_key_fingerprint: None
     web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
+For "devel" additional attributes are available.
+
+    >>> cprov_archive_devel = webservice.get("/~cprov/+archive/ppa", api_version='devel').jsonBody()
+    >>> pprint_entry(cprov_archive_devel)
+    commercial: False
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
+    description: u'packages to help my friends.'
+    displayname: u'PPA for Celso Providelo'
+    distribution_link: u'http://.../ubuntu'
+    enabled_restricted_families_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_families'
+    external_dependencies: None
+    name: u'ppa'
+    owner_link: u'http://.../~cprov'
+    private: False
+    require_virtualized: True
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive/ppa'
+    signing_key_fingerprint: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa'
+
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
 
@@ -338,12 +358,12 @@ component.
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
-We can use ``checkUpload`` to verify that a person can upload a 
+We can use ``checkUpload`` to verify that a person can upload a
 sourcepackage.
 
     >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='restricted', person=name12['self_link'])
@@ -371,7 +391,7 @@ And ``checkUpload`` now also no longer passes:
 
     >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='main', person=name12['self_link'])
@@ -1068,3 +1088,13 @@ And even if we ask for a non-integral archive ID.
     ...     '/~cprov/+archive/ppa/+dependency/foo')
     HTTP/1.1 404 Not Found
     ...
+
+== Enabled restricted families ==
+
+Archives can build on certain restricted families.  The attribute can
+be read and set only by admins and commercial admins.
+
+    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
+    >>> print_self_link_of_entries(
+    ...     webservice.get('/~mark/+archive/ppa/enabled_restricted_families',
+    ...                    api_version='devel').jsonBody())

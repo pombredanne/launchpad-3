@@ -442,13 +442,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_families = CollectionField(
+    enabled_restricted_families = exported(
+        CollectionField(
             title=_("Enabled restricted families"),
             description=_(
                 "The restricted architecture families on which the archive "
                 "can build."),
-            value_type=Reference(schema=IProcessorFamily),
-            readonly=False)
+            value_type=Reference(schema=IProcessorFamily)),
+        as_of='devel')
 
     commercial = exported(
         Bool(
