@@ -43,6 +43,28 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Defaults to self.vocabulary.displayname.
     header = None
 
+    @property
+    def widget_rendered(self):
+        # We manually create the widget name since we don't want different
+        # popups colliding, and we have to put the attr on the request so all
+        # instances of the popup on this request can check the attr.
+        attr = self.__class__.__name__ + '_rendered'
+        if hasattr(self.request, attr):
+            return getattr(self.request, attr)
+        else:
+            # The widget has not rendered before this. We return False, but
+            # set the attribute to true, so future checks will see that it
+            # has rendered. It would be better to set this in __init__ or
+            # similar, but then this first check also sees True, and we never
+            # render the part of the template this is used to guard.
+            setattr(self.request, attr, True)
+            return False
+
+    @widget_rendered.setter
+    def widget_rendered(self, val):
+        attr = self.__class__.__name__ + '_rendered'
+        setattr(self.request, attr, val)
+
     @cachedproperty
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the
