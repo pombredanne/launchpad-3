@@ -294,7 +294,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
                 distroseries=child))
 
     def test_no_cross_distro_perm_copying(self):
-        # No crss-distro archivepermissions copying should happen.
+        # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
         uploader = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
