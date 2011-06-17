@@ -192,7 +192,7 @@ If we go ahead and modify the description, however:
 The displayable comments for a bug can be obtained from the view
 property activity_and_comments.
 
-    >>> comments = [event.get('comment') for event in 
+    >>> comments = [event.get('comment') for event in
     ...     ubuntu_bugview.activity_and_comments if event.get('comment')]
 
 Because we omit the first comment, and because the third comment is

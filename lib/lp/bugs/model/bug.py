@@ -51,18 +51,14 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Count,
     Desc,
-    Exists,
     In,
-    Join,
     LeftJoin,
     Max,
     Not,
     Or,
     Select,
     SQL,
-    SQLRaw,
     Sum,
     Union,
     )
@@ -171,7 +167,6 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -300,6 +295,7 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
                 ))
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
+
     # Always query for used
     def _query(*args):
         return store.find(tag_count_columns, *(where_conditions + list(args))
@@ -2587,7 +2583,7 @@ class BugSet:
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
         bugs = []
-        for bug_task in bug_tasks[:4*limit]:
+        for bug_task in bug_tasks[:4 * limit]:
             bug = bug_task.bug
             duplicateof = bug.duplicateof
             if duplicateof is not None:
