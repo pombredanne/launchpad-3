@@ -222,6 +222,14 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
+    def test_isDerivedSeries(self):
+        # The series method isInitializing() returns True only if the series
+        # has one or more parent series.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.isDerivedSeries())
+        self.factory.makeDistroSeriesParent(derived_series=distroseries)
+        self.assertTrue(distroseries.isDerivedSeries())
+
     def test_isInitializing(self):
         # The series method isInitializing() returns True only if there is an
         # initialization job with a pending status attached to this series.
