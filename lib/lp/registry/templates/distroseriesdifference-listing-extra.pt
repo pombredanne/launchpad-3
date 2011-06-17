@@ -44,7 +44,7 @@
            tal:attributes="href context/base_distro_source_package_release/fmt:url"
            tal:content="context/base_version"/></dd>
     <dd tal:condition="not: context/base_version">
-      Unknown
+      Unknown, so no diffs are available
     </dd>
     <tal:package-diffs-info condition="view/display_package_diffs_info">
     <dt
