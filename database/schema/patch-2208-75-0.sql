@@ -42,10 +42,95 @@ CREATE VIEW CombinedBugSummary AS (
 
 
 -- Rebuild the BugSummary data with the new columns.
-INSERT INTO bugsummary (
+INSERT INTO BugSummary (
     count, product, productseries, distribution, distroseries,
-    sourcepackagename, viewed_by, tag, status, milestone,
-    importance, has_patch, fixed_upstream)
+    sourcepackagename, viewed_by, tag, status, importance, has_patch,
+    fixed_upstream, milestone)
+WITH
+    -- kill dupes
+    relevant_bug AS (SELECT * FROM bug where duplicateof is NULL),
+
+    -- (bug.id, tag) for all bug-tag pairs plus (bug.id, NULL) for all bugs
+    bug_tags AS (
+        SELECT relevant_bug.id, NULL::text AS tag FROM relevant_bug
+        UNION
+        SELECT relevant_bug.id, tag
+        FROM relevant_bug INNER JOIN bugtag ON relevant_bug.id=bugtag.bug),
+
+    -- (bug.id, NULL) for all public bugs + (bug.id, viewer) for all
+    -- (subscribers+assignee) on private bugs
+    bug_viewers AS (
+        SELECT relevant_bug.id, NULL::integer AS person
+        FROM relevant_bug WHERE NOT relevant_bug.private
+        UNION
+        SELECT relevant_bug.id, assignee AS person
+        FROM relevant_bug
+        INNER JOIN bugtask ON relevant_bug.id=bugtask.bug
+        WHERE relevant_bug.private and bugtask.assignee IS NOT NULL
+        UNION
+        SELECT relevant_bug.id, bugsubscription.person
+        FROM relevant_bug INNER JOIN bugsubscription
+            ON bugsubscription.bug=relevant_bug.id WHERE relevant_bug.private),
+
+    -- (bugtask.(bug, product, productseries, distribution, distroseries,
+    -- sourcepackagename, status, milestone) for all bugs + the same with
+    -- sourcepackage squashed to NULL)
+    tasks AS (
+        SELECT
+            bug, product, productseries, distribution, distroseries,
+            sourcepackagename, status, importance,
+            (EXISTS
+                (SELECT TRUE
+                FROM BugTask AS RelatedBugTask
+                WHERE RelatedBugTask.bug = BugTask.bug
+                AND RelatedBugTask.id != BugTask.id
+                AND ((RelatedBugTask.bugwatch IS NOT NULL
+                        AND RelatedBugTask.status IN (17, 25, 30))
+                        OR (RelatedBugTask.product IS NOT NULL
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND RelatedBugTask.status IN (25, 30))))
+                ) as fixed_upstream, milestone
+        FROM bugtask
+        UNION
+        SELECT DISTINCT ON (
+            bug, product, productseries, distribution, distroseries,
+            sourcepackagename, milestone)
+            bug, product, productseries, distribution, distroseries,
+            NULL::integer as sourcepackagename,
+            status, importance,
+            (EXISTS
+                (SELECT TRUE
+                FROM BugTask AS RelatedBugTask
+                WHERE RelatedBugTask.bug = BugTask.bug
+                AND RelatedBugTask.id != BugTask.id
+                AND ((RelatedBugTask.bugwatch IS NOT NULL
+                        AND RelatedBugTask.status IN (17, 25, 30))
+                        OR (RelatedBugTask.product IS NOT NULL
+                            AND RelatedBugTask.bugwatch IS NULL
+                            AND RelatedBugTask.status IN (25, 30))))
+                ) as fixed_upstream, milestone
+        FROM bugtask where sourcepackagename IS NOT NULL)
+
+    -- Now combine
+    SELECT
+        count(*), product, productseries, distribution, distroseries,
+        sourcepackagename, person, tag, status, importance,
+        latest_patch_uploaded IS NOT NULL AS has_patch, fixed_upstream,
+        milestone
+    FROM relevant_bug
+    INNER JOIN bug_tags ON relevant_bug.id=bug_tags.id
+    INNER JOIN bug_viewers ON relevant_bug.id=bug_viewers.id
+    INNER JOIN tasks on tasks.bug=relevant_bug.id
+    GROUP BY
+        product, productseries, distribution, distroseries,
+        sourcepackagename, person, tag, status, importance, has_patch,
+        fixed_upstream, milestone;
+
+
+
+
+
+
 WITH
     -- kill dupes
     relevant_bug AS (SELECT * FROM bug where duplicateof is NULL),
