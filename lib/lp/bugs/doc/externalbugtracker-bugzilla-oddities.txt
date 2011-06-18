@@ -138,3 +138,13 @@ invalid XML:
     ...
     UnparsableBugData: Failed to parse XML description...
 
+However, embedded control characters do not generate errors.
+
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     AnotherBrokenBugzilla)
+    >>> broken_bugzilla = AnotherBrokenBugzilla(mozilla_bugzilla.baseurl)
+    >>> r"NOT\x01USED" in repr(broken_bugzilla._readBugItemFile())
+    True
+
+    >>> remote_bugs = ['42', '2000']
+    >>> broken_bugzilla.initializeRemoteBugDB(remote_bugs) # no exception

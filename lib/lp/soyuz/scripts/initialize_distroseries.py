@@ -1,13 +1,13 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Initialise a distroseries from its parent distroseries."""
+"""Initialize a distroseries from its parent distroseries."""
 
 
 __metaclass__ = type
 __all__ = [
-    'InitialisationError',
-    'InitialiseDistroSeries',
+    'InitializationError',
+    'InitializeDistroSeries',
     ]
 
 from operator import methodcaller
@@ -36,11 +36,11 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packageset import Packageset
 
 
-class InitialisationError(Exception):
-    """Raised when there is an exception during the initialisation process."""
+class InitializationError(Exception):
+    """Raised when there is an exception during the initialization process."""
 
 
-class InitialiseDistroSeries:
+class InitializeDistroSeries:
     """Copy in all of the parent distroseries's configuration. This
     includes all configuration for distroseries as well as distroarchseries,
     publishing and all publishing records for sources and binaries.
@@ -60,12 +60,12 @@ class InitialiseDistroSeries:
       structures.
 
     Note:
-      This method will raise a InitialisationError when the pre-conditions
+      This method will raise a InitializationError when the pre-conditions
       are not met. After this is run, you still need to construct chroots
       for building, you need to add anything missing wrt. ports etc. This
       method is only meant to give you a basic copy of a parent series in
       order to assist you in preparing a new series of a distribution or
-      in the initialisation of a derivative.
+      in the initialization of a derivative.
     """
 
     def __init__(
@@ -76,7 +76,7 @@ class InitialiseDistroSeries:
         from lp.registry.model.distroseries import DistroSeries
 
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
-        # initialising from multiple parents.
+        # initializing from multiple parents.
         self.parent_id = parents[0]
         self.parent = IStore(
             DistroSeries).get(DistroSeries, int(self.parent_id))
@@ -92,8 +92,8 @@ class InitialiseDistroSeries:
         self._store = IMasterStore(DistroSeries)
 
     def check(self):
-        if self.distroseries.is_derived_series:
-            raise InitialisationError(
+        if self.distroseries.isDerivedSeries():
+            raise InitializationError(
                 ("DistroSeries {child.name} has already been initialized"
                  ".").format(
                     child=self.distroseries))
@@ -106,7 +106,7 @@ class InitialiseDistroSeries:
         """Assert there are no pending builds for parent series.
 
         Only cares about the RELEASE pocket, which is the only one inherited
-        via initialiseFromParent method.
+        via initializeFromParent method.
         """
         # only the RELEASE pocket is inherited, so we only check
         # pending build records for it.
@@ -114,51 +114,53 @@ class InitialiseDistroSeries:
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
         if pending_builds.any():
-            raise InitialisationError("Parent series has pending builds.")
+            raise InitializationError("Parent series has pending builds.")
 
     def _checkQueue(self):
         """Assert upload queue is empty on parent series.
 
         Only cares about the RELEASE pocket, which is the only one inherited
-        via initialiseFromParent method.
+        via initializeFromParent method.
         """
         # only the RELEASE pocket is inherited, so we only check
         # queue items for it.
-        for queue in (
-            PackageUploadStatus.NEW, PackageUploadStatus.ACCEPTED,
-            PackageUploadStatus.UNAPPROVED):
-            items = self.parent.getQueueItems(
-                queue, pocket=PackagePublishingPocket.RELEASE)
-            if items:
-                raise InitialisationError(
-                    "Parent series queues are not empty.")
+        statuses = [
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.UNAPPROVED,
+            ]
+        items = self.parent.getPackageUploads(
+            status=statuses, pocket=PackagePublishingPocket.RELEASE)
+        if not items.is_empty():
+            raise InitializationError(
+                "Parent series queues are not empty.")
 
     def _checkSeries(self):
         error = (
             "Can not copy distroarchseries from parent, there are "
-            "already distroarchseries(s) initialised for this series.")
+            "already distroarchseries(s) initialized for this series.")
         sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
         if not all(
             map(methodcaller('is_empty'), (
                 sources, binaries, self.distroseries.architectures,
                 self.distroseries.sections))):
-            raise InitialisationError(error)
+            raise InitializationError(error)
         if self.distroseries.components:
-            raise InitialisationError(error)
+            raise InitializationError(error)
 
-    def initialise(self):
+    def initialize(self):
         self._set_parent()
         self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
-        self._set_initialised()
+        self._set_initialized()
         transaction.commit()
 
     def _set_parent(self):
         # XXX: rvb 2011-05-27 bug=789091: This code should be fixed to support
-        # initialising from multiple parents.
+        # initializing from multiple parents.
         dsp_set = getUtility(IDistroSeriesParentSet)
         if self.overlays and self.overlays[0]:
             pocket = PackagePublishingPocket.__metaclass__.getTermByToken(
@@ -171,7 +173,7 @@ class InitialiseDistroSeries:
         else:
             dsp_set.new(self.distroseries, self.parent, initialized=False)
 
-    def _set_initialised(self):
+    def _set_initialized(self):
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             self.distroseries, self.parent)
@@ -334,7 +336,7 @@ class InitialiseDistroSeries:
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
-            # Cross-distro initialisations get packagesets owned by the
+            # Cross-distro initializations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
             if self.packagesets and str(parent_ps.id) not in self.packagesets:
                 continue

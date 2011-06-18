@@ -1,13 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
 
 __metaclass__ = type
-__all__ = [
-    'TestAcceptPartnerArchive',
-    'test_suite',
-    ]
 
 import transaction
 from zope.component import (
@@ -20,15 +16,16 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.views import create_initialized_view
 
 
 class TestAcceptQueueUploads(TestCaseWithFactory):
@@ -85,7 +82,6 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             distribution.getArchiveByComponent('partner'),
             self.partner_queue_admin, self.partner_spr.component)
 
-
         # We need to commit to ensure the changes file exists in the
         # librarian.
         transaction.commit()
@@ -111,7 +107,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',
@@ -148,7 +144,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',
@@ -166,7 +162,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.form['QUEUE_ID'] = [package_upload_id]
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
-        view = self.setupQueueView(request)
+        self.setupQueueView(request)
 
         self.assertEquals(
             'DONE',
@@ -193,3 +189,44 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         self.assertEquals(
             'NEW',
             getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
+
+class TestQueueItemsView(TestCaseWithFactory):
+    """Unit tests for `QueueItemsView`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def makeView(self, distroseries, user):
+        """Create a queue view."""
+        return create_initialized_view(
+            distroseries, name='+queue', principal=user)
+
+    def test_view_renders_source_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeSourcePackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_build_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeBuildPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)
+
+    def test_view_renders_copy_upload(self):
+        login(ADMIN_EMAIL)
+        upload = self.factory.makeCopyJobPackageUpload()
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html = view()
+        self.assertIn(upload.package_name, html)

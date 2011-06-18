@@ -12,6 +12,7 @@ __all__ = [
 import errno
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -91,6 +92,10 @@ def daemon(name, logfilename, pidfilename, *args, **kwargs):
     # start a new process group and detach ttys
     # print '## Starting', name, '##'
     os.setsid()
+
+    # Revert Python's handling of SIGPIPE. See
+    # http://bugs.python.org/issue1652 for more info.
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     # fork 2 - now detach once more free and clear
     pid = os.fork()

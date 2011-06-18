@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -34,9 +34,7 @@ from lp.soyuz.interfaces.files import (
     ISourcePackageReleaseFileSet,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.publishing import (
-    name_priority_map,
-    )
+from lp.soyuz.interfaces.publishing import name_priority_map
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadSet,
@@ -70,7 +68,7 @@ class QueueItemsView(LaunchpadView):
         try:
             state_value = int(self.request.get('queue_state', ''))
         except ValueError:
-            state_value = 0
+            state_value = PackageUploadStatus.NEW.value
 
         try:
             self.state = PackageUploadStatus.items[state_value]
@@ -91,19 +89,14 @@ class QueueItemsView(LaunchpadView):
         self.filtered_options = []
 
         for state in valid_states:
-            if state == self.state:
-                selected = True
-            else:
-                selected = False
+            selected = (state == self.state)
             self.filtered_options.append(
-                dict(name=state.title, value=state.value, selected=selected)
-                )
+                dict(name=state.title, value=state.value, selected=selected))
 
-        # request context queue items according the selected state
-        queue_items = self.context.getQueueItems(
+        queue_items = self.context.getPackageUploads(
             status=self.state, name=self.name_filter)
-        self.batchnav = BatchNavigator(queue_items, self.request,
-                                       size=QUEUE_SIZE)
+        self.batchnav = BatchNavigator(
+            queue_items, self.request, size=QUEUE_SIZE)
 
     def builds_dict(self, upload_ids, binary_files):
         """Return a dictionary of PackageUploadBuild keyed on build ID.
@@ -159,7 +152,7 @@ class QueueItemsView(LaunchpadView):
                 pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
         return package_upload_source_dict
 
-    def source_fies_dict(self, package_upload_source_dict, source_files):
+    def source_files_dict(self, package_upload_source_dict, source_files):
         """Return a dictionary of source files keyed on PackageUpload ID."""
         source_upload_files = {}
         for source_file in source_files:
@@ -215,7 +208,7 @@ class QueueItemsView(LaunchpadView):
         # Get a dictionary of lists of source files keyed by upload ID.
         package_upload_source_dict = self.source_dict(
             upload_ids, source_files)
-        source_upload_files = self.source_fies_dict(
+        source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 
         # Get a list of binary package names that already exist in
@@ -224,9 +217,10 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
-        return [CompletePackageUpload(item, build_upload_files,
-                                      source_upload_files)
-                for item in uploads]
+        return [
+            CompletePackageUpload(
+                item, build_upload_files, source_upload_files)
+            for item in uploads]
 
     def is_new(self, binarypackagerelease):
         """Return True if the binarypackagerelease has no ancestry."""
@@ -322,10 +316,8 @@ class QueueItemsView(LaunchpadView):
         queue_set = getUtility(IPackageUploadSet)
 
         if accept:
-            header = 'Accepting Results:\n'
             action = "accept"
         elif reject:
-            header = 'Rejecting Results:\n'
             action = "reject"
 
         success = []
@@ -358,10 +350,10 @@ class QueueItemsView(LaunchpadView):
                 continue
 
             feedback_interpolations = {
-                "name"      : queue_item.displayname,
-                "component" : "(unchanged)",
-                "section"   : "(unchanged)",
-                "priority"  : "(unchanged)",
+                "name": queue_item.displayname,
+                "component": "(unchanged)",
+                "section": "(unchanged)",
+                "priority": "(unchanged)",
                 }
             if new_component:
                 feedback_interpolations['component'] = new_component.name
@@ -454,13 +446,9 @@ class CompletePackageUpload:
         # Create a dictionary of binary files keyed by
         # binarypackagerelease.
         self.binary_packages = {}
-        self.binary_files = build_upload_files.get(self.id, None)
-        if self.binary_files is not None:
-            for binary in self.binary_files:
-                package = binary.binarypackagerelease
-                if package not in self.binary_packages:
-                    self.binary_packages[package] = []
-                self.binary_packages[package].append(binary)
+        for binary in build_upload_files.get(self.id, []):
+            package = binary.binarypackagerelease
+            self.binary_packages.setdefault(package, []).append(binary)
 
         # Create a list of source files if this is a source upload.
         self.source_files = source_upload_files.get(self.id, None)
@@ -486,7 +474,7 @@ class CompletePackageUpload:
         used to upload the contained source.
         """
         if self.is_delayed_copy:
-            return self.sources[0].sourcepackagerelease.upload_changesfile
+            return self.sourcepackagerelease.upload_changesfile
         return self.context.changesfile
 
     @property
@@ -498,4 +486,3 @@ class CompletePackageUpload:
                 self.sourcepackagerelease.sourcepackagename,
                 distroseries=self.distroseries,
                 direct_inclusion=True)))
-

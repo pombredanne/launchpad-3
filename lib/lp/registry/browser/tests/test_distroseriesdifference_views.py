@@ -15,8 +15,10 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
@@ -37,6 +39,9 @@ from lp.services.comments.interfaces.conversation import (
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
+    )
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
     )
 from lp.testing import (
     anonymous_logged_in,
@@ -484,6 +489,26 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('pre', text="Here's another comment.")))
 
+    def test_last_common_version_is_linked(self):
+        # The "Last Common Version" version text should link to the
+        # parent distro sourcepackagerelease page.
+        ds_diff = removeSecurityProxy(
+            self.factory.makeDistroSeriesDifference(set_base_version=True))
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        page = view()
+
+        distro = ds_diff.parent_series.distribution
+        sourcepackagerelease = ds_diff.parent_source_package_release
+        url = canonical_url(
+            DistributionSourcePackageRelease(distro, sourcepackagerelease),
+            force_local_path=True)
+        anchor_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "VERSION LINK", 'a',
+                attrs=dict(href=url)))
+
+        self.assertThat(page, anchor_matcher) 
+
     def test_blacklist_options(self):
         # Blacklist options are presented to the users who are archive
         # admins.
@@ -609,7 +634,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Unknown base version', 'dd',
                 text=re.compile(
-                    '\s*Unknown')))
+                    '\s*Unknown, so no diffs are available')))
 
         with celebrity_logged_in('admin'):
             view = create_initialized_view(

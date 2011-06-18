@@ -257,7 +257,7 @@ def safe_fix_maintainer(content, fieldname):
     """Wrapper for fix_maintainer() to handle unicode and string argument.
 
     It verifies the content type and transform it in a unicode with guess()
-    before call ascii_smash(). Then we can safelly call fix_maintainer().
+    before call ascii_smash(). Then we can safely call fix_maintainer().
     """
     if type(content) != unicode:
         content = guess_encoding(content)

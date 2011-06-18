@@ -14,9 +14,7 @@
           name="robots" content="noindex,nofollow" />
     <tal:uses_launchpad_bugtracker
        condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
-      <script type="text/javascript"
-          tal:condition="
-            request/features/malone.advanced-structural-subscriptions.enabled">
+      <script type="text/javascript">
         LPS.use('lp.registry.structural_subscription', function(Y) {
             var module = Y.lp.registry.structural_subscription;
             Y.on('domready', function() {

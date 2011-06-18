@@ -6,19 +6,19 @@
 __metaclass__ = type
 __all__ = []
 
-from lp.code.windmill.testing import CodeYUITestLayer
+from canonical.testing.layers import YUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
     )
 
 
-class CodeYUIUnitTestCase(YUIUnitTestCase):
+class SoyuzYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = CodeYUITestLayer
-    suite_name = 'CodeYUIUnitTests'
+    layer = YUITestLayer
+    suite_name = 'SoyuzYUIUnitTests'
 
 
 def test_suite():
-    app_testing_path = 'lp/code/javascript/tests'
-    return build_yui_unittest_suite(app_testing_path, CodeYUIUnitTestCase)
+    app_testing_path = 'lp/soyuz/javascript/tests'
+    return build_yui_unittest_suite(app_testing_path, SoyuzYUIUnitTestCase)

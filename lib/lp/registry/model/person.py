@@ -3978,6 +3978,9 @@ class PersonSet:
             ('votecast', 'person'),
             ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
+            # These are ON DELETE CASCADE and maintained by triggers.
+            ('bugsummary', 'viewed_by'),
+            ('bugsummaryjournal', 'viewed_by'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
