@@ -3,14 +3,14 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE BinaryPackagePaths (
+CREATE TABLE BinaryPackagePath (
     id serial PRIMARY KEY,
     path text UNIQUE NOT NULL
 );
 
 CREATE TABLE BinaryPackageReleaseContents (
     binarypackagerelease integer NOT NULL REFERENCES BinaryPackageRelease,
-    binarypackagepath integer NOT NULL REFERENCES BinaryPackagePaths,
+    binarypackagepath integer NOT NULL REFERENCES BinaryPackagePath,
     PRIMARY KEY (binarypackagerelease, binarypackagepath)
 );
 

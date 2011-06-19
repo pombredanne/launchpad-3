@@ -982,6 +982,50 @@
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
 
+    <!-- BinaryPackagePath -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
+    </class>
+
+    <!-- BinaryPackagePathSource -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource"/>
+    </securedutility>
+
+    <!-- BinaryPackageReleaseContents -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
+    </class>
+
+    <!-- BinaryPackageReleaseContentsSet -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
+        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </securedutility>
+
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

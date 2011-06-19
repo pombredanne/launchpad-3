@@ -1629,7 +1629,7 @@ COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage UR
 
 COMMENT ON TABLE BinaryPackageReleaseContents IS 'BinaryPackageReleaseContents: Mapping table that maps from BinaryPackageReleases to path names.';
 COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagerelease IS 'The BinaryPackageRelease that contains the path name.';
-COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagepath IS 'The path name, via the BinaryPackagePaths table.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagepath IS 'The path name, via the BinaryPackagePath table.';
 
 -- BinaryPackageFile
 
@@ -1642,10 +1642,10 @@ COMMENT ON COLUMN BinaryPackageFile.filetype IS 'The "type" of the file. E.g. DE
 
 COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package name.';
 
--- BinaryPackagePaths
+-- BinaryPackagePath
 
-COMMENT ON TABLE BinaryPackagePaths IS 'BinaryPackagePaths: A table of filenames shipped in binary packages.';
-COMMENT ON COLUMN BinaryPackagePaths.path IS 'The full path of the file.';
+COMMENT ON TABLE BinaryPackagePath IS 'BinaryPackagePath: A table of filenames shipped in binary packages.';
+COMMENT ON COLUMN BinaryPackagePath.path IS 'The full path of the file.';
 
 -- Distribution
 
