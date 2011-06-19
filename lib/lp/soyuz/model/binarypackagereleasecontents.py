@@ -43,7 +43,7 @@ class BinaryPackageReleaseContents(Storm):
         binaypackagepath_id, 'BinaryPackagePath.id')
 
     def add(self, bpr):
-        """See `IBinaryPackageReleaseContents`."""
+        """See `IBinaryPackageReleaseContentsSet`."""
         if not bpr.files:
             return None
         store = IMasterStore(BinaryPackageReleaseContents)
@@ -75,7 +75,7 @@ class BinaryPackageReleaseContents(Storm):
                 store.add(bprc)
 
     def remove(self, bpr):
-        """See `IBinaryPackageReleaseContents`."""
+        """See `IBinaryPackageReleaseContentsSet`."""
         store = IMasterStore(BinaryPackageReleaseContents)
         results = store.find(
             BinaryPackageReleaseContents,

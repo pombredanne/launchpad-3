@@ -26,7 +26,7 @@ class BinaryPackagePath(Storm):
     path = Unicode(name='path', allow_none=False)
 
     def getOrCreate(self, path):
-        """See `IBinaryPackagePath`."""
+        """See `IBinaryPackagePathSource`."""
         store = IMasterStore(BinaryPackagePath)
         bpp = store.find(BinaryPackagePath, BinaryPackagePath.path == path)
         if bpp.count():
