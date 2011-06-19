@@ -15,6 +15,7 @@ from testtools.content import text_content
 from testtools.matchers import (
     Equals,
     LessThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -41,6 +42,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -449,7 +451,7 @@ class CopyCheckerHarness:
     def assertCanCopySourceOnly(self, delayed=False):
         """Source-only copy is allowed.
 
-        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        Initialize a `CopyChecker` and assert a `checkCopy` call returns
         None (more importantly, doesn't raise `CannotCopy`) in the test
         suite context.
 
@@ -477,7 +479,7 @@ class CopyCheckerHarness:
     def assertCanCopyBinaries(self, delayed=False):
         """Source and binary copy is allowed.
 
-        Initialise a `CopyChecker` and assert a `checkCopy` call returns
+        Initialize a `CopyChecker` and assert a `checkCopy` call returns
         None (more importantly, doesn't raise `CannotCopy`) in the test
         suite context.
 
@@ -966,7 +968,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         binary.copyTo(hoary, source.pocket, source.archive)
 
         # Create a fresh PPA for ubuntutest, which will be the copy
-        # destination and initialise a CopyChecker for it.
+        # destination and initialize a CopyChecker for it.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
             purpose=ArchivePurpose.PPA)
@@ -1027,7 +1029,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # the case (restricted files being copied to public archives).
         # However this feature can be turned off, and the operation can
         # be performed as a direct-copy by passing 'allow_delayed_copies'
-        # as False when initialising `CopyChecker`.
+        # as False when initializing `CopyChecker`.
         # This aspect is currently only used in `UnembargoSecurityPackage`
         # script class, because it performs the file privacy fixes in
         # place.
@@ -1381,6 +1383,31 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # The real test is that the doCopy doesn't fail.
         [copied_source] = self.doCopy(
             source, target_archive, dsp.derived_series, source.pocket, False)
+
+    def test_copy_with_override(self):
+        # Test the override parameter for do_copy and by extension
+        # _do_direct_copy.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        dsp = self.factory.makeDistroSeriesParent()
+        target_archive = dsp.derived_series.main_archive
+        override = SourceOverride(
+            source.sourcepackagerelease.sourcepackagename,
+            self.factory.makeComponent(),
+            self.factory.makeSection())
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            dsp.derived_series, SourcePackageFormat.FORMAT_1_0)
+        self.layer.txn.commit()
+        self.layer.switchDbUser('archivepublisher')
+        [copied_source] = do_copy(
+            [source], target_archive, dsp.derived_series, source.pocket,
+            check_permissions=False, overrides=[override])
+
+        matcher = MatchesStructure(
+            component=Equals(override.component),
+            section=Equals(override.section))
+        self.assertThat(copied_source, matcher)
 
     def test_copy_ppa_generates_notification(self):
         # When a copy into a PPA is performed, a notification is sent.
@@ -2070,7 +2097,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         self.checkCopies(copied, target_archive, 2)
 
     def getTestPublisher(self, distroseries):
-        """Return a initialised `SoyuzTestPublisher` object.
+        """Return a initialized `SoyuzTestPublisher` object.
 
         Setup a i386 chroot for the given distroseries, so it can build
         and publish binaries.

@@ -45,7 +45,7 @@ def main():
     lock = GlobalLock('/var/lock/launchpad-archive-cruft-check.lock')
     lock.acquire(blocking=True)
 
-    log.debug("Initialising connection.")
+    log.debug("Initializing connection.")
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 

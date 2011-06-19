@@ -298,11 +298,12 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
                 BugSummary.viewed_by_id == None,
                 BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
                 ))
-    tag_count_columns = (BugSummary.tag, Sum(BugSummary.count))
+    sum_count = Sum(BugSummary.count)
+    tag_count_columns = (BugSummary.tag, sum_count)
     # Always query for used
     def _query(*args):
         return store.find(tag_count_columns, *(where_conditions + list(args))
-            ).group_by(BugSummary.tag).order_by(
+            ).group_by(BugSummary.tag).having(sum_count != 0).order_by(
             Desc(Sum(BugSummary.count)), BugSummary.tag)
     used = _query()
     if tag_limit:
@@ -938,6 +939,17 @@ BugMessage""" % sqlvalues(self.id))
             for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
         return subscriptions.subscribers.sorted
+
+    def getDirectSubscribersWithDetails(self):
+        """See `IBug`."""
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id == self.id)))
+            ).order_by(Person.displayname)
+        return results
 
     def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1658,6 +1670,13 @@ BugMessage""" % sqlvalues(self.id))
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
                     self.subscribe(person, who)
+                subscribers_for_who = self.getSubscribersForPerson(who)
+                if subscribers_for_who.is_empty():
+                    # We also add `who` as a subscriber, if they're not
+                    # already directly subscribed or part of a team
+                    # that's directly subscribed, so that they can
+                    # see the bug they've just marked private.
+                    self.subscribe(who, who)
 
             self.private = private
 
@@ -2305,7 +2324,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_structural_subscriptions_for_bug(self.bug)
+        return list(get_structural_subscriptions_for_bug(self.bug))
 
     @cachedproperty
     @freeze(BugSubscriberSet)

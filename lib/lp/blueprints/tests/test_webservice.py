@@ -300,7 +300,7 @@ class TestSpecificationSubscription(SpecificationWebserviceTestCase):
             db_spec = self.factory.makeBlueprint()
             db_person = self.factory.makePerson()
             db_spec.subscribe(person=db_person)
-            launchpad = self.factory.makeLaunchpadService()
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
 
         spec = ws_object(launchpad, db_spec)
         person = ws_object(launchpad, db_person)

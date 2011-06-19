@@ -153,7 +153,7 @@ class NascentUpload:
         self.run_and_reject_on_error(self.changes.checkFileName)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distroseries
+        # we depend on an already initialized policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_reject_on_error(self.changes.processAddresses)
 
@@ -892,7 +892,7 @@ class NascentUpload:
             return
 
         # We need to check that the queue_root object has been fully
-        # initialised first, because policy checks or even a code exception
+        # initialized first, because policy checks or even a code exception
         # may have caused us to bail out early and not create one.  If it
         # doesn't exist then we can create a dummy one that contains just
         # enough context to be able to generate a rejection email.  Nothing
