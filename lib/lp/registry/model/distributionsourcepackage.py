@@ -510,11 +510,12 @@ class DistributionSourcePackage(BugTargetBase,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
-    def _getBugTaskContextClause(self):
+    def _getBugTaskContextClause(self, tablename):
         """See `BugTargetBase`."""
-        return (
-            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distribution, self.sourcepackagename))
+        values = sqlvalues(distro=self.distribution, sourcepackage=self.sourcepackagename)
+        values['tablename'] = tablename
+        return ('%(tablename)s.distribution = %(distro)s AND '
+            '%(tablename)s.sourcepackagename = %(sourcepackage)' % values)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""

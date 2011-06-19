@@ -957,9 +957,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def _getBugTaskContextClause(self):
+    def _getBugTaskContextClause(self, tablename):
         """See BugTargetBase."""
-        return 'BugTask.product = %s' % sqlvalues(self)
+        return '%s.product = %s' % ((tablename,) + sqlvalues(self))
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,

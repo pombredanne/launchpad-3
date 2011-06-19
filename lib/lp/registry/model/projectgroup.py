@@ -354,9 +354,10 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BugSummary.product_id.is_in(product_ids),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
-    def _getBugTaskContextClause(self):
+    def _getBugTaskContextClause(self, tablename):
         """See `HasBugsBase`."""
-        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+        return '%s.product IN (%s)' % (
+            tablename, ','.join(sqlvalues(*self.products)))
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

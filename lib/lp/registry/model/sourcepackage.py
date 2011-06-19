@@ -528,11 +528,12 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
-    def _getBugTaskContextClause(self):
+    def _getBugTaskContextClause(self, tablename):
         """See BugTargetBase."""
-        return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distroseries, self.sourcepackagename))
+        values = sqlvalues(distroseries=self.distroseries, sourcepackage=self.sourcepackagename)
+        values['tablename'] = tablename
+        return ('%(tablename)s.distroseries = %(distroseries)s AND '
+            '%(tablename)s.sourcepackagename = %(sourcepackage)' % values)
 
     def setPackaging(self, productseries, owner):
         """See `ISourcePackage`."""

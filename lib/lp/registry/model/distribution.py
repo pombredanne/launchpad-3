@@ -720,9 +720,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
 
-    def _getBugTaskContextClause(self):
+    def _getBugTaskContextClause(self, tablename):
         """See BugTargetBase."""
-        return 'BugTask.distribution = %s' % sqlvalues(self)
+        return '%s.distribution = %s' % ((tablename,) + sqlvalues(self))
 
     @property
     def currentseries(self):
