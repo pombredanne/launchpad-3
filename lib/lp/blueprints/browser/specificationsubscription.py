@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'SpecificationSubscriptionAddView',
+    'SpecificationSubscriptionAddSubscriberView',
     'SpecificationSubscriptionEditView',
     ]
 
@@ -32,38 +33,94 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.registry.model.person import person_sort_key
 from lp.services.propertycache import cachedproperty
 
-
 class SpecificationSubscriptionAddView(LaunchpadFormView):
+    """Used to subscribe the current user to a blueprint."""
 
     schema = ISpecificationSubscription
-    field_names = ['person', 'essential']
-    label = 'Subscribe someone else'
-    for_input = True
-
-    @action(_('Continue'), name='continue')
-    def continue_action(self, action, data):
-        self.context.subscribe(data['person'], self.user, data['essential'])
-        self.next_url = canonical_url(self.context)
+    field_names = ['essential']
+    label = 'Subscribe to blueprint'
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
 
+    next_url = cancel_url
 
-class SpecificationSubscriptionEditView(LaunchpadEditFormView):
+    def _subscribe(self, person, essential):
+        self.context.subscribe(person, self.user, essential)
+
+    @action(_('Subscribe'), name='subscribe')
+    def subscribe_action(self, action, data):
+        self._subscribe(self.user, data['essential'])
+        self.request.response.addInfoNotification(
+            "You have subscribed to this blueprint.")
+
+
+class SpecificationSubscriptionAddSubscriberView(
+    SpecificationSubscriptionAddView):
+    """Used to subscribe someone else to a blueprint."""
+
+    field_names = ['person', 'essential']
+    label = 'Subscribe someone else'
+    for_input = True
+
+    @action(_('Subscribe'), name='subscribe')
+    def subscribe_action(self, action, data):
+        person = data['person']
+        self._subscribe(person, data['essential'])
+        self.request.response.addInfoNotification(
+            "%s has been subscribed to this blueprint." % person.displayname)
+
+
+class SpecificationSubscriptionDeleteView(LaunchpadFormView):
+    """Used to unsubscribe someone from a blueprint."""
 
     schema = ISpecificationSubscription
-    field_names = ['essential']
-    label = 'Edit subscription'
+    field_names = []
 
-    @action(_('Change'), name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context.specification)
+    @property
+    def label(self):
+        return ("Unsubscribe %s from %s"
+                    % (self.context.person.displayname,
+                       self.context.specification.title))
+    
+    page_title = label
 
     @property
     def cancel_url(self):
         return canonical_url(self.context.specification)
+
+    next_url = cancel_url
+
+    @action('Unsubscribe', name='unsubscribe')
+    def unsubscribe_action(self, action, data):
+        self.context.specification.unsubscribe(self.context.person, self.user)
+        if self.context.person == self.user:
+            self.request.response.addInfoNotification(
+                "You have unsubscribed from this blueprint.")
+        else:
+            self.request.response.addInfoNotification(
+                "%s has been unsubscribed from this blueprint."
+                % self.context.person.displayname)
+
+            
+class SpecificationSubscriptionEditView(LaunchpadEditFormView):
+
+    schema = ISpecificationSubscription
+    field_names = ['essential']
+    label = 'Modify subscription'
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context.specification)
+
+    next_url = cancel_url
+
+    @action(_('Change'), name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            "The subscription has been updated.")
 
 
 class SpecificationPortletSubcribersContents(LaunchpadView):

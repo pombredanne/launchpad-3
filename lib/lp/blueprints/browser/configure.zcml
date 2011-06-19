@@ -335,9 +335,15 @@
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+subscribe"
-            class="lp.blueprints.browser.specification.SpecificationSubscriptionView"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-subscription.pt"/>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecificationSubscription"
+            name="+unsubscribe"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionDeleteView"
+            permission="launchpad.Edit"
+            template="../templates/specification-subscription-delete.pt"/>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+givefeedback"
@@ -347,7 +353,7 @@
         <browser:page
             name="+addsubscriber"
             for="lp.blueprints.interfaces.specification.ISpecification"
-            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddView"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddSubscriberView"
             permission="launchpad.AnyPerson"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page

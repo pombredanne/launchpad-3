@@ -39,10 +39,10 @@
     />
     <a tal:define="user request/lp:person"
        tal:condition="python: subscription.canBeUnsubscribedByUser(user)"
-       href="+subscribe"
        tal:attributes="
          title string:Unsubscribe ${subscription/person/fmt:displayname};
-         id string:unsubscribe-${subscription/css_name};"
+         id string:unsubscribe-${subscription/css_name};
+         href string:${subscription/fmt:url}/+unsubscribe;"
     >
       <img class="unsub-icon" src="/@@/remove" alt="Remove"
         tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />

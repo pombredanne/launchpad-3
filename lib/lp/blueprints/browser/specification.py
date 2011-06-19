@@ -473,15 +473,14 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         """Return the 'Edit Subscription' Link."""
         user = self.user
         if user is None:
-            text = 'Edit subscription'
-            icon = 'edit'
-        elif self.context.isSubscribed(user):
-            text = 'Update subscription'
-            icon = 'edit'
+            return Link('+subscribe', 'Edit subscription', icon='edit')
+
+        if self.context.isSubscribed(user):
+            return Link(
+                '+subscription/%s' % user.name,
+                'Update subscription', icon='edit')
         else:
-            text = 'Subscribe'
-            icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+            return Link('+subscribe', 'Subscribe', icon='add')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
@@ -539,13 +538,6 @@ class SpecificationSimpleView(LaunchpadView):
             return []
         return list(self.context.getFeedbackRequests(self.user))
 
-    @property
-    def subscription(self):
-        """whether the current user has a subscription to the spec."""
-        if self.user is None:
-            return None
-        return self.context.subscription(self.user)
-
     @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
@@ -577,25 +569,6 @@ class SpecificationView(SpecificationSimpleView):
 
         if not self.user:
             return
-
-        request = self.request
-        if request.method == 'POST':
-            # establish if a subscription form was posted.
-            sub = request.form.get('subscribe')
-            upd = request.form.get('update')
-            unsub = request.form.get('unsubscribe')
-            essential = request.form.get('essential') == 'yes'
-            if sub is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append(
-                    "You have subscribed to this blueprint.")
-            elif upd is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append('Your subscription has been updated.')
-            elif unsub is not None:
-                self.context.unsubscribe(self.user, self.user)
-                self.notices.append(
-                    "You have unsubscribed from this blueprint.")
 
         if self.feedbackrequests:
             msg = "You have %d feedback request(s) on this blueprint."
@@ -678,15 +651,6 @@ class SpecificationView(SpecificationSimpleView):
             false_text='Needs approval',
             true_text='Approved',
             header='Change approval of basic direction')
-
-
-class SpecificationSubscriptionView(SpecificationView):
-
-    @property
-    def label(self):
-        if self.subscription is not None:
-            return "Modify subscription"
-        return "Subscribe to blueprint"
 
 
 class SpecificationEditSchema(ISpecification):
