@@ -127,7 +127,7 @@ class ICanPublishPackages(Interface):
     def publish(diskpool, log, archive, pocket, careful=False):
         """Publish associated publishing records targeted for a given pocket.
 
-        Require an initialised diskpool instance and a logger instance.
+        Require an initialized diskpool instance and a logger instance.
         Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
@@ -589,14 +589,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive, policy=None):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
 
         :param distroseries: The `IDistroSeries` to copy the source
             publication into.
         :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
-        :param policy: The `IOverridePolicy` to apply to the copy.
+        :param overrides: A tuple of override data as returned from a
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.

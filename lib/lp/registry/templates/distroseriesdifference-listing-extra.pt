@@ -14,13 +14,13 @@
 
     <metal:macro-parent metal:define-macro="base-to-parent">
       <span tal:replace="context/base_version">1.1.1</span> to
-      <span tal:replace="context/derived_series/previous_series/displayname">
+      <span tal:replace="context/parent_series/displayname">
         Lucid</span> version:
       <span tal:replace="context/parent_source_version">1.2.4</span>
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_edit_options">
+  <tal:show_options condition="view/show_blacklist_options">
     <div class="blacklist-options" style="float:right">
       <dl>
         <dt>Blacklisted:</dt>
@@ -39,8 +39,10 @@
       </ul></dd>
     <tal:package-diffs tal:condition="view/can_have_packages_diffs">
     <dt>Last common version:</dt>
-    <dd tal:condition="context/base_version"
-        tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="context/base_version">
+        <a id="last_common_version"
+           tal:attributes="href context/base_distro_source_package_release/fmt:url"
+           tal:content="context/base_version"/></dd>
     <dd tal:condition="not: context/base_version">
       Unknown
     </dd>
@@ -122,9 +124,9 @@
 
   <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
-  <tal:show_options condition="view/show_edit_options"
+  <tal:show_options condition="view/show_add_comment"
                     define="src_name context/source_package_name/name">
-  <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
+    <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
   </tal:show_options>
 
 </tal:root>

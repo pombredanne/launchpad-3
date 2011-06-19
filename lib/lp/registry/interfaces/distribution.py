@@ -157,7 +157,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -338,6 +338,11 @@ class IDistributionPublic(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
                       "on disk."),
+        readonly=True, required=False)
+
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
         readonly=True, required=False)
 
     def getArchiveIDList(archive=None):

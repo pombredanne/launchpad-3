@@ -15,8 +15,10 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadFunctionalLayer
@@ -37,6 +39,9 @@ from lp.services.comments.interfaces.conversation import (
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
+    )
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
     )
 from lp.testing import (
     anonymous_logged_in,
@@ -74,6 +79,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # Avoid circular import.
         from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
         distro_series = distro_series_difference.derived_series
+        parent_series = distro_series_difference.parent_series
         source_package_name_str = (
             distro_series_difference.source_package_name.name)
         stp = SoyuzTestPublisher()
@@ -90,8 +96,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # updateDistroSeriesPackageCache reconnects the db, so the
         # objects need to be reloaded.
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
-        ds_diff = dsd_source.getByDistroSeriesAndName(
-            distro_series, source_package_name_str)
+        ds_diff = dsd_source.getByDistroSeriesNameAndParentSeries(
+            distro_series, source_package_name_str, parent_series)
         return ds_diff
 
     def test_binary_summaries_for_source_pub(self):
@@ -141,34 +147,51 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, view.binary_summaries)
 
     def test_show_edit_options_non_ajax(self):
-        # Blacklist options are not shown for non-ajax requests.
+        # Blacklist options and "Add comment" are not shown for non-ajax
+        # requests.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         # Without JS, even editors don't see blacklist options.
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
-        self.assertFalse(view.show_edit_options)
+        self.assertFalse(view.show_add_comment)
+        self.assertFalse(view.show_blacklist_options)
 
     def test_show_edit_options_editor(self):
-        # Blacklist options are shown if requested by an editor via
-        # ajax.
+        # Blacklist options and "Add comment" are shown if requested by
+        # an editor via ajax.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
-            self.assertTrue(view.show_edit_options)
+            self.assertTrue(view.show_add_comment)
+            self.assertFalse(view.show_blacklist_options)
 
-    def test_show_edit_options_non_editor(self):
-        # Even with a JS request, non-editors do not see the options.
+    def test_show_blacklist_options_for_archive_admin(self):
+        # To see the blacklist options the the user needs to be an
+        # archive admin.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
+
+        request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        with person_logged_in(archive_admin):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra', request=request)
+            self.assertTrue(view.show_blacklist_options)
+
+    def test_show_add_comment_non_editor(self):
+        # Even with a JS request, non-editors do not see the 'add
+        # comment' option.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         view = create_initialized_view(
             ds_diff, '+listing-distroseries-extra', request=request)
-        self.assertFalse(view.show_edit_options)
+        self.assertFalse(view.show_add_comment)
 
     def test_does_display_child_diff(self):
         # If the child's latest published version is not the same as the base
@@ -187,7 +210,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.1-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(2, len(tags))
@@ -208,7 +232,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.30-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
@@ -229,7 +254,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('0.30-1', ds_diff.base_version)
         with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
             soup = BeautifulSoup(view())
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
@@ -463,18 +489,34 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             1, len(soup.findAll('pre', text="Here's another comment.")))
 
-    def test_blacklist_options(self):
-        # blacklist options are presented to the users with
-        # lp.View on the distroseries.
-        ds_diff = self.factory.makeDistroSeriesDifference()
+    def test_last_common_version_is_linked(self):
+        # The "Last Common Version" version text should link to the
+        # parent distro sourcepackagerelease page.
+        ds_diff = removeSecurityProxy(
+            self.factory.makeDistroSeriesDifference(set_base_version=True))
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        page = view()
 
-        with person_logged_in(self.factory.makePerson()):
-            self.assertTrue(
-                check_permission('launchpad.Edit', ds_diff))
-            self.assertTrue(
-                check_permission(
-                    'launchpad.View',
-                    ds_diff.derived_series.parent))
+        distro = ds_diff.parent_series.distribution
+        sourcepackagerelease = ds_diff.parent_source_package_release
+        url = canonical_url(
+            DistributionSourcePackageRelease(distro, sourcepackagerelease),
+            force_local_path=True)
+        anchor_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "VERSION LINK", 'a',
+                attrs=dict(href=url)))
+
+        self.assertThat(page, anchor_matcher) 
+
+    def test_blacklist_options(self):
+        # Blacklist options are presented to the users who are archive
+        # admins.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        archive_admin = self.factory.makeArchiveAdmin(
+            archive=ds_diff.derived_series.main_archive)
+
+        with person_logged_in(archive_admin):
             request = LaunchpadTestRequest(
                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             view = create_initialized_view(

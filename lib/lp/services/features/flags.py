@@ -38,6 +38,10 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.bugtracker_components.enabled',
+     'boolean',
+     ('Enables the display of bugtracker components.'),
+     ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
@@ -78,11 +82,11 @@ flag_info = sorted([
      'int',
      "How many package syncs may be done directly in a web request.",
      '100'),
-    ('soyuz.derived-series-ui.enabled',
+    ('soyuz.derived_series_ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
      ''),
-    ('soyuz.derived-series-sync.enabled',
+    ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
@@ -105,6 +109,10 @@ flag_info = sorted([
     ('disclosure.picker_enhancements.enabled',
      'boolean',
      ('Enables the display of extra details in the person picker.'),
+     ''),
+    ('disclosure.person_affiliation_rank.enabled',
+     'boolean',
+     ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
     ])
 

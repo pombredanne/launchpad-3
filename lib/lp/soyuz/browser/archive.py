@@ -33,7 +33,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -134,21 +133,24 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
+    ArchiveDependencyError,
     CannotCopy,
     IArchive,
     IArchiveEditDependenciesForm,
     IArchiveSet,
     NoSuchPPA,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.distributionjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -1285,30 +1287,6 @@ def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         dest_display_name)
 
 
-def partition_pubs_by_archive(source_pubs):
-    """Group `source_pubs` by archive.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A dict mapping `Archive`s to the list of entries from
-        `source_pubs` that are in that archive.
-    """
-    by_source_archive = {}
-    for spph in source_pubs:
-        by_source_archive.setdefault(spph.archive, []).append(spph)
-    return by_source_archive
-
-
-def name_pubs_with_versions(source_pubs):
-    """Annotate each entry from `source_pubs` with its version.
-
-    :param source_pubs: A sequence of `SourcePackagePublishingHistory`.
-    :return: A list of tuples (name, version), one for each respective
-        entry in `source_pubs`.
-    """
-    sprs = [spph.sourcepackagerelease for spph in source_pubs]
-    return [(spr.sourcepackagename.name, spr.version) for spr in sprs]
-
-
 def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
                         include_binaries, dest_url=None,
                         dest_display_name=None, person=None,
@@ -1327,12 +1305,14 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
         check_copy_permissions(
             person, dest_archive, dest_series, dest_pocket, spns)
 
-    job_source = getUtility(IPackageCopyJobSource)
-    archive_pubs = partition_pubs_by_archive(source_pubs)
-    for source_archive, spphs in archive_pubs.iteritems():
+    job_source = getUtility(IPlainPackageCopyJobSource)
+    for spph in source_pubs:
         job_source.create(
-            name_pubs_with_versions(spphs), source_archive, dest_archive,
-            dest_series, dest_pocket, include_binaries=include_binaries)
+            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            dest_pocket, include_binaries=include_binaries,
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE)
+
     return structured("""
         <p>Requested sync of %s packages.</p>
         <p>Please allow some time for these to be processed.</p>
@@ -1378,7 +1358,7 @@ class PackageCopyingMixin:
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True):
+                check_permissions=True, force_async=False):
         """Copy packages and add appropriate feedback to the browser page.
 
         This may either copy synchronously, if there are few enough
@@ -1402,11 +1382,14 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
+        :param force_async: Force the copy to create package copy jobs and
+            perform the copy asynchronously.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            if self.canCopySynchronously(source_pubs):
+            if (force_async == False and
+                    self.canCopySynchronously(source_pubs)):
                 notification = copy_synchronously(
                     source_pubs, dest_archive, dest_series, dest_pocket,
                     include_binaries, dest_url=dest_url,
@@ -1882,45 +1865,6 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         self._messages.append(structured(
             '<p>Primary dependency added: %s</p>', primary_dependency.title))
 
-    def validate(self, data):
-        """Validate dependency configuration changes.
-
-        Skip checks if no dependency candidate was sent in the form.
-
-        Validate if the requested PPA dependency is sane (different than
-        the context PPA and not yet registered).
-
-        Also check if the dependency candidate is private, if so, it can
-        only be set if the user has 'launchpad.View' permission on it and
-        the context PPA is also private (this way P3A credentials will be
-        sanitized from buildlogs).
-        """
-        dependency_candidate = data.get('dependency_candidate')
-
-        if dependency_candidate is None:
-            return
-
-        if dependency_candidate == self.context:
-            self.setFieldError('dependency_candidate',
-                               "An archive should not depend on itself.")
-            return
-
-        if self.context.getArchiveDependency(dependency_candidate):
-            self.setFieldError('dependency_candidate',
-                               "This dependency is already registered.")
-            return
-
-        if not check_permission('launchpad.View', dependency_candidate):
-            self.setFieldError(
-                'dependency_candidate',
-                "You don't have permission to use this dependency.")
-            return
-
-        if dependency_candidate.private and not self.context.private:
-            self.setFieldError(
-                'dependency_candidate',
-                "Public PPAs cannot depend on private ones.")
-
     @action(_("Save"), name="save")
     def save_action(self, action, data):
         """Save dependency configuration changes.
@@ -1932,18 +1876,21 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         refreshing. And render a page notification with the summary of the
         changes made.
         """
-        # Redirect after POST.
-        self.next_url = self.request.URL
-
         # Process the form.
         self._add_primary_dependencies(data)
-        self._add_ppa_dependencies(data)
+        try:
+            self._add_ppa_dependencies(data)
+        except ArchiveDependencyError as e:
+            self.setFieldError('dependency_candidate', str(e))
+            return
         self._remove_dependencies(data)
 
         # Issue a notification if anything was changed.
         if len(self.messages) > 0:
             self.request.response.addNotification(
                 structured(self.messages))
+        # Redirect after POST.
+        self.next_url = self.request.URL
 
 
 class ArchiveActivateView(LaunchpadFormView):
@@ -2146,7 +2093,7 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
-            errors = self.validate_external_dependencies(ext_deps)
+            errors = validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
@@ -2155,31 +2102,6 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'commercial',
                 'Can only set commericial for private archives.')
-
-    def validate_external_dependencies(self, ext_deps):
-        """Validate the external_dependencies field.
-
-        :param ext_deps: The dependencies form field to check.
-        """
-        errors = []
-        # The field can consist of multiple entries separated by
-        # newlines, so process each in turn.
-        for dep in ext_deps.splitlines():
-            try:
-                deb, url, suite, components = dep.split(" ", 3)
-            except ValueError:
-                errors.append(
-                    "'%s' is not a complete and valid sources.list entry"
-                        % dep)
-                continue
-
-            if deb != "deb":
-                errors.append("%s: Must start with 'deb'" % dep)
-            url_components = urlparse(url)
-            if not url_components[0] or not url_components[1]:
-                errors.append("%s: Invalid URL" % dep)
-
-        return errors
 
     @property
     def owner_is_private_team(self):

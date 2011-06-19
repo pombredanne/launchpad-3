@@ -148,7 +148,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = "No such branch: '%s'." % (branch.name+"wibble")
+        requiredMessage = "No such branch: '%s'." % (
+            branch.name + "wibble")
         self.assertDisplaysError(bad_name, requiredMessage)
 
     def test_private_branch(self):
@@ -176,7 +177,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         removeSecurityProxy(branch).private = True
         login(ANONYMOUS)
         requiredMessage = (
-            u"The target %s does not have a linked branch." % naked_product.name)
+            u"The target %s does not have a linked branch." %
+            naked_product.name)
         self.assertDisplaysNotice(naked_product.name, requiredMessage)
 
     def test_nonexistent_product(self):
@@ -217,8 +219,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         target = ICanHasLinkedBranch(distro_package)
         with person_logged_in(registrant):
             target.setBranch(branch, registrant)
@@ -231,8 +232,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage, private=True)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
             ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
         login(ANONYMOUS)
