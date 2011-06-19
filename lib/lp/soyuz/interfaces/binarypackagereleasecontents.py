@@ -43,6 +43,6 @@ class IBinaryPackageReleaseContentsSet(Interface):
 
     def remove(bpr):
         """Remove the contents of the given binary package release.
-        
+
         :param: bpr: The `IBinaryPackageRelease` to remove.
         """
