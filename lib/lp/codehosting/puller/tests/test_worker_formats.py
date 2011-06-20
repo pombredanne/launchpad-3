@@ -7,14 +7,18 @@ __metaclass__ = type
 
 import unittest
 
+import lp.codehosting # for bzr plugins
+
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (
-    BzrDirFormat6,
     BzrDirMetaFormat1,
     )
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
-from bzrlib.repofmt.weaverepo import (
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack5
+from bzrlib.plugins.weave_fmt.bzrdir import (
+    BzrDirFormat6,
+    )
+from bzrlib.plugins.weave_fmt.repository import (
     RepositoryFormat6,
     RepositoryFormat7,
     )

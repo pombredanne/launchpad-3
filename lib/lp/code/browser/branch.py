@@ -126,7 +126,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,

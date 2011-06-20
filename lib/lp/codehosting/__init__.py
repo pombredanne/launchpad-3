@@ -70,6 +70,18 @@ def load_optional_plugin(plugin_name):
     __import__("bzrlib.plugins.%s" % plugin_name)
 
 
+def load_bundled_plugin(plugin_name):
+    """Load a plugin bundled with Bazaar."""
+    from bzrlib.plugin import get_core_plugin_path
+    from bzrlib import plugins
+    if get_core_plugin_path() not in plugins.__path__:
+        plugins.__path__.append(get_core_plugin_path())
+    __import__("bzrlib.plugins.%s" % plugin_name)
+
+
+load_bundled_plugin("weave_fmt")
+
+
 def remove_hook(self, hook):
     """Remove the hook from the HookPoint"""
     self._callbacks.remove(hook)

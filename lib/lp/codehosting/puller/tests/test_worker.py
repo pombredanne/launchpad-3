@@ -25,7 +25,7 @@ from bzrlib.errors import (
     NotBranchError,
     NotStacked,
     )
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import (
     TestCaseInTempDir,
