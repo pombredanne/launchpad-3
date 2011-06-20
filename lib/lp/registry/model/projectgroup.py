@@ -345,14 +345,18 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
+        return get_bug_tags_open_count(
+            self._getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def _getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
         product_ids = [product.id for product in self.products]
         if not product_ids:
-            return {}
-        return get_bug_tags_open_count(
-            BugSummary.product_id.is_in(product_ids),
-            user, tag_limit=tag_limit, include_tags=include_tags)
+            return False
+        return BugSummary.product_id.is_in(product_ids)
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

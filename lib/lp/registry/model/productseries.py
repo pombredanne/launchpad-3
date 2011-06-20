@@ -448,15 +448,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugSummary.productseries_id == self.id, user, tag_limit=tag_limit,
-            include_tags=include_tags)
+            self._getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
+
+    def _getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

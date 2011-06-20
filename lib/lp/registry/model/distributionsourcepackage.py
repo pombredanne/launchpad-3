@@ -472,11 +472,13 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
-    def _getBugTaskContextWhereClause(self):
+    def _getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""
-        return (
-            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
-            self.distribution.id, self.sourcepackagename.id))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+            BugSummary.distribution == self.distribution,
+            BugSummary.sourcepackagename == self.sourcepackagename),
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution source package."""
@@ -488,11 +490,8 @@ class DistributionSourcePackage(BugTargetBase,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugSummary.distribution == self.distribution,
-                BugSummary.sourcepackagename == self.sourcepackagename),
+            self._getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     def _getOfficialTagClause(self):

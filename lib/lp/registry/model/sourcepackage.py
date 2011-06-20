@@ -502,11 +502,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugSummary.distroseries == self.distroseries,
-                BugSummary.sourcepackagename == self.sourcepackagename),
+            self._getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
@@ -527,6 +524,14 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "distribution series source package in the not-too-distant "
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
+
+    def _getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename)
 
     def setPackaging(self, productseries, owner):
         """See `ISourcePackage`."""

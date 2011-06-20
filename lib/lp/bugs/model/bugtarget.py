@@ -119,11 +119,15 @@ class HasBugsBase:
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
-        raise NotImplementedError
+        raise NotImplementedError(self._customizeSearchParams)
 
-    def _getBugTaskContextWhereClause(self):
-        """Return an SQL snippet to filter bugtasks on this context."""
-        raise NotImplementedError
+    def _getBugSummaryContextWhereClause(self):
+        """Return a storm clause to filter bugsummaries on this context.
+        
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """
+        raise NotImplementedError(self._getBugSummaryContextWhereClause)
 
     @property
     def closed_bugtasks(self):

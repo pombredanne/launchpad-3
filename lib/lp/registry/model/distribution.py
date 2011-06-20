@@ -637,9 +637,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return self.name
 
-    def _getBugTaskContextWhereClause(self):
+    def _getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return "BugTask.distribution = %d" % self.id
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution."""
@@ -651,11 +655,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugSummary.distribution_id == self.id,
-                BugSummary.sourcepackagename_id == None),
+            self._getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):

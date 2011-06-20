@@ -801,10 +801,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugSummary.product_id == self.id,
+            self._getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
@@ -956,6 +954,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
+
+    def _getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.product_id == self.id
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,

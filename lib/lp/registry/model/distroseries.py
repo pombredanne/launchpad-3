@@ -844,13 +844,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
                                      include_tags=None):
         """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(
-                BugSummary.distroseries_id == self.id,
-                BugSummary.sourcepackagename_id == None
-                ),
+            self._getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
@@ -1663,6 +1658,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "allow filing a bug on a distribution series in the "
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
+
+    def _getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                )
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
