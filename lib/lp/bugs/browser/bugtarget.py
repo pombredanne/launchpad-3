@@ -1252,7 +1252,7 @@ class BugTargetBugListingView(LaunchpadView):
             backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
-        counts = bug_task_set.countBugs2(self.user, series_list, (backlink,))
+        counts = bug_task_set.countBugs(self.user, series_list, (backlink,))
         for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
@@ -1279,10 +1279,10 @@ class BugTargetBugListingView(LaunchpadView):
             return milestone_buglistings
         # Note: this isn't totally optimal as a query, but its the simplest to
         # code; we can iterate if needed to provide one complex context to
-        # countBugs2.
+        # countBugs.
         query_milestones = map(partial(
             CombineBugSummaryContraint, self.context), milestones)
-        counts = bug_task_set.countBugs2(
+        counts = bug_task_set.countBugs(
             self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
             milestone_bug_count = counts.get((milestone.id,), 0)

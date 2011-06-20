@@ -1825,7 +1825,7 @@ class BugsStatsMixin(BugsInfoMixin):
         bug_task_set = getUtility(IBugTaskSet)
         groups = (BugSummary.status, BugSummary.importance,
             BugSummary.has_patch, BugSummary.fixed_upstream)
-        counts = bug_task_set.countBugs2(self.user, [self.context], groups)
+        counts = bug_task_set.countBugs(self.user, [self.context], groups)
         # Sum the split out aggregates.
         new = 0
         open = 0

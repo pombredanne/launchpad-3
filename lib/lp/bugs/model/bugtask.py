@@ -2526,20 +2526,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
-    def countBugs(self, params, group_on):
-        """See `IBugTaskSet`."""
-        resultset = self._search(
-            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, params).result_set
-        # We group on the related field:
-        resultset.group_by(*group_on)
-        resultset.order_by()
-        result = {}
-        for row in resultset:
-            result[row[:-1]] = row[-1]
-        return result
-
-    def countBugs2(self, user, contexts, group_on):
+    def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

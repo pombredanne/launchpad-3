@@ -1519,17 +1519,7 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
-    def countBugs(params, group_on):
-        """Count bugs that match params, grouping by group_on.
-
-        :param param: A BugTaskSearchParams object.
-        :param group_on: The column(s) group on - .e.g (
-            Bugtask.distroseriesID, BugTask.milestoneID) will cause
-            grouping by distro series and then milestone.
-        :return: A dict {group_instance: count, ...}
-        """
-
-    def countBugs2(user, contexts, group_on):
+    def countBugs(user, contexts, group_on):
         """Count open bugs that match params, grouping by group_on.
 
         This serves results from the bugsummary fact table: it is fast but not
