@@ -7,10 +7,10 @@ __all__ = [
     'BinaryPackageReleaseContents',
     ]
 
-from fixtures import TempDir
 import os
-import subprocess
 
+from apt.debfile import DebPackage
+from fixtures import TempDir
 from storm.locals import (
     Int,
     Reference,
@@ -53,22 +53,11 @@ class BinaryPackageReleaseContents(Storm):
             dest_file = open(dest, 'w')
             bpr.files[0].libraryfile.open()
             copy_and_close(bpr.files[0].libraryfile, dest_file)
-            process = subprocess.Popen(
-                ['dpkg-deb', '-c', dest], cwd=tmp_dir.path,
-                stdout=subprocess.PIPE)
-            contents, stderr = process.communicate()
-            ret = process.wait()
-            if ret != 0:
-                return None
-            for line in contents.split('\n'):
-                # We don't need to care about directories.
-                if line.endswith('/'):
-                    continue
-                if line == '':
-                    continue
-                split_line = line.split()
+            deb = DebPackage(filename=dest)
+            filelist = filter(lambda x: not x.endswith('/'), deb.filelist)
+            for filename in filelist:
                 bpp = getUtility(IBinaryPackagePathSource).getOrCreate(
-                    unicode(split_line[-1][2:]))
+                    unicode(filename))
                 bprc = BinaryPackageReleaseContents()
                 bprc.binarypackagerelease = bpr
                 bprc.binarypackagepath = bpp
