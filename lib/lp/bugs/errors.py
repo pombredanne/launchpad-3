@@ -9,16 +9,18 @@ __all__ = [
     'InvalidDuplicateValue',
 ]
 
-from lazr.restful.declarations import webservice_error
+import httplib
+
+from lazr.restful.declarations import error_status
 
 from lp.app.validators import LaunchpadValidationError
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
-    webservice_error(400)
 
 
+@error_status(httplib.EXPECTATION_FAILED)
 class InvalidDuplicateValue(LaunchpadValidationError):
     """A bug cannot be set as the duplicate of another."""
-    webservice_error(417)
