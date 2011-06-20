@@ -1664,10 +1664,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
 
-    def _getBugTaskContextClause(self, tablename):
-        """See BugTargetBase."""
-        return ('%s.distroseries = %s' % ((tablename,), sqlvalues(self))
-
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
         if logger is None:

@@ -125,14 +125,6 @@ class HasBugsBase:
         """Return an SQL snippet to filter bugtasks on this context."""
         raise NotImplementedError
 
-    def _getBugTaskContextClause(self, tablename):
-        """Return a SQL clause for selecting this target's bugtasks.
-        
-        :param tablename: The name of the table to select in. e.g 'BugTask',
-            'BugSummary'.
-        """
-        raise NotImplementedError(self._getBugTaskContextClause)
-
     @property
     def closed_bugtasks(self):
         """See `IHasBugs`."""
