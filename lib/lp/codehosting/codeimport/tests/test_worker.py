@@ -998,7 +998,8 @@ class PullingImportWorkerTests:
             raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
         worker = self.makeImportWorker(source_details)
-        self.assertRaises(NotBranchError, worker.run)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
@@ -1006,6 +1007,13 @@ class PullingImportWorkerTests:
             rcstype=self.rcstype, url="file:///path/non/existant"))
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
+    def test_unsupported_feature(self):
+        # If there is no branch in the target URL, exit with FAILURE_INVALID
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('bzr\\doesnt\\support\\this', 'Original contents')]))
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE, worker.run())
 
     def test_partial(self):
         # Only config.codeimport.revisions_import_limit will be imported in a

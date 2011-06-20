@@ -31,6 +31,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.errors import (
     ConnectionError,
+    InvalidEntryName,
     NoSuchFile,
     NoRepositoryPresent,
     NotBranchError,
@@ -554,14 +555,15 @@ class PullingImportWorker(ImportWorker):
 
     needs_bzr_tree = False
 
-    invalid_branch_exceptions = [
-        NoRepositoryPresent,
-        NotBranchError,
-        ConnectionError,
-        ]
+    @property
+    def invalid_branch_exceptions(self):
+        """Exceptions that indicate no (valid) remote branch is present."""
+        raise NotImplementedError
 
-    unsupported_feature_exceptions = [
-        ]
+    @property
+    def unsupported_feature_exceptions(self):
+        """The exceptions to consider for unsupported features."""
+        raise NotImplementedError
 
     @property
     def probers(self):
@@ -591,7 +593,8 @@ class PullingImportWorker(ImportWorker):
                 except NotBranchError:
                     pass
             else:
-                raise NotBranchError(self.source_details.url)
+                self._logger.info("No branch found at remote location.")
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             remote_branch = format.open(transport).open_branch()
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
@@ -611,10 +614,10 @@ class PullingImportWorker(ImportWorker):
                     self._logger.info(
                         "Unable to import branch because of limitations in Bazaar.")
                     self._logger.info(str(e))
-                    result = CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE
+                    return CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE
                 elif e.__class__ in self.invalid_branch_exceptions:
                     self._logger.info("Branch invalid: %s", e(str))
-                    result = CodeImportWorkerExitCode.FAILURE_INVALID
+                    return CodeImportWorkerExitCode.FAILURE_INVALID
                 else:
                     raise
             self._logger.info("Pushing local import branch to central store.")
@@ -630,6 +633,22 @@ class GitImportWorker(PullingImportWorker):
 
     The only behaviour we add is preserving the 'git.db' shamap between runs.
     """
+
+    @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        from bzrlib.plugins.git.fetch import SubmodulesRequireSubtrees
+        return [
+            InvalidEntryName,
+            SubmodulesRequireSubtrees,
+        ]
 
     @property
     def probers(self):
@@ -687,6 +706,20 @@ class HgImportWorker(PullingImportWorker):
     """
 
     @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        return [
+            InvalidEntryName,
+        ]
+
+    @property
     def probers(self):
         """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.hg import HgProber
@@ -737,6 +770,22 @@ class HgImportWorker(PullingImportWorker):
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
+
+    @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        from bzrlib.plugins.svn.errors import InvalidFileName
+        return [
+            InvalidEntryName,
+            InvalidFileName,
+        ]
 
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""
