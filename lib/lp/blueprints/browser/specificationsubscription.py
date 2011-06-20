@@ -33,6 +33,7 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.registry.model.person import person_sort_key
 from lp.services.propertycache import cachedproperty
 
+
 class SpecificationSubscriptionAddView(LaunchpadFormView):
     """Used to subscribe the current user to a blueprint."""
 
@@ -83,7 +84,7 @@ class SpecificationSubscriptionDeleteView(LaunchpadFormView):
         return ("Unsubscribe %s from %s"
                     % (self.context.person.displayname,
                        self.context.specification.title))
-    
+
     page_title = label
 
     @property
@@ -103,7 +104,7 @@ class SpecificationSubscriptionDeleteView(LaunchpadFormView):
                 "%s has been unsubscribed from this blueprint."
                 % self.context.person.displayname)
 
-            
+
 class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
     schema = ISpecificationSubscription

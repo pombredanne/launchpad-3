@@ -30,7 +30,6 @@ __all__ = [
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
-    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
