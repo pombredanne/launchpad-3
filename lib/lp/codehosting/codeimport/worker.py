@@ -140,10 +140,10 @@ class BazaarBranchStore:
                 # retire the old .bzr directory and rename
                 # the new one in place.
                 old_branch = remote_branch
-                upgrade_url = urljoin(target_url, "upgrade.bzr")
+                upgrade_url = urljoin(target_url, "backup.bzr")
                 try:
                     remote_branch.bzrdir.root_transport.delete_tree(
-                        'upgrade.bzr')
+                        'backup.bzr')
                 except NoSuchFile:
                     pass
                 remote_branch = BzrDir.create_branch_and_repo(
@@ -159,8 +159,8 @@ class BazaarBranchStore:
             # The format has changed; move the new format
             # branch in place.
             base_transport = old_branch.bzrdir.root_transport
-            old_branch.bzrdir.retire_bzrdir()
-            base_transport.rename("upgrade.bzr/.bzr", ".bzr")
+            base_transport.delete_tree('.bzr')
+            base_transport.rename("backup.bzr/.bzr", ".bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 
