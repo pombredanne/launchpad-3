@@ -54,6 +54,7 @@ class BinaryPackageReleaseContents(Storm):
             bpr.files[0].libraryfile.open()
             copy_and_close(bpr.files[0].libraryfile, dest_file)
             deb = DebPackage(filename=dest)
+            # Filter out directories.
             filelist = filter(lambda x: not x.endswith('/'), deb.filelist)
             for filename in filelist:
                 bpp = getUtility(IBinaryPackagePathSource).getOrCreate(
