@@ -108,7 +108,10 @@ class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
     schema = ISpecificationSubscription
     field_names = ['essential']
-    label = 'Modify subscription'
+
+    @property
+    def label(self):
+        return "Modify subscription %s" % self.context.specification.title
 
     @property
     def cancel_url(self):
@@ -119,8 +122,14 @@ class SpecificationSubscriptionEditView(LaunchpadEditFormView):
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            "The subscription has been updated.")
+        is_current_user_subscription = self.user == self.context.person
+        if is_current_user_subscription:
+            self.request.response.addInfoNotification(
+                "Your subscription has been updated.")
+        else:
+            self.request.response.addInfoNotification(
+                "The subscription for %s has been updated."
+                % self.context.person.displayname)
 
 
 class SpecificationPortletSubcribersContents(LaunchpadView):
