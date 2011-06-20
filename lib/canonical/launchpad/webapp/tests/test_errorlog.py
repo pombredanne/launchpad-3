@@ -42,7 +42,10 @@ from canonical.launchpad.webapp.errorlog import (
     OopsLoggingHandler,
     ScriptRequest,
     )
-from canonical.launchpad.webapp.interfaces import NoReferrerError
+from canonical.launchpad.webapp.interfaces import (
+    IUnloggedException,
+    NoReferrerError,
+    )
 from canonical.testing import reset_logging
 from lp.app.errors import (
     GoneError,
@@ -51,6 +54,7 @@ from lp.app.errors import (
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
+from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.timezone('UTC')
@@ -970,7 +974,7 @@ class TestOopsLoggingHandler(TestCase):
         self.assertIs(None, self.error_utility.getLastOopsReport())
 
 
-class Test404Oops(testtools.TestCase):
+class TestOopsIgnoring(testtools.TestCase):
 
     def test_offsite_404_ignored(self):
         # A request originating from another site that generates a NotFound
@@ -992,6 +996,92 @@ class Test404Oops(testtools.TestCase):
         utility = ErrorReportingUtility()
         request = dict()
         self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_marked_exception_is_ignored(self):
+        # If an exception has been marked as ignorable, then it is ignored.
+        utility = ErrorReportingUtility()
+        exception = Exception()
+        directlyProvides(exception, IUnloggedException)
+        self.assertTrue(
+            utility._isIgnoredException('RuntimeError', exception=exception))
+
+    def test_unmarked_exception_generates_oops(self):
+        # If an exception has not been marked as ignorable, then it is not.
+        utility = ErrorReportingUtility()
+        exception = Exception()
+        self.assertFalse(
+            utility._isIgnoredException('RuntimeError', exception=exception))
+
+
+class TestWrappedParameterConverter(testtools.TestCase):
+    """Make sure URL parameter type conversions don't generate OOPS reports"""
+
+    def test_return_value_untouched(self):
+        # When a converter succeeds, its return value is passed through the
+        # wrapper untouched.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    return 'converted %r to %s' % (value, type_)
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        self.assertEqual("converted '42' to int", converter('42'))
+
+    def test_value_errors_marked(self):
+        # When a ValueError is raised by the wrapped converter, the exception
+        # is marked with IUnloggedException so the OOPS machinery knows that a
+        # report should not be logged.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    raise ValueError
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        try:
+            converter(42)
+        except ValueError, e:
+            self.assertTrue(IUnloggedException.providedBy(e))
+
+    def test_other_errors_not_marked(self):
+        # When an exception other than ValueError is raised by the wrapped
+        # converter, the exception is not marked with IUnloggedException an
+        # OOPS report will be created.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    raise RuntimeError
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        try:
+            converter(42)
+        except RuntimeError, e:
+            self.assertFalse(IUnloggedException.providedBy(e))
+
+    def test_none_is_not_wrapped(self):
+        # The get_converter function that we're wrapping can return None, in
+        # that case there's no function for us to wrap and we just return None
+        # as well.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                return None
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        self.assertTrue(converter is None)
 
 
 def test_suite():
