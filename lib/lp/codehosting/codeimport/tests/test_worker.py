@@ -215,6 +215,7 @@ class TestBazaarBranchStore(WorkerTest):
         # The fetched branch is in the default format.
         new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
+        # Make sure backup.bzr is removed, as it interferes with CSCVS.
         self.assertEquals(os.listdir(self.temp_dir), [".bzr"])
         self.assertEqual(
             default_format, new_branch.bzrdir._format)
@@ -244,6 +245,12 @@ class TestBazaarBranchStore(WorkerTest):
 
         # The remote branch is now in the new format.
         target_branch = Branch.open(target_url)
+        # Only .bzr is left behind. The scanner removes branches
+        # in which invalid directories (such as .bzr.retire.
+        # exist). (bug #798560)
+        self.assertEquals(
+            target_branch.user_transport.list_dir("."),
+            [".bzr"])
         self.assertEqual(
             default_format.get_branch_format(),
             target_branch._format)

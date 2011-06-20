@@ -161,6 +161,7 @@ class BazaarBranchStore:
             base_transport = old_branch.bzrdir.root_transport
             base_transport.delete_tree('.bzr')
             base_transport.rename("backup.bzr/.bzr", ".bzr")
+            base_transport.rmdir("backup.bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 
