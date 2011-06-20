@@ -32,6 +32,10 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
+            path_expression="string:+processor-families"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     </facet>
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"

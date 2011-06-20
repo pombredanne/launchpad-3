@@ -36,21 +36,40 @@ from lazr.restful.declarations import (
     )
 from lazr.restful.fields import (
     CollectionField,
+    Reference,
     )
 
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
     id = Attribute("The Processor ID")
     family = Attribute("The Processor Family Reference")
-    name = Attribute("The Processor Name")
-    title = Attribute("The Processor Title")
-    description = Attribute("The Processor Description")
+    ## family = exported(
+    ##     Reference(
+    ##         schema=Interface,
+    ##         # Really IProcessorFamily.
+    ##         required=True, readonly=True,
+    ##         title=_("Processor Family"),
+    ##         description=_("The Processor Family Reference")),
+    ##     as_of='devel', readonly=True)
+    name = exported(
+        TextLine(title=_("Name"),
+                 description=_("The Processor Name")),
+        as_of='devel', readonly=True)
+    title = exported(
+        TextLine(title=_("Title"),
+                 description=_("The Processor Title")),
+        as_of='devel', readonly=True)
+    description = exported(
+        Text(title=_("Description"),
+             description=_("The Processor Description")),
+        as_of='devel', readonly=True)
 
 
 class IProcessorFamily(Interface):
     """The SQLObject ProcessorFamily Interface"""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
 
     id = Attribute("The ProcessorFamily ID")
     name = exported(
@@ -71,7 +90,8 @@ class IProcessorFamily(Interface):
     processors = exported(
         CollectionField(
             title=_("Processors"),
-            description=_("The Processors in this family.")),
+            description=_("The Processors in this family."),
+            value_type=Reference(IProcessor)),
         as_of='devel', readonly=True)
     restricted = exported(
         Bool(title=_("Whether this family is restricted.")),
@@ -105,6 +125,8 @@ class IProcessorFamilySet(Interface):
         """
 
     @collection_default_content()
+    @export_read_operation()
+    @operation_for_version('devel')
     def getRestricted():
         """Return a sequence of all restricted architectures.
 

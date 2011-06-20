@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """All the interfaces that are exposed through the webservice.
@@ -33,6 +33,9 @@ __all__ = [
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',
+    'IProcessor',
+    'IProcessorFamily',
+    'IProcessorFamilySet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
     'InsufficientUploadRights',
@@ -90,6 +93,11 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     NoSuchPackageSet,
+    )
+from lp.soyuz.interfaces.processor import (
+    IProcessor,
+    IProcessorFamily,
+    IProcessorFamilySet,
     )
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,

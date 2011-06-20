@@ -618,7 +618,7 @@ class LaunchpadRootNavigation(Navigation):
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
-        'processor-families': IProcessorFamilySet,
+        '+processor-families': IProcessorFamilySet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
         'sourcepackagenames': ISourcePackageNameSet,

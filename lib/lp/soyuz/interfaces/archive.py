@@ -101,7 +101,6 @@ from lp.services.fields import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
-from lp.soyuz.interfaces.processor import IProcessorFamily
 
 
 class ArchiveDependencyError(Exception):
@@ -448,7 +447,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             description=_(
                 "The restricted architecture families on which the archive "
                 "can build."),
-            value_type=Reference(schema=IProcessorFamily)),
+            value_type=Reference(schema=Interface),
+            # Really IProcessorFamily.
+            readonly=False),
         as_of='devel')
 
     commercial = exported(
