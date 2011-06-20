@@ -42,17 +42,22 @@ from lazr.restful.fields import (
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
-    export_as_webservice_entry(publish_web_link=False, as_of='devel')
+
+    # XXX: BradCrittenden 2011-06-20 bug=: The following use of 'beta' is a
+    # work-around to allow the WADL to be generated.  It is a bald-faced lie,
+    # though.  The class is being exported in 'devel' but in order to get the
+    # WADL generation work it must be back-dated to the earliest version.
+    export_as_webservice_entry(publish_web_link=False, as_of='beta')
     id = Attribute("The Processor ID")
-    family = Attribute("The Processor Family Reference")
-    ## family = exported(
-    ##     Reference(
-    ##         schema=Interface,
-    ##         # Really IProcessorFamily.
-    ##         required=True, readonly=True,
-    ##         title=_("Processor Family"),
-    ##         description=_("The Processor Family Reference")),
-    ##     as_of='devel', readonly=True)
+    ## family = Attribute("The Processor Family Reference")
+    family = exported(
+        Reference(
+            schema=Interface,
+            # Really IProcessorFamily.
+            required=True, readonly=True,
+            title=_("Processor Family"),
+            description=_("The Processor Family Reference")),
+        as_of='devel', readonly=True)
     name = exported(
         TextLine(title=_("Name"),
                  description=_("The Processor Name")),
@@ -69,7 +74,7 @@ class IProcessor(Interface):
 
 class IProcessorFamily(Interface):
     """The SQLObject ProcessorFamily Interface"""
-    export_as_webservice_entry(publish_web_link=False, as_of='devel')
+    export_as_webservice_entry(publish_web_link=False, as_of='beta')
 
     id = Attribute("The ProcessorFamily ID")
     name = exported(
@@ -109,13 +114,13 @@ class IProcessorFamily(Interface):
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""
 
-    export_as_webservice_collection(IProcessorFamily)
+    export_as_webservice_collection(Interface)
 
     @operation_parameters(
         name=TextLine(required=True))
-    @operation_returns_entry(IProcessorFamily)
+    @operation_returns_entry(Interface)
     @export_read_operation()
-    @operation_for_version('devel')
+    @operation_for_version('beta')
     def getByName(name):
         """Return the ProcessorFamily instance with the matching name.
 
@@ -125,8 +130,6 @@ class IProcessorFamilySet(Interface):
         """
 
     @collection_default_content()
-    @export_read_operation()
-    @operation_for_version('devel')
     def getRestricted():
         """Return a sequence of all restricted architectures.
 
