@@ -1042,7 +1042,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
     """
     page_title = 'Local package differences'
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
-    show_parent_packagesets = True
+    show_packagesets = True
     search_higher_parent_option = True
 
     def initialize(self):

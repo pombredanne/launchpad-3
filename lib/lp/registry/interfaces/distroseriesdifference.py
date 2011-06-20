@@ -195,6 +195,10 @@ class IDistroSeriesDifferencePublic(Interface):
     parent_packagesets = Attribute("The packagesets for this source package "
                                    "in the parent series.")
 
+    base_distro_source_package_release = Attribute(
+        "The DistributionSourcePackageRelease object for the source release "
+        "in the parent distribution.")
+
     def update(manual=False):
         """Checks that difference type and status matches current publishings.
 

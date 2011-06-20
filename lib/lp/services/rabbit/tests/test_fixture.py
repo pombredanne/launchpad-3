@@ -75,7 +75,7 @@ class TestRabbitFixture(TestCase):
                     }
                 amqp.Connection(**connect_arguments).close()
                 # And get a log file.
-                log = fixture.runner.getDetails()["rabbit.log"]
+                log = fixture.runner.getDetails()["server.log"]
                 # Which shouldn't blow up on iteration.
                 list(log.iter_text())
         except:
