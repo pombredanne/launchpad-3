@@ -43,7 +43,6 @@ from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
     Bug,
     BugSet,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -487,12 +486,6 @@ class DistributionSourcePackage(BugTargetBase,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            self._getBugSummaryContextWhereClause(),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()

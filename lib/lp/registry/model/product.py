@@ -114,7 +114,6 @@ from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -798,12 +797,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            self._getBugSummaryContextWhereClause(),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')

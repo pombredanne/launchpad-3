@@ -84,7 +84,6 @@ from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -840,13 +839,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            self._getBugSummaryContextWhereClause(),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):

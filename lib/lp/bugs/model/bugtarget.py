@@ -223,6 +223,13 @@ class BugTargetBase(HasBugsBase):
     # IDistribution, IDistroSeries, IProjectGroup.
     enable_bugfiling_duplicate_search = True
 
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+        """See IBugTarget."""
+        from lp.bugs.model.bug import get_bug_tags_open_count
+        return get_bug_tags_open_count(
+            self._getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
+
 
 class HasBugHeatMixin:
     """Standard functionality for objects implementing IHasBugHeat."""

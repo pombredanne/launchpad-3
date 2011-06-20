@@ -69,7 +69,6 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -342,12 +341,6 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         product_ids = sqlvalues(*self.products)
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            self._getBugSummaryContextWhereClause(),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def _getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
