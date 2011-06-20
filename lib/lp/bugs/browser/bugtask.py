@@ -1820,17 +1820,12 @@ class BugsStatsMixin(BugsInfoMixin):
 
     @cachedproperty
     def _bug_stats(self):
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         bug_task_set = getUtility(IBugTaskSet)
-        upstream_open_bugs = bug_task_set.open_bugtask_search
-        upstream_open_bugs.setTarget(self.context)
-        upstream_open_bugs.resolved_upstream = True
-        fixed_upstream_clause = SQL(
-            bug_task_set.buildUpstreamClause(upstream_open_bugs))
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(self.context)
-        groups = (BugTask.status, BugTask.importance,
-            Bug.latest_patch_uploaded != None, fixed_upstream_clause)
-        counts = bug_task_set.countBugs(open_bugs, groups)
+        groups = (BugSummary.status, BugSummary.importance,
+            BugSummary.has_patch, BugSummary.fixed_upstream)
+        counts = bug_task_set.countBugs2(self.user, [self.context], groups)
         # Sum the split out aggregates.
         new = 0
         open = 0
