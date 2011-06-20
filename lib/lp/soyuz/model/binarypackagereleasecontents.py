@@ -55,8 +55,11 @@ class BinaryPackageReleaseContents(Storm):
         # Filter out directories.
         filelist = filter(lambda x: not x.endswith('/'), deb.filelist)
         for filename in filelist:
-            bpp = getUtility(IBinaryPackagePathSet).getOrCreate(
-                unicode(filename))
+            try:
+                bpp = getUtility(IBinaryPackagePathSet).getOrCreate(
+                    filename.decode('utf8'))
+            except UnicodeDecodeError:
+                continue
             bprc = BinaryPackageReleaseContents()
             bprc.binarypackagerelease = bpr
             bprc.binarypackagepath = bpp
