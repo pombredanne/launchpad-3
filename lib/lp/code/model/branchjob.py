@@ -41,6 +41,7 @@ from lazr.enum import (
 import simplejson
 from sqlobject import (
     ForeignKey,
+    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
@@ -58,6 +59,7 @@ from zope.interface import (
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -251,6 +253,18 @@ class BranchJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
+    @classmethod
+    def get(cls, key):
+        """Return the instance of this class whose key is supplied.
+
+        :raises: SQLObjectNotFound
+        """
+        instance = IStore(BranchJob).get(BranchJob, key)
+        if instance is None or instance.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No occurrence of %s has key %s' % (cls.__name__, key))
+        return cls(instance)
+
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
@@ -313,6 +327,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    memory_limit = 2 * (1024 ** 3)
     server = None
 
     @classmethod
@@ -945,7 +960,7 @@ class RosettaUploadJob(BranchJobDerived):
                 file_names, changed_files, uploader = iter_info
                 for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
-                        continue # Skip empty files
+                        continue  # Skip empty files
                     entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)
