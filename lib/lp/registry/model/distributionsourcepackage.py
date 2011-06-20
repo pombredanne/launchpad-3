@@ -471,7 +471,7 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

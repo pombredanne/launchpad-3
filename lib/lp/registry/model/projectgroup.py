@@ -342,7 +342,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

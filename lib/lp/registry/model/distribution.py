@@ -636,7 +636,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return self.name
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

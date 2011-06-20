@@ -2538,7 +2538,7 @@ class BugTaskSet:
         context_conditions = []
         for context in contexts:
             condition = removeSecurityProxy(
-                context._getBugSummaryContextWhereClause())
+                context.getBugSummaryContextWhereClause())
             if condition is not False:
                 context_conditions.append(condition)
         if not context_conditions:

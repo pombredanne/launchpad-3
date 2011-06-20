@@ -449,7 +449,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

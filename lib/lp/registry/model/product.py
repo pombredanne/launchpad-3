@@ -948,7 +948,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

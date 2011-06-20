@@ -21,7 +21,10 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
-from lp.bugs.interfaces.bugsummary import IBugSummary
+from lp.bugs.interfaces.bugsummary import (
+    IBugSummary,
+    IBugSummaryDimension,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -83,11 +86,13 @@ class CombineBugSummaryConstraint(object):
     context.
     """
 
+    implements(IBugSummaryDimension)
+
     def __init__(self, *dimensions):
         self.dimensions = map(
-            lambda x:removeSecurityProxy(x._getBugSummaryContextWhereClause()),
+            lambda x:removeSecurityProxy(x.getBugSummaryContextWhereClause()),
             dimensions)
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See `IBugSummaryDimension`."""
         return And(*self.dimensions)

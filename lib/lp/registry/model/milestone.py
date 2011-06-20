@@ -248,7 +248,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             "associated with it.")
         SQLBase.destroySelf(self)
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

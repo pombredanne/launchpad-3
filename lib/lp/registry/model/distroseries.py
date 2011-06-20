@@ -1651,7 +1651,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

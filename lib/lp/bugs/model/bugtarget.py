@@ -121,13 +121,13 @@ class HasBugsBase:
         """Customize `search_params` for a specific target."""
         raise NotImplementedError(self._customizeSearchParams)
 
-    def _getBugSummaryContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """Return a storm clause to filter bugsummaries on this context.
         
         :return: Either a storm clause to filter bugsummaries, or False if
             there cannot be any matching bug summaries.
         """
-        raise NotImplementedError(self._getBugSummaryContextWhereClause)
+        raise NotImplementedError(self.getBugSummaryContextWhereClause)
 
     @property
     def closed_bugtasks(self):
@@ -227,7 +227,7 @@ class BugTargetBase(HasBugsBase):
         """See IBugTarget."""
         from lp.bugs.model.bug import get_bug_tags_open_count
         return get_bug_tags_open_count(
-            self._getBugSummaryContextWhereClause(),
+            self.getBugSummaryContextWhereClause(),
             user, tag_limit=tag_limit, include_tags=include_tags)
 
 

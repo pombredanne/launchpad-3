@@ -78,7 +78,7 @@ class IBugSummary(Interface):
 class IBugSummaryDimension(Interface):
     """Interface for dimensions used in the BugSummary database class."""
 
-    def _getBugSummaryContextWhereClause():
+    def getBugSummaryContextWhereClause():
         """Return a storm clause to filter bugsummaries on this context.
 
         This method is intentended for in-appserver use only.
