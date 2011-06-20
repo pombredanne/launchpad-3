@@ -19,12 +19,7 @@ from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
 
 
 class IBinaryPackageReleaseContents(Interface):
-    """The contents of a binary package release.
-
-    A binary package release is a representation of a binary package in
-    one or more releases. This class models the files contained within
-    the binary package.
-    """
+    """A file contained by an `IBinaryPackageRelease`."""
     binarypackagerelease = Reference(
         IBinaryPackageRelease, title=_('Binary Package Release'),
         required=True, readonly=True)

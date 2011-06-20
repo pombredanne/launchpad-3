@@ -42,7 +42,19 @@ class TestBinaryPackagePath(TestCaseWithFactory):
         results = store.find(
             BinaryPackageReleaseContents,
             BinaryPackageReleaseContents.binarypackagerelease == bpr.id)
-        self.assertEqual(13, results.count())
+        paths = map(lambda x: x.binarypackagepath.path, results)
+        expected_paths = [
+            u'etc/pmount.allow', u'usr/bin/pumount', u'usr/bin/pmount-hal',
+            u'usr/bin/pmount', u'usr/share/doc/pmount/TODO',
+            u'usr/share/doc/pmount/README.Debian',
+            u'usr/share/doc/pmount/AUTHORS',
+            u'usr/share/doc/pmount/copyright',
+            u'usr/share/doc/pmount/changelog.gz',
+            u'usr/share/doc/pmount/changelog.Debian.gz',
+            u'usr/share/man/man1/pmount-hal.1.gz',
+            u'usr/share/man/man1/pmount.1.gz',
+            u'usr/share/man/man1/pumount.1.gz']
+        self.assertContentEqual(expected_paths, paths)
 
     def test_remove(self):
         bpr = self.create_bpr()

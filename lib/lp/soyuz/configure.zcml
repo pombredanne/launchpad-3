@@ -990,18 +990,13 @@
             interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
     </class>
 
-    <!-- BinaryPackagePathSource -->
+    <!-- BinaryPackagePathSet -->
 
-    <class
-        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource"/>
-    </class>
     <securedutility
         class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
-        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource">
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
         <allow
-            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSource"/>
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
     </securedutility>
 
     <!-- BinaryPackageReleaseContents -->
@@ -1014,11 +1009,6 @@
 
     <!-- BinaryPackageReleaseContentsSet -->
 
-    <class
-        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
-    </class>
     <securedutility
         class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
         provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">

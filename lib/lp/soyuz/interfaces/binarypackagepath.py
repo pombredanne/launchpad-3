@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBinaryPackagePath',
-    'IBinaryPackagePathSource',
+    'IBinaryPackagePathSet',
     ]
 
 from zope.interface import Interface
@@ -30,12 +30,12 @@ class IBinaryPackagePath(Interface):
     path = TextLine(title=_('Full path name'), required=True, readonly=True)
 
 
-class IBinaryPackagePathSource(Interface):
+class IBinaryPackagePathSet(Interface):
 
     def getOrCreate(path):
         """Fetch the ID of the given path name, or create it.
 
         :param: path: The full path name to query or create.
 
-        :return: An ID.
+        :return: A `IBinaryPackagePath`.
         """
