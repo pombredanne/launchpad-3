@@ -29,7 +29,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.packaging import (
     Packaging,
     )
-from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     EventRecorder,
     login,
@@ -53,7 +52,6 @@ class TestPackaging(TestCaseWithFactory):
 
     def test_destroySelf_notifies(self):
         """destroySelf creates a notification."""
-        packaging_util = getUtility(IPackagingUtil)
         packaging = self.factory.makePackagingLink()
         with person_logged_in(packaging.owner):
             with EventRecorder() as recorder:
@@ -96,26 +94,37 @@ class TestPackaging(TestCaseWithFactory):
             packaging_util.packagingEntryExists(
                 sourcepackagename, distroseries, productseries))
 
-    def test_destroySelf__allowed_for_package_maintainer(self):
-        """A package maintainer can delete a packaging."""
-        # The package maintainer is the, strictly speaking, the
-        # maintainer of the current release. SoyuzTestPublisher
-        # knows how to create a current release.
-        publisher = SoyuzTestPublisher()
-        distroseries = publisher.setUpDefaultDistroSeries()
-        publisher.getPubSource(version='0.9')
-        sourcepackage = distroseries.getSourcePackage(
-            publisher.default_package_name)
-        sourcepackagename = sourcepackage.sourcepackagename
-        packaging = publisher.factory.makePackagingLink(
-            sourcepackagename=sourcepackagename, distroseries=distroseries)
+    def test_destroySelf__allowed_for_distro_owner(self):
+        """A distribution owner can delete a packaging link."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        distroseries = packaging.distroseries
         productseries = packaging.productseries
         packaging_util = getUtility(IPackagingUtil)
-
-        with person_logged_in(sourcepackage.currentrelease.maintainer):
+        with person_logged_in(distroseries.distribution.owner):
             packaging_util.deletePackaging(
-                packaging.productseries, packaging.sourcepackagename,
-                packaging.distroseries)
+                productseries, sourcepackagename, distroseries)
+        self.assertFalse(
+            packaging_util.packagingEntryExists(
+                sourcepackagename, distroseries, productseries))
+
+    def test_destroySelf__allowed_for_uploader(self):
+        """A person with upload rights for the sourcepackage can
+        delete a packaging link.
+        """
+        packaging = self.factory.makePackagingLink()
+        sourcepackagename = packaging.sourcepackagename
+        sourcepackage = packaging.sourcepackage
+        distroseries = packaging.distroseries
+        productseries = packaging.productseries
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(distroseries.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        packaging_util = getUtility(IPackagingUtil)
+        with person_logged_in(uploader):
+            packaging_util.deletePackaging(
+                productseries, sourcepackagename, distroseries)
         self.assertFalse(
             packaging_util.packagingEntryExists(
                 sourcepackagename, distroseries, productseries))
