@@ -567,14 +567,21 @@ class IDistributionPublic(
         Raises NotFoundError if it fails to find the named file.
         """
 
-    def guessPackageNames(pkgname):
-        """Try and locate source and binary package name objects that
-        are related to the provided name --  which could be either a
-        source or a binary package name. Returns a tuple of
-        (sourcepackagename, binarypackagename) based on the current
-        publishing status of these binary / source packages. Raises
-        NotFoundError if it fails to find any package published with
-        that name in the distribution.
+    def guessPublishedSourcePackageName(pkgname):
+        """Return the "published" SourcePackageName related to pkgname.
+
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
+
+        If there is any official source package branch linked, then that
+        source package name is returned.
+
+        Otherwise, try to find a published binary package name and then return
+        the source package name from which it comes from.
+
+        :raises NotFoundError: when pkgname doesn't correspond to either a
+            published source or binary package name in this distribution.
         """
 
     def getAllPPAs():

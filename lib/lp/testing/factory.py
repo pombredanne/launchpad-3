@@ -3486,8 +3486,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution=distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
 
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
 
         if component is None:
             component = self.makeComponent()
@@ -3554,13 +3556,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None, date_created=None, processor=None):
+            status=None, pocket=None, date_created=None, processor=None,
+            sourcepackagename=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
         to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
+        :param sourcepackagename: when source_package_release is None, the
+            sourcepackagename from which the build will come.
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
@@ -3587,7 +3592,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
                 archive, component=multiverse,
-                distroseries=distroarchseries.distroseries)
+                distroseries=distroarchseries.distroseries,
+                sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
@@ -3685,12 +3691,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
+                                           binarypackagename=None,
                                            distroarchseries=None,
                                            component=None, section_name=None,
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
-                                           pocket=None, archive=None):
+                                           pocket=None, archive=None,
+                                           source_package_release=None,
+                                           sourcepackagename=None):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
             if archive is None:
@@ -3720,8 +3729,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # in the same archive and suite.
             binarypackagebuild = self.makeBinaryPackageBuild(
                 archive=archive, distroarchseries=distroarchseries,
-                pocket=pocket)
+                pocket=pocket, source_package_release=source_package_release,
+                sourcepackagename=sourcepackagename)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                binarypackagename=binarypackagename,
                 build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
@@ -3785,8 +3796,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
-        if binarypackagename is None:
-            binarypackagename = self.makeBinaryPackageName()
+        if (binarypackagename is None or
+            isinstance(binarypackagename, basestring)):
+            binarypackagename = self.getOrMakeBinaryPackageName(
+                binarypackagename)
         if version is None:
             version = build.source_package_release.version
         if binpackageformat is None:
