@@ -16,18 +16,18 @@ __all__ = [
 
 
 import functools
-import StringIO
 from signal import (
     getsignal,
     SIGCHLD,
     signal,
     )
+import StringIO
 import sys
 
 from twisted.internet import (
     defer,
-    threads,
     reactor as default_reactor,
+    threads,
     )
 from twisted.python.failure import Failure
 

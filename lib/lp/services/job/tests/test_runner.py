@@ -8,8 +8,8 @@ import sys
 from textwrap import dedent
 from time import sleep
 
-from testtools.testcase import ExpectedException
 from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 

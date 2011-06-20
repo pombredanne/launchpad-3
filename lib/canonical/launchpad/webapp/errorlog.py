@@ -12,9 +12,9 @@ import datetime
 from itertools import repeat
 import logging
 import os
-import stat
 import re
 import rfc822
+import stat
 import types
 import urllib
 import urlparse
@@ -30,7 +30,6 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
@@ -44,8 +43,10 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
+from lp.app import versioninfo
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
+
 
 UTC = pytz.utc
 

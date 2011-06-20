@@ -103,10 +103,10 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.scripts.helpers import TransactionFreeOperation
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
