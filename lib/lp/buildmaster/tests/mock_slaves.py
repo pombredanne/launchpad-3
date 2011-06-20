@@ -109,7 +109,7 @@ class MockBuilder:
 class OkSlave:
     """An idle mock slave that prints information about itself.
 
-    The architecture tag can be customised during initialisation."""
+    The architecture tag can be customised during initialization."""
 
     def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
         self.call_log = []

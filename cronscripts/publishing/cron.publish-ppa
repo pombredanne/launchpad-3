@@ -8,6 +8,8 @@ set -x
 # Variables, lockfile and exit handler for PPA scripts.
 source `dirname $0`/cron.base-ppa
 
+LPCURRENT=`dirname $0`/../..
+
 # Accept PPA binary uploads
 $LPCURRENT/scripts/process-accepted.py -v --ppa ubuntu
 

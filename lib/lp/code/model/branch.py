@@ -1289,13 +1289,15 @@ class ClearOfficialPackageBranch(DeletionOperation):
     """Deletion operation that clears an official package branch."""
 
     def __init__(self, sspb):
+        # The affected object is really the sourcepackage.
         DeletionOperation.__init__(
-            self, sspb, _('Branch is officially linked to a source package.'))
+            self, sspb.sourcepackage,
+            _('Branch is officially linked to a source package.'))
+        # But we'll need the pocket info.
+        self.pocket = sspb.pocket
 
     def __call__(self):
-        package = self.affected_object.sourcepackage
-        pocket = self.affected_object.pocket
-        package.setBranch(pocket, None, None)
+        self.affected_object.setBranch(self.pocket, None, None)
 
 
 class DeleteCodeImport(DeletionOperation):

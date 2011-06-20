@@ -250,8 +250,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff.status)
 
-    def test_update_new_version_doesnt_change_status(self):
-        # Uploading a new (different) version does not update the
+    def test_update_new_parent_version_doesnt_change_status(self):
+        # Uploading a new (different) parent_version does not update the
         # status of the record, but the version is updated.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str="foonew",
@@ -261,7 +261,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 })
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
-            distroseries=ds_diff.derived_series,
+            distroseries=ds_diff.parent_series,
             status=PackagePublishingStatus.PENDING,
             version='1.1')
 
@@ -271,7 +271,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             ds_diff.status)
-        self.assertEqual('1.1', ds_diff.source_version)
+        self.assertEqual('1.1', ds_diff.parent_source_version)
 
     def test_update_changes_type(self):
         # The type of difference is updated when appropriate.

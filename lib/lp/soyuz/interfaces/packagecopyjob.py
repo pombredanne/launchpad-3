@@ -67,6 +67,9 @@ class IPackageCopyJob(Interface):
     package_name = TextLine(
         title=_("Package name"), required=True, readonly=True)
 
+    package_version = TextLine(
+        title=_("Package version"), required=True, readonly=True)
+
     job = Reference(
         schema=IJob, title=_('The common Job attributes'),
         required=True, readonly=True)
@@ -90,7 +93,7 @@ class IPlainPackageCopyJobSource(IJobSource):
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE):
-        """Create a new `IPackageCopyJob`.
+        """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
         :param source_archive: The `IArchive` in which `source_packages` are
@@ -104,6 +107,21 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param package_version: The version string for the package version
             that is to be copied.
         :param copy_policy: Applicable `PackageCopyPolicy`.
+        """
+
+    def createMultiple(target_distroseries, copy_tasks,
+                       copy_policy=PackageCopyPolicy.INSECURE,
+                       include_binaries=False):
+        """Create multiple new `IPlainPackageCopyJob`s at once.
+
+        :param target_distroseries: The `IDistroSeries` to which to copy the
+            packages.
+        :param copy_tasks: A list of tuples describing the copies to be
+            performed: (package name, package version, source archive,
+            target archive, target pocket).
+        :param copy_policy: Applicable `PackageCopyPolicy`.
+        :param include_binaries: As in `do_copy`.
+        :return: An iterable of `PackageCopyJob` ids.
         """
 
     def getActiveJobs(target_archive):
@@ -131,9 +149,6 @@ class IPlainPackageCopyJob(IRunnableJob):
     target_pocket = Int(
         title=_("Target package publishing pocket"), required=True,
         readonly=True)
-
-    package_version = TextLine(
-        title=_("Package version"), required=True, readonly=True)
 
     include_binaries = Bool(
         title=_("Copy binaries"),

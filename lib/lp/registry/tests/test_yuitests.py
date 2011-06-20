@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
-from lp.registry.windmill.testing import RegistryYUITestLayer
+from canonical.testing.layers import YUITestLayer
 from lp.testing import (
     build_yui_unittest_suite,
     YUIUnitTestCase,
@@ -15,7 +15,7 @@ from lp.testing import (
 
 class RegistryYUIUnitTestCase(YUIUnitTestCase):
 
-    layer = RegistryYUITestLayer
+    layer = YUITestLayer
     suite_name = 'RegistryYUIUnitTests'
 
 
