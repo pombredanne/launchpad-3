@@ -1231,25 +1231,28 @@ class BugTargetBugListingView(LaunchpadView):
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryContraint,
+            )
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         series_list = self.series_list
         if not series_list:
             return series_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*series_list))
         # This would be better as delegation not a case statement.
         if IDistribution(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProduct(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         elif IDistroSeries(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProductSeries(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
-        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        counts = bug_task_set.countBugs2(self.user, series_list, (backlink,))
         for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
