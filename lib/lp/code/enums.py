@@ -377,6 +377,12 @@ class RevisionControlSystems(DBEnumeratedType):
         Imports from Mercurial using bzr-hg.
         """)
 
+    BZR = DBItem(6, """
+        Bazaar
+
+        Mirror of a Bazaar branch.
+        """)
+
 
 class CodeImportReviewStatus(DBEnumeratedType):
     """CodeImport review status.
