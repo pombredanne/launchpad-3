@@ -153,7 +153,7 @@ class TestChangeOverride(unittest.TestCase):
         changer.processBinaryChange = fakeProcessBinaryChange
         changer.processChildrenChange = fakeProcessChildrenChange
 
-        # Consume the initialisation logging.
+        # Consume the initialization logging.
         changer.logger.clearLogBuffer()
 
         return changer

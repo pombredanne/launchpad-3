@@ -10,9 +10,11 @@ from zope.interface import (
 
 
 __all__ = [
+    'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
     'GPGKeyRevoked',
     'GPGKeyNotFoundError',
+    'GPGKeyTemporarilyNotFoundError',
     'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
@@ -32,13 +34,41 @@ class MoreThanOneGPGKeyFound(Exception):
 
 
 class GPGKeyNotFoundError(Exception):
-    """The given GPG key was not found in the keyserver."""
+    """The GPG key with the given fingerprint was not found on the keyserver.
+    """
 
-    def __init__(self, fingerprint, pubkey=None):
+    def __init__(self, fingerprint, message=None):
         self.fingerprint = fingerprint
-        self.pubkey = pubkey
-        super(GPGKeyNotFoundError, self).__init__(
+        if message is None:
+            message = (
             "No GPG key found with the given content: %s" % (fingerprint, ))
+        super(GPGKeyNotFoundError, self).__init__(message)
+
+
+class GPGKeyTemporarilyNotFoundError(GPGKeyNotFoundError):
+    """The GPG key with the given fingerprint was not found on the keyserver.
+
+    The reason is a timeout while accessing the server, a general
+    server error, a network problem or some other temporary issue.
+    """
+    def __init__(self, fingerprint):
+        message = (
+            "GPG key %s not found due to a server or network failure."
+            % fingerprint)
+        super(GPGKeyTemporarilyNotFoundError, self).__init__(
+            fingerprint, message)
+
+
+class GPGKeyDoesNotExistOnServer(GPGKeyNotFoundError):
+    """The GPG key with the given fingerprint was not found on the keyserver.
+
+    The server returned an explicit "not found".
+    """
+    def __init__(self, fingerprint):
+        message = (
+            "GPG key %s does not exist on the keyserver." % fingerprint)
+        super(GPGKeyDoesNotExistOnServer, self).__init__(
+            fingerprint, message)
 
 
 class GPGKeyRevoked(Exception):

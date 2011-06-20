@@ -365,7 +365,7 @@ and the bug watch will be added without any confirmation needed:
     bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
-attributes got initialised to Unknown. The bugtask will be synced with
+attributes got initialized to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]

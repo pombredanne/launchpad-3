@@ -60,7 +60,11 @@ class InsecureCopyPolicy(BasicCopyPolicy):
 
     enum_value = PackageCopyPolicy.INSECURE
 
-    send_email = True
+    def send_email(self, archive):
+        if archive.is_ppa:
+            return False
+            
+        return True
 
 
 class MassSyncCopyPolicy(BasicCopyPolicy):
@@ -69,7 +73,8 @@ class MassSyncCopyPolicy(BasicCopyPolicy):
 
     enum_value = PackageCopyPolicy.MASS_SYNC
 
-    send_email = False
+    def send_email(self, archive=None):
+        return False
 
 
 policies = [

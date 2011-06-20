@@ -202,6 +202,37 @@ class TestBug(TestCaseWithFactory):
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
 
+    def test_get_direct_subscribers_with_details(self):
+        # getDirectSubscribersWithDetails() returns both
+        # Person and BugSubscription records in one go.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+
+        self.assertContentEqual(
+            [(subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_mute_excludes(self):
+        # getDirectSubscribersWithDetails excludes muted subscriptions.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+            bug.mute(subscriber, subscriber)
+
+        self.assertContentEqual(
+            [], bug.getDirectSubscribersWithDetails())
+
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
         # parameter it will include only subscribers subscribed to
@@ -261,3 +292,24 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
+
+    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private is subscribed to the bug.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.setPrivate(True, person)
+            self.assertTrue(bug.personIsDirectSubscriber(person))
+
+    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private will not be subscribed if they're
+        # already a member of a team which is a direct subscriber.
+        bug = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+            bug.setPrivate(True, person)
+            self.assertFalse(bug.personIsDirectSubscriber(person))

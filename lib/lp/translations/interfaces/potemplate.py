@@ -169,6 +169,13 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="SourcePackageName")
 
+    sourcepackagenameID = Int(
+        title=_("Source Package Name ID"),
+        description=_(
+            "The ID of the source package that uses this template."),
+        required=False,
+        readonly=True)
+
     sourcepackage = Reference(
         ISourcePackage, title=u"Source package this template is for, if any.",
         required=False, readonly=True)

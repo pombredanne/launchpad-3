@@ -799,7 +799,7 @@ def init():
     Lock = GlobalLock('/var/lock/launchpad-sync-source.lock')
     Lock.acquire(blocking=True)
 
-    Log.debug("Initialising connection.")
+    Log.debug("Initializing connection.")
     execute_zcml_for_scripts()
     initZopeless(dbuser="ro")
 

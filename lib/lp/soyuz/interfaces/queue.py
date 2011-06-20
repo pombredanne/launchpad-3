@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,10 +22,7 @@ __all__ = [
     'QueueStateWriteProtectedError',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
-
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -44,9 +41,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-
-from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
 
 class QueueStateWriteProtectedError(Exception):
@@ -92,7 +88,7 @@ class IPackageUploadQueue(Interface):
     """Used to establish permission to a group of package uploads.
 
     Recieves an IDistroSeries and a PackageUploadStatus dbschema
-    on initialisation.
+    on initialization.
     No attributes exposed via interface, only used to check permissions.
     """
 
@@ -172,7 +168,7 @@ class IPackageUpload(Interface):
         exported_as="display_name")
     displayversion = exported(
         TextLine(
-            title=_("The source package version for this item"),
+            title=_("This item's displayable source package version"),
             readonly=True),
         exported_as="display_version")
     displayarchs = exported(
@@ -182,6 +178,15 @@ class IPackageUpload(Interface):
 
     sourcepackagerelease = Attribute(
         "The source package release for this item")
+
+    package_name = TextLine(
+        title=_("Name of the uploaded source package"), readonly=True)
+
+    package_version = TextLine(
+        title=_("Source package version"), readonly=True)
+
+    component_name = TextLine(
+        title=_("Source package component name"), readonly=True)
 
     contains_source = Attribute("whether or not this upload contains sources")
     contains_build = Attribute("whether or not this upload contains binaries")
@@ -205,6 +210,9 @@ class IPackageUpload(Interface):
         sourcepackagerelease.  For binaries, this is all the components
         on all the binarypackagerelease records arising from the build.
         """)
+
+    section_name = TextLine(
+        title=_("Source package sectio name"), readonly=True)
 
     def setNew():
         """Set queue state to NEW."""
@@ -356,7 +364,6 @@ class IPackageUploadBuild(Interface):
             title=_("ID"), required=True, readonly=True,
             )
 
-
     packageupload = Int(
             title=_("PackageUpload"), required=True,
             readonly=False,
@@ -392,7 +399,6 @@ class IPackageUploadSource(Interface):
     id = Int(
             title=_("ID"), required=True, readonly=True,
             )
-
 
     packageupload = Int(
             title=_("PackageUpload"), required=True,
@@ -604,15 +610,23 @@ class IPackageUploadSet(Interface):
         """
 
     def getAll(distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None,
+               name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param name: Filter results by this package or file name.
+        :param version: Filter results by this version number string.
+        :param exact_match: If True, look for exact string matches on the
+            `name` and `version` filters.  If False, look for a substring
+            match so that e.g. a package "kspreadsheetplusplus" would match
+            the search string "spreadsheet".  Defaults to False.
         :return: A result set containing `IPackageUpload`s
         """
 
@@ -633,34 +647,16 @@ class IPackageUploadSet(Interface):
     def getSourceBySourcePackageReleaseIDs(spr_ids):
         """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
 
+    def getByPackageCopyJobIDs(pcj_ids):
+        """Return `PackageUpload`s using `PackageCopyJob`s.
+
+        :param pcj_ids: A list of `PackageCopyJob` IDs.
+        :return: all the `PackageUpload`s that reference the supplied IDs.
+        """
+
 
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadeQueue occording the given state."""
-
-    def getQueueItems(status=None, name=None, version=None,
-                      exact_match=False, pocket=None, archive=None):
-        """Get the union of builds, sources and custom queue items.
-
-        Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms.
-
-        If 'status' is not supplied, return all items in the queues,
-        it supports multiple statuses as a list.
-
-        If 'name' and 'version' are supplied only items which match (SQL LIKE)
-        the sourcepackage name, binarypackage name or the filename will be
-        returned.  'name' can be supplied without supplying 'version'.
-        'version' has no effect on custom queue items.
-
-        If 'pocket' is specified return only queue items inside it, otherwise
-        return all pockets.  It supports multiple pockets as a list.
-
-        If 'archive' is specified return only queue items targeted to this
-        archive, if not restrict the results to the
-        IDistribution.main_archive.
-
-        Use 'exact_match' argument for precise results.
-        """

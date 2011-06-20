@@ -81,9 +81,7 @@ from storm.expr import (
 from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import (
-    IVocabularyTokenized,
-    )
+from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -117,6 +115,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
@@ -155,7 +154,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     PersonVisibility,
     )
-from lp.registry.interfaces.pillar import IPillarName
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarName,
+    )
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -166,6 +168,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.mailinglist import MailingList
@@ -185,8 +188,9 @@ from lp.services.database import bulk
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache
+    get_property_cache,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 
 
 class BasePersonVocabulary:
@@ -195,6 +199,7 @@ class BasePersonVocabulary:
     _table = Person
 
     def __init__(self, context=None):
+        super(BasePersonVocabulary, self).__init__(context)
         self.enhanced_picker_enabled = bool(
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
 
@@ -286,7 +291,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             fti_query = quote(query)
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query)
-            return self._table.select(sql, orderBy=self._orderBy)
+            if getFeatureFlag('disclosure.picker_enhancements.enabled'):
+                order_by = (
+                    '(CASE name WHEN %s THEN 1 '
+                    ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
+                    % (fti_query, fti_query))
+            else:
+                order_by = self._orderBy
+            return self._table.select(sql, orderBy=order_by, limit=100)
         return self.emptySelectResults()
 
 
@@ -489,6 +501,19 @@ class ValidPersonOrTeamVocabulary(
     def store(self):
         """The storm store."""
         return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+    @cachedproperty
+    def _karma_context_constraint(self):
+        context = nearest(self.context, IPillar)
+        if IProduct.providedBy(context):
+            karma_context_column = 'product'
+        elif IDistribution.providedBy(context):
+            karma_context_column = 'distribution'
+        elif IProjectGroup.providedBy(context):
+            karma_context_column = 'project'
+        else:
+            return None
+        return '%s = %d' % (karma_context_column, context.id)
 
     def _privateTeamQueryAndTables(self):
         """Return query tables for private teams.
@@ -723,21 +748,21 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id,
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 75
-                        when lower(person.displayname) like ? || '%%' then 50
+                        when person.name like ? || '%%' then 5
+                        when lower(person.displayname) like ? || '%%' then 4
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE lower(Person.name) LIKE ? || '%%'
+                    WHERE Person.name LIKE ? || '%%'
                     or lower(Person.displayname) LIKE ? || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
-                    SELECT Person.id, 25 AS rank
+                    SELECT Person.id, 3 AS rank
                     FROM Person, IrcID
                     WHERE Person.id = IrcID.person
                         AND IrcID.nickname = ?
                     UNION ALL
-                    SELECT Person.id, 10 AS rank
+                    SELECT Person.id, 2 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
                         AND LOWER(EmailAddress.email) LIKE ? || '%%'
@@ -754,8 +779,8 @@ class ValidPersonOrTeamVocabulary(
                 private_ranking_sql = SQL("""
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 75
-                        when lower(person.displayname) like ? || '%%' then 50
+                        when person.name like ? || '%%' then 5
+                        when lower(person.displayname) like ? || '%%' then 3
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
@@ -769,7 +794,7 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            lower(Person.name) LIKE ? || '%%'
+                            Person.name LIKE ? || '%%'
                             OR lower(Person.displayname) LIKE ? || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
@@ -816,8 +841,18 @@ class ValidPersonOrTeamVocabulary(
                     self.extra_clause),
                 )
             # Better ranked matches go first.
-            result.order_by(
-                SQL("rank desc"), Person.displayname, Person.name)
+            if (getFeatureFlag('disclosure.person_affiliation_rank.enabled')
+                and self._karma_context_constraint):
+                rank_order = SQL("""
+                    rank * COALESCE(
+                        (SELECT LOG(karmavalue) FROM KarmaCache
+                         WHERE person = Person.id AND
+                            %s
+                            AND category IS NULL AND karmavalue > 10),
+                        1) DESC""" % self._karma_context_constraint)
+            else:
+                rank_order = SQL("rank DESC")
+            result.order_by(rank_order, Person.displayname, Person.name)
         result.config(limit=self.LIMIT)
 
         # We will be displaying the person's irc nick(s) and emails in the
@@ -832,15 +867,15 @@ class ValidPersonOrTeamVocabulary(
                 for email in emails
                 if email.status == EmailAddressStatus.PREFERRED)
 
-            # The irc nicks.
-            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
-            nicks_by_person = dict((nick.personID, nicks)
-                for nick in nicks)
-
             for person in persons:
                 cache = get_property_cache(person)
                 cache.preferredemail = email_by_person.get(person.id, None)
-                cache.ircnicknames = nicks_by_person.get(person.id, None)
+                cache.ircnicknames = []
+
+            # The irc nicks.
+            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
+            for nick in nicks:
+                get_property_cache(nick.person).ircnicknames.append(nick)
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
@@ -895,7 +930,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             if self.enhanced_picker_enabled:
                 name_match_query = SQL("""
-                    lower(Person.name) LIKE ? || '%%'
+                    Person.name LIKE ? || '%%'
                     OR lower(Person.displayname) LIKE ? || '%%'
                     OR Person.fti @@ ftq(?)
                     """, [text, text, text]),
@@ -1694,6 +1729,9 @@ class DistroSeriesDerivationVocabulary:
     derived at a later date, but as soon as this happens, the above rule
     applies.
 
+    Also, a series must have architectures setup in LP to be a potential
+    parent.
+
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
@@ -1775,7 +1813,8 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        where = []
+        # Select only the series with architectures setup in LP.
+        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1783,21 +1822,20 @@ class DistroSeriesDerivationVocabulary:
                     DistroSeries.description.lower().like(term),
                     DistroSeries.summary.lower().like(term))
             where.append(search)
-        parent_distributions = Select(
+        parent_distributions = list(IStore(DistroSeries).find(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
-                child.previous_seriesID == parent.id))
-        where.append(
-            DistroSeries.distributionID.is_in(parent_distributions))
-        terms = self.find_terms(where)
-        if len(terms) == 0:
-            where = []
-            if query is not None:
-                where.append(search)
-            where.append(DistroSeries.distribution != self.distribution)
-            terms = self.find_terms(where)
-        return terms
+                child.id == DistroSeriesParent.derived_series_id,
+                parent.id == DistroSeriesParent.parent_series_id)))
+        if parent_distributions != []:
+            where.append(
+                DistroSeries.distributionID.is_in(parent_distributions))
+            return self.find_terms(where)
+        else:
+            where.append(
+                DistroSeries.distribution != self.distribution)
+            return self.find_terms(where)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):

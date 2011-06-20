@@ -296,7 +296,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         DistributionJob(
             distribution=dsd.derived_series.distribution,
             distroseries=dsd.derived_series,
-            job_type=DistributionJobType.INITIALISE_SERIES,
+            job_type=DistributionJobType.INITIALIZE_SERIES,
             metadata={"sourcepackagename": dsd.source_package_name.id})
         self.assertEqual(
             {},
@@ -523,6 +523,17 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             ds_diff[0].status)
         self.assertEqual('1.0-1', ds_diff[0].base_version)
 
+        # An additional upload should not change the blacklisted status.
+        self.createPublication(
+            source_package_name, ['2.0-0derived2', '1.0-1'],
+            dsp.derived_series)
+        jobs = find_waiting_jobs(dsp.derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            ds_diff[0].status)
+
+
     def test_child_is_synced(self):
         # If the source package gets 'synced' to the child from the parent,
         # the job correctly updates the DSD.
@@ -704,3 +715,12 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
 
         # The test is that we get here without exceptions.
         pass
+
+    def test_getDerivedSeries(self):
+        # Check that DB users can query derived series.
+        script_users = ['queued']
+        dsp = self.factory.makeDistroSeriesParent()
+        transaction.commit()
+        for user in script_users:
+            self.layer.switchDbUser(user)
+            list(dsp.parent_series.getDerivedSeries())
