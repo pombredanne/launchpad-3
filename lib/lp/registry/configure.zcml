@@ -477,7 +477,6 @@
                 enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
-                getBugCounts
                 getPersonsByEmail
                 getReleasesAndPublishingHistory
                 getUsedBugTags

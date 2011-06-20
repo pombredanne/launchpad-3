@@ -212,32 +212,6 @@ class HasBugsBase:
         """See `IHasBugs`."""
         return not self.all_bugtasks.is_empty()
 
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause('BugTask'),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
-
     def getBugTaskWeightFunction(self):
         """Default weight function is the simple one."""
         return simple_weight_calculator
