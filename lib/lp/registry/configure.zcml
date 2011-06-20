@@ -201,6 +201,7 @@
         class="lp.registry.model.distroseries.DistroSeries">
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesPublic"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -360,6 +361,7 @@
         class="lp.registry.model.projectgroup.ProjectGroup">
         <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -448,6 +450,7 @@
 
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -985,6 +988,7 @@
                 createProductRelease
                 closeBugsAndBlueprints
                 destroySelf"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugs"/>
         <allow
@@ -1142,6 +1146,7 @@
         class="lp.registry.model.product.Product">
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
@@ -1391,6 +1396,7 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <require
@@ -1459,6 +1465,7 @@
         class="lp.registry.model.distribution.Distribution">
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <require
@@ -1591,6 +1598,7 @@
         class="lp.registry.model.sourcepackage.SourcePackage">
         <allow
             interface="lp.registry.interfaces.sourcepackage.ISourcePackagePublic"/>
+        <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow

@@ -1529,6 +1529,21 @@ class IBugTaskSet(Interface):
         :return: A dict {group_instance: count, ...}
         """
 
+    def countBugs2(user, contexts, group_on):
+        """Count open bugs that match params, grouping by group_on.
+
+        This serves results from the bugsummary fact table: it is fast but not
+        completely precise. See the bug summary documentation for more detail.
+
+        :param user: The user to query on behalf of.
+        :param contexts: A list of contexts to search. Contexts must support
+            the IBugSummaryDimension interface.
+        :param group_on: The column(s) group on - .e.g (
+            BugSummary.distroseries_id, BugSummary.milestone_id) will cause
+            grouping by distro series and then milestone.
+        :return: A dict {group_instance: count, ...}
+        """
+
     def getStatusCountsForProductSeries(user, product_series):
         """Returns status counts for a product series' bugs.
 

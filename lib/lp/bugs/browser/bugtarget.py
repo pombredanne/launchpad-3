@@ -24,6 +24,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
+from functools import partial
 from operator import itemgetter
 import urllib
 from urlparse import urljoin
@@ -1190,7 +1191,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return url
 
 
-class BugTargetBugListingView:
+class BugTargetBugListingView(LaunchpadView):
     """Helper methods for rendering bug listings."""
 
     @property
@@ -1218,7 +1219,7 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
         else:
-            raise AssertionError("series_list called with illegal context")
+            raise AssertionError("milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1263,14 +1264,23 @@ class BugTargetBugListingView:
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryContraint,
+            )
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         milestones = self.milestones_list
         if not milestones:
             return milestone_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*milestones))
-        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        # Note: this isn't totally optimal as a query, but its the simplest to
+        # code; we can iterate if needed to provide one complex context to
+        # countBugs2.
+        query_milestones = map(partial(
+            CombineBugSummaryContraint, self.context), milestones)
+        counts = bug_task_set.countBugs2(
+            self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
             milestone_bug_count = counts.get((milestone.id,), 0)
             if milestone_bug_count > 0:

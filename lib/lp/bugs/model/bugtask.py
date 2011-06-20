@@ -45,6 +45,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Sum,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -2532,6 +2533,62 @@ class BugTaskSet:
             [], None, params).result_set
         # We group on the related field:
         resultset.group_by(*group_on)
+        resultset.order_by()
+        result = {}
+        for row in resultset:
+            result[row[:-1]] = row[-1]
+        return result
+
+    def countBugs2(self, user, contexts, group_on):
+        """See `IBugTaskSet`."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        assert user is not None
+        conditions = []
+        # Open bug statuses
+        conditions.append(BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+        # BugSummary does not include duplicates so no need to exclude.
+        context_conditions = []
+        for context in contexts:
+            condition = removeSecurityProxy(
+                context._getBugSummaryContextWhereClause())
+            if condition is not False:
+                context_conditions.append(condition)
+        if not context_conditions:
+            return {}
+        conditions.append(Or(*context_conditions))
+        # bugsummary by design requires either grouping by tag or excluding
+        # non-null tags.
+        # This is an awkward way of saying
+        # if BugSummary.tag not in group_on:
+        # - see bug 799602
+        group_on_tag = False
+        for column in group_on:
+            if column is BugSummary.tag:
+                group_on_tag = True
+        if not group_on_tag:
+            conditions.append(BugSummary.tag == None)
+        else:
+            conditions.append(BugSummary.tag != None)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user is not None and not user.inTeam(admin_team):
+            store = store.with_(SQL(
+                "teams AS ("
+                "SELECT team from TeamParticipation WHERE person=?)",
+                (user.id,)))
+        # Note that because admins can see every bug regardless of subscription
+        # they will see rather inflated counts. Admins get to deal.
+        if not user.inTeam(admin_team):
+            conditions.append(
+                Or(
+                    BugSummary.viewed_by_id == None,
+                    BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                    ))
+        sum_count = Sum(BugSummary.count)
+        resultset = store.find(group_on + (sum_count,), *conditions)
+        resultset.group_by(*group_on)
+        resultset.having(sum_count != 0)
         resultset.order_by()
         result = {}
         for row in resultset:
