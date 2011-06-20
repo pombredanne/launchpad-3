@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugSummary'
-    'CombineBugSummaryContraint',
+    'CombineBugSummaryConstraint',
     ]
 
 from storm.locals import (
@@ -75,7 +75,7 @@ class BugSummary(Storm):
     fixed_upstream = Bool()
 
 
-class CombineBugSummaryContraint(object):
+class CombineBugSummaryConstraint(object):
     """A class to combine two separate bug summary constraints.
 
     This is useful for querying on multiple related dimensions (e.g. milestone

@@ -1232,10 +1232,7 @@ class BugTargetBugListingView(LaunchpadView):
         able to see in a listing.
         """
         # Circular fail.
-        from lp.bugs.model.bugsummary import (
-            BugSummary,
-            CombineBugSummaryContraint,
-            )
+        from lp.bugs.model.bugsummary import BugSummary
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         series_list = self.series_list
@@ -1270,7 +1267,7 @@ class BugTargetBugListingView(LaunchpadView):
         # Circular fail.
         from lp.bugs.model.bugsummary import (
             BugSummary,
-            CombineBugSummaryContraint,
+            CombineBugSummaryConstraint,
             )
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
@@ -1281,7 +1278,7 @@ class BugTargetBugListingView(LaunchpadView):
         # code; we can iterate if needed to provide one complex context to
         # countBugs.
         query_milestones = map(partial(
-            CombineBugSummaryContraint, self.context), milestones)
+            CombineBugSummaryConstraint, self.context), milestones)
         counts = bug_task_set.countBugs(
             self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
