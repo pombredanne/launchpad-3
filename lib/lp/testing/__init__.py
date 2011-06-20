@@ -938,8 +938,14 @@ class YUIUnitTestCase(TestCase):
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
-        # Delay importing html5browser because it has side-effects.
-        import html5browser
+        # html5browser imports from the gir/pygtk stack which causes
+        # twisted tests to break because of gtk's initialize.
+        try:
+            import html5browser
+            # Hush lint.
+            html5browser
+        except ImportError:
+            html5browser = None
         client = html5browser.Browser()
         html_uri = 'file://%s' % os.path.join(
             config.root, 'lib', self.test_path)

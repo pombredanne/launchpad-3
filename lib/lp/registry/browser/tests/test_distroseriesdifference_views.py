@@ -634,7 +634,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             soupmatchers.Tag(
                 'Unknown base version', 'dd',
                 text=re.compile(
-                    '\s*Unknown')))
+                    '\s*Unknown, so no diffs are available')))
 
         with celebrity_logged_in('admin'):
             view = create_initialized_view(

@@ -194,12 +194,10 @@ class QueueAction:
                     term, version = term.strip().split('/')
 
                 # Expand SQLObject results.
-                # XXX 2011-06-13 JeroenVermeulen bug=394645: This should
-                # use getPackageUploads, not getQueueItems, so that it
-                # will also include copy-job uploads.
-                for item in self.distroseries.getQueueItems(
+                queue_items = self.distroseries.getPackageUploads(
                     status=self.queue, name=term, version=version,
-                    exact_match=self.exact_match, pocket=self.pocket):
+                    exact_match=self.exact_match, pocket=self.pocket)
+                for item in queue_items:
                     if item not in self.items:
                         self.items.append(item)
                 self.package_names.append(term)
@@ -683,7 +681,7 @@ class CommandRunner:
         # check syntax, abort process if anything gets wrong
         try:
             action = terms[0]
-            arguments = terms[1:]
+            arguments = [unicode(term) for term in terms[1:]]
         except IndexError:
             raise CommandRunnerError('Invalid sentence, use help.')
 

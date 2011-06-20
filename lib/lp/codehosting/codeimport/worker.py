@@ -95,6 +95,15 @@ class BazaarBranchStore:
             if needs_tree:
                 local_branch.bzrdir.create_workingtree()
             return local_branch
+        # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
+        # branches disabled.  Need an orderly upgrade process.
+        if False and remote_bzr_dir.needs_format_conversion(
+            format=required_format):
+            try:
+                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(remote_url, required_format)
         # The proper thing to do here would be to call
         # "remote_bzr_dir.sprout()".  But 2a fetch slowly checks which
         # revisions are in the ancestry of the tip of the remote branch, which
@@ -107,13 +116,6 @@ class BazaarBranchStore:
         target_control.create_prefix()
         remote_bzr_dir.transport.copy_tree_to_transport(target_control)
         local_bzr_dir = BzrDir.open_from_transport(target)
-        if local_bzr_dir.needs_format_conversion(
-            format=required_format):
-            try:
-                local_bzr_dir.root_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            upgrade(target_path, required_format, clean_up=True)
         if needs_tree:
             local_bzr_dir.create_workingtree()
         return local_bzr_dir.open_branch()
@@ -131,36 +133,11 @@ class BazaarBranchStore:
         except NotBranchError:
             remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
-            old_branch = None
-        else:
-            if remote_branch.bzrdir.needs_format_conversion(
-                    required_format):
-                # For upgrades, push to a new branch in
-                # the new format. When done pushing,
-                # retire the old .bzr directory and rename
-                # the new one in place.
-                old_branch = remote_branch
-                upgrade_url = urljoin(target_url, "upgrade.bzr")
-                try:
-                    remote_branch.bzrdir.root_transport.delete_tree(
-                        'upgrade.bzr')
-                except NoSuchFile:
-                    pass
-                remote_branch = BzrDir.create_branch_and_repo(
-                    upgrade_url, format=required_format)
-            else:
-                old_branch = None
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
         remote_branch.repository.fetch(bzr_branch.repository)
-        if old_branch is not None:
-            # The format has changed; move the new format
-            # branch in place.
-            base_transport = old_branch.bzrdir.root_transport
-            old_branch.bzrdir.retire_bzrdir()
-            base_transport.rename("upgrade.bzr/.bzr", ".bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 

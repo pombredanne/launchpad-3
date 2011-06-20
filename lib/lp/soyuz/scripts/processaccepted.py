@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
@@ -265,8 +265,8 @@ class ProcessAccepted(LaunchpadScript):
                     self.logger.debug("Processing queue for %s %s" % (
                         distroseries.name, description))
 
-                    queue_items = distroseries.getQueueItems(
-                        PackageUploadStatus.ACCEPTED, archive=archive)
+                    queue_items = distroseries.getPackageUploads(
+                        status=PackageUploadStatus.ACCEPTED, archive=archive)
                     for queue_item in queue_items:
                         self.logger.debug(
                             "Processing queue item %d" % queue_item.id)
