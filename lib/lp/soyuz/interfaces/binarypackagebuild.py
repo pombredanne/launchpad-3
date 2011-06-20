@@ -16,16 +16,18 @@ __all__ = [
     'UnparsableDependencies',
     ]
 
+import httplib
+
 from lazr.enum import (
     EnumeratedType,
     Item,
     )
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
     export_write_operation,
     exported,
     operation_parameters,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -48,9 +50,9 @@ from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
-    webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
 
 
@@ -251,7 +253,7 @@ class BuildSetStatus(EnumeratedType):
     # currently the title) to be used programatically (for example, as a
     # css class name).
     NEEDSBUILD = Item(
-        title='NEEDSBUILD',# "Need building",
+        title='NEEDSBUILD',  # "Need building",
         description='There are some builds waiting to be built.')
 
     FULLYBUILT_PENDING = Item(
@@ -259,13 +261,13 @@ class BuildSetStatus(EnumeratedType):
         description="All builds were built successfully but have not yet "
                     "been published.")
 
-    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
+    FULLYBUILT = Item(title='FULLYBUILT',  # "Successfully built",
                       description="All builds were built successfully.")
 
-    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD',  # "Failed to build",
                          description="There were build failures.")
 
-    BUILDING = Item(title='BUILDING', # "Currently building",
+    BUILDING = Item(title='BUILDING',  # "Currently building",
                     description="There are some builds currently building.")
 
 

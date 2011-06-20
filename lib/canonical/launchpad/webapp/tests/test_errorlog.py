@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 import logging
+import httplib
 import os
 import shutil
 import stat
@@ -18,7 +19,7 @@ import traceback
 import unittest
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 import pytz
 import testtools
 from zope.app.publication.tests.test_zopepublication import (
@@ -439,27 +440,29 @@ class TestErrorReportingUtility(testtools.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        # Exceptions that don't use webservice_error result in OOPSes.
+        # Exceptions that don't use error_status result in OOPSes.
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
             self.assertNotEqual(request.oopsid, None)
 
-        # Exceptions with a webservice_error in the 500 range result
+        # Exceptions with a error_status in the 500 range result
         # in OOPSes.
+        @error_status(httplib.INTERNAL_SERVER_ERROR)
         class InternalServerError(Exception):
-            webservice_error(500)
+            pass
         try:
             raise InternalServerError("")
         except InternalServerError:
             utility.raising(sys.exc_info(), request, now=now)
             self.assertNotEqual(request.oopsid, None)
 
-        # Exceptions with any other webservice_error do not result
+        # Exceptions with any other error_status do not result
         # in OOPSes.
+        @error_status(httplib.BAD_REQUEST)
         class BadDataError(Exception):
-            webservice_error(400)
+            pass
         try:
             raise BadDataError("")
         except BadDataError:

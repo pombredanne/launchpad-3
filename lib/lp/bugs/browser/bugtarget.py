@@ -25,6 +25,7 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
+import httplib
 import urllib
 from urlparse import urljoin
 
@@ -71,7 +72,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -955,7 +955,7 @@ class FileBugAdvancedView(FileBugViewBase):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
         self.request.response.redirect(
-            filebug_url, status=HTTP_MOVED_PERMANENTLY)
+            filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
