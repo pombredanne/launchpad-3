@@ -760,7 +760,7 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id, 0.8 AS rank
                     FROM Person, IrcID
                     WHERE Person.id = IrcID.person
-                        AND IrcID.nickname = ?
+                        AND LOWER(IrcID.nickname) = LOWER(?)
                     UNION ALL
                     SELECT Person.id, 0.6 AS rank
                     FROM Person, EmailAddress
