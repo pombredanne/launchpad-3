@@ -29,14 +29,18 @@ from lp.testing import (
 
 class SpecificationWebserviceTestCase(TestCaseWithFactory):
 
+    def getLaunchpadlib(self):
+        user = self.factory.makePerson()
+        return launchpadlib_for("testing", user, version='devel')
+
     def getSpecOnWebservice(self, spec_object):
-        launchpadlib = self.factory.makeLaunchpadService()
+        launchpadlib = self.getLaunchpadlib()
         return launchpadlib.load(
             '/%s/+spec/%s' % (spec_object.target.name, spec_object.name))
 
     def getPillarOnWebservice(self, pillar_obj):
         # XXX: 2010-11-26, salgado, bug=681767: Can't use relative URLs here.
-        launchpadlib = self.factory.makeLaunchpadService()
+        launchpadlib = self.getLaunchpadlib()
         return launchpadlib.load(
             str(launchpadlib._root_uri) + '/' + pillar_obj.name)
 
