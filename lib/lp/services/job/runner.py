@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseRunnableJob',
+    'BaseRunnableJobSource',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -66,7 +67,18 @@ from lp.services.twistedsupport.task import (
     )
 
 
-class BaseRunnableJob:
+class BaseRunnableJobSource:
+    """Base class for job sources for the job runner."""
+
+    memory_limit = None
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        yield
+
+
+class BaseRunnableJob(BaseRunnableJobSource):
     """Base class for jobs to be run via JobRunner.
 
     Derived classes should implement IRunnableJob, which requires implementing
@@ -80,8 +92,6 @@ class BaseRunnableJob:
     user_error_types = ()
 
     retry_error_types = ()
-
-    memory_limit = None
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -152,11 +162,6 @@ class BaseRunnableJob:
         if ctrl is None:
             return
         ctrl.send()
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        yield
 
 
 class BaseJobRunner(object):
