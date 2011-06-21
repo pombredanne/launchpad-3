@@ -30,7 +30,6 @@ from lp.app.browser.launchpadform import (
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
     )
-from lp.registry.model.person import person_sort_key
 from lp.services.propertycache import cachedproperty
 
 
@@ -148,12 +147,9 @@ class SpecificationPortletSubcribersContents(LaunchpadView):
         The list is sorted such that subscriptions you can unsubscribe appear
         before all other subscriptions.
         """
-        sort_key = lambda sub: person_sort_key(sub.person)
-        subscriptions = sorted(self.context.subscriptions, key=sort_key)
-
         can_unsubscribe = []
         cannot_unsubscribe = []
-        for subscription in subscriptions:
+        for subscription in self.context.subscriptions:
             if not check_permission('launchpad.View', subscription.person):
                 continue
             if subscription.person == self.user:
