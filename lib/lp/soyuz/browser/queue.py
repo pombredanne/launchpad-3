@@ -188,7 +188,7 @@ class QueueItemsView(LaunchpadView):
         if None in sprs:
             sprs.remove(None)
         return getUtility(IPackagesetSet).getForPackages(
-            self.context, [spr.sourcepackagename_id for spr in sprs])
+            self.context, [spr.sourcepackagenameID for spr in sprs])
 
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
@@ -217,7 +217,7 @@ class QueueItemsView(LaunchpadView):
         source_files = source_file_set.getByPackageUploadIDs(upload_ids)
 
         load_related(
-            SourcePackageRelease, source_files, ['sourcepackagerelease_id'])
+            SourcePackageRelease, source_files, ['sourcepackagereleaseID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
