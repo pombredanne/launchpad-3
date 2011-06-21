@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
+    'get_branch_info',
     'get_branch_stacked_on_url',
     'get_stacked_on_url',
     'get_vfs_format_classes',
@@ -367,6 +368,24 @@ def get_stacked_on_url(branch):
         return branch.get_stacked_on_url()
     except (NotStacked, UnstackableBranchFormat):
         return None
+
+
+def get_branch_info(branch):
+    """Get information about the branch for branchChanged.
+
+    :return: a dict containing 'stacked_on_url', 'last_revision_id',
+        'control_string', 'branch_string', 'repository_string'.
+    """
+    info = {}
+    info['stacked_on_url'] = get_stacked_on_url(branch)
+    info['last_revision_id'] = branch.last_revision()
+    # XXX: Aaron Bentley 2008-06-13
+    # Bazaar does not provide a public API for learning about
+    # format markers.  Fix this in Bazaar, then here.
+    info['control_string'] = branch.bzrdir._format.get_format_string()
+    info['branch_string'] = branch._format.get_format_string()
+    info['repository_string'] = branch.repository._format.get_format_string()
+    return info
 
 
 @contextmanager

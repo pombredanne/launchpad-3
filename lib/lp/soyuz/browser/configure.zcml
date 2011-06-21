@@ -723,6 +723,12 @@
         <browser:page
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageDifferenceView"
+            permission="zope.Public"
+            name="+difference"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
                 "lp.soyuz.browser.sourcepackage.SourcePackageChangelogView"
             permission="zope.Public"
             name="+changelog"
@@ -844,4 +850,12 @@
         facet="overview"
         permission="launchpad.View"
         template="../templates/buildfarmbuildjob-current.pt"/>
+    <browser:pages
+        for="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"
+        permission="zope.Public">
+        <browser:page
+            name="+render-list"
+            template="../templates/packagerelationship-list.pt"
+         />
+    </browser:pages>
 </configure>

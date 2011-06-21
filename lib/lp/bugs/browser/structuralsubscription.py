@@ -396,7 +396,10 @@ class StructuralSubscriptionMenuMixin:
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True, enabled=self._enabled)
+        # Clicks to this link will be intercepted by the on-page JavaScript,
+        # but we want a link target for non-JS-enabled browsers.
+        return Link('+subscribe', text, icon='add', hidden=True,
+            enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):
@@ -411,13 +414,19 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
-    if subscriptions is None or len(list(subscriptions)) == 0:
-        subscriptions = []
-        target = context
+    if subscriptions is None:
+        try:
+            # No subscriptions, which means we are on a target
+            # subscriptions page. Let's at least provide target details.
+            target_info = {}
+            target_info['title'] = context.title
+            target_info['url'] = canonical_url(context, rootsite='mainsite')
+            IJSONRequestCache(request).objects['target_info'] = target_info
+        except NoCanonicalUrl:
+            # We export nothing if the target implements no canonical URL.
+            pass
     else:
-        target = None
-    expose_user_subscriptions_to_js(
-        user, subscriptions, request, target)
+        expose_user_subscriptions_to_js(user, subscriptions, request)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -431,56 +440,52 @@ def expose_enum_to_js(request, enum, name):
 def expose_user_administered_teams_to_js(request, user, context,
         absoluteURL=absoluteURL):
     """Make the list of teams the user administers available to JavaScript."""
+    # XXX: Robert Collins workaround multiple calls making this cause
+    # timeouts: see bug 788510.
+    objects = IJSONRequestCache(request).objects
+    if 'administratedTeams' in objects:
+        return
     info = []
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
+    if is_distro:
+        # If the context is a distro AND a bug supervisor is set then we only
+        # allow subscriptions from members of the bug supervisor team.
+        bug_supervisor = context.bug_supervisor
+    else:
+        bug_supervisor = None
     if user is not None:
-        administrated_teams = user.administrated_teams
+        administrated_teams = set(user.administrated_teams)
         if administrated_teams:
             # Get this only if we need to.
-            membership = list(user.teams_participated_in)
-            for team in administrated_teams:
-                # If the user is not a member of the team itself, then
-                # skip it, because structural subscriptions and their
-                # filters can only be edited by the subscriber.
-                # This can happen if the user is an owner but not a member.
-                if not team in membership:
-                    continue
-                # If the context is a distro AND a bug supervisor is set
-                # AND the admininistered team is not a member of the bug
-                # supervisor team THEN skip it.
-                if (is_distro and context.bug_supervisor is not None and
-                    not team.inTeam(context.bug_supervisor)):
+            membership = set(user.teams_participated_in)
+            # Only consider teams the user is both in and administers:
+            #  If the user is not a member of the team itself, then
+            # skip it, because structural subscriptions and their
+            # filters can only be edited by the subscriber.
+            # This can happen if the user is an owner but not a member.
+            administers_and_in = membership.intersection(administrated_teams)
+            for team in administers_and_in:
+                if (bug_supervisor is not None and
+                    not team.inTeam(bug_supervisor)):
                     continue
                 info.append({
+                    'has_preferredemail': team.preferredemail is not None,
                     'link': absoluteURL(team, api_request),
                     'title': team.title,
                     'url': canonical_url(team),
                 })
-    IJSONRequestCache(request).objects['administratedTeams'] = info
+    objects['administratedTeams'] = info
 
 
-def expose_user_subscriptions_to_js(user, subscriptions, request,
-                                    target=None):
+def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
-    info = {}
     api_request = IWebServiceClientRequest(request)
+    info = {}
     if user is None:
         administered_teams = []
     else:
         administered_teams = user.administrated_teams
-
-    if target is not None:
-        try:
-            # No subscriptions, which means we are on a target
-            # subscriptions page. Let's at least provide target details.
-            target_info = {}
-            target_info['title'] = target.title
-            target_info['url'] = canonical_url(target, rootsite='mainsite')
-            IJSONRequestCache(request).objects['target_info'] = target_info
-        except NoCanonicalUrl:
-            # We export nothing if the target implements no canonical URL.
-            pass
 
     for subscription in subscriptions:
         target = subscription.target

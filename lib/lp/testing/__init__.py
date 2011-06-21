@@ -74,6 +74,8 @@ import tempfile
 import time
 import unittest
 
+import simplejson
+
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -163,7 +165,6 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
-from lp.testing.matchers import Provides
 from lp.testing.windmill import (
     constants,
     lpuser,
@@ -390,6 +391,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
+        from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
@@ -908,10 +910,14 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(WindmillTestCase):
+class YUIUnitTestCase(TestCase):
 
     layer = None
     suite_name = ''
+    js_timeout = 30000
+
+    TIMEOUT = object()
+    MISSING_REPORT = object()
 
     _yui_results = None
 
@@ -932,34 +938,41 @@ class YUIUnitTestCase(WindmillTestCase):
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
-        #This goes here to prevent circular import issues
-        from canonical.testing.layers import BaseLayer
-        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
-        yui_runner_url = _view_name + self.test_path
-
-        client = self.client
-        client.open(url=yui_runner_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        # This is very fragile for some reason, so we need a long delay here.
-        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
-        response = client.commands.getPageText()
+        # html5browser imports from the gir/pygtk stack which causes
+        # twisted tests to break because of gtk's initialize.
+        try:
+            import html5browser
+            # Hush lint.
+            html5browser
+        except ImportError:
+            html5browser = None
+        client = html5browser.Browser()
+        html_uri = 'file://%s' % os.path.join(
+            config.root, 'lib', self.test_path)
+        page = client.load_page(html_uri, timeout=self.js_timeout)
+        if page.return_code == page.CODE_FAIL:
+            self._yui_results = self.TIMEOUT
+            return
+        # Data['type'] is complete (an event).
+        # Data['results'] is a dict (type=report)
+        # with 1 or more dicts (type=testcase)
+        # with 1 for more dicts (type=test).
+        report = simplejson.loads(page.content)
+        if report.get('type', None) != 'complete':
+            # Did not get a report back.
+            self._yui_results = self.MISSING_REPORT
+            return
         self._yui_results = {}
-        # Maybe testing.pages should move to lp to avoid circular imports.
-        from canonical.launchpad.testing.pages import find_tags_by_class
-        entries = find_tags_by_class(
-            response['result'], 'yui3-console-entry-TestRunner')
-        for entry in entries:
-            category = entry.find(
-                attrs={'class': 'yui3-console-entry-cat'})
-            if category is None:
-                continue
-            result = category.string
-            if result not in ('pass', 'fail'):
-                continue
-            message = entry.pre.string
-            test_name, ignore = message.split(':', 1)
-            self._yui_results[test_name] = dict(
-                result=result, message=message)
+        for key, value in report['results'].items():
+            if isinstance(value, dict) and value['type'] == 'testcase':
+                testcase_name = key
+                test_case = value
+                for key, value in test_case.items():
+                    if isinstance(value, dict) and value['type'] == 'test':
+                        test_name = '%s.%s' % (testcase_name, key)
+                        test = value
+                        self._yui_results[test_name] = dict(
+                            result=test['result'], message=test['message'])
 
     def checkResults(self):
         """Check the results.
@@ -967,13 +980,20 @@ class YUIUnitTestCase(WindmillTestCase):
         The tests are run during `setUp()`, but failures need to be reported
         from here.
         """
-        if self._yui_results is None or len(self._yui_results) == 0:
-            self.fail("Test harness or js failed.")
+        if self._yui_results == self.TIMEOUT:
+            self.fail("js timed out.")
+        elif self._yui_results == self.MISSING_REPORT:
+            self.fail("The data returned by js is not a test report.")
+        elif self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js report format changed.")
+        failures = []
         for test_name in self._yui_results:
             result = self._yui_results[test_name]
-            self.assertTrue('pass' == result['result'],
+            if result['result'] != 'pass':
+                failures.append(
                     'Failure in %s.%s: %s' % (
-                        self.test_path, test_name, result['message']))
+                    self.test_path, test_name, result['message']))
+        self.assertEqual([], failures, '\n'.join(failures))
 
 
 def build_yui_unittest_suite(app_testing_path, yui_test_class):

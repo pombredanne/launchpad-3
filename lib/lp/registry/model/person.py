@@ -129,10 +129,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent,
-    ITeamInvitationEvent,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -158,7 +154,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -173,6 +168,7 @@ from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
 from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -192,7 +188,6 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
-    IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -255,6 +250,8 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
@@ -273,6 +270,7 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
@@ -599,7 +597,7 @@ class Person(
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -613,6 +611,10 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty
+    def ircnicknames(self):
+        return list(self._ircnicknames)
 
     @cachedproperty
     def languages(self):
@@ -941,11 +943,30 @@ class Person(
     # rather than package bug supervisors.
     def getBugSubscriberPackages(self):
         """See `IPerson`."""
-        packages = [sub.target for sub in self.structural_subscriptions
-                    if (sub.distribution is not None and
-                        sub.sourcepackagename is not None)]
-        packages.sort(key=lambda x: x.name)
-        return packages
+        # Avoid circular imports.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        from lp.registry.model.distribution import Distribution
+        origin = (
+            StructuralSubscription,
+            Join(
+                Distribution,
+                StructuralSubscription.distributionID == Distribution.id),
+            Join(
+                SourcePackageName,
+                StructuralSubscription.sourcepackagenameID ==
+                    SourcePackageName.id)
+            )
+        result = Store.of(self).using(*origin).find(
+            (Distribution, SourcePackageName),
+            StructuralSubscription.subscriberID == self.id)
+        result.order_by(SourcePackageName.name)
+
+        def decorator(row):
+            return DistributionSourcePackage(*row)
+
+        return DecoratedResultSet(result, decorator)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -1012,15 +1033,8 @@ class Person(
             # calling this method on a Person object directly via the
             # webservice API means searching for user related tasks
             user = kwargs.pop('user')
-            try:
-                search_params = get_related_bugtasks_search_params(
-                    user, self, **kwargs)
-            except IllegalRelatedBugTasksParams, e:
-                # dirty hack, marking an exception with a HTTP error
-                # only works if the exception is raised in the exported
-                # method, see docstring of
-                # `lazr.restful.declarations.webservice_error()`
-                raise e
+            search_params = get_related_bugtasks_search_params(
+                user, self, **kwargs)
             return getUtility(IBugTaskSet).search(
                 *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
@@ -1338,18 +1352,7 @@ class Person(
                 pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
-        if tp is not None or self.id == team.teamownerID:
-            in_team = True
-        elif not team.teamowner.inTeam(team):
-            # The owner is not a member but must retain his rights over
-            # this team. This person may be a member of the owner, and in this
-            # case it'll also have rights over this team.
-            # Note that this query and the tp query above can be consolidated
-            # when we get to a finer grained level of optimisations.
-            in_team = self.inTeam(team.teamowner)
-        else:
-            in_team = False
-
+        in_team = tp is not None
         self._inTeam_cache[team.id] = in_team
         return in_team
 
@@ -3967,6 +3970,9 @@ class PersonSet:
             ('votecast', 'person'),
             ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
+            # These are ON DELETE CASCADE and maintained by triggers.
+            ('bugsummary', 'viewed_by'),
+            ('bugsummaryjournal', 'viewed_by'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -4042,6 +4048,9 @@ class PersonSet:
 
         # We ignore BugSubscriptionFilterMutes.
         skip.append(('bugsubscriptionfiltermute', 'person'))
+
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
 
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
@@ -4659,7 +4668,7 @@ def get_recipients(person):
     if person.preferredemail:
         return [person]
     elif person.is_team:
-        # Get transitive members of team with a preferred email.
+        # Get transitive members of team without a preferred email.
         return _get_recipients_for_team(person)
     else:
         return []

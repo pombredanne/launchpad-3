@@ -23,7 +23,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
@@ -32,6 +31,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.registry.interfaces.distribution import IDistribution
@@ -135,8 +135,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    source_name, binary_name = distribution.guessPackageNames(
-                        package_name.name)
+                    source_name = (
+                        distribution.guessPublishedSourcePackageName(
+                            package_name.name))
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"

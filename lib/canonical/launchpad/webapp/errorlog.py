@@ -40,6 +40,7 @@ from canonical.launchpad.webapp.interfaces import (
     IErrorReport,
     IErrorReportEvent,
     IErrorReportRequest,
+    IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -372,12 +373,28 @@ class ErrorReportingUtility:
         notify(ErrorReportEvent(entry))
         return entry
 
-    def _isIgnoredException(self, strtype, request=None):
+    def _isIgnoredException(self, strtype, request=None, exception=None):
+        """Should the given exception generate an OOPS or be ignored?
+
+        Exceptions will be ignored if they
+            - are specially tagged as being ignorable by having the marker
+              interface IUnloggedException
+            - are of a type included in self._ignored_exceptions, or
+            - were requested with an off-site REFERRER header and are of a
+              type included in self._ignored_exceptions_for_offsite_referer
+        """
+        if IUnloggedException.providedBy(exception):
+            return True
         if strtype in self._ignored_exceptions:
             return True
         if strtype in self._ignored_exceptions_for_offsite_referer:
             if request is not None:
-                referer = request.get('HTTP_REFERER', '')
+                referer = request.get('HTTP_REFERER')
+                # If there is no referrer then we can't tell if this exception
+                # should be ignored or not, so we'll be conservative and
+                # ignore it.
+                if referer is None:
+                    return True
                 referer_parts = urlparse.urlparse(referer)
                 root_parts = urlparse.urlparse(
                     allvhosts.configs['mainsite'].rooturl)
@@ -404,7 +421,7 @@ class ErrorReportingUtility:
         tb_text = None
 
         strtype = str(getattr(info[0], '__name__', info[0]))
-        if self._isIgnoredException(strtype, request):
+        if self._isIgnoredException(strtype, request, info[1]):
             return
 
         if not isinstance(info[2], basestring):

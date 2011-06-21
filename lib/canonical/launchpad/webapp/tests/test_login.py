@@ -26,10 +26,13 @@ from openid.consumer.consumer import (
     SUCCESS,
     )
 from openid.extensions import sreg
+from openid.yadis.discover import DiscoveryFailure
+import urllib2
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
+from zope.testbrowser.testing import Browser as TestBrowser
 
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
@@ -49,7 +52,10 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication,
+    IStoreSelector,
+    )
 from canonical.launchpad.webapp.login import (
     OpenIDCallbackView,
     OpenIDLogin,
@@ -65,8 +71,10 @@ from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     logout,
+    TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import ZopeViewReplacementFixture
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 
@@ -512,7 +520,7 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view = OpenIDCallbackView(context=None, request=None)
         view.request = LaunchpadTestRequest(
             SERVER_URL=self.APPLICATION_URL, form={'fake': 'value'},
-            QUERY_STRING='starting_url='+self.STARTING_URL)
+            QUERY_STRING='starting_url=' + self.STARTING_URL)
         view._redirect()
         self.assertEquals(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
@@ -561,6 +569,13 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
     layer = AppServerLayer
 
     def test_replay_attacks_do_not_succeed(self):
+        # Enable the picker_enhancements feature to test the commenter name.
+        from lp.services.features.testing import FeatureFixture
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+
         browser = Browser(mech_browser=MyMechanizeBrowser())
         browser.open('%s/+login' % self.layer.appserver_root_url())
         # On a JS-enabled browser this page would've been auto-submitted
@@ -572,7 +587,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         fill_login_form_and_submit(browser, 'test@canonical.com', 'test')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
-        self.assertIn('name12', login_status)
+        self.assertIn('Sample Person (name12)', login_status)
 
         # Now we look up (in urls_redirected_to) the +openid-callback URL that
         # was used to complete the authentication and open it on a different
@@ -588,6 +603,37 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         error_msg = find_tags_by_class(replay_browser.contents, 'error')[0]
         self.assertEquals('Nonce already used or out of range',
                           extract_text(error_msg))
+
+
+class FakeHTTPResponse:
+    status = 500
+
+
+class OpenIDConsumerThatFailsDiscovery:
+
+    def begin(self, url):
+        raise DiscoveryFailure(
+            'HTTP Response status from identity URL host is not 200. '
+            'Got status 500', FakeHTTPResponse)
+
+
+class TestMissingServerShowsNiceErrorPage(TestCase):
+    layer = DatabaseFunctionalLayer
+
+    def test_missing_openid_server_shows_nice_error_page(self):
+        fixture = ZopeViewReplacementFixture('+login', ILaunchpadApplication)
+        class OpenIDLoginThatFailsDiscovery(fixture.original):
+            def _getConsumer(self):
+                return OpenIDConsumerThatFailsDiscovery()
+        fixture.replacement = OpenIDLoginThatFailsDiscovery
+        self.useFixture(fixture)
+        browser = TestBrowser()
+        self.assertRaises(urllib2.HTTPError,
+                          browser.open, 'http://launchpad.dev/+login')
+        self.assertEquals('503 Service Unavailable',
+                          browser.headers.get('status'))
+        self.assertTrue(
+            'OpenID Provider Is Unavailable at This Time' in browser.contents)
 
 
 class FakeOpenIDRequest:

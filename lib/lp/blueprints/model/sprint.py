@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import (
     SpecificationFilter,
     SpecificationImplementationStatus,
@@ -314,7 +314,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         # result set.  Listification should do.
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 people, need_validity=True))
-        return sorted(result, key=lambda a: a.attendee.displayname)
+        return sorted(result, key=lambda a: a.attendee.displayname.lower())
 
     # linking to specifications
     def linkSpecification(self, spec):
@@ -415,4 +415,3 @@ class HasSprintsMixin:
         return Sprint.select(
             query, clauseTables=tables, orderBy='-time_starts',
             distinct=True)
-

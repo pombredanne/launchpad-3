@@ -17,6 +17,8 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
 from lp.app.browser.tales import PersonFormatterAPI
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.distroserieslanguage import (
@@ -52,6 +54,9 @@ class BaseSeriesLanguageView(LaunchpadView):
                 self.request)
             self.pofiles = self.context.getPOFilesFor(
                 self.batchnav.currentBatch())
+            load_related(
+                SourcePackageName, self.batchnav.currentBatch(),
+                ['sourcepackagenameID'])
         else:
             self.batchnav = BatchNavigator(self.context.pofiles, self.request)
             self.pofiles = self.batchnav.currentBatch()

@@ -14,12 +14,13 @@ __all__ = [
 
 import calendar
 import datetime
+import httplib
 import operator
 
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 import pytz
 from sqlobject import (
     BoolCol,
@@ -67,7 +68,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -79,8 +79,8 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.lazr.utils import safe_hasattr
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -95,6 +95,7 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -287,9 +288,9 @@ class ProductWithLicenses:
                 tables=[ProductLicense]))
 
 
+@error_status(httplib.BAD_REQUEST)
 class UnDeactivateable(Exception):
     """Raised when a project is requested to deactivate but can not."""
-    webservice_error(400)
 
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
@@ -799,10 +800,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.product == self, user, wanted_tags=wanted_tags)
+            BugSummary.product_id == self.id,
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')

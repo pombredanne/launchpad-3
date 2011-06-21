@@ -166,6 +166,7 @@
                 custom_file_urls
                 date_created
                 sourcepackagerelease
+                component_name
                 contains_source
                 contains_build
                 contains_translation
@@ -177,8 +178,11 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components
-                isAutoSyncUpload"/>
+                package_copy_job
+                package_name
+                package_version
+                section_name
+                components"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -886,14 +890,14 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-    <!-- InitialiseDistroSeriesJobSource -->
+    <!-- InitializeDistroSeriesJobSource -->
     <securedutility
-      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
-      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+      component="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+    <class class="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
@@ -910,14 +914,68 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
-      component="lp.soyuz.model.packagecopyjob.PackageCopyJob"
-      provides="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJobSource"/>
+        component=".model.packagecopyjob.PlainPackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.packagecopyjob.PackageCopyJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IPackageCopyJob" />
-        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+
+    <!-- PackageCopyJob -->
+    <class class=".model.packagecopyjob.PackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
     </class>
+
+    <!-- PlainPackageCopyJob -->
+    <class class=".model.packagecopyjob.PlainPackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+    </class>
+
+    <!-- PackageCopyPolicy -->
+    <class class=".adapters.copypolicy.InsecureCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <class class=".adapters.copypolicy.MassSyncCopyPolicy">
+      <allow interface=".interfaces.copypolicy.ICopyPolicy"/>
+    </class>
+    <adapter
+      for="lazr.enum.DBItem"
+      provides="lp.soyuz.interfaces.copypolicy.ICopyPolicy"
+      factory="lp.soyuz.adapters.copypolicy.get_icopypolicy_for_packagecopypolicy"/>
+
+    <!-- PackageCopyRequestSet -->
+    <securedutility
+        class="lp.soyuz.model.packagecopyrequest.PackageCopyRequestSet"
+        provides="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequestSet" />
+    </securedutility>
+
+
+    <!-- PackageCopyRequest -->
+    <class class="lp.soyuz.model.packagecopyrequest.PackageCopyRequest">
+        <allow interface="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="lp.soyuz.interfaces.packagecopyrequest.IPackageCopyRequest"
+        />
+    </class>
+
+    <!-- PackageRelationship -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationship">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationship"/>
+    </class>
+
+    <!-- PackageRelationshipSet -->
+    <class class="lp.soyuz.browser.packagerelationship.PackageRelationshipSet">
+      <allow interface="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"/>
+    </class>
+
+   <!-- Overrides -->
+   <class class="lp.soyuz.adapters.overrides.SourceOverride">
+        <allow interface="lp.soyuz.adapters.overrides.ISourceOverride" />
+   </class>
+   <class class="lp.soyuz.adapters.overrides.BinaryOverride">
+        <allow interface="lp.soyuz.adapters.overrides.IBinaryOverride" />
+   </class>
 
    <!-- OverridePolicy -->
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">

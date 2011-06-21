@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -26,7 +26,10 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    )
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -78,6 +81,7 @@ class Job(SQLBase):
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
+             JobStatus.SUSPENDED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
@@ -97,6 +101,22 @@ class Job(SQLBase):
         self._status = status
 
     status = property(lambda x: x._status)
+
+    @classmethod
+    def createMultiple(self, store, num_jobs):
+        """Create multiple `Job`s at once.
+
+        :param store: `Store` to ceate the jobs in.
+        :param num_jobs: Number of `Job`s to create.
+        :return: An iterable of `Job.id` values for the new jobs.
+        """
+        job_contents = ["(%s)" % quote(JobStatus.WAITING)] * num_jobs
+        result = store.execute("""
+            INSERT INTO Job (status)
+            VALUES %s
+            RETURNING id
+            """ % ", ".join(job_contents))
+        return [job_id for job_id, in result]
 
     def acquireLease(self, duration=300):
         """See `IJob`."""

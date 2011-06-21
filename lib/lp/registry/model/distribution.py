@@ -29,7 +29,10 @@ from storm.locals import (
     Or,
     SQL,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -64,12 +67,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.url import urlparse
-from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
+from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
     FAQ,
     FAQSearch,
@@ -81,6 +83,7 @@ from lp.answers.model.question import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -116,9 +119,11 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     OfficialBugTagTargetMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
+    )
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import (
@@ -646,10 +651,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.distribution == self, user, wanted_tags=wanted_tags)
+            And(BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1363,7 +1373,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # results will only see DSPCs
         return DecoratedResultSet(results, result_to_dspc)
 
-    def guessPackageNames(self, pkgname):
+    def guessPublishedSourcePackageName(self, pkgname):
         """See `IDistribution`"""
         assert isinstance(pkgname, basestring), (
             "Expected string. Got: %r" % pkgname)
@@ -1379,78 +1389,34 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                                 'published in it'
                                 % (self.displayname, pkgname))
 
-        # The way this method works is that is tries to locate a pair
-        # of packages related to that name. If it locates a source
-        # package it then tries to see if it has been published at any
-        # point, and gets the binary package from the publishing
-        # record.
-        #
-        # If that fails (no source package by that name, or not
-        # published) then it'll search binary packages, then find the
-        # source package most recently associated with it, first in
-        # the current distroseries and then across the whole
-        # distribution.
-        #
-        # XXX kiko 2006-07-28:
-        # Note that the strategy of falling back to previous
-        # distribution series might be revisited in the future; for
-        # instance, when people file bugs, it might actually be bad for
-        # us to allow them to be associated with obsolete packages.
-
-        bpph_location_clauses = [
-            DistroSeries.distribution == self,
-            DistroArchSeries.distroseriesID == DistroSeries.id,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.archiveID.is_in(
-                self.all_distro_archive_ids),
-            BinaryPackagePublishingHistory.dateremoved == None,
-            BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagereleaseID,
-            ]
-
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
             # Note that in the source package case, we don't restrict
             # the search to the distribution release, making a best
             # effort to find a package.
-            publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distroseries =
-                    DistroSeries.id AND
-                DistroSeries.distribution = %s AND
-                SourcePackagePublishingHistory.archive IN %s AND
-                SourcePackagePublishingHistory.sourcepackagerelease =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = %s AND
-                SourcePackagePublishingHistory.status IN %s
-                ''' % sqlvalues(self,
-                                self.all_distro_archive_ids,
-                                sourcepackagename,
-                                (PackagePublishingStatus.PUBLISHED,
-                                 PackagePublishingStatus.PENDING)),
-                clauseTables=['SourcePackageRelease', 'DistroSeries'],
-                distinct=True,
-                orderBy="id")
+            publishing = IStore(SourcePackagePublishingHistory).find(
+                SourcePackagePublishingHistory,
+                SourcePackagePublishingHistory.archiveID == Archive.id,
+                Archive.distribution == self,
+                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagename == sourcepackagename,
+                SourcePackagePublishingHistory.status.is_in(
+                    (PackagePublishingStatus.PUBLISHED,
+                     PackagePublishingStatus.PENDING)
+                    )).order_by(
+                        Desc(SourcePackagePublishingHistory.id)).first()
             if publishing is not None:
-                # Attempt to find a published binary package of the
-                # same name.
-                bpph = IStore(BinaryPackagePublishingHistory).find(
-                    BinaryPackagePublishingHistory,
-                    BinaryPackageRelease.binarypackagename ==
-                        BinaryPackageName.id,
-                    BinaryPackageName.name == sourcepackagename.name,
-                    BinaryPackageBuild.id == BinaryPackageRelease.buildID,
-                    SourcePackageRelease.id ==
-                        BinaryPackageBuild.source_package_release_id,
-                    SourcePackageRelease.sourcepackagename ==
-                        sourcepackagename,
-                    *bpph_location_clauses).any()
-                if bpph is not None:
-                    bpr = bpph.binarypackagerelease
-                    return (sourcepackagename, bpr.binarypackagename)
-                # No binary with a similar name, so just return None
-                # rather than returning some arbitrary binary package.
-                return (sourcepackagename, None)
+                return sourcepackagename
+
+            # Look to see if there is an official source package branch.
+            # That's considered "published" enough.
+            branch_links = getUtility(IFindOfficialBranchLinks)
+            results = branch_links.findForDistributionSourcePackage(
+                self.getSourcePackage(sourcepackagename))
+            if results.any() is not None:
+                return sourcepackagename
 
         # At this point we don't have a published source package by
         # that name, so let's try to find a binary package and work
@@ -1463,12 +1429,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.archiveID == Archive.id,
+                Archive.distribution == self,
+                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                    BinaryPackageRelease.id,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
-                *bpph_location_clauses).order_by(
+                BinaryPackagePublishingHistory.dateremoved == None,
+                ).order_by(
                     Desc(BinaryPackagePublishingHistory.id)).first()
             if bpph is not None:
                 spr = bpph.binarypackagerelease.build.source_package_release
-                return (spr.sourcepackagename, binarypackagename)
+                return spr.sourcepackagename
 
         # We got nothing so signal an error.
         if sourcepackagename is None:
@@ -1831,10 +1803,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             BinaryPackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED).config(limit=1)
 
-        # XXX 2009-02-19 Julian
-        # Storm is not very useful for bool checking on the results,
-        # see: https://bugs.launchpad.net/soyuz/+bug/246200
-        return results.any() != None
+        return not results.is_empty()
 
     def sharesTranslationsWithOtherSide(self, person, language,
                                         sourcepackage=None,
@@ -1878,6 +1847,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return OrderedBugTask(2, bugtask.id, bugtask)
 
         return weight_function
+
+    @property
+    def has_published_sources(self):
+        archives_sources = EmptyResultSet()
+        for archive in self.all_distro_archives:
+            archives_sources = archives_sources.union(
+                archive.getPublishedSources())
+        return not archives_sources.is_empty()
 
 
 class DistributionSet:

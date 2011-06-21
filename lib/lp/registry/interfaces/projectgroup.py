@@ -43,8 +43,6 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -76,7 +74,11 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.services.fields import (
     IconImageUpload,
     LogoImageUpload,

@@ -25,6 +25,7 @@ import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from operator import itemgetter
+import httplib
 import urllib
 from urlparse import urljoin
 
@@ -60,7 +61,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -72,7 +72,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -88,6 +87,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -97,7 +97,6 @@ from lp.app.widgets.product import (
     GhostWidget,
     ProductBugTrackerWidget,
     )
-from lp.bugs.publisher import BugsLayer
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
@@ -135,6 +134,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -329,6 +329,17 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         self.extra_data = FileBugData()
 
     def initialize(self):
+        # redirect_ubuntu_filebug is a cached_property.
+        # Access it first just to compute its value. Because it
+        # makes a DB access to get the bug supervisor, it causes
+        # trouble in tests when form validation errors occur. Because the
+        # transaction is doomed, the storm cache is invalidated and accessing
+        # the property will result in a a LostObjectError, because
+        # the created objects disappeared. Not likely a problem in production
+        # since the objects will still be in the DB, but doesn't hurt there
+        # either. It makes for better diagnosis of failing tests.
+        if self.redirect_ubuntu_filebug:
+            pass
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
             self.extra_data_token is not None and
@@ -473,7 +484,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.guessPackageNames(packagename)
+                    distribution.guessPublishedSourcePackageName(packagename)
                 except NotFoundError:
                     if distribution.series:
                         # If a distribution doesn't have any series,
@@ -590,13 +601,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             # package name, so let the Soyuz API figure it out for us.
             packagename = str(packagename.name)
             try:
-                sourcepackagename, binarypackagename = (
-                    context.guessPackageNames(packagename))
+                sourcepackagename = context.guessPublishedSourcePackageName(
+                    packagename)
             except NotFoundError:
-                # guessPackageNames may raise NotFoundError. It would be
-                # nicer to allow people to indicate a package even if
-                # never published, but the quick fix for now is to note
-                # the issue and move on.
                 notifications.append(
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
@@ -608,7 +615,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                         packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -749,7 +755,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             else:
                 bug.subscribe(self.user, self.user)
                 self.request.response.addNotification(
-                    "You have been subscribed to this bug.")
+                    "You have subscribed to this bug report.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -955,7 +961,7 @@ class FileBugAdvancedView(FileBugViewBase):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
         self.request.response.redirect(
-            filebug_url, status=HTTP_MOVED_PERMANENTLY)
+            filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1405,19 +1411,8 @@ class BugTargetBugTagsView(LaunchpadView):
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
         official_tags = self.context.official_bug_tags
-
-        # Construct a dict of official and top 10 tags.
-        # getUsedBugTagsWithOpenCounts is expensive, so do the union in
-        # SQL. Also preseed with 0 for all the official tags, as gUBTWOC
-        # won't return unused ones.
-        top_ten = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
-        official = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(
-                self.user, official_tags))
-        tags = dict((tag, 0) for tag in official_tags)
-        tags.update(dict(top_ten.union(official)))
-
+        tags = self.context.getUsedBugTagsWithOpenCounts(
+            self.user, 10, official_tags)
         max_count = float(max([1] + tags.values()))
 
         return sorted(
@@ -1462,8 +1457,11 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     @property
     def tags_js_data(self):
         """Return the JSON representation of the bug tags."""
-        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
-        official_tags = list(self.context.official_bug_tags)
+        # The model returns dict and list respectively but dumps blows up on
+        # security proxied objects.
+        used_tags = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = removeSecurityProxy(self.context.official_bug_tags)
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
