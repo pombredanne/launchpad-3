@@ -446,6 +446,17 @@ class IPackagesetSet(IPackagesetSetEdit):
         :return: An iterable collection of `IPackageset` instances.
         """
 
+    def getForPackages(distroseries, sourcepackagename_ids):
+        """Get `Packagesets` that directly contain the given packages.
+
+        :param distroseries: `DistroSeries` to look in.  Only packagesets for
+            this series will be returned.
+        :param sourcepackagename_ids: A sequence of `SourcePackageName` ids.
+            Only packagesets for these package names will be returned.
+        :return: A dict mapping `SourcePackageName` ids to lists of their
+            respective packagesets, in no particular order.
+        """
+
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_('Source package name'), required=True),

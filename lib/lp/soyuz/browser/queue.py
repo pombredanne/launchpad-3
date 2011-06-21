@@ -9,6 +9,7 @@ __all__ = [
     'QueueItemsView',
     ]
 
+import cgi
 import operator
 
 from lazr.delegates import delegates
@@ -22,6 +23,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.services.database.bulk import load_related
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
@@ -176,6 +178,18 @@ class QueueItemsView(LaunchpadView):
         # Listify to avoid repeated queries.
         return list(old_binary_packages)
 
+    def getPackagesetsForSourceFiles(self, source_files):
+        """Get the `Packagesets` belonging to `source_files`.
+
+        :param source_files: A sequence of `SourcePackageReleaseFile`s.
+        """
+        sprs = set(
+            source_file.sourcepackagerelease for source_file in source_files)
+        if None in sprs:
+            sprs.remove(None)
+        return getUtility(IPackagesetSet).getForPackages(
+            self.context, [spr.sourcepackagename_id for spr in sprs])
+
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
 
@@ -183,6 +197,9 @@ class QueueItemsView(LaunchpadView):
         CompletePackageUpload.  This avoids many additional SQL queries
         in the +queue template.
         """
+        # Avoid circular imports.
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
         uploads = list(self.batchnav.currentBatch())
 
         if len(uploads) == 0:
@@ -198,6 +215,9 @@ class QueueItemsView(LaunchpadView):
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
         source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+
+        load_related(
+            SourcePackageRelease, source_files, ['sourcepackagerelease_id'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
@@ -217,9 +237,11 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
+        package_sets = self.getPackagesetsForSourceFiles(source_files)
+
         return [
             CompletePackageUpload(
-                item, build_upload_files, source_upload_files)
+                item, build_upload_files, source_upload_files, package_sets)
             for item in uploads]
 
     def is_new(self, binarypackagerelease):
@@ -415,8 +437,9 @@ class QueueItemsView(LaunchpadView):
 class CompletePackageUpload:
     """A decorated `PackageUpload` including sources, builds and packages.
 
-    Some properties of PackageUpload are cached here to reduce the number
-    of queries that the +queue template has to make.
+    This acts effectively as a view for package uploads.  Some properties of
+    the class are cached here to reduce the number of queries that the +queue
+    template has to make.  Others are added here exclusively.
     """
     # These need to be predeclared to avoid delegates taking them over.
     # Would be nice if there was a way of allowing writes to just work
@@ -433,7 +456,7 @@ class CompletePackageUpload:
     delegates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files,
-                 source_upload_files):
+                 source_upload_files, package_sets):
         self.pocket = packageupload.pocket
         self.date_created = packageupload.date_created
         self.context = packageupload
@@ -459,6 +482,12 @@ class CompletePackageUpload:
         else:
             self.sourcepackagerelease = None
 
+        if self.contains_source:
+            self.package_sets = package_sets.get(
+                self.sourcepackagerelease.sourcepackagenameID, [])
+        else:
+            self.package_sets = []
+
     @property
     def pending_delayed_copy(self):
         """Whether the context is a delayed-copy pending processing."""
@@ -478,11 +507,87 @@ class CompletePackageUpload:
         return self.context.changesfile
 
     @property
-    def package_sets(self):
-        assert self.sourcepackagerelease, \
-            "Can only be used on a source upload."
-        return ' '.join(sorted(ps.name for ps in
-            getUtility(IPackagesetSet).setsIncludingSource(
-                self.sourcepackagerelease.sourcepackagename,
-                distroseries=self.distroseries,
-                direct_inclusion=True)))
+    def display_package_sets(self):
+        """Package sets, if any, for display on the +queue page."""
+        if self.contains_source:
+            return ' '.join(sorted(
+                packageset.name for packageset in self.package_sets))
+        else:
+            return ""
+
+    @property
+    def display_component(self):
+        """Component name, if any, for display on the +queue page."""
+        if self.contains_source:
+            return self.component_name.lower()
+        else:
+            return ""
+
+    @property
+    def display_section(self):
+        """Section name, if any, for display on the +queue page."""
+        if self.contains_source:
+            return self.section_name.lower()
+        else:
+            return ""
+
+    @property
+    def display_priority(self):
+        """Priority name, if any, for display on the +queue page."""
+        if self.contains_source:
+            return self.sourcepackagerelease.urgency.name.lower()
+        else:
+            return ""
+
+    def composeIcon(self, alt, icon, title=None):
+        """Compose an icon for the package's icon list."""
+        # These should really be sprites!
+        if title is None:
+            title = alt
+        return '<img alt="[%s]" src="/@@/%s" title="%s" />' % (
+            cgi.escape(alt, quote=True),
+            icon,
+            cgi.escape(title, quote=True),
+            )
+
+    def composeIconList(self):
+        """List icons that should be shown for this upload."""
+        ddtp = "Debian Description Translation Project Indexes"
+        potential_icons = [
+            (self.contains_source, ("Source", 'package-source')),
+            (self.contains_build, ("Build", 'package-binary', "Binary")),
+            (self.contains_translation, ("Translation", 'translation-file')),
+            (self.contains_installer, ("Installer", 'ubuntu-icon')),
+            (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
+            (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
+            ]
+        return [
+            self.composeIcon(*details)
+            for condition, details in potential_icons
+                if condition]
+
+    def composeNameAndChangesLink(self):
+        """Compose HTML: upload name and link to changes file."""
+        raw_displayname = self.displayname
+        displayname = cgi.escape(raw_displayname)
+        if self.pending_delayed_copy or self.changesfile is None:
+            return displayname
+        else:
+            return '<a href="%s" title="Changes file for %s">%s</a>' % (
+                self.changesfile.http_url,
+                cgi.escape(self.displayname, quote=True),
+                displayname)
+
+    @property
+    def icons_and_name(self):
+        """Icon list and name, linked to changes file if appropriate."""
+        iconlist_id = "queue%d-iconlist" % self.id
+        icons = self.composeIconList()
+        link = self.composeNameAndChangesLink()
+        return """
+            <div id="%s">
+              %s
+              %s
+              (%s)
+            </div>
+            """ % (iconlist_id, '\n'.join(icons), link, self.displayarchs)
