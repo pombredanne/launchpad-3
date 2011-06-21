@@ -1,9 +1,10 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# NOTE: The only modules in the Launchpad tree that this is permitted to
-# depend on are canonical.buildd and canonical.launchpad.daemons.readyservice,
-# since canonical.buildd is deployed by copying lib/canonical/buildd,
+# XXX: JonathanLange 2011-06-21 bug=800295: The only modules in the Launchpad
+# tree that this is permitted to depend on are canonical.buildd and
+# canonical.launchpad.daemons.readyservice, since canonical.buildd is deployed
+# by copying lib/canonical/buildd,
 # lib/canonical/launchpad/daemons/readyservice.py and daemons/buildd-slave.tac
 # only.
 
