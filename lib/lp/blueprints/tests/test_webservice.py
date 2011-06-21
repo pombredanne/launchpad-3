@@ -5,10 +5,19 @@
 
 __metaclass__ = type
 
+import transaction
+
 from zope.security.management import endInteraction
 
-from canonical.testing import DatabaseFunctionalLayer
-from canonical.launchpad.testing.pages import webservice_for_person
+from canonical.launchpad.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
+from canonical.launchpad.webapp.interaction import ANONYMOUS
+from canonical.testing import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.testing import (
     launchpadlib_for,
@@ -38,7 +47,7 @@ class SpecificationWebserviceTestCase(TestCaseWithFactory):
 
 class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
     """Test accessing specification attributes over the webservice."""
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
 
     def test_representation_is_empty_on_1_dot_0(self):
         # ISpecification is exposed on the 1.0 version so that they can be
@@ -174,7 +183,7 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
 
 class SpecificationTargetTests(SpecificationWebserviceTestCase):
     """Tests for accessing specifications via their targets."""
-    layer = DatabaseFunctionalLayer
+    layer = AppServerLayer
 
     def test_get_specification_on_product(self):
         product = self.factory.makeProduct(name="fooix")
@@ -266,3 +275,61 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         distro_on_webservice = self.getPillarOnWebservice(distribution)
         self.assertNamesOfSpecificationsAre(
             ["spec1"], distro_on_webservice.valid_specifications)
+
+
+class TestSpecificationSubscription(SpecificationWebserviceTestCase):
+
+    layer = AppServerLayer
+
+    def test_subscribe(self):
+        # Test subscribe() API.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+        spec = ws_object(launchpad, db_spec)
+        person = ws_object(launchpad, db_person)
+        spec.subscribe(person=person, essential=True)
+        transaction.commit()
+
+        # Check the results.
+        sub = db_spec.subscription(db_person)
+        self.assertIsNot(None, sub)
+        self.assertTrue(sub.essential)
+
+    def test_unsubscribe(self):
+        # Test unsubscribe() API.
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeBlueprint()
+            db_person = self.factory.makePerson()
+            db_spec.subscribe(person=db_person)
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
+
+        spec = ws_object(launchpad, db_spec)
+        person = ws_object(launchpad, db_person)
+        spec.unsubscribe(person=person)
+        transaction.commit()
+
+        # Check the results.
+        self.assertFalse(db_spec.isSubscribed(db_person))
+
+    def test_canBeUnsubscribedByUser(self):
+        # Test canBeUnsubscribedByUser() API.
+        webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything',
+            domain='api.launchpad.dev:8085')
+
+        with person_logged_in(ANONYMOUS):
+            db_spec = self.factory.makeSpecification()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+            spec = ws_object(launchpad, db_spec)
+            person = ws_object(launchpad, db_person)
+            subscription = spec.subscribe(person=person, essential=True)
+            transaction.commit()
+
+        result = webservice.named_get(
+            subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+        self.assertFalse(result)

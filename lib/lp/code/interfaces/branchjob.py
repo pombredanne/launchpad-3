@@ -53,6 +53,8 @@ from lp.services.job.interfaces.job import (
 class IBranchJob(Interface):
     """A job related to a branch."""
 
+    id = Int(title=_('Unique id of BranchScanJob.'))
+
     branch = Object(
         title=_('Branch to use for this job.'), required=False,
         schema=IBranch)
@@ -101,6 +103,7 @@ class IBranchScanJobSource(IJobSource):
 
         :param branch: The database branch to upgrade.
         """
+
 
 class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
