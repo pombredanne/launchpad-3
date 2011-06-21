@@ -748,8 +748,8 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id,
                     (case
                         when person.name=? then 100
-                        when person.name like ? || '%%' then 5
-                        when lower(person.displayname) like ? || '%%' then 4
+                        when person.name like ? || '%%' then 0.5
+                        when lower(person.displayname) like ? || '%%' then 0.4
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
@@ -757,12 +757,12 @@ class ValidPersonOrTeamVocabulary(
                     or lower(Person.displayname) LIKE ? || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
-                    SELECT Person.id, 3 AS rank
+                    SELECT Person.id, 0.8 AS rank
                     FROM Person, IrcID
                     WHERE Person.id = IrcID.person
                         AND IrcID.nickname = ?
                     UNION ALL
-                    SELECT Person.id, 2 AS rank
+                    SELECT Person.id, 0.6 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
                         AND LOWER(EmailAddress.email) LIKE ? || '%%'
@@ -779,8 +779,8 @@ class ValidPersonOrTeamVocabulary(
                 private_ranking_sql = SQL("""
                     (case
                         when person.name=? then 100
-                        when person.name like ? || '%%' then 5
-                        when lower(person.displayname) like ? || '%%' then 3
+                        when person.name like ? || '%%' then 0.5
+                        when lower(person.displayname) like ? || '%%' then 0.4
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
