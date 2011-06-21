@@ -8,6 +8,7 @@ from zope.schema.interfaces import (
     TooLong,
     TooShort,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.pages import (
@@ -21,6 +22,7 @@ from lp.bugs.browser.bugtarget import (
     FileBugViewBase,
     )
 from lp.bugs.interfaces.bug import IBugAddForm
+from lp.bugs.publisher import BugsLayer
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -394,3 +396,33 @@ class TestFileBugReportingGuidelines(TestCaseWithFactory):
             "source": product.displayname, "content": u"Include bug details",
             }]
         self.assertEqual(expected_guidelines, view.bug_reporting_guidelines)
+
+
+class TestFileBugSourcePackage(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_filebug_works_on_official_package_branch(self):
+        # It should be possible to file a bug against a source package
+        # when there is an official package branch.
+        user = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage('my-package')
+        self.factory.makeRelatedBranchesForSourcePackage(
+            sourcepackage=sourcepackage)
+        removeSecurityProxy(sourcepackage.distribution).official_malone = True
+        login_person(user)
+
+        view = create_initialized_view(
+            context=sourcepackage.distribution, name='+filebug',
+            form={
+                'field.title': 'A bug',
+                'field.comment': 'A comment',
+                'field.bugtarget.distribution': (
+                    sourcepackage.distribution.name),
+                'field.packagename': 'my-package',
+                'field.actions.submit_bug': 'Submit Bug Request',
+            }, layer=BugsLayer, principal=user)
+        msg = "\n".join([
+            notification.message
+            for notification in view.request.response.notifications])
+        self.assertIn("Thank you for your bug report.", msg)

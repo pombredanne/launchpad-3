@@ -16,18 +16,20 @@ __all__ = [
     'BugNominationStatus',
     'NominationSeriesObsoleteError']
 
+import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
     exported,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     Reference,
@@ -60,19 +62,19 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import PublicPersonChoice
 
 
+@error_status(httplib.BAD_REQUEST)
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
-    webservice_error(400)
 
 
+@error_status(httplib.BAD_REQUEST)
 class NominationSeriesObsoleteError(Exception):
     """A bug cannot be nominated for an obsolete series."""
-    webservice_error(400)
 
 
+@error_status(httplib.BAD_REQUEST)
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
-    webservice_error(400)
 
 
 class BugNominationStatus(DBEnumeratedType):
@@ -207,5 +209,3 @@ class IBugNominationForm(Interface):
         title=_("Series that can be nominated"), required=True,
         value_type=Choice(vocabulary="BugNominatableSeries"),
         constraint=can_be_nominated_for_series)
-
-

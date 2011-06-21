@@ -88,6 +88,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -128,7 +129,6 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
-    DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -1534,8 +1534,8 @@ class Archive(SQLBase):
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError, error:
-            raise PocketNotFound(error)
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
 
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
@@ -1548,7 +1548,7 @@ class Archive(SQLBase):
             result = getUtility(IDistroSeriesSet).queryByName(
                 self.distribution, to_series)
             if result is None:
-                raise DistroSeriesNotFound(to_series)
+                raise NoSuchDistroSeries(to_series)
             series = result
         else:
             series = None

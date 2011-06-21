@@ -15,9 +15,12 @@ __all__ = [
     'IDistroSeriesSet',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
@@ -30,7 +33,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -1045,9 +1047,9 @@ class IDistroSeriesSet(Interface):
         """
 
 
+@error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
-    webservice_error(400)  # Bad Request
     _message_prefix = "Error deriving distro series"
 
 
