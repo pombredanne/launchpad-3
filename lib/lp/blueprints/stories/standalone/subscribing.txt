@@ -155,12 +155,16 @@ checkbox.
     >>> browser.getControl(name='field.essential').value = 'yes'
     >>> browser.getControl('Subscribe').click()
 
-Or we can click the icon next to their name to get to the subscription edit
-page.
+We now check that the subscriptions portlet is showing the correct information
+based on the subscription change we have made above.
 
-    >>> browser.getLink(url='/+subscription/stub').click()
-    >>> browser.getControl(name='field.essential').value = 'no'
-    >>> browser.getControl('Change').click()
+    >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
+    >>> for subscriber in subscribers:
+    ...     a_tags = subscriber.findAll('a')
+    ...     img = a_tags[0].first('img')
+    ...     print img['src'],
+    ...     print a_tags[1].string
+    /@@/subscriber-essential Stuart Bishop
 
 When we change a user's subscription, they get notified by email. Teams
 can be subscribed to a blueprint too
@@ -169,6 +173,29 @@ can be subscribed to a blueprint too
     >>> '[Participation essential]' in last_email.get_payload()
     True
 
+We can click the icon next to a user's name to get to the subscription edit
+page.
+
+    >>> browser.getLink(url='/+subscription/stub').click()
+    >>> browser.getControl(name='field.essential').value = None
+    >>> browser.getControl('Change').click()
+
+We now check that the subscriptions portlet is showing the correct information
+based on the subscription change we have made above.
+
+    >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
+    >>> for subscriber in subscribers:
+    ...     a_tags = subscriber.findAll('a')
+    ...     img = a_tags[0].first('img')
+    ...     print img['src'],
+    ...     print a_tags[1].string
+    /@@/subscriber-inessential Stuart Bishop
+
+And check the email notification too.
+
+    >>> last_email = pop_notifications()[-1]
+    >>> '[Participation non-essential]' in last_email.get_payload()
+    True
 
 Subscribing teams
 -----------------

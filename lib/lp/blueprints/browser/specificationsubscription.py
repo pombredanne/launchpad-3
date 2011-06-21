@@ -112,7 +112,7 @@ class SpecificationSubscriptionEditView(LaunchpadEditFormView):
 
     @property
     def label(self):
-        return "Modify subscription %s" % self.context.specification.title
+        return "Modify subscription to %s" % self.context.specification.title
 
     @property
     def cancel_url(self):
