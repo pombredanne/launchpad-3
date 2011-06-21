@@ -14,8 +14,9 @@ __all__ = [
     ]
 
 import datetime
+import httplib
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 from sqlobject import (
     AND,
     BoolCol,
@@ -120,9 +121,9 @@ class HasMilestonesMixin:
     milestones = property(_get_milestones)
 
 
+@error_status(httplib.BAD_REQUEST)
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
-    webservice_error(400)
 
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)
@@ -278,8 +279,8 @@ class MilestoneSet:
 
     def getByNameAndProduct(self, name, product, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.productID==product.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.productID == product.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default
@@ -287,8 +288,8 @@ class MilestoneSet:
 
     def getByNameAndDistribution(self, name, distribution, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.distributionID==distribution.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.distributionID == distribution.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default

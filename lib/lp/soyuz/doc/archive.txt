@@ -2333,14 +2333,14 @@ all result in a NotFound exception:
     ...     person=mark)
     Traceback (most recent call last):
     ...
-    PocketNotFound: 'BADPOCKET'
+    PocketNotFound: No such pocket: 'BADPOCKET'.
 
     >>> mark.archive.syncSources(
     ...     sources, cprov.archive, "release", to_series="badseries",
     ...     person=mark)
     Traceback (most recent call last):
     ...
-    DistroSeriesNotFound: badseries
+    NoSuchDistroSeries: No such distribution series: 'badseries'.
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
