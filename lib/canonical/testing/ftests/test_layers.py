@@ -20,18 +20,27 @@ from urllib import urlopen
 
 from amqplib import client_0_8 as amqp
 from fixtures import (
-    Fixture,
     EnvironmentVariableFixture,
+    Fixture,
     TestWithFixtures,
     )
-import testtools
-from zope.component import getUtility, ComponentLookupError
-
-from canonical.config import config, dbconfig
 from lazr.config import as_host_port
-from canonical.librarian.client import LibrarianClient, UploadFailed
-from canonical.librarian.interfaces import ILibrarianClient
+import testtools
+from zope.component import (
+    ComponentLookupError,
+    getUtility,
+    )
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.lazr.pidfile import pidfile_path
+from canonical.librarian.client import (
+    LibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing.layers import (
     AppServerLayer,
     BaseLayer,
