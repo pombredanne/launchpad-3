@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for TAC (Twisted Application Configuration) files."""
@@ -26,8 +26,6 @@ import time
 import warnings
 
 from fixtures import Fixture
-from twisted.application import service
-from twisted.python import log
 
 from canonical.launchpad.daemons import readyservice
 
