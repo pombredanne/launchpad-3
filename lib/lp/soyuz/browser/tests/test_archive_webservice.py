@@ -7,6 +7,7 @@ import unittest
 
 from lazr.restfulclient.errors import (
     BadRequest,
+    NotFound,
     HTTPError,
     Unauthorized as LRUnauthorized,
 )
@@ -149,7 +150,7 @@ class TestArchiveDependencies(WebServiceTestCase):
         ws_archive = self.wsObject(archive, archive.owner)
         ws_dependency = self.wsObject(dependency)
         self.assertContentEqual([], ws_archive.dependencies)
-        with ExpectedException(BadRequest, '(.|\n)*asdf(.|\n)*'):
+        with ExpectedException(NotFound, '(.|\n)*asdf(.|\n)*'):
             ws_archive.addArchiveDependency(
                 dependency=ws_dependency, pocket='Release', component='asdf')
         dependency = ws_archive.addArchiveDependency(

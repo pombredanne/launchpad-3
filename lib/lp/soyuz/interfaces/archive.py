@@ -20,7 +20,6 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
-    'DistroSeriesNotFound',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
@@ -47,12 +46,13 @@ __all__ = [
     'validate_external_dependencies',
     ]
 
-
+import httplib
 from urlparse import urlparse
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_operation_as,
@@ -65,7 +65,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -103,6 +102,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
 
 
+@error_status(httplib.BAD_REQUEST)
 class ArchiveDependencyError(Exception):
     """Raised when an `IArchiveDependency` does not fit the context archive.
 
@@ -112,76 +112,68 @@ class ArchiveDependencyError(Exception):
      * It is not a PPA,
      * It is already recorded.
     """
-    webservice_error(400)  # Bad request.
 
 
 # Exceptions used in the webservice that need to be in this file to get
 # picked up therein.
-
+@error_status(httplib.BAD_REQUEST)
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
-    webservice_error(400)  # Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotSwitchPrivacy(Exception):
     """Raised when switching the privacy of an archive that has
     publishing records."""
-    webservice_error(400)  # Bad request.
 
 
-class PocketNotFound(Exception):
+class PocketNotFound(NameLookupFailed):
     """Invalid pocket."""
-    webservice_error(400)  # Bad request.
+    _message_prefix = "No such pocket"
 
 
-class DistroSeriesNotFound(Exception):
-    """Invalid distroseries."""
-    webservice_error(400)  # Bad request.
-
-
+@error_status(httplib.BAD_REQUEST)
 class AlreadySubscribed(Exception):
     """Raised when creating a subscription for a subscribed person."""
-    webservice_error(400)  # Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
-    webservice_error(400)  # Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class NoTokensForTeams(Exception):
     """Raised when creating a token for a team, rather than a person."""
-    webservice_error(400)  # Bad request.
 
 
-class ComponentNotFound(Exception):
+class ComponentNotFound(NameLookupFailed):
     """Invalid source name."""
-    webservice_error(400)  # Bad request.
+    _message_prefix = 'No such component'
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidComponent(Exception):
     """Invalid component name."""
-    webservice_error(400)  # Bad request.
 
 
 class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
-    webservice_error(400)  # Bad request.
     _message_prefix = "No such ppa"
 
 
+@error_status(httplib.BAD_REQUEST)
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
-    webservice_error(400)  # Bad request.
 
 
 class CannotRestrictArchitectures(Exception):
     """The architectures for this archive can not be restricted."""
 
 
+@error_status(httplib.FORBIDDEN)
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
-    webservice_error(403)  # Forbidden.
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
@@ -196,9 +188,9 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
 
 
+@error_status(httplib.FORBIDDEN)
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
-    webservice_error(403)  # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -254,10 +246,9 @@ class ArchiveDisabled(CannotUploadToArchive):
         CannotUploadToArchive.__init__(self, archive_name=archive_name)
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidExternalDependencies(Exception):
     """Tried to set external dependencies to an invalid value."""
-
-    webservice_error(400)  # Bad request.
 
     def __init__(self, errors):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
@@ -1269,7 +1260,7 @@ class IArchiveAppend(Interface):
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 
@@ -1311,7 +1302,7 @@ class IArchiveAppend(Interface):
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 

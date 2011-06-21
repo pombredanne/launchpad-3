@@ -73,15 +73,12 @@ class Packaging(SQLBase):
         user = getUtility(ILaunchBag).user
         if user is None:
             return False
-        currentrelease = self.sourcepackage.currentrelease
-        package_maintainer = (
-            currentrelease.maintainer if currentrelease is not None
-            else None)
         admin = getUtility(ILaunchpadCelebrities).admin
         registry_experts = (
             getUtility(ILaunchpadCelebrities).registry_experts)
         return (
-            user.inTeam(self.owner) or user.inTeam(package_maintainer) or
+            user.inTeam(self.owner) or
+            user.canAccess(self.sourcepackage, 'setBranch') or
             user.inTeam(registry_experts) or user.inTeam(admin))
 
     def destroySelf(self):
