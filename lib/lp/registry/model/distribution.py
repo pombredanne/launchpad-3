@@ -30,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import (
-    EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
@@ -1850,11 +1849,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def has_published_sources(self):
-        archives_sources = EmptyResultSet()
         for archive in self.all_distro_archives:
-            archives_sources = archives_sources.union(
-                archive.getPublishedSources())
-        return not archives_sources.is_empty()
+            if not archive.getPublishedSources().order_by().is_empty():
+                return True
+        return False
 
 
 class DistributionSet:
