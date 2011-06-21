@@ -349,7 +349,7 @@ class DistributionSourcePackage(BugTargetBase,
             Archive,
             Archive.distribution == self.distribution,
             Archive._enabled == True,
-            Archive.private == False,
+            Archive._private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED),
