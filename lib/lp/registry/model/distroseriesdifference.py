@@ -213,17 +213,17 @@ def packagesets(dsds, in_parent):
         PackagesetSources, FlatPackagesetInclusion)
     results = tables.find(
         (DistroSeriesDifference.id, Packageset),
-        PackagesetSources.packageset == Column(
+        PackagesetSources.packageset_id == Column(
             "child", FlatPackagesetInclusion),
         Packageset.distroseries_id == (
             DistroSeriesDifference.parent_series_id if in_parent else
             DistroSeriesDifference.derived_series_id),
         Column("parent", FlatPackagesetInclusion) == Packageset.id,
-        PackagesetSources.sourcepackagename == (
+        PackagesetSources.sourcepackagename_id == (
             DistroSeriesDifference.source_package_name_id),
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds))
     results = results.order_by(
-        PackagesetSources.sourcepackagename, Packageset.name)
+        PackagesetSources.sourcepackagename_id, Packageset.name)
 
     grouped = defaultdict(list)
     for dsd_id, packageset in results:
