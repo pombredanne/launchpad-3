@@ -43,13 +43,14 @@ from lazr.restful.fields import (
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
 
-    # XXX: BradCrittenden 2011-06-20 bug=: The following use of 'beta' is a
-    # work-around to allow the WADL to be generated.  It is a bald-faced lie,
-    # though.  The class is being exported in 'devel' but in order to get the
-    # WADL generation work it must be back-dated to the earliest version.
-    export_as_webservice_entry(publish_web_link=False, as_of='beta')
+    # XXX: BradCrittenden 2011-06-20 bug=760849: The following use of 'beta'
+    # is a work-around to allow the WADL to be generated.  It is a bald-faced
+    # lie, though.  The class is being exported in 'devel' but in order to get
+    # the WADL generation work it must be back-dated to the earliest version.
+    # Note that individual attributes and methods can and must truthfully set
+    # 'devel' as their version.
+    export_as_webservice_entry(publish_web_link=True, as_of='beta')
     id = Attribute("The Processor ID")
-    ## family = Attribute("The Processor Family Reference")
     family = exported(
         Reference(
             schema=Interface,
@@ -74,7 +75,17 @@ class IProcessor(Interface):
 
 class IProcessorFamily(Interface):
     """The SQLObject ProcessorFamily Interface"""
-    export_as_webservice_entry(publish_web_link=False, as_of='beta')
+
+    # XXX: BradCrittenden 2011-06-20 bug=760849: The following use of 'beta'
+    # is a work-around to allow the WADL to be generated.  It is a bald-faced
+    # lie, though.  The class is being exported in 'devel' but in order to get
+    # the WADL generation work it must be back-dated to the earliest version.
+    # Note that individual attributes and methods can and must truthfully set
+    # 'devel' as their version.
+    export_as_webservice_entry(
+        plural_name='processor_families',
+        publish_web_link=True,
+        as_of='beta')
 
     id = Attribute("The ProcessorFamily ID")
     name = exported(
