@@ -643,53 +643,104 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             u'0.3-1',
             published_binaries[0].binarypackagerelease.version)
 
-    def createBuild(self, distroseries, packagename, version, library_file):
-        # Helper to create a build in a distroseries.
+    def createPublication(self, distroseries, packagename, version,
+                          source_library_file=None,
+                          binary_library_file=None):
+        # Helper to create a publication in a distroseries.
         spn = self.factory.getOrMakeSourcePackageName(name=packagename)
         spr = self.factory.makeSourcePackageRelease(
             sourcepackagename=spn, architecturehintlist='any',
             version=version)
+        if source_library_file is not None:
+            self.factory.makeSourcePackageReleaseFile(
+                sourcepackagerelease=spr, library_file=source_library_file)
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=distroseries.main_archive,
-            distroseries=distroseries)
+            distroseries=distroseries,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED)
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, supports_virtualized=True)
         orig_build = spr.createBuild(
             das, PackagePublishingPocket.RELEASE, distroseries.main_archive,
             status=BuildStatus.FULLYBUILT)
         bpr = self.factory.makeBinaryPackageRelease(build=orig_build)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, library_file=library_file)
+        if binary_library_file is not None:
+            self.factory.makeBinaryPackageFile(
+                binarypackagerelease=bpr, library_file=binary_library_file)
         return self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, distroarchseries=das,
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED,
             archive=distroseries.main_archive)
 
-    def test_file_package_already_in_archive(self):
-        # If a file is already present in the destination archive, the
-        # related BinaryPackagePublishingHistory won't be copied.
+    def test_sourcefile_already_in_archive(self):
+        # If a source file is already present in the destination archive,
+        # the related SourcePackagePublishingHistory won't be copied.
         self.parent1, self.parent_das1 = self.setupParent(
             packages={'package': '0.3-1'})
         self.parent2, self.parent_das2 = self.setupParent(
             packages={'package': '0.1-1'})
 
-        filename = 'foo_1.0_all.deb'
-        file_content = 'z'
+        source_filename = 'foo_1.0_source.changes'
 
-        # Create a build in parent1.
-        library_file1 = self.factory.makeLibraryFileAlias(
-            filename=filename, content=file_content)
-        self.createBuild(self.parent1, 'duppackage', '1.0', library_file1)
+        # Create a publication in parent1.
+        source_library_file = self.factory.makeLibraryFileAlias(
+            filename=source_filename, content='content')
+        self.createPublication(
+            self.parent1, 'duppackage', '1.0', source_library_file, None)
+
         child = self.factory.makeDistroSeries()
         other_child = self.factory.makeDistroSeries(
             distribution=child.distribution)
 
         # Create the same package in the destination archive (in another
         # series)
-        library_file2 = self.factory.makeLibraryFileAlias(
-            filename=filename, content=file_content)
-        self.createBuild(other_child, 'duppackage', '1.0', library_file2)
+        source_library_file2 = self.factory.makeLibraryFileAlias(
+            filename=source_filename, content='content')
+        self.createPublication(
+            other_child, 'duppackage', '1.0', source_library_file2, None)
+
+        transaction.commit()
+        self._fullInitialize(
+            [self.parent1, self.parent2], child=child)
+
+        published_sources = child.main_archive.getPublishedSources()
+        # duppackage 1.0 has not been copied because 'foo_1.0_source.changes'
+        # is already in the destination archive.
+        self.assertEquals(2, published_sources.count())
+        self.assertEquals(
+            u'1.0',
+            published_sources[0].sourcepackagerelease.version)
+        self.assertEquals(
+            u'0.3-1',
+            published_sources[1].sourcepackagerelease.version)
+
+    def test_binaryfile_already_in_archive(self):
+        # If a binary file is already present in the destination archive,
+        # the related BinaryPackagePublishingHistory won't be copied.
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'package': '0.3-1'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'package': '0.1-1'})
+
+        bin_filename = 'foo_1.0_all.deb'
+
+        # Create a publication in parent1.
+        binary_library_file = self.factory.makeLibraryFileAlias(
+            filename=bin_filename, content='content')
+        self.createPublication(
+            self.parent1, 'duppackage', '1.0', None, binary_library_file)
+        child = self.factory.makeDistroSeries()
+        other_child = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+
+        # Create the same package in the destination archive (in another
+        # series)
+        binary_library_file2 = self.factory.makeLibraryFileAlias(
+            filename=bin_filename, content='content')
+        self.createPublication(
+            other_child, 'duppackage', '1.0', None, binary_library_file2)
 
         transaction.commit()
         self._fullInitialize(
@@ -697,7 +748,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
         published_binaries = child.main_archive.getAllPublishedBinaries()
         # duppackage 1.0 has not been copied because 'foo_1.0_all.deb' is
-        # already published in the destination.
+        # already in the destination archive.
         self.assertEquals(2, published_binaries.count())
         self.assertEquals(
             u'1.0',
