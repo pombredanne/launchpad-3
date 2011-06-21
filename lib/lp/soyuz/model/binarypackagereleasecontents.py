@@ -46,12 +46,11 @@ class BinaryPackageReleaseContents(Storm):
         if not bpr.files:
             return None
         store = IMasterStore(BinaryPackageReleaseContents)
-        dest_file = tempfile.NamedTemporaryFile()
-        bpr.files[0].libraryfile.open()
-        pumpfile(bpr.files[0].libraryfile, dest_file)
-        dest_file.seek(0)
-        deb = DebPackage(filename=dest_file.name)
-        dest_file.close()
+        with tempfile.NamedTemporaryFile() as dest_file:
+            bpr.files[0].libraryfile.open()
+            pumpfile(bpr.files[0].libraryfile, dest_file)
+            dest_file.seek(0)
+            deb = DebPackage(filename=dest_file.name)
         # Filter out directories.
         filelist = filter(lambda x: not x.endswith('/'), deb.filelist)
         for filename in filelist:

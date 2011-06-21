@@ -20,12 +20,7 @@ from canonical.launchpad import _
 
 
 class IBinaryPackagePath(Interface):
-    """The path of a file contained in a binary package.
-
-    A binary package release is a representation of a binary package in
-    one or more releases. This class models the files contained within
-    the binary package.
-    """
+    """The path of a file contained in a binary package."""
     id = Int(title=_('ID'), required=True, readonly=True)
     path = TextLine(title=_('Full path name'), required=True, readonly=True)
 
