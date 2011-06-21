@@ -160,10 +160,10 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         return self.request.is_ajax and self.can_request_diffs
 
     @cachedproperty
-    def show_blacklist_options(self):
-        """Should we show the blacklisting (ignore) radio widget options.
+    def enable_blacklist_options(self):
+        """Should we enable the blacklisting (ignore) radio widget options.
 
-        Only show the options if an editor requests via JS and the user
+        Only enable the options if an editor requests via JS and the user
         is an archive admin.
         """
         return self.request.is_ajax and check_permission(

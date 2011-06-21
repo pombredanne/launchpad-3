@@ -20,16 +20,22 @@
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_blacklist_options">
-    <div class="blacklist-options" style="float:right">
+  <tal:blacklist define="
+    disabled python:'' if view.enable_blacklist_options else '-disabled'">
+    <div
+      tal:attributes="class string:blacklist-options${disabled}"
+      style="float:right">
       <dl>
         <dt>Blacklisted:</dt>
         <dd>
-          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
+          <form>
+            <tal:replace
+              replace="structure view/widgets/blacklist_options" />
+          </form>
         </dd>
       </dl>
-  </div>
-  </tal:show_options>
+    </div>
+  </tal:blacklist>
 
   <dl>
     <dt>Binary descriptions:</dt>
