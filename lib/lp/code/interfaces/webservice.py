@@ -33,7 +33,7 @@ __all__ = [
     ]
 
 # The exceptions are imported so that they can produce the special
-# status code defined by webservice_error when they are raised.
+# status code defined by error_status when they are raised.
 from lp.code.errors import (
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,

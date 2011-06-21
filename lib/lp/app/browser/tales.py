@@ -64,6 +64,9 @@ from lp.code.interfaces.branch import IBranch
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import (
+    IBinaryAndSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -741,6 +744,8 @@ class ObjectImageDisplayAPI:
             return 'sprite branch'
         elif ISpecification.providedBy(context):
             return 'sprite blueprint'
+        elif IBinaryAndSourcePackageName.providedBy(context):
+            return 'sprite package-source'
         return None
 
     def default_logo_resource(self, context):

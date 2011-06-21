@@ -204,9 +204,7 @@ class TestBazaarBranchStore(WorkerTest):
             self.arbitrary_branch_id, self.temp_dir, default_format, True)
         self.assertTrue(new_branch.bzrdir.has_workingtree())
 
-    # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
-    # branches disabled.  Need an orderly upgrade process.
-    def disabled_test_pullUpgradesFormat(self):
+    def test_pullUpgradesFormat(self):
         # A branch should always be in the most up-to-date format before a
         # pull is performed.
         store = self.makeBranchStore()
@@ -216,39 +214,50 @@ class TestBazaarBranchStore(WorkerTest):
         default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
-        new_tree = store.pull(
+        new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
+        # Make sure backup.bzr is removed, as it interferes with CSCVS.
+        self.assertEquals(os.listdir(self.temp_dir), [".bzr"])
         self.assertEqual(
-            default_format, new_tree.branch.bzrdir._format)
+            default_format, new_branch.bzrdir._format)
 
-        # In addition. the remote branch has been upgraded as well.
-        new_branch = Branch.open(target_url)
-        self.assertEqual(
-            default_format.get_branch_format(), new_branch._format)
-
-    # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
-    # branches disabled.  Need an orderly upgrade process.
-    def disabled_test_pullUpgradesFormatWithBackupDirPresent(self):
-        # pull can upgrade the remote branch even if there is a backup.bzr
-        # directory from a previous upgrade.
+    def test_pushUpgradesFormat(self):
+        # A branch should always be in the most up-to-date format before a
+        # pull is performed.
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         create_branch_with_one_revision(target_url, format=knit_format)
-        upgrade(target_url, format_registry.get('dirstate-tags')())
-        self.failUnless(get_transport(target_url).has('backup.bzr'))
         default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
-        new_tree = store.pull(
+        new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
         self.assertEqual(
-            default_format, new_tree.branch.bzrdir._format)
+            default_format, new_branch.bzrdir._format)
 
-        # In addition. the remote branch has been upgraded as well.
-        new_branch = Branch.open(target_url)
+        # The remote branch is still in the old format at this point.
+        target_branch = Branch.open(target_url)
         self.assertEqual(
-            default_format.get_branch_format(), new_branch._format)
+            knit_format.get_branch_format(),
+            target_branch._format)
+
+        store.push(self.arbitrary_branch_id, new_branch, default_format)
+
+        # The remote branch is now in the new format.
+        target_branch = Branch.open(target_url)
+        # Only .bzr is left behind. The scanner removes branches
+        # in which invalid directories (such as .bzr.retire.
+        # exist). (bug #798560)
+        self.assertEquals(
+            target_branch.user_transport.list_dir("."),
+            [".bzr"])
+        self.assertEqual(
+            default_format.get_branch_format(),
+            target_branch._format)
+        self.assertEquals(
+            target_branch.last_revision_info(),
+            new_branch.last_revision_info())
 
     def test_pushTwiceThenPull(self):
         # We can push up a branch to the store twice and then pull it from the
@@ -998,7 +1007,22 @@ class PullingImportWorkerTests:
             raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
         worker = self.makeImportWorker(source_details)
-        self.assertRaises(NotBranchError, worker.run)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
+    def test_invalid(self):
+        # If there is no branch in the target URL, exit with FAILURE_INVALID
+        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
+            rcstype=self.rcstype, url="file:///path/non/existant"))
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
+    def test_unsupported_feature(self):
+        # If there is no branch in the target URL, exit with FAILURE_INVALID
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('bzr\\doesnt\\support\\this', 'Original contents')]))
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE, worker.run())
 
     def test_partial(self):
         # Only config.codeimport.revisions_import_limit will be imported in a
