@@ -791,35 +791,18 @@ class CodeImportResultStatus(DBEnumeratedType):
         An internal error occurred. This is a problem with Launchpad.
         """)
 
-    CHECKOUT_FAILURE = DBItem(220, """
-        Source Checkout Failed
+    FAILURE_INVALID = DBItem(220, """
+        Foreign branch invalid
 
-        Unable to checkout from the foreign version control
-        system. The import details are probably incorrect or the
-        remote server is down.
+        The import failed because the foreign branch did not exist or
+        was not accessible.
         """)
 
-    IMPORT_FAILURE = DBItem(230, """
-        Bazaar Import Failed
+    FAILURE_UNSUPPORTED_FEATURE = DBItem(230, """
+        Unsupported feature
 
-        The initial import failed to complete. It may be a bug in
-        Launchpad's conversion software or a problem with the remote
-        repository.
-        """)
-
-    UPDATE_FAILURE = DBItem(240, """
-        Source Update Failed
-
-        Unable to update the foreign version control system tree. This
-        is probably a problem with the remote repository.
-        """)
-
-    SYNC_FAILURE = DBItem(250, """
-        Bazaar Update Failed
-
-        An update to the existing Bazaar import failed to complete. It
-        may be a bug in Launchpad's conversion software or a problem
-        with the remote repository.
+        The import failed because of missing feature support in
+        Bazaar or the Bazaar foreign branch support.
         """)
 
     RECLAIMED = DBItem(310, """

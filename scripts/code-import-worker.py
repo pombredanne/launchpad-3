@@ -65,11 +65,11 @@ class CodeImportWorker:
         elif source_details.rcstype == 'hg':
             load_optional_plugin('hg')
             import_worker_cls = HgImportWorker
-        else:
-            if source_details.rcstype not in ['cvs', 'svn']:
-                raise AssertionError(
-                    'unknown rcstype %r' % source_details.rcstype)
+        elif source_details.rcstype in ['cvs', 'svn']:
             import_worker_cls = CSCVSImportWorker
+        else:
+            raise AssertionError(
+                'unknown rcstype %r' % source_details.rcstype)
         import_worker = import_worker_cls(
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
