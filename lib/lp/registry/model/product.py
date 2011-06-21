@@ -108,6 +108,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
@@ -305,9 +306,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
-        IServiceUsage)
+        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
+        ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 

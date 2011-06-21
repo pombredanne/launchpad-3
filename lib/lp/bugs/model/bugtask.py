@@ -2530,7 +2530,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
-        assert user is not None
+        assert user is not None, "A user to query on behalf is required."
         conditions = []
         # Open bug statuses
         conditions.append(BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
@@ -2557,9 +2557,11 @@ class BugTaskSet:
             conditions.append(BugSummary.tag == None)
         else:
             conditions.append(BugSummary.tag != None)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BugSummary)
         admin_team = getUtility(ILaunchpadCelebrities).admin
-        if user is not None and not user.inTeam(admin_team):
+        if not user.inTeam(admin_team):
+            # admins get to see every bug, everyone else only sees bugs
+            # viewable by them-or-their-teams.
             store = store.with_(SQL(
                 "teams AS ("
                 "SELECT team from TeamParticipation WHERE person=?)",
@@ -2576,6 +2578,7 @@ class BugTaskSet:
         resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
         resultset.having(sum_count != 0)
+        # Ensure we have no order clauses.
         resultset.order_by()
         result = {}
         for row in resultset:

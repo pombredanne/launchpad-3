@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugSummary'
+    'BugSummary',
     'CombineBugSummaryConstraint',
     ]
 
@@ -78,7 +78,7 @@ class BugSummary(Storm):
     fixed_upstream = Bool()
 
 
-class CombineBugSummaryConstraint(object):
+class CombineBugSummaryConstraint:
     """A class to combine two separate bug summary constraints.
 
     This is useful for querying on multiple related dimensions (e.g. milestone

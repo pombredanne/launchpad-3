@@ -66,6 +66,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags,
@@ -118,8 +119,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    TranslationPolicyMixin):
     """A ProjectGroup"""
 
-    implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+    implements(
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
+        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
