@@ -9,8 +9,8 @@ __all__ = [
 
 from storm.locals import (
     Int,
+    RawStr,
     Storm,
-    Unicode,
     )
 from zope.interface import implements
 
@@ -23,7 +23,7 @@ class BinaryPackagePath(Storm):
     implements(IBinaryPackagePath)
     __storm_table__ = 'BinaryPackagePath'
     id = Int(primary=True)
-    path = Unicode(name='path', allow_none=False)
+    path = RawStr(name='path', allow_none=False)
 
     def getOrCreate(self, path):
         """See `IBinaryPackagePathSet`."""

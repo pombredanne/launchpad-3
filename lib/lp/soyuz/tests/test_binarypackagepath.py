@@ -17,10 +17,10 @@ class TestBinaryPackagePath(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_getOrCreate(self):
-        bpp = getUtility(IBinaryPackagePathSet).getOrCreate(u'bin/bash')
-        self.assertEqual(u'bin/bash', bpp.path)
+        bpp = getUtility(IBinaryPackagePathSet).getOrCreate('bin/bash')
+        self.assertEqual('bin/bash', bpp.path)
 
-    def test_get_or_create_existing(self):
-        orig_bpp = getUtility(IBinaryPackagePathSet).getOrCreate(u'bin/bash')
-        bpp = getUtility(IBinaryPackagePathSet).getOrCreate(u'bin/bash')
+    def test_getOrCreate_existing(self):
+        orig_bpp = getUtility(IBinaryPackagePathSet).getOrCreate('bin/bash')
+        bpp = getUtility(IBinaryPackagePathSet).getOrCreate('bin/bash')
         self.assertEqual(orig_bpp.id, bpp.id)
