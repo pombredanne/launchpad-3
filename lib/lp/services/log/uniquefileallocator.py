@@ -180,6 +180,15 @@ class UniqueFileAllocator:
                 self._lock.release()
         return result
 
+    def listRecentReportFiles(self):
+        now = datetime.datetime.now(UTC)
+        yesterday = now - datetime.timedelta(days=1)
+        directories = [self.output_dir(now), self.output_dir(yesterday)]
+        for directory in directories:
+            report_names = os.listdir(directory)
+            for name in sorted(report_names, reverse=True):
+                yield directory, name
+
     def setToken(self, token):
         """Append a string to the log subtype in filenames and log ids.
 

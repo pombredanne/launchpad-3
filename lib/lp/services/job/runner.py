@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseRunnableJob',
+    'BaseRunnableJobSource',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -19,9 +20,12 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
+from resource import (
+    getrlimit,
+    RLIMIT_AS,
+    setrlimit,
+    )
 from signal import (
-    getsignal,
-    SIGCHLD,
     SIGHUP,
     signal,
     )
@@ -40,6 +44,7 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols import amp
+from twisted.python import log
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -55,13 +60,25 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport import run_reactor
 from lp.services.twistedsupport.task import (
     ParallelLimitedTaskConsumer,
     PollingTaskSource,
     )
 
 
-class BaseRunnableJob:
+class BaseRunnableJobSource:
+    """Base class for job sources for the job runner."""
+
+    memory_limit = None
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        yield
+
+
+class BaseRunnableJob(BaseRunnableJobSource):
     """Base class for jobs to be run via JobRunner.
 
     Derived classes should implement IRunnableJob, which requires implementing
@@ -146,11 +163,6 @@ class BaseRunnableJob:
             return
         ctrl.send()
 
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        yield
-
 
 class BaseJobRunner(object):
     """Runner of Jobs."""
@@ -162,6 +174,7 @@ class BaseJobRunner(object):
             logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
+        self.oops_ids = []
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
@@ -250,6 +263,7 @@ class BaseJobRunner(object):
         """Report oopses by id to the log."""
         if self.logger is not None:
             self.logger.info('Job resulted in OOPS: %s' % oops_id)
+        self.oops_ids.append(oops_id)
 
 
 class JobRunner(BaseJobRunner):
@@ -361,6 +375,11 @@ class JobRunnerProcess(child.AMPChild):
         """Run a job from this job_source according to its job id."""
         runner = BaseJobRunner()
         job = self.job_source.get(job_id)
+        if self.job_source.memory_limit is not None:
+            soft_limit, hard_limit = getrlimit(RLIMIT_AS)
+            if soft_limit != self.job_source.memory_limit:
+                limits = (self.job_source.memory_limit, hard_limit)
+                setrlimit(RLIMIT_AS, limits)
         oops = runner.runJobHandleError(job)
         if oops is None:
             oops_id = ''
@@ -416,6 +435,9 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 self.incomplete_jobs.append(job)
                 self.logger.debug('Incomplete %r', job)
+                # Kill the worker that experienced a failure; this only
+                # works because there's a single worker.
+                self.pool.stopAWorker()
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
 
@@ -461,8 +483,8 @@ class TwistedJobRunner(BaseJobRunner):
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
         # 1 is hard-coded for now until we're sure we'd get gains by running
-        # more than one at a time.  Note that test_timeout relies on this
-        # being 1.
+        # more than one at a time.  Note that several tests, including
+        # test_timeout, rely on this being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
@@ -483,19 +505,25 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, dbuser, logger):
+    def runFromSource(cls, job_source, dbuser, logger, _log_twisted=False):
         """Run all ready jobs provided by the specified source.
 
         The dbuser parameter is not ignored.
+        :param _log_twisted: For debugging: If True, emit verbose Twisted
+            messages to stderr.
         """
         logger.info("Running through Twisted.")
+        if _log_twisted:
+            logging.getLogger().setLevel(0)
+            logger_object = logging.getLogger('twistedjobrunner')
+            handler = logging.StreamHandler(sys.stderr)
+            logger_object.addHandler(handler)
+            observer = log.PythonLoggingObserver(
+                loggerName='twistedjobrunner')
+            log.startLoggingWithObserver(observer.emit)
         runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
-        handler = getsignal(SIGCHLD)
-        try:
-            reactor.run()
-        finally:
-            signal(SIGCHLD, handler)
+        run_reactor()
         return runner
 
 

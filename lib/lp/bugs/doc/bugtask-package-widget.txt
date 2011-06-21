@@ -49,13 +49,13 @@ package name, the corresponding SourcePackageName is returned.
     u'linux-source-2.6.15'
 
 For some distribution we don't know exactly which source packages it
-contains, so IDistribution.guessPackageNames will return a
+contains, so IDistribution.guessPublishedSourcePackageName will raise a
 NotFoundError.
 
     >>> debian_task = bug_one.bugtasks[-1]
     >>> debian_task.distribution.name
     u'debian'
-    >>> debian_task.distribution.guessPackageNames('evolution')
+    >>> debian_task.distribution.guessPublishedSourcePackageName('evolution')
     Traceback (most recent call last):
     ...
     NotFoundError...
