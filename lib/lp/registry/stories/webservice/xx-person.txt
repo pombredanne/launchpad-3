@@ -634,12 +634,12 @@ named-operation on IPerson.
     ...     name='ppa').jsonBody()['self_link']
     http://.../~mark/+archive/ppa
 
-In cases where a PPA with a given name cannot be found, None is
+In cases where a PPA with a given name cannot be found, a Not Found error is
 returned.
 
     >>> print webservice.named_get(
     ...     mark['self_link'], 'getPPAByName', name='boing')
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such ppa: 'boing'.
 
