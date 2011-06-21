@@ -230,6 +230,37 @@ class PackageCloner:
                           PackagePublishingStatus.PENDING,
                           PackagePublishingStatus.PUBLISHED,
                           destination.pocket, destination.archive)
+            # If we're copying cross-archive, we want to make sure we do not
+            # duplicate any LibraryFileAlias item with the exact same
+            # filename.
+            if destination.archive != origin.archive:
+                query += ''' AND bpph.binarypackagerelease NOT IN
+                                 (SELECT bpph.binarypackagerelease FROM
+                                  LibraryFileAlias lfa,
+                                  BinaryPackageFile bpf,
+                                  BinaryPackageRelease bpr,
+                                  BinaryPackagePublishingHistory bpph
+                                  WHERE bpph.BinaryPackageRelease = bpr.id
+                                  AND bpf.BinaryPackageRelease = bpr.id
+                                  AND bpf.LibraryFile = lfa.id
+                                  AND bpph.DistroArchSeries = %s
+                                  AND filename IN
+                                     (SELECT DISTINCT filename FROM
+                                      LibraryFileAlias lfa,
+                                      BinaryPackageFile bpf,
+                                      BinaryPackageRelease bpr,
+                                      BinaryPackagePublishingHistory bpph
+                                      WHERE bpph.binarypackagerelease = bpr.id
+                                      AND bpf.binarypackagerelease = bpr.id
+                                      AND bpf.libraryfile = lfa.id
+                                      AND bpph.status in (%s, %s)
+                                      AND bpph.pocket = %s
+                                      AND bpph.archive = %s))
+                          ''' % sqlvalues(
+                              origin_das,
+                              PackagePublishingStatus.PENDING,
+                              PackagePublishingStatus.PUBLISHED,
+                              destination.pocket, destination.archive)
 
         store.execute(query)
 
@@ -504,6 +535,38 @@ class PackageCloner:
                           PackagePublishingStatus.PENDING,
                           PackagePublishingStatus.PUBLISHED,
                           destination.pocket, destination.archive)
+
+            # If we're copying cross-archive, we want to make sure we do not
+            # duplicate any LibraryFileAlias item with the exact same
+            # filename.
+            if destination.archive != origin.archive:
+                query += ''' AND spph.sourcepackagerelease NOT IN
+                                 (SELECT spph.sourcepackagerelease FROM
+                                  LibraryFileAlias lfa,
+                                  SourcePackageReleaseFile spf,
+                                  SourcePackageRelease spr,
+                                  SourcePackagePublishingHistory spph
+                                  WHERE spph.sourcepackagerelease = spr.id
+                                  AND spf.sourcepackagerelease = spr.id
+                                  AND spf.libraryfile = lfa.id
+                                  AND spph.distroseries = %s
+                                  AND filename IN
+                                     (SELECT DISTINCT filename FROM
+                                      LibraryFileAlias lfa,
+                                      SourcePackageReleaseFile spf,
+                                      SourcePackageRelease spr,
+                                      SourcePackagePublishingHistory spph
+                                      WHERE spph.sourcepackagerelease = spr.id
+                                      AND spf.sourcepackagerelease = spr.id
+                                      AND spf.libraryfile = lfa.id
+                                      AND spph.status in (%s, %s)
+                                      AND spph.pocket = %s
+                                      AND spph.archive = %s))
+                          ''' % sqlvalues(
+                              origin.distroseries,
+                              PackagePublishingStatus.PENDING,
+                              PackagePublishingStatus.PUBLISHED,
+                              destination.pocket, destination.archive)
 
         store.execute(query)
 
