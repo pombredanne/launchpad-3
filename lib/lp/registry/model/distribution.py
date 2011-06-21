@@ -30,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import (
-    EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
