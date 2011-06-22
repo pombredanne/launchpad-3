@@ -78,8 +78,10 @@ from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.testing import (
+    ANONYMOUS,
     anonymous_logged_in,
     celebrity_logged_in,
+    login,
     login_celebrity,
     login_person,
     person_logged_in,
@@ -611,6 +613,16 @@ class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
         super(TestDistroSeriesInitializeViewAccess,
               self).setUp('foo.bar@canonical.com')
         set_derived_series_ui_feature_flag(self)
+
+    def test_initseries_access_anon(self):
+        # Anonymous users cannot access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login(ANONYMOUS)
+
+        self.assertEqual(
+            False,
+            check_permission('launchpad.Edit', view))
 
     def test_initseries_access_simpleuser(self):
         # Unprivileged users cannot access +initseries.
