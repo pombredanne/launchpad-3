@@ -83,10 +83,10 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.soyuz.enums import (
-    ArchivePurpose,
     PackageDiffStatus,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.archive import Archive
@@ -129,16 +129,22 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         conditions = And(
             conditions,
             DistroSeries.id == DistroSeriesDifference.parent_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.parent_series_id),
             )
     else:
         conditions = And(
             conditions,
             DistroSeries.id == DistroSeriesDifference.derived_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.derived_series_id),
             )
+    # Ensure that the archive has the right purpose.
+    conditions = And(
+        conditions,
+        Archive.distributionID == DistroSeries.distributionID,
+        Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+        )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
         if in_parent:
