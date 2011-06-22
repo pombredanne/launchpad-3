@@ -276,7 +276,7 @@ class DistroSeriesOverviewMenu(
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def initseries(self):
         enabled = (
              getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
