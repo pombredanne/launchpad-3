@@ -271,7 +271,7 @@ class HtaccessTokenGenerator(LaunchpadCronScript):
                 Archive.date_created >= last_success.date_completed]
 
         return store.find(
-            Archive, Archive.private == True, *extra_expr)
+            Archive, Archive._private == True, *extra_expr)
 
     def main(self):
         """Script entry point."""
