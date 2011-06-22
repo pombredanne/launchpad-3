@@ -157,10 +157,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
         self.assertFalse(view.show_add_comment)
         self.assertFalse(view.enable_blacklist_options)
+        self.assertEqual(
+            'blacklist-options-disabled',
+            view.blacklist_options_css_class)
 
     def test_show_edit_options_editor(self):
         # The "Add comment" link is shown and the blacklist options are
-        # enabled if requested by an editor via ajax.
+        # not enabled if requested by an editor via ajax.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -169,6 +172,9 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra', request=request)
             self.assertTrue(view.show_add_comment)
             self.assertFalse(view.enable_blacklist_options)
+            self.assertEqual(
+                'blacklist-options-disabled',
+                view.blacklist_options_css_class)
 
     def test_enable_blacklist_options_for_archive_admin(self):
         # To see the blacklist options enabled the user needs to be an
@@ -509,19 +515,24 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
         self.assertThat(page, anchor_matcher)
 
+    def getViewContentXmlHttpRequest(self, context, view_name, person):
+        # Helper method to request a view via an XMLHttpRequest.
+        with person_logged_in(person):
+            request = LaunchpadTestRequest(
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            view = create_initialized_view(
+                context, view_name, request=request)
+            return view()
+
     def test_blacklist_options(self):
         # Blacklist options are presented to the users who are archive
         # admins.
         ds_diff = self.factory.makeDistroSeriesDifference()
         archive_admin = self.factory.makeArchiveAdmin(
             archive=ds_diff.derived_series.main_archive)
-
-        with person_logged_in(archive_admin):
-            request = LaunchpadTestRequest(
-                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra', request=request)
-            soup = BeautifulSoup(view())
+        view_content = self.getViewContentXmlHttpRequest(
+            ds_diff, '+listing-distroseries-extra', archive_admin)
+        soup = BeautifulSoup(view_content)
 
         self.assertEqual(
             1, len(soup.findAll('div', {'class': 'blacklist-options'})))
@@ -531,13 +542,9 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         # admins.
         ds_diff = self.factory.makeDistroSeriesDifference()
         person = self.factory.makePerson()
-
-        with person_logged_in(person):
-            request = LaunchpadTestRequest(
-                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra', request=request)
-            soup = BeautifulSoup(view())
+        view_content = self.getViewContentXmlHttpRequest(
+            ds_diff, '+listing-distroseries-extra', person)
+        soup = BeautifulSoup(view_content)
 
         self.assertEqual(
             1,

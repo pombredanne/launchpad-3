@@ -169,6 +169,17 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         return self.request.is_ajax and check_permission(
             'launchpad.Admin', self.context)
 
+    @cachedproperty
+    def blacklist_options_css_class(self):
+        """The css class for the blacklist option slot.
+        'blacklist-options' if enabled.
+        'blacklist-options-disabled' if not enabled.
+        """
+        if self.enable_blacklist_options:
+            return 'blacklist-options'
+        else:
+            return 'blacklist-options-disabled'
+
     @property
     def display_diffs(self):
         """Only show diffs if there's a base version."""
