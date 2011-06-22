@@ -28,6 +28,7 @@ class PackagesetSources(Storm):
     # There's a vestigial id as well, a holdover from the SQLObject
     # days.  Nobody seems to use it.  The only key that matters is
     # (packageset, sourcepackagename).
+    # XXX JeroenVermeulen 2011-06-22, bug=800677: Drop the id column.
     __storm_primary__ = (
         'packageset_id',
         'sourcepackagename_id',
