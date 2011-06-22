@@ -1385,9 +1385,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # effort to find a package.
             publishing = IStore(SourcePackagePublishingHistory).find(
                 SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename == sourcepackagename,
@@ -1418,9 +1417,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                BinaryPackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                BinaryPackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 BinaryPackagePublishingHistory.binarypackagereleaseID ==
                     BinaryPackageRelease.id,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
