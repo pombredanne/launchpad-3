@@ -4,9 +4,13 @@
 """BugSummary Storm database classes."""
 
 __metaclass__ = type
-__all__ = ['BugSummary']
+__all__ = [
+    'BugSummary',
+    'CombineBugSummaryConstraint',
+    ]
 
 from storm.locals import (
+    And,
     Bool,
     Int,
     Reference,
@@ -14,9 +18,13 @@ from storm.locals import (
     Unicode,
     )
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
-from lp.bugs.interfaces.bugsummary import IBugSummary
+from lp.bugs.interfaces.bugsummary import (
+    IBugSummary,
+    IBugSummaryDimension,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -68,3 +76,23 @@ class BugSummary(Storm):
 
     has_patch = Bool()
     fixed_upstream = Bool()
+
+
+class CombineBugSummaryConstraint:
+    """A class to combine two separate bug summary constraints.
+
+    This is useful for querying on multiple related dimensions (e.g. milestone
+    + sourcepackage) - and essential when a dimension is not unique to a
+    context.
+    """
+
+    implements(IBugSummaryDimension)
+
+    def __init__(self, *dimensions):
+        self.dimensions = map(
+            lambda x:removeSecurityProxy(x.getBugSummaryContextWhereClause()),
+            dimensions)
+
+    def getBugSummaryContextWhereClause(self):
+        """See `IBugSummaryDimension`."""
+        return And(*self.dimensions)
