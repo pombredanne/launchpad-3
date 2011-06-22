@@ -76,13 +76,6 @@ import unittest
 
 import simplejson
 
-try:
-    import html5browser
-    # Hush lint.
-    html5browser
-except ImportError:
-    html5browser = None
-
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -945,6 +938,9 @@ class YUIUnitTestCase(TestCase):
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        # html5browser imports from the gir/pygtk stack which causes
+        # twisted tests to break because of gtk's initialize.
+        import html5browser
         client = html5browser.Browser()
         html_uri = 'file://%s' % os.path.join(
             config.root, 'lib', self.test_path)

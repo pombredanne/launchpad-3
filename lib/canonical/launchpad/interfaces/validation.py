@@ -95,6 +95,7 @@ def _validate_email(email):
             "${email} isn't a valid email address.",
             mapping={'email': email}))
 
+
 def _check_email_availability(email):
     email_address = getUtility(IEmailAddressSet).getByEmail(email)
     if email_address is not None:
@@ -198,7 +199,8 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
         try:
-            distribution.guessPackageNames(sourcepackagename.name)
+            distribution.guessPublishedSourcePackageName(
+                sourcepackagename.name)
         except NotFoundError, e:
             raise LaunchpadValidationError(e)
     new_source_package = distribution.getSourcePackage(sourcepackagename)
@@ -232,9 +234,10 @@ def valid_upstreamtask(bug, bug_target):
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
     if not bug_target.searchTasks(params).is_empty():
-        errors.append(LaunchpadValidationError(_(
-                    'A fix for this bug has already been requested for ${target}',
-                    mapping={'target': bug_target.displayname})))
+        errors.append(
+            LaunchpadValidationError(_(
+                'A fix for this bug has already been requested for ${target}',
+                mapping={'target': bug_target.displayname})))
 
     if len(errors) > 0:
         raise expose(WidgetsError(errors), 400)

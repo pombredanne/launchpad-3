@@ -36,7 +36,7 @@ from zope.schema import (
     TextLine,
     )
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
@@ -308,9 +308,9 @@ class IOAuthSignedRequest(Interface):
 # so they may be raised but will not cause an OOPS to be generated.  The
 # client will see them as an UNAUTHORIZED error.
 
+@error_status(httplib.UNAUTHORIZED)
 class _TokenException(Exception):
     """Base class for token, nonce, and timestamp exceptions."""
-    webservice_error(httplib.UNAUTHORIZED)
 
 
 class NonceAlreadyUsed(_TokenException):

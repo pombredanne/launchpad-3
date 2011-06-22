@@ -470,11 +470,6 @@ class SourcePackageRelease(SQLBase):
             "BinaryPackageBuild.source_package_release = %s" % (
             sqlvalues(archive.id, distroarchseries.architecturetag, self))]
 
-        # XXX bigjools 2011-05-04 bug=777234
-        # We'll need exceptions in here for when we start initializing
-        # derived distros without rebuilding binaries.  The matched
-        # archives will need to traverse the DistroSeriesParent tree.
-
         # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)

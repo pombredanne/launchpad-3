@@ -51,18 +51,14 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Count,
     Desc,
-    Exists,
     In,
-    Join,
     LeftJoin,
     Max,
     Not,
     Or,
     Select,
     SQL,
-    SQLRaw,
     Sum,
     Union,
     )
@@ -171,7 +167,6 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -230,7 +225,7 @@ def snapshot_bug_params(bug_params):
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
             "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
+            "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
             "milestone", "assignee"])
@@ -300,6 +295,7 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
                 ))
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
+
     # Always query for used
     def _query(*args):
         return store.find(tag_count_columns, *(where_conditions + list(args))
@@ -939,6 +935,17 @@ BugMessage""" % sqlvalues(self.id))
             for subscriber in subscriptions.subscribers:
                 recipients.addDirectSubscriber(subscriber)
         return subscriptions.subscribers.sorted
+
+    def getDirectSubscribersWithDetails(self):
+        """See `IBug`."""
+        results = Store.of(self).find(
+            (Person, BugSubscription),
+            BugSubscription.person_id == Person.id,
+            BugSubscription.bug_id == self.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id == self.id)))
+            ).order_by(Person.displayname)
+        return results
 
     def getIndirectSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1659,6 +1666,13 @@ BugMessage""" % sqlvalues(self.id))
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
                     self.subscribe(person, who)
+                subscribers_for_who = self.getSubscribersForPerson(who)
+                if subscribers_for_who.is_empty():
+                    # We also add `who` as a subscriber, if they're not
+                    # already directly subscribed or part of a team
+                    # that's directly subscribed, so that they can
+                    # see the bug they've just marked private.
+                    self.subscribe(who, who)
 
             self.private = private
 
@@ -2306,7 +2320,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_structural_subscriptions_for_bug(self.bug)
+        return list(get_structural_subscriptions_for_bug(self.bug))
 
     @cachedproperty
     @freeze(BugSubscriberSet)
@@ -2519,13 +2533,6 @@ class BugSet:
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
 
-        # Store binary package name in the description, because
-        # storing it as a separate field was a maintenance burden to
-        # developers.
-        if params.binarypackagename:
-            params.comment = "Binary package hint: %s\n\n%s" % (
-                params.binarypackagename.name, params.comment)
-
         # Create the bug comment if one was given.
         if params.comment:
             rfc822msgid = make_msgid('malonedeb')
@@ -2594,7 +2601,7 @@ class BugSet:
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
         bugs = []
-        for bug_task in bug_tasks[:4*limit]:
+        for bug_task in bug_tasks[:4 * limit]:
             bug = bug_task.bug
             duplicateof = bug.duplicateof
             if duplicateof is not None:

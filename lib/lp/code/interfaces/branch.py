@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 from cgi import escape
+import httplib
 import re
 
 from lazr.restful.declarations import (
@@ -109,7 +110,7 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
-@error_status(400)
+@error_status(httplib.BAD_REQUEST)
 class WrongNumberOfReviewTypeArguments(ValueError):
     """Raised in the webservice API if `reviewers` and `review_types`
     do not have equal length.
