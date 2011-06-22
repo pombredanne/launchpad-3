@@ -20,7 +20,6 @@ from lp.code.model.branchjob import (
     RevisionMailJob,
     RevisionsAddedJob,
     )
-from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 
 
@@ -41,8 +40,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         tree.add('foo')
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('Added foo.', rev_id='rev1')
+        tree.commit('Added foo.', rev_id='rev1', committer='me@example.com')
         return branch, tree
 
     def test_sendbranchmail(self):
@@ -83,10 +81,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
-        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
-        # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('Added foo.', rev_id='rev2')
+        tree.commit('Added foo.', rev_id='rev2', committer='me@example.com')
         RevisionsAddedJob.create(
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
