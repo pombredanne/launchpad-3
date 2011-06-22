@@ -117,7 +117,10 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        SourcePackagePublishingHistory.archiveID == Archive.id,
+        # The + 0 below prevents PostgreSQL from using the index named
+        # securesourcepackagepublishinghistory__archive__status__idx, the use
+        # of which results in a terrible query plan.
+        SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
         SourcePackagePublishingHistory.status.is_in(statuses),
