@@ -417,13 +417,13 @@ class BuildFarmJobSet:
                 Select(
                     Archive.id,
                     tables=(Archive,),
-                    where=(Archive.private == False)
+                    where=(Archive._private == False)
                     ),
                 Select(
                     Archive.id,
                     tables=(Archive,),
                     where=And(
-                        Archive.private == True,
+                        Archive._private == True,
                         Archive.ownerID.is_in(
                             Select(
                                 TeamParticipation.teamID,
@@ -445,7 +445,7 @@ class BuildFarmJobSet:
                         Select(
                             Archive.id,
                             tables=(Archive,),
-                            where=(Archive.private == False)
+                            where=(Archive._private == False)
                             )
                         )
                     )

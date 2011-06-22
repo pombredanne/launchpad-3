@@ -174,6 +174,9 @@ class IRunnableJob(IJob):
 class IJobSource(Interface):
     """Interface for creating and getting jobs."""
 
+    memory_limit = Int(
+        title=_('Maximum amount of memory which may be used by the process.'))
+
     def iterReady():
         """Iterate through all jobs."""
 
