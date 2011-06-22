@@ -70,9 +70,10 @@ class _TestResultsMixin:
             "Expected edit_bug_mail link missing")
         # Ensure the LP.cache has been populated.
         self.assertTrue("LP.cache['administratedTeams']" in self.contents)
-        # And that the call to setup the subscription is in the HTML.
-        # The presence of the configuration args are used alone, as anything
-        # else is needlessly brittle.
+        # Ensure the call to setup the subscription is in the HTML.
+        # Only check for the presence of setup's configuration step; more
+        # detailed checking is needlessly brittle.
+
         # A windmill test is required to ensure that the call actually
         # succeeded, by checking the link class for 'js-action'.
         setup = ('{content_box: "#structural-subscription-content-box"});')
