@@ -331,8 +331,9 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.findPOTMsgSetsContaining(u"THIRD"))
         self.assertEquals(found_potmsgsets, [plural_potmsgset])
 
-    def test_getTranslationsFilteredBy(self):
-        # Test that filtering by submitters works.
+    def test_getTranslationsFilteredBy_none(self):
+        # When a person has submitted no translations, empty result set
+        # is returned.
 
         potmsgset = self.potmsgset
 
@@ -344,7 +345,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getTranslationsFilteredBy(submitter))
         self.assertEquals(found_translations, [])
 
-        # If 'submitter' provides a translation, it's returned in a list.
+    def test_getTranslationsFilteredBy(self):
+        # If 'submitter' provides a translation for a pofile,
+        # it's returned in a list.
+
+        potmsgset = self.potmsgset
+        submitter = self.factory.makePerson()
+
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
             translations=[u"Translation message"],
@@ -353,8 +360,13 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_pofile.getTranslationsFilteredBy(submitter))
         self.assertEquals(found_translations, [translation])
 
+    def test_getTranslationsFilteredBy_someone_else(self):
         # If somebody else provides a translation, it's not added to the
         # list of submitter's translations.
+
+        potmsgset = self.potmsgset
+        submitter = self.factory.makePerson()
+
         someone_else = self.factory.makePerson()
         self.factory.makeCurrentTranslationMessage(
             pofile=self.devel_pofile, potmsgset=potmsgset,
@@ -362,33 +374,47 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             translator=someone_else)
         found_translations = list(
             self.devel_pofile.getTranslationsFilteredBy(submitter))
-        self.assertEquals(found_translations, [translation])
+        self.assertEquals(found_translations, [])
 
-        # Adding a translation for same POTMsgSet, but to a different
+    def test_getTranslationsFilteredBy_other_pofile(self):
+        # Adding a translation for the same POTMsgSet, but to a different
         # POFile (different language) will not add the translation
-        # to the list of submitter's translations for *former* POFile.
-        serbian_latin = self.factory.makeLanguage(
-            'sr@latin', 'Serbian Latin')
+        # to the list of submitter's translations for *original* POFile.
 
-        self.devel_sr_latin_pofile = self.factory.makePOFile(
-            'sr@latin', potemplate=self.devel_potemplate)
+        potmsgset = self.potmsgset
+        submitter = self.factory.makePerson()
+
+        serbian_test = self.factory.makeLanguage(
+            'sr@test', 'Serbian Test')
+
+        self.devel_sr_test_pofile = self.factory.makePOFile(
+            'sr@test', potemplate=self.devel_potemplate)
         self.factory.makeCurrentTranslationMessage(
-            pofile=self.devel_sr_latin_pofile, potmsgset=potmsgset,
+            pofile=self.devel_sr_test_pofile, potmsgset=potmsgset,
             translations=[u"Yet another translation"],
             translator=submitter)
         found_translations = list(
             self.devel_pofile.getTranslationsFilteredBy(submitter))
-        self.assertEquals(found_translations, [translation])
+        self.assertEquals(found_translations, [])
 
+    def test_getTranslationsFilteredBy_shared(self):
         # If a POTMsgSet is shared between two templates, a
-        # translation is listed on both.
+        # translation on one is listed on both.
+
+        potmsgset = self.potmsgset
+        submitter = self.factory.makePerson()
+        translation = self.factory.makeCurrentTranslationMessage(
+            pofile=self.devel_pofile, potmsgset=potmsgset,
+            translations=[u"Translation message"],
+            translator=submitter)
+
         potmsgset.setSequence(self.stable_potemplate, 1)
-        found_translations = list(
+        stable_translations = list(
             self.stable_pofile.getTranslationsFilteredBy(submitter))
-        self.assertEquals(found_translations, [translation])
-        found_translations = list(
+        self.assertEquals(stable_translations, [translation])
+        devel_translations = list(
             self.devel_pofile.getTranslationsFilteredBy(submitter))
-        self.assertEquals(found_translations, [translation])
+        self.assertEquals(devel_translations, [translation])
 
     def test_getPOTMsgSetTranslated_NoShared(self):
         # Test listing of translated POTMsgSets when there is no shared
