@@ -10,6 +10,7 @@ import os
 import shutil
 from StringIO import StringIO
 import tempfile
+from testtools.matchers import StartsWith
 from unittest import TestCase
 
 from zope.component import getUtility
@@ -960,6 +961,14 @@ class TestQueueActionLite(TestCaseWithFactory):
             distro.name, suite, queue, terms, component.name,
             section.name, priority_name, display)
 
+    def parseUploadSummaryLine(self, output_line):
+        """Parse an output line from `QueueAction.displayItem`.
+
+        :param output_line: A line of output text from `displayItem`.
+        :return: A tuple of displayed items: (id, tag, name, version, age).
+        """
+        return tuple(item.strip() for item in output_line.split('|'))
+
     def test_display_actions_have_privileges_for_PackageCopyJob(self):
         # The methods that display uploads have privileges to work with
         # a PackageUpload that has a copy job.
@@ -994,15 +1003,52 @@ class TestQueueActionLite(TestCaseWithFactory):
         # displayItem can display a source package upload.
         upload = self.factory.makeSourcePackageUpload()
         action = self.makeQueueAction(upload)
+
         action.displayItem(upload)
-        self.assertNotEqual(0, action.display.call_count)
+
+        ((output, ), kwargs) = action.display.calls[0]
+        (upload_id, tag, name, version, age) = self.parseUploadSummaryLine(
+            output)
+        self.assertEqual(str(upload.id), upload_id)
+        self.assertEqual("S-", tag)
+        self.assertThat(upload.displayname, StartsWith(name))
+        self.assertThat(upload.package_version, StartsWith(version))
 
     def test_displayItem_displays_PackageUpload_with_PackageCopyJob(self):
         # displayItem can display a copy-job package upload.
         upload = self.factory.makeCopyJobPackageUpload()
         action = self.makeQueueAction(upload)
+
         action.displayItem(upload)
-        self.assertNotEqual(0, action.display.call_count)
+
+        ((output, ), kwargs) = action.display.calls[0]
+        (upload_id, tag, name, version, age) = self.parseUploadSummaryLine(
+            output)
+        self.assertEqual(str(upload.id), upload_id)
+        self.assertEqual("X-", tag)
+        self.assertThat(upload.displayname, StartsWith(name))
+        self.assertThat(upload.package_version, StartsWith(version))
+
+    def test_makeTag_returns_S_for_source_upload(self):
+        upload = self.factory.makeSourcePackageUpload()
+        self.assertEqual('S-', self.makeQueueAction(upload)._makeTag(upload))
+
+    def test_makeTag_returns_B_for_binary_upload(self):
+        upload = self.factory.makeBuildPackageUpload()
+        self.assertEqual('-B', self.makeQueueAction(upload)._makeTag(upload))
+
+    def test_makeTag_returns_SB_for_mixed_upload(self):
+        upload = self.factory.makeSourcePackageUpload()
+        upload.addBuild(self.factory.makeBinaryPackageBuild())
+        self.assertEqual('SB', self.makeQueueAction(upload)._makeTag(upload))
+
+    def test_makeTag_returns_X_for_copy_job_upload(self):
+        upload = self.factory.makeCopyJobPackageUpload()
+        self.assertEqual('X-', self.makeQueueAction(upload)._makeTag(upload))
+
+    def test_makeTag_returns_dashes_for_custom_upload(self):
+        upload = self.factory.makeCustomPackageUpload()
+        self.assertEqual('--', self.makeQueueAction(upload)._makeTag(upload))
 
     def test_displayInfo_displays_PackageUpload_with_source(self):
         # displayInfo can display a source package upload.
