@@ -24,6 +24,8 @@ __all__ = [
     'ArchiveViewBase',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
+    'ProcessorFamilySetNavigation',
+    'ProcessorFamilyNavigation',
     'traverse_named_ppa',
     ]
 
@@ -153,7 +155,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorFamily,
+    IProcessorFamilySet,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -2176,3 +2181,28 @@ class ArchiveDeleteView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             "Deletion of '%s' has been requested and the repository will be "
             "removed shortly." % self.context.title)
+
+
+class ProcessorFamilySetNavigation(Navigation):
+
+    usedfor = IProcessorFamilySet
+
+    def traverse(self, name):
+        # Raise NotFoundError on invalid processor family name.
+        family = self.context.getByName(name)
+        if family is None:
+            raise NotFoundError(name)
+        return family
+
+
+class ProcessorFamilyNavigation(Navigation):
+
+    usedfor= IProcessorFamily
+
+    def traverse(self, id_):
+        id_ = int(id_)
+        processors = self.processors
+        for p in processors:
+            if p.id == id_:
+                return p
+        raise NotFoundError(id_)

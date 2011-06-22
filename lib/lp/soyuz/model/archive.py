@@ -1813,7 +1813,8 @@ class Archive(SQLBase):
 
     def enableRestrictedFamily(self, family):
         """See `IArchive`."""
-        restricted = set(self.enabled_restricted_families).add(family)
+        restricted = set(self.enabled_restricted_families)
+        restricted.add(family)
         self.enabled_restricted_families = restricted
 
     @classmethod
