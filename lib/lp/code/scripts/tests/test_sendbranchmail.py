@@ -56,6 +56,7 @@ class TestSendbranchmail(TestCaseWithFactory):
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Running synchronously.\n'
             'INFO    Ran 1 RevisionMailJobs.\n', stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
@@ -93,6 +94,7 @@ class TestSendbranchmail(TestCaseWithFactory):
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'INFO    Running synchronously.\n'
             'INFO    Ran 1 RevisionMailJobs.\n',
             stderr)
         self.assertEqual('', stdout)
