@@ -97,6 +97,7 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.model.packageset import Packageset
+from lp.soyuz.model.packagesetsources import PackagesetSources
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -205,7 +206,6 @@ def packagesets(dsds, in_parent):
     if len(dsds) == 0:
         return {}
 
-    PackagesetSources = Table("PackageSetSources")
     FlatPackagesetInclusion = Table("FlatPackagesetInclusion")
 
     tables = IStore(Packageset).using(
@@ -213,18 +213,17 @@ def packagesets(dsds, in_parent):
         PackagesetSources, FlatPackagesetInclusion)
     results = tables.find(
         (DistroSeriesDifference.id, Packageset),
-        Column("packageset", PackagesetSources) == (
-            Column("child", FlatPackagesetInclusion)),
+        PackagesetSources.packageset_id == Column(
+            "child", FlatPackagesetInclusion),
         Packageset.distroseries_id == (
             DistroSeriesDifference.parent_series_id if in_parent else
             DistroSeriesDifference.derived_series_id),
         Column("parent", FlatPackagesetInclusion) == Packageset.id,
-        Column("sourcepackagename", PackagesetSources) == (
+        PackagesetSources.sourcepackagename_id == (
             DistroSeriesDifference.source_package_name_id),
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds))
     results = results.order_by(
-        Column("sourcepackagename", PackagesetSources),
-        Packageset.name)
+        PackagesetSources.sourcepackagename_id, Packageset.name)
 
     grouped = defaultdict(list)
     for dsd_id, packageset in results:
