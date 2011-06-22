@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2008-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -32,12 +32,8 @@ class RunRevisionMailJobs(LaunchpadCronScript):
         jobs = list(getUtility(IRevisionMailJobSource).iterReady())
         jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
         runner = JobRunner(jobs, self.logger)
-        server = get_ro_server()
-        server.start_server()
-        try:
+        with get_ro_server():
             runner.runAll()
-        finally:
-            server.stop_server()
         self.logger.info(
             'Ran %d RevisionMailJobs.' % len(runner.completed_jobs))
 

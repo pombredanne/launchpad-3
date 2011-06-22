@@ -427,3 +427,10 @@ class AsyncVirtualServer(Server):
             return
         self._is_started = False
         unregister_transport(self.get_url(), self._transportFactory)
+
+    def __enter__(self):
+        self.start_server()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop_server()
