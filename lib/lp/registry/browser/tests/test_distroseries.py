@@ -31,6 +31,7 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
@@ -79,6 +80,7 @@ from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.testing import (
     anonymous_logged_in,
     celebrity_logged_in,
+    login_celebrity,
     login_person,
     person_logged_in,
     StormStatementRecorder,
@@ -336,7 +338,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
     def _assertInitSeriesLink(self, series, person, present=True):
         # Helper method to check the presence/absence of the link to
-        # +iniseries.
+        # +initseries.
         if person == 'admin':
             person = getUtility(ILaunchpadCelebrities).admin.teamowner
 
@@ -372,6 +374,17 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         series = self.factory.makeDistroSeries()
 
         self.assertInitSeriesLinkPresent(series, 'admin')
+
+    def test_differences_init_link_series_driver(self):
+        # The link to +initseries is displayed to the distroseries's
+        # drivers.
+        set_derived_series_ui_feature_flag(self)
+        distroseries = self.factory.makeDistroSeries()
+        driver = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            distroseries.driver = driver
+
+        self.assertInitSeriesLinkPresent(distroseries, driver)
 
     def test_differences_init_link_not_admin(self):
         # The link to +initseries is not displayed to not admin users if the
@@ -587,6 +600,50 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
                     u"This series is already being initialized."))
+
+
+class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
+    """Test access to IDS.+initseries."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesInitializeViewAccess,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+
+    def test_initseries_access_simpleuser(self):
+        # Unprivileged users cannot access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login_person(self.factory.makePerson())
+
+        self.assertEqual(
+            False,
+            check_permission('launchpad.Edit', view))
+
+    def test_initseries_access_admin(self):
+        # Users with lp.Admin can access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login_celebrity('admin')
+
+        self.assertEqual(
+            True,
+            check_permission('launchpad.Edit', view))
+
+    def test_initseries_access_driver(self):
+        # Distroseries drivers can access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        driver = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            distroseries.driver = driver
+        login_person(driver)
+
+        self.assertEqual(
+            True,
+            check_permission('launchpad.Edit', view))
 
 
 class DistroSeriesDifferenceMixin:
