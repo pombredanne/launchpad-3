@@ -23,7 +23,10 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
@@ -43,6 +46,7 @@ from lp.soyuz.interfaces.queue import (
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.queue import PackageUploadSource
 
 
 QUEUE_SIZE = 30
@@ -178,17 +182,14 @@ class QueueItemsView(LaunchpadView):
         # Listify to avoid repeated queries.
         return list(old_binary_packages)
 
-    def getPackagesetsForSourceFiles(self, source_files):
-        """Get the `Packagesets` belonging to `source_files`.
+    def getPackagesetsFor(self, source_package_releases):
+        """Find associated `Packagesets`.
 
-        :param source_files: A sequence of `SourcePackageReleaseFile`s.
+        :param source_package_releases: A sequence of `SourcePackageRelease`s.
         """
-        sprs = set(
-            source_file.sourcepackagerelease for source_file in source_files)
-        if None in sprs:
-            sprs.remove(None)
+        sprs = [spr for spr in source_package_releases if spr is not None]
         return getUtility(IPackagesetSet).getForPackages(
-            self.context, [spr.sourcepackagenameID for spr in sprs])
+            self.context, set(spr.sourcepackagenameID for spr in sprs))
 
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
@@ -213,11 +214,14 @@ class QueueItemsView(LaunchpadView):
                     upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        packageuploadsources = load_referencing(
+            PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
         source_files = source_file_set.getByPackageUploadIDs(upload_ids)
 
-        load_related(
-            SourcePackageRelease, source_files, ['sourcepackagereleaseID'])
+        source_sprs = load_related(
+            SourcePackageRelease, packageuploadsources,
+            ['sourcepackagereleaseID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
@@ -237,7 +241,7 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
-        package_sets = self.getPackagesetsForSourceFiles(source_files)
+        package_sets = self.getPackagesetsFor(source_sprs)
 
         return [
             CompletePackageUpload(
