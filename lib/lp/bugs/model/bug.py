@@ -106,6 +106,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
+    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -369,8 +370,6 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
-    linked_branches = SQLMultipleJoin(
-        'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
@@ -1316,6 +1315,17 @@ BugMessage""" % sqlvalues(self.id))
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
+
+    @property
+    def linked_branches(self):
+        store = Store.of(self)
+        bug_branches = store.find(
+            BugBranch,
+            BugBranch.bug == self)
+        user = getUtility(ILaunchBag).user
+        return [
+            bug_branch for bug_branch in bug_branches
+                if bug_branch.branch.visibleByUser(user)]
 
     @cachedproperty
     def has_cves(self):

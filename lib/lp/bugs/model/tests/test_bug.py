@@ -313,3 +313,21 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
+
+    def test_linked_branches_doesnt_return_inaccessible_branches(self):
+        # If a Bug has branches linked to it that the current user
+        # cannot access, those branches will not be returned in its
+        # linked_branches property.
+        bug = self.factory.makeBug()
+        private_branch_owner = self.factory.makePerson()
+        private_branch = self.factory.makeBranch(
+            owner=private_branch_owner, private=True)
+        with person_logged_in(private_branch_owner):
+            bug.linkBranch(private_branch, private_branch.registrant)
+        public_branch = self.factory.makeBranch()
+        with person_logged_in(public_branch.registrant):
+            bug.linkBranch(public_branch, public_branch.registrant)
+            linked_branches = [
+                bug_branch.branch for bug_branch in bug.linked_branches]
+            self.assertIn(public_branch, linked_branches)
+            self.assertNotIn(private_branch, linked_branches)
