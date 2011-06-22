@@ -1811,6 +1811,11 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    def enableRestrictedFamily(self, family):
+        """See `IArchive`."""
+        restricted = set(self.enabled_restricted_families).add(family)
+        self.enabled_restricted_families = restricted
+
     @classmethod
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

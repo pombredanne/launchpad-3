@@ -36,6 +36,16 @@
 	    for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
             path_expression="string:+processor-families"
             parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessorFamily"
+            path_expression="string:family/${id}"
+            parent_utility="lp.soyuz.interfaces.processor.IProcessorFamilySet" />
+<!--
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessor"
+            path_expression="string:+processor-family/processor/${id}"
+            attribute_to_parent="target" />
+-->
     </facet>
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"

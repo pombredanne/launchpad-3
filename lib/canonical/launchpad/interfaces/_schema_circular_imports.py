@@ -448,6 +448,8 @@ patch_choice_parameter_type(
     IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
+patch_plain_parameter_type(
+    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
 
 
 # IBuildFarmJob

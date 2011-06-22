@@ -440,8 +440,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
                 "can build."),
             value_type=Reference(schema=Interface),
             # Really IProcessorFamily.
-            readonly=False),
+            readonly=True),
         as_of='devel')
+
 
     commercial = exported(
         Bool(
@@ -1507,6 +1508,17 @@ class IArchiveEdit(Interface):
         :param dependency: is an `IArchive` object.
         """
 
+    @operation_parameters(
+        family=Reference(schema=Interface, required=True),
+        # Really IProcessorFamily.
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def enableRestrictedFamily(family):
+        """Add the processor family to the set of enabled restricted families.
+
+        :param family: is an `IProcessorFamily` object.
+        """
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
     """Main Archive interface."""
