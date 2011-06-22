@@ -83,10 +83,10 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.soyuz.enums import (
+    ArchivePurpose,
     PackageDiffStatus,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.archive import Archive
@@ -117,9 +117,9 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        # The + 0 below prevents PostgreSQL from using the index named
-        # securesourcepackagepublishinghistory__archive__status__idx, the use
-        # of which results in a terrible query plan.
+        # The + 0 below prevents PostgreSQL from using the (archive, status)
+        # index on SourcePackagePublishingHistory, the use of which results in
+        # a terrible query plan.
         SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
@@ -146,7 +146,9 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     conditions = And(
         conditions,
         Archive.distributionID == DistroSeries.distributionID,
-        Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+        # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
+        # but we are only ever going to be interested in PRIMARY archives.
+        Archive.purpose == ArchivePurpose.PRIMARY,
         )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
