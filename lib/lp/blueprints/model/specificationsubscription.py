@@ -33,4 +33,10 @@ class SpecificationSubscription(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
-
+    def canBeUnsubscribedByUser(self, user):
+        """See `ISpecificationSubscription`."""
+        if user is None:
+            return False
+        if self.person.is_team:
+            return user.inTeam(self.person)
+        return user == self.person
