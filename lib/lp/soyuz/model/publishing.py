@@ -1336,6 +1336,9 @@ class PublishingSet:
     def copyBinariesTo(self, binaries, distroseries, pocket, archive,
                        policy=None):
         """See `IPublishingSet`."""
+        if binaries is None or len(binaries) == 0:
+            return ()
+
         if policy is not None:
             bpn_archtag = {}
             for bpph in binaries:
