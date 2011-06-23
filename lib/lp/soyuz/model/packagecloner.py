@@ -100,11 +100,11 @@ class PackageCloner:
         if proc_families is None:
             proc_families = []
 
-        self.createMissingBuilds(
+        self._create_missing_builds(
             destination.distroseries, destination.archive,
             distroarchseries_list, proc_families, always_create)
 
-    def createMissingBuilds(
+    def _create_missing_builds(
         self, distroseries, archive, distroarchseries_list,
         proc_families, always_create):
         """Create builds for all cloned source packages.
@@ -253,7 +253,7 @@ class PackageCloner:
             get_family(archivearch) for archivearch
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
-        self.createMissingBuilds(
+        self._create_missing_builds(
             destination.distroseries, destination.archive, (),
             proc_families, False)
 
