@@ -58,23 +58,22 @@ class PackageClonerTests(TestCaseWithFactory):
                 (source.source_package_name, source.source_package_version))
         self.assertEqual(expected_set, actual_set)
 
-    def createSourceDistribution(self, package_infos, distro_name=None,
-                                 create_binaries=False):
+    def createSourceDistribution(self, package_infos):
         """Create a distribution to be the source of a copy archive."""
-        distroseries = self.createSourceDistroSeries(distro_name=distro_name)
-        self.createSourcePublications(
-            package_infos, distroseries, create_binaries)
+        distroseries = self.createSourceDistroSeries()
+        self.createSourcePublications(package_infos, distroseries)
         return distroseries
 
-    def createSourceDistroSeries(self, distro_name="foobuntu",
-                                 distroseries_name="maudlin"):
+    def createSourceDistroSeries(self):
         """Create a DistroSeries suitable for copying.
 
         Creates a distroseries with a DistroArchSeries and nominatedarchindep,
         which makes it suitable for copying because it will create some
         builds.
         """
+        distro_name = "foobuntu"
         distro = self.factory.makeDistribution(name=distro_name)
+        distroseries_name = "maudlin"
         distroseries = self.factory.makeDistroSeries(
             distribution=distro, name=distroseries_name)
         das = self.factory.makeDistroArchSeries(
@@ -90,10 +89,8 @@ class PackageClonerTests(TestCaseWithFactory):
             name="test-copy-archive", purpose=ArchivePurpose.COPY,
             distribution=distribution)
 
-    def createSourcePublication(self, info, distroseries, create_binaries):
-        """Create a SourcePackagePublishingHistory /
-        BinaryPackagePublishingHistory based on a PackageInfo.
-        """
+    def createSourcePublication(self, info, distroseries):
+        """Create a SourcePackagePublishingHistory based on a PackageInfo."""
         archive = distroseries.distribution.main_archive
         sources = archive.getPublishedSources(
             distroseries=distroseries,
@@ -110,31 +107,17 @@ class PackageClonerTests(TestCaseWithFactory):
             version=info.version, architecturehintlist='any',
             archive=archive, status=info.status,
             pocket=PackagePublishingPocket.RELEASE)
-        if create_binaries:
-            binarypackagerelease = self.factory.makeBinaryPackageRelease(
-                binarypackagename=self.factory.getOrMakeBinaryPackageName(
-                    info.name),
-                version=info.version)
-            self.factory.makeBinaryPackagePublishingHistory(
-                binarypackagerelease=binarypackagerelease,
-                distroarchseries=distroseries.nominatedarchindep,
-                archive=archive, status=info.status,
-                pocket=PackagePublishingPocket.RELEASE)
 
-    def createSourcePublications(self, package_infos, distroseries,
-                                 create_binaries=False):
+    def createSourcePublications(self, package_infos, distroseries):
         """Create a source publication for each item in package_infos."""
         for package_info in package_infos:
-            self.createSourcePublication(
-                package_info, distroseries, create_binaries)
+            self.createSourcePublication(package_info, distroseries)
 
     def makeCopyArchive(self, package_infos, component="main",
                         source_pocket=None, target_pocket=None,
-                        proc_families=None, distro_name=None,
-                        create_binaries=False):
+                        proc_families=None):
         """Make a copy archive based on a new distribution."""
-        distroseries = self.createSourceDistribution(
-            package_infos, distro_name, create_binaries=create_binaries)
+        distroseries = self.createSourceDistribution(package_infos)
         copy_archive = self.getTargetArchive(distroseries.distribution)
         to_component = getUtility(IComponentSet).ensure(component)
         self.copyArchive(
@@ -163,8 +146,7 @@ class PackageClonerTests(TestCaseWithFactory):
 
     def copyArchive(self, to_archive, to_distroseries, from_archive=None,
                     from_distroseries=None, from_pocket=None, to_pocket=None,
-                    to_component=None, packagesets=None, proc_families=None,
-                    no_duplicates=False, distroarchseries_list=None):
+                    to_component=None, packagesets=None, proc_families=None):
         """Use a PackageCloner to copy an archive."""
         if from_distroseries is None:
             from_distroseries = to_distroseries
@@ -187,8 +169,8 @@ class PackageClonerTests(TestCaseWithFactory):
             destination.component = to_component
         cloner = getUtility(IPackageCloner)
         cloner.clonePackages(
-            origin, destination, distroarchseries_list=distroarchseries_list,
-            proc_families=proc_families, no_duplicates=no_duplicates)
+            origin, destination, distroarchseries_list=None,
+            proc_families=proc_families)
         return cloner
 
     def testCopiesPublished(self):
@@ -417,6 +399,7 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive, distroseries, proc_families=proc_families)
         self.checkBuilds(copy_archive, [package_info, package_info])
 
+
     def diffArchives(self, target_archive, target_distroseries,
                      source_archive=None, source_distroseries=None):
         """Run a packageSetDiff of two archives."""
@@ -440,7 +423,6 @@ class PackageClonerTests(TestCaseWithFactory):
         expected_changed_tuples = [(e.name, e.version)
                                    for e in expected_changed]
         expected_new_tuples = [(e.name, e.version) for e in expected_new]
-
         def get_tuples(source_keys):
             tuples = []
             for source_key in source_keys:
@@ -453,7 +435,6 @@ class PackageClonerTests(TestCaseWithFactory):
                     (naked_source.source_package_name,
                      naked_source.source_package_version))
             return tuples
-
         actual_changed_tuples = get_tuples(actual_changed_keys)
         actual_new_tuples = get_tuples(actual_new_keys)
         self.assertEqual(expected_changed_tuples, actual_changed_tuples)
@@ -521,6 +502,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkPackageDiff(
             [package_infos[0]], [package_infos[1]], diff,
             distroseries.distribution.main_archive)
+
 
     def mergeCopy(self, target_archive, target_distroseries,
                   source_archive=None, source_distroseries=None):
@@ -679,104 +661,3 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkBuilds(
             copy_archive,
             package_infos + package_infos + package_infos2 + package_infos2)
-
-    def setUpDistroSeriesWithSimilarPackages(self, packagename,
-                                             create_binaries=False):
-        package_infos = [
-            PackageInfo(
-                "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED),
-            PackageInfo(
-                "bzr", "2.2", status=PackagePublishingStatus.PUBLISHED),
-            PackageInfo(
-                "bzr", "2.3", status=PackagePublishingStatus.PUBLISHED)]
-        proc_families = [ProcessorFamilySet().getByName("x86")]
-        # Create bzr 2.1 (superseeded) and 2.2 (published) in
-        # distroseries1.
-        distroseries1 = self.createSourceDistribution(
-            package_infos[:2], create_binaries=create_binaries)
-
-        # Create bzr 2.1 (superseeded), 2.2 (superseeded) and 2.3 (published)
-        # in distroseries2.
-        distroseries2 = self.createSourceDistribution(
-            package_infos, distro_name='foo2',
-            create_binaries=create_binaries)
-
-        return (proc_families, distroseries1, distroseries2)
-
-    def testCopyNoSourceDuplicates(self):
-        # No duplicate SourcePackagePublishingHistory is created by
-        # the packagecloner if no_duplicates=True is passed to
-        # cloner.clonePackages.
-        res = self.setUpDistroSeriesWithSimilarPackages('bzr')
-        proc_fam, distroseries1, distroseries2 = res
-        dest_series = self.createSourceDistroSeries(distro_name="foo3")
-        dest_archive = self.getTargetArchive(dest_series.distribution)
-        self.copyArchive(
-            dest_archive, dest_series,
-            from_archive=distroseries1.main_archive,
-            from_distroseries=distroseries1, proc_families=proc_fam,
-            no_duplicates=True)
-        self.copyArchive(
-            dest_archive, dest_series,
-            from_archive=distroseries2.main_archive,
-            from_distroseries=distroseries2, proc_families=proc_fam,
-            no_duplicates=True)
-
-       # Fetch published sources in the destination archive.
-        published_sources = dest_archive.getPublishedSources(
-            name='bzr')
-        naked_published_sources = removeSecurityProxy(published_sources)
-        binarypackagebuild_set = getUtility(IBinaryPackageBuildSet)
-        builds = binarypackagebuild_set.getBuildsForArchive(
-            dest_archive, status=BuildStatus.NEEDSBUILD)
-        naked_builds = removeSecurityProxy(builds)
-
-        # Since we passed no_duplicates=True to the packagecloner, the
-        # second copy has not created another SourcePackagePublishingHistory
-        # for bzr.
-        self.assertEquals(1, naked_published_sources.count())
-        self.assertEquals(
-            u"2.2",
-            naked_published_sources[0].sourcepackagerelease.version)
-        # Only *missing builds* are created by the packagecloner so only
-        # the first copy creates a build.
-        self.assertEquals(1, naked_builds.count())
-
-    def testCopyNoBinaryDuplicates(self):
-        # No duplicate BinaryPackagePublishingHistory is created by
-        # the packagecloner if no_duplicates=True is passed to
-        # cloner.clonePackages.
-        res = self.setUpDistroSeriesWithSimilarPackages('bzr', True)
-        proc_fam, distroseries1, distroseries2 = res
-        dest_series = self.createSourceDistroSeries(distro_name="foo3")
-        dest_archive = self.getTargetArchive(dest_series.distribution)
-        self.copyArchive(
-            dest_archive, dest_series,
-            from_archive=distroseries1.main_archive,
-            from_distroseries=distroseries1, proc_families=proc_fam,
-            no_duplicates=True,
-            distroarchseries_list=[
-                (distroseries1.nominatedarchindep,
-                 dest_series.nominatedarchindep)])
-        self.copyArchive(
-            dest_archive, dest_series,
-            from_archive=distroseries2.main_archive,
-            from_distroseries=distroseries2, proc_families=proc_fam,
-            no_duplicates=True,
-            distroarchseries_list=[
-                (distroseries2.nominatedarchindep,
-                 dest_series.nominatedarchindep)])
-
-        # Fetch published binaries in the destination archive.
-        published_binaries = dest_archive.getAllPublishedBinaries(
-            name='bzr')
-        naked_published_binaries = removeSecurityProxy(published_binaries)
-
-        # Since we passed no_duplicates=True to the packagecloner, the
-        # second copy has not created any new BinaryPackagePublishingHistory
-        # for bzr.
-        self.assertEquals(2, naked_published_binaries.count())
-        self.assertContentEqual(
-            [u'2.1', u'2.2'],
-            sorted([binary.binarypackagerelease.version for binary in
-                    naked_published_binaries]))

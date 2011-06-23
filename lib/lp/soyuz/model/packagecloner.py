@@ -62,7 +62,7 @@ class PackageCloner:
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
                       proc_families=None, sourcepackagenames=None,
-                      always_create=False, no_duplicates=False):
+                      always_create=False):
         """Copies packages from origin to destination package location.
 
         Binary packages are only copied for the `DistroArchSeries` pairs
@@ -84,13 +84,10 @@ class PackageCloner:
         @param always_create: if we should create builds for every source
             package copied, useful if no binaries are to be copied.
         @type always_create: Boolean
-        @param no_duplicates: if we should prevent the duplication of packages
-            with identical sourcepackagename in the destination.
-        @type no_duplicates: Boolean
         """
         # First clone the source packages.
         self._clone_source_packages(
-            origin, destination, sourcepackagenames, no_duplicates)
+            origin, destination, sourcepackagenames)
 
         # Are we also supposed to clone binary packages from origin to
         # destination distroarchseries pairs?
@@ -98,16 +95,16 @@ class PackageCloner:
             for (origin_das, destination_das) in distroarchseries_list:
                 self._clone_binary_packages(
                     origin, destination, origin_das, destination_das,
-                    sourcepackagenames, no_duplicates)
+                    sourcepackagenames)
 
         if proc_families is None:
             proc_families = []
 
-        self._create_missing_builds(
+        self.createMissingBuilds(
             destination.distroseries, destination.archive,
             distroarchseries_list, proc_families, always_create)
 
-    def _create_missing_builds(
+    def createMissingBuilds(
         self, distroseries, archive, distroarchseries_list,
         proc_families, always_create):
         """Create builds for all cloned source packages.
@@ -154,7 +151,7 @@ class PackageCloner:
 
     def _clone_binary_packages(
         self, origin, destination, origin_das, destination_das,
-        sourcepackagenames=None, no_duplicates=False):
+        sourcepackagenames=None):
         """Copy binary publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -172,10 +169,7 @@ class PackageCloner:
         @param sourcepackagenames: List of source packages to restrict
             the copy to
         @type sourcepackagenames: Iterable
-        @param no_duplicates: if we should prevent the duplication
-            of packages with identical binarypackagename in the
-            destination.
-         """
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
             INSERT INTO BinaryPackagePublishingHistory (
@@ -209,58 +203,6 @@ class PackageCloner:
                             AND spr.sourcepackagename = spn.id
                             AND spn.name IN %s)''' % sqlvalues(
                                 sourcepackagenames)
-
-        if no_duplicates:
-            query += '''AND bpph.binarypackagerelease NOT IN
-                            (SELECT origin_bpr.id
-                             FROM BinaryPackageRelease as origin_bpr
-                             WHERE origin_bpr.binarypackagename IN
-                                (SELECT DISTINCT dest_bpr.binarypackagename
-                                 FROM BinaryPackageRelease as dest_bpr,
-                                 BinaryPackagePublishingHistory as
-                                     dest_bpph
-                                 WHERE dest_bpph.binarypackagerelease =
-                                     dest_bpr.id
-                                 AND dest_bpph.distroarchseries = %s
-                                 AND dest_bpph.status in (%s, %s)
-                                 AND dest_bpph.pocket = %s
-                                 AND dest_bpph.archive = %s))
-                      ''' % sqlvalues(
-                          destination_das,
-                          PackagePublishingStatus.PENDING,
-                          PackagePublishingStatus.PUBLISHED,
-                          destination.pocket, destination.archive)
-            # If we're copying cross-archive, we want to make sure we do not
-            # duplicate any LibraryFileAlias item with the exact same
-            # filename.
-            if destination.archive != origin.archive:
-                query += ''' AND bpph.binarypackagerelease NOT IN
-                                 (SELECT bpph.binarypackagerelease FROM
-                                  LibraryFileAlias lfa,
-                                  BinaryPackageFile bpf,
-                                  BinaryPackageRelease bpr,
-                                  BinaryPackagePublishingHistory bpph
-                                  WHERE bpph.BinaryPackageRelease = bpr.id
-                                  AND bpf.BinaryPackageRelease = bpr.id
-                                  AND bpf.LibraryFile = lfa.id
-                                  AND bpph.DistroArchSeries = %s
-                                  AND filename IN
-                                     (SELECT DISTINCT filename FROM
-                                      LibraryFileAlias lfa,
-                                      BinaryPackageFile bpf,
-                                      BinaryPackageRelease bpr,
-                                      BinaryPackagePublishingHistory bpph
-                                      WHERE bpph.binarypackagerelease = bpr.id
-                                      AND bpf.binarypackagerelease = bpr.id
-                                      AND bpf.libraryfile = lfa.id
-                                      AND bpph.status in (%s, %s)
-                                      AND bpph.pocket = %s
-                                      AND bpph.archive = %s))
-                          ''' % sqlvalues(
-                              origin_das,
-                              PackagePublishingStatus.PENDING,
-                              PackagePublishingStatus.PUBLISHED,
-                              destination.pocket, destination.archive)
 
         store.execute(query)
 
@@ -311,7 +253,7 @@ class PackageCloner:
             get_family(archivearch) for archivearch
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
-        self._create_missing_builds(
+        self.createMissingBuilds(
             destination.distroseries, destination.archive, (),
             proc_families, False)
 
@@ -457,7 +399,7 @@ class PackageCloner:
         store.execute(pop_query)
 
     def _clone_source_packages(
-            self, origin, destination, sourcepackagenames, no_duplicates):
+            self, origin, destination, sourcepackagenames):
         """Copy source publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -468,9 +410,7 @@ class PackageCloner:
             to be copied.
         @type sourcepackagenames: Iterable
         @param sourcepackagenames: List of source packages to restrict
-            the copy to.
-        @param no_duplicates: if we should prevent the duplication of packages
-            with identical sourcepackagename in the destination.
+            the copy to
         """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = '''
@@ -513,60 +453,7 @@ class PackageCloner:
                      ''' % sqlvalues([p.id for p in origin.packagesets])
 
         if origin.component:
-            query += "AND spph.component = %s" % sqlvalues(origin.component)
-
-        if no_duplicates:
-            query += '''AND spph.sourcepackagerelease NOT IN
-                            (SELECT origin_spr.id
-                             FROM SourcePackageRelease as origin_spr
-                             WHERE origin_spr.sourcepackagename IN
-                                (SELECT DISTINCT dest_spr.sourcepackagename
-                                  FROM SourcePackageRelease as dest_spr,
-                                  SourcePackagePublishingHistory as
-                                      dest_spph
-                                 WHERE dest_spph.sourcepackagerelease =
-                                      dest_spr.id
-                                 AND dest_spph.distroseries = %s
-                                 AND dest_spph.status in (%s, %s)
-                                 AND dest_spph.pocket = %s
-                                 AND dest_spph.archive = %s))
-                      ''' % sqlvalues(
-                          destination.distroseries,
-                          PackagePublishingStatus.PENDING,
-                          PackagePublishingStatus.PUBLISHED,
-                          destination.pocket, destination.archive)
-
-            # If we're copying cross-archive, we want to make sure we do not
-            # duplicate any LibraryFileAlias item with the exact same
-            # filename.
-            if destination.archive != origin.archive:
-                query += ''' AND spph.sourcepackagerelease NOT IN
-                                 (SELECT spph.sourcepackagerelease FROM
-                                  LibraryFileAlias lfa,
-                                  SourcePackageReleaseFile spf,
-                                  SourcePackageRelease spr,
-                                  SourcePackagePublishingHistory spph
-                                  WHERE spph.sourcepackagerelease = spr.id
-                                  AND spf.sourcepackagerelease = spr.id
-                                  AND spf.libraryfile = lfa.id
-                                  AND spph.distroseries = %s
-                                  AND filename IN
-                                     (SELECT DISTINCT filename FROM
-                                      LibraryFileAlias lfa,
-                                      SourcePackageReleaseFile spf,
-                                      SourcePackageRelease spr,
-                                      SourcePackagePublishingHistory spph
-                                      WHERE spph.sourcepackagerelease = spr.id
-                                      AND spf.sourcepackagerelease = spr.id
-                                      AND spf.libraryfile = lfa.id
-                                      AND spph.status in (%s, %s)
-                                      AND spph.pocket = %s
-                                      AND spph.archive = %s))
-                          ''' % sqlvalues(
-                              origin.distroseries,
-                              PackagePublishingStatus.PENDING,
-                              PackagePublishingStatus.PUBLISHED,
-                              destination.pocket, destination.archive)
+            query += "and spph.component = %s" % sqlvalues(origin.component)
 
         store.execute(query)
 
