@@ -389,7 +389,7 @@ linkify_bug_numbers() to do this.
 
 Zero or more spaces may appear between the ":" and the "#".
 
-    >>> from lp.app.text import linkify_bug_numbers
+    >>> from lp.app.browser.stringformatter import linkify_bug_numbers
     >>> linkify_bug_numbers("LP: #10")
     'LP: <a href="/bugs/10">#10</a>'
 

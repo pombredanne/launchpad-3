@@ -60,11 +60,11 @@ from lp.answers.browser.questiontarget import (
     )
 from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
-from lp.app.enums import ServiceUsage
-from lp.app.interfaces.launchpad import IServiceUsage
-from lp.app.text import (
+from lp.app.browser.stringformatter import (
     extract_bug_numbers,
     )
+from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,

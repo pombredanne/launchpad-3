@@ -17,8 +17,10 @@ import cgi
 import re
 
 from canonical.launchpad.webapp import LaunchpadView
-from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.text import linkify_bug_numbers
+from lp.app.browser.stringformatter import (
+    FormattersAPI,
+    linkify_bug_numbers,
+    )
 
 
 def extract_email_addresses(text):
