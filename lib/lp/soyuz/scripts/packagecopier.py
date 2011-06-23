@@ -248,8 +248,9 @@ class CopyChecker:
             with the source.
         :param allow_delayed_copies: boolean indicating whether or not private
             sources can be copied to public archives using delayed_copies.
-        :param strict_binaries: Should we deny the copy of sources with no
-            related binaries?
+        :param strict_binaries: If 'include_binaries' is True then setting
+            this to True will make the copy fail if binaries cannot be also
+            copied.
         """
         self.archive = archive
         self.include_binaries = include_binaries
@@ -556,8 +557,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
-    :param strict_binaries: Should we deny the copy of sources with no
-        related binaries?
+    :param strict_binaries: If 'include_binaries' is True then setting this
+        to True will make the copy fail if binaries cannot be also copied.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
