@@ -70,7 +70,6 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertIs(None, component.distro_source_package)
         view = create_initialized_view(
             component, name='+edit', form=form)
-        notifications = view.request.response.notifications
         self.assertEqual(dsp, component.distro_source_package)
 
     def test_linking_notifications(self):
@@ -104,14 +103,13 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_cannot_doublelink_sourcepackages(self):
-        ''' Two components try linking to same same package
-
-        We must maintain a one-to-one relationship between components
-        and source packages.  However, users are bound to attempt to try
-        to make multiple components linked to the same source package,
-        so the view needs to be sure to not allow this to be done and
-        pop up a friendly error message instead.
-        '''
+        # Two components try linking to same same package
+        #
+        # We must maintain a one-to-one relationship between components
+        # and source packages.  However, users are bound to attempt to try
+        # to make multiple components linked to the same source package,
+        # so the view needs to be sure to not allow this to be done and
+        # pop up a friendly error message instead.
         component_a = self._makeComponent(u'a')
         component_b = self._makeComponent(u'b')
         package = self._makeUbuntuSourcePackage('example')
