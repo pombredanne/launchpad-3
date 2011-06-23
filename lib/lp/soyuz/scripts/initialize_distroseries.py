@@ -311,9 +311,10 @@ class InitializeDistroSeries:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
 
-            # If the destination archive is empty, we can use the package
+            # If the destination series is empty, we can use the package
             # cloner because there is no conflict possible.
-            if archive.getPublishedSources().is_empty():
+            if archive.getPublishedSources(
+                distroseries=self.distroseries).is_empty():
                 origin = PackageLocation(
                     archive, parent.distribution, parent,
                     PackagePublishingPocket.RELEASE)
@@ -328,7 +329,7 @@ class InitializeDistroSeries:
                     distroarchseries_list = ()
                 getUtility(IPackageCloner).clonePackages(
                     origin, destination, distroarchseries_list,
-                    proc_families, spns, self.rebuild, no_duplicates=True)
+                    proc_families, spns, self.rebuild)
             else:
                 # If the destination archive is *not* empty, we use the
                 # package copier to avoid conflicts.
