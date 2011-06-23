@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for TAC (Twisted Application Configuration) files."""
@@ -8,107 +8,24 @@ __metaclass__ = type
 __all__ = [
     'TacTestSetup',
     'TacException',
-    'kill_by_pidfile',
-    'remove_if_exists',
-    'two_stage_kill',
     ]
 
 
-import errno
 import os
-from signal import (
-    SIGKILL,
-    SIGTERM,
-    )
 import subprocess
 import sys
 import time
 import warnings
 
 from fixtures import Fixture
-from twisted.application import service
-from twisted.python import log
 
 from canonical.launchpad.daemons import readyservice
-
-
-def _kill_may_race(pid, signal_number):
-    """Kill a pid accepting that it may not exist."""
-    try:
-        os.kill(pid, signal_number)
-    except OSError, e:
-        if e.errno in (errno.ESRCH, errno.ECHILD):
-            # Process has already been killed.
-            return
-        # Some other issue (e.g. different user owns it)
-        raise
-
-
-def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
-    """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
-
-    :param pid: The pid of the process to kill.
-    :param poll_interval: The polling interval used to check if the
-        process is still around.
-    :param num_polls: The number of polls to do before doing a SIGKILL.
-    """
-    # Kill the process.
-    _kill_may_race(pid, SIGTERM)
-
-    # Poll until the process has ended.
-    for i in range(num_polls):
-        try:
-            # Reap the child process and get its return value. If it's not
-            # gone yet, continue.
-            new_pid, result = os.waitpid(pid, os.WNOHANG)
-            if new_pid:
-                return result
-            time.sleep(poll_interval)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Raised if the process is gone by the time we try to get the
-                # return value.
-                return
-
-    # The process is still around, so terminate it violently.
-    _kill_may_race(pid, SIGKILL)
-
-
-def get_pid_from_file(pidfile_path):
-    """Retrieve the PID from the given file, if it exists, None otherwise."""
-    if not os.path.exists(pidfile_path):
-        return None
-    # Get the pid.
-    pid = open(pidfile_path, 'r').read().split()[0]
-    try:
-        pid = int(pid)
-    except ValueError:
-        # pidfile contains rubbish
-        return None
-    return pid
-
-
-def kill_by_pidfile(pidfile_path, poll_interval=0.1, num_polls=50):
-    """Kill a process identified by the pid stored in a file.
-
-    The pid file is removed from disk.
-    """
-    try:
-        pid = get_pid_from_file(pidfile_path)
-        if pid is None:
-            return
-        two_stage_kill(pid, poll_interval, num_polls)
-    finally:
-        remove_if_exists(pidfile_path)
-
-
-def remove_if_exists(path):
-    """Remove the given file if it exists."""
-    try:
-        os.remove(path)
-    except OSError, e:
-        if e.errno != errno.ENOENT:
-            raise
+from lp.services.osutils import (
+    get_pid_from_file,
+    kill_by_pidfile,
+    remove_if_exists,
+    two_stage_kill,
+    )
 
 
 twistd_script = os.path.abspath(os.path.join(

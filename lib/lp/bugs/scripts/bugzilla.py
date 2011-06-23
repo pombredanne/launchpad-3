@@ -59,12 +59,14 @@ from lp.services.messages.interfaces.message import IMessageSet
 
 logger = logging.getLogger('lp.bugs.scripts.bugzilla')
 
+
 def _add_tz(dt):
     """Convert a naiive datetime value to a UTC datetime value."""
     assert dt.tzinfo is None, 'add_tz() only accepts naiive datetime values'
     return datetime.datetime(dt.year, dt.month, dt.day,
                              dt.hour, dt.minute, dt.second,
                              dt.microsecond, tzinfo=pytz.timezone('UTC'))
+
 
 class BugzillaBackend:
     """A wrapper for all the MySQL database access.
@@ -207,6 +209,7 @@ class BugzillaBackend:
         self.cursor.execute('SELECT dupe_of, dupe FROM duplicates '
                             'ORDER BY dupe, dupe_of')
         return [(dupe_of, dupe) for (dupe_of, dupe) in self.cursor.fetchall()]
+
 
 class Bug:
     """Representation of a Bugzilla Bug"""
@@ -369,8 +372,8 @@ class Bugzilla:
 
         return person
 
-    def _getPackageNames(self, bug):
-        """Returns the source and binary package names for the given bug."""
+    def _getPackageName(self, bug):
+        """Returns the source package name for the given bug."""
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
             raise AssertionError('product must be Ubuntu')
@@ -389,19 +392,17 @@ class Bugzilla:
             pkgname = bug.component.encode('ASCII')
 
         try:
-            srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
+            return self.ubuntu.guessPublishedSourcePackageName(pkgname)
         except NotFoundError, e:
             logger.warning('could not find package name for "%s": %s',
                            pkgname, str(e))
-            srcpkg = binpkg = None
-
-        return srcpkg, binpkg
+            return None
 
     def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
-        srcpkg, binpkg = self._getPackageNames(bug)
+        srcpkg = self._getPackageName(bug)
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
@@ -435,7 +436,7 @@ class Bugzilla:
         This function relies on the package -> product linkage having been
         entered in advance.
         """
-        srcpkgname, binpkgname = self._getPackageNames(bug)
+        srcpkgname = self._getPackageName(bug)
         # find a product series
         series = None
         for series in self.ubuntu.series:
@@ -450,13 +451,13 @@ class Bugzilla:
             return None
 
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
+
     def replaceBugRef(self, match):
         # XXX: jamesh 2005-10-24:
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
         url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
         return '%s [%s]' % (match.group(0), url)
-
 
     def handleBug(self, bug_id):
         """Maybe import a single bug.
@@ -617,8 +618,10 @@ class Bugzilla:
          * bug A' is a duplicate of bug B'
          * bug A is not currently a duplicate of any other bug.
         """
+
         logger.info('Processing duplicate bugs')
         bugmap = {}
+
         def getlpbug(bugid):
             """Get the Launchpad bug corresponding to the given remote ID
 

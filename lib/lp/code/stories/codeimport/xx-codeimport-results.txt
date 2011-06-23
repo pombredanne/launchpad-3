@@ -51,8 +51,8 @@ is the text of the failure or success type.
     >>> # are declared in the enumeration.
     >>> for img in import_results.fetch('img'):
     ...     print img
-    <img src="/@@/no" title="Bazaar Import Failed" />
-    <img src="/@@/no" title="Source Checkout Failed" />
+    <img src="/@@/no" title="Unsupported feature" />
+    <img src="/@@/no" title="Foreign branch invalid" />
     <img src="/@@/no" title="Internal Failure" />
     <img src="/@@/no" title="Failure" />
     <img src="/@@/yes-gray" title="Partial Success" />
@@ -65,5 +65,3 @@ is the text of the failure or success type.
     ...     print img
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />
-    <img src="/@@/no" title="Bazaar Update Failed" />
-    <img src="/@@/no" title="Source Update Failed" />

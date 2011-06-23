@@ -130,6 +130,14 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
     def test_root_karma_context(self):
         self.assertKarmaContextConstraint(None, None)
 
+    def test_irc_nick_match_is_not_case_sensitive(self):
+        person = self.factory.makePerson()
+        irc = getUtility(IIrcIDSet).new(
+            person, 'somenet', 'MiXeD' + self.factory.getUniqueString())
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            self.assertContentEqual(
+                [person], self.searchVocabulary(person, irc.nickname.lower()))
+
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
                                       TestCaseWithFactory):

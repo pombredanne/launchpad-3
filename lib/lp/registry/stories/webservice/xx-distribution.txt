@@ -67,12 +67,12 @@ Distribution has some custom operations.
     >>> print series['self_link']
     http://.../ubuntu/hoary
 
-Requesting a series that does not exist is a bad request.
+Requesting a series that does not exist is results in a not found error.
 
     >>> print webservice.named_get(
     ...     ubuntu['self_link'], 'getSeries',
     ...     name_or_version='fnord')
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
     No such distribution series: 'fnord'.
 
