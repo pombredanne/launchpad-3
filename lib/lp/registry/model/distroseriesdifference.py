@@ -118,7 +118,10 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        SourcePackagePublishingHistory.archiveID == Archive.id,
+        # The + 0 below prevents PostgreSQL from using the (archive, status)
+        # index on SourcePackagePublishingHistory, the use of which results in
+        # a terrible query plan.
+        SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
         SourcePackagePublishingHistory.status.is_in(statuses),
@@ -130,16 +133,24 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         conditions = And(
             conditions,
             DistroSeries.id == DistroSeriesDifference.parent_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.parent_series_id),
             )
     else:
         conditions = And(
             conditions,
             DistroSeries.id == DistroSeriesDifference.derived_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.derived_series_id),
             )
+    # Ensure that the archive has the right purpose.
+    conditions = And(
+        conditions,
+        Archive.distributionID == DistroSeries.distributionID,
+        # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
+        # but we are only ever going to be interested in PRIMARY archives.
+        Archive.purpose == ArchivePurpose.PRIMARY,
+        )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
         if in_parent:

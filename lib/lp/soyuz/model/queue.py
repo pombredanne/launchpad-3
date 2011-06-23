@@ -662,7 +662,9 @@ class PackageUpload(SQLBase):
     def displayarchs(self):
         """See `IPackageUpload`"""
         archs = []
-        if self.contains_source or self.package_copy_job_id is not None:
+        if self.package_copy_job_id is not None:
+            archs.append('sync')
+        if self.contains_source:
             archs.append('source')
         for queue_build in self.builds:
             archs.append(queue_build.build.distro_arch_series.architecturetag)
