@@ -995,7 +995,7 @@ class IArchiveView(IHasBuildRecords):
     @call_with(eager_load=True)
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getPublishedSources(name=None, version=None, status=None,
+    def getPublishedSources(name=None, names=(), version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
                             eager_load=False):
@@ -1003,6 +1003,7 @@ class IArchiveView(IHasBuildRecords):
 
         :param name: source name filter (exact match or SQL LIKE controlled
                      by 'exact_match' argument).
+        :param names: filter sources with a list of names.
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.
