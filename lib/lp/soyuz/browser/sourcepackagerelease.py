@@ -1,12 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view for a sourcepackagerelease"""
 
 __metaclass__ = type
 
-# XXX: JonathanLange 2010-01-06: Many of these functions should be moved to a
-# generic lp.services.text module.
 __all__ = [
     'linkify_changelog',
     'SourcePackageReleaseView',
