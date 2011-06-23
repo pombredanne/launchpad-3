@@ -20,16 +20,19 @@
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_blacklist_options">
-    <div class="blacklist-options" style="float:right">
-      <dl>
-        <dt>Blacklisted:</dt>
-        <dd>
-          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
-        </dd>
-      </dl>
+  <div
+    tal:attributes="class view/blacklist_options_css_class"
+    style="float:right">
+    <dl>
+      <dt>Ignored:</dt>
+      <dd>
+        <form>
+          <tal:replace
+            replace="structure view/widgets/blacklist_options" />
+        </form>
+      </dd>
+    </dl>
   </div>
-  </tal:show_options>
 
   <dl>
     <dt>Binary descriptions:</dt>

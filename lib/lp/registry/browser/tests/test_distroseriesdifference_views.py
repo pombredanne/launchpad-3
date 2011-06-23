@@ -156,11 +156,14 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra')
         self.assertFalse(view.show_add_comment)
-        self.assertFalse(view.show_blacklist_options)
+        self.assertFalse(view.enable_blacklist_options)
+        self.assertEqual(
+            'blacklist-options-disabled',
+            view.blacklist_options_css_class)
 
     def test_show_edit_options_editor(self):
-        # Blacklist options and "Add comment" are shown if requested by
-        # an editor via ajax.
+        # The "Add comment" link is shown and the blacklist options are
+        # not enabled if requested by an editor via ajax.
         ds_diff = self.factory.makeDistroSeriesDifference()
 
         request = LaunchpadTestRequest(HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -168,10 +171,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
             self.assertTrue(view.show_add_comment)
-            self.assertFalse(view.show_blacklist_options)
+            self.assertFalse(view.enable_blacklist_options)
+            self.assertEqual(
+                'blacklist-options-disabled',
+                view.blacklist_options_css_class)
 
-    def test_show_blacklist_options_for_archive_admin(self):
-        # To see the blacklist options the the user needs to be an
+    def test_enable_blacklist_options_for_archive_admin(self):
+        # To see the blacklist options enabled the user needs to be an
         # archive admin.
         ds_diff = self.factory.makeDistroSeriesDifference()
         archive_admin = self.factory.makeArchiveAdmin(
@@ -181,7 +187,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         with person_logged_in(archive_admin):
             view = create_initialized_view(
                 ds_diff, '+listing-distroseries-extra', request=request)
-            self.assertTrue(view.show_blacklist_options)
+            self.assertTrue(view.enable_blacklist_options)
 
     def test_show_add_comment_non_editor(self):
         # Even with a JS request, non-editors do not see the 'add
@@ -507,7 +513,16 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 "VERSION LINK", 'a',
                 attrs=dict(href=url)))
 
-        self.assertThat(page, anchor_matcher) 
+        self.assertThat(page, anchor_matcher)
+
+    def getViewContentXmlHttpRequest(self, context, view_name, person):
+        # Helper method to request a view via an XMLHttpRequest.
+        with person_logged_in(person):
+            request = LaunchpadTestRequest(
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            view = create_initialized_view(
+                context, view_name, request=request)
+            return view()
 
     def test_blacklist_options(self):
         # Blacklist options are presented to the users who are archive
@@ -515,16 +530,25 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference()
         archive_admin = self.factory.makeArchiveAdmin(
             archive=ds_diff.derived_series.main_archive)
-
-        with person_logged_in(archive_admin):
-            request = LaunchpadTestRequest(
-                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra', request=request)
-            soup = BeautifulSoup(view())
+        view_content = self.getViewContentXmlHttpRequest(
+            ds_diff, '+listing-distroseries-extra', archive_admin)
+        soup = BeautifulSoup(view_content)
 
         self.assertEqual(
             1, len(soup.findAll('div', {'class': 'blacklist-options'})))
+
+    def test_blacklist_options_disabled(self):
+        # Blacklist options are disabled to the users who are *not* archive
+        # admins.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        person = self.factory.makePerson()
+        view_content = self.getViewContentXmlHttpRequest(
+            ds_diff, '+listing-distroseries-extra', person)
+        soup = BeautifulSoup(view_content)
+
+        self.assertEqual(
+            1,
+            len(soup.findAll('div', {'class': 'blacklist-options-disabled'})))
 
     def test_blacklist_options_initial_values_none(self):
         ds_diff = self.factory.makeDistroSeriesDifference()
