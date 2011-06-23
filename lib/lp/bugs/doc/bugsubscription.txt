@@ -629,9 +629,7 @@ unsubscribe him.
 
 So too can Launchpad administrators unsubscribe him.
 
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> subscription.canBeUnsubscribedByUser(
-    ...     getUtility(ILaunchpadCelebrities).admin)
+    >>> subscription.canBeUnsubscribedByUser(foobar)
     True
 
 The anonymous user (represented by None) also can't unsubscribe him.
