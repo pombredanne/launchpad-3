@@ -940,12 +940,7 @@ class YUIUnitTestCase(TestCase):
         super(YUIUnitTestCase, self).setUp()
         # html5browser imports from the gir/pygtk stack which causes
         # twisted tests to break because of gtk's initialize.
-        try:
-            import html5browser
-            # Hush lint.
-            html5browser
-        except ImportError:
-            html5browser = None
+        import html5browser
         client = html5browser.Browser()
         html_uri = 'file://%s' % os.path.join(
             config.root, 'lib', self.test_path)
