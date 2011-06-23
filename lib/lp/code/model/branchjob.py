@@ -797,15 +797,18 @@ class RevisionsAddedJob(BranchJobDerived):
 
 
 class BranchMailJobSource(BaseRunnableJobSource):
+    """Source of jobs that send mail about branches."""
+
+    memory_limit = 2 * (1024 ** 3)
+
+    @staticmethod
+    def contextManager():
+        return get_ro_server()
 
     @staticmethod
     def iterReady():
         return chain(
             RevisionMailJob.iterReady(), RevisionsAddedJob.iterReady())
-
-    @staticmethod
-    def contextManager():
-        return get_ro_server()
 
     @staticmethod
     def get(key):
