@@ -229,8 +229,11 @@
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.archive"
-        classes="
-            ArchiveNavigation ProcessorFamilySetNavigation ProcessorFamilyNavigation"/>
+        classes="ArchiveNavigation" />
+    <browser:navigation
+        module="lp.soyuz.browser.processor"
+	classes="
+	    ProcessorFamilySetNavigation ProcessorFamilyNavigation"/>
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"

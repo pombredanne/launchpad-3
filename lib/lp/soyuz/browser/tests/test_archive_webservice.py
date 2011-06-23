@@ -270,11 +270,19 @@ class TestArchiveProcessorFamilies(WebServiceTestCase):
         product_family_set = getUtility(IProcessorFamilySet)
         transaction.commit()
         ws_pfs = self.wsObject(product_family_set, user=commercial_admin)
-        arm = ws_pfs.getByName(name='arm')
+        ws_arm = ws_pfs.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=commercial_admin)
         self.assertContentEqual([], ws_archive.enabled_restricted_families)
-        ws_archive.enableRestrictedFamily(family=arm)
-        self.assertContentEqual([arm], ws_archive.enabled_restricted_families)
+        ws_archive.enableRestrictedFamily(family=ws_arm)
+        self.assertContentEqual(
+            [ws_arm], ws_archive.enabled_restricted_families)
+
+    def test_IProcessorFamilySetDefaultCollection(self):
+        """getRestricted will return all of the restricted families."""
+        self.ws_version = 'devel'
+        ws_arm = self.service.processor_families.getByName(name='arm')
+        self.assertContentEqual(
+            [ws_arm], self.service.processor_families)
 
 
 def test_suite():
