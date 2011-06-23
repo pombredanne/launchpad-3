@@ -28,7 +28,10 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import (
@@ -37,7 +40,6 @@ from lp.soyuz.interfaces.packageset import (
     )
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.packagecopier import do_copy
-from lp.soyuz.interfaces.archive import CannotCopy
 
 
 class InitializationError(Exception):
@@ -311,61 +313,50 @@ class InitializeDistroSeries:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
 
-            # If the destination series is empty, we can use the package
-            # cloner because there is no conflict possible.
-            if target_archive.getPublishedSources(
-                distroseries=self.distroseries).is_empty():
-                origin = PackageLocation(
-                    archive, parent.distribution, parent,
-                    PackagePublishingPocket.RELEASE)
-                destination = PackageLocation(
-                    target_archive, self.distroseries.distribution,
-                    self.distroseries, PackagePublishingPocket.RELEASE)
-                proc_families = None
-                if self.rebuild:
-                    proc_families = [
-                        das[1].processorfamily
-                        for das in distroarchseries_list]
-                    distroarchseries_list = ()
-                getUtility(IPackageCloner).clonePackages(
-                    origin, destination, distroarchseries_list,
-                    proc_families, spns, self.rebuild)
-            else:
-                # If the destination archive is *not* empty, we use the
-                # package copier to avoid conflicts.
-
-                # There is only one available pocket in an unreleased series.
-                pocket = PackagePublishingPocket.RELEASE
-                sources = archive.getPublishedSources(
-                    distroseries=parent, pocket=pocket, name=spns)
-                # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all or
-                # none of the sources will be copied). This might lead to
-                # a partially initialised series if there is a single
-                # conflict in the destination series.
-                try:
-                   sources_published = do_copy(
-                        sources, target_archive, self.distroseries,
-                        pocket, include_binaries=not self.rebuild,
-                        check_permissions=False, strict_binaries=False)
-                   if self.rebuild:
+                # If the destination series is empty, we can use the package
+                # cloner because there is no conflict possible.
+                if (target_archive is None or
+                    target_archive.getPublishedSources(
+                        distroseries=self.distroseries).is_empty()):
+                    origin = PackageLocation(
+                        archive, parent.distribution, parent,
+                        PackagePublishingPocket.RELEASE)
+                    destination = PackageLocation(
+                        target_archive, self.distroseries.distribution,
+                        self.distroseries, PackagePublishingPocket.RELEASE)
+                    proc_families = None
+                    if self.rebuild:
                         proc_families = [
-                             das[1].processorfamily
-                             for das in distroarchseries_list]
-                        architectures = list(self.distroseries.architectures)
+                            das[1].processorfamily
+                            for das in distroarchseries_list]
+                        distroarchseries_list = ()
+                    getUtility(IPackageCloner).clonePackages(
+                        origin, destination, distroarchseries_list,
+                        proc_families, spns, self.rebuild)
+                else:
+                    # If the destination archive is *not* empty, we use the
+                    # package copier to avoid conflicts.
 
-                        # Filter the list of DistroArchSeries so that only
-                        # the ones specified in proc_families remain
-                        architectures = [
-                            architecture for architecture in architectures
-                            if architecture.processorfamily in proc_families]
-
-                        if len(architectures) != 0:
+                    # There is only one available pocket in an unreleased
+                    # series.
+                    pocket = PackagePublishingPocket.RELEASE
+                    sources = archive.getPublishedSources(
+                        distroseries=parent, pocket=pocket, name=spns)
+                    # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all
+                    # or none of the sources will be copied). This might
+                    # lead to a partially initialised series if there is a
+                    # single conflict in the destination series.
+                    try:
+                       sources_published = do_copy(
+                            sources, target_archive, self.distroseries,
+                            pocket, include_binaries=not self.rebuild,
+                            check_permissions=False, strict_binaries=False)
+                       if self.rebuild:
                             for pubrec in sources_published:
-                                pubrec.createMissingBuilds(
-                                    architectures_available=architectures)
+                                pubrec.createMissingBuilds()
 
-                except CannotCopy:
-                    pass
+                    except CannotCopy:
+                        pass
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents
