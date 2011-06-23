@@ -117,9 +117,11 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        # The + 0 below prevents PostgreSQL from using the (archive, status)
-        # index on SourcePackagePublishingHistory, the use of which results in
-        # a terrible query plan.
+        # XXX: GavinPanella 2011-06-23 bug=801097: The + 0 in the condition
+        # below prevents PostgreSQL from using the (archive, status) index on
+        # SourcePackagePublishingHistory, the use of which results in a
+        # terrible query plan. This might be indicative of an underlying,
+        # undiagnosed issue in production with wider repurcussions.
         SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
