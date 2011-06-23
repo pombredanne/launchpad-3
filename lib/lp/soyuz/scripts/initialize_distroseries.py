@@ -270,9 +270,10 @@ class InitializeDistroSeries:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
 
-            # If the destination archive is empty, we can use the package
+            # If the destination series is empty, we can use the package
             # cloner because there is no conflict possible.
-            if target_archive.getPublishedSources().is_empty():
+            if target_archive.getPublishedSources(
+                distroseries=self.distroseries).is_empty():
                 origin = PackageLocation(
                     archive, parent.distribution, parent,
                     PackagePublishingPocket.RELEASE)
@@ -296,20 +297,34 @@ class InitializeDistroSeries:
                 pocket = PackagePublishingPocket.RELEASE
                 sources = archive.getPublishedSources(
                     distroseries=parent, pocket=pocket, name=spns)
+                # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all or
+                # none of the sources will be copied). This might lead to
+                # a partially initialised series if there is a single
+                # conflict in the destination series.
                 try:
-                    do_copy(
+                   sources_published = do_copy(
                         sources, target_archive, self.distroseries,
                         pocket, include_binaries=not self.rebuild,
                         check_permissions=False, strict_binaries=False)
+                   if self.rebuild:
+                        proc_families = [
+                             das[1].processorfamily
+                             for das in distroarchseries_list]
+                        architectures = list(self.distroseries.architectures)
+
+                        # Filter the list of DistroArchSeries so that only
+                        # the ones specified in proc_families remain
+                        architectures = [
+                            architecture for architecture in architectures
+                            if architecture.processorfamily in proc_families]
+
+                        if len(architectures) != 0:
+                            for pubrec in sources_published:
+                                pubrec.createMissingBuilds(
+                                    architectures_available=architectures)
+
                 except CannotCopy:
-                    pass
-                if self.rebuild:
-                    proc_families = [
-                         das[1].processorfamily
-                         for das in distroarchseries_list]
-                    getUtility(IPackageCloner).createMissingBuilds(
-                         self.distroseries, target_archive,
-                         distroarchseries_list, proc_families, self.rebuild)
+                    raise
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents
