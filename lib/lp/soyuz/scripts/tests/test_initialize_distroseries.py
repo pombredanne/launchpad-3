@@ -645,3 +645,89 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertEquals(
             u'0.3-1',
             published_binaries[0].binarypackagerelease.version)
+
+    def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
+                                      publish_in_distribution=True):
+        # Helper method to create a series within an initialized
+        # distribution (i.e. that has an initialized series) with a
+        # 'previous_series' with parents.
+
+        # Create a previous_series derived from 2 parents.
+        previous_series = self._fullInitialize(previous_parents)
+
+        child = self.factory.makeDistroSeries(previous_series=previous_series)
+
+        # Add a publishing in another series from this distro.
+        other_series = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+        if publish_in_distribution:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=other_series)
+
+        return child
+
+    def test_derive_from_previous_parents(self):
+        # If the series to be initialized is in a distribution with
+        # initialized series, the series is *derived* from
+        # the previous_series' parents.
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        parent, unused = self.setupParent()
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1, previous_parent2])
+        self._fullInitialize([parent], child=child)
+
+        # The parent for the derived series is the distroseries given as
+        # argument to InitializeSeries.
+        self.assertContentEqual(
+            [parent],
+            child.getParentSeries())
+
+        # The new series has been derived from previous_series.
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEquals(2, published_sources.count())
+        pub_sources = sorted(
+            [(s.sourcepackagerelease.sourcepackagename.name,
+              s.sourcepackagerelease.version)
+                for s in published_sources])
+        self.assertEquals(
+            [(u'p1', u'1.2'), (u'p2', u'1.5')],
+            pub_sources)
+
+    def test_derive_from_previous_parents_empty_parents(self):
+        # If an empty list is passed to InitializeDistroSeries, the
+        # parents of the previous series are used as parents.
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        parent, unused = self.setupParent()
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1, previous_parent2])
+        # Initialize from an empty list of parents.
+        self._fullInitialize([], child=child)
+
+        self.assertContentEqual(
+            [previous_parent1, previous_parent2],
+            child.getParentSeries())
+
+    def test_derive_empty_parents_distribution_not_initialized(self):
+        # Initializing a series with an empty parent list if the series'
+        # distribution has no initialized series triggers an error.
+        parent, unused = self.setupParent()
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1],
+            publish_in_distribution=False)
+
+        # Initialize from an empty list of parents.
+        ids = InitializeDistroSeries(child, [])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("Distroseries {child.name} cannot be initialized: "
+             "No other series in the distribution is initialized "
+             "and no parent was passed to the initilization method"
+             ".").format(child=child),
+             ids.check)
