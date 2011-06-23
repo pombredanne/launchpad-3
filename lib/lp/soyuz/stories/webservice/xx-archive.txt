@@ -32,6 +32,26 @@ We publish a subset of their attributes.
     signing_key_fingerprint: None
     web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
+For "devel" additional attributes are available.
+
+    >>> cprov_archive_devel = webservice.get("/~cprov/+archive/ppa", api_version='devel').jsonBody()
+    >>> pprint_entry(cprov_archive_devel)
+    commercial: False
+    dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
+    description: u'packages to help my friends.'
+    displayname: u'PPA for Celso Providelo'
+    distribution_link: u'http://.../ubuntu'
+    enabled_restricted_families_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_families'
+    external_dependencies: None
+    name: u'ppa'
+    owner_link: u'http://.../~cprov'
+    private: False
+    require_virtualized: True
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive/ppa'
+    signing_key_fingerprint: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa'
+
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
 
