@@ -200,10 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import (
-    IProcessor,
-    IProcessorFamily,
-    )
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
@@ -547,10 +544,6 @@ patch_collection_return_type(
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
-
-# IProcessor
-patch_reference_property(
-    IProcessor, 'family', IProcessorFamily)
 
 # IStructuralSubscription
 patch_collection_property(

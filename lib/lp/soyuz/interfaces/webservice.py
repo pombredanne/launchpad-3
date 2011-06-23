@@ -104,7 +104,10 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import IPackageUpload
 
 from canonical.launchpad.components.apihelpers import (
+    patch_collection_property,
     patch_entry_return_type,
+    patch_plain_parameter_type,
+    patch_reference_property,
     )
 
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
@@ -116,4 +119,12 @@ from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 IProcessorFamilySet.queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IProcessorFamily
 
+# IProcessor
+patch_reference_property(
+    IProcessor, 'family', IProcessorFamily)
+
 patch_entry_return_type(IProcessorFamilySet, 'getByName', IProcessorFamily)
+patch_collection_property(
+    IArchive, 'enabled_restricted_families', IProcessorFamily)
+patch_plain_parameter_type(
+    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
