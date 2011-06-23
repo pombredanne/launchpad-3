@@ -131,7 +131,7 @@ class IProcessorFamilySet(Interface):
         name=TextLine(required=True))
     @operation_returns_entry(Interface)
     @export_read_operation()
-    @operation_for_version('beta')
+    @operation_for_version('devel')
     def getByName(name):
         """Return the ProcessorFamily instance with the matching name.
 

@@ -20,6 +20,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
@@ -198,6 +199,82 @@ class TestArchiveDependencies(WebServiceTestCase):
         ws_dependency = self.wsObject(dependency)
         ws_archive.removeArchiveDependency(dependency=ws_dependency)
         self.assertContentEqual([], ws_archive.dependencies)
+
+
+class TestArchiveProcessorFamilies(WebServiceTestCase):
+    """Test the enabled_restricted_families property and methods."""
+
+    def test_erfNotAvailableInBeta(self):
+        """The enabled_restricted_families property is not in beta."""
+        self.ws_version = 'beta'
+        archive = self.factory.makeArchive()
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        transaction.commit()
+        ws_archive = self.wsObject(archive, user=commercial_admin)
+        expected_re = (
+            "(.|\n)*'Entry' object has no attribute "
+            "'enabled_restricted_families'(.|\n)*")
+        with ExpectedException(AttributeError, expected_re):
+            ws_archive.enabled_restricted_families
+
+    def test_erfAvailableInDevel(self):
+        """The enabled_restricted_families property is in devel."""
+        self.ws_version = 'devel'
+        archive = self.factory.makeArchive()
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        transaction.commit()
+        ws_archive = self.wsObject(archive, user=commercial_admin)
+        self.assertContentEqual([], ws_archive.enabled_restricted_families)
+
+    def test_getByName(self):
+        """The getByName method returns a processor family."""
+        self.ws_version = 'devel'
+        product_family_set = getUtility(IProcessorFamilySet)
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        transaction.commit()
+        ws_pfs = self.wsObject(product_family_set, user=commercial_admin)
+        arm = ws_pfs.getByName(name='arm')
+        self.assertEqual(u'arm', arm.name)
+        self.assertEqual(u'ARM Processors', arm.title)
+        self.assertEqual(u'The ARM and compatible processors', arm.description)
+        self.assertEqual(True, arm.restricted)
+
+    def test_processors(self):
+        """Attributes about processors are available."""
+        self.ws_version = 'devel'
+        product_family_set = getUtility(IProcessorFamilySet)
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        transaction.commit()
+        ws_pfs = self.wsObject(product_family_set, user=commercial_admin)
+        ws_arm = ws_pfs.getByName(name='arm')
+        self.assertContentEqual([], ws_arm.processors)
+        product_family_set = getUtility(IProcessorFamilySet)
+        arm = product_family_set.getByName('arm')
+        arm.addProcessor('new-arm', 'New ARM Title', 'New ARM Description')
+        transaction.commit()
+        ws_proc = ws_arm.processors[0]
+        self.assertEqual('new-arm', ws_proc.name)
+        self.assertEqual('New ARM Title', ws_proc.title)
+        self.assertEqual('New ARM Description', ws_proc.description)
+
+    def test_enableRestrictedFamily(self):
+        """A new family can be added to the enabled restricted set."""
+        self.ws_version = 'devel'
+        archive = self.factory.makeArchive()
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        product_family_set = getUtility(IProcessorFamilySet)
+        transaction.commit()
+        ws_pfs = self.wsObject(product_family_set, user=commercial_admin)
+        arm = ws_pfs.getByName(name='arm')
+        ws_archive = self.wsObject(archive, user=commercial_admin)
+        self.assertContentEqual([], ws_archive.enabled_restricted_families)
+        ws_archive.enableRestrictedFamily(family=arm)
+        self.assertContentEqual([arm], ws_archive.enabled_restricted_families)
 
 
 def test_suite():
