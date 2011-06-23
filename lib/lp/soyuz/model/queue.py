@@ -878,14 +878,18 @@ class PackageUpload(SQLBase):
                     existing_components.add(binary.component)
         return existing_components
 
+    @cachedproperty
+    def concrete_package_copy_job(self):
+        """See `IPackageUpload`."""
+        return getUtility(IPackageCopyJobSource).wrap(self.package_copy_job)
+
     def _overrideSyncSource(self, new_component, new_section,
                             allowed_components):
         """Override source on the upload's `PackageCopyJob`, if any."""
         if self.package_copy_job is None:
             return False
 
-        copy_job = getUtility(IPackageCopyJobSource).wrap(
-            self.package_copy_job)
+        copy_job = self.concrete_package_copy_job
         allowed_component_names = [
             component.name for component in allowed_components]
         if copy_job.component_name not in allowed_component_names:
@@ -901,6 +905,7 @@ class PackageUpload(SQLBase):
                                allowed_components):
         """Override sources on a source upload."""
         made_changes = False
+
         for source in self.sources:
             old_component = source.sourcepackagerelease.component
             if old_component not in allowed_components:

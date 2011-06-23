@@ -914,6 +914,11 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
+        component=".model.packagecopyjob.PackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+    </securedutility>
+    <securedutility
         component=".model.packagecopyjob.PlainPackageCopyJob"
         provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
