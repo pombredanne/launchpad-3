@@ -65,12 +65,14 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.notification import notify
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
@@ -853,6 +855,11 @@ class PackageUpload(SQLBase):
                     existing_components.add(binary.component)
         return existing_components
 
+    @cachedproperty
+    def concrete_package_copy_job(self):
+        """See `IPackageUpload`."""
+        return getUtility(IPackageCopyJobSource).wrap(self.package_copy_job)
+
     def overrideSource(self, new_component, new_section, allowed_components):
         """See `IPackageUpload`."""
         if new_component is None and new_section is None:
@@ -860,15 +867,9 @@ class PackageUpload(SQLBase):
             return False
 
         if self.package_copy_job is not None:
-            # We just need to add the required component/section to the
-            # job metadata.
-            extra_data = {}
-            if new_component is not None:
-                extra_data['component_override'] = new_component.name
-            if new_section is not None:
-                extra_data['section_override'] = new_section.name
-            self.package_copy_job.extendMetadata(extra_data)
-            return
+            self.concrete_package_copy_job.addSourceOverride(SourceOverride(
+                self.package_name, new_component, new_section))
+            return True
 
         if not self.contains_source:
             return False

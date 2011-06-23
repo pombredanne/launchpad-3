@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     "IPackageCopyJob",
+    "IPackageCopyJobSource",
     "IPlainPackageCopyJob",
     "IPlainPackageCopyJobSource",
     "PackageCopyJobType",
@@ -35,6 +36,21 @@ from lp.services.job.interfaces.job import (
     )
 from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import IArchive
+
+
+class IPackageCopyJobSource(Interface):
+    """Utility for `IPackageCopyJob`-implementing types."""
+
+    def wrap(package_copy_job):
+        """Wrap a `PackageCopyJob` in its concrete implementation type.
+
+        As a special case, `None` produces `None`.
+
+        :param package_copy_job: A `PackageCopyJob`.
+        :return: An `IPackageCopyJob` implementation based on
+            `package_copy_job`, but of the job's specific concrete type
+            (such as `PlainPackageCopyJob`).
+        """
 
 
 class IPackageCopyJob(Interface):
@@ -73,6 +89,12 @@ class IPackageCopyJob(Interface):
     job = Reference(
         schema=IJob, title=_('The common Job attributes'),
         required=True, readonly=True)
+
+    component_name = TextLine(
+        title=_("Component override name"), required=False, readonly=True)
+
+    section_name = TextLine(
+        title=_("Section override name"), required=False, readonly=True)
 
     metadata = Attribute('A dict of data about the job.')
 
