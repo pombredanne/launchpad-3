@@ -111,6 +111,7 @@ from lp.services.job.runner import (
     BaseRunnableJob,
     BaseRunnableJobSource,
     )
+from lp.services.utils import RegisteredSubclass
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -221,6 +222,23 @@ class BranchJob(SQLBase):
 
 class BranchJobDerived(BaseRunnableJob):
 
+    __metaclass__ = RegisteredSubclass
+    _subclass = {}
+
+    @staticmethod
+    def _register_subclass(cls):
+        """Register this class with its enumeration."""
+        # This would be a classmethod, except that subclasses (e.g.
+        # TranslationPackagingJob) need to be able to override it and call
+        # into it, and there's no syntax to call a base class's version of a
+        # classmethod with the subclass as the first parameter.
+        job_type = getattr(cls, 'class_job_type', None)
+        if job_type is not None:
+            value = cls._subclass.setdefault(job_type, cls)
+            assert value is cls, (
+                '%s already registered to %s.' % (
+                    job_type.name, value.__name__))
+
     delegates(IBranchJob)
 
     def __init__(self, branch_job):
@@ -255,19 +273,29 @@ class BranchJobDerived(BaseRunnableJob):
             And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
-        return (cls(job) for job in jobs)
+        return (cls._getInstance(job) for job in jobs)
 
     @classmethod
-    def get(cls, key):
-        """Return the instance of this class whose key is supplied.
+    def _getInstance(cls, job):
+        return cls._subclass[job.job_type](job)
+
+    @classmethod
+    def get(cls, key, desired_classes=None):
+        """Return the instance of this class (or a subclass) whose key
+        is supplied.  Calling this method on a subclass returns only values
+        for that subclass.
 
         :raises: SQLObjectNotFound
         """
-        instance = IStore(BranchJob).get(BranchJob, key)
-        if instance is None or instance.job_type != cls.class_job_type:
-            raise SQLObjectNotFound(
-                'No occurrence of %s has key %s' % (cls.__name__, key))
-        return cls(instance)
+        if desired_classes is None:
+            desired_classes = cls
+        branchjob = IStore(BranchJob).get(BranchJob, key)
+        if branchjob is not None:
+            job = cls._getInstance(branchjob)
+            if isinstance(job, cls):
+                return job
+        raise SQLObjectNotFound(
+            'No occurrence of %s has key %s' % (cls.__name__, key))
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -778,6 +806,10 @@ class BranchMailJobSource(BaseRunnableJobSource):
     @staticmethod
     def contextManager():
         return get_ro_server()
+
+    @staticmethod
+    def get(key):
+        return BranchJobDerived.get(key, (RevisionMailJob, RevisionsAddedJob))
 
 
 class RosettaUploadJob(BranchJobDerived):
