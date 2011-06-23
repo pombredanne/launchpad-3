@@ -59,6 +59,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
+    BranchMergeProposalExists,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,
     )
@@ -560,6 +561,11 @@ class BranchMergeProposal(SQLBase):
         if target_branch is None:
             target_branch = self.target_branch
         # DEFAULT instead of None, because None is a valid value.
+        proposals = BranchMergeProposalGetter.activeProposalsForBranches(
+            source_branch, target_branch)
+        for proposal in proposals:
+            if proposal is not self:
+                raise BranchMergeProposalExists()
         if prerequisite_branch is DEFAULT:
             prerequisite_branch = self.prerequisite_branch
         if description is None:

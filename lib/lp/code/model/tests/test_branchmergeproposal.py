@@ -20,6 +20,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -45,6 +46,7 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     BadStateTransition,
+    BranchMergeProposalExists,
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -1657,6 +1659,30 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         revised = original.resubmit(
             original.registrant, break_link=True)
         self.assertIs(None, original.superseded_by)
+
+    def test_resumit_on_inactive_retains_state(self):
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal(
+                source_branch=first_mp.source_branch,
+                target_branch=first_mp.target_branch)
+            with ExpectedException(BranchMergeProposalExists, ''):
+                first_mp.resubmit(first_mp.registrant)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
+
+    def test_resumit_on_inactive_retains_state_new_branches(self):
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal()
+            with ExpectedException(BranchMergeProposalExists, ''):
+                first_mp.resubmit(
+                    first_mp.registrant, second_mp.source_branch,
+                    second_mp.target_branch)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
 
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):
