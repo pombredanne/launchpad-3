@@ -19,7 +19,7 @@ import _pythonpath
 
 from canonical.config import config
 from lp.services.job.runner import (
-    JobRunner,
+    TwistedJobRunner,
     )
 from lp.code.model.branchjob import (
     BranchMailJobSource,
@@ -33,7 +33,7 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('sendbranchmail')
-        runner = JobRunner.runFromSource(
+        runner = TwistedJobRunner.runFromSource(
             BranchMailJobSource, 'send-branch-mail', logging.getLogger())
         self.logger.info(
             'Ran %d RevisionMailJobs.' % len(runner.completed_jobs))
