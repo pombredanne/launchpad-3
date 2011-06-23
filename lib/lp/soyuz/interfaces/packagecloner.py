@@ -37,17 +37,6 @@ class IPackageCloner(Interface):
             with identical sourcepackagename in the destination.
         """
 
-    def createMissingBuilds(
-        distroseries, archive, distroarchseries_list,
-        proc_families, always_create):
-        """Create builds for all cloned source packages.
-
-        :param distroseries: the distro series for which to create builds.
-        :param archive: the archive for which to create builds.
-        :param proc_families: the list of processor families for
-            which to create builds.
-        """
-
     def mergeCopy(origin, destination):
         """Copy packages that are obsolete or missing in target archive.
 
