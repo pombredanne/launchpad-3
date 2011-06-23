@@ -676,7 +676,7 @@ an error:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override to restricted
 
 Allowing "restricted" still won't work because the original component
 is "main":

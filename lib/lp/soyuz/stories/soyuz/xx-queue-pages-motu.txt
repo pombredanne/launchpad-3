@@ -110,7 +110,7 @@ If he tries to override back to main, it will fail:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: alsa-utils (No rights to override from universe to main)
+    FAILED: alsa-utils (No rights to override to main)
 
 The same applies to the binary:
 
@@ -120,7 +120,7 @@ The same applies to the binary:
     >>> motu_browser.getControl(name="Accept").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
-    FAILED: pmount (No rights to override from universe to main)
+    FAILED: pmount (No rights to override to main)
 
 Our user is able to override to multiverse, however.  Let's do that
 with pmount:
