@@ -62,6 +62,9 @@ from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.text import (
+    extract_bug_numbers,
+    )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
@@ -78,7 +81,6 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers,
     extract_email_addresses,
     linkify_changelog,
     )
