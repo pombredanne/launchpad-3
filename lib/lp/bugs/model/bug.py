@@ -174,6 +174,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
+from lp.code.model.branch import Branch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -197,6 +198,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
 from lp.services.database.stormbase import StormBase
 from lp.services.fields import DuplicateBug
 from lp.services.messages.interfaces.message import (
@@ -1322,6 +1324,8 @@ BugMessage""" % sqlvalues(self.id))
         bug_branches = store.find(
             BugBranch,
             BugBranch.bug == self)
+        # Pre-load the branches so as to avoid late evaluation.
+        load_related(Branch, bug_branches, ['branchID'])
         user = getUtility(ILaunchBag).user
         return [
             bug_branch for bug_branch in bug_branches
