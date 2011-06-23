@@ -23,6 +23,7 @@ __all__ = [
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
+    'IArchiveCommercial',
     'IArchiveEdit',
     'IArchiveView',
     'IArchiveEditDependenciesForm',
@@ -450,18 +451,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
             description=_(
                 "Display the archive in Software Center's commercial "
                 "listings. Only private archives can be commercial.")))
-
-    @operation_parameters(
-        family=Reference(schema=Interface, required=True),
-        # Really IProcessorFamily.
-    )
-    @export_write_operation()
-    @operation_for_version('devel')
-    def enableRestrictedFamily(family):
-        """Add the processor family to the set of enabled restricted families.
-
-        :param family: is an `IProcessorFamily` object.
-        """
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -1520,7 +1509,24 @@ class IArchiveEdit(Interface):
         """
 
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
+class IArchiveCommercial(Interface):
+    """Archive interface for operations restricted by commercial."""
+
+    @operation_parameters(
+        family=Reference(schema=Interface, required=True),
+        # Really IProcessorFamily.
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def enableRestrictedFamily(family):
+        """Add the processor family to the set of enabled restricted families.
+
+        :param family: is an `IProcessorFamily` object.
+        """
+
+
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
+               IArchiveCommercial):
     """Main Archive interface."""
     export_as_webservice_entry()
 
