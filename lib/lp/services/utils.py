@@ -130,7 +130,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
+        yield a_list[i:i + size]
 
 
 def synchronize(source, target, add, remove):
@@ -240,7 +240,7 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
+    first, rest = (s + '\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
 
 
