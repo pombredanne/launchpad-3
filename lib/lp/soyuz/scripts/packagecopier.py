@@ -238,9 +238,11 @@ class CopyChecker:
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries, allow_delayed_copies=True):
+    def __init__(self, archive, include_binaries, allow_delayed_copies=True,
+                 strict_binaries=True):
         self.archive = archive
         self.include_binaries = include_binaries
+        self.strict_binaries = strict_binaries
         self.allow_delayed_copies = allow_delayed_copies
         self._inventory = {}
 
@@ -461,7 +463,7 @@ class CopyChecker:
             if source_file.libraryfile.expires is not None:
                 raise CannotCopy('source contains expired files')
 
-        if self.include_binaries:
+        if self.include_binaries and self.strict_binaries:
             built_binaries = source.getBuiltBinaries(want_files=True)
             if len(built_binaries) == 0:
                 raise CannotCopy("source has no binaries to be copied")
@@ -511,7 +513,7 @@ class CopyChecker:
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
-            overrides=None, send_email=False):
+            overrides=None, send_email=False, strict_binaries=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -554,7 +556,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     copies = []
     errors = []
     copy_checker = CopyChecker(
-        archive, include_binaries, allow_delayed_copies)
+        archive, include_binaries, allow_delayed_copies,
+        strict_binaries=strict_binaries)
 
     for source in sources:
         if series is None:
@@ -664,10 +667,11 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-        source.getBuiltBinaries(), series, pocket, archive, policy=policy)
+    if len(source.getBuiltBinaries()) != 0:
+        binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+            source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
-    copies.extend(binary_copies)
+        copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.

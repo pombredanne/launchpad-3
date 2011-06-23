@@ -36,6 +36,8 @@ from lp.soyuz.interfaces.packageset import (
     NoSuchPackageSet,
     )
 from lp.soyuz.model.packageset import Packageset
+from lp.soyuz.scripts.packagecopier import do_copy
+from lp.soyuz.interfaces.archive import CannotCopy
 
 
 class InitializationError(Exception):
@@ -267,6 +269,10 @@ class InitializeDistroSeries:
                 if archive.purpose is ArchivePurpose.PRIMARY:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
+
+            # If the destination archive is empty, we can use the package
+            # cloner because there is no conflict possible.
+            if archive.getPublishedSources().is_empty():
                 origin = PackageLocation(
                     archive, parent.distribution, parent,
                     PackagePublishingPocket.RELEASE)
@@ -282,6 +288,26 @@ class InitializeDistroSeries:
                 getUtility(IPackageCloner).clonePackages(
                     origin, destination, distroarchseries_list,
                     proc_families, spns, self.rebuild, no_duplicates=True)
+            else:
+                # If the destination archive is *not* empty, we use the
+                # package copier to avoid conflicts.
+                for pocket in archive.getPockets():
+                    sources = archive.getPublishedSources(
+                        distroseries=parent, pocket=pocket, names=spns)
+                    try:
+                        do_copy(
+                            sources, target_archive, self.distroseries,
+                            pocket, include_binaries=not self.rebuild,
+                            check_permissions=False, strict_binaries=False)
+                    except CannotCopy:
+                        pass
+                if self.rebuild:
+                    proc_families = [
+                         das[1].processorfamily
+                         for das in distroarchseries_list]
+                    getUtility(IPackageCloner).createMissingBuilds(
+                         self.distroseries, target_archive,
+                         distroarchseries_list, proc_families, self.rebuild)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents

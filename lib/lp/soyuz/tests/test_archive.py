@@ -1905,6 +1905,31 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual(3, cprov_archive.getPublishedSources(
             created_since_date=two_hours_earlier).count())
 
+    def test_getPublishedSources_names(self):
+        # The names parameters allows to filter with a list of
+        # names.
+        distroseries =  self.factory.makeDistroSeries()
+        # Create some SourcePackagePublishingHistory.
+        for package_name in ['package1', 'package2', 'package3']:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                archive=distroseries.main_archive,
+                sourcepackagename=self.factory.makeSourcePackageName(
+                    package_name))
+        filtered_sources = distroseries.main_archive.getPublishedSources(
+            names=['package1', 'package2'])
+
+        self.assertEqual(
+            3,
+            distroseries.main_archive.getPublishedSources().count())
+        self.assertEqual(
+            2,
+            filtered_sources.count())
+        self.assertContentEqual(
+            ['package1', 'package2'],
+            [filtered_source.sourcepackagerelease.name for filtered_source in
+            filtered_sources])
+
 
 class TestSyncSource(TestCaseWithFactory):
 
