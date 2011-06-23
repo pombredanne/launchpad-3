@@ -163,11 +163,8 @@ class BranchMirrorer(object):
         try:
             return callable(*args, **kw)
         finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
+            Branch.hooks.uninstall_named_hook('transform_fallback_location',
+                'BranchMirrorer.transformFallbackLocationHook')
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()

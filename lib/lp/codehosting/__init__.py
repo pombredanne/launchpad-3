@@ -80,17 +80,3 @@ def load_bundled_plugin(plugin_name):
 
 
 load_bundled_plugin("weave_fmt")
-
-
-def remove_hook(self, hook):
-    """Remove the hook from the HookPoint"""
-    self._callbacks.remove(hook)
-    for name, value in self._callback_names.iteritems():
-        if value is hook:
-            del self._callback_names[name]
-
-
-# XXX: JonathanLange 2011-03-30 bug=301472: Monkeypatch: Branch.hooks is a
-# list in bzr 1.13, so it supports remove.  It is a HookPoint in bzr 1.14, so
-# add HookPoint.remove.
-hooks.HookPoint.remove = remove_hook
