@@ -118,6 +118,9 @@ class PackageCopyJob(StormBase):
         """See `IPackageCopyJobSource`."""
         if package_copy_job is None:
             return None
+        # Read job_type so You Don't Have To.  If any other code reads
+        # job_type, that's probably a sign that the interfaces need more
+        # work.
         job_type = removeSecurityProxy(package_copy_job).job_type
         concrete_class = cls.concrete_classes[job_type]
         return concrete_class(package_copy_job)
