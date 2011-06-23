@@ -234,6 +234,11 @@ def linkify_bug_numbers(text):
     return text
 
 
+def extract_email_addresses(text):
+    '''Unique email addresses in the text.'''
+    matches = re.finditer(FormattersAPI._re_email, text)
+    return list(set([match.group() for match in matches]))
+
 
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""

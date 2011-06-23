@@ -62,6 +62,7 @@ from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.browser.stringformatter import (
     extract_bug_numbers,
+    extract_email_addresses,
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -81,7 +82,6 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_email_addresses,
     linkify_changelog,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet

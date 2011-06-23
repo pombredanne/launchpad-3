@@ -8,7 +8,6 @@ __metaclass__ = type
 # XXX: JonathanLange 2010-01-06: Many of these functions should be moved to a
 # generic lp.services.text module.
 __all__ = [
-    'extract_email_addresses',
     'linkify_changelog',
     'SourcePackageReleaseView',
     ]
@@ -21,12 +20,6 @@ from lp.app.browser.stringformatter import (
     FormattersAPI,
     linkify_bug_numbers,
     )
-
-
-def extract_email_addresses(text):
-    '''Unique email addresses in the text.'''
-    matches = re.finditer(FormattersAPI._re_email, text)
-    return list(set([match.group() for match in matches]))
 
 
 def obfuscate_email(user, text):
