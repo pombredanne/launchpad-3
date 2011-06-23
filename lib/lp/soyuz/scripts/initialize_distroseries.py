@@ -337,7 +337,7 @@ class InitializeDistroSeries:
                 # There is only one available pocket in an unreleased series.
                 pocket = PackagePublishingPocket.RELEASE
                 sources = archive.getPublishedSources(
-                    distroseries=parent, pocket=pocket, names=spns)
+                    distroseries=parent, pocket=pocket, name=spns)
                 try:
                     do_copy(
                         sources, target_archive, self.distroseries,
