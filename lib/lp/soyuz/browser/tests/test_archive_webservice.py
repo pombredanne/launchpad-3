@@ -235,7 +235,8 @@ class TestProcessorFamilies(WebServiceTestCase):
         arm = self.service.processor_families.getByName(name='arm')
         self.assertEqual(u'arm', arm.name)
         self.assertEqual(u'ARM Processors', arm.title)
-        self.assertEqual(u'The ARM and compatible processors', arm.description)
+        self.assertEqual(
+            u'The ARM and compatible processors', arm.description)
         self.assertEqual(True, arm.restricted)
 
     def test_processors(self):

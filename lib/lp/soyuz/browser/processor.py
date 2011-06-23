@@ -35,7 +35,7 @@ class ProcessorFamilySetNavigation(Navigation):
 class ProcessorFamilyNavigation(Navigation):
     """IProcessorFamily navigation."""
 
-    usedfor= IProcessorFamily
+    usedfor = IProcessorFamily
 
     def traverse(self, id_):
         id_ = int(id_)

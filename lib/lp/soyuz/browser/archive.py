@@ -24,8 +24,6 @@ __all__ = [
     'ArchiveViewBase',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
-    'ProcessorFamilySetNavigation',
-    'ProcessorFamilyNavigation',
     'traverse_named_ppa',
     ]
 
