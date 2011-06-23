@@ -118,9 +118,11 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        # The + 0 below prevents PostgreSQL from using the (archive, status)
-        # index on SourcePackagePublishingHistory, the use of which results in
-        # a terrible query plan.
+        # XXX: GavinPanella 2011-06-23 bug=801097: The + 0 in the condition
+        # below prevents PostgreSQL from using the (archive, status) index on
+        # SourcePackagePublishingHistory, the use of which results in a
+        # terrible query plan. This might be indicative of an underlying,
+        # undiagnosed issue in production with wider repurcussions.
         SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
@@ -132,21 +134,18 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     if in_parent:
         conditions = And(
             conditions,
-            DistroSeries.id == DistroSeriesDifference.parent_series_id,
             SourcePackagePublishingHistory.distroseriesID == (
                 DistroSeriesDifference.parent_series_id),
             )
     else:
         conditions = And(
             conditions,
-            DistroSeries.id == DistroSeriesDifference.derived_series_id,
             SourcePackagePublishingHistory.distroseriesID == (
                 DistroSeriesDifference.derived_series_id),
             )
     # Ensure that the archive has the right purpose.
     conditions = And(
         conditions,
-        Archive.distributionID == DistroSeries.distributionID,
         # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
         # but we are only ever going to be interested in PRIMARY archives.
         Archive.purpose == ArchivePurpose.PRIMARY,
