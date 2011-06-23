@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 import contextlib
+from itertools import chain
 import operator
 import os
 import shutil
@@ -106,7 +107,10 @@ from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -762,6 +766,18 @@ class RevisionsAddedJob(BranchJobDerived):
         finally:
             self.bzr_branch.unlock()
         return outf.getvalue()
+
+
+class BranchMailJobSource(BaseRunnableJobSource):
+
+    @staticmethod
+    def iterReady():
+        return chain(
+            RevisionMailJob.iterReady(), RevisionsAddedJob.iterReady())
+
+    @staticmethod
+    def contextManager():
+        return get_ro_server()
 
 
 class RosettaUploadJob(BranchJobDerived):
