@@ -473,8 +473,8 @@ class Archive(SQLBase):
             return getUtility(IPackageBuildSet).getBuildsForArchive(
                 self, status=build_state, pocket=pocket)
 
-    def getPublishedSources(self, name=None, names=(), version=None,
-                            status=None, distroseries=None, pocket=None,
+    def getPublishedSources(self, name=None, version=None, status=None,
+                            distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
                             eager_load=False):
         """See `IArchive`."""
@@ -495,17 +495,17 @@ class Archive(SQLBase):
             ]
 
         if name is not None:
-            if exact_match:
-                storm_clauses.append(SourcePackageName.name == name)
-            else:
+            if type(name) == str:
+                if exact_match:
+                    storm_clauses.append(SourcePackageName.name == name)
+                else:
+                    clauses.append(
+                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                        % quote_like(name))
+            elif len(name) != 0:
                 clauses.append(
-                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                    % quote_like(name))
-
-        if len(names) != 0:
-            clauses.append(
-                "SourcePackageName.name IN %s"
-                % sqlvalues(names))
+                    "SourcePackageName.name IN %s"
+                    % sqlvalues(name))
 
         if version is not None:
             if name is None:
