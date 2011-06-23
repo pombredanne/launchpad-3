@@ -495,7 +495,7 @@ class Archive(SQLBase):
             ]
 
         if name is not None:
-            if type(name) == str:
+            if type(name) in (str, unicode):
                 if exact_match:
                     storm_clauses.append(SourcePackageName.name == name)
                 else:
