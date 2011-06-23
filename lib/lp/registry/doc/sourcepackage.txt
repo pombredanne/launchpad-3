@@ -385,12 +385,11 @@ be more like the bug number linkification just below.
 The view will linkify bug numbers of the format "LP: #number" in the
 changelog if number is a valid bug ID (also see Soyuz page tests 24
 -sourcepackage-changelog.txt).  The changelog() method calls a method
-_linkify_bug_numbers() to do this.
+linkify_bug_numbers() to do this.
 
 Zero or more spaces may appear between the ":" and the "#".
 
-    >>> from lp.soyuz.browser.sourcepackagerelease import (
-    ...     linkify_bug_numbers)
+    >>> from lp.app.text import linkify_bug_numbers
     >>> linkify_bug_numbers("LP: #10")
     'LP: <a href="/bugs/10">#10</a>'
 

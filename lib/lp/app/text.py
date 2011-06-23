@@ -6,10 +6,13 @@
 __metaclass__ = type
 __all__ = [
     'extract_bug_numbers',
+    'linkify_bug_numbers',
     ]
 
 
 import re
+
+from lp.app.browser.stringformatter import FormattersAPI
 
 
 def extract_bug_numbers(text):
@@ -49,3 +52,26 @@ def extract_bug_numbers(text):
             unique_bug_matches[bugnum] = bug_match
 
     return unique_bug_matches
+
+
+def linkify_bug_numbers(text):
+    """Linkify to a bug if LP: #number appears in the (changelog) text."""
+    unique_bug_matches = extract_bug_numbers(text)
+    for bug_match in unique_bug_matches.values():
+        replace_text = bug_match.group('bug')
+        if replace_text is not None:
+            # XXX julian 2008-01-10
+            # Note that re.sub would be far more efficient to use
+            # instead of string.replace() but this requires a regex
+            # that matches everything in one go.  We're also at danger
+            # of replacing the wrong thing if string.replace() finds
+            # other matching substrings.  So for example in the
+            # string:
+            # "LP: #9, #999"
+            # replacing #9 with some HTML would also interfere with
+            # #999.  The liklihood of this happening is very, very
+            # small, however.
+            text = text.replace(
+                replace_text,
+                FormattersAPI._linkify_substitution(bug_match))
+    return text
