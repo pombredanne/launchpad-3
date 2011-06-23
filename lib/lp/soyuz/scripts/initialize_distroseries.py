@@ -324,7 +324,7 @@ class InitializeDistroSeries:
                                     architectures_available=architectures)
 
                 except CannotCopy:
-                    raise
+                    pass
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents
