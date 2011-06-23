@@ -18,6 +18,7 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'RegisteredSubclass',
     'run_capturing_output',
     'synchronize',
     'text_delta',
@@ -285,3 +286,10 @@ def traceback_info(info):
     variables, and helps to avoid typos.
     """
     sys._getframe(1).f_locals["__traceback_info__"] = info
+
+
+class RegisteredSubclass(type):
+    """Metaclass for when subclasses should be registered."""
+
+    def __init__(cls, name, bases, dict_):
+        cls._register_subclass(cls)

@@ -35,6 +35,7 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import Job
+from lp.services.utils import RegisteredSubclass
 
 
 class PackagingJobType(DBEnumeratedType):
@@ -94,13 +95,6 @@ class PackagingJob(StormBase):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
         self.productseries = productseries
-
-
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        cls._register_subclass(cls)
 
 
 class PackagingJobDerived:
