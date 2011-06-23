@@ -1115,13 +1115,3 @@ And even if we ask for a non-integral archive ID.
     ...     '/~cprov/+archive/ppa/+dependency/foo')
     HTTP/1.1 404 Not Found
     ...
-
-== Enabled restricted families ==
-
-Archives can build on certain restricted families.  The attribute can
-be read and set only by admins and commercial admins.
-
-    >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
-    >>> print_self_link_of_entries(
-    ...     webservice.get('/~mark/+archive/ppa/enabled_restricted_families',
-    ...                    api_version='devel').jsonBody())
