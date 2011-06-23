@@ -313,7 +313,7 @@ class InitializeDistroSeries:
 
             # If the destination series is empty, we can use the package
             # cloner because there is no conflict possible.
-            if archive.getPublishedSources(
+            if target_archive.getPublishedSources(
                 distroseries=self.distroseries).is_empty():
                 origin = PackageLocation(
                     archive, parent.distribution, parent,
@@ -333,16 +333,18 @@ class InitializeDistroSeries:
             else:
                 # If the destination archive is *not* empty, we use the
                 # package copier to avoid conflicts.
-                for pocket in archive.getPockets():
-                    sources = archive.getPublishedSources(
-                        distroseries=parent, pocket=pocket, names=spns)
-                    try:
-                        do_copy(
-                            sources, target_archive, self.distroseries,
-                            pocket, include_binaries=not self.rebuild,
-                            check_permissions=False, strict_binaries=False)
-                    except CannotCopy:
-                        pass
+
+                # There is only one available pocket in an unreleased series.
+                pocket = PackagePublishingPocket.RELEASE
+                sources = archive.getPublishedSources(
+                    distroseries=parent, pocket=pocket, names=spns)
+                try:
+                    do_copy(
+                        sources, target_archive, self.distroseries,
+                        pocket, include_binaries=not self.rebuild,
+                        check_permissions=False, strict_binaries=False)
+                except CannotCopy:
+                    pass
                 if self.rebuild:
                     proc_families = [
                          das[1].processorfamily
