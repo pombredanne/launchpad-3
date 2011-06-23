@@ -621,11 +621,18 @@ subscribed him.
     >>> subscription.canBeUnsubscribedByUser(subscriber)
     True
 
-The one who subscribed the subscriber doesn't have permission to
+The one who subscribed the subscriber does have permission to
 unsubscribe him.
 
     >>> subscription.canBeUnsubscribedByUser(subscribed_by)
-    False
+    True
+
+So too can Launchpad administrators unsubscribe him.
+
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> subscription.canBeUnsubscribedByUser(
+    ...     getUtility(ILaunchpadCelebrities).admin)
+    True
 
 The anonymous user (represented by None) also can't unsubscribe him.
 

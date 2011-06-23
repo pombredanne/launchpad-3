@@ -12,10 +12,12 @@ from storm.locals import (
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_person
@@ -79,6 +81,11 @@ class BugSubscription(StormBase):
         """See `IBugSubscription`."""
         if user is None:
             return False
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if user.inTeam(celebrities.admin):
+            return True
+        if user == self.subscribed_by:
+            return True
         if self.person.is_team:
             return user.inTeam(self.person)
         return user == self.person
