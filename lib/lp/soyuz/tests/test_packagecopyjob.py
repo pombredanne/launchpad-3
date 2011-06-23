@@ -17,7 +17,10 @@ from storm.store import Store
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -846,6 +849,8 @@ class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
 class TestPackageCopyJobSource(TestCaseWithFactory):
     """Test the `IPackageCopyJob` utility."""
 
+    layer = ZopelessDatabaseLayer
+
     def test_implements_interface(self):
         job_source = getUtility(IPackageCopyJobSource)
         self.assertThat(job_source, Provides(IPackageCopyJobSource))
@@ -856,7 +861,8 @@ class TestPackageCopyJobSource(TestCaseWithFactory):
 
     def test_wrap_wraps_PlainPackageCopyJob(self):
         original_ppcj = self.factory.makePlainPackageCopyJob()
-        pcj = IStore(PackageCopyJob).get(
-            PackageCopyJob, PackageCopyJob.id == original_ppcj.id)
+        IStore(PackageCopyJob).flush()
+        pcj = IStore(PackageCopyJob).get(PackageCopyJob, original_ppcj.id)
+        self.assertNotEqual(None, pcj)
         job_source = getUtility(IPackageCopyJobSource)
         self.assertEqual(original_ppcj, job_source.wrap(pcj))
