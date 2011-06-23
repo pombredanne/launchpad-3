@@ -240,6 +240,17 @@ class CopyChecker:
     """
     def __init__(self, archive, include_binaries, allow_delayed_copies=True,
                  strict_binaries=True):
+        """Initialize a copy checker.
+
+        :param archive: the target `IArchive`.
+        :param include_binaries: controls whether or not the published
+            binaries for each given source should be also copied along
+            with the source.
+        :param allow_delayed_copies: boolean indicating whether or not private
+            sources can be copied to public archives using delayed_copies.
+        :param strict_binaries: Should we deny the copy of sources with no
+            related binaries?
+        """
         self.archive = archive
         self.include_binaries = include_binaries
         self.strict_binaries = strict_binaries
@@ -545,6 +556,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
+    :param strict_binaries: Should we deny the copy of sources with no
+        related binaries?
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
