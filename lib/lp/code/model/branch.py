@@ -422,10 +422,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         target = BranchMergeProposalGetter.activeProposalsForBranches(
             self, target_branch)
         if target.count() > 0:
-            raise BranchMergeProposalExists(
-                'There is already a branch merge proposal registered for '
-                'branch %s to land on %s that is still active.'
-                % (self.displayname, target_branch.displayname))
+            raise BranchMergeProposalExists(target.any())
 
         if date_created is None:
             date_created = UTC_NOW

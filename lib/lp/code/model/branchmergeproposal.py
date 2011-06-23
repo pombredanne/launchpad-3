@@ -565,7 +565,7 @@ class BranchMergeProposal(SQLBase):
             source_branch, target_branch)
         for proposal in proposals:
             if proposal is not self:
-                raise BranchMergeProposalExists()
+                raise BranchMergeProposalExists(proposal)
         if prerequisite_branch is DEFAULT:
             prerequisite_branch = self.prerequisite_branch
         if description is None:

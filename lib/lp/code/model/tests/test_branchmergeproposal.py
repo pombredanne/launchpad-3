@@ -1667,7 +1667,10 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
             second_mp = self.factory.makeBranchMergeProposal(
                 source_branch=first_mp.source_branch,
                 target_branch=first_mp.target_branch)
-            with ExpectedException(BranchMergeProposalExists, ''):
+            with ExpectedException(
+                BranchMergeProposalExists, 'There is already a branch merge'
+                ' proposal registered for branch .* to land on .* that is'
+                ' still active.'):
                 first_mp.resubmit(first_mp.registrant)
             self.assertEqual(
                 BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
