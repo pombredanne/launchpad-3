@@ -10,9 +10,11 @@ from datetime import (
     )
 import doctest
 
-from testtools.matchers import DocTestMatches, MatchesRegex
+from testtools.matchers import (
+    DocTestMatches,
+    MatchesRegex,
+    )
 from testtools.testcase import ExpectedException
-
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -1906,7 +1908,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
             created_since_date=two_hours_earlier).count())
 
     def test_getPublishedSources_name(self):
-        # The name parameter allows to filter with a list of
+        # The name parameter allows to filtering with a list of
         # names.
         distroseries =  self.factory.makeDistroSeries()
         # Create some SourcePackagePublishingHistory.
