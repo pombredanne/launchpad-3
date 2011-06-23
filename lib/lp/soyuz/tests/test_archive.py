@@ -1905,8 +1905,8 @@ class TestGetPublishedSources(TestCaseWithFactory):
         self.assertEqual(3, cprov_archive.getPublishedSources(
             created_since_date=two_hours_earlier).count())
 
-    def test_getPublishedSources_names(self):
-        # The names parameters allows to filter with a list of
+    def test_getPublishedSources_name(self):
+        # The name parameter allows to filter with a list of
         # names.
         distroseries =  self.factory.makeDistroSeries()
         # Create some SourcePackagePublishingHistory.
@@ -1917,7 +1917,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
                 sourcepackagename=self.factory.makeSourcePackageName(
                     package_name))
         filtered_sources = distroseries.main_archive.getPublishedSources(
-            names=['package1', 'package2'])
+            name=['package1', 'package2'])
 
         self.assertEqual(
             3,
