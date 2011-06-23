@@ -81,8 +81,7 @@ class BugSubscription(StormBase):
         """See `IBugSubscription`."""
         if user is None:
             return False
-        celebrities = getUtility(ILaunchpadCelebrities)
-        if user.inTeam(celebrities.admin):
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             return True
         if user == self.subscribed_by:
             return True
