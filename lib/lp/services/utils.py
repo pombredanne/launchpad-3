@@ -292,4 +292,14 @@ class RegisteredSubclass(type):
     """Metaclass for when subclasses should be registered."""
 
     def __init__(cls, name, bases, dict_):
+        # _register_subclass must be a static method to permit upcalls.
+        #
+        # We cannot use super(Class, cls) to do the upcalls, because Class
+        # isn't fully defined yet.  (Remember, we're calling this from a
+        # metaclass.)
+        #
+        # Without using super, a classmethod that overrides another
+        # classmethod has no reasonable way to call the overridden version AND
+        # provide its class as first parameter (i.e. "cls").  Therefore, we
+        # must use a static method.
         cls._register_subclass(cls)
