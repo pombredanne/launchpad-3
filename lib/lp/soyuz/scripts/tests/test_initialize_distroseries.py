@@ -445,8 +445,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_setup_overlays(self):
         # If the overlay parameter is passed, overlays are properly setup.
-        self.parent1, unused = self.setupParent()
-        self.parent2, unused = self.setupParent()
+        self.parent1, notused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            packages={'udev': '0.1-3'})
 
         overlays = [False, True]
         overlay_pockets = [None, 'Updates']
@@ -480,9 +482,12 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_multiple_parents_ordering(self):
         # The parents' order is stored.
-        self.parent1, self.parent_das = self.setupParent()
-        self.parent2, self.parent_das2 = self.setupParent()
-        self.parent3, self.parent_das3 = self.setupParent()
+        self.parent1, notused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            packages={'udev': '0.1-3'})
+        self.parent3, notused = self.setupParent(
+            packages={'udev': '0.1-2'})
         child = self._fullInitialize(
             [self.parent1, self.parent3, self.parent2])
         dsp_set = getUtility(IDistroSeriesParentSet)
@@ -503,8 +508,12 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_multiple_parent_packagesets_merge(self):
         # Identical packagesets from the parents are merged as one
         # packageset in the child.
-        self.parent1, self.parent_das1 = self.setupParent()
-        self.parent2, self.parent_das2 = self.setupParent()
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'udev': '0.1-1', 'libc6': '2.8-1',
+                'postgresql': '9.0-1', 'chromium': '3.6'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'udev': '0.1-2', 'libc6': '2.8-2',
+                'postgresql': '9.0-2', 'chromium': '3.7'})
         uploader1 = self.factory.makePerson()
         uploader2 = self.factory.makePerson()
         test1_parent1 = getUtility(IPackagesetSet).new(
@@ -556,8 +565,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # the format selections of the parents.
         format1 = SourcePackageFormat.FORMAT_1_0
         format2 = SourcePackageFormat.FORMAT_3_0_QUILT
-        self.parent1, notused = self.setupParent(format_selection=format1)
-        self.parent2, notused = self.setupParent(format_selection=format2)
+        self.parent1, notused = self.setupParent(
+            format_selection=format1, packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            format_selection=format2, packages={'udev': '0.1-2'})
         child = self._fullInitialize([self.parent1, self.parent2])
 
         self.assertTrue(child.isSourcePackageFormatPermitted(format1))
@@ -568,8 +579,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # child's components.
         self.comp1 = self.factory.makeComponent()
         self.comp2 = self.factory.makeComponent()
-        self.parent1, notused = self.setupParent()
-        self.parent2, notused = self.setupParent()
+        self.parent1, unused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, unused = self.setupParent(
+            packages={'udev': '0.1-2'})
         ComponentSelection(distroseries=self.parent1, component=self.comp1)
         ComponentSelection(distroseries=self.parent2, component=self.comp1)
         ComponentSelection(distroseries=self.parent2, component=self.comp2)
@@ -584,8 +597,10 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # sections.
         self.section1 = self.factory.makeSection()
         self.section2 = self.factory.makeSection()
-        self.parent1, notused = self.setupParent()
-        self.parent2, notused = self.setupParent()
+        self.parent1, unused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, unused = self.setupParent(
+            packages={'udev': '0.1-2'})
         SectionSelection(distroseries=self.parent1, section=self.section1)
         SectionSelection(distroseries=self.parent2, section=self.section1)
         SectionSelection(distroseries=self.parent2, section=self.section2)
@@ -595,59 +610,17 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             [self.section1, self.section2],
             child.sections)
 
-    def test_multiple_parents_same_packaging(self):
-        # If the same packaging exists different parents, the packaging
-        # in the first parent takes precedence.
+    def test_multiple_parents_same_package(self):
+        # If the same package (i.e. same packagename and version) is
+        # published in different parents the initialization will error.
         self.parent1, self.parent_das1 = self.setupParent(
-            packages={'package': '0.3-1'})
+            packages={'package': '0.1-1'})
         self.parent2, self.parent_das2 = self.setupParent(
             packages={'package': '0.1-1'})
-        sourcepackagename = self.factory.getOrMakeSourcePackageName('package')
-        packaging1 = self.factory.makePackagingLink(
-            distroseries=self.parent1, sourcepackagename=sourcepackagename)
-        self.factory.makePackagingLink(
-            distroseries=self.parent2, sourcepackagename=sourcepackagename)
-        child = self._fullInitialize([self.parent1, self.parent2])
-        productseries1 = packaging1.productseries
-        child_packagings = productseries1.getPackagingInDistribution(
-            child.distribution)
 
-        self.assertEquals(1, len(child_packagings))
-        self.assertEquals(
-            packaging1.owner,
-            child_packagings[0].owner)
-
-    def test_multiple_parents_same_source_package(self):
-        # If the same source package (i.e. same packagename) is published in
-        # different parents, the source package in the first parent takes
-        # precedence.
-        self.parent1, self.parent_das1 = self.setupParent(
-            packages={'package': '0.3-1'})
-        self.parent2, self.parent_das2 = self.setupParent(
-            packages={'package': '0.1-1'})
-        child = self._fullInitialize([self.parent1, self.parent2])
-        published_sources = child.main_archive.getPublishedSources()
-
-        self.assertEquals(1, published_sources.count())
-        self.assertEquals(
-            u'0.3-1',
-            published_sources[0].sourcepackagerelease.version)
-
-    def test_multiple_parents_same_binary_package(self):
-        # If the same binary package (i.e. same packagename) is published
-        # in different parents, the binary package in the first parent
-        # takes precedence.
-        self.parent1, self.parent_das1 = self.setupParent(
-            packages={'package': '0.3-1'})
-        self.parent2, self.parent_das2 = self.setupParent(
-            packages={'package': '0.1-1'})
-        child = self._fullInitialize([self.parent1, self.parent2])
-        published_binaries = child.main_archive.getAllPublishedBinaries()
-
-        self.assertEquals(1, published_binaries.count())
-        self.assertEquals(
-            u'0.3-1',
-            published_binaries[0].binarypackagerelease.version)
+        self.assertRaises(
+            InitializationError, self._fullInitialize,
+            [self.parent1, self.parent2])
 
     def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
                                       publish_in_distribution=True):
