@@ -704,3 +704,66 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
              "and no parent was passed to the initilization method"
              ".").format(child=child),
              ids.check)
+             
+    def test_copy_method_diff_archive_empty_target(self):
+        # If the archives are different and the target archive is
+        # empty: use the cloner.
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, archive, distroseries))
+
+    def test_copy_method_same_archive_empty_series(self):
+        # If the archives are the same and the target series is
+        # empty: use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
+
+    def test_copy_method_same_archive_empty_series_non_empty_archive(self):
+        # If the archives are the same and the target series is
+        # empty (another series in the same distribution
+        # might not be empty): use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
+
+    def test_copy_method_diff_archive_non_empty_target(self):
+        # If the archives are different and the target archive is
+        # *not* empty: don't use the cloner.
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+
+        self.assertFalse(
+            InitializeDistroSeries._use_cloner(
+                target_archive, archive, distroseries))
+
+    def test_copy_method_same_archive_non_empty_series(self):
+        # If the archives are the same and the target series is
+        # *not* empty: don't use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries)
+        target_archive = distroseries.main_archive
+
+        self.assertFalse(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
