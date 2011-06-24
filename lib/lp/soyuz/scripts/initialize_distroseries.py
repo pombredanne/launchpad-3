@@ -240,6 +240,29 @@ class InitializeDistroSeries:
         self._copy_publishing_records(distroarchseries_lists)
         self._copy_packaging_links()
 
+    @classmethod
+    def _use_cloner(self, target_archive, archive, distroseries):
+        """Returns True if it's safe to use the packagecloner (as opposed
+        to using the packagecopier).
+        We use two different ways to copy packages:
+         - the packagecloner: fast but not conflict safe.
+         - the packagecopier: slow but performs lots of checks to
+         avoid creating conflicts.
+        1a. If the archives are different and the target archive is
+            empty use the cloner.
+        1b. If the archives are the same and the target series is
+            empty use the cloner.
+        2.  Otherwise use the copier.
+        """
+        target_archive_empty = target_archive.getPublishedSources().is_empty()
+        case_1a = (target_archive != archive and
+                   target_archive_empty)
+        case_1b = (target_archive == archive and
+                   (target_archive_empty or
+                    target_archive.getPublishedSources(
+                        distroseries=distroseries).is_empty()))
+        return case_1a or case_1b
+
     def _copy_publishing_records(self, distroarchseries_lists):
         """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
@@ -272,23 +295,8 @@ class InitializeDistroSeries:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
 
-                # We use two different ways to copy packages:
-                # - the packagecloner: fast but not conflict safe.
-                # - the packagecopier: slow but performs lots of checks to
-                # avoid creating conflicts.
-                #
-                # 1a. If the archives are different and the target archive is
-                # empty use the cloner.
-                # 1b. if the archives are the same and the target series is
-                # empty use the cloner.
-                # 2. otherwise use the copier.
-
-                # 1a and 1b.
-                if ((target_archive != archive and
-                     target_archive.getPublishedSources().is_empty()) or
-                    (target_archive == archive and
-                     target_archive.getPublishedSources(
-                         distroseries=self.distroseries).is_empty())):
+                if self._use_cloner(
+                    target_archive, archive, self.distroseries):
                     origin = PackageLocation(
                         archive, parent.distribution, parent,
                         PackagePublishingPocket.RELEASE)
@@ -304,7 +312,6 @@ class InitializeDistroSeries:
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
                         proc_families, spns, self.rebuild)
-                # 2.
                 else:
                     # There is only one available pocket in an unreleased
                     # series.
