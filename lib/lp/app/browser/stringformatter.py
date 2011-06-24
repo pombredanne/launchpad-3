@@ -10,6 +10,7 @@ __all__ = [
     'break_long_words',
     'escape',
     'extract_bug_numbers',
+    'extract_email_addresses',
     'FormattersAPI',
     'linkify_bug_numbers',
     're_substitute',
