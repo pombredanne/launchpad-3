@@ -86,6 +86,7 @@ def main():
         log.debug('initializing from parent(s), copying publishing records.')
         ids.initialize()
     except InitializationError, e:
+        ztm.abort()
         log.error(e)
         return 1
 

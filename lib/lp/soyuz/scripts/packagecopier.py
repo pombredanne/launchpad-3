@@ -684,7 +684,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     binary_copies = getUtility(IPublishingSet).copyBinariesTo(
         source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
-    copies.extend(binary_copies)
+    if binary_copies is not None:
+        copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
