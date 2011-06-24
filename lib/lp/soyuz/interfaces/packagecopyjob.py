@@ -5,6 +5,8 @@ __metaclass__ = type
 
 __all__ = [
     "IPackageCopyJob",
+    "IPackageCopyJobEdit",
+    "IPackageCopyJobView",
     "IPackageCopyJobSource",
     "IPlainPackageCopyJob",
     "IPlainPackageCopyJobSource",
@@ -53,8 +55,15 @@ class IPackageCopyJobSource(Interface):
         """
 
 
-class IPackageCopyJob(Interface):
-    """A job that copies packages between `IArchive`s."""
+class IPackageCopyJobEdit(Interface):
+    """Privileged access to an `IPackageCopyJob`."""
+
+    def extendMetadata(metadata_dict):
+        """Update the job's JSON metadata with items from `metadata_dict`."""
+
+
+class IPackageCopyJobView(Interface):
+    """Immutable data on an `IPackageCopyJob`."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -96,7 +105,16 @@ class IPackageCopyJob(Interface):
     section_name = TextLine(
         title=_("Section override name"), required=False, readonly=True)
 
-    metadata = Attribute('A dict of data about the job.')
+    metadata = Attribute(_("A dict of data about the job."))
+
+
+class IPackageCopyJob(IPackageCopyJobEdit, IPackageCopyJobView):
+    """A job that copies packages between `IArchive`s.
+
+    The base classes define separate access regimes:
+     * `IPackageCopyJobEdit` is dangerous and privileged.
+     * `IPackageCopyJobView` is read-only.
+    """
 
 
 class PackageCopyJobType(DBEnumeratedType):
