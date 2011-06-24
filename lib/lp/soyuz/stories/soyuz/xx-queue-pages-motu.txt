@@ -1,4 +1,5 @@
-= MOTU administration of the Upload Queue Pages =
+MOTU administration of the Upload Queue Pages
+=============================================
 
 (see also xx-queue-pages.txt)
 
@@ -17,7 +18,8 @@ fake changes files (so it doesn't OOPS when trying to send emails).
     >>> insertFakeChangesFileForAllPackageUploads()
 
 
-== MOTU upload-admin role ==
+MOTU upload-admin role
+----------------------
 
 In our sample data, there is a user 'no-team-memberships' who has
 rights to administer the queue in the universe and multiverse
@@ -70,8 +72,10 @@ permission to manipulate them.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> from lp.soyuz.interfaces.binarypackagename import (
+    ...     IBinaryPackageNameSet)
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
     >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
