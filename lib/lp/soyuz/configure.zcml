@@ -167,6 +167,7 @@
                 date_created
                 sourcepackagerelease
                 component_name
+                concrete_package_copy_job
                 contains_source
                 contains_build
                 contains_translation
@@ -927,13 +928,13 @@
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
       <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobView"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
       <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobView" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
     </class>
 
