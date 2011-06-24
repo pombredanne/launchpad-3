@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.testing import TestCaseWithFactory
@@ -18,6 +19,9 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
     def setUp(self):
         super(TestDistributionSourcePackageVocabulary, self).setUp()
         self.vocabulary = DistributionSourcePackageVocabulary()
+
+    def test_provides_ihugevocabulary(self):
+        self.assertProvides(self.vocabulary, IHugeVocabulary)
 
     def test_toTerm_unbuilt_dsp(self):
         # If the source has no built binaries, the term's value contains a

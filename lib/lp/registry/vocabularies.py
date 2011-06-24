@@ -1967,9 +1967,20 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
 class DistributionSourcePackageVocabulary:
 
     implements(IHugeVocabulary)
+    displayname = 'Select a package'
+    step_title = 'Search'
 
     def __init__(self, context=None):
         self.context = context
+
+    def __contains__(self, obj):
+        pass
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        pass
 
     def toTerm(self, dsp):
         """See `IVocabulary`."""
@@ -1996,7 +2007,7 @@ class DistributionSourcePackageVocabulary:
         distribution = self.context
         if query is None:
             return
-        search_term = '%' + query.lower() + '%'
+        search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
         spns = store.using(
             SourcePackagePublishingHistory,
@@ -2032,8 +2043,8 @@ class DistributionSourcePackageVocabulary:
                 SourcePackagePublishingHistory.archive ==
                     distribution.main_archive,
                 Or(
-                    SourcePackageName.name.like(search_term),
-                    BinaryPackageName.name.like(search_term))).config(
-                        distinct=True)
+                    SourcePackageName.name.contains_string(search_term),
+                    BinaryPackageName.name.contains_string(
+                        search_term))).config(distinct=True)
         return [
             self.toTerm(distribution.getSourcePackage(spn)) for spn in spns]
