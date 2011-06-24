@@ -15,6 +15,7 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'ExpectedException',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -95,6 +96,7 @@ import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -1352,3 +1354,16 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class ExpectedException(TTExpectedException):
+    """An ExpectedException that provides access to the caught exception."""
+
+    def __init__(self, exc_type, value_re):
+        super(ExpectedException, self).__init__(exc_type, value_re)
+        self.caught_exc = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.caught_exc = exc_value
+        return super(ExpectedException, self).__exit__(
+            exc_type, exc_value, traceback)

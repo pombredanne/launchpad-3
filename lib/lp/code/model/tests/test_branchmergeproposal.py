@@ -20,7 +20,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
-from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -80,6 +79,7 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
+    ExpectedException,
     launchpadlib_for,
     login,
     login_person,
@@ -1629,7 +1629,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmitting a proposal with no reviewers should work."""
         bmp = make_merge_proposal_without_reviewers(self.factory)
         with person_logged_in(bmp.registrant):
-            bmp2 = bmp.resubmit(bmp.registrant)
+            bmp.resubmit(bmp.registrant)
 
     def test_resubmit_changes_branches(self):
         """Resubmit changes branches, if specified."""
@@ -1656,7 +1656,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmit breaks link, if specified."""
         original = self.factory.makeBranchMergeProposal()
         self.useContext(person_logged_in(original.registrant))
-        revised = original.resubmit(
+        original.resubmit(
             original.registrant, break_link=True)
         self.assertIs(None, original.superseded_by)
 
@@ -1667,11 +1667,14 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
             second_mp = self.factory.makeBranchMergeProposal(
                 source_branch=first_mp.source_branch,
                 target_branch=first_mp.target_branch)
-            with ExpectedException(
+            expected_exc = ExpectedException(
                 BranchMergeProposalExists, 'There is already a branch merge'
                 ' proposal registered for branch .* to land on .* that is'
-                ' still active.'):
+                ' still active.')
+            with expected_exc:
                 first_mp.resubmit(first_mp.registrant)
+            self.assertEqual(
+                second_mp, expected_exc.caught_exc.existing_proposal)
             self.assertEqual(
                 BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
 
