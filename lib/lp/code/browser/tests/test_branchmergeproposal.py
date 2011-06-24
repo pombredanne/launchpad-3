@@ -28,7 +28,10 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.messages.model.message import MessageSet
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -609,11 +612,11 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         with person_logged_in(first_bmp.target_branch.owner):
             first_bmp.resubmit(first_bmp.registrant)
         self.resubmitDefault(view)
-        (notification,) = [
-            n.message for n in view.request.response.notifications]
+        (notification,) = view.request.response.notifications
         self.assertThat(
-            notification, MatchesRegex('Cannot resubmit because <a href=.*>'
-            'another proposal</a> is already active.'))
+            notification.message, MatchesRegex('Cannot resubmit because'
+            ' <a href=.*>a similar merge proposal</a> is already active.'))
+        self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
 
 
 class TestResubmitBrowser(BrowserTestCase):

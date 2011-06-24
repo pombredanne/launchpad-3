@@ -1023,7 +1023,7 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 data['break_link'])
         except BranchMergeProposalExists as e:
             message = structured(
-                'Cannot resubmit because <a href="%(url)s">another'
+                'Cannot resubmit because <a href="%(url)s">a similar merge'
                 ' proposal</a> is already active.',
                 url=canonical_url(e.existing_proposal))
             self.request.response.addErrorNotification(message)
