@@ -241,7 +241,7 @@ class InitializeDistroSeries:
         self._copy_packaging_links()
 
     @classmethod
-    def _use_cloner(self, target_archive, archive, distroseries):
+    def _use_cloner(cls, target_archive, archive, distroseries):
         """Returns True if it's safe to use the packagecloner (as opposed
         to using the packagecopier).
         We use two different ways to copy packages:
