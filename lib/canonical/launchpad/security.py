@@ -1449,7 +1449,7 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return permissions.any()
+        return not permissions.is_empty()
 
 
 class EditPackageCopyJob(AuthorizationBase):
@@ -1460,7 +1460,7 @@ class EditPackageCopyJob(AuthorizationBase):
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.target_archive, user.person)
-        return permissions.any()
+        return not permissions.is_empty()
 
 
 class EditPackageUpload(AdminByAdminsTeam):
