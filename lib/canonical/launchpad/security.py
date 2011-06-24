@@ -175,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobEdit
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -1448,7 +1449,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return permissions.count() > 0
+        return permissions.any()
+
+
+class EditPackageCopyJob(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPackageCopyJobEdit
+
+    def checkAuthenticated(self, user):
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.target_archive, user.person)
+        return permissions.any()
 
 
 class EditPackageUpload(AdminByAdminsTeam):

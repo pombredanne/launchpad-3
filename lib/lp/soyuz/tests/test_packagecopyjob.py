@@ -10,6 +10,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
@@ -823,9 +824,15 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             self.assertEqual(
                 policy, naked_job.getPolicyImplementation().enum_value)
 
+    def test_extendMetadata_is_privileged(self):
+        pcj = self.factory.makePlainPackageCopyJob()
+        self.assertRaises(
+            ForbiddenAttribute, getattr, pcj, "extendMetadata")
 
-class TestPlainPackageCopyJobPrivileges(TestCaseWithFactory, LocalTestHelper):
-    """Test that `PlainPackageCopyJob` has the privileges it needs.
+
+class TestPlainPackageCopyJobDbPrivileges(TestCaseWithFactory,
+                                          LocalTestHelper):
+    """Test that `PlainPackageCopyJob` has the database privileges it needs.
 
     This test looks for errors, not failures.  It's here only to see that
     these operations don't run into any privilege limitations.

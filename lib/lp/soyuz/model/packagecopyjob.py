@@ -380,7 +380,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         metadata_dict = dict(
             component_override=component,
             section_override=section)
-        removeSecurityProxy(self.context).extendMetadata(metadata_dict)
+        self.context.extendMetadata(metadata_dict)
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""

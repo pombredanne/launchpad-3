@@ -926,12 +926,14 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobView"/>
+      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobView" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
     </class>
 
