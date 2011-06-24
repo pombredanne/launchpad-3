@@ -742,7 +742,6 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
     # makeSourcePackageUpload
     def test_makeSourcePackageUpload_makes_proxied_IPackageUpload(self):
         pu = self.factory.makeSourcePackageUpload()
-        pu.concrete_package_copy_job
         self.assertThat(pu, ProvidesAndIsProxied(IPackageUpload))
 
     def test_makeSourcePackageUpload_creates_source(self):
