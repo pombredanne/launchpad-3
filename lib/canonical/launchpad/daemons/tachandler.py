@@ -25,6 +25,7 @@ from lp.services.osutils import (
     kill_by_pidfile,
     remove_if_exists,
     two_stage_kill,
+    until_no_eintr,
     )
 
 
@@ -85,9 +86,7 @@ class TacTestSetup(Fixture):
         proc = subprocess.Popen(args, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
         self.addCleanup(self.killTac)
-        # XXX: JonathanLange 2008-03-19: This can raise EINTR. We should
-        # really catch it and try again if that happens.
-        stdout = proc.stdout.read()
+        stdout = until_no_eintr(10, proc.stdout.read)
         if stdout:
             raise TacException('Error running %s: unclean stdout/err: %s'
                                % (args, stdout))

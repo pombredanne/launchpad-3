@@ -27,7 +27,7 @@ hence if the display will be the date.
 First, let's bring in some dependencies:
 
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
 

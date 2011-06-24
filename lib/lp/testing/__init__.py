@@ -154,8 +154,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-# canonical.launchpad.ftests expects test_tales to be imported from here.
-# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
