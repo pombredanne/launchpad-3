@@ -239,10 +239,6 @@ def get_qa_clause(bugs, no_qa=False, incremental=False, rollback=None):
 def get_email(person):
     """Get the preferred email address for 'person'."""
     email_object = person.preferred_email_address
-    # XXX: JonathanLange 2009-09-24 bug=319432: This raises a very obscure
-    # error when the email address isn't set. e.g. with name12 in the sample
-    # data. e.g. "httplib2.RelativeURIError: Only absolute URIs are allowed.
-    # uri = tag:launchpad.net:2008:redacted".
     return email_object.email
 
 

@@ -40,13 +40,18 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
             'field.actions.save': 'Save',
             }
 
-    def test_view_attributes(self):
-        component = self.factory.makeBugTrackerComponent(
-            u'Example', self.comp_group)
+    def _makeComponent(self, name):
+        return self.factory.makeBugTrackerComponent(name, self.comp_group)
+
+    def _makeUbuntuSourcePackage(self, package_name):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
-        package = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='example', distribution=distro)
-        form = self._makeForm(package)
+        return self.factory.makeDistributionSourcePackage(
+            sourcepackagename=package_name, distribution=distro)
+
+    def test_view_attributes(self):
+        component = self._makeComponent(u'Example')
+        dsp = self._makeUbuntuSourcePackage('example')
+        form = self._makeForm(dsp)
         view = create_initialized_view(
             component, name='+edit', form=form)
         label = 'Link a distribution source package to Example component'
@@ -58,33 +63,37 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual(url, view.cancel_url)
 
     def test_linking(self):
-        component = self.factory.makeBugTrackerComponent(
-            u'Example', self.comp_group)
-        distro = getUtility(IDistributionSet).getByName('ubuntu')
-        package = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='example', distribution=distro)
+        component = self._makeComponent(u'Example')
+        dsp = self._makeUbuntuSourcePackage('example')
+        form = self._makeForm(dsp)
 
         self.assertIs(None, component.distro_source_package)
-        form = self._makeForm(package)
+        view = create_initialized_view(
+            component, name='+edit', form=form)
+        self.assertEqual(dsp, component.distro_source_package)
+
+    def test_linking_notifications(self):
+        component = self._makeComponent(u'Example')
+        dsp = self._makeUbuntuSourcePackage('example')
+        form = self._makeForm(dsp)
+
         view = create_initialized_view(
             component, name='+edit', form=form)
         self.assertEqual([], view.errors)
-
         notifications = view.request.response.notifications
-        self.assertEqual(component.distro_source_package, package)
-        expected = (
-            u"alpha:Example is now linked to the example "
-            "source package in ubuntu.")
-        self.assertEqual(expected, notifications.pop().message)
+        expected = """
+            alpha:Example is now linked to the example
+            source package in ubuntu."""
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, notifications.pop().message)
 
     def test_unlinking(self):
-        component = self.factory.makeBugTrackerComponent(
-            u'Example', self.comp_group)
+        component = self._makeComponent(u'Example')
         distro = getUtility(IDistributionSet).getByName('ubuntu')
-        dsp = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='example', distribution=distro)
+        dsp = self._makeUbuntuSourcePackage('example')
         component.distro_source_package = dsp
         form = self._makeForm(None)
+
         view = create_initialized_view(
             component, name='+edit', form=form)
         self.assertEqual([], view.errors)
@@ -94,31 +103,27 @@ class BugTrackerEditComponentViewTextCase(TestCaseWithFactory):
         self.assertEqual(expected, notifications.pop().message)
 
     def test_cannot_doublelink_sourcepackages(self):
-        # Two components try linking to same package
-        component_a = self.factory.makeBugTrackerComponent(
-            u'a', self.comp_group)
-        component_b = self.factory.makeBugTrackerComponent(
-            u'b', self.comp_group)
-        distro = getUtility(IDistributionSet).getByName('ubuntu')
-        package = self.factory.makeDistributionSourcePackage(
-            sourcepackagename='example', distribution=distro)
-
+        # Two components try linking to same same package
+        #
+        # We must maintain a one-to-one relationship between components
+        # and source packages.  However, users are bound to attempt to try
+        # to make multiple components linked to the same source package,
+        # so the view needs to be sure to not allow this to be done and
+        # pop up a friendly error message instead.
+        component_a = self._makeComponent(u'a')
+        component_b = self._makeComponent(u'b')
+        package = self._makeUbuntuSourcePackage('example')
         form = self._makeForm(package)
-        view = create_initialized_view(
-            component_a, name='+edit', form=form)
-        notifications = view.request.response.notifications
-        self.assertEqual([], view.errors)
-        self.assertEqual(1, len(notifications))
-        self.assertEqual(package, component_a.distro_source_package)
 
-        form = self._makeForm(package)
+        component_a.distro_source_package = package
         view = create_initialized_view(
             component_b, name='+edit', form=form)
         self.assertIs(None, component_b.distro_source_package)
         self.assertEqual([], view.errors)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected = (
-            "The example source package is already linked to "
-            "alpha:a in ubuntu.")
-        self.assertEqual(expected, notifications.pop().message)
+        expected = """
+            The example source package is already linked to
+            alpha:a in ubuntu."""
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, notifications.pop().message)
