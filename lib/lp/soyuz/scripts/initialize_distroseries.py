@@ -313,11 +313,23 @@ class InitializeDistroSeries:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
 
-                # If the destination series is empty, we can use the package
-                # cloner because there is no conflict possible.
-                if (target_archive is None or
-                    target_archive.getPublishedSources(
-                        distroseries=self.distroseries).is_empty()):
+                # We use two different ways to copy packages:
+                # - the packagecloner: fast but not conflict safe.
+                # - the packagecopier: slow but performs lots of checks to
+                # avoid creating conflicts.
+                #
+                # 1a. If the archives are different and the target archive is
+                # empty use the cloner.
+                # 1b. if the archives are the same and the target series is
+                # empty use the cloner.
+                # 2. otherwise use the copier.
+
+                # 1a and 1b.
+                if ((target_archive != archive and
+                     target_archive.getPublishedSources().is_empty()) or
+                    (target_archive == archive and
+                     target_archive.getPublishedSources(
+                         distroseries=self.distroseries).is_empty())):
                     origin = PackageLocation(
                         archive, parent.distribution, parent,
                         PackagePublishingPocket.RELEASE)
@@ -333,10 +345,8 @@ class InitializeDistroSeries:
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
                         proc_families, spns, self.rebuild)
+                # 2.
                 else:
-                    # If the destination archive is *not* empty, we use the
-                    # package copier to avoid conflicts.
-
                     # There is only one available pocket in an unreleased
                     # series.
                     pocket = PackagePublishingPocket.RELEASE
