@@ -894,8 +894,7 @@ class PackageUpload(SQLBase):
             component.name for component in allowed_components]
         if copy_job.component_name not in allowed_component_names:
             raise QueueInconsistentStateError(
-                "No rights to override from %s to %s" % (
-                    copy_job.component_name, new_component.name))
+                "No rights to override from %s" % copy_job.component_name)
         copy_job.addSourceOverride(SourceOverride(
             copy_job.package_name, new_component, new_section))
 
@@ -912,8 +911,7 @@ class PackageUpload(SQLBase):
                 # The old component is not in the list of allowed components
                 # to override.
                 raise QueueInconsistentStateError(
-                    "No rights to override from %s to %s" % (
-                        old_component.name, new_component.name))
+                    "No rights to override from %s" % old_component.name)
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
             made_changes = True
@@ -952,16 +950,18 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
+        if new_component not in allowed_components:
+            raise QueueInconsistentStateError(
+                "No rights to override to %s" % new_component.name)
+
         for build in self.builds:
             for binarypackage in build.build.binarypackages:
-                if (new_component not in allowed_components or
-                    binarypackage.component not in allowed_components):
+                if binarypackage.component not in allowed_components:
                     # The old or the new component is not in the list of
                     # allowed components to override.
                     raise QueueInconsistentStateError(
-                        "No rights to override from %s to %s" % (
-                            binarypackage.component.name,
-                            new_component.name))
+                        "No rights to override from %s" % (
+                            binarypackage.component.name))
                 binarypackage.override(
                     component=new_component,
                     section=new_section,
