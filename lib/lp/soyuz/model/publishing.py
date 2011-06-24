@@ -35,7 +35,7 @@ from storm.expr import (
     Or,
     Sum,
     )
-from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
 from storm.zope import IResultSet
 from zope.component import getUtility
@@ -1341,11 +1341,11 @@ class PublishingSet:
         if binaries is None:
             return
 
-        if type(binaries) == list:
+        if type(removeSecurityProxy(binaries)) == list:
             if len(binaries) == 0:
                 return
         else:
-            if type(binaries) == SQLObjectResultSet:
+            if ISQLObjectResultSet.providedBy(binaries):
                 # Adapt to ResultSet
                 binaries = IResultSet(binaries)
             if binaries.is_empty():
