@@ -967,11 +967,12 @@ This example uses a subscription of SteveA.
     >>> print subscription['person_link']
     http://.../~stevea
 
-Salgado is the webservice user and cannot unsubscribe SteveA.
+Salgado is the webservice user who performed the original subscription and so
+can unsubscribe SteveA.
 
     >>> print webservice.named_get(
     ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
-    False
+    True
 
 
 Unsubscribing From Duplicates

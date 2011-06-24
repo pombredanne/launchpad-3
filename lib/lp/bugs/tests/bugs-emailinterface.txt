@@ -793,10 +793,11 @@ unsubscribed. Examples:
 If the user sending the email does not have permission to perform
 the unsubscribe request, an error message wil be sent.
 
+    >>> login(sampledata.NO_PRIVILEGE_EMAIL)
     >>> submit_commands(bug_four, 'unsubscribe mark')
     >>> print_latest_email()
     Subject: Submit Request Failure
-    To: test@canonical.com
+    To: no-priv@canonical.com
     <BLANKLINE>
     ...
     You do not have permission to unsubcribe Mark Shuttleworth.
