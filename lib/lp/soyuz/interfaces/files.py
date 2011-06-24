@@ -14,6 +14,7 @@ __all__ = [
     'ISourcePackageReleaseFileSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -21,6 +22,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class IBinaryPackageFile(Interface):
@@ -57,11 +59,16 @@ class ISourcePackageReleaseFile(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    sourcepackagerelease = Int(
-            title=_('The sourcepackagerelease being published'),
+
+    sourcepackagerelease = Reference(
+        ISourcePackageRelease,
+        title=_("The source package release being published"),
+        required=True, readonly=False)
+
+    sourcepackagereleaseID = Int(
+            title=_('ID of the source package release being published'),
             required=True,
-            readonly=False,
-            )
+            readonly=False)
 
     libraryfile = Int(
             title=_('The library file alias for this file'), required=True,

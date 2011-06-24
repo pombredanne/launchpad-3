@@ -96,7 +96,12 @@ class IPackaging(IHasOwner):
 
     def userCanDelete():
         """True, if the current user is allowed to delete this packaging,
-        else False."""
+        else False.
+
+        People who created the packaging can delete it, as well as
+        people with upload rights for a source package, distribution
+        owners, members of the registry team and LP admin team.
+        """
 
 
 class IPackagingUtil(Interface):

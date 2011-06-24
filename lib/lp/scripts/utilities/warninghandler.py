@@ -158,9 +158,7 @@ def launchpad_showwarning(message, category, filename, lineno, file=None,
     if file is None:
         file = sys.stderr
     stream = StringIO.StringIO()
-    # XXX: JonathanLange 2010-07-27: When Launchpad ceases supporting Python
-    # 2.5, pass on the optional 'line' parameter.
-    old_show_warning(message, category, filename, lineno, stream)
+    old_show_warning(message, category, filename, lineno, stream, line=line)
     warning_message = stream.getvalue()
     important_info = find_important_info()
 

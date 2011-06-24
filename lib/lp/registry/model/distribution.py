@@ -30,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import (
-    EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
@@ -1396,9 +1395,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # effort to find a package.
             publishing = IStore(SourcePackagePublishingHistory).find(
                 SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                # We use an extra query to get the IDs instead of an
+                # inner join on archive because of the skewness in the
+                # archive data. (There are many, many PPAs to consider
+                # and PostgreSQL picks a bad query plan resulting in
+                # timeouts).
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename == sourcepackagename,
@@ -1429,9 +1432,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                BinaryPackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                # See comment above for rationale for using an extra query 
+                # instead of an inner join. (Bottom line, it would time out
+                # otherwise.)
+                BinaryPackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 BinaryPackagePublishingHistory.binarypackagereleaseID ==
                     BinaryPackageRelease.id,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
@@ -1850,11 +1855,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def has_published_sources(self):
-        archives_sources = EmptyResultSet()
         for archive in self.all_distro_archives:
-            archives_sources = archives_sources.union(
-                archive.getPublishedSources())
-        return not archives_sources.is_empty()
+            if not archive.getPublishedSources().order_by().is_empty():
+                return True
+        return False
 
 
 class DistributionSet:
