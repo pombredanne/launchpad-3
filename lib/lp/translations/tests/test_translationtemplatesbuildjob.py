@@ -156,6 +156,8 @@ class FakeTranslationTemplatesJobSource(TranslationTemplatesBuildJob):
     behavior by setting an attribute of the class (not an object!) at
     the beginning of every test.
     """
+    class_job_type = None
+
     # Fake _hasPotteryCompatibleSetup, and if so, make it give what
     # answer?
     fake_pottery_compatibility = None

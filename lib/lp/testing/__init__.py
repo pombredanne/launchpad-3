@@ -894,7 +894,7 @@ class WebServiceTestCase(TestCaseWithFactory):
 
         :param obj: The object to find the launchpadlib equivalent of.
         :param user: The user to use for accessing the object over
-            lauchpadlib.  Defaults to an arbitrary logged-in user.
+            launchpadlib.  Defaults to an arbitrary logged-in user.
         """
         if user is not None:
             service = self.factory.makeLaunchpadService(
