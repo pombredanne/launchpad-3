@@ -40,7 +40,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -79,8 +79,8 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
-	    --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
