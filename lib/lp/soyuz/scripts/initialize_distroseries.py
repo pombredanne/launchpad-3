@@ -306,16 +306,16 @@ class InitializeDistroSeries:
                     # lead to a partially initialised series if there is a
                     # single conflict in the destination series.
                     try:
-                       sources_published = do_copy(
+                        sources_published = do_copy(
                             sources, target_archive, self.distroseries,
                             pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False)
-                       if self.rebuild:
+                        if self.rebuild:
                             for pubrec in sources_published:
                                 pubrec.createMissingBuilds()
 
-                    except CannotCopy:
-                        pass
+                    except CannotCopy, error:
+                        raise InitializationError(error)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents
