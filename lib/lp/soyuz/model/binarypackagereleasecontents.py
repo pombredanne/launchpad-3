@@ -44,7 +44,7 @@ class BinaryPackageReleaseContents(Storm):
     def add(self, bpr):
         """See `IBinaryPackageReleaseContentsSet`."""
         if not bpr.files:
-            return None
+            return False
         store = IMasterStore(BinaryPackageReleaseContents)
         with tempfile.NamedTemporaryFile() as dest_file:
             bpr.files[0].libraryfile.open()
@@ -60,6 +60,7 @@ class BinaryPackageReleaseContents(Storm):
             bprc.binarypackagerelease = bpr
             bprc.binarypackagepath = bpp
             store.add(bprc)
+        return True
 
     def remove(self, bpr):
         """See `IBinaryPackageReleaseContentsSet`."""

@@ -34,6 +34,8 @@ class IBinaryPackageReleaseContentsSet(Interface):
         """Add the contents of the given binary package release.
 
         :param: bpr: The `IBinaryPackageRelease` to add.
+
+        :return: True on success, False on failure.
         """
 
     def remove(bpr):
