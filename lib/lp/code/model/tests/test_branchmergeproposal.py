@@ -1660,7 +1660,8 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
             original.registrant, break_link=True)
         self.assertIs(None, original.superseded_by)
 
-    def test_resumit_on_inactive_retains_state(self):
+    def test_resumit_with_active_retains_state(self):
+        """Resubmit does not change proposal if an active proposal exists."""
         first_mp = self.factory.makeBranchMergeProposal()
         with person_logged_in(first_mp.registrant):
             first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
@@ -1679,6 +1680,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
                 BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
 
     def test_resumit_on_inactive_retains_state_new_branches(self):
+        """Resubmit with branches doesn't change proposal."""
         first_mp = self.factory.makeBranchMergeProposal()
         with person_logged_in(first_mp.registrant):
             first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
