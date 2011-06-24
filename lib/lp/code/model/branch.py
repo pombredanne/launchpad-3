@@ -421,8 +421,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         target = BranchMergeProposalGetter.activeProposalsForBranches(
             self, target_branch)
-        if target.count() > 0:
-            raise BranchMergeProposalExists(target.any())
+        for existing_proposal in target:
+            raise BranchMergeProposalExists(existing_proposal)
 
         if date_created is None:
             date_created = UTC_NOW
