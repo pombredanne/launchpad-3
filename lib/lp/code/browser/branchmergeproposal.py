@@ -80,7 +80,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.menu import NavigationMenu, structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -102,6 +102,7 @@ from lp.code.enums import (
     CodeReviewVote,
     )
 from lp.code.errors import (
+    BranchMergeProposalExists,
     ClaimReviewFailed,
     WrongBranchMergeProposal,
     )
@@ -1015,10 +1016,19 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(
-            self.user, data['source_branch'], data['target_branch'],
-            data['prerequisite_branch'], data['description'],
-            data['break_link'])
+        try:
+            proposal = self.context.resubmit(
+                self.user, data['source_branch'], data['target_branch'],
+                data['prerequisite_branch'], data['description'],
+                data['break_link'])
+        except BranchMergeProposalExists as e:
+            message = structured(
+                'Cannot resubmit because <a href="%(url)s">another'
+                ' proposal</a> is already active.',
+                url=canonical_url(e.existing_proposal))
+            self.request.response.addErrorNotification(message)
+            self.next_url = canonical_url(self.context)
+            return None
         self.next_url = canonical_url(proposal)
         return proposal
 
