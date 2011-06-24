@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     "PackageCopyJob",
     "PlainPackageCopyJob",
-]
+    ]
 
 from lazr.delegates import delegates
 import simplejson
