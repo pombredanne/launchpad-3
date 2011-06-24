@@ -2029,6 +2029,8 @@ class DistributionSourcePackageVocabulary:
                 SourcePackagePublishingHistory.status.is_in((
                     PackagePublishingStatus.PENDING,
                     PackagePublishingStatus.PUBLISHED)),
+                SourcePackagePublishingHistory.archive ==
+                    distribution.main_archive,
                 Or(
                     SourcePackageName.name.like(search_term),
                     BinaryPackageName.name.like(search_term))).config(
