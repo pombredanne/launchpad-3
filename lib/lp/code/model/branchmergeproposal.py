@@ -29,7 +29,6 @@ from storm.expr import (
     Select,
     SQL,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -662,9 +661,11 @@ class BranchMergeProposal(SQLBase):
             LIMIT 10)""" % self.source_branch.id)
         where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
             BranchRevision AS target where target.branch = %s and
-            BranchRevision.revision = target.revision)""" % self.target_branch.id)
+            BranchRevision.revision = target.revision)""" %
+            self.target_branch.id)
         using = SQL("""source as BranchRevision""")
-        revisions = store.with_(source).using(using).find(BranchRevision, where)
+        revisions = store.with_(source).using(using).find(
+            BranchRevision, where)
         return list(revisions.order_by(
             Desc(BranchRevision.sequence)).config(limit=10))
 
