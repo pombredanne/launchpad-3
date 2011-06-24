@@ -700,7 +700,7 @@ link should appear linked. The request is also set as the menu's
 
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> from canonical.launchpad.webapp import LaunchpadView
     >>> from canonical.launchpad.webapp.vhosts import allvhosts
     >>> class FakeRequest:
