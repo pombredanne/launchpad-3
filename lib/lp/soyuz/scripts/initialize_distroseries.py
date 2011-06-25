@@ -51,6 +51,18 @@ class InitializeDistroSeries:
     includes all configuration for distroseries as well as distroarchseries,
     publishing and all publishing records for sources and binaries.
 
+    We support 2 use cases here:
+      #1 If the child distribution has zero initialized series:
+        - the parent list can't be empty (otherwise we trigger an error);
+        - the series will be derived from the parents passed as argument;
+        - the parents will be set to the parents passed as argument;
+        - first_derivation = True.
+      #2 If the child distribution has more than zero initialized series:
+        - the series will be derived from the previous_series;
+        - the parents will be set to the parents passed as argument or
+          the parents of the previous_series if the passed argument is empty;
+        - first_derivation = False.
+
     Preconditions:
       The distroseries must exist, and be completly unused, with no source
       or binary packages existing, as well as no distroarchseries set up.
@@ -75,7 +87,7 @@ class InitializeDistroSeries:
     """
 
     def __init__(
-        self, distroseries, parents, arches=(), packagesets=(),
+        self, distroseries, parents=(), arches=(), packagesets=(),
         rebuild=False, overlays=(), overlay_pockets=(),
         overlay_components=()):
         # Avoid circular imports
@@ -98,17 +110,45 @@ class InitializeDistroSeries:
         self.overlay_components = overlay_components
         self._store = IMasterStore(DistroSeries)
 
+        self.first_derivation = (
+            not self.distroseries.distribution.has_published_sources)
+        if self.first_derivation:
+            # Use-case #1.
+            self.derivation_parents = self.parents
+            self.derivation_parent_ids = self.parent_ids
+        else:
+            # Use-case #2.
+            self.derivation_parents = [self.distroseries.previous_series]
+            self.derivation_parent_ids = [
+                p.id for p in self.derivation_parents]
+            if self.parent_ids == []:
+                self.parents = (
+                    self.distroseries.previous_series.getParentSeries())
+
     def check(self):
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
                 ("DistroSeries {child.name} has already been initialized"
                  ".").format(
                     child=self.distroseries))
-        for parent in self.parents:
+        self._checkParents()
+        for parent in self.derivation_parents:
             if self.distroseries.distribution.id == parent.distribution.id:
                 self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+
+    def _checkParents(self):
+        """If self.first_derivation, the parents list cannot be empty."""
+        if self.first_derivation:
+            # Use-case #1.
+            if len(self.parent_ids) == 0:
+                raise InitializationError(
+                    ("Distroseries {child.name} cannot be initialized: "
+                     "No other series in the distribution is initialized "
+                     "and no parent was passed to the initilization method"
+                     ".").format(
+                        child=self.distroseries))
 
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
@@ -195,11 +235,12 @@ class InitializeDistroSeries:
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
-            parent.backports_not_automatic for parent in self.parents)
+            parent.backports_not_automatic
+                for parent in self.derivation_parents)
 
     def _copy_architectures(self):
         das_filter = ' AND distroseries IN %s ' % (
-                sqlvalues(self.parent_ids))
+                sqlvalues([p.id for p in self.derivation_parents]))
         if self.arches:
             das_filter += ' AND architecturetag IN %s ' % (
                 sqlvalues(self.arches))
@@ -215,7 +256,7 @@ class InitializeDistroSeries:
         self._store.flush()
         # Take nominatedarchindep from the first parent.
         self.distroseries.nominatedarchindep = self.distroseries[
-            self.parents[0].nominatedarchindep.architecturetag]
+            self.derivation_parents[0].nominatedarchindep.architecturetag]
 
     def _copy_packages(self):
         # Perform the copies
@@ -224,7 +265,7 @@ class InitializeDistroSeries:
         # Prepare the lists of distroarchseries for which binary packages
         # shall be copied.
         distroarchseries_lists = {}
-        for parent in self.parents:
+        for parent in self.derivation_parents:
             distroarchseries_lists[parent] = []
             for arch in self.distroseries.architectures:
                 if self.arches and (arch.architecturetag not in self.arches):
@@ -282,7 +323,7 @@ class InitializeDistroSeries:
                 pkgset = self._store.get(Packageset, int(pkgsetid))
                 spns += list(pkgset.getSourcesIncluded())
 
-        for parent in self.parents:
+        for parent in self.derivation_parents:
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
                 if archive.purpose not in (
@@ -344,14 +385,14 @@ class InitializeDistroSeries:
             SELECT DISTINCT %s AS distroseries, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distroseries IN %s
             ''' % sqlvalues(self.distroseries.id,
-            self.parent_ids))
+            self.derivation_parent_ids))
         # Copy the section selections
         self._store.execute('''
             INSERT INTO SectionSelection (distroseries, section)
             SELECT DISTINCT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries IN %s
             ''' % sqlvalues(self.distroseries.id,
-            self.parent_ids))
+            self.derivation_parent_ids))
         # Copy the source format selections
         self._store.execute('''
             INSERT INTO SourcePackageFormatSelection (distroseries, format)
@@ -359,13 +400,13 @@ class InitializeDistroSeries:
             FROM SourcePackageFormatSelection AS spfs
             WHERE spfs.distroseries IN %s
             ''' % sqlvalues(self.distroseries.id,
-            self.parent_ids))
+            self.derivation_parent_ids))
 
     def _copy_packaging_links(self):
         """Copy the packaging links from the parent series to this one."""
         # We iterate over the parents and copy into the child in
         # sequence to avoid creating duplicates.
-        for parent_id in self.parent_ids:
+        for parent_id in self.derivation_parent_ids:
             self._store.execute("""
                 INSERT INTO
                     Packaging(
@@ -414,11 +455,11 @@ class InitializeDistroSeries:
         from lp.registry.model.distroseries import DistroSeries
 
         packagesets = self._store.find(
-            Packageset, DistroSeries.id.is_in(self.parent_ids))
+            Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         parent_distro_ids = [
-            parent.distribution.id for parent in self.parents]
+            parent.distribution.id for parent in self.derivation_parents]
         for parent_ps in packagesets:
             # Cross-distro initializations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.

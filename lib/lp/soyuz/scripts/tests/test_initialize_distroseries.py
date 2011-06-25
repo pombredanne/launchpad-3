@@ -116,7 +116,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         source.createMissingBuilds()
         child = self.factory.makeDistroSeries(
-            distribution=self.parent.parent)
+            distribution=self.parent.parent, previous_series=self.parent)
         ids = InitializeDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitializationError, "Parent series has pending builds.",
@@ -188,11 +188,13 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _fullInitialize(self, parents, child=None, arches=(), packagesets=(),
-                        rebuild=False, distribution=None, overlays=(),
+    def _fullInitialize(self, parents, child=None, previous_series=None,
+                        arches=(), packagesets=(), rebuild=False,
+                        distribution=None, overlays=(),
                         overlay_pockets=(), overlay_components=()):
         if child is None:
-            child = self.factory.makeDistroSeries(distribution=distribution)
+            child = self.factory.makeDistroSeries(
+                distribution=distribution, previous_series=previous_series)
         ids = InitializeDistroSeries(
             child, [parent.id for parent in parents], arches, packagesets,
             rebuild, overlays, overlay_pockets, overlay_components)
@@ -277,7 +279,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_packageset_owner_preserved_within_distro(self):
         # When initializing a new series within a distro, the copied
         # packagesets have ownership preserved.
-        self.parent, self.parent_das = self.setupParent()
+        self.parent, self.parent_das = self.setupParent(packages={})
         ps_owner = self.factory.makePerson()
         getUtility(IPackagesetSet).new(
             u'ps', u'packageset', ps_owner, distroseries=self.parent)
@@ -397,12 +399,12 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         test1.addSources('udev')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
-        # The child must have a parent series because initialize-from-parent
-        # expects it; this script supports the old-style derivation of
-        # distribution series where the parent series is specified at the time
-        # of adding the series. New-style derivation leaves the specification
-        # of the parent series until later.
         child = self.factory.makeDistroSeries(previous_series=self.parent)
+        # Create an initialized series in the distribution.
+        other_series = self.factory.makeDistroSeries(
+            distribution=child.parent)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_series)
         transaction.commit()
         ifp = os.path.join(
             config.root, 'scripts', 'ftpmaster-tools',
@@ -620,6 +622,92 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             InitializationError, self._fullInitialize,
             [self.parent1, self.parent2])
 
+    def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
+                                      publish_in_distribution=True):
+        # Helper method to create a series within an initialized
+        # distribution (i.e. that has an initialized series) with a
+        # 'previous_series' with parents.
+
+        # Create a previous_series derived from 2 parents.
+        previous_series = self._fullInitialize(previous_parents)
+
+        child = self.factory.makeDistroSeries(previous_series=previous_series)
+
+        # Add a publishing in another series from this distro.
+        other_series = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+        if publish_in_distribution:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=other_series)
+
+        return child
+
+    def test_derive_from_previous_parents(self):
+        # If the series to be initialized is in a distribution with
+        # initialized series, the series is *derived* from
+        # the previous_series' parents.
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        parent, unused = self.setupParent()
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1, previous_parent2])
+        self._fullInitialize([parent], child=child)
+
+        # The parent for the derived series is the distroseries given as
+        # argument to InitializeSeries.
+        self.assertContentEqual(
+            [parent],
+            child.getParentSeries())
+
+        # The new series has been derived from previous_series.
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        self.assertEquals(2, published_sources.count())
+        pub_sources = sorted(
+            [(s.sourcepackagerelease.sourcepackagename.name,
+              s.sourcepackagerelease.version)
+                for s in published_sources])
+        self.assertEquals(
+            [(u'p1', u'1.2'), (u'p2', u'1.5')],
+            pub_sources)
+
+    def test_derive_from_previous_parents_empty_parents(self):
+        # If an empty list is passed to InitializeDistroSeries, the
+        # parents of the previous series are used as parents.
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        parent, unused = self.setupParent()
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1, previous_parent2])
+        # Initialize from an empty list of parents.
+        self._fullInitialize([], child=child)
+
+        self.assertContentEqual(
+            [previous_parent1, previous_parent2],
+            child.getParentSeries())
+
+    def test_derive_empty_parents_distribution_not_initialized(self):
+        # Initializing a series with an empty parent list if the series'
+        # distribution has no initialized series triggers an error.
+        parent, unused = self.setupParent()
+        previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        child = self.setUpSeriesWithPreviousSeries(
+            parent=parent,
+            previous_parents=[previous_parent1],
+            publish_in_distribution=False)
+
+        # Initialize from an empty list of parents.
+        ids = InitializeDistroSeries(child, [])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("Distroseries {child.name} cannot be initialized: "
+             "No other series in the distribution is initialized "
+             "and no parent was passed to the initilization method"
+             ".").format(child=child),
+             ids.check)
+             
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.
