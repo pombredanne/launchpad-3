@@ -92,6 +92,7 @@ for the ubuntutest distribution.
     >>> factory = LaunchpadObjectFactory()
     >>> debug_archive = factory.makeArchive(
     ...     distribution=breezy.distribution, purpose=ArchivePurpose.DEBUG)
+    >>> breezy.previous_series = breezy_autotest
     >>> ids = InitializeDistroSeries(breezy, [breezy_autotest.id])
     >>> ids.initialize()
     >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
