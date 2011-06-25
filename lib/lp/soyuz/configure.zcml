@@ -167,6 +167,7 @@
                 date_created
                 sourcepackagerelease
                 component_name
+                concrete_package_copy_job
                 contains_source
                 contains_build
                 contains_translation
@@ -915,6 +916,11 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
+        component=".model.packagecopyjob.PackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+    </securedutility>
+    <securedutility
         component=".model.packagecopyjob.PlainPackageCopyJob"
         provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
@@ -922,7 +928,9 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
+      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
