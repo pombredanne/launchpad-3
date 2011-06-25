@@ -512,12 +512,17 @@ class Archive(SQLBase):
             ]
 
         if name is not None:
-            if exact_match:
-                storm_clauses.append(SourcePackageName.name == name)
-            else:
+            if type(name) in (str, unicode):
+                if exact_match:
+                    storm_clauses.append(SourcePackageName.name == name)
+                else:
+                    clauses.append(
+                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                        % quote_like(name))
+            elif len(name) != 0:
                 clauses.append(
-                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                    % quote_like(name))
+                    "SourcePackageName.name IN %s"
+                    % sqlvalues(name))
 
         if version is not None:
             if name is None:

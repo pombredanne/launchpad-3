@@ -27,11 +27,14 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
     InitializeDistroSeries,
@@ -43,40 +46,43 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestInitializeDistroSeries, self).setUp()
-        self.parent = self.factory.makeDistroSeries()
-        pf = self.factory.makeProcessorFamily()
-        pf.addProcessor('x86', '', '')
-        self.parent_das = self.factory.makeDistroArchSeries(
-            distroseries=self.parent, processorfamily=pf)
+    def setupParent(self, packages=None, format_selection=None):
+        parent = self.factory.makeDistroSeries()
+        pf = getUtility(IProcessorFamilySet).getByName('x86')
+        parent_das = self.factory.makeDistroArchSeries(
+            distroseries=parent, processorfamily=pf,
+            architecturetag='i386')
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
-        self.parent_das.addOrUpdateChroot(lf)
-        self.parent_das.supports_virtualized = True
-        self.parent.nominatedarchindep = self.parent_das
+        parent_das.addOrUpdateChroot(lf)
+        parent_das.supports_virtualized = True
+        parent.nominatedarchindep = parent_das
+        if format_selection is None:
+            format_selection = SourcePackageFormat.FORMAT_1_0
         getUtility(ISourcePackageFormatSelectionSet).add(
-            self.parent, SourcePackageFormat.FORMAT_1_0)
-        self.parent.backports_not_automatic = True
-        self._populate_parent()
+            parent, format_selection)
+        parent.backports_not_automatic = True
+        self._populate_parent(parent, parent_das, packages)
+        return parent, parent_das
 
-    def _populate_parent(self):
-        packages = {'udev': '0.1-1', 'libc6': '2.8-1',
-            'postgresql': '9.0-1', 'chromium': '3.6'}
+    def _populate_parent(self, parent, parent_das, packages=None):
+        if packages is None:
+            packages = {'udev': '0.1-1', 'libc6': '2.8-1',
+                'postgresql': '9.0-1', 'chromium': '3.6'}
         for package in packages.keys():
-            spn = self.factory.makeSourcePackageName(package)
+            spn = self.factory.getOrMakeSourcePackageName(package)
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=spn, version=packages[package],
-                distroseries=self.parent,
+                distroseries=parent,
                 pocket=PackagePublishingPocket.RELEASE,
                 status=PackagePublishingStatus.PUBLISHED)
             status = BuildStatus.FULLYBUILT
             if package is 'chromium':
                 status = BuildStatus.FAILEDTOBUILD
-            bpn = self.factory.makeBinaryPackageName(package)
+            bpn = self.factory.getOrMakeBinaryPackageName(package)
             build = self.factory.makeBinaryPackageBuild(
                 source_package_release=spph.sourcepackagerelease,
-                distroarchseries=self.parent_das,
+                distroarchseries=parent_das,
                 status=status)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=bpn, build=build,
@@ -84,13 +90,14 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             if package is not 'chromium':
                 self.factory.makeBinaryPackagePublishingHistory(
                     binarypackagerelease=bpr,
-                    distroarchseries=self.parent_das,
+                    distroarchseries=parent_das,
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
 
     def test_failure_for_already_released_distroseries(self):
         # Initializing a distro series that has already been used will
         # error.
+        self.parent, self.parent_das = self.setupParent()
         child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
         ids = InitializeDistroSeries(child, [self.parent.id])
@@ -103,6 +110,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # If the parent series has pending builds, and the child is a series
         # of the same distribution (which means they share an archive), we
         # can't initialize.
+        self.parent, self.parent_das = self.setupParent()
         source = self.factory.makeSourcePackagePublishingHistory(
             distroseries=self.parent,
             pocket=PackagePublishingPocket.RELEASE)
@@ -117,16 +125,19 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_success_with_pending_builds(self):
         # If the parent series has pending builds, and the child's
         # distribution is different, we can initialize.
+        self.parent, self.parent_das = self.setupParent()
         source = self.factory.makeSourcePackagePublishingHistory(
             distroseries=self.parent,
             pocket=PackagePublishingPocket.RELEASE)
         source.createMissingBuilds()
-        child = self._full_initialize()
-        self.assertDistroSeriesInitializedCorrectly(child)
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_failure_with_queue_items(self):
         # If the parent series has items in its queues, such as NEW and
         # UNAPPROVED, we can't initialize.
+        self.parent, self.parent_das = self.setupParent()
         self.parent.createQueueEntry(
             PackagePublishingPocket.RELEASE, self.parent.main_archive,
             'foo.changes', 'bar')
@@ -136,16 +147,21 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             InitializationError, "Parent series queues are not empty.",
             ids.check)
 
-    def assertDistroSeriesInitializedCorrectly(self, child):
+    def assertDistroSeriesInitializedCorrectly(self, child, parent,
+                                               parent_das):
         # Check that 'udev' has been copied correctly.
-        parent_udev_pubs = self.parent.getPublishedSources('udev')
-        child_udev_pubs = child.getPublishedSources('udev')
+        parent_udev_pubs = parent.main_archive.getPublishedSources(
+            'udev', distroseries=parent)
+        child_udev_pubs = child.main_archive.getPublishedSources(
+            'udev', distroseries=child)
         self.assertEqual(
             parent_udev_pubs.count(), child_udev_pubs.count())
-        parent_arch_udev_pubs = self.parent[
-            self.parent_das.architecturetag].getReleasedPackages('udev')
+        parent_arch_udev_pubs = parent[
+            parent_das.architecturetag].getReleasedPackages(
+                'udev', include_pending=True)
         child_arch_udev_pubs = child[
-            self.parent_das.architecturetag].getReleasedPackages('udev')
+            parent_das.architecturetag].getReleasedPackages(
+                'udev', include_pending=True)
         self.assertEqual(
             len(parent_arch_udev_pubs), len(child_arch_udev_pubs))
         # And the binary package, and linked source package look fine too.
@@ -154,16 +170,16 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertEqual(
             udev_bin.build.title,
             u'%s build of udev 0.1-1 in %s %s RELEASE' % (
-                self.parent_das.architecturetag, self.parent.parent.name,
-                self.parent.name))
+                parent_das.architecturetag, parent.parent.name,
+                parent.name))
         udev_src = udev_bin.build.source_package_release
         self.assertEqual(udev_src.title, u'udev - 0.1-1')
         # The build of udev 0.1-1 has been copied across.
         child_udev = udev_src.getBuildByArch(
-            child[self.parent_das.architecturetag], child.main_archive)
+            child[parent_das.architecturetag], child.main_archive)
         parent_udev = udev_src.getBuildByArch(
-            self.parent[self.parent_das.architecturetag],
-            self.parent.main_archive)
+            parent[parent_das.architecturetag],
+            parent.main_archive)
         self.assertEqual(parent_udev.id, child_udev.id)
         # We also inherit the permitted source formats from our parent.
         self.assertTrue(
@@ -172,30 +188,35 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _full_initialize(self, child=None, arches=(), packagesets=(),
-                         rebuild=False, distribution=None, overlays=(),
-                         overlay_pockets=(), overlay_components=()):
+    def _fullInitialize(self, parents, child=None, arches=(), packagesets=(),
+                        rebuild=False, distribution=None, overlays=(),
+                        overlay_pockets=(), overlay_components=()):
         if child is None:
             child = self.factory.makeDistroSeries(distribution=distribution)
         ids = InitializeDistroSeries(
-            child, [self.parent.id], arches, packagesets, rebuild, overlays,
-            overlay_pockets, overlay_components)
+            child, [parent.id for parent in parents], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
         ids.check()
         ids.initialize()
         return child
 
     def test_initialize(self):
         # Test a full initialize with no errors.
-        child = self._full_initialize()
-        self.assertDistroSeriesInitializedCorrectly(child)
+        self.parent, self.parent_das = self.setupParent()
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_initialize_only_one_das(self):
         # Test a full initialize with no errors, but only copy i386 to
         # the child.
+        self.parent, self.parent_das = self.setupParent()
         self.factory.makeDistroArchSeries(distroseries=self.parent)
-        child = self._full_initialize(
+        child = self._fullInitialize(
+            [self.parent],
             arches=[self.parent_das.architecturetag])
-        self.assertDistroSeriesInitializedCorrectly(child)
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
         das = list(IStore(DistroArchSeries).find(
             DistroArchSeries, distroseries=child))
         self.assertEqual(len(das), 1)
@@ -204,6 +225,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_copying_packagesets(self):
         # If a parent series has packagesets, we should copy them.
+        self.parent, self.parent_das = self.setupParent()
         uploader = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
@@ -217,7 +239,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         test1.addSources('udev')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
-        child = self._full_initialize()
+        child = self._fullInitialize([self.parent])
         # We can fetch the copied sets from the child.
         child_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=child)
@@ -255,10 +277,12 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_packageset_owner_preserved_within_distro(self):
         # When initializing a new series within a distro, the copied
         # packagesets have ownership preserved.
+        self.parent, self.parent_das = self.setupParent()
         ps_owner = self.factory.makePerson()
         getUtility(IPackagesetSet).new(
             u'ps', u'packageset', ps_owner, distroseries=self.parent)
-        child = self._full_initialize(distribution=self.parent.distribution)
+        child = self._fullInitialize(
+            [self.parent], distribution=self.parent.distribution)
         child_ps = getUtility(IPackagesetSet).getByName(
             u'ps', distroseries=child)
         self.assertEqual(ps_owner, child_ps.owner)
@@ -266,10 +290,11 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_packageset_owner_not_preserved_cross_distro(self):
         # In the case of a cross-distro initialization, the new
         # packagesets are owned by the new distro owner.
+        self.parent, self.parent_das = self.setupParent()
         getUtility(IPackagesetSet).new(
             u'ps', u'packageset', self.factory.makePerson(),
             distroseries=self.parent)
-        child = self._full_initialize()
+        child = self._fullInitialize([self.parent])
         child_ps = getUtility(IPackagesetSet).getByName(
             u'ps', distroseries=child)
         self.assertEqual(child.owner, child_ps.owner)
@@ -277,6 +302,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_copy_limit_packagesets(self):
         # If a parent series has packagesets, we can decide which ones we
         # want to copy.
+        self.parent, self.parent_das = self.setupParent()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
@@ -288,7 +314,8 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             test1.addSources(pkg)
         packageset1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=self.parent)
-        child = self._full_initialize(packagesets=(str(packageset1.id),))
+        child = self._fullInitialize(
+            [self.parent], packagesets=(str(packageset1.id),))
         child_test1 = getUtility(IPackagesetSet).getByName(
             u'test1', distroseries=child)
         self.assertEqual(test1.description, child_test1.description)
@@ -301,12 +328,13 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertEqual(parent_srcs, child_srcs)
         child.updatePackageCount()
         self.assertEqual(child.sourcecount, len(packages))
-        self.assertEqual(child.binarycount, 2) # Chromium is FTBFS
+        self.assertEqual(child.binarycount, 2)  # Chromium is FTBFS
 
     def test_rebuild_flag(self):
         # No binaries will get copied if we specify rebuild=True.
+        self.parent, self.parent_das = self.setupParent()
         self.parent.updatePackageCount()
-        child = self._full_initialize(rebuild=True)
+        child = self._fullInitialize([self.parent], rebuild=True)
         child.updatePackageCount()
         builds = child.getBuildRecords(
             build_state=BuildStatus.NEEDSBUILD,
@@ -318,6 +346,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
     def test_limit_packagesets_rebuild_and_one_das(self):
         # We can limit the source packages copied, and only builds
         # for the copied source will be created.
+        self.parent, self.parent_das = self.setupParent()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
             distroseries=self.parent)
@@ -328,7 +357,8 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         for pkg in packages:
             test1.addSources(pkg)
         self.factory.makeDistroArchSeries(distroseries=self.parent)
-        child = self._full_initialize(
+        child = self._fullInitialize(
+            [self.parent],
             arches=[self.parent_das.architecturetag],
             packagesets=(str(test1.id),), rebuild=True)
         child.updatePackageCount()
@@ -346,10 +376,11 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_do_not_copy_disabled_dases(self):
         # DASes that are disabled in the parent will not be copied.
+        self.parent, self.parent_das = self.setupParent()
         ppc_das = self.factory.makeDistroArchSeries(
             distroseries=self.parent)
         ppc_das.enabled = False
-        child = self._full_initialize()
+        child = self._fullInitialize([self.parent])
         das = list(IStore(DistroArchSeries).find(
             DistroArchSeries, distroseries=child))
         self.assertEqual(len(das), 1)
@@ -358,6 +389,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_script(self):
         # Do an end-to-end test using the command-line tool.
+        self.parent, self.parent_das = self.setupParent()
         uploader = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
             u'test1', u'test 1 packageset', self.parent.owner,
@@ -385,12 +417,14 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
         transaction.commit()
-        self.assertDistroSeriesInitializedCorrectly(child)
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_is_initialized(self):
         # At the end of the initialization, the distroseriesparent is marked
         # as 'initialized'.
-        child = self._full_initialize(rebuild=True, overlays=())
+        self.parent, self.parent_das = self.setupParent()
+        child = self._fullInitialize([self.parent], rebuild=True, overlays=())
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             child, self.parent)
@@ -399,7 +433,8 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_no_overlays(self):
         # Without the overlay parameter, no overlays are created.
-        child = self._full_initialize(rebuild=True, overlays=[])
+        self.parent, self.parent_das = self.setupParent()
+        child = self._fullInitialize([self.parent], rebuild=True, overlays=[])
         dsp_set = getUtility(IDistroSeriesParentSet)
         distroseriesparent = dsp_set.getByDerivedAndParentSeries(
             child, self.parent)
@@ -408,21 +443,242 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
 
     def test_setup_overlays(self):
         # If the overlay parameter is passed, overlays are properly setup.
-        child = self.factory.makeDistroSeries()
-        overlays = [True]
-        overlay_pockets = ['Updates']
-        overlay_components = ['universe']
-        child = self._full_initialize(
-            child=child, rebuild=True, overlays=overlays,
+        self.parent1, notused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            packages={'udev': '0.1-3'})
+
+        overlays = [False, True]
+        overlay_pockets = [None, 'Updates']
+        overlay_components = [None, 'universe']
+        child = self._fullInitialize(
+            [self.parent1, self.parent2], rebuild=True,
+            overlays=overlays,
             overlay_pockets=overlay_pockets,
             overlay_components=overlay_components)
         dsp_set = getUtility(IDistroSeriesParentSet)
-        distroseriesparent = dsp_set.getByDerivedAndParentSeries(
-            child, self.parent)
+        distroseriesparent1 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent1)
+        distroseriesparent2 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent2)
 
-        self.assertTrue(distroseriesparent.is_overlay)
+        self.assertFalse(distroseriesparent1.is_overlay)
+        self.assertTrue(distroseriesparent2.is_overlay)
         self.assertEqual(
             getUtility(IComponentSet)['universe'],
-            distroseriesparent.component)
+            distroseriesparent2.component)
         self.assertEqual(
-            PackagePublishingPocket.UPDATES, distroseriesparent.pocket)
+            PackagePublishingPocket.UPDATES, distroseriesparent2.pocket)
+
+    def test_multiple_parents_initialize(self):
+        self.parent, self.parent_das = self.setupParent()
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'alpha': '0.1-1'})
+        child = self._fullInitialize([self.parent, self.parent2])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
+
+    def test_multiple_parents_ordering(self):
+        # The parents' order is stored.
+        self.parent1, notused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            packages={'udev': '0.1-3'})
+        self.parent3, notused = self.setupParent(
+            packages={'udev': '0.1-2'})
+        child = self._fullInitialize(
+            [self.parent1, self.parent3, self.parent2])
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        distroseriesparent1 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent1)
+        distroseriesparent2 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent2)
+        distroseriesparent3 = dsp_set.getByDerivedAndParentSeries(
+            child, self.parent3)
+
+        self.assertContentEqual(
+            [self.parent1, self.parent3, self.parent2],
+            child.getParentSeries())
+        self.assertEqual(0, distroseriesparent1.ordering)
+        self.assertEqual(1, distroseriesparent3.ordering)
+        self.assertEqual(2, distroseriesparent2.ordering)
+
+    def test_multiple_parent_packagesets_merge(self):
+        # Identical packagesets from the parents are merged as one
+        # packageset in the child.
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'udev': '0.1-1', 'libc6': '2.8-1',
+                'postgresql': '9.0-1', 'chromium': '3.6'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'udev': '0.1-2', 'libc6': '2.8-2',
+                'postgresql': '9.0-2', 'chromium': '3.7'})
+        uploader1 = self.factory.makePerson()
+        uploader2 = self.factory.makePerson()
+        test1_parent1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent1.owner,
+            distroseries=self.parent1)
+        test1_parent2 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent2.owner,
+            distroseries=self.parent2)
+        test1_parent1.addSources('chromium')
+        test1_parent1.addSources('udev')
+        test1_parent2.addSources('udev')
+        test1_parent2.addSources('libc6')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent1.main_archive, uploader1, test1_parent1)
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent2.main_archive, uploader2, test1_parent2)
+        child = self._fullInitialize([self.parent1, self.parent2])
+
+        # In the child, the identical packagesets are merged into one.
+        child_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=child)
+        child_srcs = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        parent1_srcs = test1_parent1.getSourcesIncluded(direct_inclusion=True)
+        parent2_srcs = test1_parent2.getSourcesIncluded(direct_inclusion=True)
+        self.assertContentEqual(
+            set(parent1_srcs).union(set(parent2_srcs)),
+            child_srcs)
+        # The uploaders can also upload to the new distroseries.
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent1.main_archive, 'udev', uploader1,
+                distroseries=self.parent1))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader1,
+                distroseries=child))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent2.main_archive, 'libc6', uploader2,
+                distroseries=self.parent2))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'libc6', uploader2,
+                distroseries=child))
+
+    def test_multiple_parents_format_selection_union(self):
+        # The format selection for the derived series is the union of
+        # the format selections of the parents.
+        format1 = SourcePackageFormat.FORMAT_1_0
+        format2 = SourcePackageFormat.FORMAT_3_0_QUILT
+        self.parent1, notused = self.setupParent(
+            format_selection=format1, packages={'udev': '0.1-1'})
+        self.parent2, notused = self.setupParent(
+            format_selection=format2, packages={'udev': '0.1-2'})
+        child = self._fullInitialize([self.parent1, self.parent2])
+
+        self.assertTrue(child.isSourcePackageFormatPermitted(format1))
+        self.assertTrue(child.isSourcePackageFormatPermitted(format2))
+
+    def test_multiple_parents_component_merge(self):
+        # The components from the parents are merged to create the
+        # child's components.
+        self.comp1 = self.factory.makeComponent()
+        self.comp2 = self.factory.makeComponent()
+        self.parent1, unused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, unused = self.setupParent(
+            packages={'udev': '0.1-2'})
+        ComponentSelection(distroseries=self.parent1, component=self.comp1)
+        ComponentSelection(distroseries=self.parent2, component=self.comp1)
+        ComponentSelection(distroseries=self.parent2, component=self.comp2)
+        child = self._fullInitialize([self.parent1, self.parent2])
+
+        self.assertContentEqual(
+            [self.comp1, self.comp2],
+            child.components)
+
+    def test_multiple_parents_section_merge(self):
+        # The sections from the parents are merged to create the child's
+        # sections.
+        self.section1 = self.factory.makeSection()
+        self.section2 = self.factory.makeSection()
+        self.parent1, unused = self.setupParent(
+            packages={'udev': '0.1-1'})
+        self.parent2, unused = self.setupParent(
+            packages={'udev': '0.1-2'})
+        SectionSelection(distroseries=self.parent1, section=self.section1)
+        SectionSelection(distroseries=self.parent2, section=self.section1)
+        SectionSelection(distroseries=self.parent2, section=self.section2)
+        child = self._fullInitialize([self.parent1, self.parent2])
+
+        self.assertContentEqual(
+            [self.section1, self.section2],
+            child.sections)
+
+    def test_multiple_parents_same_package(self):
+        # If the same package (i.e. same packagename and version) is
+        # published in different parents the initialization will error.
+        self.parent1, self.parent_das1 = self.setupParent(
+            packages={'package': '0.1-1'})
+        self.parent2, self.parent_das2 = self.setupParent(
+            packages={'package': '0.1-1'})
+
+        self.assertRaises(
+            InitializationError, self._fullInitialize,
+            [self.parent1, self.parent2])
+
+    def test_copy_method_diff_archive_empty_target(self):
+        # If the archives are different and the target archive is
+        # empty: use the cloner.
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, archive, distroseries))
+
+    def test_copy_method_same_archive_empty_series(self):
+        # If the archives are the same and the target series is
+        # empty: use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
+
+    def test_copy_method_same_archive_empty_series_non_empty_archive(self):
+        # If the archives are the same and the target series is
+        # empty (another series in the same distribution
+        # might not be empty): use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+        target_archive = distroseries.main_archive
+
+        self.assertTrue(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
+
+    def test_copy_method_diff_archive_non_empty_target(self):
+        # If the archives are different and the target archive is
+        # *not* empty: don't use the cloner.
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+
+        self.assertFalse(
+            InitializeDistroSeries._use_cloner(
+                target_archive, archive, distroseries))
+
+    def test_copy_method_same_archive_non_empty_series(self):
+        # If the archives are the same and the target series is
+        # *not* empty: don't use the cloner.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries)
+        target_archive = distroseries.main_archive
+
+        self.assertFalse(
+            InitializeDistroSeries._use_cloner(
+                target_archive, target_archive, distroseries))
