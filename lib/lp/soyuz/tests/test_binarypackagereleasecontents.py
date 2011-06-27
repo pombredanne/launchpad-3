@@ -21,7 +21,7 @@ from lp.soyuz.model.binarypackagereleasecontents import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestBinaryPackagePath(TestCaseWithFactory):
+class TestBinaryPackageReleaseContents(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
