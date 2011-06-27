@@ -6,7 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'ensure_directory_exists',
+    'get_pid_from_file',
     'kill_by_pidfile',
+    'get_pid_from_file',
     'open_for_writing',
     'override_environ',
     'remove_if_exists',

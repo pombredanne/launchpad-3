@@ -229,6 +229,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', None, bat.owner)
 
+        self.breezy.previous_series = bat
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         ids = InitializeDistroSeries(self.breezy, [bat.id])
         ids.initialize()

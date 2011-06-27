@@ -182,6 +182,14 @@ class InvalidBranchMergeProposal(Exception):
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
+    def __init__(self, existing_proposal):
+        super(BranchMergeProposalExists, self).__init__(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s that is still active.' %
+                (existing_proposal.source_branch.displayname,
+                 existing_proposal.target_branch.displayname))
+        self.existing_proposal = existing_proposal
+
 
 class InvalidNamespace(Exception):
     """Raised when someone tries to lookup a namespace with a bad name.

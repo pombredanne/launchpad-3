@@ -15,6 +15,7 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'ExpectedException',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -95,6 +96,7 @@ import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
 from windmill.authoring import WindmillTestClient
 from zope.component import (
@@ -154,8 +156,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-# canonical.launchpad.ftests expects test_tales to be imported from here.
-# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
@@ -894,7 +894,7 @@ class WebServiceTestCase(TestCaseWithFactory):
 
         :param obj: The object to find the launchpadlib equivalent of.
         :param user: The user to use for accessing the object over
-            lauchpadlib.  Defaults to an arbitrary logged-in user.
+            launchpadlib.  Defaults to an arbitrary logged-in user.
         """
         if user is not None:
             service = self.factory.makeLaunchpadService(
@@ -1352,3 +1352,16 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class ExpectedException(TTExpectedException):
+    """An ExpectedException that provides access to the caught exception."""
+
+    def __init__(self, exc_type, value_re):
+        super(ExpectedException, self).__init__(exc_type, value_re)
+        self.caught_exc = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.caught_exc = exc_value
+        return super(ExpectedException, self).__exit__(
+            exc_type, exc_value, traceback)

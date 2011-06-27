@@ -23,6 +23,7 @@ __all__ = [
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
+    'IArchiveCommercial',
     'IArchiveEdit',
     'IArchiveView',
     'IArchiveEditDependenciesForm',
@@ -100,7 +101,6 @@ from lp.services.fields import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
-from lp.soyuz.interfaces.processor import IProcessorFamily
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -433,13 +433,16 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_families = CollectionField(
+    enabled_restricted_families = exported(
+        CollectionField(
             title=_("Enabled restricted families"),
             description=_(
                 "The restricted architecture families on which the archive "
                 "can build."),
-            value_type=Reference(schema=IProcessorFamily),
-            readonly=False)
+            value_type=Reference(schema=Interface),
+            # Really IProcessorFamily.
+            readonly=True),
+        as_of='devel')
 
     commercial = exported(
         Bool(
@@ -994,6 +997,7 @@ class IArchiveView(IHasBuildRecords):
 
         :param name: source name filter (exact match or SQL LIKE controlled
                      by 'exact_match' argument).
+                     Name can be a single string or a list of strings.
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.
@@ -1506,7 +1510,24 @@ class IArchiveEdit(Interface):
         """
 
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
+class IArchiveCommercial(Interface):
+    """Archive interface for operations restricted by commercial."""
+
+    @operation_parameters(
+        family=Reference(schema=Interface, required=True),
+        # Really IProcessorFamily.
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def enableRestrictedFamily(family):
+        """Add the processor family to the set of enabled restricted families.
+
+        :param family: is an `IProcessorFamily` object.
+        """
+
+
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
+               IArchiveCommercial):
     """Main Archive interface."""
     export_as_webservice_entry()
 

@@ -80,6 +80,8 @@ for the ubuntutest distribution.
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
     >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> ubuntu = Distribution.byName('ubuntu')
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> ubuntutest = Distribution.byName('ubuntutest')
@@ -87,6 +89,10 @@ for the ubuntutest distribution.
     ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
     ...     'Black and White', 'Someone', '5.10', None,
     ...     breezy_autotest.owner)
+    >>> factory = LaunchpadObjectFactory()
+    >>> debug_archive = factory.makeArchive(
+    ...     distribution=breezy.distribution, purpose=ArchivePurpose.DEBUG)
+    >>> breezy.previous_series = breezy_autotest
     >>> ids = InitializeDistroSeries(breezy, [breezy_autotest.id])
     >>> ids.initialize()
     >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
