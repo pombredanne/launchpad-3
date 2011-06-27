@@ -518,6 +518,7 @@ th {
 th, td {
     vertical-align: baseline;
     }
+.head th,
 thead th, tr.thead th {
     text-align: left;
     vertical-align: bottom;
@@ -624,6 +625,7 @@ table.listing, table.listing tbody, table.listing td.end-of-section {
 table.listing th {
     font-weight: bold;
     }
+table.listing .head, table.listing .head th,
 table.listing thead, table.listing thead th, table.listing tfoot tr,
 table.listing tr.thead th {
     border: 1px solid #d2d2d2;
