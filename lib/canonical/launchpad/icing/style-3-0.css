@@ -892,15 +892,13 @@ table.form table.extra-options td,
 table.form table.extra-options th {
     padding-bottom: 1em;
     }
-table.form table.listing th {
+table.form table.listing th,
+table.form table.listing td {
     padding-bottom: 0.25em;
 }
 table.form td td {
     padding-bottom: 0;
     }
-table.form table.listing td {
-    padding-bottom: 0.25em;
-}
 .long td {
     /* Long forms are composed of multiple tables and visible fieldsets */
     padding-right: 1em;
