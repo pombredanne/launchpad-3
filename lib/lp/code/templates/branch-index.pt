@@ -31,7 +31,9 @@
   <script type="text/javascript"
           tal:content="string:
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'lp.code.branch.status',
+              'lazr.choiceedit',
+              'lp.app.widgets.expander',
+              'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
               'lp.code.branch.subscription',
               'lp.code.branch.expandable',
@@ -48,6 +50,12 @@
             }
             Y.lp.code.branchmergeproposal.diff.connect_diff_links();
         }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.setupExpanders(
+            '.expandable', Y.lp.code.branch.expandable.diff_loader);
+    });
+
     });
   "/>
 </metal:block>
