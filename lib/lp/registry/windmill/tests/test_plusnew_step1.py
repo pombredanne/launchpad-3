@@ -25,6 +25,7 @@ class TestNewProjectStep1(WindmillTestCase):
 
         On step 1 of the wizard, the URL field gets autofilled from the Name
         field.  Also, the URL field will not accept invalid characters.
+        XXX: Move entire test to YUI test.
         """
         # Perform step 1 of the project registration, using information
         # that will yield search results.

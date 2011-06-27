@@ -13,7 +13,10 @@ from lp.testing.windmill.constants import PAGE_LOAD
 
 
 class TestProjectLicenses(WindmillTestCase):
-    """Test project licenses picker."""
+    """Test project licenses picker.
+
+    XXX: This needs to be YUI test.
+    """
 
     layer = RegistryWindmillLayer
     suite_name = 'TestProjectLicenses'
