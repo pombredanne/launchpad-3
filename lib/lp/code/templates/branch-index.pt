@@ -33,7 +33,8 @@
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit', 'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
-              'lp.code.branch.subscription', function(Y) {
+              'lp.code.branch.subscription',
+              'lp.code.branch.expandable', function(Y) {
 
         Y.on('load', function(e) {
             var logged_in = LP.links['me'] !== undefined;
