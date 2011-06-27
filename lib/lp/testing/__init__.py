@@ -4,7 +4,6 @@
 # pylint: disable-msg=W0401,C0301,F0401
 
 from __future__ import absolute_import
-from lp.testing.windmill.lpuser import LaunchpadUser
 
 
 __metaclass__ = type
@@ -42,7 +41,6 @@ __all__ = [
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
-    'WindmillTestCase',
     'with_anonymous_login',
     'with_celebrity_logged_in',
     'with_person_logged_in',
@@ -96,7 +94,6 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
 import transaction
-from windmill.authoring import WindmillTestClient
 from zope.component import (
     adapter,
     getUtility,
@@ -163,10 +160,6 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
-from lp.testing.windmill import (
-    constants,
-    lpuser,
-    )
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
@@ -801,73 +794,6 @@ class BrowserTestCase(TestCaseWithFactory):
         from canonical.launchpad.testing.pages import extract_text
         return extract_text(
             self.getMainContent(context, view_name, rootsite, no_login, user))
-
-
-class WindmillTestCase(TestCaseWithFactory):
-    """A TestCase class for Windmill tests.
-
-    It provides a WindmillTestClient (self.client) with Launchpad's front
-    page loaded.
-    """
-
-    suite_name = ''
-
-    def setUp(self):
-        super(WindmillTestCase, self).setUp()
-        self.client = WindmillTestClient(self.suite_name)
-        # Load the front page to make sure we don't get fooled by stale pages
-        # left by the previous test. (For some reason, when you create a new
-        # WindmillTestClient you get a new session and everything, but if you
-        # do anything before you open() something you'd be operating on the
-        # page that was last accessed by the previous test, which is the cause
-        # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=self.layer.appserver_root_url())
-
-    def getClientFor(self, obj, user=None, password='test', base_url=None,
-                     view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if user is not None:
-            if isinstance(user, LaunchpadUser):
-                email = user.email
-                password = user.password
-            else:
-                email = removeSecurityProxy(user).preferredemail.email
-            client.open(url=lpuser.get_basic_login_url(email, password))
-            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, rootsite=self.layer.facet,
-                force_local_path=True)
-        if base_url is None:
-            base_url = self.layer.base_url
-        obj_url = base_url + url
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
-
-    def getClientForPerson(self, url, person, password='test'):
-        """Create a LaunchpadUser for a person and login to the url."""
-        naked_person = removeSecurityProxy(person)
-        user = LaunchpadUser(
-            person.displayname, naked_person.preferredemail.email, password)
-        return self.getClientFor(url, user=user)
-
-    def getClientForAnonymous(self, obj, view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, force_local_path=True)
-        obj_url = self.layer.base_url + url
-        obj_url = obj_url.replace('http://', 'http://foo:foo@')
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
 
 
 class WebServiceTestCase(TestCaseWithFactory):
