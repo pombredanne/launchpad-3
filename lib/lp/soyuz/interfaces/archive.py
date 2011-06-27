@@ -997,6 +997,7 @@ class IArchiveView(IHasBuildRecords):
 
         :param name: source name filter (exact match or SQL LIKE controlled
                      by 'exact_match' argument).
+                     Name can be a single string or a list of strings.
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.

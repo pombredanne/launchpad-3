@@ -51,6 +51,7 @@ __all__ = [
     'reconnect_stores',
     ]
 
+from cProfile import Profile
 import datetime
 import errno
 import gc
@@ -61,74 +62,100 @@ import socket
 import subprocess
 import sys
 import tempfile
+from textwrap import dedent
 import threading
 import time
-from cProfile import Profile
-from textwrap import dedent
-from unittest import TestCase, TestResult
+from unittest import (
+    TestCase,
+    TestResult,
+    )
 from urllib import urlopen
 
 from fixtures import (
     Fixture,
     MonkeyPatch,
     )
+from lazr.restful.utils import safe_hasattr
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 from wsgi_intercept import httplib2_intercept
-
-from lazr.restful.utils import safe_hasattr
-
-import zope.app.testing.functional
-import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
-from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, provideUtility
-from zope.component import globalregistry
+import zope.app.testing.functional
+from zope.app.testing.functional import (
+    FunctionalTestSetup,
+    ZopePublication,
+    )
+from zope.component import (
+    getUtility,
+    globalregistry,
+    provideUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
+import zope.publisher.publish
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-import canonical.launchpad.webapp.session
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import pidfile
-from canonical.config import CanonicalConfig, config, dbconfig
+from canonical.config import (
+    CanonicalConfig,
+    config,
+    dbconfig,
+    )
 from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
 from canonical.database.revision import (
-    confirm_dbrevision, confirm_dbrevision_on_startup)
+    confirm_dbrevision,
+    confirm_dbrevision_on_startup,
+    )
 from canonical.database.sqlbase import (
     cursor,
     session_store,
     ZopelessTransactionManager,
     )
 from canonical.launchpad.interfaces.mailbox import IMailBox
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from lp.testing import ANONYMOUS, login, logout, is_logged_in
-import lp.services.mail.stub
-from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.services.googlesearch.tests.googleserviceharness import (
-    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IOpenLaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.servers import (
-    LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+    LaunchpadAccessLogger,
+    register_launchpad_request_publication_factories,
+    )
+import canonical.launchpad.webapp.session
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
-    get_default_timeout_function, set_default_timeout_function)
-from canonical.lp import initZopeless
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from canonical.librarian.testing.server import LibrarianServerFixture
+from canonical.lp import initZopeless
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.googlesearch.tests.googleserviceharness import (
+    GoogleServiceTestSetup,
+    )
+from lp.services.mail.mailbox import TestMailBox
+import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.services.rabbit.testing.server import RabbitServer
+from lp.testing import (
+    ANONYMOUS,
+    is_logged_in,
+    login,
+    logout,
+    )
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -636,6 +663,46 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.flush_all()  # Only do this in tests!
 
 
+class RabbitMQLayer(BaseLayer):
+    """Provides tests access to a rabbitMQ instance."""
+    _reset_between_tests = True
+
+    rabbit = RabbitServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.rabbit.setUp()
+        cls.config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls.appserver_config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.rabbit.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 # We store a reference to the DB-API connect method here when we
 # put a proxy in its place.
 _org_connect = None
@@ -933,7 +1000,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon

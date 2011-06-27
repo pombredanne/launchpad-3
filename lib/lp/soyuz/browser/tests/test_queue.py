@@ -272,7 +272,7 @@ class TestCompletePackageUpload(TestCaseWithFactory):
             package_sets.values()[0][0].name,
             complete_upload.display_package_sets)
 
-    def test_display_package_sets_returns_empty_for_non_source_upload(self):
+    def test_display_package_sets_returns_empty_for_other_upload(self):
         upload = self.factory.makeBuildPackageUpload()
         complete_upload = self.makeCompletePackageUpload(
             upload, package_sets=self.mapPackageSets(upload))
@@ -287,34 +287,51 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         self.assertEqual("aaa bbb ccc", complete_upload.display_package_sets)
 
     def test_display_component_returns_source_upload_component_name(self):
-        complete_upload = self.makeCompletePackageUpload()
+        upload = self.factory.makeSourcePackageUpload()
+        complete_upload = self.makeCompletePackageUpload(upload)
         self.assertEqual(
-            complete_upload.sourcepackagerelease.component.name.lower(),
+            upload.sourcepackagerelease.component.name.lower(),
             complete_upload.display_component)
 
-    def test_display_component_returns_empty_for_non_source_upload(self):
+    def test_display_component_returns_copy_job_upload_component_name(self):
+        copy_job_upload = self.factory.makeCopyJobPackageUpload()
+        complete_upload = self.makeCompletePackageUpload(copy_job_upload)
+        self.assertEqual(
+            copy_job_upload.component_name.lower(),
+            complete_upload.display_component)
+
+    def test_display_component_returns_empty_for_other_upload(self):
         complete_upload = self.makeCompletePackageUpload(
             self.factory.makeBuildPackageUpload())
         self.assertEqual('', complete_upload.display_component)
 
     def test_display_section_returns_source_upload_section_name(self):
-        complete_upload = self.makeCompletePackageUpload()
+        upload = self.factory.makeSourcePackageUpload()
+        complete_upload = self.makeCompletePackageUpload(upload)
         self.assertEqual(
-            complete_upload.sourcepackagerelease.section.name.lower(),
+            upload.sourcepackagerelease.section.name.lower(),
             complete_upload.display_section)
 
-    def test_display_section_returns_empty_for_non_source_upload(self):
+    def test_display_section_returns_copy_job_upload_section_name(self):
+        copy_job_upload = self.factory.makeCopyJobPackageUpload()
+        complete_upload = self.makeCompletePackageUpload(copy_job_upload)
+        self.assertEqual(
+            copy_job_upload.section_name.lower(),
+            complete_upload.display_section)
+
+    def test_display_section_returns_empty_for_other_upload(self):
         complete_upload = self.makeCompletePackageUpload(
             self.factory.makeBuildPackageUpload())
         self.assertEqual('', complete_upload.display_section)
 
     def test_display_priority_returns_source_upload_priority(self):
-        complete_upload = self.makeCompletePackageUpload()
+        upload = self.factory.makeSourcePackageUpload()
+        complete_upload = self.makeCompletePackageUpload(upload)
         self.assertEqual(
-            complete_upload.sourcepackagerelease.urgency.name.lower(),
+            upload.sourcepackagerelease.urgency.name.lower(),
             complete_upload.display_priority)
 
-    def test_display_priority_returns_empty_for_non_source_upload(self):
+    def test_display_priority_returns_empty_for_other_upload(self):
         complete_upload = self.makeCompletePackageUpload(
             self.factory.makeBuildPackageUpload())
         self.assertEqual('', complete_upload.display_priority)

@@ -243,6 +243,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -3442,6 +3443,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_archive=spph.archive,
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries)
+        job.addSourceOverride(SourceOverride(
+            spr.sourcepackagename, spr.component, spr.section))
         try:
             job.run()
         except SuspendJobException:
