@@ -892,9 +892,15 @@ table.form table.extra-options td,
 table.form table.extra-options th {
     padding-bottom: 1em;
     }
+table.form table.listing th {
+    padding-bottom: 0.25em;
+}
 table.form td td {
     padding-bottom: 0;
     }
+table.form table.listing td {
+    padding-bottom: 0.25em;
+}
 .long td {
     /* Long forms are composed of multiple tables and visible fieldsets */
     padding-right: 1em;
@@ -914,6 +920,9 @@ fieldset.collapsible {
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
+fieldset.collapsible h2 {
+    margin-top: 0;
+}
 fieldset .collapsed {
     display: none;
     }
