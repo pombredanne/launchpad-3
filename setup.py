@@ -66,7 +66,6 @@ setup(
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
-        'selenium',
         'setproctitle',
         'setuptools',
         'Sphinx',
