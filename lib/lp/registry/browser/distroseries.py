@@ -861,6 +861,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # show the results.
             self.next_url = self.request.URL
 
+    @property
+    def action_url(self):
+        """The forms should post to themselves, including GET params to
+        account for batch parameters.
+        """
+        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
+
     def validate_sync(self, action, data):
         """Validate selected differences."""
         form.getWidgetsData(self.widgets, self.prefix, data)
