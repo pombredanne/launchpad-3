@@ -693,6 +693,9 @@ class RabbitMQLayer(BaseLayer):
             return
         cls.rabbit.cleanUp()
         cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
 
     @classmethod
     @profiled
