@@ -25,7 +25,6 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
-    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -80,9 +79,6 @@ import wsgi_intercept
 from wsgi_intercept import httplib2_intercept
 
 from lazr.restful.utils import safe_hasattr
-
-from windmill.bin.admin_lib import (
-    start_windmill, teardown as windmill_teardown)
 
 import zope.app.testing.functional
 import zope.publisher.publish
@@ -1978,134 +1974,6 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
-
-
-class BaseWindmillLayer(AppServerLayer):
-    """Layer for Windmill tests.
-
-    This layer shouldn't be used directly. A subclass needs to be
-    created specifying which base URL to use (e.g.
-    http://bugs.launchpad.dev:8085/).
-    """
-
-    facet = None
-    base_url = None
-    shell_objects = None
-    config_file = None
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        if cls.base_url is None:
-            # Only do the setup if we're in a subclass that defines
-            # base_url. With no base_url, we can't create the config
-            # file windmill needs.
-            return
-
-        cls._fixStandardInputFileno()
-        cls._configureWindmillLogging()
-        cls._configureWindmillStartup()
-
-        # Tell windmill to start its browser and server.  Our testrunner will
-        # keep going, passing commands to the server for execution.
-        cls.shell_objects = start_windmill()
-
-        # Patch the config to provide the port number and not use https.
-        sites = (
-            (('vhost.%s' % sitename,
-            'rooturl: %s/' % cls.appserver_root_url(sitename))
-            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
-                            'code', 'testopenid', 'translations']))
-        for site in sites:
-            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
-        allvhosts.reload()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        if cls.shell_objects is not None:
-            windmill_teardown(cls.shell_objects)
-        if cls.config_file is not None:
-            # Close the file so that it gets deleted.
-            cls.config_file.close()
-        config.reloadConfig()
-        reset_logging()
-        # XXX: deryck 2011-01-28 bug=709438
-        # Windmill mucks about with the default timeout and this is
-        # a fix until the library itself can be cleaned up.
-        socket.setdefaulttimeout(None)
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        # Left-over threads should be harmless, since they should all
-        # belong to Windmill, which will be cleaned up on layer
-        # tear down.
-        BaseLayer.disable_thread_check = True
-        socket.setdefaulttimeout(120)
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        # To play nice with Windmill layers, we need to reset
-        # the socket timeout default in this method, too.
-        socket.setdefaulttimeout(None)
-
-    @classmethod
-    def _fixStandardInputFileno(cls):
-        """Patch the STDIN fileno so Windmill doesn't break."""
-        # If we're running in a bin/test sub-process, sys.stdin is
-        # replaced by FakeInputContinueGenerator, which doesn't have a
-        # fileno method. When Windmill starts Firefox,
-        # sys.stdin.fileno() is called, so we add such a method here, to
-        # prevent it from breaking. By returning None, we should ensure
-        # that it doesn't try to use the return value for anything.
-        if not safe_hasattr(sys.stdin, 'fileno'):
-            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
-                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
-            sys.stdin.fileno = lambda: None
-
-    @classmethod
-    def _configureWindmillLogging(cls):
-        """Override the default windmill log handling."""
-        if not config.windmill.debug_log:
-            return
-
-        # Add a new log handler to capture all of the windmill testrunner
-        # output. This overrides windmill's own log handling, which we do not
-        # have direct access to.
-        # We'll overwrite the previous log contents to keep the disk usage
-        # low, and because the contents are only meant as an in-situ debugging
-        # aid.
-        filehandler = logging.FileHandler(config.windmill.debug_log, mode='w')
-        filehandler.setLevel(logging.NOTSET)
-        filehandler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        logging.getLogger('windmill').addHandler(filehandler)
-
-        # Make sure that everything sent to the windmill logger is captured.
-        # This works because windmill configures the root logger for its
-        # purposes, and we are pre-empting that by inserting a new logger one
-        # level higher in the logger chain.
-        logging.getLogger('windmill').setLevel(logging.NOTSET)
-
-    @classmethod
-    def _configureWindmillStartup(cls):
-        """Pass our startup parameters to the windmill server."""
-        # Windmill needs a config file on disk to load its settings from.
-        # There is no way to directly pass settings to the windmill test
-        # driver from out here.
-        config_text = dedent("""\
-            START_FIREFOX = True
-            TEST_URL = '%s/'
-            CONSOLE_LOG_LEVEL = %d
-            """ % (cls.base_url, logging.NOTSET))
-        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
-        cls.config_file.write(config_text)
-        # Flush the file so that windmill can read it.
-        cls.config_file.flush()
-        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
 
 
 class YUITestLayer(FunctionalLayer):
