@@ -962,6 +962,9 @@ h1 .edit {
 .yui3-ieditor {
     padding-right: 288px;
     }
+.yui3-skin-sam .yui3-ieditor-input {
+    margin-top: 0;
+}
 h1 .yui3-ieditor-errors {
     font-size: 12px;
     }
