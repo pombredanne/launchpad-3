@@ -10,11 +10,11 @@ __all__ = [
     ]
 
 from lazr.restful.marshallers import (
-    TextFieldMarhaller as LazrTextFieldMarshaller,
+    TextFieldMarshaller as LazrTextFieldMarshaller,
     )
 
 
-class TextFieldMarhaller(LazrTextFieldMarshaller):
+class TextFieldMarshaller(LazrTextFieldMarshaller):
     """Do not expose email addresses for anonymous users."""
 
     def unmarshall(self, entry, value):
